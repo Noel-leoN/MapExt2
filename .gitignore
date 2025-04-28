@@ -361,3 +361,26 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+/.gitignore
+/.gitignore
+/MapExt2.sln
+/Setting.cs
+/ReBurstCellMapRef/NetColorSystem.cs
+/ReBurstCellMapRef/PowerPlantAISystem.cs
+/ReBurstCellMapRef/TempRenewableElectricityProductionTooltipSystem.cs
+/ReBurstCellMapRef/TempWaterPumpingTooltipSystem.cs
+/ReBurstCellMapRef/WaterPumpingStationAISystem.cs
+/ReBurstCellMapClosed/GroundPollutionSystemRe.cs
+/ReBurstCellMapClosed/GroundWaterSystemRe.cs
+/ReBurstCellMapClosed/NaturalResourceSystem.cs
+/ReBurstCellMapClosed/TelecomPreviewSystem.cs
+/ReBurstCellMapClosed/TrafficAmbienceSystemRe.cs
+/ReBurstCellMapClosed/ZoneAmbienceSystemRe.cs
+/Library/ilpp.pid
+/CorePatcher/WaterSystemSurfaceReader.cs
+/Properties/MapExt.png
+/Properties/MapExt57km.png
+/Properties/outputs_20250428_hzb69nw4th.jpeg
+/Properties/PublishConfiguration.xml
+/Properties/Thumbnail.png
+/Properties/Thumbnail.pngx

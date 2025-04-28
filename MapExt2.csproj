@@ -1,0 +1,129 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<OutputType>Library</OutputType>
+		<TargetFramework>net472</TargetFramework>
+		<Configurations>Debug;Release</Configurations>
+		<LangVersion>9.0</LangVersion>
+		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+		<AssemblyName>MapExt2</AssemblyName>
+		<RootNamespace>MapExtPDX</RootNamespace>
+		<Version>1.0.0.2</Version>		
+		<Description>Game version support 1.2.5f; MapExtXL PDX mod with 4x4 vanilla mapsize(57km^2)</Description>
+		
+		<!--The file where mod information which is required for publishing mod on PDX mods are stored-->
+		<PublishConfigurationPath>Properties\PublishConfiguration.xml</PublishConfigurationPath>
+		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+	</PropertyGroup>
+	
+	<!--Imports must be after PropertyGroup block-->
+	<Import Project="$([System.Environment]::GetEnvironmentVariable('CSII_TOOLPATH', 'EnvironmentVariableTarget.User'))\Mod.props" />
+	<Import Project="$([System.Environment]::GetEnvironmentVariable('CSII_TOOLPATH', 'EnvironmentVariableTarget.User'))\Mod.targets" />
+	<ItemGroup>	  
+	  <Compile Remove="CorePatcher\WaterSystemSurfaceReader.cs" />	  
+	  <Compile Remove="ReBurstCellMapClosed\GroundPollutionSystemRe.cs" />
+	  <Compile Remove="ReBurstCellMapClosed\GroundWaterSystemRe.cs" />
+	  <Compile Remove="ReBurstCellMapClosed\NaturalResourceSystem.cs" />
+	  <Compile Remove="ReBurstCellMapClosed\TelecomPreviewSystem.cs" />
+	  <Compile Remove="ReBurstCellMapClosed\TrafficAmbienceSystemRe.cs" />
+	  <Compile Remove="ReBurstCellMapClosed\ZoneAmbienceSystemRe.cs" />
+	  <Compile Remove="ReBurstCellMapRef\NetColorSystem.cs" />
+	  <Compile Remove="ReBurstCellMapRef\PowerPlantAISystem.cs" />
+	  <Compile Remove="ReBurstCellMapRef\TempRenewableElectricityProductionTooltipSystem.cs" />
+	  <Compile Remove="ReBurstCellMapRef\TempWaterPumpingTooltipSystem.cs" />
+	  <Compile Remove="ReBurstCellMapRef\WaterPumpingStationAISystem.cs" />
+	  <Compile Remove="Setting.cs" />
+	</ItemGroup>
+	<ItemGroup>
+	  <None Remove="Properties\MapExt.png" />
+	  <None Remove="Properties\MapExt57km.png" />
+	  <None Remove="Properties\outputs_20250428_hzb69nw4th.jpeg" />
+	  <None Remove="Properties\Thumbnail.png" />
+	  <None Remove="Properties\Thumbnail.pngx" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<Reference Include="Game">			
+			<Private>false</Private>
+		</Reference>
+		<Reference Include="Colossal.Core">
+			<Private>false</Private>
+		</Reference>
+		<Reference Include="Colossal.Logging">
+			<Private>false</Private>
+		</Reference>
+		<Reference Include="Colossal.IO.AssetDatabase">
+			<Private>false</Private>
+		</Reference>
+		<Reference Include="Colossal.UI">
+			<Private>false</Private>
+		</Reference>
+		<Reference Include="Colossal.UI.Binding">
+			<Private>false</Private>
+		</Reference>
+		<Reference Include="Colossal.Localization">
+			<Private>false</Private>
+		</Reference>
+		<Reference Include="Colossal.Collections">
+			<Private>false</Private>
+		</Reference>
+		<Reference Include="Colossal.Mathematics">
+			<Private>false</Private>
+		</Reference>
+		<Reference Include="Colossal.Mono.Cecil">
+			<Private>false</Private>
+		</Reference>
+		<Reference Include="Unity.InputSystem">
+			<Private>false</Private>
+		</Reference>
+		<Reference Include="UnityEngine.CoreModule">
+			<Private>false</Private>
+		</Reference>
+		<Reference Include="Unity.Burst">
+			<Private>false</Private>
+		</Reference>
+		<Reference Include="Unity.Burst.Unsafe">
+			<Private>false</Private>
+		</Reference>
+		<Reference Include="Unity.Collections">
+			<Private>false</Private>
+		</Reference>
+		<Reference Include="Unity.Entities">
+			<Private>false</Private>
+		</Reference>
+		<Reference Include="Unity.Mathematics">
+			<Private>false</Private>
+		</Reference>
+	</ItemGroup>
+
+	<ItemGroup>
+		<Reference Update="System">
+			<Private>false</Private>
+		</Reference>
+		<Reference Update="System.Core">
+			<Private>false</Private>
+		</Reference>
+		<Reference Update="System.Data">
+			<Private>false</Private>
+		</Reference>
+	</ItemGroup>
+	
+	<ItemGroup>
+		<PackageReference Include="Lib.Harmony" Version="2.2.2" />
+	</ItemGroup>
+
+	
+	<!--
+	<ItemGroup>
+		<PackageReference Include="BepInEx.Core" Version="5.4.21" IncludeAssets="compile" />
+	</ItemGroup>
+-->
+	<ItemGroup>
+		<None Include="$(ModPropsFile)" Link="Properties\Mod.props" />
+		<None Include="$(ModTargetsFile)" Link="Properties\Mod.targets" />
+	</ItemGroup>
+	<ItemGroup>
+	  <Service Include="{508349b6-6b84-4df5-91f0-309beebad82d}" />
+	</ItemGroup>
+
+</Project>
