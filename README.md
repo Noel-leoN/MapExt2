@@ -25,7 +25,7 @@ Supported terrain image format: 4096x4096 16bit grayscale terrain image (PNG or 
 - May not be compatible with some special mods.
 - Repeatedly replicate the overlayinfomation of the playable area to the scope of the world map, its a vanilla bug, hasn't been fixed yet, so please ignore it for now, or don't use too much zoom out.
 - a few simulation systems may not be working properly,such as water pumping/tempwater powerstation.
-- Water Feature Mod needs to override the "mapextend" constant specified inside it in order to work properly.(now The latest beta version is working fine. )
+- The latest beta version of Water Feature Mod is working fine.
 - If you found issues please report in github, thank you.
 
 ## Disclaimer
