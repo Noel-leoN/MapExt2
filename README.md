@@ -1,4 +1,5 @@
 ﻿# Cities Skylines 2 Map Extended Mod Beta(57km version)
+- MapExt2 a pure PDX mod version, mainly using harmony transpiler to patch vanilla code, please do not mix with the BepInEx framework version (MapExt).
 
 ## Introduction
 
@@ -33,7 +34,7 @@ Supported terrain image format: 4096x4096 16bit grayscale terrain image (PNG or 
 
 ## Notice
 - This is a "pure" PDX mod solution.Most patches use Harmony Transpiler to get performance similar to the vanilla.
-- For experienced users, it's recommended to use BepInEx/PDX mixed version (released on GitHub) for much better stability,mod compatibility and performance.However, the installation is somewhat complicated.
+- For experienced users, you can try to use BepInEx/PDX mixed version (released on GitHub) for better stability,mod compatibility and performance.However, the installation is somewhat complicated.
 
 ## Credits
 - [Captain-Of-Coit](https://github.com/Captain-Of-Coit/cities-skylines-2-mod-template): A Cities: Skylines 2 BepInEx mod template.
