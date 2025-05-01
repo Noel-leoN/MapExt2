@@ -3,13 +3,13 @@
 
 ## Introduction
 
-- 57km^2 MapSize (4x4 the size of the vanilla map)
+- 57km MapSize (4x4 the size of the vanilla map)
 
 ## Usage
-For 57km^2 version(more stable):
+For 57km version(more stable):
 - create map in game editor manually to import 57.344km heightmap (229.376km worldmap is optional) . (it's 1:1 scale, or any size you want but it scales)
 
-For 229km^2 version(under test):
+For 229km version(under test):
 - create map in game editor manually to import 229.376km heightmap (optional 917.504km worldmap, but not recommand because of performance drop). (or any size you want but it scales)
 
 Supported terrain image format: 4096x4096 16bit grayscale terrain image (PNG or TIFF) .
