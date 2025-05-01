@@ -34,7 +34,7 @@ Supported terrain image format: 4096x4096 16bit grayscale terrain image (PNG or 
 
 ## Notice
 - This is a "pure" PDX mod solution.Most patches use Harmony Transpiler to get performance similar to the vanilla.
-- For experienced users, you can try to use BepInEx/PDX mixed version (released on GitHub) for quick test or build self-use version.However, the installation is somewhat complicated.
+- For experienced users(modders), you can try to use BepInEx/PDX mixed version (released on GitHub) for quick test or build self-use version.
 
 ## Credits
 - [Captain-Of-Coit](https://github.com/Captain-Of-Coit/cities-skylines-2-mod-template): A Cities: Skylines 2 BepInEx mod template.
