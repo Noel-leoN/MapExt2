@@ -34,7 +34,7 @@ Supported terrain image format: 4096x4096 16bit grayscale terrain image (PNG or 
 
 ## Notice
 - This is a "pure" PDX mod solution.Most patches use Harmony Transpiler to get performance similar to the vanilla.
-- For experienced users, you can try to use BepInEx/PDX mixed version (released on GitHub) for better stability,mod compatibility and performance.However, the installation is somewhat complicated.
+- For experienced users, you can try to use BepInEx/PDX mixed version (released on GitHub) for quick test or build self-use version.However, the installation is somewhat complicated.
 
 ## Credits
 - [Captain-Of-Coit](https://github.com/Captain-Of-Coit/cities-skylines-2-mod-template): A Cities: Skylines 2 BepInEx mod template.
@@ -65,5 +65,5 @@ Supported terrain image format: 4096x4096 16bit grayscale terrain image (PNG or 
 - 可以使用水源工具选项-实验功能-流动性开到最大，蒸发量减少，生成水源会相当快。
 
 ### 提示：
-- 有一定经验用户建议使用BepInEx版本(在Github/CSLBBS发布)，以获得更好的稳定性、mod兼容性和性能。
+- 有一定经验用户可尝试使用BepInEx版本(在Github/CSLBBS发布)，该版本将专注于快速构建和辅助测试。将优先更新MapExt2版本。
 - 欢迎反馈测试
