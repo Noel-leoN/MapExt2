@@ -1,18 +1,22 @@
-﻿# Cities Skylines 2 Map Extended Mod Beta(57km version)
+﻿# Cities Skylines 2 Map Extended Mod Beta
 - MapExt2 a pure PDX mod version, mainly using harmony transpiler to patch vanilla code, please do not mix with the BepInEx framework version (MapExt).
 
 ## Introduction
-
-- 57km MapSize (4x4 the size of the vanilla map)
+- 28km MapSize (2x2 the size of the vanilla map) (DEM 7m, vanilla is 3.5m)
+- 57km MapSize (4x4)(DEM 14m）
+- 229km MapSize (16x16)(DEM 56m)
 
 ## Usage
+For 28km version(more stable):
+- create map in game editor manually to import 28.672km heightmap (114.688km worldmap is optional) . (1:1 scale, or any size but it will up/downscales)
+
 For 57km version(more stable):
-- create map in game editor manually to import 57.344km heightmap (229.376km worldmap is optional) . (it's 1:1 scale, or any size you want but it scales)
+- create map in game editor manually to import 57.344km heightmap (229.376km worldmap is optional) . (1:1 scale, or any size but it scales)
 
 For 229km version(under test):
-- create map in game editor manually to import 229.376km heightmap (optional 917.504km worldmap, but not recommand because of performance drop). (or any size you want but it scales)
+- create map in game editor manually to import 229.376km heightmap (optional 917.504km worldmap, but not recommand because of performance drop). (or any size but it scales)
 
-Supported terrain image format: 4096x4096 16bit grayscale terrain image (PNG or TIFF) .
+Supported terrain image format: 4096x4096 16bit grayscale terrain image (PNG or TIF/TIFF) .
 
 ## Caution
 - Bugs with all vanilla maps. You HAVE TO USE a custom map.
