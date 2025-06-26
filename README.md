@@ -1,68 +1,107 @@
-﻿# Cities Skylines 2 Map Extended Mod Beta(57km version)
+﻿
+# Cities Skylines 2 Map Extended Mod (28/57/114/229km) All-in-one Edition
 
+## Caution!!! Make sure to check out the full description below before using this mod!
+* There's no doubt it will affect game saves. BACKUP YOUR VANILLA GAMESAVE or SAVES from earlier versions of MapExt before use this mod!
+* Now you can switch back to the vanilla mapsize at any time from the main menu without having to uninstall the mod. If you don't want to use this mod anymore, make sure to delete it in the Playset instead of just disabling it!
+* If the mod is uninstalled or does not load successfully, please DO NOT load a save of >=28km mapsize.
+* Please set the correct mapsize in the Option UI and MATCH the Maps you want to make, or the Saves you want to play.
+* If you want to a 1:1 map with a size of >=28km, you need to select the correct mapsize in the Option UI, then make your own map in the game's editor, or use a map of the specific size made by someone else. Otherwise, the map will stretch or broken.
+* The mod has a simple loadgame check function to prevent loading gamesaves of different map sizes with the wrong settings. However, it cannot to validate maps loaded in the map editor, You have to choose the right settings in Option UI.
+* It is very laborious to build a big city. Due to the large number of patched objects involved in the map size factor in the game, it is not entirely clear that there are hidden issues, Please use at your own risk.
+* Recommended to use a graphics card with more than 10G of video memory. This mod will take an extra 1-2GB of VRAM. If you experience crashes while loading maps, it's likely due to insufficient VRAM from loading too many assets. It's recommended to create a new Playset the first time you use this mod and to use as few asset mods as possible. If everything works fine, you can gradually add more asset mods.
 ## Introduction
-
-- 57km^2 MapSize (4x4 the size of the vanilla map)
-
+* MapSize list:
+* 57km(default): 4x4 the size of the vanilla map,DEM-14m.
+* 28km: 2x2 DEM-7m
+* 114km: 8x8 DEM-28m (not recommand due to low terrain resolution, as well as tearing at the edges of the map, and calculation issues of simulation systems)
+* 229km: 16x16 DEM-56m (not recommand, same reason but even worse)
+* 14km: vanilla 1x1 DEM-3.5m
+* As the map size is enlarged, the terrain will be less detailed, and waterfront edges and mountains may look relatively rough.Due to some pretty tricky technical reasons, this mod won't be able to improve the terrain resolution for now.If you need a higher terrain resolution, you can wait for LargerMap by algernon.
+* The maptiles now stay at 529.
 ## Usage
-For 57km^2 version(more stable):
-- create map in game editor manually to import 57.344km heightmap (229.376km worldmap is optional) . (it's 1:1 scale, or any size you want but it scales)
-
-For 229km^2 version(under test):
-- create map in game editor manually to import 229.376km heightmap (optional 917.504km worldmap, but not recommand because of performance drop). (or any size you want but it scales)
-
-Supported terrain image format: 4096x4096 16bit grayscale terrain image (PNG or TIFF) .
-
-## Caution
-- Bugs with all vanilla maps. You HAVE TO USE a custom map.
-  Due to the change in terrain height ratio, DO NOT use vanilla game saves to play, otherwise existing buildings will have visual errors.
-- If you have any BepInEx version of MapExt installed, BE SURE to delete all directories and files, including BepInEx/patcher/MapExt and local PDX mods/MapExt.PDX
-- There's no doubt it will affect game saves (generally, different mapsize/resolution savegame might not be compatible, but the same mapsize/resolution savegame may work).
+### Make 1:1 Map:
+* In the Editor, Import the correct size heightmap/worldmap terrain image.
+* 28km playable: height 28672m / world 114688m
+* 57km playable: height 57344m / world 229376m
+* 114km playable: height 114688m / world 458752m
+* 229km playable: height 229376m / world 917504m
+* Supported heightmap/worldmap terrain image format: 4096x4096 16bit grayscale terrain image (PNG or TIFF) 
+* If the import size is not the same as above, the map will stretch.
+* Maps over 57km are recommended not to import the "fake" Worldmap to save performance. (The only use of the worldmap is for visuals; it really can't serve any other purpose.)
+### Here's some folders you may need :
+- heightmap/worldmap : "%USERPROFILE%\AppData\LocalLow\Colossal Order\Cities Skylines II\Heightmaps"
+- overlays map : "%USERPROFILE%\AppData\LocalLow\Colossal Order\Cities Skylines II\Overlays"
+- log (for reporting issues) : "%USERPROFILE%\AppData\LocalLow\Colossal Order\Cities Skylines II\Logs"
+- local mod (only for manual installation, don't touch this if you subscribed this mod）"%USERPROFILE%\AppData\LocalLow\Colossal Order\Cities Skylines II\Mods"
 
 ## Issues
-- As the map size is enlarged, the terrain will be less detailed, and waterfront edges and mountains may look relatively rough.
-- Due to the floating-point precision issues in the vanilla game simulation system (probably because of performance considerations), there might be some weird height display glitches at the edges of the map.The 229km version will show this more noticeably, while the 57km version is pretty much usable.
-- May not be compatible with some special mods.
-- Repeatedly replicate the overlayinfomation of the playable area to the scope of the world map, its a vanilla bug, hasn't been fixed yet, so please ignore it for now, or don't use too much zoom out.
-- a few simulation systems may not be working properly,such as water pumping/tempwater powerstation.
-- The latest beta version of Water Feature Mod is working fine.
-- If you found issues please report in github, thank you.
+* Due to the floating-point precision issues in the vanilla game simulation system (probably because of performance considerations), there might be some weird height display glitches at the edges of the map.
+* May not be compatible with some special mods.
+* Repeatedly replicate the overlay infomation of the playable area to the scope of the world map, its a vanilla bug, hasn't been fixed yet, so please ignore it for now, or don't use too much zoom out.
+* If you found issues please report in Discord or Github, thank you.
 
-## Disclaimer
-- SAVE YOUR GAME before use this mod. Please use at your own risk.
-
-## Notice
-- This is a "pure" PDX mod solution.Most patches use Harmony Transpiler to get performance similar to the vanilla.
-- For experienced users, it's recommended to use BepInEx/PDX mixed version (released on GitHub) for much better stability,mod compatibility and performance.However, the installation is somewhat complicated.
+## Tips
+* For those who don’t want to wait too long for water sources to generate, it is recommended to use Water Feature Mod from yenyang and sliding the flowness feature to the max (it’s experimental, but it works great in practice).
+* More tips can be found in the Discord channel listed below.
 
 ## Credits
+- [Discord](https://discord.gg/s6BcrFKepF): Cities: Skylines Modding (mainly discussion location)
+- [rcav8tr](https://github.com/rcav8tr/CS2-Modding-Instructions):Cities Skylines 2 Modding Instructions
 - [Captain-Of-Coit](https://github.com/Captain-Of-Coit/cities-skylines-2-mod-template): A Cities: Skylines 2 BepInEx mod template.
 - [BepInEx](https://github.com/BepInEx/BepInEx): Unity / XNA game patcher and plugin framework.
 - [Harmony](https://github.com/pardeike/Harmony): A library for patching, replacing and decorating .NET and Mono methods during runtime.
 - [CSLBBS](https://www.cslbbs.net): A chinese Cities: Skylines 2 community.
-- [Discord](https://discord.gg/ABrJqdZJNE): Cities 2 Modding (in testing channel https://discord.com/channels/1169011184557637825/1252265608607961120)
-- Thanks  Rebeccat, HideoKuze2501, Nulos, Jack the Stripper,Bbublegum/Blax (in no particular order) and other good people who are not mentioned above for the test!
+- [Discord](https://discord.gg/ABrJqdZJNE): Cities 2 Modding
+- Thanks Rebeccat, HideoKuze2501, Nulos, Jack the Stripper,Bbublegum/Blax (in no particular order) and other good people who are not mentioned above for the test!
 
-## 大地图mod
-### 介绍：
-- 自定义地图可达57kmx57km，原版4x4倍大小
+## 大地图mod全功能整合版(14km/28km/57km/114km/229km切换)
 
-### 使用：
-- 1.请在地图编辑器中自制地图或使用别人做好的地图。需导入57.344km大小的地形高位图(1:1真实世界比例)，可选导入229.376km的世界外围地图(不可建造部分)。建议可只导入前者以提高性能。其他大小也可以导入，但会自动缩放。
-- 2.高位图仅支持4096x4096分辨率/16位灰度/PNG或TIFF格式。具体请自行查询相关教程。
-- 3.自制地图时尽量不要改动高度缩放(默认为4096)以免出现未知问题。
+## 警告！！！在使用这个模组之前，请务必看完下面的完整描述！
+* 毫无疑问，它会影响游戏存档。务必请备份你的原版游戏存档或早期版本的MapExt存档后，再使用这个模组！
+* 现在Mod支持随时从主菜单切换回原版地图大小，而无需卸载模组。如果你不想再使用这个模组，请确保在Playset中删除它，而不是仅仅禁用！(其他的Mod最好也这样做，因为游戏的Mod管理器存在一些问题，某些情况下点击禁用了仍会部分加载，必须使用删除按钮，这也是许多不明崩溃的原因之一)
+* 如果模组未成功卸载或加载，请不要读取超过28公里地图大小的存档,并且千万不要保存后退出。
+* 请在选项界面中设置正确的地图大小，并匹配你想制作的地图或想玩的存档。
+* 如果你想要一个28公里及以上大小的 1:1 地图，你需要在选项界面中选择正确的地图大小，然后在游戏编辑器中制作自己的地图，或者使用别人制作的特定大小的地图。否则，地图会拉伸或破损。
+* 
+* 该模组具有简单的 loadgame 读取检查功能，以防止以错误的设置加载不同地图大小的游戏存档。但是，无法验证识别地图编辑器中加载的地图，必须在 Option UI 中选择正确的设置。
+* 建设一个大城市非常费力。由于游戏中涉及的地图大小的代码涉及大量修补对象，目前尚不完全清楚是否存在隐藏问题，如使用请风险自担。
+* 建议使用显存超过 10G 的显卡。该mod可能需要额外的 1-2GB VRAM。如果您在加载地图时遇到崩溃，很可能是由于加载过多资产模组导致 VRAM 不足。建议在第一次使用此Mod时创建一个新的 Playset，并尽可能少地使用资产模组。如果一切正常，再逐渐添加更多的资产模组。
 
-### 注意：
-- 1.安装过BepInEx版本的务必彻底删除几个dll(目录可保留)。
-- 2.不要用原版地图及存档，虽然可能打开，但所有高度不正常。
-- 3.由于本mod策略为地图放大而不改变分辨率，因此地形精度会下降，水岸和山体可能相对粗糙，介意的请不要使用。
-- 4.信息视图比如污染、资源等会出现可建造范围外重复显示，这是原版游戏bug，暂未修复。
-- 5.个别模拟系统可能数值计算相对不正常，比如温差发电站、水泵之类。
-- 6.Water Feature Mod水源工具需要使用最新测试版。老版不支持生成水源。
+## 介绍
+* MapSize 地图尺寸列表：
+* 57 公里（默认）：原版地图大小的 4x4，DEM-14m。
+* 28 公里：2x2 DEM-7m
+* 114 公里：8x8 DEM-28m（由于地形分辨率低，以及地图边缘撕裂以及模拟系统的计算问题，因此不建议使用）
+* 229 公里：16x16 DEM-56m（不推荐，同样的原因且更糟）
+* 14 公里：原版 1x1 DEM-3.5m
+* 随着地图大小的放大，地形的细节会变少，滨水区边缘和山脉可能看起来相对粗糙。由于一些非常棘手的技术原因，这个mod暂时无法提高地形分辨率。如果您需要更高的地形分辨率，您可以等待 algernon 的 LargerMap。
+* 地图图块现在保持在 529 个。
 
-### 技巧：
-- 可以使用水源工具选项-实验功能-流动性开到最大，蒸发量减少，生成水源会相当快。
+## 用法
+### 制作 1：1 地图：
+* 在 Editor 中，导入正确大小的地形高度贴图heightmap/世界贴图worldmap。
+* 28 公里可玩区域：高位图 28672 米 / 世界 114688 米
+* 57 公里可玩区域：高位图 57344 米 / 世界 229376 米
+* 114公里可玩区域：高位图 114688m / 世界 458752m
+* 229公里可玩区域：高位图 229376米 / 世界917504米
+* 支持的可玩区域高度图/世界地图的地形贴图格式：4096x4096 16 位灰度贴图（PNG 或 TIFF）
+* 如果导入大小与上述大小不同，则地图将拉伸。
+* 建议超过 57 公里的地图不要导入“假”世界地图以节省性能。（世界地图的唯一用途是视觉效果;它真的不能用于任何其他目的。）
 
-### 提示：
-- 有一定经验用户建议使用BepInEx版本(在Github/CSLBBS发布)，以获得更好的稳定性、mod兼容性和性能。
-- 欢迎反馈测试
+### 可能需要的一些文件夹：
+- heightmap/worldmap : "%USERPROFILE%\AppData\LocalLow\Colossal Order\Cities Skylines II\Heightmaps"
+- 覆盖地图(叠加一个现实地图层，需要Overlay模组) : "%USERPROFILE%\AppData\LocalLow\Colossal Order\Cities Skylines II\Overlays"
+- 日志 (for reporting issues) : "%USERPROFILE%\AppData\LocalLow\Colossal Order\Cities Skylines II\Logs"
+- 本地模组 (仅用于经验丰富用户，如果您是订阅的模组请不要触碰这个) : "%USERPROFILE%\AppData\LocalLow\Colossal Order\Cities Skylines II\Mods"
+
+### 已知问题：
+* 由于原版游戏模拟系统中的浮点精度问题（可能是出于性能考虑），地图边缘可能会出现一些奇怪的高度显示故障。
+* 可能与某些特殊模组不兼容。
+* 将可玩区域的叠加信息反复复制到世界地图范围内，这是一个原版bug，目前没有修复，请暂时忽略，或者不要使用太大的缩放。
+
+### 技巧： 
+* 可以使用水源工具Mod的选项-实验功能-流动性开到最大，蒸发量最小，生成水源会相当快。
+* 附加设置整合了一些作者之前发布的性能mod小工具，比如不溜狗、去除过境交通等。更多功能持续增加中。
+
+欢迎留言反馈问题

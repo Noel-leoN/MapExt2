@@ -2,44 +2,66 @@
 
 	<PropertyGroup>
 		<OutputType>Library</OutputType>
-		<TargetFramework>net472</TargetFramework>
 		<Configurations>Debug;Release</Configurations>
 		<LangVersion>9.0</LangVersion>
 		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 		<AssemblyName>MapExt2</AssemblyName>
 		<RootNamespace>MapExtPDX</RootNamespace>
-		<Version>1.0.0.2</Version>		
-		<Description>Game version support 1.2.5f; MapExtXL PDX mod with 4x4 vanilla mapsize(57km^2)</Description>
+		<Version>2.0.0</Version>		
+		<Description>Game version support 1.3.3f; MapSize 28/57/114/229km</Description>
 		
 		<!--The file where mod information which is required for publishing mod on PDX mods are stored-->
 		<PublishConfigurationPath>Properties\PublishConfiguration.xml</PublishConfigurationPath>
 		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+		<TargetFramework>net48</TargetFramework>
+		<Authors>Noel2</Authors>
+		<Copyright>Copyright (c) [2025] [Noel2/Noel-leoN/=Noel=]</Copyright>
+		<Title>MapExt</Title>
 	</PropertyGroup>
 	
 	<!--Imports must be after PropertyGroup block-->
 	<Import Project="$([System.Environment]::GetEnvironmentVariable('CSII_TOOLPATH', 'EnvironmentVariableTarget.User'))\Mod.props" />
 	<Import Project="$([System.Environment]::GetEnvironmentVariable('CSII_TOOLPATH', 'EnvironmentVariableTarget.User'))\Mod.targets" />
-	<ItemGroup>	  
-	  <Compile Remove="CorePatcher\WaterSystemSurfaceReader.cs" />	  
-	  <Compile Remove="ReBurstCellMapClosed\GroundPollutionSystemRe.cs" />
-	  <Compile Remove="ReBurstCellMapClosed\GroundWaterSystemRe.cs" />
-	  <Compile Remove="ReBurstCellMapClosed\NaturalResourceSystem.cs" />
-	  <Compile Remove="ReBurstCellMapClosed\TelecomPreviewSystem.cs" />
-	  <Compile Remove="ReBurstCellMapClosed\TrafficAmbienceSystemRe.cs" />
-	  <Compile Remove="ReBurstCellMapClosed\ZoneAmbienceSystemRe.cs" />
-	  <Compile Remove="ReBurstCellMapRef\NetColorSystem.cs" />
-	  <Compile Remove="ReBurstCellMapRef\PowerPlantAISystem.cs" />
-	  <Compile Remove="ReBurstCellMapRef\TempRenewableElectricityProductionTooltipSystem.cs" />
-	  <Compile Remove="ReBurstCellMapRef\TempWaterPumpingTooltipSystem.cs" />
-	  <Compile Remove="ReBurstCellMapRef\WaterPumpingStationAISystem.cs" />
-	  <Compile Remove="Setting.cs" />
+	<ItemGroup>
+	  <Compile Remove="MapExt\ReBurstSystemMinor\**" />
+	  <Compile Remove="MapExt\SystemsNeedFix\**" />
+	  <EmbeddedResource Remove="MapExt\ReBurstSystemMinor\**" />
+	  <EmbeddedResource Remove="MapExt\SystemsNeedFix\**" />
+	  <None Remove="MapExt\ReBurstSystemMinor\**" />
+	  <None Remove="MapExt\SystemsNeedFix\**" />
 	</ItemGroup>
 	<ItemGroup>
-	  <None Remove="Properties\MapExt.png" />
-	  <None Remove="Properties\MapExt57km.png" />
+	  <Compile Remove="MapExt\CoreHelper\FileName.cs" />
+	  <Compile Remove="MapExt\CoreHelper\LogHelper.cs" />
+	  <Compile Remove="MapExt\CoreHelper\PatchManager - 复制.cs" />
+	  <Compile Remove="MapExt\MapSizePatchSet\PatchSet4ReBurst.cs" />
+	  <Compile Remove="MapExt\MapSizePatchSet\PatchSet5AirWay.cs" />
+	  <Compile Remove="MapExt\MapSizePatchSet\PatchSet6RestSystem.cs" />
+	  <Compile Remove="MapExt\ReBurstSystem\ReBurstJobPak_ModeA_57km\ReBurstCellMapClosed\GroundPollutionSystemRe.cs" />
+	  <Compile Remove="MapExt\ReBurstSystem\ReBurstJobPak_ModeA_57km\ReBurstCellMapClosed\GroundWaterSystemRe.cs" />
+	  <Compile Remove="MapExt\ReBurstSystem\ReBurstJobPak_ModeA_57km\ReBurstCellMapClosed\NaturalResourceSystem.cs" />
+	  <Compile Remove="MapExt\ReBurstSystem\ReBurstJobPak_ModeA_57km\ReBurstCellMapClosed\TelecomPreviewSystemRe.cs" />
+	  <Compile Remove="MapExt\ReBurstSystem\ReBurstJobPak_ModeA_57km\ReBurstCellMapClosed\ZoneAmbienceSystemRe.cs" />
+	  <Compile Remove="MapExt\ReBurstSystem\ReBurstJobPak_ModeA_57km\ReBurstCellMapRef\NetColorSystem.cs" />
+	  <Compile Remove="MapExt\ReBurstSystem\ReBurstJobPak_ModeA_57km\ReBurstCellMapRef\TempRenewableElectricityProductionTooltipSystem.cs" />
+	  <Compile Remove="MapExt\ReBurstSystem\ReBurstJobPak_ModeA_57km\ReBurstCellMapRef\TempWaterPumpingTooltipSystem.cs" />
+	  <Compile Remove="MapExt\ReBurstSystem\ReBurstJobPak_ModeA_57km\ReBurstCellMapRef\WaterPumpingStationAISystem.cs" />
+	  <Compile Remove="MapExt\ReBurstSystem\ReBurstJobPak_ModeA_57km\ReBurstCellMapSub\NetColorSystem.cs" />
+	  <Compile Remove="MapExt\ReBurstSystem\ReBurstJobPak_ModeB_28km\ReBurstCellMapClosed\GroundPollutionSystemRe.cs" />
+	  <Compile Remove="MapExt\ReBurstSystem\ReBurstJobPak_ModeB_28km\ReBurstCellMapClosed\GroundWaterSystemRe.cs" />
+	  <Compile Remove="MapExt\ReBurstSystem\ReBurstJobPak_ModeB_28km\ReBurstCellMapClosed\NaturalResourceSystem.cs" />
+	  <Compile Remove="MapExt\ReBurstSystem\ReBurstJobPak_ModeB_28km\ReBurstCellMapClosed\TelecomPreviewSystemRe.cs" />
+	  <Compile Remove="MapExt\ReBurstSystem\ReBurstJobPak_ModeB_28km\ReBurstCellMapClosed\ZoneAmbienceSystemRe.cs" />
+	  <Compile Remove="MapExt\ReBurstSystem\ReBurstJobPak_ModeB_28km\ReBurstCellMapRef\NetColorSystem.cs" />
+	  <Compile Remove="MapExt\ReBurstSystem\ReBurstJobPak_ModeB_28km\ReBurstCellMapRef\PowerPlantAISystem.cs" />
+	  <Compile Remove="MapExt\SaveGameDiagnosticSystem.cs" />
+	  <Compile Remove="MapExt\SaveGameValidationSystem2.cs" />
+	</ItemGroup>
+	<ItemGroup>
+	  <None Remove="Properties\0-ebfda6dc-6d4e-4c49-9b7f-8b26b8c9b97d.png" />
 	  <None Remove="Properties\outputs_20250428_hzb69nw4th.jpeg" />
-	  <None Remove="Properties\Thumbnail.png" />
-	  <None Remove="Properties\Thumbnail.pngx" />
+	  <None Remove="Properties\Thumbnail - 副本.png" />
+	  <None Remove="Properties\Thumbnail-57km.png" />
 	</ItemGroup>
 
 	<ItemGroup>
@@ -94,6 +116,9 @@
 		<Reference Include="Unity.Mathematics">
 			<Private>false</Private>
 		</Reference>
+		<Reference Include="cohtml.Net">
+			<Private>false</Private>
+		</Reference>
 	</ItemGroup>
 
 	<ItemGroup>
@@ -106,6 +131,10 @@
 		<Reference Update="System.Data">
 			<Private>false</Private>
 		</Reference>
+		<!--		<Reference Include="mscorlib">
+			<Private>false</Private>
+		<HintPath>$(ManagedPath)\mscorlib.dll</HintPath>
+		</Reference>-->
 	</ItemGroup>
 	
 	<ItemGroup>
@@ -121,9 +150,11 @@
 	<ItemGroup>
 		<None Include="$(ModPropsFile)" Link="Properties\Mod.props" />
 		<None Include="$(ModTargetsFile)" Link="Properties\Mod.targets" />
+		<None Include="MapExt2.sln" />
+		<None Include="Properties\PublishConfiguration.csproj" />
 	</ItemGroup>
-	<ItemGroup>
-	  <Service Include="{508349b6-6b84-4df5-91f0-309beebad82d}" />
-	</ItemGroup>
+
+	<!-- Automatically build PublishConfiguration.xml file. -->
+	<Import Project="Properties\PublishConfiguration.csproj" />
 
 </Project>

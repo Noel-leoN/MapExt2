@@ -1,0 +1,105 @@
+using Game.Simulation;
+using Unity.Burst;
+using Unity.Collections;
+using Unity.Jobs;
+using Unity.Mathematics;
+using static Game.Simulation.WindSimulationSystem;
+using static MapExtPDX.MapExt.ReBurstSystemModeA.CellMapSystemRe;
+
+namespace MapExtPDX.MapExt.ReBurstSystemModeA
+{
+    // cellcenter in bcjob
+    [BurstCompile]
+    public struct UpdateWindVelocityJob : IJobFor
+    {
+        public NativeArray<WindCell> m_Cells;
+
+        [ReadOnly]
+        public TerrainHeightData m_TerrainHeightData;
+
+        [ReadOnly]
+        public WaterSurfaceData m_WaterSurfaceData;
+
+        public float2 m_TerrainRange;
+
+        public void Execute(int index)
+        {
+            int3 @int = new int3(index % kResolution.x, index / kResolution.x % kResolution.y, index / (kResolution.x * kResolution.y));
+            bool3 @bool = new bool3(@int.x >= kResolution.x - 1, @int.y >= kResolution.y - 1, @int.z >= kResolution.z - 1);
+            if (!@bool.x && !@bool.y && !@bool.z)
+            {
+                int3 position = new int3(@int.x, @int.y + 1, @int.z);
+                int3 position2 = new int3(@int.x + 1, @int.y, @int.z);
+                float3 cellCenter = WindSimulationSystemGetCellCenter(index);
+                cellCenter.y = math.lerp(m_TerrainRange.x, m_TerrainRange.y, (@int.z + 0.5f) / kResolution.z);
+                float num = WaterUtils.SampleHeight(ref m_WaterSurfaceData, ref m_TerrainHeightData, cellCenter);
+                float num2 = WaterUtils.SampleHeight(ref m_WaterSurfaceData, ref m_TerrainHeightData, cellCenter);
+                float num3 = WaterUtils.SampleHeight(ref m_WaterSurfaceData, ref m_TerrainHeightData, cellCenter);
+                float num4 = 65535f / (m_TerrainHeightData.scale.y * kResolution.z);
+                float num5 = math.saturate((0.5f * (num4 + num + num2) - cellCenter.y) / num4);
+                float num6 = math.saturate((0.5f * (num4 + num + num3) - cellCenter.y) / num4);
+                WindCell value = m_Cells[index];
+                WindCell cell = GetCell(new int3(@int.x, @int.y, @int.z + 1), m_Cells);
+                WindCell cell2 = GetCell(position, m_Cells);
+                WindCell cell3 = GetCell(position2, m_Cells);
+                value.m_Velocities.x *= math.lerp(kAirSlowdown, kTerrainSlowdown, num6);
+                value.m_Velocities.y *= math.lerp(kAirSlowdown, kTerrainSlowdown, num5);
+                value.m_Velocities.z *= kVerticalSlowdown;
+                value.m_Velocities.x += kChangeFactor * (1f - num6) * (value.m_Pressure - cell3.m_Pressure);
+                value.m_Velocities.y += kChangeFactor * (1f - num5) * (value.m_Pressure - cell2.m_Pressure);
+                value.m_Velocities.z += kChangeFactor * (value.m_Pressure - cell.m_Pressure);
+                m_Cells[index] = value;
+            }
+        }
+    }
+
+}
+// no cell in bcjob
+/*
+[BurstCompile]
+public struct UpdatePressureJob : IJobFor
+{
+    public NativeArray<WindCell> m_Cells;
+
+    public float2 m_Wind;
+
+    public void Execute(int index)
+    {
+        int3 @int = new int3(index % WindSimulationSystem.kResolution.x, index / WindSimulationSystem.kResolution.x % WindSimulationSystem.kResolution.y, index / (WindSimulationSystem.kResolution.x * WindSimulationSystem.kResolution.y));
+        bool3 @bool = new bool3(@int.x == 0, @int.y == 0, @int.z == 0);
+        bool3 bool2 = new bool3(@int.x >= WindSimulationSystem.kResolution.x - 1, @int.y >= WindSimulationSystem.kResolution.y - 1, @int.z >= WindSimulationSystem.kResolution.z - 1);
+        if (!bool2.x && !bool2.y && !bool2.z)
+        {
+            WindCell value = this.m_Cells[index];
+            value.m_Pressure -= value.m_Velocities.x + value.m_Velocities.y + value.m_Velocities.z;
+            if (!@bool.x)
+            {
+                WindCell cell = WindSimulationSystem.GetCell(new int3(@int.x - 1, @int.y, @int.z), this.m_Cells);
+                value.m_Pressure += cell.m_Velocities.x;
+            }
+            if (!@bool.y)
+            {
+                WindCell cell2 = WindSimulationSystem.GetCell(new int3(@int.x, @int.y - 1, @int.z), this.m_Cells);
+                value.m_Pressure += cell2.m_Velocities.y;
+            }
+            if (!@bool.z)
+            {
+                WindCell cell3 = WindSimulationSystem.GetCell(new int3(@int.x, @int.y, @int.z - 1), this.m_Cells);
+                value.m_Pressure += cell3.m_Velocities.z;
+            }
+            this.m_Cells[index] = value;
+        }
+        if (@bool.x || @bool.y || bool2.x || bool2.y)
+        {
+            WindCell value2 = this.m_Cells[index];
+            float num = math.dot(math.normalize(new float2(@int.x - WindSimulationSystem.kResolution.x / 2, @int.y - WindSimulationSystem.kResolution.y / 2)), math.normalize(this.m_Wind));
+            float num2 = math.pow((1f + (float)@int.z) / (1f + (float)WindSimulationSystem.kResolution.z), 1f / 7f);
+            float num3 = 0.1f * (2f - num);
+            float num4 = (40f - 20f * (1f + num)) * math.length(this.m_Wind) * num2;
+            value2.m_Pressure = ((num4 > value2.m_Pressure) ? math.min(num4, value2.m_Pressure + num3) : math.max(num4, value2.m_Pressure - num3));
+            this.m_Cells[index] = value2;
+        }
+    }
+}
+*/
+
