@@ -403,3 +403,22 @@ FodyWeavers.xsd
 /Properties/PublishConfiguration.xml
 /Properties/Thumbnail.png
 /Properties/Thumbnail.pngx
+/CorePatcher/CodeFile1.cs
+/CorePatcher/CodeFile1.cs
+/CorePatcher/OverlayInfoPatch.cs
+/CorePatcher/TerrainSystemCascadePatch.cs
+/CorePatcher/TerrainSystemReSample.cs
+/CorePatcher/TerrainSystemReSample2.cs
+/CorePatcher/TerrainSystemTextFix.cs
+/MapExt/ReBurstSystem/ReBurstJobPak_ModeA_57km/ReBurstCellMapRef/NetColorSystem.cs
+/MapExt/SystemsNeedFix/AirwaySystem.cs
+/MapExt/SystemsNeedFix/NetColorSystem.cs
+/MapExt/SystemsNeedFix/PowerPlantAISystem.cs
+/MapExt/SystemsNeedFix/TempRenewableElectricityProductionTooltipSystem.cs
+/MapExt/SystemsNeedFix/TempWaterPumpingTooltipSystem.cs
+/MapExt/SystemsNeedFix/WaterPumpingStationAISystem.cs
+/MapExt2.sln
+/MapExt/ReBurstSystem/ReBurstJobPak_ModeA_57km/ReBurstCellMapSub/NetColorSystem.cs
+/Properties/Thumbnail-57km.png
+/Properties/0-ebfda6dc-6d4e-4c49-9b7f-8b26b8c9b97d.png
+/Properties/Thumbnail - 副本.png
