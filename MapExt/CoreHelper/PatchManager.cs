@@ -225,6 +225,11 @@ namespace MapExtPDX
             LoadedSaveCoreValue = null; // Reset after applying changes prompted by save load // 当前方案并未启用该字段
         }
 
+        /// <summary>
+        /// 核心CV设置！
+        /// </summary>
+        /// <param name="mode"></param>
+        /// <returns></returns>
         // 获取模式对应的CV值；用于初始化、切换模式；
         internal static int GetCoreValueForMode(PatchModeSetting mode) // Changed to internal or could be public
         {

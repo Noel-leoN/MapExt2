@@ -186,11 +186,11 @@ namespace MapExtPDX.MapExt.ReBurstSystem
         ),
         new BaseJobTargetInfo(
             "Game.UI.Tooltip.TempWaterPumpingTooltipSystem", "OnUpdate",
-            "Game.Simulation.TempWaterPumpingTooltipSystem/TempJob", "TempJob"
+            "Game.UI.Tooltip.TempWaterPumpingTooltipSystem/TempJob", "TempJob"
         ),
         new BaseJobTargetInfo(
             "Game.UI.Tooltip.TempWaterPumpingTooltipSystem", "OnUpdate",
-            "Game.Simulation.TempWaterPumpingTooltipSystem/GroundWaterPumpJob", "GroundWaterPumpJob"
+            "Game.UI.Tooltip.TempWaterPumpingTooltipSystem/GroundWaterPumpJob", "GroundWaterPumpJob"
         ),
 
         // ... add more base targets here ...
