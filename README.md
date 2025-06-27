@@ -18,7 +18,7 @@
 * 114km: 8x8 DEM-28m (not recommand due to low terrain resolution, as well as tearing at the edges of the map, and calculation issues of simulation systems)
 * 229km: 16x16 DEM-56m (not recommand, same reason but even worse)
 * 14km: vanilla 1x1 DEM-3.5m
-* As the map size is enlarged, the terrain will be less detailed, and waterfront edges and mountains may look relatively rough.Due to some pretty tricky technical reasons, this mod won't be able to improve the terrain resolution for now.If you need a higher terrain resolution, you can wait for LargerMap by algernon.
+* As the map size is enlarged, the terrain will be less detailed, and waterfront edges and mountains may look relatively rough. Due to some pretty tricky technical reasons, and also considering the performance impact (higher resolutions will affect performance noticeably), this mod won't be able to improve the terrain resolution for now. If needed, you can try some methods to avoid it, like planting trees or using other objects for cover. If you really need a higher terrain resolution, you can wait for LargerMap mod by algernon.
 * The maptiles now stay at 529.
 ## Usage
 ### Make 1:1 Map:
