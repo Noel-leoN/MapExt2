@@ -10,6 +10,7 @@
 * The mod has a simple loadgame check function to prevent loading gamesaves of different map sizes with the wrong settings. However, it cannot to validate maps loaded in the map editor, You have to choose the right settings in Option UI.
 * It is very laborious to build a big city. Due to the large number of patched objects involved in the map size factor in the game, it is not entirely clear that there are hidden issues, Please use at your own risk.
 * Recommended to use a graphics card with more than 10G of video memory. This mod will take an extra 1-2GB of VRAM. If you experience crashes while loading maps, it's likely due to insufficient VRAM from loading too many assets. It's recommended to create a new Playset the first time you use this mod and to use as few asset mods as possible. If everything works fine, you can gradually add more asset mods.
+* If you are using a version that is NOT released on PDX mod platform and is a non-57km map size (e.g. 28km or 229km), you need to manually check the Debug devalidation option in OptionUI, and then be sure to select the correct mapsize mode. Once you've successfully loaded and checked that the save file is all good, you can save it as a new file and then just Turn Off the options in Debug.
 ## Introduction
 * MapSize list:
 * 57km(default): 4x4 the size of the vanilla map,DEM-14m.
