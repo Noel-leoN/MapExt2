@@ -28,7 +28,7 @@
 * 114km playable: height 114688m / world 458752m
 * 229km playable: height 229376m / world 917504m
 * Supported heightmap/worldmap terrain image format: 4096x4096 16bit grayscale terrain image (PNG or TIFF) 
-* If the import size is not the same as above, the map will stretch.
+* If the import size is not the same as above, the map will work but stretch.
 * Maps over 57km are recommended not to import the "fake" Worldmap to save performance. (The only use of the worldmap is for visuals; it really can't serve any other purpose.)
 ### Here's some folders you may need :
 - heightmap/worldmap : "%USERPROFILE%\AppData\LocalLow\Colossal Order\Cities Skylines II\Heightmaps"
