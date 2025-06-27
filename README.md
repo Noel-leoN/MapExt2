@@ -35,6 +35,13 @@
 - overlays map : "%USERPROFILE%\AppData\LocalLow\Colossal Order\Cities Skylines II\Overlays"
 - log (for reporting issues) : "%USERPROFILE%\AppData\LocalLow\Colossal Order\Cities Skylines II\Logs"
 - local mod (only for manual installation, don't touch this if you subscribed this mod）"%USERPROFILE%\AppData\LocalLow\Colossal Order\Cities Skylines II\Mods"
+### Some must-have mods to use together: 
+- Skyve: to manager Playset, backup savegame, report issue
+- Image Overlay: overlay an image on the game map, a must-have for building a real city
+- Free Range Camera：a must-have too
+- Water Feature: better control of water sources, important for bigger maps
+- 529 Tiles： essential for managing maptiles
+Thanks to the authors of these mods
 
 ## Issues
 * Due to the floating-point precision issues in the vanilla game simulation system (probably because of performance considerations), there might be some weird height display glitches at the edges of the map. Try to set up the residential/commercial/industrial areas close to the center of the map.
