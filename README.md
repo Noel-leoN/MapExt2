@@ -37,7 +37,7 @@
 - local mod (only for manual installation, don't touch this if you subscribed this mod）"%USERPROFILE%\AppData\LocalLow\Colossal Order\Cities Skylines II\Mods"
 
 ## Issues
-* Due to the floating-point precision issues in the vanilla game simulation system (probably because of performance considerations), there might be some weird height display glitches at the edges of the map.
+* Due to the floating-point precision issues in the vanilla game simulation system (probably because of performance considerations), there might be some weird height display glitches at the edges of the map. Try to set up the residential/commercial/industrial areas close to the center of the map.
 * May not be compatible with some special mods.
 * Repeatedly replicate the overlay infomation of the playable area to the scope of the world map, its a vanilla bug, hasn't been fixed yet, so please ignore it for now, or don't use too much zoom out.
 * If you found issues please report in Discord or Github, thank you.
