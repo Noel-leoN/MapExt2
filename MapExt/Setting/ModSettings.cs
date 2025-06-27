@@ -11,6 +11,7 @@ using Game.Modding;
 using Game.SceneFlow;
 using Game.Settings;
 using Game.UI.Widgets;
+using MapExtPDX.SaveLoadSystem;
 using Unity.Entities;
 
 // 保持与Mod.cs同一命名空间
@@ -261,12 +262,13 @@ namespace MapExtPDX
             //World.DefaultGameObjectInjectionWorld.GetOrCreateSystemManaged<Game.Simulation.LandValueSystem>().Enabled = !m_LandValueRemakeSystem;
         }
 
+        private bool m_LoadGameValidatorPatch;
         // 开关LoadGame验证系统
         [SettingsUISection(kDebugTab, kDebugGroup)]
-        public bool DisableLoadGameValidation { get; set; }
-
+        public bool DisableLoadGameValidation { get; set; } = false;
 
     }
 }
+
 
 

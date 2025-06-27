@@ -56,10 +56,13 @@ namespace MapExtPDX.SaveLoadSystem
         [HarmonyPrefix]
         public static bool BeforeLoadGame(MenuUISystem __instance, LoadGameArgs args, bool dismiss)
         {
+            if (Mod.Instance == null || Mod.Instance.CurrentSettings.DisableLoadGameValidation)
+            {
+                return true; // 设置开启禁用验证，直接执行原版方法，不执行验证逻辑
+            }
+
             Info("--- Save Validation Started ---");
             Info($"Attempting to load save with ID: {args.saveId}, CityName: {args.cityName}");
-
-
 
             // 1. 获取与UI中选定的存档相对应的SaveInfo对象
             var savesBinding = AccessTools.Field(typeof(MenuUISystem), "m_SavesBinding").GetValue(__instance) as ValueBinding<List<SaveInfo>>;
