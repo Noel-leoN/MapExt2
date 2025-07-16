@@ -1,21 +1,15 @@
-using System;
-using System.Runtime.CompilerServices;
 using Colossal.Collections;
 using Game.Buildings;
-using Game.Common;
 using Game.Notifications;
-using Game.Objects;
 using Game.Prefabs;
-using Game.Tools;
+using Game.Simulation;
+using System;
 using Unity.Burst;
 using Unity.Burst.Intrinsics;
 using Unity.Collections;
 using Unity.Entities;
-using Unity.Jobs;
 using Unity.Mathematics;
 using UnityEngine;
-using UnityEngine.Scripting;
-using Game.Simulation;
 using static MapExtPDX.MapExt.ReBurstSystemModeD.CellMapSystemRe;
 
 namespace MapExtPDX.MapExt.ReBurstSystemModeD

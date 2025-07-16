@@ -1,6 +1,5 @@
 using Game.Objects;
 using Game.Prefabs;
-using Game.Simulation;
 using Unity.Burst;
 using Unity.Burst.Intrinsics;
 using Unity.Collections;
@@ -52,7 +51,7 @@ namespace MapExtPDX.MapExt.ReBurstSystemModeD
 
         public static float CalculateSourceMultiplier(Game.Simulation.WaterSourceData source, float3 pos)
         {
-            float kCellSize = 7f * MapSizeMultiplier;
+            float kCellSize = 112f; // 7f * MapSizeMultiplier;
 
             if (source.m_Radius < 0.01f)
             {

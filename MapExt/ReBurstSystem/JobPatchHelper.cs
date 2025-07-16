@@ -4,11 +4,10 @@
 // Recommended for non-commercial use. For commercial purposes, please consider contacting the author.
 // When using this part of the code, please clearly credit [Project Name] and the author.
 
+using HarmonyLib;
 using System;
 using System.Linq;
 using System.Reflection;
-using Colossal.Logging;
-using HarmonyLib;
 
 namespace MapExtPDX.MapExt.ReBurstSystem
 {
@@ -40,24 +39,33 @@ namespace MapExtPDX.MapExt.ReBurstSystem
                     try
                     {
                         targetType = AccessTools.TypeByName(t.TargetTypeName);
+                        Mod.Info($"[JobPatcher] 发现目标类型 {targetType} ");
+
                         if (targetType != null)
                         {
                             // Add robust method finding if needed (handle overloads etc.)
                             targetMethod = AccessTools.Method(targetType, t.TargetMethodName);
                             if (targetMethod == null) { targetMethod = AccessTools.DeclaredMethod(targetType, t.TargetMethodName); }
+
+                            Mod.Info($"[JobPatcher] 发现目标方法 {targetMethod} ");
+
                         }
                         if (targetMethod != null)
                         {
                             originalJobType = AccessTools.TypeByName(t.OriginalJobFullName);
+                            Mod.Info($"[JobPatcher] 发现目标Job {originalJobType} ");
                         }
                         if (originalJobType != null)
                         {
                             // Try global first, then local assembly
                             replacementJobType = AccessTools.TypeByName(t.ReplacementJobFullName) ??
                                                  typeof(JobPatchHelper).Assembly.GetType(t.ReplacementJobFullName);
+                            Mod.Info($"[JobPatcher] 获取替换Job {replacementJobType} ");
                         }
                         isValid = targetMethod != null && originalJobType != null && replacementJobType != null;
-
+                        
+                        
+                       
                         if (!isValid)
                         {
                             Mod.Error($"[JobPatcher]错误！ Failed to resolve components for target: {t.TargetTypeName}.{t.TargetMethodName} -> {t.OriginalJobFullName}");
@@ -82,9 +90,8 @@ namespace MapExtPDX.MapExt.ReBurstSystem
             foreach (var methodGroup in resolvedAndGrouped)
             {
                 MethodInfo targetMethod = methodGroup.Key; // The unique method being patched
-#if DEBUG
+
                 Mod.Info($"[JobPatcher] --> Processing method: {targetMethod.DeclaringType.FullName}.{targetMethod.Name}");
-#endif
 
                 // Register *all* replacements intended for this specific method
                 foreach (var item in methodGroup)

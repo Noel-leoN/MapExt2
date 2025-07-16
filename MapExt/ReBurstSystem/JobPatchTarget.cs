@@ -8,21 +8,21 @@ namespace MapExtPDX.MapExt.ReBurstSystem
 {
     public class JobPatchTarget
     {
-        public string TargetAssemblyName { get; set; } 
+        public string TargetAssemblyName { get; set; }
         public string TargetTypeName { get; set; }
-        public string TargetMethodName { get; set; } 
-        public string OriginalJobFullName { get; set; } 
-        public string ReplacementJobFullName { get; set; } 
+        public string TargetMethodName { get; set; }
+        public string OriginalJobFullName { get; set; }
+        public string ReplacementJobFullName { get; set; }
 
         // public bool IsParallelFor { get; set; }
 
         // 构造函数
         public JobPatchTarget(
-            string targetType, 
-            string targetMethod, 
-            string originalJob, 
+            string targetType,
+            string targetMethod,
+            string originalJob,
             // string replacementAsm, // 暂未使用，用于跨mod替换
-            string replacementJobBaseName, 
+            string replacementJobBaseName,
             string replacementNamespacePattern,
             int currentCoreValueForMode,
             string modeIdentifier,
@@ -41,7 +41,7 @@ namespace MapExtPDX.MapExt.ReBurstSystem
             ReplacementJobFullName = $"{finalReplacementNamespace}.{replacementJobBaseName}".Replace('/', '+');// Ensure consistency
         }
 
-        public static class JobPatchDefinitions 
+        public static class JobPatchDefinitions
         {
             // --- 定义ReBurstJob基本名称集 ---
             // Job名称的通用部分
@@ -49,8 +49,8 @@ namespace MapExtPDX.MapExt.ReBurstSystem
             {
                 public string TargetType { get; }
                 public string TargetMethod { get; }
-                public string OriginalJob { get; } 
-                public string ReplacementJobBaseName { get; } 
+                public string OriginalJob { get; }
+                public string ReplacementJobBaseName { get; }
 
                 public BaseJobTargetInfo(string targetType, string targetMethod, string originalJob, string replacementJobBaseName)
                 {
@@ -64,133 +64,246 @@ namespace MapExtPDX.MapExt.ReBurstSystem
             // 集中定义(对象类完整名/对象方法名/原Job全名/替换Job的不含命名空间的类型名)
             private static readonly List<BaseJobTargetInfo> AllBaseTargets = new List<BaseJobTargetInfo>
     {
-        new BaseJobTargetInfo("Game.Simulation.AirPollutionSystem",
-                              "OnUpdate",
-                              "Game.Simulation.AirPollutionSystem/AirPollutionMoveJob",
-                              "AirPollutionMoveJob"),
-        new BaseJobTargetInfo("Game.Simulation.AvailabilityInfoToGridSystem",
-                              "OnUpdate",
-                              "Game.Simulation.AvailabilityInfoToGridSystem/AvailabilityInfoToGridJob",
-                              "AvailabilityInfoToGridJob"),
         new BaseJobTargetInfo(
-            "Game.Simulation.LandValueSystem", "OnUpdate",
-            "Game.Simulation.LandValueSystem/LandValueMapUpdateJob", "LandValueMapUpdateJob"
+            "Game.Simulation.AirPollutionSystem",
+            "OnUpdate",
+            "Game.Simulation.AirPollutionSystem/AirPollutionMoveJob",
+            "AirPollutionMoveJob"
         ),
         new BaseJobTargetInfo(
-            "Game.Simulation.NoisePollutionSystem", "OnUpdate",
-            "Game.Simulation.NoisePollutionSystem/NoisePollutionSwapJob", "NoisePollutionSwapJob"
+            "Game.Simulation.AvailabilityInfoToGridSystem",
+            "OnUpdate",
+            "Game.Simulation.AvailabilityInfoToGridSystem/AvailabilityInfoToGridJob",
+            "AvailabilityInfoToGridJob"
         ),
         new BaseJobTargetInfo(
-            "Game.Simulation.PopulationToGridSystem", "OnUpdate",
-            "Game.Simulation.PopulationToGridSystem/PopulationToGridJob", "PopulationToGridJob"
+            "Game.Simulation.LandValueSystem",
+            "OnUpdate",
+            "Game.Simulation.LandValueSystem/LandValueMapUpdateJob",
+            "LandValueMapUpdateJob"
         ),
         new BaseJobTargetInfo(
-            "Game.Simulation.SoilWaterSystem", "OnUpdate",
-            "Game.Simulation.SoilWaterSystem/SoilWaterTickJob", "SoilWaterTickJob"
+            "Game.Simulation.NoisePollutionSystem",
+            "OnUpdate",
+            "Game.Simulation.NoisePollutionSystem/NoisePollutionSwapJob",
+            "NoisePollutionSwapJob"
         ),
         new BaseJobTargetInfo(
-            "Game.Simulation.TelecomCoverageSystem", "OnUpdate",
-            "Game.Simulation.TelecomCoverageSystem/TelecomCoverageJob", "TelecomCoverageJob"
+            "Game.Simulation.PopulationToGridSystem",
+            "OnUpdate",
+            "Game.Simulation.PopulationToGridSystem/PopulationToGridJob",
+            "PopulationToGridJob"
         ),
         new BaseJobTargetInfo(
-            "Game.Tools.TelecomPreviewSystem", "OnUpdate",
-            "Game.Simulation.TelecomCoverageSystem/TelecomCoverageJob", "TelecomCoverageJob"
+            "Game.Simulation.SoilWaterSystem",
+            "OnUpdate",
+            "Game.Simulation.SoilWaterSystem/SoilWaterTickJob",
+            "SoilWaterTickJob"
         ),
         new BaseJobTargetInfo(
-            "Game.Simulation.TerrainAttractivenessSystem", "OnUpdate",
-            "Game.Simulation.TerrainAttractivenessSystem/TerrainAttractivenessPrepareJob", "TerrainAttractivenessPrepareJob"
+            "Game.Simulation.TelecomCoverageSystem", 
+            "OnUpdate",
+            "Game.Simulation.TelecomCoverageSystem/TelecomCoverageJob", 
+            "TelecomCoverageJob"
         ),
         new BaseJobTargetInfo(
-            "Game.Simulation.TerrainAttractivenessSystem", "OnUpdate",
-            "Game.Simulation.TerrainAttractivenessSystem/TerrainAttractivenessJob", "TerrainAttractivenessJob"
+            "Game.Tools.TelecomPreviewSystem", 
+            "OnUpdate",
+            "Game.Simulation.TelecomCoverageSystem/TelecomCoverageJob", 
+            "TelecomCoverageJob"
         ),
         new BaseJobTargetInfo(
-            "Game.Simulation.WindSystem", "OnUpdate",
-            "Game.Simulation.WindSystem/WindCopyJob", "WindCopyJob"
+            "Game.Simulation.TerrainAttractivenessSystem", 
+            "OnUpdate",
+            "Game.Simulation.TerrainAttractivenessSystem/TerrainAttractivenessPrepareJob", 
+            "TerrainAttractivenessPrepareJob"
         ),
         new BaseJobTargetInfo(
-            "Game.Simulation.AttractionSystem", "OnUpdate",
-            "Game.Simulation.AttractionSystem/AttractivenessJob", "AttractivenessJob"
+            "Game.Simulation.TerrainAttractivenessSystem", 
+            "OnUpdate",
+            "Game.Simulation.TerrainAttractivenessSystem/TerrainAttractivenessJob", 
+            "TerrainAttractivenessJob"
         ),
         new BaseJobTargetInfo(
-            "Game.Audio.AudioGroupingSystem", "OnUpdate",
-            "Game.Audio.AudioGroupingSystem/AudioGroupingJob", "AudioGroupingJob"
+            "Game.Simulation.WindSystem", 
+            "OnUpdate",
+            "Game.Simulation.WindSystem/WindCopyJob", 
+            "WindCopyJob"
         ),
         new BaseJobTargetInfo(
-            "Game.Simulation.CarNavigationSystem+Actions", "OnUpdate",
-            "Game.Simulation.CarNavigationSystem/ApplyTrafficAmbienceJob", "ApplyTrafficAmbienceJob"
+            "Game.Simulation.AttractionSystem", 
+            "OnUpdate",
+            "Game.Simulation.AttractionSystem/AttractivenessJob", 
+            "AttractivenessJob"
         ),
         new BaseJobTargetInfo(
-            "Game.Simulation.CitizenHappinessSystem", "OnUpdate",
-            "Game.Simulation.CitizenHappinessSystem/CitizenHappinessJob", "CitizenHappinessJob"
+            "Game.Audio.AudioGroupingSystem", 
+            "OnUpdate",
+            "Game.Audio.AudioGroupingSystem/AudioGroupingJob", 
+            "AudioGroupingJob"
         ),
         new BaseJobTargetInfo(
-            "Game.Simulation.GroundWaterPollutionSystem", "OnUpdate",
-            "Game.Simulation.GroundWaterPollutionSystem/PolluteGroundWaterJob", "PolluteGroundWaterJob"
+            "Game.Simulation.CarNavigationSystem+Actions", 
+            "OnUpdate",
+            "Game.Simulation.CarNavigationSystem/ApplyTrafficAmbienceJob", 
+            "ApplyTrafficAmbienceJob"
         ),
         new BaseJobTargetInfo(
-            "Game.UI.Tooltip.LandValueTooltipSystem", "OnUpdate",
-            "Game.UI.Tooltip.LandValueTooltipSystem/LandValueTooltipJob", "LandValueTooltipJob"
+            "Game.Simulation.CitizenHappinessSystem", 
+            "OnUpdate",
+            "Game.Simulation.CitizenHappinessSystem/CitizenHappinessJob", 
+            "CitizenHappinessJob"
         ),
         new BaseJobTargetInfo(
-            "Game.Simulation.ObjectPolluteSystem", "OnUpdate",
-            "Game.Simulation.ObjectPolluteSystem/ObjectPolluteJob", "ObjectPolluteJob"
+            "Game.Simulation.GroundWaterPollutionSystem", 
+            "OnUpdate",
+            "Game.Simulation.GroundWaterPollutionSystem/PolluteGroundWaterJob", 
+            "PolluteGroundWaterJob"
         ),
         new BaseJobTargetInfo(
-            "Game.Simulation.SpawnableAmbienceSystem", "OnUpdate",
-            "Game.Simulation.SpawnableAmbienceSystem/SpawnableAmbienceJob", "SpawnableAmbienceJob"
+            "Game.UI.Tooltip.LandValueTooltipSystem", 
+            "OnUpdate",
+            "Game.UI.Tooltip.LandValueTooltipSystem/LandValueTooltipJob", 
+            "LandValueTooltipJob"
         ),
         new BaseJobTargetInfo(
-            "Game.Simulation.WindSimulationSystem", "OnUpdate",
-            "Game.Simulation.WindSimulationSystem/UpdateWindVelocityJob", "UpdateWindVelocityJob"
+            "Game.Simulation.ObjectPolluteSystem", 
+            "OnUpdate",
+            "Game.Simulation.ObjectPolluteSystem/ObjectPolluteJob", 
+            "ObjectPolluteJob"
         ),
         new BaseJobTargetInfo(
-            "Game.Simulation.ZoneSpawnSystem", "OnUpdate",
-            "Game.Simulation.ZoneSpawnSystem/EvaluateSpawnAreas", "EvaluateSpawnAreas"
+            "Game.Simulation.SpawnableAmbienceSystem", 
+            "OnUpdate",
+            "Game.Simulation.SpawnableAmbienceSystem/SpawnableAmbienceJob", 
+            "SpawnableAmbienceJob"
         ),
         new BaseJobTargetInfo(
-            "Game.Tools.AreaToolSystem", "UpdateDefinitions",
-            "Game.Tools.AreaToolSystem/CreateDefinitionsJob", "CreateDefinitionsJob"
+            "Game.Simulation.WindSimulationSystem", 
+            "OnUpdate",
+            "Game.Simulation.WindSimulationSystem/UpdateWindVelocityJob", 
+            "UpdateWindVelocityJob"
         ),
         new BaseJobTargetInfo(
-            "Game.Areas.MapTileSystem", "LegacyGenerateMapTiles",
-            "Game.Areas.MapTileSystem/GenerateMapTilesJob", "GenerateMapTilesJob"
+            "Game.Simulation.ZoneSpawnSystem", 
+            "OnUpdate",
+            "Game.Simulation.ZoneSpawnSystem/EvaluateSpawnAreas", 
+            "EvaluateSpawnAreas"
         ),
         new BaseJobTargetInfo(
-            "Game.Simulation.FloodCheckSystem", "OnUpdate",
-            "Game.Simulation.FloodCheckSystem/FloodCheckJob", "FloodCheckJob"
+            "Game.Tools.AreaToolSystem", 
+            "UpdateDefinitions",
+            "Game.Tools.AreaToolSystem/CreateDefinitionsJob", 
+            "CreateDefinitionsJob"
         ),
         new BaseJobTargetInfo(
-            "Game.Simulation.WaterDangerSystem", "OnUpdate",
-            "Game.Simulation.WaterDangerSystem/WaterDangerJob", "WaterDangerJob"
+            "Game.Areas.MapTileSystem", 
+            "LegacyGenerateMapTiles",
+            "Game.Areas.MapTileSystem/GenerateMapTilesJob", 
+            "GenerateMapTilesJob"
         ),
         new BaseJobTargetInfo(
-            "Game.Simulation.WaterLevelChangeSystem", "OnUpdate",
-            "Game.Simulation.WaterLevelChangeSystem/WaterLevelChangeJob", "WaterLevelChangeJob"
+            "Game.Simulation.FloodCheckSystem", 
+            "OnUpdate",
+            "Game.Simulation.FloodCheckSystem/FloodCheckJob", 
+            "FloodCheckJob"
         ),
         new BaseJobTargetInfo(
-            "Game.Simulation.WaterSourceInitializeSystem", "OnUpdate",
-            "Game.Simulation.WaterSourceInitializeSystem/InitializeWaterSourcesJob", "InitializeWaterSourcesJob"
+            "Game.Simulation.WaterDangerSystem",
+            "OnUpdate",
+            "Game.Simulation.WaterDangerSystem/WaterDangerJob",
+            "WaterDangerJob"
         ),
         new BaseJobTargetInfo(
-            "Game.Audio.WeatherAudioSystem", "OnUpdate",
-            "Game.Audio.WeatherAudioSystem/WeatherAudioJob", "WeatherAudioJob"
+            "Game.Simulation.WaterLevelChangeSystem",
+            "OnUpdate",
+            "Game.Simulation.WaterLevelChangeSystem/WaterLevelChangeJob",
+            "WaterLevelChangeJob"
         ),
         new BaseJobTargetInfo(
-            "Game.Simulation.PowerPlantAISystem", "OnUpdate",
-            "Game.Simulation.PowerPlantAISystem/PowerPlantTickJob", "PowerPlantTickJob"
+            "Game.Simulation.WaterSourceInitializeSystem",
+            "OnUpdate",
+            "Game.Simulation.WaterSourceInitializeSystem/InitializeWaterSourcesJob",
+            "InitializeWaterSourcesJob"
         ),
         new BaseJobTargetInfo(
-            "Game.Simulation.WaterPumpingStationAISystem", "OnUpdate",
-            "Game.Simulation.WaterPumpingStationAISystem/PumpTickJob", "PumpTickJob"
+            "Game.Audio.WeatherAudioSystem",
+            "OnUpdate",
+            "Game.Audio.WeatherAudioSystem/WeatherAudioJob",
+            "WeatherAudioJob"
+        ),
+        /*
+                new BaseJobTargetInfo(
+            "Game.Simulation.PowerPlantAISystem", 
+            "OnUpdate",
+            "Game.Simulation.PowerPlantAISystem/PowerPlantTickJob", 
+            "PowerPlantTickJob"
         ),
         new BaseJobTargetInfo(
-            "Game.UI.Tooltip.TempWaterPumpingTooltipSystem", "OnUpdate",
-            "Game.UI.Tooltip.TempWaterPumpingTooltipSystem/TempJob", "TempJob"
+            "Game.Simulation.WaterPumpingStationAISystem", 
+            "OnUpdate",
+            "Game.Simulation.WaterPumpingStationAISystem/PumpTickJob", 
+            "PumpTickJob"
         ),
         new BaseJobTargetInfo(
-            "Game.UI.Tooltip.TempWaterPumpingTooltipSystem", "OnUpdate",
-            "Game.UI.Tooltip.TempWaterPumpingTooltipSystem/GroundWaterPumpJob", "GroundWaterPumpJob"
+            "Game.UI.Tooltip.TempWaterPumpingTooltipSystem", 
+            "OnUpdate",
+            "Game.UI.Tooltip.TempWaterPumpingTooltipSystem/TempJob", 
+            "TempJob"
+        ),
+        new BaseJobTargetInfo(
+            "Game.UI.Tooltip.TempWaterPumpingTooltipSystem", 
+            "OnUpdate",
+            "Game.UI.Tooltip.TempWaterPumpingTooltipSystem/GroundWaterPumpJob", 
+            "GroundWaterPumpJob"
+        ),
+        */
+
+        new BaseJobTargetInfo(
+            "Game.UI.InGame.AverageHappinessSection", 
+            "OnUpdate",
+            "Game.UI.InGame.AverageHappinessSection/CountHappinessJob", "CountHappinessJob"
+        ),
+        new BaseJobTargetInfo(
+            "Game.UI.InGame.AverageHappinessSection", 
+            "OnUpdate",
+            "Game.UI.InGame.AverageHappinessSection/CountDistrictHappinessJob", 
+            "CountDistrictHappinessJob"
+        ),        
+        new BaseJobTargetInfo(
+            "Game.Simulation.HouseholdFindPropertySystem",
+            "OnUpdate",
+            "Game.Simulation.HouseholdFindPropertySystem/PreparePropertyJob",
+            "PreparePropertyJob"),
+        new BaseJobTargetInfo(
+            "Game.Simulation.HouseholdFindPropertySystem", 
+            "OnUpdate",
+            "Game.Simulation.HouseholdFindPropertySystem/FindPropertyJob", 
+            "FindPropertyJob"
+        ),
+        new BaseJobTargetInfo(
+            "Game.UI.InGame.PollutionInfoviewUISystem", 
+            "PerformUpdate",
+            "Game.UI.InGame.PollutionInfoviewUISystem/CalculateAveragePollutionJob", 
+            "CalculateAveragePollutionJob"
+        ),
+        new BaseJobTargetInfo(
+            "Game.Simulation.PollutionTriggerSystem",
+            "OnUpdate",
+            "Game.Simulation.PollutionTriggerSystem/CalculateAverageAirPollutionJob",
+            "CalculateAverageAirPollutionJob"
+        ),
+        new BaseJobTargetInfo(
+            "Game.Simulation.RentAdjustSystem",
+            "OnUpdate",
+            "Game.Simulation.RentAdjustSystem/AdjustRentJob",
+            "AdjustRentJob"
+        ),
+        new BaseJobTargetInfo(
+            "Game.Simulation.CitizenPathfindSetup",
+            "SetupFindHome",
+            "Game.Simulation.CitizenPathfindSetup/SetupFindHomeJob",
+            "CitizenPathfindSetup/SetupFindHomeJob"
         ),
 
         // ... add more base targets here ...
@@ -206,7 +319,7 @@ namespace MapExtPDX.MapExt.ReBurstSystem
             public static List<JobPatchTarget> GetTargetsForMode(PatchModeSetting mode)
             {
                 var concreteTargets = new List<JobPatchTarget>();
-                int coreValue = PatchManager.CurrentCoreValue; 
+                int coreValue = PatchManager.CurrentCoreValue;
                 string modeIdentifier = GetModeIdentifier(mode); // Helper to get "A", "B", or "CoreValue2" etc.
 
                 // Choose your pattern

@@ -22,12 +22,13 @@
 * The maptiles now stay at 529.
 ## Usage
 ### Make 1:1 Map:
-* In the Editor, Import the correct size heightmap/worldmap terrain image.
+* In the Editor, Import the correct size heightmap/worldmap terrain image：
 * 28km playable: height 28672m / world 114688m
 * 57km playable: height 57344m / world 229376m
 * 114km playable: height 114688m / world 458752m
 * 229km playable: height 229376m / world 917504m
 * Supported heightmap/worldmap terrain image format: 4096x4096 16bit grayscale terrain image (PNG or TIFF) 
+* (It's possible to import terrain heightmaps with a resolution <b>lower than 14336x14336</b>, which will be automatically upsampled or downsampled to 4096x4096.)
 * If the import size is not the same as above, the map will work but stretch.
 * Maps over 57km are recommended not to import the "fake" Worldmap to save performance. (The only use of the worldmap is for visuals; it really can't serve any other purpose.)
 ### Here's some folders you may need :
@@ -41,6 +42,7 @@
 - Free Range Camera：a must-have too
 - Water Feature: better control of water sources, important for bigger maps
 - 529 Tiles： essential for managing maptiles
+- Anarchy: Some service buildings that require special resources need to be opened, such as groundwater pumping stations, geothermal power stations, etc.
 
 ## Issues
 * Due to the floating-point precision issues in the vanilla game simulation system (probably because of performance considerations), there might be some weird height display glitches at the edges of the map. Try to set up the residential/commercial/industrial areas close to the center of the map.
@@ -93,6 +95,7 @@
 * 114公里可玩区域：高位图 114688m / 世界 458752m
 * 229公里可玩区域：高位图 229376米 / 世界917504米
 * 支持的可玩区域高度图/世界地图的地形贴图格式：4096x4096 16 位灰度贴图（PNG 或 TIFF）
+* (支持直接导入不高于14336x14336分辨率的地形高位图，mod会自动缩放至4096x4096)
 * 如果导入大小与上述大小不同，则地图将拉伸。
 * 建议超过 57 公里的地图不要导入“假”世界地图以节省性能。（世界地图的唯一用途是视觉效果;它真的不能用于任何其他目的。）
 

@@ -3,14 +3,17 @@
 // See LICENSE in the project root for full license information.
 // When using this part of the code, please clearly credit [Project Name] and the author.
 
-using System;
-using System.Reflection;
 using Colossal.Logging;
 using Game;
 using Game.Modding;
+using Game.Net;
 using Game.SceneFlow;
 using HarmonyLib;
+using MapExtPDX.MapExt.MapSizePatchSet;
 using MapExtPDX.SaveLoadSystem;
+using System;
+using System.Reflection;
+using Unity.Entities;
 
 namespace MapExtPDX
 {
@@ -45,8 +48,8 @@ namespace MapExtPDX
         /// 双Harmony实例模式
         /// </summary>
         //  双Harmony实例名称定义
-        public static readonly string HarmonyIdGlobal = $"{ModName}.global";
-        public static readonly string HarmonyIdModes = $"{ModName}.modes";       
+        public static readonly string HarmonyIdGlobal = $"{ModName}_global";
+        public static readonly string HarmonyIdModes = $"{ModName}_modes";
         // 用于全局并行补丁定义
         private Harmony _globalPatcher;
         // 用于MapSize模式选择补丁集定义
@@ -84,41 +87,53 @@ namespace MapExtPDX
             Colossal.IO.AssetDatabase.AssetDatabase.global.LoadSettings(nameof(ModName), m_Setting, new ModSettings(this));
             Info("Settings initialized");
 
+            // Harmony.DEBUG = true;
+
             // 3. 初始化MapSize PatchManager，并应用启动时默认的补丁模式
             // m_Setting.PatchModeChoice 从配置文件中加载上次保存的模式
             // 从设置加载初始模式
             PatchModeSetting initialMode = m_Setting.PatchModeChoice;
             Info($"Initializing PatchManager with mode from settings: {m_Setting.PatchModeChoice}");
             PatchManager.Initialize(_modePatcher, initialMode);
-            Info("PatchManager初始化完成应用！(所有Transpiler补丁完成执行；所有Pre/Postfix将在方法调用时执行");
+            Info("PatchManager初始化完成应用！(所有Transpiler补丁完成执行；所有Pre/Postfix将在方法调用时执行.)");
+
+            // 3.1 Harmony修复AirwaySystem
+            _globalPatcher.CreateClassProcessor(typeof(AirwaySystem_OnUpdate_Patch)).Patch();
+            Info($"AirwaySystem补丁(全局并行方式) {nameof(AirwaySystem_OnUpdate_Patch)}已应用.");
+            _globalPatcher.CreateClassProcessor(typeof(SessionManager)).Patch();// OnUpdate执行标志位
+            Info($"AirwaySystem辅助补丁(全局并行方式) {nameof(SessionManager)}已应用.");
 
             // 4. 执行全局并行补丁
-            Info("全局并行补丁正在逐条执行...");
+            Info("全局并行方式补丁正在逐条执行...");
             // 4.1 加载SaveLoadSystem的2个class补丁
             if (m_Setting.DisableLoadGameValidation == false)
             {
                 _globalPatcher.CreateClassProcessor(typeof(MetaDataExtenderPatch)).Patch();
-                Info($"全局并行补丁{nameof(MetaDataExtenderPatch)}已应用.");
+                Info($"存档验证补丁(全局并行) {nameof(MetaDataExtenderPatch)}已应用.");
                 _globalPatcher.CreateClassProcessor(typeof(LoadGameValidatorPatch)).Patch();
-                Info($"全局并行补丁{nameof(LoadGameValidatorPatch)}已应用.");
+                Info($"存档验证补丁(全局并行) {nameof(LoadGameValidatorPatch)}已应用.");
             }
             // 其他并行的选项补丁，也在这里添加
             // _globalPatcher.CreateClassProcessor(typeof(ParallelOptionPatch)).Patch();
             // 加载SaveLoadSystem的弹窗本地化语言库
             ModLocalization.Initialize(GameManager.instance.localizationManager);
+            Info($"加载OptionUI本地化文本 {nameof(ModLocalization)}已应用.");
 
             // 其他并行的选项补丁
             // 手动ECS调用Apply方式以应用已保存的设置值
             // 4.2.1 加载NoDogs
             m_Setting.UpdateNoDogsSystemStates();
-            // 4.2.2 加载NoTroughTraffic(From CS2LiteBooster)
+            Info($"NoDogs补丁(全局并行) {nameof(ModLocalization)}已应用.");
+            // 4.2.2 加载NoTroughTraffic(From CS2LiteBooster)           
             m_Setting.UpdateNoThroughTrafficSystemStates();
+            Info($"NoThroughTraffic补丁(全局并行) {nameof(ModLocalization)}已应用.");
             // 4.2.3 加载NoRandomTraffic(From CS2LiteBooster)
             // m_Setting.UpdateNoRandomTrafficSystemStates();
-            
+
             // 4.3 加载特色工具
             // 加载LandValueRemake
             // m_Setting.UpdateLandValueRemakeSystemStates();
+            //Info($"LandValue Remake补丁(全局并行) {nameof(ModLocalization)}已应用.");
 
             // 执行诊断系统
             // updateSystem.UpdateAt<SaveGameDiagnosticSystem>(SystemUpdatePhase.LateUpdate);
@@ -132,14 +147,14 @@ namespace MapExtPDX
             // 通知PatchManager使用设置中当前选定的新模式
             Info($"Mod.OnPatchModeChanged: MapSize Mode在设置UI中改变为: {newModeFromSettings}");
             // 关键方法，切换应用补丁模式集
-            PatchManager.SetPatchMode(newModeFromSettings); 
+            PatchManager.SetPatchMode(newModeFromSettings);
             //m_Setting?.RefreshModSettingInfo(); // Update status display
         }
 
         public void ApplyPatchChangesFromSettings(PatchModeSetting modeToApply)
         {
             PatchManager.SetPatchMode(modeToApply);
-            Logger.Info($"Mod.ApplyPatchChangesFromSettings: 已应用MapSize Mode: {modeToApply}");
+            Info($"Mod.ApplyPatchChangesFromSettings: 已应用MapSize Mode: {modeToApply}");
         }
 
         public void OnDispose()

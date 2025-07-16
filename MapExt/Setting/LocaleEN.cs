@@ -4,10 +4,8 @@
 // When using this part of the code, please clearly credit [Project Name] and the author.
 
 // --- LOCALE ---
-using System.Collections.Generic;
 using Colossal;
-using Game.Settings;
-using Unity.Entities.UniversalDelegates;
+using System.Collections.Generic;
 
 namespace MapExtPDX
 {
@@ -80,6 +78,10 @@ namespace MapExtPDX
                 { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.DisableLoadGameValidation)), "Disable LoadGame Validation" },
                 { m_Setting.GetOptionDescLocaleID(nameof(ModSettings.DisableLoadGameValidation)), "Warn! Disable LoadGame Validation function. Usually don't click! Use only if your legacy MapExt savegame is not recognized. Legacy savegame need to be in the correct mode selected in the MapSize option, otherwise the savegame may be corrupted." },
 
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.ApplyAirwayRegenerate)), "Apply Airway Regenerate" },
+                { m_Setting.GetOptionGroupLocaleID(ModSettings.kAirwayGroup), "Airway Regenerator" },
+                { m_Setting.GetOptionDescLocaleID(nameof(ModSettings.ApplyAirwayRegenerate)), "After adding the new airplane path boundary point, just click this to make it active in the game." },
+                { m_Setting.GetOptionWarningLocaleID(nameof(ModSettings.ApplyAirwayRegenerate)), "All airway will be rebuilt soon." },
 
 
             };

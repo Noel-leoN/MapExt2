@@ -4,18 +4,15 @@
 // When using this part of the code, please clearly credit [Project Name] and the author.
 
 
+// using UnityEngine; // For Debug.Log
+using Game.Simulation;
+using Game.UI.Tooltip;
+using HarmonyLib;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
-using Colossal.Logging;
-
-// using UnityEngine; // For Debug.Log
-using Game.Simulation;
-using Game.UI.Tooltip;
-using HarmonyLib;
-using MapExtPDX.MapExt.MapSizePatchSet;
 using Unity.Collections;
 using Unity.Mathematics;
 
@@ -63,10 +60,10 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
                     // Check 1: 字段名是否kMapSize
                     // Check 2: 字段是否属于泛型封闭类型
                     // Check 3: 泛型是否属于CellMapSystem<>
-                    if (operandField.Name == TARGET_FIELD_NAME &&
+                    if (operandField.Name == TARGET_FIELD_NAME/* &&
                         operandField.DeclaringType != null &&
                         operandField.DeclaringType.IsGenericType &&
-                        operandField.DeclaringType.GetGenericTypeDefinition() == targetGenericTypeDef)
+                        operandField.DeclaringType.GetGenericTypeDefinition() == targetGenericTypeDef*/)
                     {
                         CodeInstruction nextInstruction = i + 1 < instructionList.Count ? instructionList[i + 1] : null;
                         bool needsFloat = nextInstruction?.opcode == OpCodes.Conv_R4;
@@ -138,6 +135,18 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
             // Reuse the same transpiler logic
             return PatchKMapSizeFieldLoad(instructions, gen, original);
         }
+
+        /*
+        /// 直接在BurstJob中修改，避免双重修补OnUpdate
+        // Patching AvailabilityInfoToGridSystemOnUpdate
+        [HarmonyPatch(typeof(AvailabilityInfoToGridSystem), "OnUpdate")]
+        [HarmonyTranspiler]
+        static IEnumerable<CodeInstruction> Transpile_AvailabilityInfoToGridSystemOnUpdate(IEnumerable<CodeInstruction> instructions, ILGenerator gen, MethodBase original)
+        {
+            // Reuse the same transpiler logic
+            return PatchKMapSizeFieldLoad(instructions, gen, original);
+        }
+        */
 
         // Patching BuildingPollutionAddSystemOnUpdate
         [HarmonyPatch(typeof(BuildingPollutionAddSystem), "OnUpdate")]
@@ -213,6 +222,15 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
         [HarmonyPatch(typeof(NaturalResourceSystem), "ResourceAmountToArea")]
         [HarmonyTranspiler]
         static IEnumerable<CodeInstruction> Transpile_NaturalResourceSystemResourceAmountToArea(IEnumerable<CodeInstruction> instructions, ILGenerator gen, MethodBase original)
+        {
+            // Reuse the same transpiler logic
+            return PatchKMapSizeFieldLoad(instructions, gen, original);
+        }
+
+        // Patching NaturalResourceSystemResourceAmountToArea
+        [HarmonyPatch(typeof(NaturalResourceSystem), "GetResource")]
+        [HarmonyTranspiler]
+        static IEnumerable<CodeInstruction> Transpile_NaturalResourceSystemGetResource(IEnumerable<CodeInstruction> instructions, ILGenerator gen, MethodBase original)
         {
             // Reuse the same transpiler logic
             return PatchKMapSizeFieldLoad(instructions, gen, original);

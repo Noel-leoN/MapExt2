@@ -5,19 +5,16 @@
 // When using this part of the code, please clearly credit [Project Name] and the author.
 
 // LoadGameValidatorPatch.cs
-using System;
-using System.Collections.Generic; // Contains GameManager
-using System.Linq;
-using Colossal.Annotations;
 using Colossal.UI.Binding; // Contains ValueBinding
-using Game; // Contains GameManager
 using Game.Assets;
 using Game.SceneFlow;
 using Game.UI;      // Contains SaveInfo and NotificationUISystem (or similar)
 using Game.UI.Localization;
 using Game.UI.Menu; // Contains MenuUISystem
 using HarmonyLib;
-using static Colossal.IO.AssetDatabase.GeometryAsset;
+using System;
+using System.Collections.Generic; // Contains GameManager
+using System.Linq;
 using static Game.UI.Menu.MenuUISystem;
 
 namespace MapExtPDX.SaveLoadSystem
@@ -158,7 +155,7 @@ namespace MapExtPDX.SaveLoadSystem
                 }
             }
 
-            
+
             Info("Mod identifier found in save file. Proceeding to check CoreValue tag.");
 
             // 2. 判断已使用MapExt存档
@@ -218,7 +215,7 @@ namespace MapExtPDX.SaveLoadSystem
                 }
             }
 
-          
+
         }
 
 

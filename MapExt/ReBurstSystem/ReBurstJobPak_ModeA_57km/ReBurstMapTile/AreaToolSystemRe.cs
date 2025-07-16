@@ -1,4 +1,3 @@
-using System.Drawing.Text;
 using Colossal.Collections;
 using Colossal.Mathematics;
 using Game.Areas;
@@ -152,7 +151,7 @@ namespace MapExtPDX.MapExt.ReBurstSystemModeA
         private void Generate()
         {
             // ∫À–ƒ…Ë÷√
-            int Value = MapSizeMultiplier;
+            int Value = 4; //MapSizeMultiplier;
 
             int2 @int = default;
             @int.y = 0;

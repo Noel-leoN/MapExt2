@@ -15,10 +15,10 @@ using static MapExtPDX.MapExt.ReBurstSystemModeA.CellMapSystemRe;
 
 namespace MapExtPDX.MapExt.ReBurstSystemModeA
 {
-/// <summary>
-/// TelecomCoverageJob被TelecomCoverageSystem/TelecomPreviewSystem两个系统调用
-/// </summary>
-/// 
+    /// <summary>
+    /// TelecomCoverageJob被TelecomCoverageSystem/TelecomPreviewSystem两个系统调用
+    /// </summary>
+    /// 
     [BurstCompile]
     public struct TelecomCoverageJob : IJob
     {

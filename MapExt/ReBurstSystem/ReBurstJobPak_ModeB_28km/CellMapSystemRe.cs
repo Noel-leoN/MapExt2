@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Game.Prefabs;
+﻿using Game.Prefabs;
 using Game.Simulation;
 using Unity.Assertions;
 using Unity.Collections;
@@ -21,11 +16,11 @@ namespace MapExtPDX.MapExt.ReBurstSystemModeB
     {
         // 等同于CV值；用于CellMapSystem/WaterSystem; 其他系统无BurstJob调用；
         public static readonly int MapSizeMultiplier = 2;
-        public static readonly int kMapSize = MapSizeMultiplier * 14336;
+        public static readonly int kMapSize = 28672; // MapSizeMultiplier * 14336;
 
         // WaterSystem CellSize/WaveSpeed
-        public static readonly float kCellSize = MapSizeMultiplier * 7f;
-        public static readonly float WaveSpeed = kCellSize / 30f;
+        public static readonly float kCellSize = 14f; // MapSizeMultiplier * 7f;
+        public static readonly float WaveSpeed = 14f / 30f;// kCellSize / 30f;
 
         // Water-related System
         public static int TsunamiEndDelay => Mathf.RoundToInt(kMapSize / WaveSpeed);

@@ -3,14 +3,13 @@
 // See LICENSE in the project root for full license information.
 // When using this part of the code, please clearly credit [Project Name] and the author.
 
-using System;
-using System.Collections.Generic;
 using HarmonyLib;
 using MapExtPDX.MapExt.MapSizePatchSet;
 using MapExtPDX.MapExt.ReBurstSystem;
-using MapExtPDX.SaveLoadSystem;
+using System;
+using System.Collections.Generic;
 
-namespace MapExtPDX 
+namespace MapExtPDX
 {
     /// <summary>
     /// MapSize模式补丁集管理器
@@ -72,7 +71,8 @@ namespace MapExtPDX
                 { "CellMapSystemPatch_Method", (h) => h.CreateClassProcessor(typeof(CellMapSystem_KMapSize_Method_Patches)).Patch() },
 
                 // PatchSet4:AirWaySystem
-                { "AirWaySystemPatch", (h) => h.CreateClassProcessor(typeof(AirwaySystem_OnCreate_Patch)).Patch() },
+                //{ "AirwaySystem_OnUpdate_Patch", (h) => h.CreateClassProcessor(typeof(AirwaySystemRedirectPatch)).Patch() },
+                 //{ "AirwayMap_Deserialize_Patch", (h) => h.CreateClassProcessor(typeof(AirwayMap_Deserialize_Patch)).Patch() },
 
                 // PatchSetFinal:ReBurstJobSystems
                 // 集中调用方式
@@ -103,7 +103,9 @@ namespace MapExtPDX
                         "CellMapSystemPatch_Field",
                         "CellMapSystemPatch_Method",
                         "ReBurstSystemsPatches",
-                        "AirWaySystemPatch",
+                        //"AirwaySystem_OnUpdate_Patch"
+                        //"AirWaySystemPatch",
+                        //"AirwayMap_Deserialize_Patch"
                         //"MetaDataExtenderPatch",
                         //"LoadGameValidatorPatch"
                     };
@@ -118,7 +120,9 @@ namespace MapExtPDX
                         "CellMapSystemPatch_Field",
                         "CellMapSystemPatch_Method",
                         "ReBurstSystemsPatches",
-                        "AirWaySystemPatch",
+                        //"AirwaySystem_OnUpdate_Patch"
+                        //"AirWaySystemPatch",
+                        //"AirwayMap_Deserialize_Patch"
                         //"MetaDataExtenderPatch",
                         //"LoadGameValidatorPatch"
                     };
@@ -133,7 +137,9 @@ namespace MapExtPDX
                         "CellMapSystemPatch_Field",
                         "CellMapSystemPatch_Method",
                         "ReBurstSystemsPatches",
-                        "AirWaySystemPatch",
+                        //"AirwaySystem_OnUpdate_Patch"
+                        //"AirWaySystemPatch",
+                        //"AirwayMap_Deserialize_Patch"
                         //"MetaDataExtenderPatch",
                         //"LoadGameValidatorPatch"
                     };
@@ -148,13 +154,16 @@ namespace MapExtPDX
                         "CellMapSystemPatch_Field",
                         "CellMapSystemPatch_Method",
                         "ReBurstSystemsPatches",
-                        "AirWaySystemPatch",
+                        //"AirwaySystem_OnUpdate_Patch"
+                        //"AirWaySystemPatch",
+                        //"AirwayMap_Deserialize_Patch"
                         //"MetaDataExtenderPatch",
                         //"LoadGameValidatorPatch"
                     };
-                
+
                 case PatchModeSetting.None:  // 14km vanilla模式
-                    return new List<string>{
+                    return new List<string>
+                    {
                         //"MetaDataExtenderPatch",
                         //"LoadGameValidatorPatch"
                     };
@@ -166,7 +175,7 @@ namespace MapExtPDX
         {
             // 传入Mod主入口_modePatcher harmony实例
             _modePatcher = harmony;
-            
+
             // 从已保存设置中读取模式并应用补丁集
             // 进入游戏后Mod初始化加载，不需要进行UnpatchAll or CleanUpAllContexts
             _currentMode = initialModeFromSettings;
@@ -175,7 +184,7 @@ namespace MapExtPDX
 
             // if (_currentMode != PatchModeSetting.None) 
             // {
-                ApplyPatchesForMode(_currentMode); 
+            ApplyPatchesForMode(_currentMode);
             // }
             // else
             // {
@@ -195,7 +204,7 @@ namespace MapExtPDX
             }
 
             // 避免点击Apply后重复修补；LoadedSaveCoreValue字段当前方案中无效，备用；
-            if (_currentMode == newMode && LoadedSaveCoreValue == null) 
+            if (_currentMode == newMode && LoadedSaveCoreValue == null)
             {
                 Info($"Patch mode {newMode} is already active. No changes applied.");
                 return;
@@ -208,7 +217,7 @@ namespace MapExtPDX
 
             // 1. 移除所有旧补丁，确保干净的状态
             Info("Unpatching all previous MapSize patchsets...");
-            _modePatcher.UnpatchAll(Mod.HarmonyIdModes);           
+            _modePatcher.UnpatchAll(Mod.HarmonyIdModes);
 
             // 2. 根据新模式设置CV
             _currentMode = newMode; // Set new mode first
@@ -218,7 +227,7 @@ namespace MapExtPDX
             // 3. 根据新模式应用所需的补丁集
             //if (_currentMode != PatchModeSetting.None)
             //{
-                ApplyPatchesForMode(_currentMode);
+            ApplyPatchesForMode(_currentMode);
             //}
 
             Info($"Successfully switched to patch mode: {_currentMode}");
@@ -239,7 +248,7 @@ namespace MapExtPDX
                 case PatchModeSetting.ModeB: return 2;
                 case PatchModeSetting.ModeC: return 8;
                 case PatchModeSetting.ModeD: return 16;
-                case PatchModeSetting.None:  return 1; 
+                case PatchModeSetting.None: return 1;
             }
         }
 
@@ -305,7 +314,7 @@ namespace MapExtPDX
                 Info($"All patches with ID {_modePatcher.Id} have been removed by PatchManager.");
             }
             // 重置为vanilla;待验证
-            _currentMode = PatchModeSetting.None; 
+            _currentMode = PatchModeSetting.None;
             CurrentCoreValue = GetCoreValueForMode(PatchModeSetting.None);
             Info($"PatchManager reset. CurrentMode: {_currentMode}, CurrentCoreValue: {CurrentCoreValue}");
         }

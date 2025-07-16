@@ -39,7 +39,7 @@ namespace MapExtPDX.MapExt.ReBurstSystemModeB
         public void Execute(int index)
         {
             // 核心参数设置
-            int Value = MapSizeMultiplier; // 2-> 28672 4 -> 57344; 16 -> 229376
+            int Value = 2; // MapSizeMultiplier; // 2-> 28672 4 -> 57344; 16 -> 229376
 
             // ... 其余代码与原Job保持一致 
             Entity entity = m_Entities[index];

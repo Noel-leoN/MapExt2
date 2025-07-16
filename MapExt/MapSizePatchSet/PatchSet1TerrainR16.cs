@@ -3,17 +3,16 @@
 // See LICENSE in the project root for full license information.
 // When using this part of the code, please clearly credit [Project Name] and the author.
 
-using HarmonyLib;
-using UnityEngine;
-using Game.Simulation;
-using System;
-using UnityEngine.Experimental.Rendering;
 using Game.SceneFlow;
+using Game.Simulation;
+using Game.UI;
 using Game.UI.Editor;
 using Game.UI.Localization;
-using Game.UI;
+using HarmonyLib;
+using System;
 using System.Collections.Generic;
-using Colossal.Logging;
+using UnityEngine;
+using UnityEngine.Experimental.Rendering;
 
 namespace MapExtPDX.MapExt.MapSizePatchSet
 {

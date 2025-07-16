@@ -2,7 +2,6 @@ using Game.Simulation;
 using Unity.Burst;
 using Unity.Collections;
 using Unity.Jobs;
-using static MapExtPDX.MapExt.ReBurstSystemModeB.CellMapSystemRe;
 
 namespace MapExtPDX.MapExt.ReBurstSystemModeB
 {

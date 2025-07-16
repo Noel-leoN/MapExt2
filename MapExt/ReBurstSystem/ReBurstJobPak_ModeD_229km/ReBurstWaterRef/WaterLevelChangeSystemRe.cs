@@ -1,6 +1,5 @@
 using Game.Events;
 using Game.Prefabs;
-using Game.Simulation;
 using Unity.Burst;
 using Unity.Burst.Intrinsics;
 using Unity.Collections;

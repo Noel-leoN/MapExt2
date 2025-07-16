@@ -3,17 +3,15 @@
 // See LICENSE in the project root for full license information.
 // When using this part of the code, please clearly credit [Project Name] and the author.
 
+using Game.Simulation;
 using HarmonyLib;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
-using System.Linq;
 using Unity.Jobs;
 using Unity.Mathematics;
-using Game.Simulation;
-using Colossal.Logging;
-using System.Runtime.CompilerServices;
 // using UnityEngine; // 如果使用 Debug.Log
 
 namespace MapExtPDX.MapExt.MapSizePatchSet

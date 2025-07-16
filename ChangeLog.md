@@ -1,7 +1,16 @@
-﻿### 2.0.0
+﻿### 2.0.2
+  - Due to potential lag issues, temporarily removed the repairs for things like groundwater pumping stations and groundwater power stations.
+  - fixed a bug in the pollution calculation.
+
+### 2.0.1
+  - Airway-pathfinding have been repaired.
+  - Added the feature that makes the outside airplane connections added in-game actually work.(testing,not sure if it works at all the conditions)
+  - Groundwater pumping stations, Wind power stations, Geothermal power stations can now work in the right place, BUT Anarchy mod needs to be turned on.
+
+### 2.0.0
   - Integrated vanilla-14km/28/57/114/229km switchable version.
   - Add LoadGame verification function to prevent the savegames of different mapsizes from being loaded incorrectly.
-  - Some minor systems such as Airway-pathfinding, groundwater pumping stations, wind power generation, etc., have been repaired.
+  - ~~Some minor systems such as Airway-pathfinding, groundwater pumping stations, wind power generation, etc., have been repaired.~~
   - Integrates some of my performance mod gadgets, such as NoDogs, LiteBoost (will be added continuously).
   - Added the OptionUI settings interface.
 

@@ -5,7 +5,6 @@
 
 
 using Colossal.Localization;
-using Colossal.Logging;
 using System.Collections.Generic;
 
 namespace MapExtPDX.SaveLoadSystem

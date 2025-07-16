@@ -1,5 +1,5 @@
-using System;
 using Game.Simulation;
+using System;
 using Unity.Burst;
 using Unity.Collections;
 using Unity.Jobs;

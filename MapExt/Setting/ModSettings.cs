@@ -3,15 +3,14 @@
 // See LICENSE in the project root for full license information.
 // When using this part of the code, please clearly credit [Project Name] and the author.
 
-using System.Collections.Generic;
-using Colossal;
 using Colossal.IO.AssetDatabase;
 using Game;
 using Game.Modding;
 using Game.SceneFlow;
 using Game.Settings;
 using Game.UI.Widgets;
-using MapExtPDX.SaveLoadSystem;
+using MapExtPDX.MapExt.MapSizePatchSet;
+using System.Collections.Generic;
 using Unity.Entities;
 
 // 保持与Mod.cs同一命名空间
@@ -29,8 +28,8 @@ namespace MapExtPDX
 
     [FileLocation(nameof(MapExtPDX))]
     [SettingsUITabOrder(kMapSizeModeTab, kPerformanceToolTab, kMiscTab, kDebugTab)]
-    [SettingsUIGroupOrder(kMainModeGroup, kResetGroup, kInfoGroup, kPerformanceToolGroup, kMiscGroup, kDebugGroup)]
-    [SettingsUIShowGroupName(kMainModeGroup, kResetGroup, kInfoGroup, kPerformanceToolGroup, kMiscGroup, kDebugGroup)]
+    [SettingsUIGroupOrder(kMainModeGroup, kResetGroup, kInfoGroup, kPerformanceToolGroup, kMiscGroup, kAirwayGroup, kDebugGroup)]
+    [SettingsUIShowGroupName(kMainModeGroup, kResetGroup, kInfoGroup, kPerformanceToolGroup, kMiscGroup, kAirwayGroup, kDebugGroup)]
 
     public class ModSettings : Game.Modding.ModSetting
     {
@@ -45,6 +44,7 @@ namespace MapExtPDX
         public const string kPerformanceToolGroup = "PerformanceTool";
         public const string kMiscGroup = "Misc";
         public const string kDebugGroup = "Debug";
+        public const string kAirwayGroup = "AirwayRegenerate";
         //public const string kPatchSettingsGroup = "PatchSettings"; // New group for our patch controls
 
         // Original group constants (can be removed if not used)
@@ -210,7 +210,7 @@ namespace MapExtPDX
             // 当 DisableMyOptionalSystem 为 false 时, .Enabled 应为 true
             // 所以逻辑是 .Enabled = !DisableMyOptionalSystem
             World.DefaultGameObjectInjectionWorld.GetOrCreateSystemManaged<Game.Simulation.HouseholdPetSpawnSystem>().Enabled = !m_NoDogsSystem;
-            
+
 
             // 如果多个系统需要控制，可以继续在这里添加
             // World.DefaultGameObjectInjectionWorld.GetOrCreateSystemManaged<AnotherSystem>().Enabled = !this.SomeOtherSetting;
@@ -237,9 +237,24 @@ namespace MapExtPDX
             World.DefaultGameObjectInjectionWorld.GetOrCreateSystemManaged<Game.Simulation.TrafficSpawnerAISystem>().Enabled = !m_NoThroughTrafficSystem;
         }
 
+
+
         //[SettingsUISection(kPerformanceToolTab, kPerformanceToolGroup)]
         //[SettingsUIDisableByConditionAttribute(typeof(ModSettings), nameof(IsPatchUnAvailable))]
         //public bool NoRandomTraffic { get; set; }
+
+        [SettingsUISection(kMiscTab, kAirwayGroup)]
+        [SettingsUIButton]
+        [SettingsUIConfirmation]
+        [SettingsUIHideByCondition(typeof(ModSettings), nameof(IsInMainMenu))]
+        public bool ApplyAirwayRegenerate
+        {
+            set
+            {
+                AirwaySystem_OnUpdate_Patch.RequestManualRegeneration();
+                Mod.Info($"ApplyAirwayRegenerate button clicked. SessionLock change to {AirwaySystem_OnUpdate_Patch.s_HasRunThisSession}");
+            }
+        }
 
         [SettingsUISection(kMiscTab, kMiscGroup)]
         [SettingsUIDisableByConditionAttribute(typeof(ModSettings), nameof(IsPatchUnAvailable))]  // 暂时禁用
@@ -256,13 +271,14 @@ namespace MapExtPDX
                 }
             }
         }
+
         public void UpdateLandValueRemakeSystemStates()
         {
             //Mod.Info($"Setting 'LandValueRemakeSystem' is now: {nameof(Game.Simulation.LandValueSystem)}. Updating system enabled state.");
             //World.DefaultGameObjectInjectionWorld.GetOrCreateSystemManaged<Game.Simulation.LandValueSystem>().Enabled = !m_LandValueRemakeSystem;
         }
 
-        private bool m_LoadGameValidatorPatch;
+        // private bool m_LoadGameValidatorPatch;
         // 开关LoadGame验证系统
         [SettingsUISection(kDebugTab, kDebugGroup)]
         public bool DisableLoadGameValidation { get; set; } = false;

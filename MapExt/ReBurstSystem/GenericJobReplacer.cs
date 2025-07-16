@@ -4,13 +4,12 @@
 // Recommended for non-commercial use. For commercial purposes, please consider contacting the author.
 // When using this part of the code, please clearly credit [Project Name] and the author.
 
+using HarmonyLib;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
-using Game.UI.InGame;
-using HarmonyLib;
 
 namespace MapExtPDX.MapExt.ReBurstSystem
 {
@@ -58,9 +57,9 @@ namespace MapExtPDX.MapExt.ReBurstSystem
 
             // Add or update the specific replacement pair within the method's context
             context.Replacements[originalJobType] = replacementJobType;
-#if DEBUG
+
             Mod.Logger.Info($"[JobReplacer]    Registered replacement: {originalJobType.Name} -> {replacementJobType.Name}");
-#endif
+
         }
 
         // The Transpiler method - Modified to use the new context structure

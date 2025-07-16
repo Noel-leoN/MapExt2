@@ -3,10 +3,10 @@
 // See LICENSE in the project root for full license information.
 // When using this part of the code, please clearly credit [Project Name] and the author.
 
-using System;
-using System.Collections.Generic;
 using Game.Simulation;
 using HarmonyLib;
+using System;
+using System.Collections.Generic;
 
 namespace MapExtPDX.MapExt.MapSizePatchSet
 {
@@ -24,7 +24,9 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
         [HarmonyTranspiler]
         static IEnumerable<CodeInstruction> get_MapSize_Transpiler(IEnumerable<CodeInstruction> instructions)
         {
+#if DEBUG
             Info($" Applying Transpiler to WaterSystem.get_MapSize");
+#endif
             return WaterSystemPatcherHelper.PatchMethodInstructions(instructions, WaterSystemPatcherHelper.GetCurrentMethodName());
         }
 
@@ -32,7 +34,9 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
         [HarmonyTranspiler]
         static IEnumerable<CodeInstruction> get_CellSize_Transpiler(IEnumerable<CodeInstruction> instructions)
         {
-            Info($" Applying Transpiler to WaterSystem.get_MapSize");
+#if DEBUG
+            Info($" Applying Transpiler to WaterSystem.get_MapSize"); 
+#endif
             return WaterSystemPatcherHelper.PatchMethodInstructions(instructions, WaterSystemPatcherHelper.GetCurrentMethodName());
         }
 
@@ -40,7 +44,9 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
         [HarmonyTranspiler]
         static IEnumerable<CodeInstruction> get_WaveSpeed_Transpiler(IEnumerable<CodeInstruction> instructions)
         {
-            Info($" Applying Transpiler to WaterSystem.get_WaveSpeed");
+#if DEBUG
+            Info($" Applying Transpiler to WaterSystem.get_WaveSpeed"); 
+#endif
             return WaterSystemPatcherHelper.PatchMethodInstructions(instructions, WaterSystemPatcherHelper.GetCurrentMethodName());
         }
 
@@ -48,7 +54,9 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
         [HarmonyTranspiler]
         static IEnumerable<CodeInstruction> GetDepth_Transpiler(IEnumerable<CodeInstruction> instructions)
         {
-            Info($" Applying Transpiler to WaterSystem.GetDepth");
+#if DEBUG
+            Info($" Applying Transpiler to WaterSystem.GetDepth"); 
+#endif
             return WaterSystemPatcherHelper.PatchMethodInstructions(instructions, WaterSystemPatcherHelper.GetCurrentMethodName());
         }
 
@@ -56,7 +64,9 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
         [HarmonyTranspiler]
         static IEnumerable<CodeInstruction> HasWater_Transpiler(IEnumerable<CodeInstruction> instructions)
         {
-            Info($" Applying Transpiler to WaterSystem.HasWater");
+#if DEBUG
+            Info($" Applying Transpiler to WaterSystem.HasWater"); 
+#endif
             // This method calls GetCell which uses GetCellCoords which uses mapSize.
             // Patching HasWater ensures the correct mapSize is passed down.
             return WaterSystemPatcherHelper.PatchMethodInstructions(instructions, WaterSystemPatcherHelper.GetCurrentMethodName());
@@ -77,7 +87,9 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
         [HarmonyTranspiler]
         static IEnumerable<CodeInstruction> ResetToLevel_Transpiler(IEnumerable<CodeInstruction> instructions)
         {
-            Info($" Applying Transpiler to WaterSystem.ResetToLevel");
+#if DEBUG
+            Info($" Applying Transpiler to WaterSystem.ResetToLevel"); 
+#endif
             return WaterSystemPatcherHelper.PatchMethodInstructions(instructions, WaterSystemPatcherHelper.GetCurrentMethodName());
         }
 
@@ -86,7 +98,9 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
         [HarmonyTranspiler]
         static IEnumerable<CodeInstruction> BorderCircleIntersection_Transpiler(IEnumerable<CodeInstruction> instructions)
         {
-            Info($" Applying Transpiler to WaterSystem.BorderCircleIntersection");
+#if DEBUG
+            Info($" Applying Transpiler to WaterSystem.BorderCircleIntersection"); 
+#endif
             return WaterSystemPatcherHelper.PatchMethodInstructions(instructions, WaterSystemPatcherHelper.GetCurrentMethodName());
         }
 
@@ -94,7 +108,9 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
         [HarmonyTranspiler]
         static IEnumerable<CodeInstruction> SourceStep_Transpiler(IEnumerable<CodeInstruction> instructions)
         {
-            Info($" Applying Transpiler to WaterSystem.SourceStep");
+#if DEBUG
+            Info($" Applying Transpiler to WaterSystem.SourceStep"); 
+#endif
             return WaterSystemPatcherHelper.PatchMethodInstructions(instructions, WaterSystemPatcherHelper.GetCurrentMethodName());
         }
 
@@ -102,7 +118,9 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
         [HarmonyTranspiler]
         static IEnumerable<CodeInstruction> ResetActive_Transpiler(IEnumerable<CodeInstruction> instructions)
         {
-            Info($" Applying Transpiler to WaterSystem.ResetActive");
+#if DEBUG
+            Info($" Applying Transpiler to WaterSystem.ResetActive"); 
+#endif
             return WaterSystemPatcherHelper.PatchMethodInstructions(instructions, WaterSystemPatcherHelper.GetCurrentMethodName());
         }
 
@@ -110,7 +128,9 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
         [HarmonyTranspiler]
         static IEnumerable<CodeInstruction> EvaporateStep_Transpiler(IEnumerable<CodeInstruction> instructions)
         {
-            Info($" Applying Transpiler to WaterSystem.EvaporateStep");
+#if DEBUG
+            Info($" Applying Transpiler to WaterSystem.EvaporateStep"); 
+#endif
             return WaterSystemPatcherHelper.PatchMethodInstructions(instructions, WaterSystemPatcherHelper.GetCurrentMethodName());
         }
 
@@ -118,7 +138,9 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
         [HarmonyTranspiler]
         static IEnumerable<CodeInstruction> VelocityStep_Transpiler(IEnumerable<CodeInstruction> instructions)
         {
+#if DEBUG
             Info($" Applying Transpiler to WaterSystem.VelocityStep");
+#endif
             return WaterSystemPatcherHelper.PatchMethodInstructions(instructions, WaterSystemPatcherHelper.GetCurrentMethodName());
         }
 
@@ -126,7 +148,9 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
         [HarmonyTranspiler]
         static IEnumerable<CodeInstruction> DepthStep_Transpiler(IEnumerable<CodeInstruction> instructions)
         {
-            Info($" Applying Transpiler to WaterSystem.DepthStep");
+#if DEBUG
+            Info($" Applying Transpiler to WaterSystem.DepthStep"); 
+#endif
             return WaterSystemPatcherHelper.PatchMethodInstructions(instructions, WaterSystemPatcherHelper.GetCurrentMethodName());
         }
 
@@ -135,7 +159,9 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
         [HarmonyTranspiler]
         static IEnumerable<CodeInstruction> CalculateSourceMultiplier_Transpiler(IEnumerable<CodeInstruction> instructions)
         {
-            Info($" Applying Transpiler to WaterSystem.CalculateSourceMultiplier");
+#if DEBUG
+            Info($" Applying Transpiler to WaterSystem.CalculateSourceMultiplier"); 
+#endif
             return WaterSystemPatcherHelper.PatchMethodInstructions(instructions, WaterSystemPatcherHelper.GetCurrentMethodName());
         }
         // 注意序列化/反序列化是否需要修补

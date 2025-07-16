@@ -3,13 +3,12 @@
 // See LICENSE in the project root for full license information.
 // When using this part of the code, please clearly credit [Project Name] and the author.
 
+using Game.Simulation;
+using HarmonyLib;
 using System;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Reflection.Emit;
-using Colossal.Logging;
-using Game.Simulation;
-using HarmonyLib;
 // using UnityEngine; // Required for Debug.Log
 
 namespace MapExtPDX.MapExt.MapSizePatchSet
@@ -50,10 +49,10 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
 
             // --- 修补为新的Water kMapSize ---
             // 原始整数形式
-            int NewKMapSizeI = MapScaleMultiplier * OriginalKMapSize; 
+            int NewKMapSizeI = MapScaleMultiplier * OriginalKMapSize;
             // 浮点形式适配上下文
             float NewKMapSizeF = MapScaleMultiplier * OriginalKMapSize;
-            
+
             // --- 修补为新的Water CellSize ---
             float NewKCellSize = OriginalKCellSize * MapScaleMultiplier;
             // Calculate new map size based on the new cell size and assumed original texture width
@@ -81,7 +80,9 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
                         codes.RemoveAt(i + 1);
                         // Note: Loop counter doesn't need adjustment because RemoveAt shifts subsequent indices
                         patched = true;
-                        Info($" Patched kMapSize (as float) {codes[i].operand} in {methodName}");
+#if DEBUG
+                        Info($" Patched kMapSize (as float) {codes[i].operand} in {methodName}"); 
+#endif
                     }
                     else
                     {
@@ -89,7 +90,9 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
                         codes[i].opcode = OpCodes.Ldc_I4;
                         codes[i].operand = NewKMapSizeI;
                         patched = true;
-                        Info($" Patched kMapSize (as int) to {codes[i].operand} in {methodName}");
+#if DEBUG
+                        Info($" Patched kMapSize (as int) to {codes[i].operand} in {methodName}"); 
+#endif
                     }
                 }
                 // Check for loading kCellSize (static float)
@@ -99,7 +102,9 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
                     codes[i].opcode = OpCodes.Ldc_R4;
                     codes[i].operand = NewKCellSize;
                     patched = true;
-                    Info($" Patched kCellSize to {codes[i].operand} in {methodName}");
+#if DEBUG
+                    Info($" Patched kCellSize to {codes[i].operand} in {methodName}"); 
+#endif
                 }
             }
 

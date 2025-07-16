@@ -3,12 +3,11 @@
 // See LICENSE in the project root for full license information.
 // When using this part of the code, please clearly credit [Project Name] and the author.
 
-using System;
-using System.Collections.Generic;
-using System.Diagnostics.Eventing.Reader;
-using System.Reflection.Emit;
 using Game.Simulation;
 using HarmonyLib;
+using System;
+using System.Collections.Generic;
+using System.Reflection.Emit;
 using Unity.Mathematics;
 
 namespace MapExtPDX.MapExt.MapSizePatchSet
@@ -41,11 +40,11 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
                 inMapCorner = -0.5f * inMapSize;
                 inWorldCorner = -0.5f * inWorldSize;
 
-                patches++;                
+                patches++;
             }
 
             if (patches != 0)
-            {                
+            {
 #if DEBUG
                 Info($"FinalizeTerrainData Prefix applied {patches} patch(es). (Expected value: {inMapSize} , {inMapCorner} , {inWorldSize} , {inWorldCorner})");
 #endif

@@ -4,10 +4,8 @@
 // When using this part of the code, please clearly credit [Project Name] and the author.
 
 // --- LOCALE ---
-using System.Collections.Generic;
 using Colossal;
-using Game.Settings;
-using Unity.Entities.UniversalDelegates;
+using System.Collections.Generic;
 
 namespace MapExtPDX
 {
@@ -80,6 +78,10 @@ namespace MapExtPDX
                 { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.DisableLoadGameValidation)), "禁止游戏读取存档验证" },
                 { m_Setting.GetOptionDescLocaleID(nameof(ModSettings.DisableLoadGameValidation)), "警告！默认(不勾选)为启用游戏读取存档验证，以防止错误设置地图尺寸模式而读取不同尺寸的存档造成坏档！\r\n  该选项勾选后将取消验证，仅用于使用旧版MapExt mod特殊尺寸模式而无法正确识别的情况。使用旧版存档请务必确认'地图尺寸模式'是否设置正确，否则可能坏档！ \r\n 务必在使用该功能前备份您的存档！" },
 
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.ApplyAirwayRegenerate)), "应用飞行航道重建" },
+                { m_Setting.GetOptionGroupLocaleID(ModSettings.kAirwayGroup), "飞行航道重建工具" },
+                { m_Setting.GetOptionDescLocaleID(nameof(ModSettings.ApplyAirwayRegenerate)), "可以在添加飞行航道外部连接点后，点击此处使之生效." },
+                { m_Setting.GetOptionWarningLocaleID(nameof(ModSettings.ApplyAirwayRegenerate)), "所有飞行航道将立即重建。" },
 
 
             };
