@@ -4,355 +4,275 @@
 // When using this part of the code, please clearly credit [Project Name] and the author.
 
 using Colossal.Serialization.Entities;
-using Game;
-using Game.Common;
 using Game.Net;
-using Game.Pathfind;
-using Game.Prefabs;
-using Game.SceneFlow;
 using Game.Serialization;
 using Game.Simulation;
 using HarmonyLib;
+using System;
 using System.Reflection;
 using Unity.Burst;
 using Unity.Collections;
 using Unity.Entities;
 using Unity.Jobs;
 using Unity.Mathematics;
+using UnityEngine;
 
 namespace MapExtPDX.MapExt.MapSizePatchSet
 {
-    [HarmonyPatch(typeof(AirwaySystem), "OnUpdate")]
+    [HarmonyPatch(typeof(AirwaySystem))]
     public static class AirwaySystem_OnUpdate_Patch
     {
-        // --- THE SESSION LOCK ---
-        public static bool s_HasRunThisSession = false;
+        // A "session lock" to ensure logic runs only once per game load/new game.
+        private static bool s_HasRunThisSession = false;
 
-        // --- REFLECTION CACHE ---
-        // Caching reflection info is crucial for performance. 
+        // --- Reflection Fields - Meticulously defined to match the source code ---
+
+        // Fields for AirwaySystem
         private static readonly FieldInfo m_AirwayDataField = AccessTools.Field(typeof(AirwaySystem), "m_AirwayData");
         private static readonly FieldInfo m_LoadGameSystemField = AccessTools.Field(typeof(AirwaySystem), "m_LoadGameSystem");
         private static readonly FieldInfo m_TerrainSystemField = AccessTools.Field(typeof(AirwaySystem), "m_TerrainSystem");
         private static readonly FieldInfo m_WaterSystemField = AccessTools.Field(typeof(AirwaySystem), "m_WaterSystem");
-        private static readonly FieldInfo m_PrefabQueryField = AccessTools.Field(typeof(AirwaySystem), "m_PrefabQuery");
-        private static readonly FieldInfo m_AirplaneConnectionQueryField = AccessTools.Field(typeof(AirwaySystem), "m_AirplaneConnectionQuery");
-        private static readonly FieldInfo m_OldConnectionQueryField = AccessTools.Field(typeof(AirwaySystem), "m_OldConnectionQuery");
+
+        // Properties for AirwayHelpers.AirwayData
+        private static readonly PropertyInfo m_HelicopterMapProperty = AccessTools.Property(typeof(AirwayHelpers.AirwayData), "helicopterMap");
+        private static readonly PropertyInfo m_AirplaneMapProperty = AccessTools.Property(typeof(AirwayHelpers.AirwayData), "airplaneMap");
+
+        // Fields for AirwayHelpers.AirwayMap
+        private static readonly FieldInfo m_GridSizeField = AccessTools.Field(typeof(AirwayHelpers.AirwayMap), "m_GridSize");
+        private static readonly FieldInfo m_CellSizeField = AccessTools.Field(typeof(AirwayHelpers.AirwayMap), "m_CellSize");
+        private static readonly FieldInfo m_PathHeightField = AccessTools.Field(typeof(AirwayHelpers.AirwayMap), "m_PathHeight");
+        private static readonly FieldInfo m_EntitiesField = AccessTools.Field(typeof(AirwayHelpers.AirwayMap), "m_Entities");
+
         private static readonly PropertyInfo DependencyProperty = AccessTools.Property(typeof(SystemBase), "Dependency");
 
-        // --- AirwayMap Internal Fields ---
-        // reflection to read the private m_CellSize for comparison.
-        private static readonly FieldInfo am_CellSizeField = AccessTools.Field(typeof(AirwayHelpers.AirwayMap), "m_CellSize");
 
-        /// <summary>
-        /// This Harmony Prefix takes complete control of the AirwaySystem's OnUpdate on the first frame.
-        /// </summary>
+        // This runs BEFORE the original OnUpdate. Its only job is to manage the session lock.
+        [HarmonyPatch("OnUpdate")]
         [HarmonyPrefix]
-        public static bool Prefix(AirwaySystem __instance)
+        public static void Prefix(AirwaySystem __instance)
         {
-            
-            // --- Log Header ---
-            Mod.Info("=====================================================");
-            Mod.Info("[Airway Patch] First frame detected. Intercepting OnUpdate.");
-
-            var loadGameSystem = (LoadGameSystem)m_LoadGameSystemField.GetValue(__instance);
-            var purpose = loadGameSystem.context.purpose;
-            // --- DIAGNOSTIC LOG ---
-            Mod.Info($"--- AirwaySystem.OnUpdate called. Purpose: {purpose}, SessionLock: {s_HasRunThisSession} ---");
-
-            // ===== THE CRITICAL, PURPOSE-BASED GUARD CLAUSE =====
-            if (purpose == Purpose.Cleanup)
+            try
             {
-                Mod.Info("[Airway Patch] Purpose is 'Cleanup'. Letting original method run. No action taken.");
-                return true; // Let the original OnUpdate run for cleanup.
-            }
+                var loadGameSystem = (LoadGameSystem)m_LoadGameSystemField.GetValue(__instance);
 
-            // check our session lock. If already run, do nothing.
+                // When exiting to main menu, the game runs a "Cleanup" cycle. use this to reset session lock.
+                if (loadGameSystem.context.purpose == Purpose.Cleanup)
+                {
+                    if (s_HasRunThisSession)
+                    {
+                        Mod.Info("[Airway Patch] Game session is ending (Cleanup). Resetting session lock.");
+                        s_HasRunThisSession = false;
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                Mod.Error(e, "Error in AirwaySystem OnUpdate Prefix!");
+            }
+        }
+
+        // This runs AFTER the original OnUpdate. 主要逻辑.
+        [HarmonyPatch("OnUpdate")]
+        [HarmonyPostfix]
+        public static void Postfix(AirwaySystem __instance)
+        {
+            // --- Guard Clause: If already run this session, do nothing ---
             if (s_HasRunThisSession)
             {
-                return true; // work is done for this session.
-            }
-
-            // --- Log Header ---
-            Mod.Info("=====================================================");
-            Mod.Info($"[Airway Patch] First '{purpose}' frame detected. Intercepting OnUpdate.");
-
-            // Decide action based on purpose
-            if (purpose == Purpose.LoadGame || purpose == Purpose.LoadMap)
-            {
-                Mod.Info($"[Airway Patch] Context: LOAD ({purpose}). Preparing to destroy old grid.");
-
-                DestroyExistingAirwayEntities(__instance);
-            }
-            else // This will be NewGame or NewMap
-            {
-                Mod.Info($"[Airway Patch] Context: NEW ({purpose}). Disposing template data.");
-                var oldData = (AirwayHelpers.AirwayData)m_AirwayDataField.GetValue(__instance);
-                oldData.Dispose();
-            }
-
-            // Generate the new airways with custom logic
-            GenerateCustomAirways(__instance);
-
-            // Engage the session lock so this logic doesn't run again until exit to menu and reset.
-            s_HasRunThisSession = true;
-            Mod.Info("[Airway Patch] All operations complete. Session lock engaged.");
-            Mod.Info("=====================================================");
-
-            // VERY IMPORTANT: Return false to PREVENT the original OnUpdate from running.
-            return false;
-        }
-
-        /// <summary>
-        /// Finds and destroys all entities created by a previous AirwaySystem run.
-        /// This is critical for loading a save file.
-        /// </summary>
-        private static void DestroyExistingAirwayEntities(AirwaySystem __instance)
-        {
-            Mod.Info("[Airway Patch] Destroying old airway entities...");
-            var oldData = (AirwayHelpers.AirwayData)m_AirwayDataField.GetValue(__instance);
-            int destroyedCount = 0;
-
-            // Destroy Helicopter Entities
-            if (!oldData.helicopterMap.entities.IsCreated)
-            {
-                Mod.Warn("[Airway Patch] Helicopter entities array was not created. Nothing to destroy.");
-            }
-            else
-            {
-                foreach (var entity in oldData.helicopterMap.entities)
-                {
-                    if (__instance.EntityManager.Exists(entity))
-                    {
-                        __instance.EntityManager.DestroyEntity(entity);
-                        destroyedCount++;
-                    }
-                }
-            }
-
-            // Destroy Airplane Entities
-            if (!oldData.airplaneMap.entities.IsCreated)
-            {
-                Mod.Warn("[Airway Patch] Airplane entities array was not created. Nothing to destroy.");
-            }
-            else
-            {
-                foreach (var entity in oldData.airplaneMap.entities)
-                {
-                    if (__instance.EntityManager.Exists(entity))
-                    {
-                        __instance.EntityManager.DestroyEntity(entity);
-                        destroyedCount++;
-                    }
-                }
-            }
-
-            oldData.Dispose(); // Dispose the old native arrays and data structure
-            Mod.Info($"[Airway Patch] Destroyed {destroyedCount} old airway entities and disposed old data.");
-        }
-
-
-        /// <summary>
-        /// This is a meticulous 1-to-1 recreation of the original OnUpdate logic,
-        /// but using custom map sizes.
-        /// </summary>
-        private static void GenerateCustomAirways(AirwaySystem __instance)
-        {
-            Mod.Info("[Airway Patch] Starting custom airway generation process...");
-
-            // --- 1. Define Custom Sizes & Create New AirwayData ---
-            float mapSize = PatchManager.CurrentCoreValue * 14336f;
-            float helicopterCellSize = mapSize / 29f;
-            float airplaneCellSize = helicopterCellSize * 2f;
-
-            Mod.Info($"[Airway Patch] Using custom sizes: Heli Cell={helicopterCellSize}, Plane Cell={airplaneCellSize}");
-
-            var helicopterMap = new AirwayHelpers.AirwayMap(new int2(28, 28), helicopterCellSize, 200f, Allocator.Persistent);
-            var airplaneMap = new AirwayHelpers.AirwayMap(new int2(14, 14), airplaneCellSize, 1000f, Allocator.Persistent);
-            var newAirwayData = new AirwayHelpers.AirwayData(helicopterMap, airplaneMap);
-
-            // Overwrite the system's m_AirwayData with new, correctly-sized one.
-            m_AirwayDataField.SetValue(__instance, newAirwayData);
-            Mod.Info("[Airway Patch] New custom AirwayData created and set in system.");
-
-            // --- 2. Replicate Original OnUpdate Logic ---
-            var prefabQuery = (EntityQuery)m_PrefabQueryField.GetValue(__instance);
-
-            using (var nativeArray = prefabQuery.ToEntityArray(Allocator.TempJob))
-            {
-                if (nativeArray.Length == 0)
-                {
-                    Mod.Warn("[Airway Patch] Prefab for 'Airway Lane' not found. Cannot generate airways.");
-                    return;
-                }
-
-                Entity prefabEntity = nativeArray[0];
-                var componentData = __instance.EntityManager.GetComponentData<NetLaneArchetypeData>(prefabEntity);
-
-                Mod.Info("[Airway Patch] Checking for airplane connections to update...");
-                var airplaneConnectionQuery = (EntityQuery)m_AirplaneConnectionQueryField.GetValue(__instance);
-
-                if (!airplaneConnectionQuery.IsEmptyIgnoreFilter)
-                {
-                    int count = airplaneConnectionQuery.CalculateEntityCount();
-                    __instance.EntityManager.AddComponent<Updated>(airplaneConnectionQuery);
-                    Mod.Info($"[Airway Patch] Found {count} airplane connections. Added <Updated> component to notify other systems.");
-                }
-                else
-                {
-                    Mod.Info("[Airway Patch] No active airplane connections found to update.");
-                }
-
-                // Create the blank entities that the job will populate.
-                __instance.EntityManager.CreateEntity(componentData.m_LaneArchetype, newAirwayData.helicopterMap.entities);
-                __instance.EntityManager.CreateEntity(componentData.m_LaneArchetype, newAirwayData.airplaneMap.entities);
-                Mod.Info($"[Airway Patch] Created {newAirwayData.helicopterMap.entities.Length} blank helicopter and {newAirwayData.airplaneMap.entities.Length} blank airplane entities.");
-
-                // Get systems and data exactly like the original.
-                var terrainSystem = (TerrainSystem)m_TerrainSystemField.GetValue(__instance);
-                var waterSystem = (WaterSystem)m_WaterSystemField.GetValue(__instance);
-                var heightData = terrainSystem.GetHeightData(true);
-                var surfaceData = waterSystem.GetSurfaceData(out var deps);
-
-                var prefabRefLookup = __instance.GetComponentLookup<PrefabRef>(false);
-                var laneLookup = __instance.GetComponentLookup<Lane>(false);
-                var curveLookup = __instance.GetComponentLookup<Curve>(false);
-                var connectionLaneLookup = __instance.GetComponentLookup<Game.Net.ConnectionLane>(false);
-
-                // --- 3. Setup and Schedule Jobs, mirroring the original ---
-                var helicopterJob = new GenerateAirwayLanesJob
-                {
-                    m_AirwayMap = newAirwayData.helicopterMap,
-                    m_Prefab = prefabEntity,
-                    m_RoadType = RoadTypes.Helicopter,
-                    m_TerrainHeightData = heightData,
-                    m_WaterSurfaceData = surfaceData,
-                    m_PrefabRefData = prefabRefLookup,
-                    m_LaneData = laneLookup,
-                    m_CurveData = curveLookup,
-                    m_ConnectionLaneData = connectionLaneLookup
-                };
-
-                // Combine dependencies and schedule the first job.
-                var currentDependency = (JobHandle)AccessTools.Property(typeof(SystemBase), "Dependency").GetValue(__instance);
-                var helicopterJobHandle = helicopterJob.Schedule(newAirwayData.helicopterMap.entities.Length, 4, JobHandle.CombineDependencies(currentDependency, deps));
-
-
-                var airplaneJob = new GenerateAirwayLanesJob
-                {
-                    m_AirwayMap = newAirwayData.airplaneMap,
-                    m_Prefab = prefabEntity,
-                    m_RoadType = RoadTypes.Airplane,
-                    m_TerrainHeightData = heightData,
-                    m_WaterSurfaceData = surfaceData,
-                    m_PrefabRefData = prefabRefLookup,
-                    m_LaneData = laneLookup,
-                    m_CurveData = curveLookup,
-                    m_ConnectionLaneData = connectionLaneLookup
-                };
-
-                // Chain the second job to the first one.
-                var airplaneJobHandle = airplaneJob.Schedule(newAirwayData.airplaneMap.entities.Length, 4, helicopterJobHandle);
-
-                Mod.Info("[Airway Patch] Generation jobs scheduled successfully.");
-
-                // --- 4. Finalize Dependencies ---
-                terrainSystem.AddCPUHeightReader(airplaneJobHandle);
-                waterSystem.AddSurfaceReader(airplaneJobHandle);
-
-                // Safely set the final dependency back to the system using reflection.
-                AccessTools.Property(typeof(SystemBase), "Dependency").SetValue(__instance, airplaneJobHandle);
-            } // nativeArray is automatically disposed here by the 'using' block.
-        }
-
-        public static void RequestManualRegeneration()
-        {
-            // 安全检查：确保玩家当前在游戏中，而不是在主菜单或加载界面。
-            if (GameManager.instance.gameMode != GameMode.Game)
-            {
-                Mod.Info("[Airway Patch] Manual regeneration requested, but not in an active game session. Request ignored.");
                 return;
             }
 
-            // 如果已经在游戏中，我们就可以安全地重置会话锁。
-            Mod.Info("[Airway Patch] Manual regeneration requested via UI. Resetting session lock.");
-            s_HasRunThisSession = false;
+            try
+            {
+                Mod.Info("=================================================");
+                Mod.Info("[Airway Patch Postfix] Starting airway check...");
+
+                // --- Get necessary systems and data using reflection ---
+                var loadGameSystem = (LoadGameSystem)m_LoadGameSystemField.GetValue(__instance);
+                var terrainSystem = (TerrainSystem)m_TerrainSystemField.GetValue(__instance);
+                var waterSystem = (WaterSystem)m_WaterSystemField.GetValue(__instance);
+
+                var purpose = loadGameSystem.context.purpose;
+                Mod.Info($"[Airway Patch Postfix] Current game purpose: {purpose}");
+
+                // only care about modifying airways in a real game or map editor session.
+                if (purpose != Purpose.NewGame && purpose != Purpose.LoadGame && purpose != Purpose.NewMap && purpose != Purpose.LoadMap)
+                {
+                    Mod.Info($"[Airway Patch Postfix] Purpose is not relevant. Skipping.");
+                    return;
+                }
+
+                // Get the AirwayData struct from the system instance
+                object airwayDataObject = m_AirwayDataField.GetValue(__instance);
+
+                // Get the helicopterMap struct (as a boxed object) to check its size
+                object heliMapObject = m_HelicopterMapProperty.GetValue(airwayDataObject);
+                float currentCellSize = (float)m_CellSizeField.GetValue(heliMapObject);
+
+                // --- Define custom target size ---
+                float mapSize = 14336f * PatchManager.CurrentCoreValue;
+                float targetHeliCellSize = mapSize / 29f;
+
+                Mod.Info($"[Airway Patch Postfix] Current CellSize: {currentCellSize}, Target CellSize: {targetHeliCellSize}");
+
+                // --- The Core Logic: Check if modification is needed ---
+                if (Mathf.Approximately(currentCellSize, targetHeliCellSize))
+                {
+                    Mod.Info("[Airway Patch Postfix] Sizes already match. No action needed. Engaging session lock.");
+                    s_HasRunThisSession = true;
+                    return;
+                }
+
+                Mod.Info("[Airway Patch Postfix] Size mismatch detected. Rebuilding airway data in memory and scheduling update job...");
+
+                // --- Rebuild AirwayData in memory with new sizes but OLD entities ---
+                // not creating or destroying anything, just creating new C# structs.
+
+                // 1. Get all data from the OLD helicopter map
+                object oldHeliMapObject = m_HelicopterMapProperty.GetValue(airwayDataObject);
+                int2 oldHeliGridSize = (int2)m_GridSizeField.GetValue(oldHeliMapObject);
+                float oldHeliPathHeight = (float)m_PathHeightField.GetValue(oldHeliMapObject);
+                var oldHeliEntities = (NativeArray<Entity>)m_EntitiesField.GetValue(oldHeliMapObject);
+
+                // 2. Get all data from the OLD airplane map
+                object oldAirplaneMapObject = m_AirplaneMapProperty.GetValue(airwayDataObject);
+                int2 oldAirplaneGridSize = (int2)m_GridSizeField.GetValue(oldAirplaneMapObject);
+                float oldAirplanePathHeight = (float)m_PathHeightField.GetValue(oldAirplaneMapObject);
+                var oldAirplaneEntities = (NativeArray<Entity>)m_EntitiesField.GetValue(oldAirplaneMapObject);
+                float targetAirplaneCellSize = targetHeliCellSize * 2f;
+
+                // 3. Create NEW map structs with the new sizes
+                // pass Allocator.None because NOT allocating new arrays. The constructor will just store our references.
+                // CORRECTION: The constructor *always* allocates. So it must dispose the old and create new with proper allocator.
+                // re-read AirwayMap constructor. It takes an allocator. So it must provide one.
+                var newHeliMap = new AirwayHelpers.AirwayMap(oldHeliGridSize, targetHeliCellSize, oldHeliPathHeight, Allocator.Persistent);
+                newHeliMap.entities.CopyFrom(oldHeliEntities); // Copy entity references
+
+                var newAirplaneMap = new AirwayHelpers.AirwayMap(oldAirplaneGridSize, targetAirplaneCellSize, oldAirplanePathHeight, Allocator.Persistent);
+                newAirplaneMap.entities.CopyFrom(oldAirplaneEntities); // Copy entity references
+
+                // 4. Create a new top-level data struct
+                var newAirwayData = new AirwayHelpers.AirwayData(newHeliMap, newAirplaneMap);
+
+                // 5. Replace the system's data struct with new one using reflection
+                m_AirwayDataField.SetValue(__instance, newAirwayData);
+
+                Mod.Info("[Airway Patch Postfix] AirwayData in memory replaced successfully.");
+
+                // --- Schedule the job to update the curve positions of existing entities ---
+                var updateCurvesJob = new UpdateAirwayCurvesJob
+                {
+                    m_HelicopterMap = newHeliMap,
+                    m_AirplaneMap = newAirplaneMap,
+                    m_TerrainHeightData = terrainSystem.GetHeightData(true),
+                    m_WaterSurfaceData = waterSystem.GetSurfaceData(out var waterDep),
+                    m_CurveData = __instance.GetComponentLookup<Curve>(false) // isReadOnly = false
+                };
+
+                // 1. GET the current dependency using reflection.
+                JobHandle currentDependency = (JobHandle)DependencyProperty.GetValue(__instance);
+
+                // 2. Combine it with the dependencies for our job.
+                JobHandle combinedDeps = JobHandle.CombineDependencies(currentDependency, waterDep);
+
+                // 3. Schedule our job.
+                JobHandle updateJobHandle = updateCurvesJob.Schedule(combinedDeps);
+
+                // These calls are the same
+                terrainSystem.AddCPUHeightReader(updateJobHandle);
+                waterSystem.AddSurfaceReader(updateJobHandle);
+
+                // 4. SET the system's dependency to new job's handle using reflection.
+                DependencyProperty.SetValue(__instance, updateJobHandle);
+
+                Mod.Info("[Airway Patch Postfix] Update job scheduled. Engaging session lock.");
+                s_HasRunThisSession = true;
+            }
+            catch (Exception e)
+            {
+                Mod.Error(e, "A critical error occurred in AirwaySystem OnUpdate Postfix!");
+            }
+            finally
+            {
+                Mod.Info("=================================================\n");
+            }
         }
 
-
+        // A lightweight job that ONLY updates the Curve component of existing entities.
         [BurstCompile]
-        private struct GenerateAirwayLanesJob : IJobParallelFor
+        private struct UpdateAirwayCurvesJob : IJob
         {
             [ReadOnly]
-            public AirwayHelpers.AirwayMap m_AirwayMap;
-
+            public AirwayHelpers.AirwayMap m_HelicopterMap;
             [ReadOnly]
-            public Entity m_Prefab;
-
-            [ReadOnly]
-            public RoadTypes m_RoadType;
-
+            public AirwayHelpers.AirwayMap m_AirplaneMap;
             [ReadOnly]
             public TerrainHeightData m_TerrainHeightData;
-
             [ReadOnly]
             public WaterSurfaceData m_WaterSurfaceData;
 
             [NativeDisableParallelForRestriction]
-            public ComponentLookup<PrefabRef> m_PrefabRefData;
-
-            [NativeDisableParallelForRestriction]
-            public ComponentLookup<Lane> m_LaneData;
-
-            [NativeDisableParallelForRestriction]
             public ComponentLookup<Curve> m_CurveData;
 
-            [NativeDisableParallelForRestriction]
-            public ComponentLookup<Game.Net.ConnectionLane> m_ConnectionLaneData;
-
-            public void Execute(int entityIndex)
+            public void Execute()
             {
-                AirwayHelpers.LaneDirection direction;
-                int2 cellIndex = this.m_AirwayMap.GetCellIndex(entityIndex, out direction);
-                switch (direction)
+                // Update all helicopter lanes
+                for (int i = 0; i < m_HelicopterMap.entities.Length; i++)
                 {
-                    case AirwayHelpers.LaneDirection.HorizontalZ:
-                        this.CreateLane(entityIndex, cellIndex, new int2(cellIndex.x, cellIndex.y + 1));
-                        break;
-                    case AirwayHelpers.LaneDirection.HorizontalX:
-                        this.CreateLane(entityIndex, cellIndex, new int2(cellIndex.x + 1, cellIndex.y));
-                        break;
-                    case AirwayHelpers.LaneDirection.Diagonal:
-                        this.CreateLane(entityIndex, cellIndex, cellIndex + 1);
-                        break;
-                    case AirwayHelpers.LaneDirection.DiagonalCross:
-                        this.CreateLane(entityIndex, new int2(cellIndex.x + 1, cellIndex.y), new int2(cellIndex.x, cellIndex.y + 1));
-                        break;
+                    UpdateLane(i, m_HelicopterMap);
+                }
+
+                // Update all airplane lanes
+                for (int i = 0; i < m_AirplaneMap.entities.Length; i++)
+                {
+                    UpdateLane(i, m_AirplaneMap);
                 }
             }
 
-            private void CreateLane(int entityIndex, int2 startNode, int2 endNode)
+            private void UpdateLane(int entityIndex, AirwayHelpers.AirwayMap map)
             {
-                Entity entity = this.m_AirwayMap.entities[entityIndex];
-                Lane value = default(Lane);
-                value.m_StartNode = this.m_AirwayMap.GetPathNode(startNode);
-                value.m_MiddleNode = new PathNode(entity, 1);
-                value.m_EndNode = this.m_AirwayMap.GetPathNode(endNode);
-                float3 nodePosition = this.m_AirwayMap.GetNodePosition(startNode);
-                float3 nodePosition2 = this.m_AirwayMap.GetNodePosition(endNode);
-                nodePosition.y += WaterUtils.SampleHeight(ref this.m_WaterSurfaceData, ref this.m_TerrainHeightData, nodePosition);
-                nodePosition2.y += WaterUtils.SampleHeight(ref this.m_WaterSurfaceData, ref this.m_TerrainHeightData, nodePosition2);
+                Entity entity = map.entities[entityIndex];
+                if (entity == Entity.Null || !m_CurveData.HasComponent(entity))
+                {
+                    return;
+                }
+
+                AirwayHelpers.LaneDirection direction;
+                int2 cellIndex = map.GetCellIndex(entityIndex, out direction);
+
+                int2 startNode, endNode;
+                switch (direction)
+                {
+                    case AirwayHelpers.LaneDirection.HorizontalZ:
+                        startNode = cellIndex;
+                        endNode = new int2(cellIndex.x, cellIndex.y + 1);
+                        break;
+                    case AirwayHelpers.LaneDirection.HorizontalX:
+                        startNode = cellIndex;
+                        endNode = new int2(cellIndex.x + 1, cellIndex.y);
+                        break;
+                    case AirwayHelpers.LaneDirection.Diagonal:
+                        startNode = cellIndex;
+                        endNode = cellIndex + 1;
+                        break;
+                    case AirwayHelpers.LaneDirection.DiagonalCross:
+                        startNode = new int2(cellIndex.x + 1, cellIndex.y);
+                        endNode = new int2(cellIndex.x, cellIndex.y + 1);
+                        break;
+                    default:
+                        return; // Should not happen
+                }
+
+                float3 nodePosition = map.GetNodePosition(startNode);
+                float3 nodePosition2 = map.GetNodePosition(endNode);
+                nodePosition.y += WaterUtils.SampleHeight(ref m_WaterSurfaceData, ref m_TerrainHeightData, nodePosition);
+                nodePosition2.y += WaterUtils.SampleHeight(ref m_WaterSurfaceData, ref m_TerrainHeightData, nodePosition2);
+
                 Curve value2 = default(Curve);
                 value2.m_Bezier = NetUtils.StraightCurve(nodePosition, nodePosition2);
                 value2.m_Length = math.distance(value2.m_Bezier.a, value2.m_Bezier.d);
-                Game.Net.ConnectionLane value3 = default(Game.Net.ConnectionLane);
-                value3.m_AccessRestriction = Entity.Null;
-                value3.m_Flags = ConnectionLaneFlags.AllowMiddle | ConnectionLaneFlags.Airway;
-                value3.m_TrackTypes = TrackTypes.None;
-                value3.m_RoadTypes = this.m_RoadType;
-                this.m_PrefabRefData[entity] = new PrefabRef(this.m_Prefab);
-                this.m_LaneData[entity] = value;
-                this.m_CurveData[entity] = value2;
-                this.m_ConnectionLaneData[entity] = value3;
+
+                m_CurveData[entity] = value2;
             }
         }
     }

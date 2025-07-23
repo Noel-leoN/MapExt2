@@ -3,7 +3,6 @@
 // See LICENSE in the project root for full license information.
 // When using this part of the code, please clearly credit [Project Name] and the author.
 
-
 // using UnityEngine; // For Debug.Log
 using Game.Simulation;
 using Game.UI.Tooltip;

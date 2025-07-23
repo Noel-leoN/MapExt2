@@ -14,7 +14,6 @@ using Unity.Collections;
 using Unity.Entities;
 using Unity.Jobs;
 using Unity.Mathematics;
-using Game.UI.InGame;
 
 namespace MapExtPDX.MapExt.ReBurstSystemModeA
 {

@@ -1,6 +1,12 @@
-﻿### 2.0.2
+﻿### 2.0.4
+  - Fix network color infoview of residential suitability.
+
+### 2.0.3
+  - Fix bug with multiple airport direct connections.
+
+### 2.0.2
   - Due to potential lag issues, temporarily removed the repairs for things like groundwater pumping stations and groundwater power stations.
-  - fixed a bug in the pollution calculation.
+  - Fixed bugs in the pollution calculation.
 
 ### 2.0.1
   - Airway-pathfinding have been repaired.

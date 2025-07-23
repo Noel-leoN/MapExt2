@@ -7,7 +7,6 @@ using Game.City;
 using Game.Companies;
 using Game.Economy;
 using Game.Net;
-using Game.Objects;
 using Game.Prefabs;
 using Game.Simulation;
 using Unity.Collections;

@@ -26,10 +26,11 @@ namespace MapExtPDX
         None   // Vanilla = 1
     }
 
-    [FileLocation(nameof(MapExtPDX))]
+    //[FileLocation(nameof(MapExtPDX))]
+    [FileLocation("ModsSettings/" + Mod.ModName + "/" + Mod.ModName)]
     [SettingsUITabOrder(kMapSizeModeTab, kPerformanceToolTab, kMiscTab, kDebugTab)]
-    [SettingsUIGroupOrder(kMainModeGroup, kResetGroup, kInfoGroup, kPerformanceToolGroup, kMiscGroup, kAirwayGroup, kDebugGroup)]
-    [SettingsUIShowGroupName(kMainModeGroup, kResetGroup, kInfoGroup, kPerformanceToolGroup, kMiscGroup, kAirwayGroup, kDebugGroup)]
+    [SettingsUIGroupOrder(kMainModeGroup, kResetGroup, kInfoGroup, kPerformanceToolGroup, kMiscGroup, /*kAirwayGroup,*/ kDebugGroup)]
+    [SettingsUIShowGroupName(kMainModeGroup, kResetGroup, kInfoGroup, kPerformanceToolGroup, kMiscGroup, /*kAirwayGroup,*/ kDebugGroup)]
 
     public class ModSettings : Game.Modding.ModSetting
     {
@@ -44,7 +45,7 @@ namespace MapExtPDX
         public const string kPerformanceToolGroup = "PerformanceTool";
         public const string kMiscGroup = "Misc";
         public const string kDebugGroup = "Debug";
-        public const string kAirwayGroup = "AirwayRegenerate";
+        //public const string kAirwayGroup = "AirwayRegenerate";
         //public const string kPatchSettingsGroup = "PatchSettings"; // New group for our patch controls
 
         // Original group constants (can be removed if not used)
@@ -128,8 +129,6 @@ namespace MapExtPDX
         // public string IsModSettingCoreValueMatch => PatchManager.CurrentCoreValue == PatchManager.LoadedSaveCoreValue
         //  ? $"Loaded Save and MapSize Mode Setting match up" : "Loaded Save and Mode Setting is conflicting!";
 
-
-
         public override void SetDefaults()
         {
             // 设置默认的补丁模式
@@ -159,7 +158,7 @@ namespace MapExtPDX
                 case PatchModeSetting.ModeA: return "ModeA 57km (4x4)";
                 case PatchModeSetting.ModeB: return "ModeB 28km (2x2)";
                 case PatchModeSetting.ModeC: return "ModeC 114km (8x8) (not Recommand)";
-                case PatchModeSetting.ModeD: return "ModeD 229km (16x16) (not Recommand)";
+                case PatchModeSetting.ModeD: return "ModeD 229km (16x16) (Test Only!)";
                 case PatchModeSetting.None: return "None 14km (Vanilla)";
                 default: return mode.ToString();
             }
@@ -243,6 +242,7 @@ namespace MapExtPDX
         //[SettingsUIDisableByConditionAttribute(typeof(ModSettings), nameof(IsPatchUnAvailable))]
         //public bool NoRandomTraffic { get; set; }
 
+        /*
         [SettingsUISection(kMiscTab, kAirwayGroup)]
         [SettingsUIButton]
         [SettingsUIConfirmation]
@@ -251,10 +251,11 @@ namespace MapExtPDX
         {
             set
             {
-                AirwaySystem_OnUpdate_Patch.RequestManualRegeneration();
-                Mod.Info($"ApplyAirwayRegenerate button clicked. SessionLock change to {AirwaySystem_OnUpdate_Patch.s_HasRunThisSession}");
+                //AirwaySystem_OnUpdate_Patch.RequestManualRegeneration();
+                //Mod.Info($"ApplyAirwayRegenerate button clicked. SessionLock change to {AirwaySystem_OnUpdate_Patch.s_HasRunThisSession}");
             }
         }
+        */
 
         [SettingsUISection(kMiscTab, kMiscGroup)]
         [SettingsUIDisableByConditionAttribute(typeof(ModSettings), nameof(IsPatchUnAvailable))]  // 暂时禁用

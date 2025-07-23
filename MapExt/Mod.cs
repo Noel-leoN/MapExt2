@@ -84,7 +84,7 @@ namespace MapExtPDX
             GameManager.instance.localizationManager.AddSource("zh-HANS", new LocaleHANS(m_Setting));
             // 2.2 读取已保存设置
             // Load saved settings
-            Colossal.IO.AssetDatabase.AssetDatabase.global.LoadSettings(nameof(ModName), m_Setting, new ModSettings(this));
+            Colossal.IO.AssetDatabase.AssetDatabase.global.LoadSettings(Mod.ModName, m_Setting, new ModSettings(this));
             Info("Settings initialized");
 
             // Harmony.DEBUG = true;
@@ -98,10 +98,12 @@ namespace MapExtPDX
             Info("PatchManager初始化完成应用！(所有Transpiler补丁完成执行；所有Pre/Postfix将在方法调用时执行.)");
 
             // 3.1 Harmony修复AirwaySystem
+             // World.DefaultGameObjectInjectionWorld.GetOrCreateSystemManaged<Game.Net.AirwaySystem>().Enabled = false;
+            // updateSystem.UpdateAfter<AirwaySystemRe>(SystemUpdatePhase.Deserialize); // 弃用
             _globalPatcher.CreateClassProcessor(typeof(AirwaySystem_OnUpdate_Patch)).Patch();
             Info($"AirwaySystem补丁(全局并行方式) {nameof(AirwaySystem_OnUpdate_Patch)}已应用.");
-            _globalPatcher.CreateClassProcessor(typeof(SessionManager)).Patch();// OnUpdate执行标志位
-            Info($"AirwaySystem辅助补丁(全局并行方式) {nameof(SessionManager)}已应用.");
+            //_globalPatcher.CreateClassProcessor(typeof(SessionManager)).Patch();// OnUpdate执行标志位
+            //Info($"AirwaySystem辅助补丁(全局并行方式) {nameof(SessionManager)}已应用.");
 
             // 4. 执行全局并行补丁
             Info("全局并行方式补丁正在逐条执行...");

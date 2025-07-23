@@ -7,8 +7,8 @@
 		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 		<AssemblyName>MapExt2</AssemblyName>
 		<RootNamespace>MapExtPDX</RootNamespace>
-		<Version>2.0.2</Version>		
-		<Description>MapSize 28/57/114/229km/vanilla</Description>
+		<Version>2.0.4</Version>		
+		<Description>MapSize 28/57/114km</Description>
 		
 		<!--The file where mod information which is required for publishing mod on PDX mods are stored-->
 		<PublishConfigurationPath>Properties\PublishConfiguration.xml</PublishConfigurationPath>
@@ -32,7 +32,6 @@
 	<Import Project="$([System.Environment]::GetEnvironmentVariable('CSII_TOOLPATH', 'EnvironmentVariableTarget.User'))\Mod.targets" />
 	<ItemGroup>
 	  <Compile Remove="MapExt\ReBurstSystem\ReBurstJobPak_ModeA_57km\ReBurstCellMapRef2\CitizenPathfindSetupRe.cs" />
-	  <Compile Remove="MapExt\ReBurstSystem\ReBurstJobPak_ModeA_57km\ReBurstCellMapSub\NetColorSystem.cs" />
 	  <Compile Remove="MapExt\ReBurstSystem\ReBurstJobPak_ModeB_28km\ReBurstCellMapRef2\CitizenPathfindSetupRe.cs" />
 	  <Compile Remove="MapExt\ReBurstSystem\ReBurstJobPak_ModeC_114km\ReBurstCellMapRef2\CitizenPathfindSetupRe.cs" />
 	  <Compile Remove="MapExt\ReBurstSystem\ReBurstJobPak_ModeD_229km\ReBurstCellMapRef2\CitizenPathfindSetupRe.cs" />
@@ -41,6 +40,7 @@
 
 	<ItemGroup>
 	  <None Remove="Properties\0-ebfda6dc-6d4e-4c49-9b7f-8b26b8c9b97d.png" />
+	  <None Remove="Properties\Thumbnail.bak.png" />
 	</ItemGroup>
 
 	<ItemGroup>

@@ -35,7 +35,7 @@ namespace MapExtPDX.MapExt.ReBurstSystemModeA
         public void Execute(int index)
         {
             // 修补输入值；
-            m_CellSize = 57344f;
+            m_CellSize = 57344f/128;
             // 原始代码
             float3 cellCenter = GetCellCenter(index, AvailabilityInfoToGridSystem.kTextureSize);
             NetIterator netIterator = default;
@@ -104,14 +104,14 @@ namespace MapExtPDX.MapExt.ReBurstSystemModeA
                     {
                         float2 t = i / new float2(num, num + num2);
                         float3 curvePos = math.lerp(MathUtils.Position(edgeGeometry.m_Start.m_Left, t.x), MathUtils.Position(edgeGeometry.m_Start.m_Right, t.x), 0.5f);
-                        float weight = math.max(0f, 1f - math.distance(@float.xz, curvePos.xz) / (1.5f * 57344));// m_CellSize
+                        float weight = math.max(0f, 1f - math.distance(@float.xz, curvePos.xz) / (1.5f * m_CellSize));// m_CellSize
                         AddData(availability, availability2, availability3, availability4, availability5, t, curvePos, weight);
                     }
                     for (int j = 1; j <= num2; j++)
                     {
                         float2 t2 = new float2(j, num + j) / new float2(num2, num + num2);
                         float3 curvePos2 = math.lerp(MathUtils.Position(edgeGeometry.m_End.m_Left, t2.x), MathUtils.Position(edgeGeometry.m_End.m_Right, t2.x), 0.5f);
-                        float weight2 = math.max(0f, 1f - math.distance(@float.xz, curvePos2.xz) / (1.5f * 57344));// m_CellSize
+                        float weight2 = math.max(0f, 1f - math.distance(@float.xz, curvePos2.xz) / (1.5f * m_CellSize));// m_CellSize
                         AddData(availability, availability2, availability3, availability4, availability5, t2, curvePos2, weight2);
                     }
                 }

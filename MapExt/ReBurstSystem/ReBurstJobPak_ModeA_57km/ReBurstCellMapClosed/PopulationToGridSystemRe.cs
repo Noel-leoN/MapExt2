@@ -61,23 +61,3 @@ namespace MapExtPDX.MapExt.ReBurstSystemModeA
     }
 
 }
-
-
-/*
-		[Preserve]
-		protected override void OnUpdate()
-		{
-			this.__TypeHandle.__Game_Objects_Transform_RO_ComponentLookup.Update(ref base.CheckedStateRef);
-			this.__TypeHandle.__Game_Citizens_HouseholdCitizen_RO_BufferLookup.Update(ref base.CheckedStateRef);
-			this.__TypeHandle.__Game_Buildings_Renter_RO_BufferLookup.Update(ref base.CheckedStateRef);
-			PopulationToGridJob populationToGridJob = default(PopulationToGridJob);
-			populationToGridJob.m_Entities = this.m_ResidentialPropertyQuery.ToEntityListAsync(base.World.UpdateAllocator.ToAllocator, out var outJobHandle);
-			populationToGridJob.m_PopulationMap = base.m_Map;
-			populationToGridJob.m_Renters = this.__TypeHandle.__Game_Buildings_Renter_RO_BufferLookup;
-			populationToGridJob.m_HouseholdCitizens = this.__TypeHandle.__Game_Citizens_HouseholdCitizen_RO_BufferLookup;
-			populationToGridJob.m_Transforms = this.__TypeHandle.__Game_Objects_Transform_RO_ComponentLookup;
-			PopulationToGridJob jobData = populationToGridJob;
-			base.Dependency = IJobExtensions.Schedule(jobData, JobUtils.CombineDependencies(outJobHandle, base.m_WriteDependencies, base.m_ReadDependencies, base.Dependency));
-			base.AddWriter(base.Dependency);
-		}
-*/

@@ -232,6 +232,8 @@ namespace MapExtPDX.MapExt.ReBurstSystem
             "Game.Audio.WeatherAudioSystem/WeatherAudioJob",
             "WeatherAudioJob"
         ),
+
+        // v2.0.2版本暂时移除，疑似造成卡顿
         /*
                 new BaseJobTargetInfo(
             "Game.Simulation.PowerPlantAISystem", 
@@ -259,6 +261,15 @@ namespace MapExtPDX.MapExt.ReBurstSystem
         ),
         */
 
+        // v2.0.3版新增修复
+        new BaseJobTargetInfo(
+            "Game.Rendering.NetColorSystem",
+            "OnUpdate",
+            "Game.Rendering.NetColorSystem/UpdateEdgeColorsJob",
+            "UpdateEdgeColorsJob"
+        ),
+
+        // v2.0.2版新增修复
         new BaseJobTargetInfo(
             "Game.UI.InGame.AverageHappinessSection", 
             "OnUpdate",
@@ -299,12 +310,14 @@ namespace MapExtPDX.MapExt.ReBurstSystem
             "Game.Simulation.RentAdjustSystem/AdjustRentJob",
             "AdjustRentJob"
         ),
+        /*
         new BaseJobTargetInfo(
             "Game.Simulation.CitizenPathfindSetup",
             "SetupFindHome",
             "Game.Simulation.CitizenPathfindSetup/SetupFindHomeJob",
             "CitizenPathfindSetup/SetupFindHomeJob"
         ),
+        */
 
         // ... add more base targets here ...
     };
