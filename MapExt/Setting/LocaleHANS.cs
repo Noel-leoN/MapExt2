@@ -25,11 +25,11 @@ namespace MapExtPDX
                 { m_Setting.GetOptionGroupLocaleID(ModSettings.kMainModeGroup), "地图尺寸模式" },
 
                 { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.PatchModeChoice)), "选择地图尺寸模式" },
-                { m_Setting.GetOptionDescLocaleID(nameof(ModSettings.PatchModeChoice)), "改变地图尺寸模式需要点击 '应用设置' 按钮！\r\n \r\n 模式详情:\r\n  ModeA: 57km (4x4) DEM:14m\r\n  ModeB: 28km (2x2) DEM:7m\r\n  ModeC: 114km (8x8) DEM:28m\r\n  ModeD: 229km (16x16) DEM:56m\r\n  ModeNone: 14km vanilla(1x1) DEM:3.5m\r\n \r\n  注意\r\n  1. DEM地形分辨率随着地图尺寸变大而变得更差，导致山体、坡道或水岸显得粗糙。如果需要更美观的图形，建议使用较为平坦的地图，或采取一些遮盖方法，比如堤岸、种树等。\r\n  2. 地图尺寸扩大造成边缘区域的模拟计算数据不准确，这是由于游戏内建浮点精度不够造成且无法修复。可能会导致地图边缘图形或物件显示穿模，并且经济物件数据显示有偏差，尤其是在使用229km/114km时。建议尽量将住商工建造在地图中心位置。"},
+                { m_Setting.GetOptionDescLocaleID(nameof(ModSettings.PatchModeChoice)), "改变地图尺寸模式需要点击 '应用设置' 按钮！\r\n \r\n 模式详情:\r\n  ModeA: 57km (4x4) DEM:14m\r\n  ModeB: 28km (2x2) DEM:7m\r\n  ModeC: 114km (8x8) DEM:28m\r\n  ModeNone: 14km vanilla(1x1) DEM:3.5m\r\n \r\n  注意\r\n  1. DEM地形分辨率随着地图尺寸变大而变得更差，导致山体、坡道或水岸显得粗糙。如果需要更美观的图形，建议使用较为平坦的地图，或采取一些遮盖方法，比如堤岸、种树等。\r\n  2. 地图尺寸扩大造成边缘区域的模拟计算数据不准确，这是由于游戏内建浮点精度不够造成且无法修复。可能会导致地图边缘图形或物件显示穿模，并且经济物件数据显示有偏差，尤其是在使用114km时。建议尽量将住商工建造在地图中心位置。\r\n ！！！强烈建议在变更地图尺寸模式后重启游戏！！！"},
 
                 { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.ApplyPatchChanges)), "应用设置" },
-                { m_Setting.GetOptionDescLocaleID(nameof(ModSettings.ApplyPatchChanges)), "正在应用已选择的地图尺寸模式。请耐心等待完成。完成后请检查'当前地图尺寸'是否与选择相符。" },
-                { m_Setting.GetOptionWarningLocaleID(nameof(ModSettings.ApplyPatchChanges)), "正在应用已选择的地图尺寸模式。请耐心等待完成。完成后请检查'当前地图尺寸'是否与选择相符。" },
+                { m_Setting.GetOptionDescLocaleID(nameof(ModSettings.ApplyPatchChanges)), "正在应用已选择的地图尺寸模式。请耐心等待完成。完成后请检查'当前地图尺寸'是否与选择相符。\r\n  ！！！强烈建议在变更地图尺寸模式后重启游戏！！！" },
+                { m_Setting.GetOptionWarningLocaleID(nameof(ModSettings.ApplyPatchChanges)), "正在应用已选择的地图尺寸模式。请耐心等待完成。完成后请检查'当前地图尺寸'是否与选择相符。\r\n  ！！！强烈建议在变更地图尺寸模式后重启游戏！！！" },
 
                  //{ m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.WarningInfo)), "警告: 强烈建议在使用本Mod加载游戏存档前，请备份好您的所有游戏存档(推荐Skyve)，以防游戏崩溃或各种奇特问题坏档！大地图制作不易，且行且珍惜。" },
 
@@ -76,7 +76,7 @@ namespace MapExtPDX
                 { m_Setting.GetOptionGroupLocaleID(ModSettings.kDebugGroup), "Debug" },
                 { m_Setting.GetOptionLabelLocaleID(ModSettings.kDebugTab), "Debug" },
                 { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.DisableLoadGameValidation)), "禁止游戏读取存档验证" },
-                { m_Setting.GetOptionDescLocaleID(nameof(ModSettings.DisableLoadGameValidation)), "警告！默认(不勾选)为启用游戏读取存档验证，以防止错误设置地图尺寸模式而读取不同尺寸的存档造成坏档！\r\n  该选项勾选后将取消验证，仅用于使用旧版MapExt mod特殊尺寸模式而无法正确识别的情况。使用旧版存档请务必确认'地图尺寸模式'是否设置正确，否则可能坏档！ \r\n 务必在使用该功能前备份您的存档！" },
+                { m_Setting.GetOptionDescLocaleID(nameof(ModSettings.DisableLoadGameValidation)), "警告！默认(不勾选)为启用游戏读取存档验证，以防止错误设置地图尺寸模式而读取不同尺寸的存档造成坏档！\r\n  该选项勾选后将取消验证，仅用于使用旧版MapExt mod特殊尺寸模式而无法正确识别的情况。使用旧版存档请务必确认'地图尺寸模式'是否设置正确，否则可能坏档！ \r\n 务必在使用该功能前备份您的存档" },
 
                 //{ m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.ApplyAirwayRegenerate)), "应用飞行航道重建" },
                 //{ m_Setting.GetOptionGroupLocaleID(ModSettings.kAirwayGroup), "飞行航道重建工具" },

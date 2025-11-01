@@ -11,7 +11,7 @@ namespace MapExtPDX.SaveLoadSystem
 {
     public static class ModLocalization
     {
-        // 它的唯一职责：在Mod加载时，向游戏注册我们的后备(fallback)翻译
+        // Mod加载时，向游戏注册后备(fallback)翻译
         public static void Initialize(LocalizationManager localizationManager)
         {
             var fallback = new Dictionary<string, string>

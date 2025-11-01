@@ -5,6 +5,7 @@ using Unity.Jobs;
 
 namespace MapExtPDX.MapExt.ReBurstSystemModeC
 {
+    // BurstJob未调用kMapSize,仅修补原版数值过大异常
     [BurstCompile]
     public struct NoisePollutionSwapJob : IJobParallelFor
     {

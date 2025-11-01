@@ -59,7 +59,7 @@ namespace MapExtPDX.MapExt.ReBurstSystemModeC
             int num2 = tmp[otherIndex];
             float num3 = soilWater2.m_Surface - soilWater.m_Surface;
             float num4 = soilWater2.m_Amount / (float)soilWater2.m_Max - soilWater.m_Amount / (float)soilWater.m_Max;
-            float num5 = soilWaterParameters.m_HeightEffect * num3 / (kMapSize / SoilWaterSystem.kTextureSize) + 0.25f * num4;
+            float num5 = soilWaterParameters.m_HeightEffect * num3 / (CellMapSystemRe.kMapSize / SoilWaterSystem.kTextureSize) + 0.25f * num4;
             num5 = !(num5 >= 0f) ? math.max(0f - soilWaterParameters.m_MaxDiffusion, num5) : math.min(soilWaterParameters.m_MaxDiffusion, num5);
             int num6 = Mathf.RoundToInt(num5 * (num5 > 0f ? soilWater2.m_Amount : soilWater.m_Amount));
             num += num6;
@@ -192,45 +192,3 @@ namespace MapExtPDX.MapExt.ReBurstSystemModeC
     }
 
 }
-
-
-/*
-    [Preserve]
-    protected override void OnUpdate()
-    {
-        TerrainHeightData heightData = this.m_TerrainSystem.GetHeightData();
-        if (heightData.isCreated)
-        {
-            this.m_SoilWaterTexture.Apply();
-            float value = this.m_ClimateSystem.precipitation.value;
-            int shaderUpdatesPerSoilUpdate = 262144 / (SoilWaterSystem.kUpdatesPerDay / SoilWaterSystem.kLoadDistribution) / this.m_WaterSystem.SimulationCycleSteps;
-            int loadDistributionIndex = (int)((long)this.m_SimulationSystem.frameIndex / (long)(262144 / SoilWaterSystem.kUpdatesPerDay) % SoilWaterSystem.kLoadDistribution);
-            this.__TypeHandle.__Game_Simulation_FloodCounterData_RW_ComponentLookup.Update(ref base.CheckedStateRef);
-            this.__TypeHandle.__Game_Prefabs_EventData_RO_ComponentLookup.Update(ref base.CheckedStateRef);
-            this.__TypeHandle.__Game_Events_WaterLevelChange_RW_ComponentLookup.Update(ref base.CheckedStateRef);
-            SoilWaterTickJob soilWaterTickJob = default(SoilWaterTickJob);
-            soilWaterTickJob.m_SoilWaterMap = base.m_Map;
-            soilWaterTickJob.m_TerrainHeightData = heightData;
-            soilWaterTickJob.m_WaterSurfaceData = this.m_WaterSystem.GetSurfaceData(out var deps);
-            soilWaterTickJob.m_SoilWaterTextureData = this.m_SoilWaterTexture.GetRawTextureData<float>();
-            soilWaterTickJob.m_SoilWaterParameters = this.m_SoilWaterParameterQuery.GetSingleton<SoilWaterParameterData>();
-            soilWaterTickJob.m_FloodEntities = this.m_FloodQuery.ToEntityListAsync(base.World.UpdateAllocator.ToAllocator, out var outJobHandle);
-            soilWaterTickJob.m_FloodPrefabEntities = this.m_FloodPrefabQuery.ToEntityListAsync(base.World.UpdateAllocator.ToAllocator, out var outJobHandle2);
-            soilWaterTickJob.m_Changes = this.__TypeHandle.__Game_Events_WaterLevelChange_RW_ComponentLookup;
-            soilWaterTickJob.m_Events = this.__TypeHandle.__Game_Prefabs_EventData_RO_ComponentLookup;
-            soilWaterTickJob.m_FloodCounterDatas = this.__TypeHandle.__Game_Simulation_FloodCounterData_RW_ComponentLookup;
-            soilWaterTickJob.m_CommandBuffer = this.m_EndFrameBarrier.CreateCommandBuffer();
-            soilWaterTickJob.m_FloodCounterEntity = this.__query_336595330_0.GetSingletonEntity();
-            soilWaterTickJob.m_Weather = value;
-            soilWaterTickJob.m_ShaderUpdatesPerSoilUpdate = shaderUpdatesPerSoilUpdate;
-            soilWaterTickJob.m_LoadDistributionIndex = loadDistributionIndex;
-            SoilWaterTickJob jobData = soilWaterTickJob;
-            base.Dependency = IJobExtensions.Schedule(jobData, JobUtils.CombineDependencies(base.m_WriteDependencies, base.m_ReadDependencies, outJobHandle, outJobHandle2, deps, base.Dependency));
-            base.AddWriter(base.Dependency);
-            this.m_EndFrameBarrier.AddJobHandleForProducer(base.Dependency);
-            this.m_TerrainSystem.AddCPUHeightReader(base.Dependency);
-            this.m_WaterSystem.AddSurfaceReader(base.Dependency);
-            base.Dependency = JobHandle.CombineDependencies(base.m_ReadDependencies, base.m_WriteDependencies, base.Dependency);
-        }
-    }
-*/

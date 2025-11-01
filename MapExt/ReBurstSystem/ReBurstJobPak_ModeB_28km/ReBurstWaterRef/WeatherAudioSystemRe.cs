@@ -41,7 +41,7 @@ namespace MapExtPDX.MapExt.ReBurstSystemModeB
 
         public void Execute()
         {
-            if (NearWater(m_CameraPosition, m_WaterTextureSize, m_WaterAudioNearDistance, ref m_WaterDepths))
+            if (WeatherAudioJob.NearWater(m_CameraPosition, m_WaterTextureSize, m_WaterAudioNearDistance, ref m_WaterDepths))
             {
                 EffectInstance value = m_EffectInstances[m_WaterAudioEntity];
                 float y = TerrainUtils.SampleHeight(ref m_TerrainData, m_CameraPosition);
@@ -77,8 +77,8 @@ namespace MapExtPDX.MapExt.ReBurstSystemModeB
 
         private static bool NearWater(float3 position, int2 texSize, int distance, ref NativeArray<SurfaceWater> depthsCPU)
         {
-            float2 @float = kMapSize / (float2)texSize;
-            int2 cell = WaterSystem.GetCell(position - new float3(@float.x / 2f, 0f, @float.y / 2f), kMapSize, texSize);
+            float2 @float = CellMapSystemRe.kMapSize / (float2)texSize; //
+            int2 cell = WaterSystem.GetCell(position - new float3(@float.x / 2f, 0f, @float.y / 2f), CellMapSystemRe.kMapSize, texSize); //
             int2 @int = default;
             for (int i = -distance; i <= distance; i++)
             {
@@ -97,37 +97,3 @@ namespace MapExtPDX.MapExt.ReBurstSystemModeB
     }
 
 }
-
-/*
-		[Preserve]
-		protected override void OnUpdate()
-		{
-			if (this.m_WaterSystem.Loaded && this.m_CameraUpdateSystem.activeViewer != null && this.m_CameraUpdateSystem.activeCameraController != null)
-			{
-				if (this.m_SmallWaterAudioEntity == Entity.Null)
-				{
-					this.Initialize();
-				}
-				IGameCameraController activeCameraController = this.m_CameraUpdateSystem.activeCameraController;
-				float3 position = this.m_CameraUpdateSystem.activeViewer.position;
-				if (base.EntityManager.HasComponent<EffectInstance>(this.m_SmallWaterAudioEntity) && activeCameraController.zoom < (float)this.m_WaterAudioEnabledZoom)
-				{
-					this.__TypeHandle.__Game_Effects_EffectInstance_RW_ComponentLookup.Update(ref base.CheckedStateRef);
-					WeatherAudioJob weatherAudioJob = default(WeatherAudioJob);
-					weatherAudioJob.m_WaterTextureSize = this.m_WaterSystem.TextureSize;
-					weatherAudioJob.m_WaterAudioNearDistance = this.m_WaterAudioNearDistance;
-					weatherAudioJob.m_CameraPosition = position;
-					weatherAudioJob.m_WaterAudioEntity = this.m_SmallWaterAudioEntity;
-					weatherAudioJob.m_WeatherAudioData = base.EntityManager.GetComponentData<WeatherAudioData>(this.m_WeatherAudioEntityQuery.GetSingletonEntity());
-					weatherAudioJob.m_SourceUpdateData = this.m_AudioManager.GetSourceUpdateData(out var deps);
-					weatherAudioJob.m_TerrainData = this.m_TerrainSystem.GetHeightData();
-					weatherAudioJob.m_EffectInstances = this.__TypeHandle.__Game_Effects_EffectInstance_RW_ComponentLookup;
-					weatherAudioJob.m_WaterDepths = this.m_WaterSystem.GetDepths(out var deps2);
-					WeatherAudioJob jobData = weatherAudioJob;
-					base.Dependency = IJobExtensions.Schedule(jobData, JobHandle.CombineDependencies(deps, deps2, base.Dependency));
-					this.m_TerrainSystem.AddCPUHeightReader(base.Dependency);
-					this.m_AudioManager.AddSourceUpdateWriter(base.Dependency);
-				}
-			}
-		}
-*/

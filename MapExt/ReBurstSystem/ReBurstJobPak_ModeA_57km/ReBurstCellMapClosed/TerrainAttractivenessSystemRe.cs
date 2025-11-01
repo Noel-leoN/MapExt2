@@ -27,7 +27,7 @@ namespace MapExtPDX.MapExt.ReBurstSystemModeA
         {
             for (int i = startIndex; i < startIndex + count; i++)
             {
-                float3 cellCenter = GetCellCenter(i, TerrainAttractivenessSystem.kTextureSize);
+                float3 cellCenter = CellMapSystemRe.GetCellCenter(i, TerrainAttractivenessSystem.kTextureSize);
                 m_AttractFactorData[i] = new float3(WaterUtils.SampleDepth(ref m_WaterData, cellCenter), TerrainUtils.SampleHeight(ref m_TerrainData, cellCenter), ZoneAmbienceSystemGetZoneAmbience(GroupAmbienceType.Forest, cellCenter, m_ZoneAmbienceData.m_Buffer, 1f));
             }
         }
@@ -50,7 +50,7 @@ namespace MapExtPDX.MapExt.ReBurstSystemModeA
         {
             for (int i = startIndex; i < startIndex + count; i++)
             {
-                float3 cellCenter = GetCellCenter(i, TerrainAttractivenessSystem.kTextureSize);
+                float3 cellCenter = CellMapSystemRe.GetCellCenter(i, TerrainAttractivenessSystem.kTextureSize);
                 float2 @float = 0;
                 int num = Mathf.CeilToInt(math.max(m_AttractivenessParameters.m_ForestDistance, m_AttractivenessParameters.m_ShoreDistance) / m_Scale);
                 for (int j = -num; j <= num; j++)
@@ -61,7 +61,7 @@ namespace MapExtPDX.MapExt.ReBurstSystemModeA
                         int num3 = math.min(TerrainAttractivenessSystem.kTextureSize - 1, math.max(0, i / TerrainAttractivenessSystem.kTextureSize + k));
                         int index = num2 + num3 * TerrainAttractivenessSystem.kTextureSize;
                         float3 float2 = m_AttractFactorData[index];
-                        float num4 = math.distance(GetCellCenter(index, TerrainAttractivenessSystem.kTextureSize), cellCenter);
+                        float num4 = math.distance(CellMapSystemRe.GetCellCenter(index, TerrainAttractivenessSystem.kTextureSize), cellCenter);
                         @float.x = math.max(@float.x, math.saturate(1f - num4 / m_AttractivenessParameters.m_ForestDistance) * float2.z);
                         @float.y = math.max(@float.y, math.saturate(1f - num4 / m_AttractivenessParameters.m_ShoreDistance) * (float2.x > 2f ? 1f : 0f));
                     }

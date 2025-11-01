@@ -23,7 +23,7 @@ using Game.Simulation;
 
 namespace MapExtPDX.MapExt.ReBurstSystemModeB
 {
-
+    // v1.3.6f±ä¶¯
     [BurstCompile]
     public struct AdjustRentJob : IJobChunk
     {
@@ -158,6 +158,8 @@ namespace MapExtPDX.MapExt.ReBurstSystemModeB
 
         public PollutionParameterData m_PollutionParameters;
 
+        public ServiceFeeParameterData m_FeeParameters;
+
         public IconCommandBuffer m_IconCommandBuffer;
 
         public uint m_UpdateFrameIndex;
@@ -241,6 +243,7 @@ namespace MapExtPDX.MapExt.ReBurstSystemModeB
                 Game.Zones.AreaType areaType = Game.Zones.AreaType.None;
                 int buildingLevel = PropertyUtils.GetBuildingLevel(prefab, this.m_SpawnableBuildingData);
                 bool ignoreLandValue = false;
+                bool isOffice = false;
                 if (this.m_SpawnableBuildingData.HasComponent(prefab))
                 {
                     SpawnableBuildingData spawnableBuildingData = this.m_SpawnableBuildingData[prefab];
@@ -249,8 +252,10 @@ namespace MapExtPDX.MapExt.ReBurstSystemModeB
                     {
                         ignoreLandValue = componentData.m_IgnoreLandValue;
                     }
+                    isOffice = (this.m_ZoneData[spawnableBuildingData.m_ZonePrefab].m_ZoneFlags & ZoneFlags.Office) != 0;
                 }
                 this.ProcessPollutionNotification(areaType, entity, cityModifiers);
+                int buildingGarbageFeePerDay = this.m_FeeParameters.GetBuildingGarbageFeePerDay(areaType, isOffice);
                 int rentPricePerRenter = PropertyUtils.GetRentPricePerRenter(buildingPropertyData, buildingLevel, lotSize, landValueBase, areaType, ref this.m_EconomyParameterData, ignoreLandValue);
                 if (this.m_OnMarkets.HasComponent(entity))
                 {
@@ -274,7 +279,8 @@ namespace MapExtPDX.MapExt.ReBurstSystemModeB
                             continue;
                         }
                         int num3 = 0;
-                        if (this.m_HouseholdCitizenBufs.HasBuffer(renter))
+                        bool flag3 = this.m_HouseholdCitizenBufs.HasBuffer(renter);
+                        if (flag3)
                         {
                             num3 = EconomyUtils.GetHouseholdIncome(this.m_HouseholdCitizenBufs[renter], ref this.m_Workers, ref this.m_Citizens, ref this.m_HealthProblems, ref this.m_EconomyParameterData, this.m_TaxRates) + math.max(0, EconomyUtils.GetResources(Resource.Money, this.m_ResourcesBuf[renter]));
                         }
@@ -290,7 +296,7 @@ namespace MapExtPDX.MapExt.ReBurstSystemModeB
                         }
                         value3.m_Rent = rentPricePerRenter;
                         this.m_PropertyRenters[renter] = value3;
-                        if (rentPricePerRenter > num3)
+                        if (rentPricePerRenter + buildingGarbageFeePerDay > num3 || (flag3 && rentPricePerRenter + buildingGarbageFeePerDay < num3 / 2))
                         {
                             this.m_CommandBuffer.SetComponentEnabled<PropertySeeker>(unfilteredChunkIndex, renter, value: true);
                         }

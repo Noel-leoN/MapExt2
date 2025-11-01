@@ -236,7 +236,7 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
         }
 
         // Patching NetPollutionSystemOnUpdate
-        [HarmonyPatch(typeof(NetPollutionSystem), "OnUpdate")]
+        [HarmonyPatch(typeof(Game.Simulation.NetPollutionSystem), "OnUpdate")]
         [HarmonyTranspiler]
         static IEnumerable<CodeInstruction> Transpile_NetPollutionSystemOnUpdate(IEnumerable<CodeInstruction> instructions, ILGenerator gen, MethodBase original)
         {
@@ -289,12 +289,14 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
             return PatchKMapSizeFieldLoad(instructions, gen, original);
         }
 
+        /*
         // Patching WindDebugSystem
-        //[HarmonyPatch(typeof(WindDebugSystem).GetNestedType("WindGizmoJob", BindingFlags.NonPublic), "Execute")]
-        //[HarmonyTranspiler]
-        //static IEnumerable<CodeInstruction> Transpile_WindDebugSystem(IEnumerable<CodeInstruction> instructions, ILGenerator gen, MethodBase original) =>
+        [HarmonyPatch("Game.Debug.WindDebugSystem+WindGizmoJob,Game", "Execute")]
+        [HarmonyTranspiler]
+        static IEnumerable<CodeInstruction> Transpile_WindDebugSystem(IEnumerable<CodeInstruction> instructions, ILGenerator gen, MethodBase original) =>
         // Reuse the same transpiler logic
-        // PatchKMapSizeFieldLoad(instructions, gen, original);
+         PatchKMapSizeFieldLoad(instructions, gen, original);
+        */
 
         // Patching WindSimulationSystemGetCellCenter
         [HarmonyPatch(typeof(WindSimulationSystem), "GetCellCenter")]

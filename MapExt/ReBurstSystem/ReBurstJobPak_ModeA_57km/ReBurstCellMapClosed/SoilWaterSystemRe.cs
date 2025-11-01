@@ -59,7 +59,7 @@ namespace MapExtPDX.MapExt.ReBurstSystemModeA
             int num2 = tmp[otherIndex];
             float num3 = soilWater2.m_Surface - soilWater.m_Surface;
             float num4 = soilWater2.m_Amount / (float)soilWater2.m_Max - soilWater.m_Amount / (float)soilWater.m_Max;
-            float num5 = soilWaterParameters.m_HeightEffect * num3 / (kMapSize / SoilWaterSystem.kTextureSize) + 0.25f * num4;
+            float num5 = soilWaterParameters.m_HeightEffect * num3 / (CellMapSystemRe.kMapSize / SoilWaterSystem.kTextureSize) + 0.25f * num4;
             num5 = !(num5 >= 0f) ? math.max(0f - soilWaterParameters.m_MaxDiffusion, num5) : math.min(soilWaterParameters.m_MaxDiffusion, num5);
             int num6 = Mathf.RoundToInt(num5 * (num5 > 0f ? soilWater2.m_Amount : soilWater.m_Amount));
             num += num6;

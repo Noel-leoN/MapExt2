@@ -19,6 +19,7 @@ using UnityEngine;
 
 namespace MapExtPDX.MapExt.MapSizePatchSet
 {
+    [HarmonyPatch]
     [HarmonyPatch(typeof(AirwaySystem))]
     public static class AirwaySystem_OnUpdate_Patch
     {
@@ -47,7 +48,7 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
 
 
         // This runs BEFORE the original OnUpdate. Its only job is to manage the session lock.
-        [HarmonyPatch("OnUpdate")]
+        [HarmonyPatch(typeof(AirwaySystem),"OnUpdate")]
         [HarmonyPrefix]
         public static void Prefix(AirwaySystem __instance)
         {
@@ -72,7 +73,7 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
         }
 
         // This runs AFTER the original OnUpdate. 主要逻辑.
-        [HarmonyPatch("OnUpdate")]
+        [HarmonyPatch(typeof(AirwaySystem), "OnUpdate")]
         [HarmonyPostfix]
         public static void Postfix(AirwaySystem __instance)
         {

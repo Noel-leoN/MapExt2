@@ -28,7 +28,6 @@ namespace MapExtPDX.SaveLoadSystem
         LegacyMismatch      // 旧存档模式不匹配
     }
 
-
     [HarmonyPatch(typeof(MenuUISystem), "SafeLoadGame")]
     public static class LoadGameValidatorPatch
     {
@@ -214,10 +213,7 @@ namespace MapExtPDX.SaveLoadSystem
                     return SaveValidationResult.CoreValueMismatch;
                 }
             }
-
-
         }
-
 
         /// <summary>
         /// 显示一个只有“OK”按钮的信息对话框

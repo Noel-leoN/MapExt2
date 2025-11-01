@@ -14,6 +14,7 @@ using static MapExtPDX.MapExt.ReBurstSystemModeA.CellMapSystemRe;
 
 namespace MapExtPDX.MapExt.ReBurstSystemModeA
 {
+    // v1.3.6f±ä¸ü
     [BurstCompile]
     public struct EvaluateSpawnAreas : IJobChunk
     {
@@ -116,27 +117,33 @@ namespace MapExtPDX.MapExt.ReBurstSystemModeA
         public ResourcePrefabs m_ResourcePrefabs;
 
         [ReadOnly]
-        public NativeArray<GroundPollution> m_PollutionMap;
+        public NativeArray<GroundPollution> m_GroundPollutionMap;
 
-        public NativeQueue<ZoneSpawnSystem.SpawnLocation>.ParallelWriter m_Residential;
+        [ReadOnly]
+        public NativeArray<NoisePollution> m_NoisePollutionMap;
 
-        public NativeQueue<ZoneSpawnSystem.SpawnLocation>.ParallelWriter m_Commercial;
+        [ReadOnly]
+        public NativeArray<AirPollution> m_AirPollutionMap;
 
-        public NativeQueue<ZoneSpawnSystem.SpawnLocation>.ParallelWriter m_Industrial;
+        public NativeQueue<Game.Simulation.ZoneSpawnSystem.SpawnLocation>.ParallelWriter m_Residential;
+
+        public NativeQueue<Game.Simulation.ZoneSpawnSystem.SpawnLocation>.ParallelWriter m_Commercial;
+
+        public NativeQueue<Game.Simulation.ZoneSpawnSystem.SpawnLocation>.ParallelWriter m_Industrial;
 
         public void Execute(in ArchetypeChunk chunk, int unfilteredChunkIndex, bool useEnabledMask, in v128 chunkEnabledMask)
         {
-            Random random = m_RandomSeed.GetRandom(unfilteredChunkIndex);
-            ZoneSpawnSystem.SpawnLocation bestLocation = default;
-            ZoneSpawnSystem.SpawnLocation bestLocation2 = default;
-            ZoneSpawnSystem.SpawnLocation bestLocation3 = default;
-            NativeArray<Entity> nativeArray = chunk.GetNativeArray(m_EntityType);
-            BufferAccessor<VacantLot> bufferAccessor = chunk.GetBufferAccessor(ref m_VacantLotType);
+            Random random = this.m_RandomSeed.GetRandom(unfilteredChunkIndex);
+            Game.Simulation.ZoneSpawnSystem.SpawnLocation bestLocation = default(Game.Simulation.ZoneSpawnSystem.SpawnLocation);
+            Game.Simulation.ZoneSpawnSystem.SpawnLocation bestLocation2 = default(Game.Simulation.ZoneSpawnSystem.SpawnLocation);
+            Game.Simulation.ZoneSpawnSystem.SpawnLocation bestLocation3 = default(Game.Simulation.ZoneSpawnSystem.SpawnLocation);
+            NativeArray<Entity> nativeArray = chunk.GetNativeArray(this.m_EntityType);
+            BufferAccessor<VacantLot> bufferAccessor = chunk.GetBufferAccessor(ref this.m_VacantLotType);
             if (bufferAccessor.Length != 0)
             {
-                NativeArray<Owner> nativeArray2 = chunk.GetNativeArray(ref m_OwnerType);
-                NativeArray<CurvePosition> nativeArray3 = chunk.GetNativeArray(ref m_CurvePositionType);
-                NativeArray<Block> nativeArray4 = chunk.GetNativeArray(ref m_BlockType);
+                NativeArray<Owner> nativeArray2 = chunk.GetNativeArray(ref this.m_OwnerType);
+                NativeArray<CurvePosition> nativeArray3 = chunk.GetNativeArray(ref this.m_CurvePositionType);
+                NativeArray<Block> nativeArray4 = chunk.GetNativeArray(ref this.m_BlockType);
                 for (int i = 0; i < nativeArray.Length; i++)
                 {
                     Entity entity = nativeArray[i];
@@ -147,34 +154,34 @@ namespace MapExtPDX.MapExt.ReBurstSystemModeA
                     for (int j = 0; j < dynamicBuffer.Length; j++)
                     {
                         VacantLot lot = dynamicBuffer[j];
-                        if (!m_ZonePropertiesDatas.HasComponent(m_ZonePrefabs[lot.m_Type]))
+                        if (!this.m_ZonePropertiesDatas.HasComponent(this.m_ZonePrefabs[lot.m_Type]))
                         {
                             continue;
                         }
-                        ZoneData zoneData = m_ZoneData[m_ZonePrefabs[lot.m_Type]];
-                        ZonePropertiesData zonePropertiesData = m_ZonePropertiesDatas[m_ZonePrefabs[lot.m_Type]];
-                        DynamicBuffer<ProcessEstimate> estimates = m_ProcessEstimates[m_ZonePrefabs[lot.m_Type]];
+                        ZoneData zoneData = this.m_ZoneData[this.m_ZonePrefabs[lot.m_Type]];
+                        ZonePropertiesData zonePropertiesData = this.m_ZonePropertiesDatas[this.m_ZonePrefabs[lot.m_Type]];
+                        DynamicBuffer<ProcessEstimate> estimates = this.m_ProcessEstimates[this.m_ZonePrefabs[lot.m_Type]];
                         switch (zoneData.m_AreaType)
                         {
-                            case AreaType.Residential:
-                                if (m_SpawnResidential != 0)
+                            case Game.Zones.AreaType.Residential:
+                                if (this.m_SpawnResidential != 0)
                                 {
-                                    float curvePos2 = CalculateCurvePos(curvePosition, lot, block);
-                                    TryAddLot(ref bestLocation, ref random, owner.m_Owner, curvePos2, entity, lot.m_Area, lot.m_Flags, lot.m_Height, zoneData, zonePropertiesData, estimates, m_Processes);
+                                    float curvePos2 = this.CalculateCurvePos(curvePosition, lot, block);
+                                    this.TryAddLot(ref bestLocation, ref random, owner.m_Owner, curvePos2, entity, lot.m_Area, lot.m_Flags, lot.m_Height, zoneData, zonePropertiesData, estimates, this.m_Processes);
                                 }
                                 break;
-                            case AreaType.Commercial:
-                                if (m_SpawnCommercial != 0)
+                            case Game.Zones.AreaType.Commercial:
+                                if (this.m_SpawnCommercial != 0)
                                 {
-                                    float curvePos3 = CalculateCurvePos(curvePosition, lot, block);
-                                    TryAddLot(ref bestLocation2, ref random, owner.m_Owner, curvePos3, entity, lot.m_Area, lot.m_Flags, lot.m_Height, zoneData, zonePropertiesData, estimates, m_Processes);
+                                    float curvePos3 = this.CalculateCurvePos(curvePosition, lot, block);
+                                    this.TryAddLot(ref bestLocation2, ref random, owner.m_Owner, curvePos3, entity, lot.m_Area, lot.m_Flags, lot.m_Height, zoneData, zonePropertiesData, estimates, this.m_Processes);
                                 }
                                 break;
-                            case AreaType.Industrial:
-                                if (m_SpawnIndustrial != 0 || m_SpawnStorage != 0)
+                            case Game.Zones.AreaType.Industrial:
+                                if (this.m_SpawnIndustrial != 0 || this.m_SpawnStorage != 0)
                                 {
-                                    float curvePos = CalculateCurvePos(curvePosition, lot, block);
-                                    TryAddLot(ref bestLocation3, ref random, owner.m_Owner, curvePos, entity, lot.m_Area, lot.m_Flags, lot.m_Height, zoneData, zonePropertiesData, estimates, m_Processes, m_SpawnIndustrial != 0, m_SpawnStorage != 0);
+                                    float curvePos = this.CalculateCurvePos(curvePosition, lot, block);
+                                    this.TryAddLot(ref bestLocation3, ref random, owner.m_Owner, curvePos, entity, lot.m_Area, lot.m_Flags, lot.m_Height, zoneData, zonePropertiesData, estimates, this.m_Processes, this.m_SpawnIndustrial != 0, this.m_SpawnStorage != 0);
                                 }
                                 break;
                         }
@@ -183,27 +190,27 @@ namespace MapExtPDX.MapExt.ReBurstSystemModeA
             }
             if (bestLocation.m_Priority != 0f)
             {
-                m_Residential.Enqueue(bestLocation);
+                this.m_Residential.Enqueue(bestLocation);
             }
             if (bestLocation2.m_Priority != 0f)
             {
-                m_Commercial.Enqueue(bestLocation2);
+                this.m_Commercial.Enqueue(bestLocation2);
             }
             if (bestLocation3.m_Priority != 0f)
             {
-                m_Industrial.Enqueue(bestLocation3);
+                this.m_Industrial.Enqueue(bestLocation3);
             }
         }
 
         private float CalculateCurvePos(CurvePosition curvePosition, VacantLot lot, Block block)
         {
-            float s = math.saturate((lot.m_Area.x + lot.m_Area.y) * 0.5f / block.m_Size.x);
-            return math.lerp(curvePosition.m_CurvePosition.x, curvePosition.m_CurvePosition.y, s);
+            float t = math.saturate((float)(lot.m_Area.x + lot.m_Area.y) * 0.5f / (float)block.m_Size.x);
+            return math.lerp(curvePosition.m_CurvePosition.x, curvePosition.m_CurvePosition.y, t);
         }
 
-        private void TryAddLot(ref ZoneSpawnSystem.SpawnLocation bestLocation, ref Random random, Entity road, float curvePos, Entity entity, int4 area, LotFlags flags, int height, ZoneData zoneData, ZonePropertiesData zonePropertiesData, DynamicBuffer<ProcessEstimate> estimates, NativeList<IndustrialProcessData> processes, bool normal = true, bool storage = false)
+        private void TryAddLot(ref Game.Simulation.ZoneSpawnSystem.SpawnLocation bestLocation, ref Random random, Entity road, float curvePos, Entity entity, int4 area, LotFlags flags, int height, ZoneData zoneData, ZonePropertiesData zonePropertiesData, DynamicBuffer<ProcessEstimate> estimates, NativeList<IndustrialProcessData> processes, bool normal = true, bool storage = false)
         {
-            if (!m_Availabilities.HasBuffer(road))
+            if (!this.m_Availabilities.HasBuffer(road))
             {
                 return;
             }
@@ -215,51 +222,55 @@ namespace MapExtPDX.MapExt.ReBurstSystemModeA
             {
                 flags &= ~LotFlags.CornerRight;
             }
-            ZoneSpawnSystem.SpawnLocation location = default;
-            location.m_Entity = entity;
-            location.m_LotArea = area;
-            location.m_ZoneType = zoneData.m_ZoneType;
-            location.m_AreaType = zoneData.m_AreaType;
-            location.m_LotFlags = flags;
-            bool office = zoneData.m_AreaType == AreaType.Industrial && estimates.Length == 0;
-            DynamicBuffer<ResourceAvailability> availabilities = m_Availabilities[road];
-            if (m_BlockData.HasComponent(location.m_Entity))
+            Game.Simulation.ZoneSpawnSystem.SpawnLocation location = new Game.Simulation.ZoneSpawnSystem.SpawnLocation
             {
-                float3 position = ZoneUtils.GetPosition(m_BlockData[location.m_Entity], location.m_LotArea.xz, location.m_LotArea.yw);
+                m_Entity = entity,
+                m_LotArea = area,
+                m_ZoneType = zoneData.m_ZoneType,
+                m_AreaType = zoneData.m_AreaType,
+                m_LotFlags = flags
+            };
+            bool office = zoneData.m_AreaType == Game.Zones.AreaType.Industrial && estimates.Length == 0;
+            DynamicBuffer<ResourceAvailability> availabilities = this.m_Availabilities[road];
+            if (this.m_BlockData.HasComponent(location.m_Entity))
+            {
+                float3 position = ZoneUtils.GetPosition(this.m_BlockData[location.m_Entity], location.m_LotArea.xz, location.m_LotArea.yw);
                 bool extractor = false;
-                float pollution = GroundPollutionSystemGetPollution(position, m_PollutionMap).m_Pollution;
-                float landValue = m_LandValues[road].m_LandValue;
-                float maxHeight = height - position.y;
-                if (SelectBuilding(ref location, ref random, availabilities, zoneData, zonePropertiesData, curvePos, pollution, landValue, maxHeight, estimates, processes, normal, storage, extractor, office) && location.m_Priority > bestLocation.m_Priority)
+                GroundPollution pollution = GroundPollutionSystemGetPollution(position, this.m_GroundPollutionMap);//
+                NoisePollution pollution2 = NoisePollutionSystemGetPollution(position, this.m_NoisePollutionMap);//
+                AirPollution pollution3 = AirPollutionSystemGetPollution(position, this.m_AirPollutionMap);//
+                float landValue = this.m_LandValues[road].m_LandValue;
+                float maxHeight = (float)height - position.y;
+                if (this.SelectBuilding(ref location, ref random, availabilities, zoneData, zonePropertiesData, curvePos, new float3(pollution.m_Pollution, pollution2.m_Pollution, pollution3.m_Pollution), landValue, maxHeight, estimates, processes, normal, storage, extractor, office) && location.m_Priority > bestLocation.m_Priority)
                 {
                     bestLocation = location;
                 }
             }
         }
 
-        private bool SelectBuilding(ref ZoneSpawnSystem.SpawnLocation location, ref Random random, DynamicBuffer<ResourceAvailability> availabilities, ZoneData zoneData, ZonePropertiesData zonePropertiesData, float curvePos, float pollution, float landValue, float maxHeight, DynamicBuffer<ProcessEstimate> estimates, NativeList<IndustrialProcessData> processes, bool normal = true, bool storage = false, bool extractor = false, bool office = false)
+        private bool SelectBuilding(ref Game.Simulation.ZoneSpawnSystem.SpawnLocation location, ref Random random, DynamicBuffer<ResourceAvailability> availabilities, ZoneData zoneData, ZonePropertiesData zonePropertiesData, float curvePos, float3 pollution, float landValue, float maxHeight, DynamicBuffer<ProcessEstimate> estimates, NativeList<IndustrialProcessData> processes, bool normal = true, bool storage = false, bool extractor = false, bool office = false)
         {
             int2 @int = location.m_LotArea.yw - location.m_LotArea.xz;
-            BuildingData buildingData = default;
+            BuildingData buildingData = default(BuildingData);
             bool2 @bool = new bool2((location.m_LotFlags & LotFlags.CornerLeft) != 0, (location.m_LotFlags & LotFlags.CornerRight) != 0);
             bool flag = (zoneData.m_ZoneFlags & ZoneFlags.SupportNarrow) == 0;
-            for (int i = 0; i < m_BuildingChunks.Length; i++)
+            for (int i = 0; i < this.m_BuildingChunks.Length; i++)
             {
-                ArchetypeChunk archetypeChunk = m_BuildingChunks[i];
-                if (!archetypeChunk.GetSharedComponent(m_BuildingSpawnGroupType).m_ZoneType.Equals(location.m_ZoneType))
+                ArchetypeChunk archetypeChunk = this.m_BuildingChunks[i];
+                if (!archetypeChunk.GetSharedComponent(this.m_BuildingSpawnGroupType).m_ZoneType.Equals(location.m_ZoneType))
                 {
                     continue;
                 }
-                bool flag2 = archetypeChunk.Has(ref m_WarehouseType);
-                if (flag2 && !storage || !flag2 && !normal)
+                bool flag2 = archetypeChunk.Has(ref this.m_WarehouseType);
+                if ((flag2 && !storage) || (!flag2 && !normal))
                 {
                     continue;
                 }
-                NativeArray<Entity> nativeArray = archetypeChunk.GetNativeArray(m_EntityType);
-                NativeArray<BuildingData> nativeArray2 = archetypeChunk.GetNativeArray(ref m_BuildingDataType);
-                NativeArray<SpawnableBuildingData> nativeArray3 = archetypeChunk.GetNativeArray(ref m_SpawnableBuildingType);
-                NativeArray<BuildingPropertyData> nativeArray4 = archetypeChunk.GetNativeArray(ref m_BuildingPropertyType);
-                NativeArray<ObjectGeometryData> nativeArray5 = archetypeChunk.GetNativeArray(ref m_ObjectGeometryType);
+                NativeArray<Entity> nativeArray = archetypeChunk.GetNativeArray(this.m_EntityType);
+                NativeArray<BuildingData> nativeArray2 = archetypeChunk.GetNativeArray(ref this.m_BuildingDataType);
+                NativeArray<SpawnableBuildingData> nativeArray3 = archetypeChunk.GetNativeArray(ref this.m_SpawnableBuildingType);
+                NativeArray<BuildingPropertyData> nativeArray4 = archetypeChunk.GetNativeArray(ref this.m_BuildingPropertyType);
+                NativeArray<ObjectGeometryData> nativeArray5 = archetypeChunk.GetNativeArray(ref this.m_ObjectGeometryType);
                 for (int j = 0; j < nativeArray3.Length; j++)
                 {
                     if (nativeArray3[j].m_Level != 1)
@@ -276,34 +287,34 @@ namespace MapExtPDX.MapExt.ReBurstSystemModeA
                     }
                     BuildingPropertyData buildingPropertyData = nativeArray4[j];
                     ZoneDensity zoneDensity = PropertyUtils.GetZoneDensity(zoneData, zonePropertiesData);
-                    int num = EvaluateDemandAndAvailability(buildingPropertyData, zoneData.m_AreaType, zoneDensity, flag2);
-                    if (!(num >= m_MinDemand || extractor))
+                    int num = this.EvaluateDemandAndAvailability(buildingPropertyData, zoneData.m_AreaType, zoneDensity, flag2);
+                    if (!(num >= this.m_MinDemand || extractor))
                     {
                         continue;
                     }
                     int2 int2 = math.select(@int - lotSize, 0, lotSize == @int - 1);
-                    float num2 = lotSize.x * lotSize.y * random.NextFloat(1f, 1.05f);
-                    num2 += int2.x * lotSize.y * random.NextFloat(0.95f, 1f);
-                    num2 += @int.x * int2.y * random.NextFloat(0.55f, 0.6f);
-                    num2 /= @int.x * @int.y;
-                    num2 *= num + 1;
+                    float num2 = (float)(lotSize.x * lotSize.y) * random.NextFloat(1f, 1.05f);
+                    num2 += (float)(int2.x * lotSize.y) * random.NextFloat(0.95f, 1f);
+                    num2 += (float)(@int.x * int2.y) * random.NextFloat(0.55f, 0.6f);
+                    num2 /= (float)(@int.x * @int.y);
+                    num2 *= (float)(num + 1);
                     num2 *= math.csum(math.select(0.01f, 0.5f, @bool == bool2));
                     if (!extractor)
                     {
                         float num3 = landValue;
                         float num4;
-                        if (location.m_AreaType == AreaType.Residential)
+                        if (location.m_AreaType == Game.Zones.AreaType.Residential)
                         {
-                            num4 = buildingPropertyData.m_ResidentialProperties == 1 ? 2f : buildingPropertyData.CountProperties();
+                            num4 = ((buildingPropertyData.m_ResidentialProperties == 1) ? 2f : ((float)buildingPropertyData.CountProperties()));
                             lotSize.x = math.select(lotSize.x, @int.x, lotSize.x == @int.x - 1 && flag);
-                            num3 *= lotSize.x * @int.y;
+                            num3 *= (float)(lotSize.x * @int.y);
                         }
                         else
                         {
                             num4 = buildingPropertyData.m_SpaceMultiplier;
                         }
-                        float score = ZoneEvaluationUtils.GetScore(location.m_AreaType, office, availabilities, curvePos, ref m_Preferences, flag2, flag2 ? m_StorageDemands : m_IndustrialDemands, buildingPropertyData, pollution, num3 / num4, estimates, processes, m_ResourcePrefabs, ref m_ResourceDatas);
-                        score = math.select(score, math.max(0f, score) + 1f, m_MinDemand == 0);
+                        float score = ZoneEvaluationUtils.GetScore(location.m_AreaType, office, availabilities, curvePos, ref this.m_Preferences, flag2, flag2 ? this.m_StorageDemands : this.m_IndustrialDemands, buildingPropertyData, pollution, num3 / num4, estimates, processes, this.m_ResourcePrefabs, ref this.m_ResourceDatas);
+                        score = math.select(score, math.max(0f, score) + 1f, this.m_MinDemand == 0);
                         num2 *= score;
                     }
                     if (num2 > location.m_Priority)
@@ -330,18 +341,18 @@ namespace MapExtPDX.MapExt.ReBurstSystemModeA
             return false;
         }
 
-        private int EvaluateDemandAndAvailability(BuildingPropertyData buildingPropertyData, AreaType areaType, ZoneDensity zoneDensity, bool storage = false)
+        private int EvaluateDemandAndAvailability(BuildingPropertyData buildingPropertyData, Game.Zones.AreaType areaType, ZoneDensity zoneDensity, bool storage = false)
         {
             switch (areaType)
             {
-                case AreaType.Residential:
+                case Game.Zones.AreaType.Residential:
                     return zoneDensity switch
                     {
-                        ZoneDensity.Low => m_ResidentialDemands.x,
-                        ZoneDensity.Medium => m_ResidentialDemands.y,
-                        _ => m_ResidentialDemands.z,
+                        ZoneDensity.Low => this.m_ResidentialDemands.x,
+                        ZoneDensity.Medium => this.m_ResidentialDemands.y,
+                        _ => this.m_ResidentialDemands.z,
                     };
-                case AreaType.Commercial:
+                case Game.Zones.AreaType.Commercial:
                     {
                         int num2 = 0;
                         ResourceIterator iterator2 = ResourceIterator.GetIterator();
@@ -349,12 +360,12 @@ namespace MapExtPDX.MapExt.ReBurstSystemModeA
                         {
                             if ((buildingPropertyData.m_AllowedSold & iterator2.resource) != Resource.NoResource)
                             {
-                                num2 += m_CommercialBuildingDemands[EconomyUtils.GetResourceIndex(iterator2.resource)];
+                                num2 += this.m_CommercialBuildingDemands[EconomyUtils.GetResourceIndex(iterator2.resource)];
                             }
                         }
                         return num2;
                     }
-                case AreaType.Industrial:
+                case Game.Zones.AreaType.Industrial:
                     {
                         int num = 0;
                         ResourceIterator iterator = ResourceIterator.GetIterator();
@@ -364,12 +375,12 @@ namespace MapExtPDX.MapExt.ReBurstSystemModeA
                             {
                                 if ((buildingPropertyData.m_AllowedStored & iterator.resource) != Resource.NoResource)
                                 {
-                                    num += m_StorageDemands[EconomyUtils.GetResourceIndex(iterator.resource)];
+                                    num += this.m_StorageDemands[EconomyUtils.GetResourceIndex(iterator.resource)];
                                 }
                             }
                             else if ((buildingPropertyData.m_AllowedManufactured & iterator.resource) != Resource.NoResource)
                             {
-                                num += m_IndustrialDemands[EconomyUtils.GetResourceIndex(iterator.resource)];
+                                num += this.m_IndustrialDemands[EconomyUtils.GetResourceIndex(iterator.resource)];
                             }
                         }
                         return num;
@@ -381,7 +392,7 @@ namespace MapExtPDX.MapExt.ReBurstSystemModeA
 
         void IJobChunk.Execute(in ArchetypeChunk chunk, int unfilteredChunkIndex, bool useEnabledMask, in v128 chunkEnabledMask)
         {
-            Execute(in chunk, unfilteredChunkIndex, useEnabledMask, in chunkEnabledMask);
+            this.Execute(in chunk, unfilteredChunkIndex, useEnabledMask, in chunkEnabledMask);
         }
     }
 

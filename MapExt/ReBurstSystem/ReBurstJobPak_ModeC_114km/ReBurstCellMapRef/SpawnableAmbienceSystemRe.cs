@@ -9,7 +9,6 @@ using Unity.Burst.Intrinsics;
 using Unity.Collections;
 using Unity.Entities;
 using Unity.Mathematics;
-using static MapExtPDX.MapExt.ReBurstSystemModeC.CellMapSystemRe;
 
 namespace MapExtPDX.MapExt.ReBurstSystemModeC
 {
@@ -52,7 +51,7 @@ namespace MapExtPDX.MapExt.ReBurstSystemModeC
                         float3 position = nativeArray[i].m_Position;
                         int num = componentData2.m_LotSize.x * componentData2.m_LotSize.y;
                         float amount = bufferAccessor[i].Length * num * BuildingUtils.GetEfficiency(bufferAccessor2, i);
-                        int2 cell = CellMapSystem<ZoneAmbienceCell>.GetCell(position, kMapSize, ZoneAmbienceSystem.kTextureSize);
+                        int2 cell = CellMapSystem<ZoneAmbienceCell>.GetCell(position, CellMapSystemRe.kMapSize, ZoneAmbienceSystem.kTextureSize);
                         int num2 = cell.x + cell.y * ZoneAmbienceSystem.kTextureSize;
                         int hashCode = num2 * m_Queue.HashRange / (ZoneAmbienceSystem.kTextureSize * ZoneAmbienceSystem.kTextureSize);
                         if (cell.x >= 0 && cell.y >= 0 && cell.x < ZoneAmbienceSystem.kTextureSize && cell.y < ZoneAmbienceSystem.kTextureSize)
@@ -70,7 +69,7 @@ namespace MapExtPDX.MapExt.ReBurstSystemModeC
             }
             for (int j = 0; j < chunk.Count; j++)
             {
-                int2 cell2 = CellMapSystem<ZoneAmbienceCell>.GetCell(nativeArray[j].m_Position, kMapSize, ZoneAmbienceSystem.kTextureSize);
+                int2 cell2 = CellMapSystem<ZoneAmbienceCell>.GetCell(nativeArray[j].m_Position, CellMapSystemRe.kMapSize, ZoneAmbienceSystem.kTextureSize);
                 int num3 = cell2.x + cell2.y * ZoneAmbienceSystem.kTextureSize;
                 int hashCode2 = num3 * m_Queue.HashRange / (ZoneAmbienceSystem.kTextureSize * ZoneAmbienceSystem.kTextureSize);
                 if (cell2.x >= 0 && cell2.y >= 0 && cell2.x < ZoneAmbienceSystem.kTextureSize && cell2.y < ZoneAmbienceSystem.kTextureSize)

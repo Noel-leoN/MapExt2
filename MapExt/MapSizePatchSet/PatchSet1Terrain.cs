@@ -12,7 +12,8 @@ using Unity.Mathematics;
 
 namespace MapExtPDX.MapExt.MapSizePatchSet
 {
-
+    // Target TerrainSystem class
+    // 修补FinalizeTerrainData/GetTerrainBounds/GetHeightData等三个方法
     [HarmonyPatch(typeof(TerrainSystem))]
     public static class TerrainSystemPatches
     {
@@ -22,7 +23,7 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
         private static void Error(Exception e, string message) => Mod.Error(e, $" {Mod.ModName}.{nameof(TerrainSystemPatches)}:{message}");
 
         // FinalizeTerrainData (改变引入默认值，仅修改此处即可，不需要同时修补其他方法)
-        // 该方法调用频次较低，使用Prefix简化维护 
+        // 该方法调用仅在加载存档后执行一次，使用Prefix简化维护 
         // Target the FinalizeTerrainData method
         [HarmonyPatch("FinalizeTerrainData")]
         [HarmonyPrefix]
@@ -54,6 +55,7 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
 
 
         // Target the GetTerrainBounds method
+        // 高频调用
         [HarmonyPatch(nameof(TerrainSystem.GetTerrainBounds))]
         [HarmonyTranspiler]
         public static IEnumerable<CodeInstruction> GetTerrainBounds_Transpiler(IEnumerable<CodeInstruction> instructions)
@@ -93,6 +95,7 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
 
 
         // Target the GetHeightData method
+        // 极高频调用
         [HarmonyPatch(nameof(TerrainSystem.GetHeightData))]
         [HarmonyTranspiler]
         public static IEnumerable<CodeInstruction> GetHeightData_Transpiler(IEnumerable<CodeInstruction> instructions)

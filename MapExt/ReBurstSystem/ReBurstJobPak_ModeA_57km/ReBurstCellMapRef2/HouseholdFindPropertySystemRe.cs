@@ -31,6 +31,9 @@ using static Game.Simulation.HouseholdFindPropertySystem;
 
 namespace MapExtPDX.MapExt.ReBurstSystemModeA
 {
+    // v1.3.6f变动
+    // 关联PropertyUtilsRe
+    // StartHomeFinding寻找住所数量待测试修补
 
     [BurstCompile]
     public struct PreparePropertyJob : IJobChunk
@@ -408,7 +411,12 @@ namespace MapExtPDX.MapExt.ReBurstSystemModeA
             {
                 CommonUtils.Swap(ref a, ref b);
             }
+
+            // 待测试mod
+            // parameters.m_MaxResultCount = 10;
             parameters.m_MaxResultCount = 10;
+            // 设置正在寻找住处的实体所能搜寻工作/上学地点周边的空闲住宅数量，原始设定过低导致大量排队时卡住;
+
             parameters.m_PathfindFlags |= (PathfindFlags)(targetIsOrigin ? 256 : 128);
             this.m_CommandBuffer.AddBuffer<PathInformations>(household).Add(new PathInformations
             {
@@ -494,7 +502,11 @@ namespace MapExtPDX.MapExt.ReBurstSystemModeA
                 this.ProcessPathInformations(householdEntity, bufferData, propertySeeker, dynamicBuffer, householdIncome);
                 return false;
             }
-            if (propertySeeker.m_LastPropertySeekFrame + HouseholdFindPropertySystem.kFindPropertyCoolDown > this.m_SimulationFrame)
+            Entity householdHomeBuilding = BuildingUtils.GetHouseholdHomeBuilding(householdEntity, ref this.m_PropertyRenters, ref this.m_HomelessHouseholds);
+
+            // mod
+            float bestPropertyScore = ((householdHomeBuilding != Entity.Null) ? PropertyUtilsRe.GetPropertyScore(householdHomeBuilding, householdEntity, dynamicBuffer, ref this.m_PrefabRefs, ref this.m_BuildingProperties, ref this.m_Buildings, ref this.m_BuildingDatas, ref this.m_Households, ref this.m_Citizens, ref this.m_Students, ref this.m_Workers, ref this.m_SpawnableDatas, ref this.m_Crimes, ref this.m_ServiceCoverages, ref this.m_Lockeds, ref this.m_ElectricityConsumers, ref this.m_WaterConsumers, ref this.m_GarbageProducers, ref this.m_MailProducers, ref this.m_Transforms, ref this.m_Abandoneds, ref this.m_Parks, ref this.m_Availabilities, this.m_TaxRates, this.m_PollutionMap, this.m_AirPollutionMap, this.m_NoiseMap, this.m_TelecomCoverages, this.m_CityModifiers[this.m_City], this.m_HealthcareParameters.m_HealthcareServicePrefab, this.m_ParkParameters.m_ParkServicePrefab, this.m_EducationParameters.m_EducationServicePrefab, this.m_TelecomParameters.m_TelecomServicePrefab, this.m_GarbageParameters.m_GarbageServicePrefab, this.m_PoliceParameters.m_PoliceServicePrefab, this.m_CitizenHappinessParameterData, this.m_GarbageParameters) : float.NegativeInfinity);
+            if (householdHomeBuilding == Entity.Null && propertySeeker.m_LastPropertySeekFrame + HouseholdFindPropertySystem.kFindPropertyCoolDown > this.m_SimulationFrame)
             {
                 if (this.m_PathInformations[householdEntity].m_State != PathFlags.Pending && math.csum(this.m_ResidentialPropertyData.m_FreeProperties) < 10)
                 {
@@ -502,13 +514,11 @@ namespace MapExtPDX.MapExt.ReBurstSystemModeA
                 }
                 return false;
             }
-            Entity householdHomeBuilding = BuildingUtils.GetHouseholdHomeBuilding(householdEntity, ref this.m_PropertyRenters, ref this.m_HomelessHouseholds);
-            float bestPropertyScore = ((householdHomeBuilding != Entity.Null) ? PropertyUtilsRe.GetPropertyScore(householdHomeBuilding, householdEntity, dynamicBuffer, ref this.m_PrefabRefs, ref this.m_BuildingProperties, ref this.m_Buildings, ref this.m_BuildingDatas, ref this.m_Households, ref this.m_Citizens, ref this.m_Students, ref this.m_Workers, ref this.m_SpawnableDatas, ref this.m_Crimes, ref this.m_ServiceCoverages, ref this.m_Lockeds, ref this.m_ElectricityConsumers, ref this.m_WaterConsumers, ref this.m_GarbageProducers, ref this.m_MailProducers, ref this.m_Transforms, ref this.m_Abandoneds, ref this.m_Parks, ref this.m_Availabilities, this.m_TaxRates, this.m_PollutionMap, this.m_AirPollutionMap, this.m_NoiseMap, this.m_TelecomCoverages, this.m_CityModifiers[this.m_City], this.m_HealthcareParameters.m_HealthcareServicePrefab, this.m_ParkParameters.m_ParkServicePrefab, this.m_EducationParameters.m_EducationServicePrefab, this.m_TelecomParameters.m_TelecomServicePrefab, this.m_GarbageParameters.m_GarbageServicePrefab, this.m_PoliceParameters.m_PoliceServicePrefab, this.m_CitizenHappinessParameterData, this.m_GarbageParameters) : float.NegativeInfinity);
             Entity citizen = Entity.Null;
             Entity firstWorkplaceOrSchool = this.GetFirstWorkplaceOrSchool(dynamicBuffer, ref citizen);
             bool flag = firstWorkplaceOrSchool == Entity.Null;
             Entity entity = (flag ? this.GetCurrentLocation(dynamicBuffer) : firstWorkplaceOrSchool);
-            if (entity == Entity.Null)
+            if (householdHomeBuilding == Entity.Null && entity == Entity.Null)
             {
                 CitizenUtils.HouseholdMoveAway(this.m_CommandBuffer, householdEntity);
                 return false;
@@ -570,7 +580,7 @@ namespace MapExtPDX.MapExt.ReBurstSystemModeA
             {
                 if (!this.m_HomelessHouseholds.HasComponent(householdEntity) && !flag5 && income < this.m_PropertyRenters[householdEntity].m_Rent)
                 {
-                    CitizenUtils.HouseholdMoveAway(this.m_CommandBuffer, householdEntity);
+                    CitizenUtils.HouseholdMoveAway(this.m_CommandBuffer, householdEntity, MoveAwayReason.NoMoney);
                 }
                 else
                 {
@@ -604,7 +614,5 @@ namespace MapExtPDX.MapExt.ReBurstSystemModeA
             }
         }
     }
-
-
 
 }

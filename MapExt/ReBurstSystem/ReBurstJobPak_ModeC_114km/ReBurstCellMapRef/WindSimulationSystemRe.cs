@@ -103,38 +103,3 @@ public struct UpdatePressureJob : IJobFor
 }
 */
 
-/*
-		[Preserve]
-		protected override void OnUpdate()
-		{
-			if (this.m_TerrainSystem.heightmap != null)
-			{
-				this.m_Odd = !this.m_Odd;
-				if (!this.m_Odd)
-				{
-					TerrainHeightData data = this.m_TerrainSystem.GetHeightData();
-					float x = TerrainUtils.ToWorldSpace(ref data, 0f);
-					float y = TerrainUtils.ToWorldSpace(ref data, 65535f);
-					float2 terrainRange = new float2(x, y);
-					UpdateWindVelocityJob updateWindVelocityJob = default(UpdateWindVelocityJob);
-					updateWindVelocityJob.m_Cells = this.m_Cells;
-					updateWindVelocityJob.m_TerrainHeightData = data;
-					updateWindVelocityJob.m_WaterSurfaceData = this.m_WaterSystem.GetSurfaceData(out var deps);
-					updateWindVelocityJob.m_TerrainRange = terrainRange;
-					UpdateWindVelocityJob jobData = updateWindVelocityJob;
-					this.m_Deps = jobData.Schedule(WindSimulationSystem.kResolution.x * WindSimulationSystem.kResolution.y * WindSimulationSystem.kResolution.z, JobHandle.CombineDependencies(this.m_Deps, deps, base.Dependency));
-					this.m_WaterSystem.AddSurfaceReader(this.m_Deps);
-					this.m_TerrainSystem.AddCPUHeightReader(this.m_Deps);
-				}
-				else
-				{
-					UpdatePressureJob updatePressureJob = default(UpdatePressureJob);
-					updatePressureJob.m_Cells = this.m_Cells;
-					updatePressureJob.m_Wind = this.constantWind / 10f;
-					UpdatePressureJob jobData2 = updatePressureJob;
-					this.m_Deps = jobData2.Schedule(WindSimulationSystem.kResolution.x * WindSimulationSystem.kResolution.y * WindSimulationSystem.kResolution.z, JobHandle.CombineDependencies(this.m_Deps, base.Dependency));
-				}
-				base.Dependency = this.m_Deps;
-			}
-		}
-*/

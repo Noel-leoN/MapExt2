@@ -6,14 +6,13 @@
 using Colossal.Logging;
 using Game;
 using Game.Modding;
-using Game.Net;
 using Game.SceneFlow;
-using HarmonyLib;
-using MapExtPDX.MapExt.MapSizePatchSet;
-using MapExtPDX.SaveLoadSystem;
+
 using System;
 using System.Reflection;
-using Unity.Entities;
+using HarmonyLib;
+
+using MapExtPDX.SaveLoadSystem;
 
 namespace MapExtPDX
 {
@@ -67,10 +66,14 @@ namespace MapExtPDX
                 Info($"{asset.name} v{asset.version} mod asset at {asset.path}");
 
             // 1.初始化双Harmony实例
+            Harmony.DEBUG = true;
+
             _globalPatcher = new Harmony(HarmonyIdGlobal);
             Info("HarmonyGlobal instance created");
             _modePatcher = new Harmony(HarmonyIdModes);
             Info("HarmonyModes instance created");
+
+            FileLog.Log("MapExt_harmony.log");
 
             // 将当前实例赋值给静态属性(use for Setting)
             Instance = this;
@@ -87,23 +90,20 @@ namespace MapExtPDX
             Colossal.IO.AssetDatabase.AssetDatabase.global.LoadSettings(Mod.ModName, m_Setting, new ModSettings(this));
             Info("Settings initialized");
 
-            // Harmony.DEBUG = true;
-
             // 3. 初始化MapSize PatchManager，并应用启动时默认的补丁模式
             // m_Setting.PatchModeChoice 从配置文件中加载上次保存的模式
             // 从设置加载初始模式
             PatchModeSetting initialMode = m_Setting.PatchModeChoice;
             Info($"Initializing PatchManager with mode from settings: {m_Setting.PatchModeChoice}");
+            // 执行MapSize关联主要系统补丁
             PatchManager.Initialize(_modePatcher, initialMode);
-            Info("PatchManager初始化完成应用！(所有Transpiler补丁完成执行；所有Pre/Postfix将在方法调用时执行.)");
+            Info("PatchManager初始化完成应用！(所有MapSize Modes Transpiler补丁完成执行；所有Pre/Postfix将在方法调用时执行.)");
 
             // 3.1 Harmony修复AirwaySystem
-             // World.DefaultGameObjectInjectionWorld.GetOrCreateSystemManaged<Game.Net.AirwaySystem>().Enabled = false;
-            // updateSystem.UpdateAfter<AirwaySystemRe>(SystemUpdatePhase.Deserialize); // 弃用
-            _globalPatcher.CreateClassProcessor(typeof(AirwaySystem_OnUpdate_Patch)).Patch();
-            Info($"AirwaySystem补丁(全局并行方式) {nameof(AirwaySystem_OnUpdate_Patch)}已应用.");
-            //_globalPatcher.CreateClassProcessor(typeof(SessionManager)).Patch();// OnUpdate执行标志位
-            //Info($"AirwaySystem辅助补丁(全局并行方式) {nameof(SessionManager)}已应用.");
+            // v2.0.5版本添加，单独执行；
+            // v2.1.0 移入PatchManager.Initialize
+            // _globalPatcher.CreateClassProcessor(typeof(AirwaySystem_OnUpdate_Patch)).Patch();
+            // Info($"AirwaySystem补丁(全局并行方式) {nameof(AirwaySystem_OnUpdate_Patch)}已应用.");
 
             // 4. 执行全局并行补丁
             Info("全局并行方式补丁正在逐条执行...");
@@ -126,7 +126,7 @@ namespace MapExtPDX
             // 4.2.1 加载NoDogs
             m_Setting.UpdateNoDogsSystemStates();
             Info($"NoDogs补丁(全局并行) {nameof(ModLocalization)}已应用.");
-            // 4.2.2 加载NoTroughTraffic(From CS2LiteBooster)           
+            // 4.2.2 加载NoTroughTraffic(From CS2LiteBooster)
             m_Setting.UpdateNoThroughTrafficSystemStates();
             Info($"NoThroughTraffic补丁(全局并行) {nameof(ModLocalization)}已应用.");
             // 4.2.3 加载NoRandomTraffic(From CS2LiteBooster)

@@ -9,7 +9,6 @@ using Game.Modding;
 using Game.SceneFlow;
 using Game.Settings;
 using Game.UI.Widgets;
-using MapExtPDX.MapExt.MapSizePatchSet;
 using System.Collections.Generic;
 using Unity.Entities;
 
@@ -22,7 +21,7 @@ namespace MapExtPDX
         ModeA, // CoreValue = 4  // 57km (default)
         ModeB, // CoreValue = 2  // 28km
         ModeC, // CoreValue = 8  // 114km
-        ModeD, // CoreValue = 16 // 229km
+        // ModeD, // CoreValue = 16 // 229km
         None   // Vanilla = 1
     }
 
@@ -157,8 +156,8 @@ namespace MapExtPDX
             {
                 case PatchModeSetting.ModeA: return "ModeA 57km (4x4)";
                 case PatchModeSetting.ModeB: return "ModeB 28km (2x2)";
-                case PatchModeSetting.ModeC: return "ModeC 114km (8x8) (not Recommand)";
-                case PatchModeSetting.ModeD: return "ModeD 229km (16x16) (Test Only!)";
+                case PatchModeSetting.ModeC: return "ModeC 114km (8x8) (Not Recommand)";
+                // case PatchModeSetting.ModeD: return "ModeD 229km (16x16) (Test Only!)";
                 case PatchModeSetting.None: return "None 14km (Vanilla)";
                 default: return mode.ToString();
             }
@@ -175,7 +174,7 @@ namespace MapExtPDX
         // 实时应用并保存
         public override void Apply()
         {
-            base.Apply(); // 这会保存设置到文件
+            base.Apply(); // 保存设置到文件
         }
 
         // 设置字段初始化器默认值
@@ -195,7 +194,7 @@ namespace MapExtPDX
                 {
                     m_NoDogsSystem = value;
 
-                    // 关键：在值被改变的瞬间，立即调用我们的更新逻辑！
+                    // 关键：在值被改变的瞬间，立即调用更新逻辑
                     UpdateNoDogsSystemStates();
                 }
             }
@@ -236,26 +235,9 @@ namespace MapExtPDX
             World.DefaultGameObjectInjectionWorld.GetOrCreateSystemManaged<Game.Simulation.TrafficSpawnerAISystem>().Enabled = !m_NoThroughTrafficSystem;
         }
 
-
-
         //[SettingsUISection(kPerformanceToolTab, kPerformanceToolGroup)]
         //[SettingsUIDisableByConditionAttribute(typeof(ModSettings), nameof(IsPatchUnAvailable))]
         //public bool NoRandomTraffic { get; set; }
-
-        /*
-        [SettingsUISection(kMiscTab, kAirwayGroup)]
-        [SettingsUIButton]
-        [SettingsUIConfirmation]
-        [SettingsUIHideByCondition(typeof(ModSettings), nameof(IsInMainMenu))]
-        public bool ApplyAirwayRegenerate
-        {
-            set
-            {
-                //AirwaySystem_OnUpdate_Patch.RequestManualRegeneration();
-                //Mod.Info($"ApplyAirwayRegenerate button clicked. SessionLock change to {AirwaySystem_OnUpdate_Patch.s_HasRunThisSession}");
-            }
-        }
-        */
 
         [SettingsUISection(kMiscTab, kMiscGroup)]
         [SettingsUIDisableByConditionAttribute(typeof(ModSettings), nameof(IsPatchUnAvailable))]  // 暂时禁用
@@ -286,6 +268,3 @@ namespace MapExtPDX
 
     }
 }
-
-
-

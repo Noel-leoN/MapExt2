@@ -64,10 +64,13 @@ namespace MapExtPDX.MapExt.ReBurstSystemModeA
         {
             // OnUpdate中引入参数
             // m_CellSize = CellMapSystem<LandValueCell>.kMapSize / LandValueSystem.kTextureSize
-            // 直接修改job内部逻辑，避免transpiler双重修补(使用直接数，不要用倍数，以免可能泛型双重修补）
-            m_CellSize = 57344 / LandValueSystem.kTextureSize;
+            // 直接修改job内部逻辑，避免transpiler双重修补
+            m_CellSize = CellMapSystemRe.kMapSize / LandValueSystem.kTextureSize; // 57344 / 128; 
 
+            // 后续修补
             int kTextureSize = 128;
+            // int kUpdatesPerDay = 32;
+
             float3 cellCenter = GetCellCenter(index, kTextureSize);
             if (WaterUtils.SampleDepth(ref m_WaterSurfaceData, cellCenter) > 1f)
             {
@@ -140,9 +143,6 @@ namespace MapExtPDX.MapExt.ReBurstSystemModeA
                 }
             }
         }
-
-
-
     }
 
 }

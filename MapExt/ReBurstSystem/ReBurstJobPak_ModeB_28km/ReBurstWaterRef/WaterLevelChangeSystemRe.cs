@@ -50,7 +50,7 @@ namespace MapExtPDX.MapExt.ReBurstSystemModeB
                 }
                 if (waterLevelChangeData.m_ChangeType == WaterLevelChangeType.Sine)
                 {
-                    float num2 = (duration.m_EndFrame - TsunamiEndDelay - duration.m_StartFrame) / 60f;
+                    float num2 = (duration.m_EndFrame - CellMapSystemRe.TsunamiEndDelay - duration.m_StartFrame) / 60f; //
                     if (num < 0.05f * num2)
                     {
                         value.m_Intensity = -0.2f * value.m_MaxIntensity * math.sin(20f * num / num2 * math.PI);
@@ -81,25 +81,3 @@ namespace MapExtPDX.MapExt.ReBurstSystemModeB
     }
 
 }
-
-/*
-		[Preserve]
-		protected override void OnUpdate()
-		{
-			this.__TypeHandle.__Game_Prefabs_WaterLevelChangeData_RO_ComponentLookup.Update(ref base.CheckedStateRef);
-			this.__TypeHandle.__Game_Events_Duration_RO_ComponentTypeHandle.Update(ref base.CheckedStateRef);
-			this.__TypeHandle.__Game_Events_WaterLevelChange_RW_ComponentTypeHandle.Update(ref base.CheckedStateRef);
-			this.__TypeHandle.__Game_Prefabs_PrefabRef_RO_ComponentTypeHandle.Update(ref base.CheckedStateRef);
-			this.__TypeHandle.__Unity_Entities_Entity_TypeHandle.Update(ref base.CheckedStateRef);
-			WaterLevelChangeJob waterLevelChangeJob = default(WaterLevelChangeJob);
-			waterLevelChangeJob.m_EntityType = this.__TypeHandle.__Unity_Entities_Entity_TypeHandle;
-			waterLevelChangeJob.m_PrefabRefType = this.__TypeHandle.__Game_Prefabs_PrefabRef_RO_ComponentTypeHandle;
-			waterLevelChangeJob.m_WaterLevelChangeType = this.__TypeHandle.__Game_Events_WaterLevelChange_RW_ComponentTypeHandle;
-			waterLevelChangeJob.m_DurationType = this.__TypeHandle.__Game_Events_Duration_RO_ComponentTypeHandle;
-			waterLevelChangeJob.m_PrefabWaterLevelChangeData = this.__TypeHandle.__Game_Prefabs_WaterLevelChangeData_RO_ComponentLookup;
-			waterLevelChangeJob.m_SimulationFrame = this.m_SimulationSystem.frameIndex;
-			WaterLevelChangeJob jobData = waterLevelChangeJob;
-			base.Dependency = JobChunkExtensions.ScheduleParallel(jobData, this.m_WaterLevelChangeQuery, base.Dependency);
-			this.m_EndFrameBarrier.AddJobHandleForProducer(base.Dependency);
-		}
-*/

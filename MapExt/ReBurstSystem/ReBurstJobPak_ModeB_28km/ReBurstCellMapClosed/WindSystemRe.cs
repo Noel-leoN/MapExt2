@@ -38,25 +38,3 @@ namespace MapExtPDX.MapExt.ReBurstSystemModeB
     }
 
 }
-
-
-/*
-[Preserve]
-protected override void OnUpdate()
-{
-    TerrainHeightData heightData = this.m_TerrainSystem.GetHeightData();
-    if (heightData.isCreated)
-    {
-        WindCopyJob windCopyJob = default(WindCopyJob);
-        windCopyJob.m_WindMap = base.m_Map;
-        windCopyJob.m_Source = this.m_WindSimulationSystem.GetCells(out var deps);
-        windCopyJob.m_TerrainHeightData = heightData;
-        WindCopyJob jobData = windCopyJob;
-        base.Dependency = jobData.Schedule(base.m_Map.Length, JobHandle.CombineDependencies(deps, JobHandle.CombineDependencies(base.m_WriteDependencies, base.m_ReadDependencies, base.Dependency)));
-        base.AddWriter(base.Dependency);
-        this.m_TerrainSystem.AddCPUHeightReader(base.Dependency);
-        this.m_WindSimulationSystem.AddReader(base.Dependency);
-        this.m_WindTextureSystem.RequireUpdate();
-    }
-}
-*/

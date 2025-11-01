@@ -69,7 +69,7 @@ $(Screenshot00)$(Screenshot01)$(Screenshot02)$(Screenshot03)$(Screenshot04)$(Scr
     <ModVersion Value="$(Version)" />
 
     <!-- Recommended version of the base game to use the mod. -->
-    <GameVersion Value="1.3.*" />
+    <GameVersion Value="1.3.6*" />
 
     <!-- Dependency for the mod.  Can be set multiple times. -->
     <Dependency Id="" />
@@ -83,7 +83,8 @@ $(Screenshot00)$(Screenshot01)$(Screenshot02)$(Screenshot03)$(Screenshot04)$(Scr
 $([System.IO.File]::ReadAllText('.\ChangeLog.md').TrimEnd())
 </ChangeLog>
 
-    <!-- External links. Supported types are discord, github, youtube, twitch, x, paypal, patreon, buymeacoffee, kofi, crowdin, gitlab, gofundme.  Can be set multiple times. -->
+    <!-- External links.  Can be set multiple times. -->
+    <!-- Supported types are discord, github, youtube, twitch, x, paypal, patreon, buymeacoffee, kofi, crowdin, gitlab, gofundme. -->
     <ExternalLink Type="github" Url="https://github.com/Noel-leoN/MapExt2" />
 	<ExternalLink Type="discord" Url="https://discord.com/channels/1024242828114673724/1366810268331540671" />
 	<ExternalLink Type="kofi" Url="https://ko-fi.com/noel2" />

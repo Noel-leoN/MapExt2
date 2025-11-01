@@ -13,6 +13,8 @@ using static MapExtPDX.MapExt.ReBurstSystemModeA.CellMapSystemRe;
 namespace MapExtPDX.MapExt.ReBurstSystemModeA
 {
     /// <summary>
+    /// ModeBCD需要变更内部代码！！！
+    /// 重定向引用的外部静态方法/kTextureSize=256
     /// 需修改m_CellSize输入值；
     /// OnUpdate中引入m_CellSize=CellMapSystem.kMapSize/kTextureSize
     /// </summary>
@@ -34,8 +36,9 @@ namespace MapExtPDX.MapExt.ReBurstSystemModeA
 
         public void Execute(int index)
         {
-            // 修补输入值；
-            m_CellSize = 57344f/128;
+            // 直接修补输入值；
+            m_CellSize = CellMapSystemRe.kMapSize / AvailabilityInfoToGridSystem.kTextureSize; // 57344f/128; m_CellSize = (float)CellMapSystem<AvailabilityInfoCell>.kMapSize / (float)AvailabilityInfoToGridSystem.kTextureSize;
+
             // 原始代码
             float3 cellCenter = GetCellCenter(index, AvailabilityInfoToGridSystem.kTextureSize);
             NetIterator netIterator = default;
@@ -51,6 +54,7 @@ namespace MapExtPDX.MapExt.ReBurstSystemModeA
             value.m_AvailabilityInfo = math.select(iterator.m_Result.m_AvailabilityInfo / iterator.m_TotalWeight.m_AvailabilityInfo, 0f, iterator.m_TotalWeight.m_AvailabilityInfo == 0f);
             m_AvailabilityInfoMap[index] = value;
         }
+
         private struct NetIterator : INativeQuadTreeIterator<Entity, QuadTreeBoundsXZ>, IUnsafeQuadTreeIterator<Entity, QuadTreeBoundsXZ>
         {
             public AvailabilityInfoCell m_TotalWeight;

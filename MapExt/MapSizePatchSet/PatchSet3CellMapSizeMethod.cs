@@ -15,6 +15,10 @@ using Unity.Mathematics;
 
 namespace MapExtPDX.MapExt.MapSizePatchSet
 {
+    /// <summary>
+    /// 此class修补所有引用kMapSize的CellMapSystem<T>基类方法的外部调用
+    /// </summary>
+    
     [HarmonyPatch]
     public static class CellMapSystem_KMapSize_Method_Patches
     {
@@ -105,6 +109,11 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
         static IEnumerable<CodeInstruction> AirPollution_Center(IEnumerable<CodeInstruction> instructions, ILGenerator gen, MethodBase original) =>
             PatchKMapSizeFieldLoad(instructions, gen, original);
 
+        [HarmonyPatch(typeof(CellMapSystem<AirPollution>), "GetCellCenter", new Type[] { typeof(int2), typeof(int) } /* Add params if any */)]
+        [HarmonyTranspiler]
+        static IEnumerable<CodeInstruction> AirPollution_Center2(IEnumerable<CodeInstruction> instructions, ILGenerator gen, MethodBase original) =>
+            PatchKMapSizeFieldLoad(instructions, gen, original);
+
         [HarmonyPatch(typeof(CellMapSystem<AirPollution>), "GetData")]
         [HarmonyTranspiler]
         static IEnumerable<CodeInstruction> AirPollution_GetData(IEnumerable<CodeInstruction> instructions, ILGenerator gen, MethodBase original) =>
@@ -117,7 +126,12 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
         static IEnumerable<CodeInstruction> AvailabilityInfoCell_Center(IEnumerable<CodeInstruction> instructions, ILGenerator gen, MethodBase original) =>
             PatchKMapSizeFieldLoad(instructions, gen, original);
 
-        [HarmonyPatch(typeof(CellMapSystem<AvailabilityInfoCell>), nameof(CellMapSystem<AvailabilityInfoCell>.GetData))] // Adjust params as needed
+        [HarmonyPatch(typeof(CellMapSystem<AvailabilityInfoCell>), "GetCellCenter", new Type[] { typeof(int2), typeof(int) } /* Add params if any */)]
+        [HarmonyTranspiler]
+        static IEnumerable<CodeInstruction> AvailabilityInfoCell_Center2(IEnumerable<CodeInstruction> instructions, ILGenerator gen, MethodBase original) =>
+            PatchKMapSizeFieldLoad(instructions, gen, original);
+
+        [HarmonyPatch(typeof(CellMapSystem<AvailabilityInfoCell>), "GetData")]
         [HarmonyTranspiler]
         static IEnumerable<CodeInstruction> AvailabilityInfoCell_GetData(IEnumerable<CodeInstruction> instructions, ILGenerator gen, MethodBase original) =>
             PatchKMapSizeFieldLoad(instructions, gen, original);

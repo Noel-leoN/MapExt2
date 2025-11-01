@@ -7,7 +7,6 @@ using Game.City;
 using Game.Companies;
 using Game.Economy;
 using Game.Net;
-using Game.Objects;
 using Game.Prefabs;
 using Game.Simulation;
 using Unity.Collections;
@@ -17,7 +16,9 @@ using UnityEngine;
 
 namespace MapExtPDX.MapExt.ReBurstSystemModeB
 {
-    // 静态方法库，无BCJob
+    // v1.3.6f变动
+    // 静态方法库用于AverageHappinessSection
+    // 无BCJob
     public static class BuildingHappinessRe
     {
         public static void GetResidentialBuildingHappinessFactors(Entity city, NativeArray<int> taxRates, Entity property, NativeArray<int2> factors, ref ComponentLookup<PrefabRef> prefabs, ref ComponentLookup<SpawnableBuildingData> spawnableBuildings, ref ComponentLookup<BuildingPropertyData> buildingPropertyDatas, ref BufferLookup<CityModifier> cityModifiers, ref ComponentLookup<Building> buildings, ref ComponentLookup<ElectricityConsumer> electricityConsumers, ref ComponentLookup<WaterConsumer> waterConsumers, ref BufferLookup<Game.Net.ServiceCoverage> serviceCoverages, ref ComponentLookup<Locked> locked, ref ComponentLookup<Game.Objects.Transform> transforms, ref ComponentLookup<GarbageProducer> garbageProducers, ref ComponentLookup<CrimeProducer> crimeProducers, ref ComponentLookup<MailProducer> mailProducers, ref BufferLookup<Renter> renters, ref ComponentLookup<Citizen> citizenDatas, ref BufferLookup<HouseholdCitizen> householdCitizens, ref ComponentLookup<BuildingData> buildingDatas, CitizenHappinessParameterData citizenHappinessParameters, GarbageParameterData garbageParameters, HealthcareParameterData healthcareParameters, ParkParameterData parkParameters, EducationParameterData educationParameters, TelecomParameterData telecomParameters, DynamicBuffer<HappinessFactorParameterData> happinessFactorParameters, NativeArray<GroundPollution> pollutionMap, NativeArray<NoisePollution> noisePollutionMap, NativeArray<AirPollution> airPollutionMap, CellMapData<TelecomCoverage> telecomCoverage, float relativeElectricityFee, float relativeWaterFee)
@@ -218,27 +219,27 @@ namespace MapExtPDX.MapExt.ReBurstSystemModeB
                     factors[14] = value10;
                 }
             }
-            // method替换
             if (!locked.HasEnabledComponent(happinessFactorParameters[6].m_LockedEntity))
             {
+                // 重定向
                 int2 groundPollutionBonuses = CitizenHappinessJob.GetGroundPollutionBonuses(property, ref transforms, pollutionMap, cityModifiers2, in citizenHappinessParameters);
                 int2 value11 = factors[5];
                 value11.x++;
                 value11.y += (groundPollutionBonuses.x + groundPollutionBonuses.y) / 2 - happinessFactorParameters[6].m_BaseLevel;
                 factors[5] = value11;
             }
-            // method替换
             if (!locked.HasEnabledComponent(happinessFactorParameters[2].m_LockedEntity))
             {
+                // 重定向
                 int2 airPollutionBonuses = CitizenHappinessJob.GetAirPollutionBonuses(property, ref transforms, airPollutionMap, cityModifiers2, in citizenHappinessParameters);
                 int2 value12 = factors[2];
                 value12.x++;
                 value12.y += (airPollutionBonuses.x + airPollutionBonuses.y) / 2 - happinessFactorParameters[2].m_BaseLevel;
                 factors[2] = value12;
             }
-            // method替换
             if (!locked.HasEnabledComponent(happinessFactorParameters[7].m_LockedEntity))
             {
+                // 重定向
                 int2 noiseBonuses = CitizenHappinessJob.GetNoiseBonuses(property, ref transforms, noisePollutionMap, in citizenHappinessParameters);
                 int2 value13 = factors[6];
                 value13.x++;
@@ -287,7 +288,7 @@ namespace MapExtPDX.MapExt.ReBurstSystemModeB
             }
             if (!locked.HasEnabledComponent(happinessFactorParameters[17].m_LockedEntity))
             {
-                float2 @float = new float2(num4, num4) * CitizenHappinessSystem.GetTaxBonuses(0, taxRates, in citizenHappinessParameters) + new float2(num5, num5) * CitizenHappinessSystem.GetTaxBonuses(1, taxRates, in citizenHappinessParameters) + new float2(num6, num6) * CitizenHappinessSystem.GetTaxBonuses(2, taxRates, in citizenHappinessParameters) + new float2(num7, num7) * CitizenHappinessSystem.GetTaxBonuses(3, taxRates, in citizenHappinessParameters) + new float2(num8, num8) * CitizenHappinessSystem.GetTaxBonuses(4, taxRates, in citizenHappinessParameters);
+                float2 @float = new float2(num4, num4) * CitizenHappinessSystem.GetTaxBonuses(0, taxRates, cityModifiers2, in citizenHappinessParameters) + new float2(num5, num5) * CitizenHappinessSystem.GetTaxBonuses(1, taxRates, cityModifiers2, in citizenHappinessParameters) + new float2(num6, num6) * CitizenHappinessSystem.GetTaxBonuses(2, taxRates, cityModifiers2, in citizenHappinessParameters) + new float2(num7, num7) * CitizenHappinessSystem.GetTaxBonuses(3, taxRates, cityModifiers2, in citizenHappinessParameters) + new float2(num8, num8) * CitizenHappinessSystem.GetTaxBonuses(4, taxRates, cityModifiers2, in citizenHappinessParameters);
                 int2 value19 = factors[16];
                 value19.x++;
                 value19.y += Mathf.RoundToInt(@float.x + @float.y) / 2 - happinessFactorParameters[17].m_BaseLevel;
@@ -301,82 +302,6 @@ namespace MapExtPDX.MapExt.ReBurstSystemModeB
                 value20.y += Mathf.RoundToInt(float2.x + float2.y) / 2 - happinessFactorParameters[3].m_BaseLevel;
                 factors[21] = value20;
             }
-        }
-
-        public static void GetCompanyHappinessFactors(Entity property, NativeArray<int2> factors, ref ComponentLookup<PrefabRef> prefabs, ref ComponentLookup<SpawnableBuildingData> spawnableBuildings, ref ComponentLookup<BuildingPropertyData> buildingPropertyDatas, ref ComponentLookup<Building> buildings, ref ComponentLookup<OfficeBuilding> officeBuildings, ref BufferLookup<Renter> renters, ref ComponentLookup<BuildingData> buildingDatas, ref ComponentLookup<CompanyData> companies, ref ComponentLookup<IndustrialProcessData> industrialProcessDatas, ref ComponentLookup<WorkProvider> workProviders, ref BufferLookup<Employee> employees, ref ComponentLookup<WorkplaceData> workplaceDatas, ref ComponentLookup<Citizen> citizens, ref ComponentLookup<HealthProblem> healthProblems, ref ComponentLookup<ServiceAvailable> serviceAvailables, ref ComponentLookup<ResourceData> resourceDatas, ref ComponentLookup<ZonePropertiesData> zonePropertiesDatas, ref BufferLookup<Efficiency> efficiencies, ref ComponentLookup<ServiceCompanyData> serviceCompanyDatas, ref BufferLookup<ResourceAvailability> availabilities, ref BufferLookup<TradeCost> tradeCosts, EconomyParameterData economyParameters, NativeArray<int> taxRates, NativeArray<Entity> processes, ResourcePrefabs resourcePrefabs)
-        {
-            if (!prefabs.HasComponent(property))
-            {
-                return;
-            }
-            Entity prefab = prefabs[property].m_Prefab;
-            if (!spawnableBuildings.HasComponent(prefab) || !buildingDatas.HasComponent(prefab))
-            {
-                return;
-            }
-            BuildingPropertyData buildingPropertyData = buildingPropertyDatas[prefab];
-            BuildingData buildingData = buildingDatas[prefab];
-            SpawnableBuildingData spawnableData = spawnableBuildings[prefab];
-            int level = spawnableData.m_Level;
-            Building building = default(Building);
-            if (buildings.HasComponent(property))
-            {
-                building = buildings[property];
-            }
-            bool flag = false;
-            Entity entity = default(Entity);
-            Entity entity2 = default(Entity);
-            IndustrialProcessData processData = default(IndustrialProcessData);
-            ServiceCompanyData serviceCompanyData = default(ServiceCompanyData);
-            Resource resource = buildingPropertyData.m_AllowedManufactured | buildingPropertyData.m_AllowedSold;
-            if (resource == Resource.NoResource)
-            {
-                return;
-            }
-            if (renters.HasBuffer(property))
-            {
-                DynamicBuffer<Renter> dynamicBuffer = renters[property];
-                for (int i = 0; i < dynamicBuffer.Length; i++)
-                {
-                    entity = dynamicBuffer[i].m_Renter;
-                    if (!companies.HasComponent(entity) || !prefabs.HasComponent(entity))
-                    {
-                        continue;
-                    }
-                    entity2 = prefabs[entity].m_Prefab;
-                    if (industrialProcessDatas.HasComponent(entity2))
-                    {
-                        if (serviceCompanyDatas.HasComponent(entity2))
-                        {
-                            serviceCompanyData = serviceCompanyDatas[entity2];
-                        }
-                        processData = industrialProcessDatas[entity2];
-                        flag = true;
-                        break;
-                    }
-                }
-            }
-            if (flag)
-            {
-                BuildingHappinessRe.AddCompanyHappinessFactors(factors, property, prefab, entity, entity2, processData, serviceCompanyData, buildingPropertyData.m_AllowedSold != Resource.NoResource, level, ref officeBuildings, ref workProviders, ref employees, ref workplaceDatas, ref citizens, ref healthProblems, ref serviceAvailables, ref buildingPropertyDatas, ref resourceDatas, ref serviceCompanyDatas, ref efficiencies, ref availabilities, ref tradeCosts, taxRates, building, spawnableData, buildingData, resourcePrefabs, ref economyParameters);
-                return;
-            }
-            for (int j = 0; j < processes.Length; j++)
-            {
-                processData = industrialProcessDatas[processes[j]];
-                if (serviceCompanyDatas.HasComponent(processes[j]))
-                {
-                    serviceCompanyData = serviceCompanyDatas[processes[j]];
-                }
-                if ((resource & processData.m_Output.m_Resource) != Resource.NoResource)
-                {
-                    BuildingHappinessRe.AddCompanyHappinessFactors(factors, property, prefab, entity, entity2, processData, serviceCompanyData, buildingPropertyData.m_AllowedSold != Resource.NoResource, level, ref officeBuildings, ref workProviders, ref employees, ref workplaceDatas, ref citizens, ref healthProblems, ref serviceAvailables, ref buildingPropertyDatas, ref resourceDatas, ref serviceCompanyDatas, ref efficiencies, ref availabilities, ref tradeCosts, taxRates, building, spawnableData, buildingData, resourcePrefabs, ref economyParameters);
-                }
-            }
-        }
-
-        private static void AddCompanyHappinessFactors(NativeArray<int2> factors, Entity property, Entity prefab, Entity renter, Entity renterPrefab, IndustrialProcessData processData, ServiceCompanyData serviceCompanyData, bool commercial, int level, ref ComponentLookup<OfficeBuilding> officeBuildings, ref ComponentLookup<WorkProvider> workProviders, ref BufferLookup<Employee> employees, ref ComponentLookup<WorkplaceData> workplaceDatas, ref ComponentLookup<Citizen> citizens, ref ComponentLookup<HealthProblem> healthProblems, ref ComponentLookup<ServiceAvailable> serviceAvailables, ref ComponentLookup<BuildingPropertyData> buildingPropertyDatas, ref ComponentLookup<ResourceData> resourceDatas, ref ComponentLookup<ServiceCompanyData> serviceCompanyDatas, ref BufferLookup<Efficiency> efficiencies, ref BufferLookup<ResourceAvailability> availabilities, ref BufferLookup<TradeCost> tradeCosts, NativeArray<int> taxRates, Building building, SpawnableBuildingData spawnableData, BuildingData buildingData, ResourcePrefabs resourcePrefabs, ref EconomyParameterData economyParameters)
-        {
         }
     }
 }

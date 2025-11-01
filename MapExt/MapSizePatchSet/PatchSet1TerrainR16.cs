@@ -17,6 +17,7 @@ using UnityEngine.Experimental.Rendering;
 namespace MapExtPDX.MapExt.MapSizePatchSet
 {
     /// <summary>
+    /// 地图编辑器导入地形高位图自适应分辨率
     /// 仅在创建地图时一次调用，无需Transpiler提高性能
     /// </summary>
     public static class TerrainToR16Patch
@@ -26,8 +27,8 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
         private static void Error(string message) => Mod.Error($" {nameof(Mod.ModName)}.{nameof(TerrainToR16Patch)}:{message}");
         private static void Error(Exception e, string message) => Mod.Error(e, $" {nameof(Mod.ModName)}.{nameof(TerrainToR16Patch)}:{message}");
 
-        private const int TARGET_WIDTH = 4096; // 4096;
-        private const int TARGET_HEIGHT = 4096; //4096;
+        private const int TARGET_WIDTH = 4096; // vanilla = 4096;
+        private const int TARGET_HEIGHT = 4096; // vanilla = 4096;
 
         [HarmonyPatch(typeof(TerrainSystem), "IsValidHeightmapFormat")]
         [HarmonyPrefix]
@@ -47,7 +48,7 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
             AppBindings appBindings = GameManager.instance.userInterface.appBindings;
             LocalizedString? localizedString = LocalizedString.Id("Editor.INCORRECT_HEIGHTMAP_TITLE");
             Dictionary<string, ILocElement> dictionary = new Dictionary<string, ILocElement>();
-            int kDefaultHeightmapWidth = 14336;
+            int kDefaultHeightmapWidth = 14336; // vanilla仅支持导入分辨率不高于14336x14336贴图，原因未知
             dictionary.Add("WIDTH", LocalizedString.Value(kDefaultHeightmapWidth.ToString()));
             kDefaultHeightmapWidth = 14336;
             dictionary.Add("HEIGHT", LocalizedString.Value(kDefaultHeightmapWidth.ToString()));
@@ -64,7 +65,6 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
             // __result = true;
             // return false;
         }
-
 
         // --- Helper: Resample Texture2D -> New R16 Texture2D ---
         private static Texture2D ResampleTexture2DToR16(Texture2D source)

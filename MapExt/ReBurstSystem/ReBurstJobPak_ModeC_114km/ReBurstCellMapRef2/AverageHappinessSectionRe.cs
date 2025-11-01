@@ -8,16 +8,18 @@ using Game.City;
 using Game.Objects;
 using Game.Prefabs;
 using Game.Simulation;
+using Game.UI.InGame;
 using Unity.Burst;
 using Unity.Burst.Intrinsics;
 using Unity.Collections;
 using Unity.Entities;
 using Unity.Jobs;
 using Unity.Mathematics;
-using Game.UI.InGame;
 
 namespace MapExtPDX.MapExt.ReBurstSystemModeC
 {
+    // v1.3.6f变动
+    // 关联CitizenHappinessSystemRe/BuildingHappinessRe
     [BurstCompile]
     public struct CountHappinessJob : IJob
     {
@@ -41,9 +43,6 @@ namespace MapExtPDX.MapExt.ReBurstSystemModeC
 
         [ReadOnly]
         public ComponentLookup<PropertyRenter> m_PropertyRenterFromEntity;
-
-        [ReadOnly]
-        public ComponentLookup<Abandoned> m_AbandonedFromEntity;
 
         [ReadOnly]
         public BufferLookup<HouseholdCitizen> m_HouseholdCitizenFromEntity;
@@ -136,14 +135,15 @@ namespace MapExtPDX.MapExt.ReBurstSystemModeC
             int citizenCount = 0;
             if (this.m_BuildingFromEntity.HasComponent(this.m_SelectedEntity) && this.m_ResidentialPropertyFromEntity.HasComponent(this.m_SelectedEntity))
             {
-                bool flag = this.m_AbandonedFromEntity.HasComponent(this.m_SelectedEntity);
+                // 重定向
                 BuildingHappinessRe.GetResidentialBuildingHappinessFactors(this.m_City, this.m_TaxRates, this.m_SelectedEntity, this.m_Factors, ref this.m_PrefabRefFromEntity, ref this.m_SpawnableBuildingDataFromEntity, ref this.m_BuildingPropertyDataFromEntity, ref this.m_CityModifierFromEntity, ref this.m_BuildingFromEntity, ref this.m_ElectricityConsumerFromEntity, ref this.m_WaterConsumerFromEntity, ref this.m_ServiceCoverageFromEntity, ref this.m_LockedFromEntity, ref this.m_TransformFromEntity, ref this.m_GarbageProducersFromEntity, ref this.m_CrimeProducersFromEntity, ref this.m_MailProducerFromEntity, ref this.m_RenterFromEntity, ref this.m_CitizenFromEntity, ref this.m_HouseholdCitizenFromEntity, ref this.m_BuildingDataFromEntity, this.m_CitizenHappinessParameters, this.m_GarbageParameters, this.m_HealthcareParameters, this.m_ParkParameters, this.m_EducationParameters, this.m_TelecomParameters, this.m_HappinessFactorParameters, this.m_PollutionMap, this.m_NoisePollutionMap, this.m_AirPollutionMap, this.m_TelecomCoverage, this.m_RelativeElectricityFee, this.m_RelativeWaterFee);
+                // mod
                 if (TryAddPropertyHappiness(ref happiness, ref citizenCount, this.m_SelectedEntity, this.m_HouseholdFromEntity, this.m_CitizenFromEntity, this.m_HealthProblemFromEntity, this.m_RenterFromEntity, this.m_HouseholdCitizenFromEntity))
                 {
                     this.m_Results[1] = citizenCount;
                     this.m_Results[2] = happiness;
                 }
-                this.m_Results[0] = ((citizenCount > 0 || flag) ? 1 : 0);
+                this.m_Results[0] = ((citizenCount > 0) ? 1 : 0);
             }
             else
             {
@@ -164,12 +164,14 @@ namespace MapExtPDX.MapExt.ReBurstSystemModeC
                 this.m_Results[1] = citizenCount;
                 this.m_Results[2] = happiness;
                 if (this.m_PropertyRenterFromEntity.TryGetComponent(this.m_SelectedEntity, out var componentData))
-                {
+                { 
+                    //重定向
                     BuildingHappinessRe.GetResidentialBuildingHappinessFactors(this.m_City, this.m_TaxRates, componentData.m_Property, this.m_Factors, ref this.m_PrefabRefFromEntity, ref this.m_SpawnableBuildingDataFromEntity, ref this.m_BuildingPropertyDataFromEntity, ref this.m_CityModifierFromEntity, ref this.m_BuildingFromEntity, ref this.m_ElectricityConsumerFromEntity, ref this.m_WaterConsumerFromEntity, ref this.m_ServiceCoverageFromEntity, ref this.m_LockedFromEntity, ref this.m_TransformFromEntity, ref this.m_GarbageProducersFromEntity, ref this.m_CrimeProducersFromEntity, ref this.m_MailProducerFromEntity, ref this.m_RenterFromEntity, ref this.m_CitizenFromEntity, ref this.m_HouseholdCitizenFromEntity, ref this.m_BuildingDataFromEntity, this.m_CitizenHappinessParameters, this.m_GarbageParameters, this.m_HealthcareParameters, this.m_ParkParameters, this.m_EducationParameters, this.m_TelecomParameters, this.m_HappinessFactorParameters, this.m_PollutionMap, this.m_NoisePollutionMap, this.m_AirPollutionMap, this.m_TelecomCoverage, this.m_RelativeElectricityFee, this.m_RelativeWaterFee);
                 }
             }
         }
 
+        // 重定向
         private static bool TryAddPropertyHappiness(ref int happiness, ref int citizenCount, Entity entity, ComponentLookup<Household> householdFromEntity, ComponentLookup<Citizen> citizenFromEntity, ComponentLookup<HealthProblem> healthProblemFromEntity, BufferLookup<Renter> renterFromEntity, BufferLookup<HouseholdCitizen> householdCitizenFromEntity)
         {
             bool result = false;
@@ -209,9 +211,6 @@ namespace MapExtPDX.MapExt.ReBurstSystemModeC
 
         [ReadOnly]
         public ComponentTypeHandle<CurrentDistrict> m_CurrentDistrictHandle;
-
-        [ReadOnly]
-        public ComponentLookup<Abandoned> m_AbandonedFromEntity;
 
         [ReadOnly]
         public ComponentLookup<Household> m_HouseholdFromEntity;
@@ -320,9 +319,11 @@ namespace MapExtPDX.MapExt.ReBurstSystemModeC
             for (int i = 0; i < nativeArray.Length; i++)
             {
                 Entity entity = nativeArray[i];
-                if (!(nativeArray2[i].m_District != this.m_SelectedEntity) && this.m_SpawnableBuildingDataFromEntity.HasComponent(this.m_PrefabRefFromEntity[entity].m_Prefab) && (TryAddPropertyHappiness(ref happiness, ref citizenCount, entity, this.m_HouseholdFromEntity, this.m_CitizenFromEntity, this.m_HealthProblemFromEntity, this.m_RenterFromEntity, this.m_HouseholdCitizenFromEntity) || this.m_AbandonedFromEntity.HasComponent(entity)))
+                // 重定向TryAddPropertyHappiness
+                if (!(nativeArray2[i].m_District != this.m_SelectedEntity) && this.m_SpawnableBuildingDataFromEntity.HasComponent(this.m_PrefabRefFromEntity[entity].m_Prefab) && TryAddPropertyHappiness(ref happiness, ref citizenCount, entity, this.m_HouseholdFromEntity, this.m_CitizenFromEntity, this.m_HealthProblemFromEntity, this.m_RenterFromEntity, this.m_HouseholdCitizenFromEntity))
                 {
                     num = 1;
+                    // 重定向
                     BuildingHappinessRe.GetResidentialBuildingHappinessFactors(this.m_City, this.m_TaxRates, entity, this.m_Factors, ref this.m_PrefabRefFromEntity, ref this.m_SpawnableBuildingDataFromEntity, ref this.m_BuildingPropertyDataFromEntity, ref this.m_CityModifierFromEntity, ref this.m_BuildingFromEntity, ref this.m_ElectricityConsumerFromEntity, ref this.m_WaterConsumerFromEntity, ref this.m_ServiceCoverageFromEntity, ref this.m_LockedFromEntity, ref this.m_TransformFromEntity, ref this.m_GarbageProducersFromEntity, ref this.m_CrimeProducersFromEntity, ref this.m_MailProducerFromEntity, ref this.m_RenterFromEntity, ref this.m_CitizenFromEntity, ref this.m_HouseholdCitizenFromEntity, ref this.m_BuildingDataFromEntity, this.m_CitizenHappinessParameters, this.m_GarbageParameters, this.m_HealthcareParameters, this.m_ParkParameters, this.m_EducationParameters, this.m_TelecomParameters, this.m_HappinessFactorParameters, this.m_PollutionMap, this.m_NoisePollutionMap, this.m_AirPollutionMap, this.m_TelecomCoverage, this.m_RelativeElectricityFee, this.m_RelativeWaterFee);
                 }
             }
@@ -335,6 +336,8 @@ namespace MapExtPDX.MapExt.ReBurstSystemModeC
         {
             this.Execute(in chunk, unfilteredChunkIndex, useEnabledMask, in chunkEnabledMask);
         }
+
+        // 重定向
         private static bool TryAddPropertyHappiness(ref int happiness, ref int citizenCount, Entity entity, ComponentLookup<Household> householdFromEntity, ComponentLookup<Citizen> citizenFromEntity, ComponentLookup<HealthProblem> healthProblemFromEntity, BufferLookup<Renter> renterFromEntity, BufferLookup<HouseholdCitizen> householdCitizenFromEntity)
         {
             bool result = false;

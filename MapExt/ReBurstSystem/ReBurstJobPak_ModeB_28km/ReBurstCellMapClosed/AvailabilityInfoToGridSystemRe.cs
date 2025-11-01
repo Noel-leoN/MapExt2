@@ -13,6 +13,8 @@ using static MapExtPDX.MapExt.ReBurstSystemModeB.CellMapSystemRe;
 namespace MapExtPDX.MapExt.ReBurstSystemModeB
 {
     /// <summary>
+    /// ModeBCD需要变更内部代码！！！
+    /// 重定向引用的外部静态方法/kTextureSize=256
     /// 需修改m_CellSize输入值；
     /// OnUpdate中引入m_CellSize=CellMapSystem.kMapSize/kTextureSize
     /// </summary>
@@ -34,8 +36,9 @@ namespace MapExtPDX.MapExt.ReBurstSystemModeB
 
         public void Execute(int index)
         {
-            // 修补输入值；
-            m_CellSize = 28672f/128;
+            // 直接修补输入值；
+            m_CellSize = CellMapSystemRe.kMapSize / AvailabilityInfoToGridSystem.kTextureSize; // 57344f/128; m_CellSize = (float)CellMapSystem<AvailabilityInfoCell>.kMapSize / (float)AvailabilityInfoToGridSystem.kTextureSize;
+
             // 原始代码
             float3 cellCenter = GetCellCenter(index, AvailabilityInfoToGridSystem.kTextureSize);
             NetIterator netIterator = default;
@@ -51,6 +54,7 @@ namespace MapExtPDX.MapExt.ReBurstSystemModeB
             value.m_AvailabilityInfo = math.select(iterator.m_Result.m_AvailabilityInfo / iterator.m_TotalWeight.m_AvailabilityInfo, 0f, iterator.m_TotalWeight.m_AvailabilityInfo == 0f);
             m_AvailabilityInfoMap[index] = value;
         }
+
         private struct NetIterator : INativeQuadTreeIterator<Entity, QuadTreeBoundsXZ>, IUnsafeQuadTreeIterator<Entity, QuadTreeBoundsXZ>
         {
             public AvailabilityInfoCell m_TotalWeight;
@@ -121,28 +125,3 @@ namespace MapExtPDX.MapExt.ReBurstSystemModeB
     }
 
 }
-
-/*
-
-*/
-
-
-/*
-[Preserve]
-protected override void OnUpdate()
-{
-    this.__TypeHandle.__Game_Net_EdgeGeometry_RO_ComponentLookup.Update(ref base.CheckedStateRef);
-    this.__TypeHandle.__Game_Net_ResourceAvailability_RO_BufferLookup.Update(ref base.CheckedStateRef);
-    AvailabilityInfoToGridJob availabilityInfoToGridJob = default(AvailabilityInfoToGridJob);
-    availabilityInfoToGridJob.m_NetSearchTree = this.m_NetSearchSystem.GetNetSearchTree(readOnly: true, out var dependencies);
-    availabilityInfoToGridJob.m_AvailabilityInfoMap = base.m_Map;
-    availabilityInfoToGridJob.m_AvailabilityData = this.__TypeHandle.__Game_Net_ResourceAvailability_RO_BufferLookup;
-    availabilityInfoToGridJob.m_EdgeGeometryData = this.__TypeHandle.__Game_Net_EdgeGeometry_RO_ComponentLookup;
-    availabilityInfoToGridJob.m_CellSize = (float)CellMapSystem<AvailabilityInfoCell>.kMapSize / (float)AvailabilityInfoToGridSystem.kTextureSize;
-    AvailabilityInfoToGridJob jobData = availabilityInfoToGridJob;
-    base.Dependency = IJobParallelForExtensions.Schedule(jobData, AvailabilityInfoToGridSystem.kTextureSize * AvailabilityInfoToGridSystem.kTextureSize, AvailabilityInfoToGridSystem.kTextureSize, JobHandle.CombineDependencies(dependencies, JobHandle.CombineDependencies(base.m_WriteDependencies, base.m_ReadDependencies, base.Dependency)));
-    base.AddWriter(base.Dependency);
-    this.m_NetSearchSystem.AddNetSearchTreeReader(base.Dependency);
-    base.Dependency = JobHandle.CombineDependencies(base.m_ReadDependencies, base.m_WriteDependencies, base.Dependency);
-}
-*/

@@ -1,3 +1,5 @@
+// Game.Rendering.NetColorSystem
+
 using System.Runtime.CompilerServices;
 using Colossal.Collections;
 using Colossal.Entities;
@@ -23,6 +25,8 @@ using static MapExtPDX.MapExt.ReBurstSystemModeA.CellMapSystemRe;
 
 namespace MapExtPDX.MapExt.ReBurstSystemModeA
 {
+    // v1.3.6f变动
+
     /// <summary>
     /// Job较大
     /// 仅引用GroundPollutionSystem.GetPollution
@@ -129,7 +133,13 @@ namespace MapExtPDX.MapExt.ReBurstSystemModeA
         public ResourcePrefabs m_ResourcePrefabs;
 
         [ReadOnly]
-        public NativeArray<GroundPollution> m_PollutionMap;
+        public NativeArray<GroundPollution> m_GroundPollutionMap;
+
+        [ReadOnly]
+        public NativeArray<NoisePollution> m_NoisePollutionMap;
+
+        [ReadOnly]
+        public NativeArray<AirPollution> m_AirPollutionMap;
 
         [ReadOnly]
         public NativeArray<int> m_IndustrialDemands;
@@ -218,12 +228,16 @@ namespace MapExtPDX.MapExt.ReBurstSystemModeA
                     }
                     float3 position = this.m_Nodes[edge.m_Start].m_Position;
                     float3 position2 = this.m_Nodes[edge.m_End].m_Position;
+
                     // 修改点GroundPollution.SystemGetPollution
-                    GroundPollution pollution = GroundPollutionSystemGetPollution(position, this.m_PollutionMap);
-                    // 修改点
-                    GroundPollution pollution2 = GroundPollutionSystemGetPollution(position2, this.m_PollutionMap);
-                    float pollution3 = pollution.m_Pollution;
-                    float pollution4 = pollution2.m_Pollution;
+                    GroundPollution pollution = GroundPollutionSystemGetPollution(position, this.m_GroundPollutionMap);
+                    GroundPollution pollution2 = GroundPollutionSystemGetPollution(position2, this.m_GroundPollutionMap);
+                    NoisePollution pollution3 = NoisePollutionSystemGetPollution(position, this.m_NoisePollutionMap);
+                    NoisePollution pollution4 = NoisePollutionSystemGetPollution(position2, this.m_NoisePollutionMap);
+                    AirPollution pollution5 = AirPollutionSystemGetPollution(position, this.m_AirPollutionMap);
+                    AirPollution pollution6 = AirPollutionSystemGetPollution(position2, this.m_AirPollutionMap);
+                    // mod end
+
                     this.m_ProcessEstimates.TryGetBuffer(this.m_ZonePrefab, out var bufferData3);
                     if (this.m_ZonePropertiesDatas.TryGetComponent(this.m_ZonePrefab, out var componentData6))
                     {
@@ -232,8 +246,12 @@ namespace MapExtPDX.MapExt.ReBurstSystemModeA
                         num2 /= num3;
                     }
                     value4.m_Index = (byte)activeData2.m_Index;
-                    value4.m_Value0 = (byte)math.clamp(Mathf.RoundToInt(InfoviewUtils.GetColor(availabilityData, availabilityBuffer, 0f, ref preferences, this.m_IndustrialDemands, this.m_StorageDemands, pollution3, num, bufferData3, this.m_Processes, this.m_ResourcePrefabs, this.m_ResourceDatas) * 255f), 0, 255);
-                    value4.m_Value1 = (byte)math.clamp(Mathf.RoundToInt(InfoviewUtils.GetColor(availabilityData, availabilityBuffer, 1f, ref preferences, this.m_IndustrialDemands, this.m_StorageDemands, pollution4, num2, bufferData3, this.m_Processes, this.m_ResourcePrefabs, this.m_ResourceDatas) * 255f), 0, 255);
+
+                    // mod
+                    value4.m_Value0 = (byte)math.clamp(Mathf.RoundToInt(InfoviewUtils.GetColor(availabilityData, availabilityBuffer, 0f, ref preferences, this.m_IndustrialDemands, this.m_StorageDemands, new float3(pollution.m_Pollution, pollution3.m_Pollution, pollution5.m_Pollution), num, bufferData3, this.m_Processes, this.m_ResourcePrefabs, this.m_ResourceDatas) * 255f), 0, 255);
+                    value4.m_Value1 = (byte)math.clamp(Mathf.RoundToInt(InfoviewUtils.GetColor(availabilityData, availabilityBuffer, 1f, ref preferences, this.m_IndustrialDemands, this.m_StorageDemands, new float3(pollution2.m_Pollution, pollution4.m_Pollution, pollution6.m_Pollution), num2, bufferData3, this.m_Processes, this.m_ResourcePrefabs, this.m_ResourceDatas) * 255f), 0, 255);
+                    // mod end;
+
                     nativeArray[j] = value4;
                 }
             }

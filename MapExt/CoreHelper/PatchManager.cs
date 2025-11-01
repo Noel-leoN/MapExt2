@@ -59,20 +59,21 @@ namespace MapExtPDX
 
                 // PatchSet1:TerrainSystem
                 { "TerrainSystemPatch", (h) => h.CreateClassProcessor(typeof(TerrainSystemPatches)).Patch() },
-                 { "TerrainToR16Patch", (h) => h.CreateClassProcessor(typeof(TerrainToR16Patch)).Patch() },
+                { "TerrainToR16Patch", (h) => h.CreateClassProcessor(typeof(TerrainToR16Patch)).Patch() },
 
                 // PatchSet2:WaterSystem
+                // v2.1.0增加WaterSimulationPatch_Static/WaterSimulationLegacyPatch_Static
                 { "WaterSystemPatch_Static", (h) => h.CreateClassProcessor(typeof(WaterSystemMethodPatches)).Patch() },
-                  { "WaterSystemPatch_GetSurfaceData", (h) => h.CreateClassProcessor(typeof(WaterSystem_GetSurfaceData_Patch)).Patch() },
-
+                { "WaterSimulationPatch_Static", (h) => h.CreateClassProcessor(typeof(WaterSimulationMethodPatches)).Patch() },
+                { "WaterSimulationLegacyPatch_Static", (h) => h.CreateClassProcessor(typeof(WaterSimulationLegacyMethodPatches)).Patch() },
+                { "WaterSystemPatch_GetSurfaceData", (h) => h.CreateClassProcessor(typeof(WaterSystem_GetSurfaceData_Patch)).Patch() },
 
                 // PatchSet3:CellMapSystem<T>托管代码部分
                 { "CellMapSystemPatch_Field", (h) => h.CreateClassProcessor(typeof(CellMapSystem_KMapSize_Field_Patches)).Patch() },
                 { "CellMapSystemPatch_Method", (h) => h.CreateClassProcessor(typeof(CellMapSystem_KMapSize_Method_Patches)).Patch() },
 
                 // PatchSet4:AirWaySystem
-                //{ "AirwaySystem_OnUpdate_Patch", (h) => h.CreateClassProcessor(typeof(AirwaySystemRedirectPatch)).Patch() },
-                 //{ "AirwayMap_Deserialize_Patch", (h) => h.CreateClassProcessor(typeof(AirwayMap_Deserialize_Patch)).Patch() },
+                { "AirwaySystemPatch", (h) => h.CreateClassProcessor(typeof(AirwaySystem_OnUpdate_Patch)).Patch() },
 
                 // PatchSetFinal:ReBurstJobSystems
                 // 集中调用方式
@@ -99,13 +100,13 @@ namespace MapExtPDX
                         "TerrainSystemPatch",
                         "TerrainToR16Patch",
                         "WaterSystemPatch_Static",
+                        "WaterSimulationPatch_Static",
+                        "WaterSimulationLegacyPatch_Static",
                         "WaterSystemPatch_GetSurfaceData",
                         "CellMapSystemPatch_Field",
                         "CellMapSystemPatch_Method",
+                        "AirwaySystemPatch",
                         "ReBurstSystemsPatches",
-                        //"AirwaySystem_OnUpdate_Patch"
-                        //"AirWaySystemPatch",
-                        //"AirwayMap_Deserialize_Patch"
                         //"MetaDataExtenderPatch",
                         //"LoadGameValidatorPatch"
                     };
@@ -116,13 +117,13 @@ namespace MapExtPDX
                         "TerrainSystemPatch",
                         "TerrainToR16Patch",
                         "WaterSystemPatch_Static",
+                        "WaterSimulationPatch_Static",
+                        "WaterSimulationLegacyPatch_Static",
                         "WaterSystemPatch_GetSurfaceData",
                         "CellMapSystemPatch_Field",
                         "CellMapSystemPatch_Method",
+                        "AirWaySystemPatch",
                         "ReBurstSystemsPatches",
-                        //"AirwaySystem_OnUpdate_Patch"
-                        //"AirWaySystemPatch",
-                        //"AirwayMap_Deserialize_Patch"
                         //"MetaDataExtenderPatch",
                         //"LoadGameValidatorPatch"
                     };
@@ -133,37 +134,40 @@ namespace MapExtPDX
                         "TerrainSystemPatch",
                         "TerrainToR16Patch",
                         "WaterSystemPatch_Static",
+                        "WaterSimulationPatch_Static",
+                        "WaterSimulationLegacyPatch_Static",
                         "WaterSystemPatch_GetSurfaceData",
                         "CellMapSystemPatch_Field",
                         "CellMapSystemPatch_Method",
+                        "AirWaySystemPatch",
                         "ReBurstSystemsPatches",
-                        //"AirwaySystem_OnUpdate_Patch"
-                        //"AirWaySystemPatch",
-                        //"AirwayMap_Deserialize_Patch"
                         //"MetaDataExtenderPatch",
                         //"LoadGameValidatorPatch"
                     };
 
+                    /*
                 case PatchModeSetting.ModeD: // 模式229km
                     return new List<string>
                     {
                         "TerrainSystemPatch",
                         "TerrainToR16Patch",
                         "WaterSystemPatch_Static",
+                        "WaterSimulationPatch_Static",
+                        "WaterSimulationLegacyPatch_Static",
                         "WaterSystemPatch_GetSurfaceData",
                         "CellMapSystemPatch_Field",
                         "CellMapSystemPatch_Method",
+                        "AirWaySystemPatch",
                         "ReBurstSystemsPatches",
-                        //"AirwaySystem_OnUpdate_Patch"
-                        //"AirWaySystemPatch",
-                        //"AirwayMap_Deserialize_Patch"
                         //"MetaDataExtenderPatch",
                         //"LoadGameValidatorPatch"
                     };
+                    */
 
                 case PatchModeSetting.None:  // 14km vanilla模式
                     return new List<string>
                     {
+                        "TerrainToR16Patch",
                         //"MetaDataExtenderPatch",
                         //"LoadGameValidatorPatch"
                     };
@@ -247,7 +251,7 @@ namespace MapExtPDX
                 case PatchModeSetting.ModeA: default: return 4;
                 case PatchModeSetting.ModeB: return 2;
                 case PatchModeSetting.ModeC: return 8;
-                case PatchModeSetting.ModeD: return 16;
+                // case PatchModeSetting.ModeD: return 16;
                 case PatchModeSetting.None: return 1;
             }
         }
@@ -295,7 +299,7 @@ namespace MapExtPDX
                 case 4: return ("ModeA 57km");
                 case 2: return ("ModeB 28km");
                 case 8: return ("ModeC 114km");
-                case 16: return ("ModeD 229km");
+                // case 16: return ("ModeD 229km");
                 case 1: return ("Vanilla 14km");
 
                 // 防止意外传入未知CV

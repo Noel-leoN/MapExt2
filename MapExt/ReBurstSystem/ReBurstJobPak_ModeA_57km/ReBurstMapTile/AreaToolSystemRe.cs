@@ -1,3 +1,5 @@
+// Game.Tools.AreaToolSystem
+
 using Colossal.Collections;
 using Colossal.Mathematics;
 using Game.Areas;
@@ -151,7 +153,7 @@ namespace MapExtPDX.MapExt.ReBurstSystemModeA
         private void Generate()
         {
             // ∫À–ƒ…Ë÷√
-            int Value = 4; //MapSizeMultiplier;
+            int CoreValue = CellMapSystemRe.kMapSize / 14336; //MapSizeMultiplier;
 
             int2 @int = default;
             @int.y = 0;
@@ -167,9 +169,9 @@ namespace MapExtPDX.MapExt.ReBurstSystemModeA
                         m_Prefab = m_Prefab
                     };
                     component.m_Prefab = m_Prefab;
-                    float2 @float = new float2(23f, 23f) * 311.652161f * Value;
-                    bounds.min = (float2)@int * 623.3043f * Value - @float;
-                    bounds.max = (float2)(@int + 1) * 623.3043f * Value - @float;
+                    float2 @float = new float2(23f, 23f) * 311.652161f * CoreValue;
+                    bounds.min = (float2)@int * 623.3043f * CoreValue - @float;
+                    bounds.max = (float2)(@int + 1) * 623.3043f * CoreValue - @float;
                     DynamicBuffer<Game.Areas.Node> dynamicBuffer = m_CommandBuffer.AddBuffer<Game.Areas.Node>(e);
                     dynamicBuffer.ResizeUninitialized(5);
                     dynamicBuffer[0] = new Game.Areas.Node(new float3(bounds.min.x, 0f, bounds.min.y), float.MinValue);

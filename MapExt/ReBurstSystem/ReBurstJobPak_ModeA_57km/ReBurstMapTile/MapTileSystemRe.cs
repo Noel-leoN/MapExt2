@@ -1,4 +1,5 @@
-﻿
+﻿// Game.Areas.MapTileSystem
+
 using Colossal.Mathematics;
 using Game.Areas;
 using Game.Prefabs;
@@ -40,7 +41,7 @@ namespace MapExtPDX.MapExt.ReBurstSystemModeA
         public void Execute(int index)
         {
             // 核心参数设置
-            int Value = 4; // 2-> 28672 4 -> 57344; 16 -> 229376
+            int CoreValue = CellMapSystemRe.kMapSize / 14336; // 2-> 28672 4 -> 57344; 16 -> 229376
 
             // ... 其余代码与原Job保持一致 
             Entity entity = m_Entities[index];
@@ -48,10 +49,10 @@ namespace MapExtPDX.MapExt.ReBurstSystemModeA
             m_AreaData[entity] = new Area(AreaFlags.Complete);
             DynamicBuffer<Node> dynamicBuffer = m_NodeData[entity];
             int2 @int = new int2(index % 23, index / 23);
-            float2 @float = new float2(23f, 23f) * 311.65216f * Value; // 区块数不变，边长扩展4倍；311.65216f
+            float2 @float = new float2(23f, 23f) * 311.65216f * CoreValue; // 区块数不变，边长扩展4倍；311.65216f
             Bounds2 bounds = default;
-            bounds.min = (float2)@int * 623.3043f * Value - @float; // 边长扩展4倍；623.3043f
-            bounds.max = (float2)(@int + 1) * 623.3043f * Value - @float;
+            bounds.min = (float2)@int * 623.3043f * CoreValue - @float; // 边长扩展4倍；623.3043f
+            bounds.max = (float2)(@int + 1) * 623.3043f * CoreValue - @float;
             dynamicBuffer.ResizeUninitialized(4);
             dynamicBuffer[0] = new Node(new float3(bounds.min.x, 0f, bounds.min.y), float.MinValue);
             dynamicBuffer[1] = new Node(new float3(bounds.min.x, 0f, bounds.max.y), float.MinValue);

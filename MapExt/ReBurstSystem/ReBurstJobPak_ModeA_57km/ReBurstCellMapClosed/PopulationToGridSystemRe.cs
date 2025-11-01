@@ -48,7 +48,7 @@ namespace MapExtPDX.MapExt.ReBurstSystemModeA
                     }
                 }
                 //int2 cell = CellMapSystem<PopulationCell>.GetCell(m_Transforms[entity].m_Position, CellMapSystem<PopulationCell>.kMapSize, PopulationToGridSystem.kTextureSize);
-                int2 cell = CellMapSystem<PopulationCell>.GetCell(m_Transforms[entity].m_Position, kMapSize, PopulationToGridSystem.kTextureSize);
+                int2 cell = CellMapSystem<PopulationCell>.GetCell(m_Transforms[entity].m_Position, CellMapSystemRe.kMapSize, PopulationToGridSystem.kTextureSize);
                 if (cell.x >= 0 && cell.y >= 0 && cell.x < PopulationToGridSystem.kTextureSize && cell.y < PopulationToGridSystem.kTextureSize)
                 {
                     int index = cell.x + cell.y * PopulationToGridSystem.kTextureSize;

@@ -220,12 +220,17 @@ namespace MapExtPDX.MapExt.ReBurstSystem
             "Game.Simulation.WaterLevelChangeSystem/WaterLevelChangeJob",
             "WaterLevelChangeJob"
         ),
+
+        // v2.1.0版本移除，vanilla系统不再引用kMapSize
+        /*
         new BaseJobTargetInfo(
             "Game.Simulation.WaterSourceInitializeSystem",
             "OnUpdate",
             "Game.Simulation.WaterSourceInitializeSystem/InitializeWaterSourcesJob",
             "InitializeWaterSourcesJob"
         ),
+        */
+
         new BaseJobTargetInfo(
             "Game.Audio.WeatherAudioSystem",
             "OnUpdate",
@@ -374,7 +379,7 @@ namespace MapExtPDX.MapExt.ReBurstSystem
                     case PatchModeSetting.ModeA: return "A";
                     case PatchModeSetting.ModeB: return "B";
                     case PatchModeSetting.ModeC: return "C";
-                    case PatchModeSetting.ModeD: return "D";
+                    // case PatchModeSetting.ModeD: return "D";
                     // If using CoreValue string in namespace:
                     // case Setting.PatchModeSetting.ModeA: return PatchManager.GetCoreValueForMode(mode).ToString(); // "2"
                     // case Setting.PatchModeSetting.ModeB: return PatchManager.GetCoreValueForMode(mode).ToString(); // "4"

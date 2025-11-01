@@ -31,16 +31,3 @@ namespace MapExtPDX.MapExt.ReBurstSystemModeB
     }
 
 }
-/*
-    [Preserve]
-    protected override void OnUpdate()
-    {
-        PolluteGroundWaterJob polluteGroundWaterJob = default(PolluteGroundWaterJob);
-        polluteGroundWaterJob.m_GroundWaterMap = this.m_GroundWaterSystem.GetMap(readOnly: false, out var dependencies);
-        polluteGroundWaterJob.m_PollutionMap = this.m_GroundPollutionSystem.GetMap(readOnly: true, out var dependencies2);
-        PolluteGroundWaterJob jobData = polluteGroundWaterJob;
-        base.Dependency = jobData.Schedule(JobHandle.CombineDependencies(base.Dependency, dependencies, dependencies2));
-        this.m_GroundWaterSystem.AddWriter(base.Dependency);
-        this.m_GroundPollutionSystem.AddReader(base.Dependency);
-    }
-*/

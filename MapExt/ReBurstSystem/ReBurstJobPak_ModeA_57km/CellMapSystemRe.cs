@@ -15,12 +15,15 @@ namespace MapExtPDX.MapExt.ReBurstSystemModeA
     public static class CellMapSystemRe
     {
         // 等同于CV值；用于CellMapSystem/WaterSystem; 其他系统无BurstJob调用；
-        public static readonly int MapSizeMultiplier = 4;
+        // public static readonly int MapSizeMultiplier = 4;
         public static readonly int kMapSize = 57344; //MapSizeMultiplier * 14336;
 
+        // public static readonly int AirPollutionSystemkTextureSize = 256 * 4;
+
+
         // WaterSystem CellSize/WaveSpeed
-        public static readonly float kCellSize = 28f; //MapSizeMultiplier * 7f;
-        public static readonly float WaveSpeed = 28f / 30f; //kCellSize / 30f;
+        public static readonly float kCellSize = kMapSize / 14336 * 7f; //28f; //MapSizeMultiplier * 7f;
+        public static readonly float WaveSpeed = kMapSize / 14336 * 7f / 30f; //kCellSize / 30f;
 
         // Water-related System
         public static int TsunamiEndDelay => Mathf.RoundToInt(kMapSize / WaveSpeed);
@@ -31,12 +34,21 @@ namespace MapExtPDX.MapExt.ReBurstSystemModeA
             int num2 = index / textureSize;
             int num3 = kMapSize / textureSize;
             return new float3(-0.5f * kMapSize + (num + 0.5f) * num3, 0f, -0.5f * kMapSize + (num2 + 0.5f) * num3);
-        }
+        }       
 
         public static float3 GetCellCenter(int2 cell, int textureSize)
         {
             int num = kMapSize / textureSize;
             return new float3(-0.5f * kMapSize + (cell.x + 0.5f) * num, 0f, -0.5f * kMapSize + (cell.y + 0.5f) * num);
+        }
+
+        /// <summary>
+        /// 集中管理BurstJob调用public静态方法
+        /// </summary>
+        public static float3 AirPollutionSystemGetCellCenter(int index)
+        {
+            int kTextureSize = AirPollutionSystem.kTextureSize;
+            return GetCellCenter(index, kTextureSize);
         }
 
         public static Wind WindSystemGetWind(float3 position, NativeArray<Wind> windMap)

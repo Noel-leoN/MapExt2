@@ -1,47 +1,24 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
-		<OutputType>Library</OutputType>
 		<Configurations>Debug;Release</Configurations>
-		<LangVersion>9.0</LangVersion>
-		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 		<AssemblyName>MapExt2</AssemblyName>
 		<RootNamespace>MapExtPDX</RootNamespace>
-		<Version>2.0.4</Version>		
-		<Description>MapSize 28/57/114km</Description>
-		
-		<!--The file where mod information which is required for publishing mod on PDX mods are stored-->
-		<PublishConfigurationPath>Properties\PublishConfiguration.xml</PublishConfigurationPath>
-		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-		<TargetFramework>net48</TargetFramework>
+		<Description>MapSize Extend 28/57/114km</Description>
 		<Authors>Noel2</Authors>
 		<Copyright>Copyright (c) [2025] [Noel2/Noel-leoN/=Noel=]</Copyright>
 		<Title>MapExt</Title>
-	</PropertyGroup>
+		<Version>2.1.0</Version>
 
-	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
-	  <DebugType>portable</DebugType>
-	</PropertyGroup>
-
-	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
-	  <DebugType>portable</DebugType>
+		<!--The file where mod information which is required for publishing mod on PDX mods are stored-->
+		<PublishConfigurationPath>Properties\PublishConfiguration.xml</PublishConfigurationPath>
+		
+		<TreatWarningsAsErrors>True</TreatWarningsAsErrors>
 	</PropertyGroup>
 	
 	<!--Imports must be after PropertyGroup block-->
 	<Import Project="$([System.Environment]::GetEnvironmentVariable('CSII_TOOLPATH', 'EnvironmentVariableTarget.User'))\Mod.props" />
-	<Import Project="$([System.Environment]::GetEnvironmentVariable('CSII_TOOLPATH', 'EnvironmentVariableTarget.User'))\Mod.targets" />
-	<ItemGroup>
-	  <Compile Remove="MapExt\ReBurstSystem\ReBurstJobPak_ModeA_57km\ReBurstCellMapRef2\CitizenPathfindSetupRe.cs" />
-	  <Compile Remove="MapExt\ReBurstSystem\ReBurstJobPak_ModeB_28km\ReBurstCellMapRef2\CitizenPathfindSetupRe.cs" />
-	  <Compile Remove="MapExt\ReBurstSystem\ReBurstJobPak_ModeC_114km\ReBurstCellMapRef2\CitizenPathfindSetupRe.cs" />
-	  <Compile Remove="MapExt\ReBurstSystem\ReBurstJobPak_ModeD_229km\ReBurstCellMapRef2\CitizenPathfindSetupRe.cs" />
-	</ItemGroup>
-
-
-	<ItemGroup>
-	  <None Remove="Properties\0-ebfda6dc-6d4e-4c49-9b7f-8b26b8c9b97d.png" />
-	  <None Remove="Properties\Thumbnail.bak.png" />
-	</ItemGroup>
+	<Import Project="$([System.Environment]::GetEnvironmentVariable('CSII_TOOLPATH', 'EnvironmentVariableTarget.User'))\Mod.targets" />	
 
 	<ItemGroup>
 		<Reference Include="Game">			
@@ -71,9 +48,6 @@
 		<Reference Include="Colossal.Mathematics">
 			<Private>false</Private>
 		</Reference>
-		<Reference Include="Colossal.Mono.Cecil">
-			<Private>false</Private>
-		</Reference>
 		<Reference Include="Unity.InputSystem">
 			<Private>false</Private>
 		</Reference>
@@ -81,9 +55,6 @@
 			<Private>false</Private>
 		</Reference>
 		<Reference Include="Unity.Burst">
-			<Private>false</Private>
-		</Reference>
-		<Reference Include="Unity.Burst.Unsafe">
 			<Private>false</Private>
 		</Reference>
 		<Reference Include="Unity.Collections">
@@ -99,7 +70,7 @@
 
 	<ItemGroup>
 		<Reference Update="System">
-			<Private>false</Private>
+			<Private>False</Private>
 		</Reference>
 		<Reference Update="System.Core">
 			<Private>false</Private>
@@ -116,7 +87,6 @@
 	<ItemGroup>
 		<PackageReference Include="Lib.Harmony" Version="2.2.2" />
 	</ItemGroup>
-
 	
 	<!--
 	<ItemGroup>
@@ -126,11 +96,20 @@
 	<ItemGroup>
 		<None Include="$(ModPropsFile)" Link="Properties\Mod.props" />
 		<None Include="$(ModTargetsFile)" Link="Properties\Mod.targets" />
-		<None Include="MapExt2.sln" />
+		<None Include="MapExt2.sln" />		
 		<None Include="Properties\PublishConfiguration.csproj" />
+	</ItemGroup>
+
+	<!-- Automatically build ModAssemblyInfo.cs file. -->
+	<Import Project="ModAssemblyInfo\ModAssemblyInfo.csproj" />
+	<ItemGroup>
+		<None Include="ModAssemblyInfo\ModAssemblyInfo.csproj" />
 	</ItemGroup>
 
 	<!-- Automatically build PublishConfiguration.xml file. -->
 	<Import Project="Properties\PublishConfiguration.csproj" />
+	<ItemGroup>
+		<None Include="Properties\PublishConfiguration.csproj" />
+	</ItemGroup>
 
 </Project>
