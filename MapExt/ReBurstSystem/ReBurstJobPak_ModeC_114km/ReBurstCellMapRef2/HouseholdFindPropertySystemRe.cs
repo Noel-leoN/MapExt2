@@ -395,7 +395,7 @@ namespace MapExtPDX.MapExt.ReBurstSystemModeC
             {
                 parameters.m_Methods |= (PathMethod)(targetIsOrigin ? 8194 : 8198);
                 parameters.m_ParkingSize = float.MinValue;
-                parameters.m_IgnoredRules |= RuleFlags.ForbidCombustionEngines | RuleFlags.ForbidHeavyTraffic | RuleFlags.ForbidSlowTraffic;
+                parameters.m_IgnoredRules |= RuleFlags.ForbidCombustionEngines | RuleFlags.ForbidHeavyTraffic | RuleFlags.ForbidSlowTraffic | RuleFlags.AvoidBicycles;
                 a.m_Methods |= PathMethod.Road | PathMethod.MediumRoad;
                 a.m_RoadTypes |= RoadTypes.Car;
                 b.m_Methods |= PathMethod.Road | PathMethod.MediumRoad;
@@ -405,7 +405,7 @@ namespace MapExtPDX.MapExt.ReBurstSystemModeC
             {
                 parameters.m_MaxSpeed.y = 277.77777f;
                 parameters.m_Methods |= PathMethod.Taxi | PathMethod.PublicTransportNight;
-                parameters.m_SecondaryIgnoredRules = VehicleUtils.GetIgnoredPathfindRulesTaxiDefaults();
+                parameters.m_TaxiIgnoredRules = VehicleUtils.GetIgnoredPathfindRulesTaxiDefaults();
             }
             else
             {
@@ -469,11 +469,12 @@ namespace MapExtPDX.MapExt.ReBurstSystemModeC
                 {
                     num++;
                 }
-                if (num >= HouseholdFindPropertySystem.kMaxProcessEntitiesPerUpdate / 2)
+                if (num >= HouseholdFindPropertySystem.kMaxProcessHomelessHouseholdPerUpdate)
                 {
                     break;
                 }
             }
+            num = 0;
             for (int j = 0; j < this.m_MovedInHouseholdEntities.Length; j++)
             {
                 Entity householdEntity2 = this.m_MovedInHouseholdEntities[j];
@@ -481,7 +482,7 @@ namespace MapExtPDX.MapExt.ReBurstSystemModeC
                 {
                     num++;
                 }
-                if (num >= HouseholdFindPropertySystem.kMaxProcessEntitiesPerUpdate)
+                if (num >= HouseholdFindPropertySystem.kMaxProcessNormalHouseholdPerUpdate)
                 {
                     break;
                 }

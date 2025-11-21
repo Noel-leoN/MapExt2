@@ -2,6 +2,7 @@
 // Licensed under the MIT License.
 // See LICENSE in the project root for full license information.
 
+using MapExtPDX.MapExt.ReBurstSystemModeA;
 using System.Collections.Generic;
 
 namespace MapExtPDX.MapExt.ReBurstSystem
@@ -179,6 +180,12 @@ namespace MapExtPDX.MapExt.ReBurstSystem
             "SpawnableAmbienceJob"
         ),
         new BaseJobTargetInfo(
+            "Game.Simulation.SpawnableAmbienceSystem",
+            "OnUpdate",
+            "Game.Simulation.SpawnableAmbienceSystem/EmitterAmbienceJob",
+            "EmitterAmbienceJob"
+        ),
+        new BaseJobTargetInfo(
             "Game.Simulation.WindSimulationSystem", 
             "OnUpdate",
             "Game.Simulation.WindSimulationSystem/UpdateWindVelocityJob", 
@@ -239,8 +246,8 @@ namespace MapExtPDX.MapExt.ReBurstSystem
         ),
 
         // v2.0.2版本暂时移除，疑似造成卡顿
-        /*
-                new BaseJobTargetInfo(
+        // v2.1.1 mod重新添加
+        new BaseJobTargetInfo(
             "Game.Simulation.PowerPlantAISystem", 
             "OnUpdate",
             "Game.Simulation.PowerPlantAISystem/PowerPlantTickJob", 
@@ -264,7 +271,13 @@ namespace MapExtPDX.MapExt.ReBurstSystem
             "Game.UI.Tooltip.TempWaterPumpingTooltipSystem/GroundWaterPumpJob", 
             "GroundWaterPumpJob"
         ),
-        */
+        new BaseJobTargetInfo(
+            "Game.UI.Tooltip.TempWaterPumpingTooltipSystem",
+            "OnUpdate",
+            "Game.UI.Tooltip.TempWaterPumpingTooltipSystem/GroundWaterReservoirJob",
+            "GroundWaterReservoirJob"
+        ),
+        
 
         // v2.0.3版新增修复
         new BaseJobTargetInfo(
@@ -315,6 +328,15 @@ namespace MapExtPDX.MapExt.ReBurstSystem
             "Game.Simulation.RentAdjustSystem/AdjustRentJob",
             "AdjustRentJob"
         ),
+
+        // v2.1.1新增补遗
+        new BaseJobTargetInfo(
+            "Game.Tools.ValidationSystem",
+            "OnUpdate",
+            "Game.Tools.ValidationSystem/ValidationJob",
+            "ValidationJob"
+        ),
+
         /*
         new BaseJobTargetInfo(
             "Game.Simulation.CitizenPathfindSetup",

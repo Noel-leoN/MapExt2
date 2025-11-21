@@ -465,7 +465,8 @@ namespace MapExtPDX.MapExt.ReBurstSystemModeB
                     citizen.m_LeisureCounter = (byte)math.min(255, math.max(0, citizen.m_LeisureCounter - this.m_LeisureParameters.m_AmountLeisureCounterDecrease));
                 }
                 citizen.m_PenaltyCounter = (byte)math.max(0, citizen.m_PenaltyCounter - 1);
-                int2 leisureBonuses = CitizenHappinessSystem.GetLeisureBonuses(citizen.m_LeisureCounter);
+                int2 leisureBonuses = CitizenHappinessSystem.GetLeisureBonuses(citizen);
+
                 value19.x += leisureBonuses.x + leisureBonuses.y;
                 value19.z += leisureBonuses.x;
                 value19.w += leisureBonuses.y;
@@ -494,21 +495,18 @@ namespace MapExtPDX.MapExt.ReBurstSystemModeB
                 value23.y++;
                 int num6 = math.max(0, 50 + num5 + deathPenalty.y + @int.y + int4.y + int5.y + int10.y + int11.y + int13.y + int6.y + leisureBonuses.y + int2.y + int12.y + int9.y + int14.y + int15.y + int16.y + int18.y + int17.y + int19.y + int3.y + int20.y + int21.y + int22.y + int23.y);
                 int num7 = 50 + int6.x + sicknessBonuses.x + deathPenalty.x + int2.x + int7.x + int8.x + int4.x + int10.x + int13.x + int12.x + int14.x + int3.x + int20.x + int22.x + int23.x;
-                float value31 = num6;
-                float value32 = num7;
-                if (this.m_Transforms.HasComponent(entity))
-                {
-                    Game.Objects.Transform transform = this.m_Transforms[entity];
-                    this.m_LocalEffectData.ApplyModifier(ref value31, transform.m_Position, LocalModifierType.Wellbeing);
-                    this.m_LocalEffectData.ApplyModifier(ref value32, transform.m_Position, LocalModifierType.Health);
-                }
+                num7 += math.select(0, 1, (citizen.m_State & CitizenFlags.BicycleUser) != 0);
+                float wellbeing = num6;
+                float health = num7;
+                CitizenHappinessSystem.GetLocalEffectBonuses(ref wellbeing, ref health, ref this.m_LocalEffectData, ref this.m_Transforms, entity);
                 if (this.m_DistrictModifiers.HasBuffer(entity2))
                 {
                     DynamicBuffer<DistrictModifier> modifiers = this.m_DistrictModifiers[entity2];
-                    AreaUtils.ApplyModifier(ref value31, modifiers, DistrictModifierType.Wellbeing);
+                    AreaUtils.ApplyModifier(ref wellbeing, modifiers, DistrictModifierType.Wellbeing);
                 }
-                num6 = Mathf.RoundToInt(value31);
-                num7 = Mathf.RoundToInt(value32);
+                num6 = Mathf.RoundToInt(wellbeing);
+                num7 = Mathf.RoundToInt(health);
+
                 int num8 = ((random.NextInt(100) > 50 + citizen.m_WellBeing - num6) ? 1 : (-1));
                 citizen.m_WellBeing = (byte)math.max(0, math.min(100, citizen.m_WellBeing + num8));
                 num8 = ((random.NextInt(100) > 50 + citizen.m_Health - num7) ? 1 : (-1));

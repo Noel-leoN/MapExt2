@@ -137,6 +137,12 @@ namespace MapExtPDX.MapExt.ReBurstSystemModeA
         [ReadOnly]
         public ComponentLookup<ZonePropertiesData> m_ZonePropertiesDatas;
 
+        [ReadOnly]
+        public ComponentLookup<ServiceAvailable> m_ServiceAvailables;
+
+        [ReadOnly]
+        public ComponentLookup<UnderConstruction> m_UnderConstructions;
+
         [NativeDisableParallelForRestriction]
         public ComponentLookup<BuildingNotifications> m_BuildingNotifications;
 
@@ -291,8 +297,10 @@ namespace MapExtPDX.MapExt.ReBurstSystemModeA
                             {
                                 continue;
                             }
+                            IndustrialProcessData industrialProcessData = this.m_ProcessDatas[prefab2];
+                            bool isIndustrial = !this.m_ServiceAvailables.HasComponent(renter);
                             int companyMaxProfitPerDay = EconomyUtils.GetCompanyMaxProfitPerDay(this.m_WorkProviders[renter], areaType == Game.Zones.AreaType.Industrial, buildingLevel, this.m_ProcessDatas[prefab2], this.m_ResourcePrefabs, this.m_WorkplaceDatas[prefab2], ref this.m_ResourceDatas, ref this.m_EconomyParameterData);
-                            num3 = ((companyMaxProfitPerDay >= num3) ? companyMaxProfitPerDay : ((!this.m_OwnedVehicles.HasBuffer(renter)) ? EconomyUtils.GetCompanyTotalWorth(this.m_ResourcesBuf[renter], this.m_ResourcePrefabs, ref this.m_ResourceDatas) : EconomyUtils.GetCompanyTotalWorth(this.m_ResourcesBuf[renter], this.m_OwnedVehicles[renter], ref this.m_LayoutElements, ref this.m_DeliveryTrucks, this.m_ResourcePrefabs, ref this.m_ResourceDatas)));
+                            num3 = ((companyMaxProfitPerDay >= num3) ? companyMaxProfitPerDay : ((!this.m_OwnedVehicles.HasBuffer(renter)) ? EconomyUtils.GetCompanyTotalWorth(isIndustrial, industrialProcessData, this.m_ResourcesBuf[renter], this.m_ResourcePrefabs, ref this.m_ResourceDatas) : EconomyUtils.GetCompanyTotalWorth(isIndustrial, industrialProcessData, this.m_ResourcesBuf[renter], this.m_OwnedVehicles[renter], ref this.m_LayoutElements, ref this.m_DeliveryTrucks, this.m_ResourcePrefabs, ref this.m_ResourceDatas)));
                         }
                         value3.m_Rent = rentPricePerRenter;
                         this.m_PropertyRenters[renter] = value3;
@@ -353,9 +361,10 @@ namespace MapExtPDX.MapExt.ReBurstSystemModeA
                 int2 groundPollutionBonuses = CitizenHappinessJob.GetGroundPollutionBonuses(buildingEntity, ref this.m_Transforms, this.m_PollutionMap, cityModifiers, in this.m_CitizenHappinessParameterData);
                 int2 noiseBonuses = CitizenHappinessJob.GetNoiseBonuses(buildingEntity, ref this.m_Transforms, this.m_NoiseMap, in this.m_CitizenHappinessParameterData);
                 int2 airPollutionBonuses = CitizenHappinessJob.GetAirPollutionBonuses(buildingEntity, ref this.m_Transforms, this.m_AirPollutionMap, cityModifiers, in this.m_CitizenHappinessParameterData);
-                bool flag = groundPollutionBonuses.x + groundPollutionBonuses.y < 2 * this.m_PollutionParameters.m_GroundPollutionNotificationLimit;
-                bool flag2 = airPollutionBonuses.x + airPollutionBonuses.y < 2 * this.m_PollutionParameters.m_AirPollutionNotificationLimit;
-                bool flag3 = noiseBonuses.x + noiseBonuses.y < 2 * this.m_PollutionParameters.m_NoisePollutionNotificationLimit;
+                bool num = this.m_UnderConstructions.HasComponent(buildingEntity);
+                bool flag = !num && groundPollutionBonuses.x + groundPollutionBonuses.y < 2 * this.m_PollutionParameters.m_GroundPollutionNotificationLimit;
+                bool flag2 = !num && airPollutionBonuses.x + airPollutionBonuses.y < 2 * this.m_PollutionParameters.m_AirPollutionNotificationLimit;
+                bool flag3 = !num && noiseBonuses.x + noiseBonuses.y < 2 * this.m_PollutionParameters.m_NoisePollutionNotificationLimit;
                 BuildingNotifications value = this.m_BuildingNotifications[buildingEntity];
                 if (flag && !value.HasNotification(BuildingNotification.GroundPollution))
                 {

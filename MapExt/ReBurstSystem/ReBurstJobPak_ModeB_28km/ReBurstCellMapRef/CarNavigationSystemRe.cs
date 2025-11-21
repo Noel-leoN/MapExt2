@@ -4,7 +4,7 @@ using Unity.Collections;
 using Unity.Jobs;
 using Unity.Mathematics;
 using static Game.Simulation.CarNavigationSystem;
-// using static MapExtPDX.MapExt.ReBurstSystemModeB.CellMapSystemRe;
+using static MapExtPDX.MapExt.ReBurstSystemModeB.CellMapSystemRe;
 
 namespace MapExtPDX.MapExt.ReBurstSystemModeB
 {

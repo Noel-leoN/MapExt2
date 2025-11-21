@@ -9,6 +9,7 @@ using Game.Buildings;
 using Game.Common;
 using Game.Net;
 using Game.Objects;
+using Game.Pathfind;
 using Game.Prefabs;
 using Game.Simulation;
 using Game.Tools;
@@ -89,10 +90,22 @@ namespace MapExtPDX.MapExt.ReBurstSystemModeC
         public BufferTypeHandle<ResourceAvailability> m_ResourceAvailabilityType;
 
         [ReadOnly]
+        public BufferTypeHandle<Game.Net.SubLane> m_SubLaneType;
+
+        [ReadOnly]
         public ComponentLookup<LandValue> m_LandValues;
 
         [ReadOnly]
-        public ComponentLookup<Edge> m_Edges;
+        public ComponentLookup<SecondaryFlow> m_SecondaryFlowData;
+
+        [ReadOnly]
+        public ComponentLookup<EdgeLane> m_EdgeLaneData;
+
+        [ReadOnly]
+        public ComponentLookup<Game.Net.CarLane> m_CarLaneData;
+
+        [ReadOnly]
+        public ComponentLookup<Game.Net.Edge> m_Edges;
 
         [ReadOnly]
         public ComponentLookup<Node> m_Nodes;
@@ -116,10 +129,13 @@ namespace MapExtPDX.MapExt.ReBurstSystemModeC
         public BufferLookup<ResourceAvailability> m_ResourceAvailabilityData;
 
         [ReadOnly]
+        public BufferLookup<Game.Net.SubLane> m_SubLanes;
+
+        [ReadOnly]
         public BufferLookup<ProcessEstimate> m_ProcessEstimates;
 
         [ReadOnly]
-        public ComponentTypeHandle<Edge> m_EdgeType;
+        public ComponentTypeHandle<Game.Net.Edge> m_EdgeType;
 
         [ReadOnly]
         public ComponentTypeHandle<Temp> m_TempType;
@@ -188,13 +204,13 @@ namespace MapExtPDX.MapExt.ReBurstSystemModeC
             else if (chunk.Has(ref this.m_ResourceAvailabilityType) && this.GetResourceAvailabilityData(chunk, out availabilityData, out activeData2))
             {
                 ZonePreferenceData preferences = this.m_ZonePreferences;
-                NativeArray<Edge> nativeArray3 = chunk.GetNativeArray(ref this.m_EdgeType);
+                NativeArray<Game.Net.Edge> nativeArray3 = chunk.GetNativeArray(ref this.m_EdgeType);
                 NativeArray<Temp> nativeArray4 = chunk.GetNativeArray(ref this.m_TempType);
                 BufferAccessor<ResourceAvailability> bufferAccessor2 = chunk.GetBufferAccessor(ref this.m_ResourceAvailabilityType);
                 EdgeColor value4 = default(EdgeColor);
                 for (int j = 0; j < nativeArray.Length; j++)
                 {
-                    Edge edge = nativeArray3[j];
+                    Game.Net.Edge edge = nativeArray3[j];
                     DynamicBuffer<ResourceAvailability> availabilityBuffer = bufferAccessor2[j];
                     float num;
                     float num2;
@@ -229,14 +245,14 @@ namespace MapExtPDX.MapExt.ReBurstSystemModeC
                     float3 position = this.m_Nodes[edge.m_Start].m_Position;
                     float3 position2 = this.m_Nodes[edge.m_End].m_Position;
 
-                    // 修改点GroundPollution.SystemGetPollution
+                    // mod重定向
                     GroundPollution pollution = GroundPollutionSystemGetPollution(position, this.m_GroundPollutionMap);
                     GroundPollution pollution2 = GroundPollutionSystemGetPollution(position2, this.m_GroundPollutionMap);
                     NoisePollution pollution3 = NoisePollutionSystemGetPollution(position, this.m_NoisePollutionMap);
                     NoisePollution pollution4 = NoisePollutionSystemGetPollution(position2, this.m_NoisePollutionMap);
                     AirPollution pollution5 = AirPollutionSystemGetPollution(position, this.m_AirPollutionMap);
                     AirPollution pollution6 = AirPollutionSystemGetPollution(position2, this.m_AirPollutionMap);
-                    // mod end
+                    // mod end;
 
                     this.m_ProcessEstimates.TryGetBuffer(this.m_ZonePrefab, out var bufferData3);
                     if (this.m_ZonePropertiesDatas.TryGetComponent(this.m_ZonePrefab, out var componentData6))
@@ -246,12 +262,8 @@ namespace MapExtPDX.MapExt.ReBurstSystemModeC
                         num2 /= num3;
                     }
                     value4.m_Index = (byte)activeData2.m_Index;
-
-                    // mod
                     value4.m_Value0 = (byte)math.clamp(Mathf.RoundToInt(InfoviewUtils.GetColor(availabilityData, availabilityBuffer, 0f, ref preferences, this.m_IndustrialDemands, this.m_StorageDemands, new float3(pollution.m_Pollution, pollution3.m_Pollution, pollution5.m_Pollution), num, bufferData3, this.m_Processes, this.m_ResourcePrefabs, this.m_ResourceDatas) * 255f), 0, 255);
                     value4.m_Value1 = (byte)math.clamp(Mathf.RoundToInt(InfoviewUtils.GetColor(availabilityData, availabilityBuffer, 1f, ref preferences, this.m_IndustrialDemands, this.m_StorageDemands, new float3(pollution2.m_Pollution, pollution4.m_Pollution, pollution6.m_Pollution), num2, bufferData3, this.m_Processes, this.m_ResourcePrefabs, this.m_ResourceDatas) * 255f), 0, 255);
-                    // mod end;
-
                     nativeArray[j] = value4;
                 }
             }
@@ -377,6 +389,8 @@ namespace MapExtPDX.MapExt.ReBurstSystemModeC
                 NetStatusType.AirPollutionSource => chunk.Has(ref this.m_PollutionType),
                 NetStatusType.TrafficVolume => chunk.Has(ref this.m_RoadType),
                 NetStatusType.LeisureProvider => !chunk.Has(ref this.m_ServiceCoverageType),
+                NetStatusType.BicycleLanes => chunk.Has(ref this.m_SubLaneType),
+                NetStatusType.BicycleTrafficVolume => chunk.Has(ref this.m_SubLaneType),
                 _ => false,
             };
         }
@@ -387,93 +401,164 @@ namespace MapExtPDX.MapExt.ReBurstSystemModeC
             {
                 case NetStatusType.Wear:
                     {
-                        NativeArray<NetCondition> nativeArray5 = chunk.GetNativeArray(ref this.m_NetConditionType);
-                        EdgeColor value4 = default(EdgeColor);
-                        for (int l = 0; l < nativeArray5.Length; l++)
+                        NativeArray<NetCondition> nativeArray9 = chunk.GetNativeArray(ref this.m_NetConditionType);
+                        EdgeColor value9 = default(EdgeColor);
+                        for (int num4 = 0; num4 < nativeArray9.Length; num4++)
                         {
-                            NetCondition netCondition = nativeArray5[l];
-                            value4.m_Index = (byte)activeData.m_Index;
-                            value4.m_Value0 = (byte)math.clamp(Mathf.RoundToInt(InfoviewUtils.GetColor(statusData, netCondition.m_Wear.x / 10f) * 255f), 0, 255);
-                            value4.m_Value1 = (byte)math.clamp(Mathf.RoundToInt(InfoviewUtils.GetColor(statusData, netCondition.m_Wear.y / 10f) * 255f), 0, 255);
-                            results[l] = value4;
+                            NetCondition netCondition = nativeArray9[num4];
+                            value9.m_Index = (byte)activeData.m_Index;
+                            value9.m_Value0 = (byte)math.clamp(Mathf.RoundToInt(InfoviewUtils.GetColor(statusData, netCondition.m_Wear.x / 10f) * 255f), 0, 255);
+                            value9.m_Value1 = (byte)math.clamp(Mathf.RoundToInt(InfoviewUtils.GetColor(statusData, netCondition.m_Wear.y / 10f) * 255f), 0, 255);
+                            results[num4] = value9;
                         }
                         break;
                     }
                 case NetStatusType.TrafficFlow:
                     {
-                        NativeArray<Road> nativeArray8 = chunk.GetNativeArray(ref this.m_RoadType);
-                        EdgeColor value6 = default(EdgeColor);
-                        for (int n = 0; n < nativeArray8.Length; n++)
+                        NativeArray<Road> nativeArray4 = chunk.GetNativeArray(ref this.m_RoadType);
+                        EdgeColor value5 = default(EdgeColor);
+                        for (int n = 0; n < nativeArray4.Length; n++)
                         {
-                            Road road2 = nativeArray8[n];
-                            float4 trafficFlowSpeed = NetUtils.GetTrafficFlowSpeed(road2.m_TrafficFlowDuration0, road2.m_TrafficFlowDistance0);
-                            float4 trafficFlowSpeed2 = NetUtils.GetTrafficFlowSpeed(road2.m_TrafficFlowDuration1, road2.m_TrafficFlowDistance1);
-                            value6.m_Index = (byte)activeData.m_Index;
-                            value6.m_Value0 = (byte)math.clamp(Mathf.RoundToInt(InfoviewUtils.GetColor(statusData, math.csum(trafficFlowSpeed) * 0.125f + math.cmin(trafficFlowSpeed) * 0.5f) * 255f), 0, 255);
-                            value6.m_Value1 = (byte)math.clamp(Mathf.RoundToInt(InfoviewUtils.GetColor(statusData, math.csum(trafficFlowSpeed2) * 0.125f + math.cmin(trafficFlowSpeed2) * 0.5f) * 255f), 0, 255);
-                            results[n] = value6;
+                            Road road = nativeArray4[n];
+                            float4 trafficFlowSpeed = NetUtils.GetTrafficFlowSpeed(road.m_TrafficFlowDuration0, road.m_TrafficFlowDistance0);
+                            float4 trafficFlowSpeed2 = NetUtils.GetTrafficFlowSpeed(road.m_TrafficFlowDuration1, road.m_TrafficFlowDistance1);
+                            value5.m_Index = (byte)activeData.m_Index;
+                            value5.m_Value0 = (byte)math.clamp(Mathf.RoundToInt(InfoviewUtils.GetColor(statusData, math.csum(trafficFlowSpeed) * 0.125f + math.cmin(trafficFlowSpeed) * 0.5f) * 255f), 0, 255);
+                            value5.m_Value1 = (byte)math.clamp(Mathf.RoundToInt(InfoviewUtils.GetColor(statusData, math.csum(trafficFlowSpeed2) * 0.125f + math.cmin(trafficFlowSpeed2) * 0.5f) * 255f), 0, 255);
+                            results[n] = value5;
                         }
                         break;
                     }
                 case NetStatusType.NoisePollutionSource:
                     {
-                        NativeArray<Game.Net.Pollution> nativeArray2 = chunk.GetNativeArray(ref this.m_PollutionType);
-                        NativeArray<EdgeGeometry> nativeArray3 = chunk.GetNativeArray(ref this.m_EdgeGeometryType);
-                        EdgeColor value2 = default(EdgeColor);
-                        for (int j = 0; j < nativeArray2.Length; j++)
+                        NativeArray<Game.Net.Pollution> nativeArray6 = chunk.GetNativeArray(ref this.m_PollutionType);
+                        NativeArray<EdgeGeometry> nativeArray7 = chunk.GetNativeArray(ref this.m_EdgeGeometryType);
+                        EdgeColor value7 = default(EdgeColor);
+                        for (int num2 = 0; num2 < nativeArray6.Length; num2++)
                         {
-                            float status = nativeArray2[j].m_Accumulation.x / math.max(0.1f, nativeArray3[j].m_Start.middleLength + nativeArray3[j].m_End.middleLength);
-                            value2.m_Index = (byte)activeData.m_Index;
-                            value2.m_Value0 = (byte)math.clamp(Mathf.RoundToInt(InfoviewUtils.GetColor(statusData, status) * 255f), 0, 255);
-                            value2.m_Value1 = value2.m_Value0;
-                            results[j] = value2;
+                            float status2 = nativeArray6[num2].m_Accumulation.x / math.max(0.1f, nativeArray7[num2].m_Start.middleLength + nativeArray7[num2].m_End.middleLength);
+                            value7.m_Index = (byte)activeData.m_Index;
+                            value7.m_Value0 = (byte)math.clamp(Mathf.RoundToInt(InfoviewUtils.GetColor(statusData, status2) * 255f), 0, 255);
+                            value7.m_Value1 = value7.m_Value0;
+                            results[num2] = value7;
                         }
                         break;
                     }
                 case NetStatusType.AirPollutionSource:
                     {
-                        NativeArray<Game.Net.Pollution> nativeArray6 = chunk.GetNativeArray(ref this.m_PollutionType);
-                        NativeArray<EdgeGeometry> nativeArray7 = chunk.GetNativeArray(ref this.m_EdgeGeometryType);
-                        EdgeColor value5 = default(EdgeColor);
-                        for (int m = 0; m < nativeArray6.Length; m++)
+                        NativeArray<Game.Net.Pollution> nativeArray2 = chunk.GetNativeArray(ref this.m_PollutionType);
+                        NativeArray<EdgeGeometry> nativeArray3 = chunk.GetNativeArray(ref this.m_EdgeGeometryType);
+                        EdgeColor value3 = default(EdgeColor);
+                        for (int k = 0; k < nativeArray2.Length; k++)
                         {
-                            float status2 = nativeArray6[m].m_Accumulation.y / math.max(0.1f, nativeArray7[m].m_Start.middleLength + nativeArray7[m].m_End.middleLength);
-                            value5.m_Index = (byte)activeData.m_Index;
-                            value5.m_Value0 = (byte)math.clamp(Mathf.RoundToInt(InfoviewUtils.GetColor(statusData, status2) * 255f), 0, 255);
-                            value5.m_Value1 = value5.m_Value0;
-                            results[m] = value5;
+                            float status = nativeArray2[k].m_Accumulation.y / math.max(0.1f, nativeArray3[k].m_Start.middleLength + nativeArray3[k].m_End.middleLength);
+                            value3.m_Index = (byte)activeData.m_Index;
+                            value3.m_Value0 = (byte)math.clamp(Mathf.RoundToInt(InfoviewUtils.GetColor(statusData, status) * 255f), 0, 255);
+                            value3.m_Value1 = value3.m_Value0;
+                            results[k] = value3;
                         }
                         break;
                     }
                 case NetStatusType.TrafficVolume:
                     {
-                        NativeArray<Road> nativeArray4 = chunk.GetNativeArray(ref this.m_RoadType);
-                        EdgeColor value3 = default(EdgeColor);
-                        for (int k = 0; k < nativeArray4.Length; k++)
+                        NativeArray<Road> nativeArray8 = chunk.GetNativeArray(ref this.m_RoadType);
+                        EdgeColor value8 = default(EdgeColor);
+                        for (int num3 = 0; num3 < nativeArray8.Length; num3++)
                         {
-                            Road road = nativeArray4[k];
-                            float4 x = math.sqrt(road.m_TrafficFlowDistance0 * 5.3333335f);
-                            float4 x2 = math.sqrt(road.m_TrafficFlowDistance1 * 5.3333335f);
-                            value3.m_Index = (byte)activeData.m_Index;
-                            value3.m_Value0 = (byte)math.clamp(Mathf.RoundToInt(InfoviewUtils.GetColor(statusData, math.csum(x) * 0.25f) * 255f), 0, 255);
-                            value3.m_Value1 = (byte)math.clamp(Mathf.RoundToInt(InfoviewUtils.GetColor(statusData, math.csum(x2) * 0.25f) * 255f), 0, 255);
-                            results[k] = value3;
+                            Road road2 = nativeArray8[num3];
+                            float4 x3 = math.sqrt(road2.m_TrafficFlowDistance0 * 5.33333349f);
+                            float4 x4 = math.sqrt(road2.m_TrafficFlowDistance1 * 5.33333349f);
+                            value8.m_Index = (byte)activeData.m_Index;
+                            value8.m_Value0 = (byte)math.clamp(Mathf.RoundToInt(InfoviewUtils.GetColor(statusData, math.csum(x3) * 0.25f) * 255f), 0, 255);
+                            value8.m_Value1 = (byte)math.clamp(Mathf.RoundToInt(InfoviewUtils.GetColor(statusData, math.csum(x4) * 0.25f) * 255f), 0, 255);
+                            results[num3] = value8;
                         }
                         break;
                     }
                 case NetStatusType.LeisureProvider:
                     {
-                        NativeArray<PrefabRef> nativeArray = chunk.GetNativeArray(ref this.m_PrefabRefType);
-                        for (int i = 0; i < nativeArray.Length; i++)
+                        NativeArray<PrefabRef> nativeArray5 = chunk.GetNativeArray(ref this.m_PrefabRefType);
+                        for (int num = 0; num < nativeArray5.Length; num++)
                         {
-                            EdgeColor value = new EdgeColor
+                            EdgeColor value6 = default(EdgeColor);
+                            value6.m_Value0 = byte.MaxValue;
+                            value6.m_Value1 = byte.MaxValue;
+                            if (this.m_PrefabPathwayData.TryGetComponent(nativeArray5[num].m_Prefab, out var componentData4) && componentData4.m_LeisureProvider)
                             {
-                                m_Value0 = byte.MaxValue,
-                                m_Value1 = byte.MaxValue
-                            };
-                            if (this.m_PrefabPathwayData.TryGetComponent(nativeArray[i].m_Prefab, out var componentData) && componentData.m_LeisureProvider)
+                                value6.m_Index = (byte)activeData.m_Index;
+                            }
+                            results[num] = value6;
+                        }
+                        break;
+                    }
+                case NetStatusType.BicycleLanes:
+                    {
+                        BufferAccessor<Game.Net.SubLane> bufferAccessor2 = chunk.GetBufferAccessor(ref this.m_SubLaneType);
+                        for (int l = 0; l < bufferAccessor2.Length; l++)
+                        {
+                            DynamicBuffer<Game.Net.SubLane> dynamicBuffer2 = bufferAccessor2[l];
+                            EdgeColor value4 = default(EdgeColor);
+                            value4.m_Value0 = byte.MaxValue;
+                            value4.m_Value1 = byte.MaxValue;
+                            for (int m = 0; m < dynamicBuffer2.Length; m++)
                             {
-                                value.m_Index = (byte)activeData.m_Index;
+                                Game.Net.SubLane subLane2 = dynamicBuffer2[m];
+                                if ((subLane2.m_PathMethods & PathMethod.Bicycle) == 0)
+                                {
+                                    continue;
+                                }
+                                value4.m_Index = (byte)activeData.m_Index;
+                                if ((subLane2.m_PathMethods & ~PathMethod.Bicycle) != 0)
+                                {
+                                    if (this.m_CarLaneData.TryGetComponent(subLane2.m_SubLane, out var componentData3) && (componentData3.m_Flags & CarLaneFlags.ForbidBicycles) != 0)
+                                    {
+                                        value4.m_Value0 = 127;
+                                        value4.m_Value1 = 127;
+                                        break;
+                                    }
+                                    value4.m_Value0 = 0;
+                                    value4.m_Value1 = 0;
+                                }
+                            }
+                            results[l] = value4;
+                        }
+                        break;
+                    }
+                case NetStatusType.BicycleTrafficVolume:
+                    {
+                        NativeArray<Temp> nativeArray = chunk.GetNativeArray(ref this.m_TempType);
+                        BufferAccessor<Game.Net.SubLane> bufferAccessor = chunk.GetBufferAccessor(ref this.m_SubLaneType);
+                        for (int i = 0; i < bufferAccessor.Length; i++)
+                        {
+                            DynamicBuffer<Game.Net.SubLane> dynamicBuffer = bufferAccessor[i];
+                            float4 @float = 0f;
+                            float4 float2 = 0f;
+                            EdgeColor value = default(EdgeColor);
+                            value.m_Value0 = byte.MaxValue;
+                            value.m_Value1 = byte.MaxValue;
+                            if (CollectionUtils.TryGet(nativeArray, i, out var value2) && this.m_SubLanes.TryGetBuffer(value2.m_Original, out var bufferData))
+                            {
+                                dynamicBuffer = bufferData;
+                            }
+                            for (int j = 0; j < dynamicBuffer.Length; j++)
+                            {
+                                Game.Net.SubLane subLane = dynamicBuffer[j];
+                                if ((subLane.m_PathMethods & PathMethod.Bicycle) != 0 && this.m_SecondaryFlowData.TryGetComponent(subLane.m_SubLane, out var componentData))
+                                {
+                                    value.m_Index = (byte)activeData.m_Index;
+                                    EdgeLane componentData2;
+                                    float2 float3 = ((!this.m_EdgeLaneData.TryGetComponent(subLane.m_SubLane, out componentData2)) ? ((float2)1f) : math.select(0f, 1f, new bool2(math.any(componentData2.m_EdgeDelta == 0f), math.any(componentData2.m_EdgeDelta == 1f))));
+                                    @float += componentData.m_Distance * float3.x;
+                                    float2 += componentData.m_Distance * float3.y;
+                                }
+                            }
+                            if (value.m_Index == activeData.m_Index)
+                            {
+                                float4 x = math.sqrt(@float * 5.33333349f);
+                                float4 x2 = math.sqrt(float2 * 5.33333349f);
+                                value.m_Value0 = (byte)math.clamp(Mathf.RoundToInt(InfoviewUtils.GetColor(statusData, math.csum(x) * 0.25f) * 255f), 0, 255);
+                                value.m_Value1 = (byte)math.clamp(Mathf.RoundToInt(InfoviewUtils.GetColor(statusData, math.csum(x2) * 0.25f) * 255f), 0, 255);
+                                results[i] = value;
                             }
                             results[i] = value;
                         }

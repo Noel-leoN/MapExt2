@@ -3,6 +3,7 @@ using Unity.Burst;
 using Unity.Collections;
 using Unity.Jobs;
 using Unity.Mathematics;
+using static MapExtPDX.MapExt.ReBurstSystemModeC.CellMapSystemRe;
 
 namespace MapExtPDX.MapExt.ReBurstSystemModeC
 {
@@ -19,7 +20,7 @@ namespace MapExtPDX.MapExt.ReBurstSystemModeC
             for (int i = 0; i < m_GroundWaterMap.Length; i++)
             {
                 GroundWater value = m_GroundWaterMap[i];
-                GroundPollution pollution = CellMapSystemRe.GroundPollutionSystemGetPollution(CellMapSystemRe.GetCellCenter(i, GroundWaterSystem.kTextureSize), m_PollutionMap);
+                GroundPollution pollution = GroundPollutionSystemGetPollution(GetCellCenter(i, GroundWaterSystem.kTextureSize), m_PollutionMap);
                 if (pollution.m_Pollution > 0)
                 {
                     value.m_Polluted = (short)math.min(value.m_Amount, value.m_Polluted + pollution.m_Pollution / 200);

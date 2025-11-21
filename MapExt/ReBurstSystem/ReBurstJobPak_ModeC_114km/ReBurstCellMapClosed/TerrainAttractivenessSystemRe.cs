@@ -16,7 +16,7 @@ namespace MapExtPDX.MapExt.ReBurstSystemModeC
         public TerrainHeightData m_TerrainData;
 
         [ReadOnly]
-        public WaterSurfaceData m_WaterData;
+        public WaterSurfaceData<SurfaceWater> m_WaterData;
 
         [ReadOnly]
         public CellMapData<ZoneAmbienceCell> m_ZoneAmbienceData;

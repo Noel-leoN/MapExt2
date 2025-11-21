@@ -15,7 +15,8 @@ namespace MapExtPDX.MapExt.ReBurstSystemModeC
     public static class CellMapSystemRe
     {
         // 等同于CV值；用于CellMapSystem/WaterSystem; 其他系统无BurstJob调用；
-        // public static readonly int MapSizeMultiplier = 8;
+        // public static readonly int MapSizeMultiplier = 4;
+        // ModeA = 4 = 57344 ; ModeB = 2 = 28672; ModeC = 8 = 114688; ModeE = 1 = 14336;
         public static readonly int kMapSize = 114688; //MapSizeMultiplier * 14336;
 
         // public static readonly int AirPollutionSystemkTextureSize = 256 * 4;

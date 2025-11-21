@@ -16,11 +16,12 @@ namespace MapExtPDX
     /// </summary>
     public static class PatchManager
     {
-        // 日志归一化
-        private static void Info(string message) => Mod.Info($" {Mod.ModName}.{nameof(PatchManager)}:{message}");
-        private static void Warn(string message) => Mod.Warn($" {Mod.ModName}.{nameof(PatchManager)}:{message}");
-        private static void Error(string message) => Mod.Error($" {Mod.ModName}.{nameof(PatchManager)}:{message}");
-        private static void Error(Exception e, string message) => Mod.Error(e, $" {Mod.ModName}.{nameof(PatchManager)}:{message}");
+        // --- 日志封装 ---
+        private static readonly string patchTypename = nameof(PatchManager);
+        private static void Info(string message) => Mod.Info($" {Mod.ModName}.{patchTypename}:{message}");
+        private static void Warn(string message) => Mod.Warn($" {Mod.ModName}.{patchTypename}:{message}");
+        private static void Error(string message) => Mod.Error($" {(Mod.ModName)}.{patchTypename}:{message}");
+        private static void Error(Exception e, string message) => Mod.Error(e, $" {Mod.ModName}.{patchTypename}:{message}");
 
         // 定义PatchManager的Harmony实例引用字段
         private static Harmony _modePatcher;
@@ -66,7 +67,11 @@ namespace MapExtPDX
                 { "WaterSystemPatch_Static", (h) => h.CreateClassProcessor(typeof(WaterSystemMethodPatches)).Patch() },
                 { "WaterSimulationPatch_Static", (h) => h.CreateClassProcessor(typeof(WaterSimulationMethodPatches)).Patch() },
                 { "WaterSimulationLegacyPatch_Static", (h) => h.CreateClassProcessor(typeof(WaterSimulationLegacyMethodPatches)).Patch() },
-                { "WaterSystemPatch_GetSurfaceData", (h) => h.CreateClassProcessor(typeof(WaterSystem_GetSurfaceData_Patch)).Patch() },
+                // v2.1.1增加WaterLevelChangeSystemMethodPatches
+                { "WaterLevelChangeSystemMethodPatches_Static", (h) => h.CreateClassProcessor(typeof(WaterLevelChangeSystemMethodPatches)).Patch() },
+                // { "WaterSystemPatch_GetSurfaceData", (h) => h.CreateClassProcessor(typeof(WaterSystem_GetSurfaceData_Patch)).Patch() }, // v2.1.1去除
+                // v2.1.1增加WaterSystem_BaseDataReader_Patch(集中调用方式)
+                { "WaterSystem_BaseDataReader_Patch", (h) => WaterSystem_BaseDataReader_Patch.Apply(h) },
 
                 // PatchSet3:CellMapSystem<T>托管代码部分
                 { "CellMapSystemPatch_Field", (h) => h.CreateClassProcessor(typeof(CellMapSystem_KMapSize_Field_Patches)).Patch() },
@@ -78,11 +83,6 @@ namespace MapExtPDX
                 // PatchSetFinal:ReBurstJobSystems
                 // 集中调用方式
                 { "ReBurstSystemsPatches", (h) => JobPatchHelper.ApplyAllPatches(h) },
-
-                // 转为并行补丁系统
-                // PatchSetGloble:SaveLoadSystem
-                //{ "MetaDataExtenderPatch", (h) => h.CreateClassProcessor(typeof(MetaDataExtenderPatch)).Patch() },
-                //{ "LoadGameValidatorPatch", (h) => h.CreateClassProcessor(typeof(LoadGameValidatorPatch)).Patch() },
 
             };
             Info($"Registry initialized with {s_AllPatchSets.Count} patch sets.");
@@ -102,13 +102,13 @@ namespace MapExtPDX
                         "WaterSystemPatch_Static",
                         "WaterSimulationPatch_Static",
                         "WaterSimulationLegacyPatch_Static",
-                        "WaterSystemPatch_GetSurfaceData",
+                        "WaterLevelChangeSystemMethodPatches_Static",
+                        "WaterSystem_BaseDataReader_Patch",
+                        //"WaterSystemPatch_GetSurfaceData",
                         "CellMapSystemPatch_Field",
                         "CellMapSystemPatch_Method",
                         "AirwaySystemPatch",
                         "ReBurstSystemsPatches",
-                        //"MetaDataExtenderPatch",
-                        //"LoadGameValidatorPatch"
                     };
 
                 case PatchModeSetting.ModeB: // 模式28km
@@ -119,13 +119,13 @@ namespace MapExtPDX
                         "WaterSystemPatch_Static",
                         "WaterSimulationPatch_Static",
                         "WaterSimulationLegacyPatch_Static",
-                        "WaterSystemPatch_GetSurfaceData",
+                        "WaterLevelChangeSystemMethodPatches_Static",
+                        "WaterSystem_BaseDataReader_Patch",
+                        //"WaterSystemPatch_GetSurfaceData",
                         "CellMapSystemPatch_Field",
                         "CellMapSystemPatch_Method",
                         "AirWaySystemPatch",
                         "ReBurstSystemsPatches",
-                        //"MetaDataExtenderPatch",
-                        //"LoadGameValidatorPatch"
                     };
 
                 case PatchModeSetting.ModeC: // 模式114km
@@ -136,40 +136,38 @@ namespace MapExtPDX
                         "WaterSystemPatch_Static",
                         "WaterSimulationPatch_Static",
                         "WaterSimulationLegacyPatch_Static",
-                        "WaterSystemPatch_GetSurfaceData",
+                        "WaterLevelChangeSystemMethodPatches_Static",
+                        "WaterSystem_BaseDataReader_Patch",
+                        //"WaterSystemPatch_GetSurfaceData",
                         "CellMapSystemPatch_Field",
                         "CellMapSystemPatch_Method",
                         "AirWaySystemPatch",
                         "ReBurstSystemsPatches",
-                        //"MetaDataExtenderPatch",
-                        //"LoadGameValidatorPatch"
                     };
 
-                    /*
-                case PatchModeSetting.ModeD: // 模式229km
-                    return new List<string>
-                    {
-                        "TerrainSystemPatch",
-                        "TerrainToR16Patch",
-                        "WaterSystemPatch_Static",
-                        "WaterSimulationPatch_Static",
-                        "WaterSimulationLegacyPatch_Static",
-                        "WaterSystemPatch_GetSurfaceData",
-                        "CellMapSystemPatch_Field",
-                        "CellMapSystemPatch_Method",
-                        "AirWaySystemPatch",
-                        "ReBurstSystemsPatches",
-                        //"MetaDataExtenderPatch",
-                        //"LoadGameValidatorPatch"
-                    };
-                    */
+                /*
+            case PatchModeSetting.ModeD: // 模式229km
+                return new List<string>
+                {
+                    "TerrainSystemPatch",
+                    "TerrainToR16Patch",
+                    "WaterSystemPatch_Static",
+                    "WaterSimulationPatch_Static",
+                    "WaterSimulationLegacyPatch_Static",
+                    "WaterLevelChangeSystemMethodPatches_Static",
+                    "WaterSystem_BaseDataReader_Patch",
+                    //"WaterSystemPatch_GetSurfaceData",
+                    "CellMapSystemPatch_Field",
+                    "CellMapSystemPatch_Method",
+                    "AirWaySystemPatch",
+                    "ReBurstSystemsPatches",
+                };
+                */
 
                 case PatchModeSetting.None:  // 14km vanilla模式
                     return new List<string>
                     {
                         "TerrainToR16Patch",
-                        //"MetaDataExtenderPatch",
-                        //"LoadGameValidatorPatch"
                     };
             }
         }
@@ -186,14 +184,8 @@ namespace MapExtPDX
             CurrentCoreValue = GetCoreValueForMode(_currentMode);
             Info($"PatchManager Initialized. Effective initial mode from settings: {_currentMode}, CoreValue: {CurrentCoreValue}. Applying initial patches.");
 
-            // if (_currentMode != PatchModeSetting.None) 
-            // {
+            // 核心方法：执行模式加载
             ApplyPatchesForMode(_currentMode);
-            // }
-            // else
-            // {
-            //     Info("Initial mode is 'None', no patches applied by default.");
-            // }
         }
 
         // 核心功能方法
@@ -256,7 +248,7 @@ namespace MapExtPDX
             }
         }
 
-        // 应用PatchSet's Recipe
+        // 核心方法：应用PatchSet's Recipe
         private static void ApplyPatchesForMode(PatchModeSetting mode)
         {
             // 获取当前模式的“配方”

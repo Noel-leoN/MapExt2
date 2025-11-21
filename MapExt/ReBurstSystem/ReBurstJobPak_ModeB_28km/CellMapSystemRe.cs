@@ -16,6 +16,7 @@ namespace MapExtPDX.MapExt.ReBurstSystemModeB
     {
         // 等同于CV值；用于CellMapSystem/WaterSystem; 其他系统无BurstJob调用；
         // public static readonly int MapSizeMultiplier = 2;
+        // ModeA = 4 = 57344 ; ModeB = 2 = 28672; ModeC = 8 = 114688; ModeE = 1 = 14336;
         public static readonly int kMapSize = 28672; //MapSizeMultiplier * 14336;
 
         // public static readonly int AirPollutionSystemkTextureSize = 256 * 4;

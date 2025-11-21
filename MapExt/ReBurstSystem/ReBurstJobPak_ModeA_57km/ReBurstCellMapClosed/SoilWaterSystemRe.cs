@@ -22,7 +22,7 @@ namespace MapExtPDX.MapExt.ReBurstSystemModeA
         public TerrainHeightData m_TerrainHeightData;
 
         [ReadOnly]
-        public WaterSurfaceData m_WaterSurfaceData;
+        public WaterSurfaceData<SurfaceWater> m_WaterSurfaceData;
 
         public NativeArray<float> m_SoilWaterTextureData;
 

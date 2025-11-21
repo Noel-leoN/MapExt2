@@ -3,16 +3,19 @@
 // See LICENSE in the project root for full license information.
 // When using this part of the code, please clearly credit [Project Name] and the author.
 
+using System;
+using System.Reflection;
 using Colossal.Logging;
 using Game;
 using Game.Modding;
 using Game.SceneFlow;
-
-using System;
-using System.Reflection;
+using Game.Simulation;
 using HarmonyLib;
-
+using MapExtPDX.MapExt.MapSizePatchSet;
 using MapExtPDX.SaveLoadSystem;
+using Unity.Entities;
+using UnityEngine;
+using static Game.Simulation.WaterSystem;
 
 namespace MapExtPDX
 {
@@ -66,14 +69,13 @@ namespace MapExtPDX
                 Info($"{asset.name} v{asset.version} mod asset at {asset.path}");
 
             // 1.初始化双Harmony实例
-            Harmony.DEBUG = true;
+            // Harmony.DEBUG = true;
+            // FileLog.Log("MapExt_harmony.log");
 
             _globalPatcher = new Harmony(HarmonyIdGlobal);
             Info("HarmonyGlobal instance created");
             _modePatcher = new Harmony(HarmonyIdModes);
             Info("HarmonyModes instance created");
-
-            FileLog.Log("MapExt_harmony.log");
 
             // 将当前实例赋值给静态属性(use for Setting)
             Instance = this;
@@ -98,6 +100,10 @@ namespace MapExtPDX
             // 执行MapSize关联主要系统补丁
             PatchManager.Initialize(_modePatcher, initialMode);
             Info("PatchManager初始化完成应用！(所有MapSize Modes Transpiler补丁完成执行；所有Pre/Postfix将在方法调用时执行.)");
+
+            // v2.1.1新增
+            // 强制重置WaterSystem.InitTextures()
+            WaterSystemReinitializer.Execute();
 
             // 3.1 Harmony修复AirwaySystem
             // v2.0.5版本添加，单独执行；
@@ -178,7 +184,7 @@ namespace MapExtPDX
                 m_Setting.UnregisterInOptionsUI();
                 m_Setting = null;
             }
-        }
+        }        
 
         /// <summary>
         /// Gets the current game mode.

@@ -8,10 +8,12 @@ using Unity.Collections;
 using Unity.Entities;
 using Unity.Jobs;
 using Unity.Mathematics;
+using static MapExtPDX.MapExt.ReBurstSystemModeC.CellMapSystemRe;
 
 /// <summary>
 /// 地图大小变化请在 Execute()内设置！
 /// </summary>
+
 
 namespace MapExtPDX.MapExt.ReBurstSystemModeC
 {

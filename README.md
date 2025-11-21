@@ -1,6 +1,8 @@
 ﻿
 # Cities Skylines 2 Map Extended Mod (28/57/114/vanilla) All-in-one Edition (Beta)
 
+## Testing for 1.4.2f game version with much code changes. If there're any issues, please report on Discord. Thanks!
+
 ## Caution!!! Make sure to check out the full description below before using this mod!
 * It is very laborious to build a big city. This mod makes extensive modifications to the vanilla game's code, it is not entirely clear what potential issues there might be, and it may conflict with some mods.Please use at your own risk.
 * BACKUP YOUR GAME SAVES before use this mod! Whether you're using this mod or not, it's highly recommended to get into the habit of saving as a new file every time you play the game, then delete old saves once you're sure don't need them.

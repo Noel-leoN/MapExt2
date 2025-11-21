@@ -22,10 +22,12 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
     [HarmonyPatch]
     public static class CellMapSystem_KMapSize_Method_Patches
     {
-        private static void Info(string message) => Mod.Info($" {Mod.ModName}.{nameof(CellMapSystem_KMapSize_Method_Patches)}:{message}");
-        private static void Warn(string message) => Mod.Warn($" {Mod.ModName}.{nameof(CellMapSystem_KMapSize_Method_Patches)}:{message}");
-        private static void Error(string message) => Mod.Error($" {Mod.ModName}.{nameof(CellMapSystem_KMapSize_Method_Patches)}:{message}");
-        private static void Error(Exception e, string message) => Mod.Error(e, $" {Mod.ModName}.{nameof(CellMapSystem_KMapSize_Method_Patches)}:{message}");
+        // --- 日志封装 ---
+        private static readonly string patchTypename = nameof(CellMapSystem_KMapSize_Method_Patches);
+        private static void Info(string message) => Mod.Info($" {Mod.ModName}.{patchTypename}:{message}");
+        private static void Warn(string message) => Mod.Warn($" {Mod.ModName}.{patchTypename}:{message}");
+        private static void Error(string message) => Mod.Error($" {(Mod.ModName)}.{patchTypename}:{message}");
+        private static void Error(Exception e, string message) => Mod.Error(e, $" {Mod.ModName}.{patchTypename}:{message}");
 
         const string TARGET_FIELD_NAME = "kMapSize";
 

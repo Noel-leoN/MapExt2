@@ -9,16 +9,17 @@ using System;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Reflection.Emit;
-// using UnityEngine; // Required for Debug.Log
 
 namespace MapExtPDX.MapExt.MapSizePatchSet
 {
     public static class WaterSystemPatcherHelper
     {
-        private static void Info(string message) => Mod.Info($" {nameof(Mod.ModName)}.{nameof(WaterSystemPatcherHelper)}:{message}");
-        private static void Warn(string message) => Mod.Warn($" {nameof(Mod.ModName)}.{nameof(WaterSystemPatcherHelper)}:{message}");
-        private static void Error(string message) => Mod.Error($" {nameof(Mod.ModName)}.{nameof(WaterSystemPatcherHelper)}:{message}");
-        private static void Error(Exception e, string message) => Mod.Error(e, $" {nameof(Mod.ModName)}.{nameof(WaterSystemPatcherHelper)}:{message}");
+        // --- 日志封装 ---
+        private static readonly string patchTypename = nameof(WaterSystemPatcherHelper);
+        private static void Info(string message) => Mod.Info($" {Mod.ModName}.{patchTypename}:{message}");
+        private static void Warn(string message) => Mod.Warn($" {Mod.ModName}.{patchTypename}:{message}");
+        private static void Error(string message) => Mod.Error($" {(Mod.ModName)}.{patchTypename}:{message}");
+        private static void Error(Exception e, string message) => Mod.Error(e, $" {Mod.ModName}.{patchTypename}:{message}");
 
 
         // --- Reflection Info (cached for performance) ---

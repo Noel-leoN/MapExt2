@@ -9,7 +9,7 @@ using Unity.Burst.Intrinsics;
 using Unity.Collections;
 using Unity.Entities;
 using Unity.Mathematics;
-// using static MapExtPDX.MapExt.ReBurstSystemModeB.CellMapSystemRe;
+using static MapExtPDX.MapExt.ReBurstSystemModeB.CellMapSystemRe;
 
 namespace MapExtPDX.MapExt.ReBurstSystemModeB
 {
@@ -90,14 +90,68 @@ namespace MapExtPDX.MapExt.ReBurstSystemModeB
             Execute(in chunk, unfilteredChunkIndex, useEnabledMask, in chunkEnabledMask);
         }
 
-        public struct GroupAmbienceEffect
+        
+    }
+
+    [BurstCompile]
+    public struct EmitterAmbienceJob : IJobChunk
+    {
+        [ReadOnly]
+        public ComponentTypeHandle<Transform> m_TransformType;
+
+        [ReadOnly]
+        public ComponentTypeHandle<PrefabRef> m_PrefabRefType;
+
+        [ReadOnly]
+        public ComponentLookup<AmbienceEmitterData> m_AmbienceEmitterDatas;
+
+        public NativeParallelQueue<GroupAmbienceEffect>.Writer m_Queue;
+
+        public void Execute(in ArchetypeChunk chunk, int unfilteredChunkIndex, bool useEnabledMask, in v128 chunkEnabledMask)
         {
-            public GroupAmbienceType m_Type;
+            NativeArray<Transform> nativeArray = chunk.GetNativeArray(ref this.m_TransformType);
+            NativeArray<PrefabRef> nativeArray2 = chunk.GetNativeArray(ref this.m_PrefabRefType);
+            for (int i = 0; i < chunk.Count; i++)
+            {
+                float3 position = nativeArray[i].m_Position;
+                PrefabRef prefabRef = nativeArray2[i];
+                if (!this.m_AmbienceEmitterDatas.HasComponent(prefabRef.m_Prefab))
+                {
+                    continue;
+                }
+                AmbienceEmitterData ambienceEmitterData = this.m_AmbienceEmitterDatas[prefabRef.m_Prefab];
+                if (ambienceEmitterData.m_Intensity != 0f)
+                {
+                    int2 cell = CellMapSystem<ZoneAmbienceCell>.GetCell(position, CellMapSystemRe.kMapSize, ZoneAmbienceSystem.kTextureSize);
+                    int num = cell.x + cell.y * ZoneAmbienceSystem.kTextureSize;
+                    int hashCode = num * this.m_Queue.HashRange / (ZoneAmbienceSystem.kTextureSize * ZoneAmbienceSystem.kTextureSize);
+                    if (cell.x >= 0 && cell.y >= 0 && cell.x < ZoneAmbienceSystem.kTextureSize && cell.y < ZoneAmbienceSystem.kTextureSize)
+                    {
+                        this.m_Queue.Enqueue(hashCode, new GroupAmbienceEffect
+                        {
+                            m_Amount = ambienceEmitterData.m_Intensity,
+                            m_Type = ambienceEmitterData.m_AmbienceType,
+                            m_CellIndex = num
+                        });
+                    }
+                }
+            }
+        }
 
-            public float m_Amount;
-
-            public int m_CellIndex;
+        void IJobChunk.Execute(in ArchetypeChunk chunk, int unfilteredChunkIndex, bool useEnabledMask, in v128 chunkEnabledMask)
+        {
+            this.Execute(in chunk, unfilteredChunkIndex, useEnabledMask, in chunkEnabledMask);
         }
     }
+
+    public struct GroupAmbienceEffect
+    {
+        public GroupAmbienceType m_Type;
+
+        public float m_Amount;
+
+        public int m_CellIndex;
+    }
+
 
 }

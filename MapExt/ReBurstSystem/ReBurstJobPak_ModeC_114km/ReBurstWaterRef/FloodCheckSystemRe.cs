@@ -8,6 +8,7 @@ using Unity.Burst.Intrinsics;
 using Unity.Collections;
 using Unity.Entities;
 using Unity.Mathematics;
+using static MapExtPDX.MapExt.ReBurstSystemModeC.CellMapSystemRe;
 
 namespace MapExtPDX.MapExt.ReBurstSystemModeC
 {
@@ -57,7 +58,7 @@ namespace MapExtPDX.MapExt.ReBurstSystemModeC
         public TerrainHeightData m_TerrainHeightData;
 
         [ReadOnly]
-        public WaterSurfaceData m_WaterSurfaceData;
+        public WaterSurfaceData<SurfaceWater> m_WaterSurfaceData;
 
         [ReadOnly]
         public NativeList<ArchetypeChunk> m_WaterLevelChangeChunks;

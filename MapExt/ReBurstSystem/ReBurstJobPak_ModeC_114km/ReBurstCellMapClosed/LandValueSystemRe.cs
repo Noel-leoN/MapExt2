@@ -41,7 +41,7 @@ namespace MapExtPDX.MapExt.ReBurstSystemModeC
         public CellMapData<TelecomCoverage> m_TelecomCoverageMap;
 
         [ReadOnly]
-        public WaterSurfaceData m_WaterSurfaceData;
+        public WaterSurfaceData<SurfaceWater> m_WaterSurfaceData;
 
         [ReadOnly]
         public TerrainHeightData m_TerrainHeightData;

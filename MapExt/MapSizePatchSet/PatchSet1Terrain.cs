@@ -3,24 +3,27 @@
 // See LICENSE in the project root for full license information.
 // When using this part of the code, please clearly credit [Project Name] and the author.
 
-using Game.Simulation;
-using HarmonyLib;
-using System;
-using System.Collections.Generic;
-using System.Reflection.Emit;
-using Unity.Mathematics;
-
 namespace MapExtPDX.MapExt.MapSizePatchSet
 {
+    using Game.Simulation;
+    using HarmonyLib;
+    using System;
+    using System.Collections.Generic;
+    using System.Reflection.Emit;
+    using Unity.Mathematics;
+    using static MapExtPDX.Mod;
+
     // Target TerrainSystem class
     // 修补FinalizeTerrainData/GetTerrainBounds/GetHeightData等三个方法
     [HarmonyPatch(typeof(TerrainSystem))]
     public static class TerrainSystemPatches
     {
-        private static void Info(string message) => Mod.Info($" {Mod.ModName}.{nameof(TerrainSystemPatches)}:{message}");
-        private static void Warn(string message) => Mod.Warn($" {Mod.ModName}.{nameof(TerrainSystemPatches)}:{message}");
-        private static void Error(string message) => Mod.Error($" {(Mod.ModName)}.{nameof(TerrainSystemPatches)}:{message}");
-        private static void Error(Exception e, string message) => Mod.Error(e, $" {Mod.ModName}.{nameof(TerrainSystemPatches)}:{message}");
+        // --- 日志封装 ---
+        private static readonly string patchTypename = nameof(TerrainSystemPatches);
+        private static void Info(string message) => Mod.Info($" {ModName}.{patchTypename}:{message}");
+        private static void Warn(string message) => Mod.Warn($" {ModName}.{patchTypename}:{message}");
+        private static void Error(string message) => Mod.Error($" {(ModName)}.{patchTypename}:{message}");
+        private static void Error(Exception e, string message) => Mod.Error(e, $" {ModName}.{patchTypename}:{message}");
 
         // FinalizeTerrainData (改变引入默认值，仅修改此处即可，不需要同时修补其他方法)
         // 该方法调用仅在加载存档后执行一次，使用Prefix简化维护 

@@ -19,6 +19,8 @@ using static Game.Tools.AreaToolSystem;
 
 /// 地图大小变化时请修改Execute()内设置！
 
+using static MapExtPDX.MapExt.ReBurstSystemModeC.CellMapSystemRe;
+
 namespace MapExtPDX.MapExt.ReBurstSystemModeC
 {
     [BurstCompile]

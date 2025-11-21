@@ -11,7 +11,7 @@ using Unity.Collections;
 using Unity.Entities;
 using Unity.Jobs;
 using Unity.Mathematics;
-// using static MapExtPDX.MapExt.ReBurstSystemModeC.CellMapSystemRe;
+using static MapExtPDX.MapExt.ReBurstSystemModeC.CellMapSystemRe;
 
 namespace MapExtPDX.MapExt.ReBurstSystemModeC
 {

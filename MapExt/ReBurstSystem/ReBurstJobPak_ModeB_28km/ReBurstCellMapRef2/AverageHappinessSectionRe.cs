@@ -87,6 +87,9 @@ namespace MapExtPDX.MapExt.ReBurstSystemModeB
         public BufferLookup<CityModifier> m_CityModifierFromEntity;
 
         [ReadOnly]
+        public LocalEffectSystem.ReadData m_LocalEffectData;
+
+        [ReadOnly]
         public BufferLookup<Game.Net.ServiceCoverage> m_ServiceCoverageFromEntity;
 
         public CitizenHappinessParameterData m_CitizenHappinessParameters;
@@ -136,7 +139,7 @@ namespace MapExtPDX.MapExt.ReBurstSystemModeB
             if (this.m_BuildingFromEntity.HasComponent(this.m_SelectedEntity) && this.m_ResidentialPropertyFromEntity.HasComponent(this.m_SelectedEntity))
             {
                 // 重定向
-                BuildingHappinessRe.GetResidentialBuildingHappinessFactors(this.m_City, this.m_TaxRates, this.m_SelectedEntity, this.m_Factors, ref this.m_PrefabRefFromEntity, ref this.m_SpawnableBuildingDataFromEntity, ref this.m_BuildingPropertyDataFromEntity, ref this.m_CityModifierFromEntity, ref this.m_BuildingFromEntity, ref this.m_ElectricityConsumerFromEntity, ref this.m_WaterConsumerFromEntity, ref this.m_ServiceCoverageFromEntity, ref this.m_LockedFromEntity, ref this.m_TransformFromEntity, ref this.m_GarbageProducersFromEntity, ref this.m_CrimeProducersFromEntity, ref this.m_MailProducerFromEntity, ref this.m_RenterFromEntity, ref this.m_CitizenFromEntity, ref this.m_HouseholdCitizenFromEntity, ref this.m_BuildingDataFromEntity, this.m_CitizenHappinessParameters, this.m_GarbageParameters, this.m_HealthcareParameters, this.m_ParkParameters, this.m_EducationParameters, this.m_TelecomParameters, this.m_HappinessFactorParameters, this.m_PollutionMap, this.m_NoisePollutionMap, this.m_AirPollutionMap, this.m_TelecomCoverage, this.m_RelativeElectricityFee, this.m_RelativeWaterFee);
+                BuildingHappinessRe.GetResidentialBuildingHappinessFactors(this.m_City, this.m_TaxRates, this.m_SelectedEntity, this.m_Factors, ref this.m_PrefabRefFromEntity, ref this.m_SpawnableBuildingDataFromEntity, ref this.m_BuildingPropertyDataFromEntity, ref this.m_CityModifierFromEntity, ref this.m_BuildingFromEntity, ref this.m_ElectricityConsumerFromEntity, ref this.m_WaterConsumerFromEntity, ref this.m_ServiceCoverageFromEntity, ref this.m_LockedFromEntity, ref this.m_TransformFromEntity, ref this.m_GarbageProducersFromEntity, ref this.m_CrimeProducersFromEntity, ref this.m_MailProducerFromEntity, ref this.m_RenterFromEntity, ref this.m_CitizenFromEntity, ref this.m_HouseholdCitizenFromEntity, ref this.m_BuildingDataFromEntity, ref this.m_LocalEffectData, this.m_CitizenHappinessParameters, this.m_GarbageParameters, this.m_HealthcareParameters, this.m_ParkParameters, this.m_EducationParameters, this.m_TelecomParameters, this.m_HappinessFactorParameters, this.m_PollutionMap, this.m_NoisePollutionMap, this.m_AirPollutionMap, this.m_TelecomCoverage, this.m_RelativeElectricityFee, this.m_RelativeWaterFee);
                 // mod
                 if (TryAddPropertyHappiness(ref happiness, ref citizenCount, this.m_SelectedEntity, this.m_HouseholdFromEntity, this.m_CitizenFromEntity, this.m_HealthProblemFromEntity, this.m_RenterFromEntity, this.m_HouseholdCitizenFromEntity))
                 {
@@ -164,9 +167,9 @@ namespace MapExtPDX.MapExt.ReBurstSystemModeB
                 this.m_Results[1] = citizenCount;
                 this.m_Results[2] = happiness;
                 if (this.m_PropertyRenterFromEntity.TryGetComponent(this.m_SelectedEntity, out var componentData))
-                { 
+                {
                     //重定向
-                    BuildingHappinessRe.GetResidentialBuildingHappinessFactors(this.m_City, this.m_TaxRates, componentData.m_Property, this.m_Factors, ref this.m_PrefabRefFromEntity, ref this.m_SpawnableBuildingDataFromEntity, ref this.m_BuildingPropertyDataFromEntity, ref this.m_CityModifierFromEntity, ref this.m_BuildingFromEntity, ref this.m_ElectricityConsumerFromEntity, ref this.m_WaterConsumerFromEntity, ref this.m_ServiceCoverageFromEntity, ref this.m_LockedFromEntity, ref this.m_TransformFromEntity, ref this.m_GarbageProducersFromEntity, ref this.m_CrimeProducersFromEntity, ref this.m_MailProducerFromEntity, ref this.m_RenterFromEntity, ref this.m_CitizenFromEntity, ref this.m_HouseholdCitizenFromEntity, ref this.m_BuildingDataFromEntity, this.m_CitizenHappinessParameters, this.m_GarbageParameters, this.m_HealthcareParameters, this.m_ParkParameters, this.m_EducationParameters, this.m_TelecomParameters, this.m_HappinessFactorParameters, this.m_PollutionMap, this.m_NoisePollutionMap, this.m_AirPollutionMap, this.m_TelecomCoverage, this.m_RelativeElectricityFee, this.m_RelativeWaterFee);
+                    BuildingHappiness.GetResidentialBuildingHappinessFactors(this.m_City, this.m_TaxRates, componentData.m_Property, this.m_Factors, ref this.m_PrefabRefFromEntity, ref this.m_SpawnableBuildingDataFromEntity, ref this.m_BuildingPropertyDataFromEntity, ref this.m_CityModifierFromEntity, ref this.m_BuildingFromEntity, ref this.m_ElectricityConsumerFromEntity, ref this.m_WaterConsumerFromEntity, ref this.m_ServiceCoverageFromEntity, ref this.m_LockedFromEntity, ref this.m_TransformFromEntity, ref this.m_GarbageProducersFromEntity, ref this.m_CrimeProducersFromEntity, ref this.m_MailProducerFromEntity, ref this.m_RenterFromEntity, ref this.m_CitizenFromEntity, ref this.m_HouseholdCitizenFromEntity, ref this.m_BuildingDataFromEntity, ref this.m_LocalEffectData, this.m_CitizenHappinessParameters, this.m_GarbageParameters, this.m_HealthcareParameters, this.m_ParkParameters, this.m_EducationParameters, this.m_TelecomParameters, this.m_HappinessFactorParameters, this.m_PollutionMap, this.m_NoisePollutionMap, this.m_AirPollutionMap, this.m_TelecomCoverage, this.m_RelativeElectricityFee, this.m_RelativeWaterFee);
                 }
             }
         }
@@ -269,6 +272,9 @@ namespace MapExtPDX.MapExt.ReBurstSystemModeB
         [ReadOnly]
         public BufferLookup<Game.Net.ServiceCoverage> m_ServiceCoverageFromEntity;
 
+        [ReadOnly]
+        public LocalEffectSystem.ReadData m_LocalEffectData;
+
         public CitizenHappinessParameterData m_CitizenHappinessParameters;
 
         public GarbageParameterData m_GarbageParameters;
@@ -324,7 +330,7 @@ namespace MapExtPDX.MapExt.ReBurstSystemModeB
                 {
                     num = 1;
                     // 重定向
-                    BuildingHappinessRe.GetResidentialBuildingHappinessFactors(this.m_City, this.m_TaxRates, entity, this.m_Factors, ref this.m_PrefabRefFromEntity, ref this.m_SpawnableBuildingDataFromEntity, ref this.m_BuildingPropertyDataFromEntity, ref this.m_CityModifierFromEntity, ref this.m_BuildingFromEntity, ref this.m_ElectricityConsumerFromEntity, ref this.m_WaterConsumerFromEntity, ref this.m_ServiceCoverageFromEntity, ref this.m_LockedFromEntity, ref this.m_TransformFromEntity, ref this.m_GarbageProducersFromEntity, ref this.m_CrimeProducersFromEntity, ref this.m_MailProducerFromEntity, ref this.m_RenterFromEntity, ref this.m_CitizenFromEntity, ref this.m_HouseholdCitizenFromEntity, ref this.m_BuildingDataFromEntity, this.m_CitizenHappinessParameters, this.m_GarbageParameters, this.m_HealthcareParameters, this.m_ParkParameters, this.m_EducationParameters, this.m_TelecomParameters, this.m_HappinessFactorParameters, this.m_PollutionMap, this.m_NoisePollutionMap, this.m_AirPollutionMap, this.m_TelecomCoverage, this.m_RelativeElectricityFee, this.m_RelativeWaterFee);
+                    BuildingHappiness.GetResidentialBuildingHappinessFactors(this.m_City, this.m_TaxRates, entity, this.m_Factors, ref this.m_PrefabRefFromEntity, ref this.m_SpawnableBuildingDataFromEntity, ref this.m_BuildingPropertyDataFromEntity, ref this.m_CityModifierFromEntity, ref this.m_BuildingFromEntity, ref this.m_ElectricityConsumerFromEntity, ref this.m_WaterConsumerFromEntity, ref this.m_ServiceCoverageFromEntity, ref this.m_LockedFromEntity, ref this.m_TransformFromEntity, ref this.m_GarbageProducersFromEntity, ref this.m_CrimeProducersFromEntity, ref this.m_MailProducerFromEntity, ref this.m_RenterFromEntity, ref this.m_CitizenFromEntity, ref this.m_HouseholdCitizenFromEntity, ref this.m_BuildingDataFromEntity, ref this.m_LocalEffectData, this.m_CitizenHappinessParameters, this.m_GarbageParameters, this.m_HealthcareParameters, this.m_ParkParameters, this.m_EducationParameters, this.m_TelecomParameters, this.m_HappinessFactorParameters, this.m_PollutionMap, this.m_NoisePollutionMap, this.m_AirPollutionMap, this.m_TelecomCoverage, this.m_RelativeElectricityFee, this.m_RelativeWaterFee);
                 }
             }
             this.m_Results[0] += num;

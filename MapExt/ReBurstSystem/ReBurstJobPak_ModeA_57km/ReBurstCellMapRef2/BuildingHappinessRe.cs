@@ -21,7 +21,7 @@ namespace MapExtPDX.MapExt.ReBurstSystemModeA
     // 无BCJob
     public static class BuildingHappinessRe
     {
-        public static void GetResidentialBuildingHappinessFactors(Entity city, NativeArray<int> taxRates, Entity property, NativeArray<int2> factors, ref ComponentLookup<PrefabRef> prefabs, ref ComponentLookup<SpawnableBuildingData> spawnableBuildings, ref ComponentLookup<BuildingPropertyData> buildingPropertyDatas, ref BufferLookup<CityModifier> cityModifiers, ref ComponentLookup<Building> buildings, ref ComponentLookup<ElectricityConsumer> electricityConsumers, ref ComponentLookup<WaterConsumer> waterConsumers, ref BufferLookup<Game.Net.ServiceCoverage> serviceCoverages, ref ComponentLookup<Locked> locked, ref ComponentLookup<Game.Objects.Transform> transforms, ref ComponentLookup<GarbageProducer> garbageProducers, ref ComponentLookup<CrimeProducer> crimeProducers, ref ComponentLookup<MailProducer> mailProducers, ref BufferLookup<Renter> renters, ref ComponentLookup<Citizen> citizenDatas, ref BufferLookup<HouseholdCitizen> householdCitizens, ref ComponentLookup<BuildingData> buildingDatas, CitizenHappinessParameterData citizenHappinessParameters, GarbageParameterData garbageParameters, HealthcareParameterData healthcareParameters, ParkParameterData parkParameters, EducationParameterData educationParameters, TelecomParameterData telecomParameters, DynamicBuffer<HappinessFactorParameterData> happinessFactorParameters, NativeArray<GroundPollution> pollutionMap, NativeArray<NoisePollution> noisePollutionMap, NativeArray<AirPollution> airPollutionMap, CellMapData<TelecomCoverage> telecomCoverage, float relativeElectricityFee, float relativeWaterFee)
+        public static void GetResidentialBuildingHappinessFactors(Entity city, NativeArray<int> taxRates, Entity property, NativeArray<int2> factors, ref ComponentLookup<PrefabRef> prefabs, ref ComponentLookup<SpawnableBuildingData> spawnableBuildings, ref ComponentLookup<BuildingPropertyData> buildingPropertyDatas, ref BufferLookup<CityModifier> cityModifiers, ref ComponentLookup<Building> buildings, ref ComponentLookup<ElectricityConsumer> electricityConsumers, ref ComponentLookup<WaterConsumer> waterConsumers, ref BufferLookup<Game.Net.ServiceCoverage> serviceCoverages, ref ComponentLookup<Locked> locked, ref ComponentLookup<Game.Objects.Transform> transforms, ref ComponentLookup<GarbageProducer> garbageProducers, ref ComponentLookup<CrimeProducer> crimeProducers, ref ComponentLookup<MailProducer> mailProducers, ref BufferLookup<Renter> renters, ref ComponentLookup<Citizen> citizenDatas, ref BufferLookup<HouseholdCitizen> householdCitizens, ref ComponentLookup<BuildingData> buildingDatas, ref LocalEffectSystem.ReadData localEffectData, CitizenHappinessParameterData citizenHappinessParameters, GarbageParameterData garbageParameters, HealthcareParameterData healthcareParameters, ParkParameterData parkParameters, EducationParameterData educationParameters, TelecomParameterData telecomParameters, DynamicBuffer<HappinessFactorParameterData> happinessFactorParameters, NativeArray<GroundPollution> pollutionMap, NativeArray<NoisePollution> noisePollutionMap, NativeArray<AirPollution> airPollutionMap, CellMapData<TelecomCoverage> telecomCoverage, float relativeElectricityFee, float relativeWaterFee)
         {
             if (!prefabs.HasComponent(property))
             {
@@ -52,24 +52,24 @@ namespace MapExtPDX.MapExt.ReBurstSystemModeA
             num /= (float)buildingPropertyData.m_ResidentialProperties;
             float num2 = 1f;
             int currentHappiness = 50;
-            int num3 = 128;
-            float num4 = 0.3f;
+            int leisureCounter = 128;
+            float num3 = 0.3f;
+            float num4 = 0.25f;
             float num5 = 0.25f;
-            float num6 = 0.25f;
-            float num7 = 0.15f;
-            float num8 = 0.05f;
-            float num9 = 2f;
+            float num6 = 0.15f;
+            float num7 = 0.05f;
+            float num8 = 2f;
             if (renters.HasBuffer(property))
             {
+                num3 = 0f;
                 num4 = 0f;
                 num5 = 0f;
                 num6 = 0f;
                 num7 = 0f;
-                num8 = 0f;
                 int2 @int = default(int2);
                 int2 int2 = default(int2);
+                int num9 = 0;
                 int num10 = 0;
-                int num11 = 0;
                 DynamicBuffer<Renter> dynamicBuffer = renters[property];
                 for (int i = 0; i < dynamicBuffer.Length; i++)
                 {
@@ -78,7 +78,7 @@ namespace MapExtPDX.MapExt.ReBurstSystemModeA
                     {
                         continue;
                     }
-                    num11++;
+                    num10++;
                     DynamicBuffer<HouseholdCitizen> dynamicBuffer2 = householdCitizens[renter];
                     for (int j = 0; j < dynamicBuffer2.Length; j++)
                     {
@@ -88,23 +88,23 @@ namespace MapExtPDX.MapExt.ReBurstSystemModeA
                             Citizen citizen2 = citizenDatas[citizen];
                             int2.x += citizen2.Happiness;
                             int2.y++;
-                            num10 += citizen2.m_LeisureCounter;
+                            num9 += citizen2.m_LeisureCounter;
                             switch (citizen2.GetEducationLevel())
                             {
                                 case 0:
-                                    num4 += 1f;
+                                    num3 += 1f;
                                     break;
                                 case 1:
-                                    num5 += 1f;
+                                    num4 += 1f;
                                     break;
                                 case 2:
-                                    num6 += 1f;
+                                    num5 += 1f;
                                     break;
                                 case 3:
-                                    num7 += 1f;
+                                    num6 += 1f;
                                     break;
                                 case 4:
-                                    num8 += 1f;
+                                    num7 += 1f;
                                     break;
                             }
                             if (citizen2.GetAge() == CitizenAge.Child)
@@ -122,13 +122,13 @@ namespace MapExtPDX.MapExt.ReBurstSystemModeA
                 if (int2.y > 0)
                 {
                     currentHappiness = Mathf.RoundToInt((float)int2.x / (float)int2.y);
-                    num3 = Mathf.RoundToInt((float)num10 / (float)int2.y);
+                    leisureCounter = Mathf.RoundToInt((float)num9 / (float)int2.y);
+                    num3 /= (float)int2.y;
                     num4 /= (float)int2.y;
                     num5 /= (float)int2.y;
                     num6 /= (float)int2.y;
                     num7 /= (float)int2.y;
-                    num8 /= (float)int2.y;
-                    num9 = (float)int2.y / (float)num11;
+                    num8 = (float)int2.y / (float)num10;
                 }
             }
             Entity healthcareServicePrefab = healthcareParameters.m_HealthcareServicePrefab;
@@ -221,7 +221,6 @@ namespace MapExtPDX.MapExt.ReBurstSystemModeA
             }
             if (!locked.HasEnabledComponent(happinessFactorParameters[6].m_LockedEntity))
             {
-                // 重定向
                 int2 groundPollutionBonuses = CitizenHappinessJob.GetGroundPollutionBonuses(property, ref transforms, pollutionMap, cityModifiers2, in citizenHappinessParameters);
                 int2 value11 = factors[5];
                 value11.x++;
@@ -230,7 +229,6 @@ namespace MapExtPDX.MapExt.ReBurstSystemModeA
             }
             if (!locked.HasEnabledComponent(happinessFactorParameters[2].m_LockedEntity))
             {
-                // 重定向
                 int2 airPollutionBonuses = CitizenHappinessJob.GetAirPollutionBonuses(property, ref transforms, airPollutionMap, cityModifiers2, in citizenHappinessParameters);
                 int2 value12 = factors[2];
                 value12.x++;
@@ -239,7 +237,6 @@ namespace MapExtPDX.MapExt.ReBurstSystemModeA
             }
             if (!locked.HasEnabledComponent(happinessFactorParameters[7].m_LockedEntity))
             {
-                // 重定向
                 int2 noiseBonuses = CitizenHappinessJob.GetNoiseBonuses(property, ref transforms, noisePollutionMap, in citizenHappinessParameters);
                 int2 value13 = factors[6];
                 value13.x++;
@@ -280,7 +277,7 @@ namespace MapExtPDX.MapExt.ReBurstSystemModeA
             }
             if (!locked.HasEnabledComponent(happinessFactorParameters[16].m_LockedEntity))
             {
-                int2 leisureBonuses = CitizenHappinessSystem.GetLeisureBonuses((byte)num3);
+                int2 leisureBonuses = CitizenHappinessSystem.GetLeisureBonuses(leisureCounter, isTourist: false);
                 int2 value18 = factors[15];
                 value18.x++;
                 value18.y += (leisureBonuses.x + leisureBonuses.y) / 2 - happinessFactorParameters[16].m_BaseLevel;
@@ -288,7 +285,7 @@ namespace MapExtPDX.MapExt.ReBurstSystemModeA
             }
             if (!locked.HasEnabledComponent(happinessFactorParameters[17].m_LockedEntity))
             {
-                float2 @float = new float2(num4, num4) * CitizenHappinessSystem.GetTaxBonuses(0, taxRates, cityModifiers2, in citizenHappinessParameters) + new float2(num5, num5) * CitizenHappinessSystem.GetTaxBonuses(1, taxRates, cityModifiers2, in citizenHappinessParameters) + new float2(num6, num6) * CitizenHappinessSystem.GetTaxBonuses(2, taxRates, cityModifiers2, in citizenHappinessParameters) + new float2(num7, num7) * CitizenHappinessSystem.GetTaxBonuses(3, taxRates, cityModifiers2, in citizenHappinessParameters) + new float2(num8, num8) * CitizenHappinessSystem.GetTaxBonuses(4, taxRates, cityModifiers2, in citizenHappinessParameters);
+                float2 @float = new float2(num3, num3) * CitizenHappinessSystem.GetTaxBonuses(0, taxRates, cityModifiers2, in citizenHappinessParameters) + new float2(num4, num4) * CitizenHappinessSystem.GetTaxBonuses(1, taxRates, cityModifiers2, in citizenHappinessParameters) + new float2(num5, num5) * CitizenHappinessSystem.GetTaxBonuses(2, taxRates, cityModifiers2, in citizenHappinessParameters) + new float2(num6, num6) * CitizenHappinessSystem.GetTaxBonuses(3, taxRates, cityModifiers2, in citizenHappinessParameters) + new float2(num7, num7) * CitizenHappinessSystem.GetTaxBonuses(4, taxRates, cityModifiers2, in citizenHappinessParameters);
                 int2 value19 = factors[16];
                 value19.x++;
                 value19.y += Mathf.RoundToInt(@float.x + @float.y) / 2 - happinessFactorParameters[17].m_BaseLevel;
@@ -296,12 +293,19 @@ namespace MapExtPDX.MapExt.ReBurstSystemModeA
             }
             if (!locked.HasEnabledComponent(happinessFactorParameters[3].m_LockedEntity))
             {
-                float2 float2 = CitizenHappinessSystem.GetApartmentWellbeing(buildingPropertyData.m_SpaceMultiplier * num / num9, level);
+                float2 float2 = CitizenHappinessSystem.GetApartmentWellbeing(buildingPropertyData.m_SpaceMultiplier * num / num8, level);
                 int2 value20 = factors[21];
                 value20.x++;
                 value20.y += Mathf.RoundToInt(float2.x + float2.y) / 2 - happinessFactorParameters[3].m_BaseLevel;
                 factors[21] = value20;
             }
+            float wellbeing = 50f;
+            float health = 50f;
+            float2 float3 = CitizenHappinessSystem.GetLocalEffectBonuses(ref wellbeing, ref health, ref localEffectData, ref transforms, property);
+            int2 value21 = factors[28];
+            value21.x++;
+            value21.y += Mathf.RoundToInt(float3.x + float3.y) / 2;
+            factors[28] = value21;
         }
     }
 }

@@ -25,10 +25,13 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
     [HarmonyPatch]
     public static class CellMapSystem_KMapSize_Field_Patches
     {
-        private static void Info(string message) => Mod.Info($" {Mod.ModName}.{nameof(CellMapSystem_KMapSize_Field_Patches)}:{message}");
-        private static void Warn(string message) => Mod.Warn($" {Mod.ModName}.{nameof(CellMapSystem_KMapSize_Field_Patches)}:{message}");
-        private static void Error(string message) => Mod.Error($" {Mod.ModName}.{nameof(CellMapSystem_KMapSize_Field_Patches)}:{message}");
-        private static void Error(Exception e, string message) => Mod.Error(e, $" {Mod.ModName}.{nameof(CellMapSystem_KMapSize_Field_Patches)}:{message}");
+        // --- 日志封装 ---
+        private static readonly string modName = Mod.ModName;
+        private static readonly string patchTypename = nameof(CellMapSystem_KMapSize_Field_Patches);
+        private static void Info(string message) => Mod.Info($" {modName}.{patchTypename}:{message}");
+        private static void Warn(string message) => Mod.Warn($" {Mod.ModName}.{patchTypename}:{message}");
+        private static void Error(string message) => Mod.Error($" {(Mod.ModName)}.{patchTypename}:{message}");
+        private static void Error(Exception e, string message) => Mod.Error(e, $" {Mod.ModName}.{patchTypename}:{message}");
 
 
         const string TARGET_FIELD_NAME = "kMapSize";
@@ -59,10 +62,10 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
                     // Check 1: 字段名是否kMapSize
                     // Check 2: 字段是否属于泛型封闭类型
                     // Check 3: 泛型是否属于CellMapSystem<>
-                    if (operandField.Name == TARGET_FIELD_NAME/* &&
+                    if (operandField.Name == TARGET_FIELD_NAME &&
                         operandField.DeclaringType != null &&
                         operandField.DeclaringType.IsGenericType &&
-                        operandField.DeclaringType.GetGenericTypeDefinition() == targetGenericTypeDef*/)
+                        operandField.DeclaringType.GetGenericTypeDefinition() == targetGenericTypeDef)
                     {
                         CodeInstruction nextInstruction = i + 1 < instructionList.Count ? instructionList[i + 1] : null;
                         bool needsFloat = nextInstruction?.opcode == OpCodes.Conv_R4;
@@ -297,6 +300,7 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
         // Reuse the same transpiler logic
          PatchKMapSizeFieldLoad(instructions, gen, original);
         */
+        // Harmony2.2.2获取嵌套类型解析不佳
 
         // Patching WindSimulationSystemGetCellCenter
         [HarmonyPatch(typeof(WindSimulationSystem), "GetCellCenter")]

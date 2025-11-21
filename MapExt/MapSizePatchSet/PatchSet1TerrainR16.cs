@@ -22,10 +22,12 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
     /// </summary>
     public static class TerrainToR16Patch
     {
-        private static void Info(string message) => Mod.Info($" {nameof(Mod.ModName)}.{nameof(TerrainToR16Patch)}:{message}");
-        private static void Warn(string message) => Mod.Warn($" {nameof(Mod.ModName)}.{nameof(TerrainToR16Patch)}:{message}");
-        private static void Error(string message) => Mod.Error($" {nameof(Mod.ModName)}.{nameof(TerrainToR16Patch)}:{message}");
-        private static void Error(Exception e, string message) => Mod.Error(e, $" {nameof(Mod.ModName)}.{nameof(TerrainToR16Patch)}:{message}");
+        // --- 日志封装 ---
+        private static readonly string patchTypename = nameof(TerrainToR16Patch);
+        private static void Info(string message) => Mod.Info($" {Mod.ModName}.{patchTypename}:{message}");
+        private static void Warn(string message) => Mod.Warn($" {Mod.ModName}.{patchTypename}:{message}");
+        private static void Error(string message) => Mod.Error($" {(Mod.ModName)}.{patchTypename}:{message}");
+        private static void Error(Exception e, string message) => Mod.Error(e, $" {Mod.ModName}.{patchTypename}:{message}");
 
         private const int TARGET_WIDTH = 4096; // vanilla = 4096;
         private const int TARGET_HEIGHT = 4096; // vanilla = 4096;

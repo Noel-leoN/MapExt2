@@ -20,7 +20,7 @@ using UnityEngine;
 namespace MapExtPDX.MapExt.MapSizePatchSet
 {
     [HarmonyPatch]
-    [HarmonyPatch(typeof(AirwaySystem))]
+    [HarmonyPatch(typeof(Game.Net.AirwaySystem))]
     public static class AirwaySystem_OnUpdate_Patch
     {
         // A "session lock" to ensure logic runs only once per game load/new game.
@@ -210,7 +210,7 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
             [ReadOnly]
             public TerrainHeightData m_TerrainHeightData;
             [ReadOnly]
-            public WaterSurfaceData m_WaterSurfaceData;
+            public WaterSurfaceData<SurfaceWater> m_WaterSurfaceData;
 
             [NativeDisableParallelForRestriction]
             public ComponentLookup<Curve> m_CurveData;
