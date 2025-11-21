@@ -442,3 +442,4 @@ FodyWeavers.xsd
 /MapExt/ReBurstSystem/ReBurstJobPak_ModeC_114km/ReBurstCellMapSub/PowerPlantAISystemRe.cs
 /MapExt/ReBurstSystem/ReBurstJobPak_ModeC_114km/ReBurstCellMapSub/TempWaterPumpingTooltipSystemRe.cs
 /MapExt/ReBurstSystem/ReBurstJobPak_ModeC_114km/ReBurstCellMapSub/WaterPumpingStationAISystemRe.cs
+/MapExt/MapSizePatchSet/PatchSet2WaterSurfaceData.cs
