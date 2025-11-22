@@ -1,4 +1,16 @@
-﻿### 2.1.0
+﻿### 2.1.2
+- Fixe a bug that caused a crash due to a missing piece. Sorry for the inconvenience!
+
+### 2.1.1
+  - Updated for 1.4.2f.  Major changes again, please report any issues, thanks.
+  - Re-add fixing power plant, water pump that need groundwater.
+  - Add fix a few missing minor systems.
+  
+  - 1.4.2f版本适配。由于大量改动，请及时报告问题，谢谢。
+  - 重新添加各类需要地下水的电厂、水泵修复。
+  - 补充修复个别遗漏的小系统。
+
+### 2.1.0
   - Updated for 1.3.6f.  Major changes, please report any issues, thanks.
   - Completely remove the unstable 229km mode. 
   - Since the new patch changed the demand system, temporarily disabled the resident housing search fix and will bring it back once it's improved.

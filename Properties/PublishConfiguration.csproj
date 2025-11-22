@@ -69,7 +69,7 @@ $(Screenshot00)$(Screenshot01)$(Screenshot02)$(Screenshot03)$(Screenshot04)$(Scr
     <ModVersion Value="$(Version)" />
 
     <!-- Recommended version of the base game to use the mod. -->
-    <GameVersion Value="1.3.6*" />
+    <GameVersion Value="1.4.2*" />
 
     <!-- Dependency for the mod.  Can be set multiple times. -->
     <Dependency Id="" />

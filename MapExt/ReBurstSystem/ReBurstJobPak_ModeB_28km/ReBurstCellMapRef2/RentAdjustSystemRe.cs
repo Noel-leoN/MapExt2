@@ -338,7 +338,7 @@ namespace MapExtPDX.MapExt.ReBurstSystemModeB
                     renters.RemoveAt(renters.Length - 1);
                     UnityEngine.Debug.LogWarning($"Removed extra renter from building:{entity.Index}");
                 }
-                if (renters.Length == 0 && (value.m_Flags & Game.Buildings.BuildingFlags.HighRentWarning) != Game.Buildings.BuildingFlags.None)
+                if (renters.Length == 0 && (value.m_Flags & Game.Buildings.BuildingFlags.HighRentWarning) != 0)
                 {
                     this.m_IconCommandBuffer.Remove(entity, this.m_BuildingConfigurationData.m_HighRentNotification);
                     value.m_Flags &= ~Game.Buildings.BuildingFlags.HighRentWarning;

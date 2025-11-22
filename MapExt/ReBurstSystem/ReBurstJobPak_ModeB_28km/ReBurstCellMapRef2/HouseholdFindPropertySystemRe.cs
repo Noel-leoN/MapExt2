@@ -368,29 +368,26 @@ namespace MapExtPDX.MapExt.ReBurstSystemModeB
                 }
                 weights.m_Value *= 1f / (float)citizens.Length;
             }
-            PathfindParameters parameters = new PathfindParameters
-            {
-                m_MaxSpeed = 111.111115f,
-                m_WalkSpeed = 1.6666667f,
-                m_Weights = weights,
-                m_Methods = (PathMethod.Pedestrian | PathMethod.PublicTransportDay),
-                m_MaxCost = CitizenBehaviorSystem.kMaxPathfindCost,
-                m_PathfindFlags = (PathfindFlags.Simplified | PathfindFlags.IgnorePath)
-            };
-            SetupQueueTarget a = new SetupQueueTarget
-            {
-                m_Type = SetupTargetType.CurrentLocation,
-                m_Methods = PathMethod.Pedestrian,
-                m_Entity = targetLocation
-            };
-            SetupQueueTarget b = new SetupQueueTarget
-            {
-                m_Type = SetupTargetType.FindHome,
-                m_Methods = PathMethod.Pedestrian,
-                m_Entity = household,
-                m_Entity2 = oldHome,
-                m_Value2 = minimumScore
-            };
+            PathfindParameters pathfindParameters = default(PathfindParameters);
+            pathfindParameters.m_MaxSpeed = 111.111115f;
+            pathfindParameters.m_WalkSpeed = 1.66666675f;
+            pathfindParameters.m_Weights = weights;
+            pathfindParameters.m_Methods = PathMethod.Pedestrian | PathMethod.PublicTransportDay;
+            pathfindParameters.m_MaxCost = CitizenBehaviorSystem.kMaxPathfindCost;
+            pathfindParameters.m_PathfindFlags = PathfindFlags.Simplified | PathfindFlags.IgnorePath;
+            PathfindParameters parameters = pathfindParameters;
+            SetupQueueTarget setupQueueTarget = default(SetupQueueTarget);
+            setupQueueTarget.m_Type = SetupTargetType.CurrentLocation;
+            setupQueueTarget.m_Methods = PathMethod.Pedestrian;
+            setupQueueTarget.m_Entity = targetLocation;
+            SetupQueueTarget a = setupQueueTarget;
+            setupQueueTarget = default(SetupQueueTarget);
+            setupQueueTarget.m_Type = SetupTargetType.FindHome;
+            setupQueueTarget.m_Methods = PathMethod.Pedestrian;
+            setupQueueTarget.m_Entity = household;
+            setupQueueTarget.m_Entity2 = oldHome;
+            setupQueueTarget.m_Value2 = minimumScore;
+            SetupQueueTarget b = setupQueueTarget;
             if (this.m_OwnedVehicles.TryGetBuffer(household, out var bufferData) && bufferData.Length != 0)
             {
                 parameters.m_Methods |= (PathMethod)(targetIsOrigin ? 8194 : 8198);
@@ -403,7 +400,7 @@ namespace MapExtPDX.MapExt.ReBurstSystemModeB
             }
             if (targetIsOrigin)
             {
-                parameters.m_MaxSpeed.y = 277.77777f;
+                parameters.m_MaxSpeed.y = 277.777771f;
                 parameters.m_Methods |= PathMethod.Taxi | PathMethod.PublicTransportNight;
                 parameters.m_TaxiIgnoredRules = VehicleUtils.GetIgnoredPathfindRulesTaxiDefaults();
             }
@@ -411,12 +408,7 @@ namespace MapExtPDX.MapExt.ReBurstSystemModeB
             {
                 CommonUtils.Swap(ref a, ref b);
             }
-
-            // 待测试mod
-            // parameters.m_MaxResultCount = 10;
             parameters.m_MaxResultCount = 10;
-            // 设置正在寻找住处的实体所能搜寻工作/上学地点周边的空闲住宅数量，原始设定过低导致大量排队时卡住;
-
             parameters.m_PathfindFlags |= (PathfindFlags)(targetIsOrigin ? 256 : 128);
             this.m_CommandBuffer.AddBuffer<PathInformations>(household).Add(new PathInformations
             {
@@ -504,8 +496,6 @@ namespace MapExtPDX.MapExt.ReBurstSystemModeB
                 return false;
             }
             Entity householdHomeBuilding = BuildingUtils.GetHouseholdHomeBuilding(householdEntity, ref this.m_PropertyRenters, ref this.m_HomelessHouseholds);
-
-            // mod
             float bestPropertyScore = ((householdHomeBuilding != Entity.Null) ? PropertyUtilsRe.GetPropertyScore(householdHomeBuilding, householdEntity, dynamicBuffer, ref this.m_PrefabRefs, ref this.m_BuildingProperties, ref this.m_Buildings, ref this.m_BuildingDatas, ref this.m_Households, ref this.m_Citizens, ref this.m_Students, ref this.m_Workers, ref this.m_SpawnableDatas, ref this.m_Crimes, ref this.m_ServiceCoverages, ref this.m_Lockeds, ref this.m_ElectricityConsumers, ref this.m_WaterConsumers, ref this.m_GarbageProducers, ref this.m_MailProducers, ref this.m_Transforms, ref this.m_Abandoneds, ref this.m_Parks, ref this.m_Availabilities, this.m_TaxRates, this.m_PollutionMap, this.m_AirPollutionMap, this.m_NoiseMap, this.m_TelecomCoverages, this.m_CityModifiers[this.m_City], this.m_HealthcareParameters.m_HealthcareServicePrefab, this.m_ParkParameters.m_ParkServicePrefab, this.m_EducationParameters.m_EducationServicePrefab, this.m_TelecomParameters.m_TelecomServicePrefab, this.m_GarbageParameters.m_GarbageServicePrefab, this.m_PoliceParameters.m_PoliceServicePrefab, this.m_CitizenHappinessParameterData, this.m_GarbageParameters) : float.NegativeInfinity);
             if (householdHomeBuilding == Entity.Null && propertySeeker.m_LastPropertySeekFrame + HouseholdFindPropertySystem.kFindPropertyCoolDown > this.m_SimulationFrame)
             {

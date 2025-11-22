@@ -13,6 +13,7 @@ using Unity.Collections;
 using Unity.Entities;
 using Unity.Mathematics;
 using UnityEngine;
+using static Game.UI.InGame.BuildingHappiness;
 
 namespace MapExtPDX.MapExt.ReBurstSystemModeC
 {
@@ -307,5 +308,6 @@ namespace MapExtPDX.MapExt.ReBurstSystemModeC
             value21.y += Mathf.RoundToInt(float3.x + float3.y) / 2;
             factors[28] = value21;
         }
+
     }
 }
