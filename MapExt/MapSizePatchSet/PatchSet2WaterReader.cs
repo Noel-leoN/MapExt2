@@ -14,7 +14,7 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
 
     /// <summary>
     /// BaseDataReader基类/SurfaceDataReader派生类/HeightDataReader派生类修补GetReadbackBounds方法
-    /// v1.4.2f版本将水系统SurfaceDataReader改为BaseDataReader基类下的子类，并在基类GetReadbackBounds方法引用WaterSystem.kMapSize字段
+    /// v1.4.2f版本将水系统SurfaceDataReader改变为BaseDataReader基类下的子类，并在基类GetReadbackBounds方法引用WaterSystem.kMapSize字段
     /// </summary>
     public static class WaterSystem_BaseDataReader_Patch
     {

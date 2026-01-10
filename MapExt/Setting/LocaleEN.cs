@@ -44,7 +44,6 @@ namespace MapExtPDX
                 // { m_Setting.GetOptionGroupLocaleID(Setting.kButtonGroup), "Buttons" },
                 // ...
                 { m_Setting.GetOptionGroupLocaleID(ModSettings.kInfoGroup), "MapSize Info" },
-
                 { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.kInfoGroup)), "MapSize Info" },
 
                  //{ m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.LoadedSaveCoreValue)), "Loaded Save's MapSize" },
@@ -52,6 +51,15 @@ namespace MapExtPDX
 
                  { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.ModSettingCoreValue)), "Current Applied MapSize" },
                 { m_Setting.GetOptionDescLocaleID(nameof(ModSettings.ModSettingCoreValue)), "Warning: Although MapExt has loadgame validation to prevent loading wrong size game saves, Please BACKUP ALL of your GameSaves (Strongly recommand SKYVE) before Loading them with this mod!!! Otherwise, there is a risk that the save may be corrupted due to game crashes or other special reasons"},
+
+                { m_Setting.GetOptionGroupLocaleID(ModSettings.kEcoGroup), "Economy Overhaul" },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.kEcoGroup)), "Logic & Perf. Optimization" },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.isEnableEconomyFix)), "Economy System Logic & Perf. Optimization" },
+                { m_Setting.GetOptionDescLocaleID(nameof(ModSettings.isEnableEconomyFix)), "Fix the following systems to adapt to cities with populations in the millions:\r\n Residential/Commercial/Industrail demand system\r\n Household home search system\r\n Household behavior system (consumer behavior adjustment)\r\n Citizen job search system\r\n Rent calculation system" },
+
+                { m_Setting.GetOptionGroupLocaleID(ModSettings.kNoteGroup), "⚠️Caution!" },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.kNoteGroup)), "⚠️Caution!" },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.ModeChangeWarningMessage)), "Please RESTART after applying the above settings！" },
 
                 //{ m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.WarningInfo)), "Warning: Please BACKUP ALL of your GameSaves (Strongly recommand SKYVE) before Loading them with this mod!!! Otherwise, there is a risk that the save may be corrupted due to game crashes or other special reasons" },
 

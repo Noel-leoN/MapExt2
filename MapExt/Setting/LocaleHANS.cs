@@ -46,8 +46,16 @@ namespace MapExtPDX
                 // { m_Setting.GetOptionGroupLocaleID(Setting.kButtonGroup), "Buttons" },
                 // ...
                 { m_Setting.GetOptionGroupLocaleID(ModSettings.kInfoGroup), "地图尺寸信息" },
-
                 { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.kInfoGroup)), "地图尺寸信息" },
+
+                { m_Setting.GetOptionGroupLocaleID(ModSettings.kEcoGroup), "经济系统修复" },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.kEcoGroup)), "经济逻辑和性能优化" },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.isEnableEconomyFix)), "经济逻辑修复&性能优化" },
+                { m_Setting.GetOptionDescLocaleID(nameof(ModSettings.isEnableEconomyFix)), "修复下列系统适配百万级人口城市：\r\n  住工商需求系统 \r\n  家庭找房系统  \r\n  家庭行为系统(消费行为修正)  \r\n  市民找工作系统  \r\n  租金计算系统  \r\n." },
+
+                { m_Setting.GetOptionGroupLocaleID(ModSettings.kNoteGroup), "⚠️注意!" },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.kNoteGroup)), "⚠️注意!" },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.ModeChangeWarningMessage)), "应用设置后请重启游戏生效！" },
 
                  //{ m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.LoadedSaveCoreValue)), "Loaded Save's MapSize" },
                 //{ m_Setting.GetOptionDescLocaleID(nameof(ModSettings.LoadedSaveCoreValue)), "Loaded Save's Map Size" },

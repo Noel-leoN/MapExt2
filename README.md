@@ -1,10 +1,10 @@
 ﻿
-# Cities Skylines 2 Map Extended Mod (28/57/114/vanilla) All-in-one Edition (Beta)
+# Cities Skylines 2 Map Extended Mod (28/57/114/vanilla) with Economy fix and Performance improvement (Test)
 
-## Testing for 1.4.2f game version with much code changes. If there're any issues, please report on Discord. Thanks!
+## Only for test! For the stable version, please see here [MapExt](https://mods.paradoxplaza.com/mods/107939/Windows)
 
 ## Caution!!! Make sure to check out the full description below before using this mod!
-* It is very laborious to build a big city. This mod makes extensive modifications to the vanilla game's code, it is not entirely clear what potential issues there might be, and it may conflict with some mods.Please use at your own risk.
+* It is very laborious to build a big city. This mod makes extensive modifications, it is not entirely clear what potential issues there might be, and it may conflict with some mods.Please use at your own risk.
 * BACKUP YOUR GAME SAVES before use this mod! Whether you're using this mod or not, it's highly recommended to get into the habit of saving as a new file every time you play the game, then delete old saves once you're sure don't need them.
 * If the mod is uninstalled or does not load successfully, please DO NOT LOAD savegame made by MapExt and then OVERWRITE it. As mentioned above, "Save As" every time.
 * In the Option UI, Set the correct mapsize mode(28km/57km/114km/vanilla 14km, side length of map square)  and MATCH the Maps and Saves. You must use a map or save of the specific size made by youself or someone else. It's a good idea for anyone sharing maps or saved games with special sizes to tag the actual mapsize and scale.
@@ -46,7 +46,7 @@ In the Editor, Import the correct size heightmap/worldmap terrain image：
 - Demand Master Control: Vanilla games might have economic or population simulation issues or sudden performance drops when the population goes over 200k-500k. Tweaking some options with this mod could help.
 
 ## Issues
-* It’s been noticed that in vanilla game, when dealing with populations over 200k–500k (depending on city layout), pathfinding queue jams can cause sudden CPU slowdowns and weird economic simulation issues—and these problems become even more obvious when using this mod. I'm trying to fix it. Some possible ways to mitigate it include: avoid building huge areas all at once, don’t boost citizen happiness too quickly, don’t rapidly expand service coverage, and don’t build too many parks (actually, it’s best to skip parks entirely). Just like in real life, steady city growth is healthy, while going all-out too fast just leads to a crash.
+* It’s been noticed that in vanilla game, when dealing with populations over 200k–500k (depending on city layout), pathfinding queue jams can cause sudden CPU slowdowns and weird economic simulation issues—and these problems become even more obvious when using this mod. You may try enabling the Economy and Performance repair options, but no guarantees are provided.
 * Due to the floating-point precision in the vanilla game simulation system, there might be some weird height display glitches at the edges of the map. Try to set up the residential/commercial/industrial areas close to the center of the map.
 * May not be compatible with some special mods.
 * If you are using a previous version that is NOT released on PDX mod platform and is a non-57km map size (e.g. 28km or 114km), you need to manually check the Debug devalidation option in OptionUI, and then be sure to select the correct mapsize mode. Once you've successfully loaded and checked that the save file is all good, you can save it as a new file and then just Turn Off the option in Debug.

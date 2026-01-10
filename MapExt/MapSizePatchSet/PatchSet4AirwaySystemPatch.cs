@@ -20,7 +20,7 @@ using UnityEngine;
 namespace MapExtPDX.MapExt.MapSizePatchSet
 {
     [HarmonyPatch]
-    [HarmonyPatch(typeof(Game.Net.AirwaySystem))]
+    [HarmonyPatch(typeof(AirwaySystem))]
     public static class AirwaySystem_OnUpdate_Patch
     {
         // A "session lock" to ensure logic runs only once per game load/new game.

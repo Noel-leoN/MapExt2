@@ -12,7 +12,7 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
     using Unity.Entities;
 
     /// <summary>
-    /// InitTextures()在WaterSystem.OnCreate初始化，Harmony框架延迟加载因而直接修补该方法无效，必须采取方案：
+    /// InitTextures()在WaterSystem.OnCreate初始化，Harmony框架延迟加载因而直接修补该方法无效，采取方案：
     /// 1.Transpiler修补InitTextures()；
     /// 2.强制清除初始化生成字段；
     /// 3.重新运行一次InitTextures()；
@@ -52,16 +52,22 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
             DisposeQuadWaterBuffer(traverse);
 
             // 2. 清理 Helpers (Native Arrays & ComputeBuffers)
-            Info("Processing 'm_waterSimActiveTilesHelper'...");
+#if DEBUG
+            Info("Processing 'm_waterSimActiveTilesHelper'..."); 
+#endif
             DisposeHelper(traverse.Field("m_waterSimActiveTilesHelper").GetValue());
 
-            Info("Processing 'm_waterBackdropSimActiveTilesHelper'...");
+#if DEBUG
+            Info("Processing 'm_waterBackdropSimActiveTilesHelper'..."); 
+#endif
             DisposeHelper(traverse.Field("m_waterBackdropSimActiveTilesHelper").GetValue());
 
             // 3. 调用 InitTextures 重建系统
             try
             {
-                Info("Invoking WaterSystem.InitTextures() to apply new settings...");
+#if DEBUG
+                Info("Invoking WaterSystem.InitTextures() to apply new settings..."); 
+#endif
                 traverse.Method("InitTextures").GetValue();
                 Info("SUCCESS: WaterSystem re-initialized. New MapSize should be effective.");
             }
@@ -82,7 +88,7 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
                 var field = systemTraverse.Field("m_Water");
                 if (!field.FieldExists())
                 {
-                    Info("Warning: Field 'm_Water' not found.");
+                    Warn("Warning: Field 'm_Water' not found.");
                     return;
                 }
 
@@ -93,7 +99,9 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
                 if (bufferInstance != null)
                 {
                     Traverse.Create(bufferInstance).Method("Dispose").GetValue();
-                    Info("Disposed old 'm_Water' (RenderTextures).");
+#if DEBUG
+                    Info("Disposed old 'm_Water' (RenderTextures)."); 
+#endif
                 }
             }
             catch (Exception e)
@@ -113,13 +121,17 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
             // 1. 检查 Helper 类本身是否实现了 IDisposable
             if (helperInstance is IDisposable disposable)
             {
-                Info($"  -> Helper ({helperInstance.GetType().Name}) implements IDisposable. Disposing...");
+#if DEBUG
+                Info($"  -> Helper ({helperInstance.GetType().Name}) implements IDisposable. Disposing..."); 
+#endif
                 disposable.Dispose();
                 return;
             }
 
             // 2. 如果没有，手动清理内部字段
-            Info($"  -> Helper ({helperInstance.GetType().Name}) requires manual reflection dispose.");
+#if DEBUG
+            Info($"  -> Helper ({helperInstance.GetType().Name}) requires manual reflection dispose."); 
+#endif
             var t = Traverse.Create(helperInstance);
 
             // 使用修正后的方法
@@ -145,7 +157,9 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
                 if (val is IDisposable disposable)
                 {
                     disposable.Dispose();
-                    Info($"    -> Disposed {fieldName} ({typeDesc}) via IDisposable.");
+#if DEBUG
+                    Info($"    -> Disposed {fieldName} ({typeDesc}) via IDisposable."); 
+#endif
                 }
                 // 方案 B (备选): 如果方案 A 不起作用，使用反射精确查找无参方法
                 else
@@ -155,7 +169,9 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
                     if (method != null)
                     {
                         method.Invoke(val, null);
-                        Info($"    -> Disposed {fieldName} ({typeDesc}) via Reflection.");
+#if DEBUG
+                        Info($"    -> Disposed {fieldName} ({typeDesc}) via Reflection."); 
+#endif
                     }
                     else
                     {

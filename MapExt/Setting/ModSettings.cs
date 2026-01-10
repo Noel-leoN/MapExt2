@@ -3,13 +3,14 @@
 // See LICENSE in the project root for full license information.
 // When using this part of the code, please clearly credit [Project Name] and the author.
 
+using System.Collections.Generic;
 using Colossal.IO.AssetDatabase;
 using Game;
 using Game.Modding;
 using Game.SceneFlow;
 using Game.Settings;
 using Game.UI.Widgets;
-using System.Collections.Generic;
+using MapExtPDX.SaveLoadSystem;
 using Unity.Entities;
 
 // 保持与Mod.cs同一命名空间
@@ -28,10 +29,10 @@ namespace MapExtPDX
     //[FileLocation(nameof(MapExtPDX))]
     [FileLocation("ModsSettings/" + Mod.ModName + "/" + Mod.ModName)]
     [SettingsUITabOrder(kMapSizeModeTab, kPerformanceToolTab, kMiscTab, kDebugTab)]
-    [SettingsUIGroupOrder(kMainModeGroup, kResetGroup, kInfoGroup, kPerformanceToolGroup, kMiscGroup, /*kAirwayGroup,*/ kDebugGroup)]
-    [SettingsUIShowGroupName(kMainModeGroup, kResetGroup, kInfoGroup, kPerformanceToolGroup, kMiscGroup, /*kAirwayGroup,*/ kDebugGroup)]
+    [SettingsUIGroupOrder(kMainModeGroup, kResetGroup, kInfoGroup, kEcoGroup, kNoteGroup, kPerformanceToolGroup, kMiscGroup, /*kAirwayGroup,*/ kDebugGroup)]
+    [SettingsUIShowGroupName(kMainModeGroup, kResetGroup, kInfoGroup, kEcoGroup, kNoteGroup, kPerformanceToolGroup, kMiscGroup, /*kAirwayGroup,*/ kDebugGroup)]
 
-    public class ModSettings : Game.Modding.ModSetting
+    public class ModSettings : ModSetting
     {
         public const string kMapSizeModeTab = "MapSize Mode";
         public const string kPerformanceToolTab = "PerformanceTool";
@@ -40,6 +41,8 @@ namespace MapExtPDX
         public const string kMainModeGroup = "MainMode";
         public const string kApplyModeGroup = "ApplyMode";
         public const string kInfoGroup = "GameInfo";
+        public const string kEcoGroup = "Economy Logic & Perf.";
+        public const string kNoteGroup = "Warning!";
         public const string kResetGroup = "Reset";
         public const string kPerformanceToolGroup = "PerformanceTool";
         public const string kMiscGroup = "Misc";
@@ -163,6 +166,38 @@ namespace MapExtPDX
             }
         }
 
+        // === 经济系统补丁 ===
+        [SettingsUISection(kMapSizeModeTab, kEcoGroup)]
+        [SettingsUIHideByCondition(typeof(ModSettings), nameof(IsNotInMainMenu))]
+        public bool isEnableEconomyFix { get; set; } = true;
+
+        //[SettingsUISection(kMapSizeModeTab, kEcoGroup)]
+        //[SettingsUIButton]
+        //[SettingsUIConfirmation]
+        //[SettingsUIHideByCondition(typeof(ModSettings), nameof(IsNotInMainMenu))]
+        //public bool ApplyEcoPatchChanges
+        //{
+        //    set
+        //    {
+        //        //Mod.Info($"ApplyPatchChanges button clicked. Selected mode: {PatchModeChoice}");
+        //        // Tell the Mod to re-apply patches based on the current PatchModeChoice
+        //        // The PatchModeChoice property is already updated by the UI at this point.
+        //        // 使用静态实例来调用方法
+        //        // 这样是类型安全的，编译器知道 Mod.Instance 的类型是 Mod
+        //        // ?. 是空值条件运算符，确保如果Instance为null时不会出错
+        //        //Mod.Instance?.OnPatchModeChanged(PatchManager.PatchModeChoice);
+        //        //Mod.Info($"Settings changes applied via button.");
+
+        //        Mod.Info($"ApplyEcoPatchChanges button clicked from UI: {isEnableEconomyFix}");
+        //        // 传递用户在UI中选择的 EcoPatchMode
+        //        Mod.Instance?.OnEcoPatchChanged(isEnableEconomyFix);
+        //        Mod.Info($"Eco Settings changes applied via button for mode: {isEnableEconomyFix}");
+
+        //    }
+        //}
+
+        [SettingsUISection(kMapSizeModeTab, kNoteGroup)]
+        public string ModeChangeWarningMessage => "";
 
         /// <summary>
         /// 全局并行选项
@@ -176,6 +211,8 @@ namespace MapExtPDX
         {
             base.Apply(); // 保存设置到文件
         }
+
+       
 
         // 设置字段初始化器默认值
         private bool m_NoDogsSystem = false;
@@ -201,7 +238,7 @@ namespace MapExtPDX
         }
         public void UpdateNoDogsSystemStates()
         {
-            Mod.Info($"Setting 'HouseholdPetSpawnSystem' is now: {nameof(Game.Simulation.HouseholdPetSpawnSystem)}. Updating system enabled state.");
+            Mod.Info($"Setting 'HouseholdPetSpawnSystem' is now: {nameof(Game.Simulation.HouseholdPetSpawnSystem)}. Updating system enabled state.");            
 
             // 获取系统实例并根据设置更新其 .Enabled 属性
             // 当 DisableMyOptionalSystem 为 true 时, .Enabled 应为 false
@@ -209,9 +246,10 @@ namespace MapExtPDX
             // 所以逻辑是 .Enabled = !DisableMyOptionalSystem
             World.DefaultGameObjectInjectionWorld.GetOrCreateSystemManaged<Game.Simulation.HouseholdPetSpawnSystem>().Enabled = !m_NoDogsSystem;
 
-
             // 如果多个系统需要控制，可以继续在这里添加
             // World.DefaultGameObjectInjectionWorld.GetOrCreateSystemManaged<AnotherSystem>().Enabled = !this.SomeOtherSetting;
+
+            Mod.Info($"NoDogs补丁已应用.(全局并行)");
         }
 
         [SettingsUISection(kPerformanceToolTab, kPerformanceToolGroup)]
@@ -233,6 +271,8 @@ namespace MapExtPDX
         {
             Mod.Info($"Setting 'TrafficSpawnerAISystem' is now: {nameof(Game.Simulation.TrafficSpawnerAISystem)}. Updating system enabled state.");
             World.DefaultGameObjectInjectionWorld.GetOrCreateSystemManaged<Game.Simulation.TrafficSpawnerAISystem>().Enabled = !m_NoThroughTrafficSystem;
+
+            Mod.Info($"NoThroughTraffic补丁已应用.(全局并行)");
         }
 
         //[SettingsUISection(kPerformanceToolTab, kPerformanceToolGroup)]
@@ -240,7 +280,7 @@ namespace MapExtPDX
         //public bool NoRandomTraffic { get; set; }
 
         [SettingsUISection(kMiscTab, kMiscGroup)]
-        [SettingsUIDisableByConditionAttribute(typeof(ModSettings), nameof(IsPatchUnAvailable))]  // 暂时禁用
+        [SettingsUIDisableByCondition(typeof(ModSettings), nameof(IsPatchUnAvailable))]  // 暂时禁用
         public bool LandValueRemake
         {
             get => m_LandValueRemakeSystem;

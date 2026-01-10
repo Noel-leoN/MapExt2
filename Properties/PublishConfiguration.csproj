@@ -40,7 +40,7 @@
 
 <Publish>
     <!-- Mod ID must be 0 for publishing a mod for the first time.  Mod ID must be set in order to update an existing mod. -->
-    <ModId Value="107939" />
+    <ModId Value="0" />
 
     <!-- Name of the mod to display to players.  Copied from assembly Title. -->
     <DisplayName Value="$(Title)" />
@@ -69,7 +69,7 @@ $(Screenshot00)$(Screenshot01)$(Screenshot02)$(Screenshot03)$(Screenshot04)$(Scr
     <ModVersion Value="$(Version)" />
 
     <!-- Recommended version of the base game to use the mod. -->
-    <GameVersion Value="1.4.2*" />
+    <GameVersion Value="1.5.3*" />
 
     <!-- Dependency for the mod.  Can be set multiple times. -->
     <Dependency Id="" />

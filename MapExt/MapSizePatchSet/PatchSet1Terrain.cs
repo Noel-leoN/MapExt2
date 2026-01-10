@@ -49,9 +49,9 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
 
             if (patches != 0)
             {
-#if DEBUG
+// #if DEBUG
                 Info($"FinalizeTerrainData Prefix applied {patches} patch(es). (Expected value: {inMapSize} , {inMapCorner} , {inWorldSize} , {inWorldCorner})");
-#endif
+// #endif
             }
 
         } // FinalizeTerrainData method

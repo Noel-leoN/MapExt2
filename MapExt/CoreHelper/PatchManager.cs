@@ -36,6 +36,9 @@ namespace MapExtPDX
         // 地图尺寸原始值；用于某些补丁set调用计算
         public const int OriginalMapSize = 14336;
 
+        // CellMapSystem<T>当前kTextureSize倍率
+        public static int CurrentCoreValueTex { get; private set; }
+
         // 调用当前模式状态
         public static PatchModeSetting CurrentMode => _currentMode;
 
@@ -63,19 +66,16 @@ namespace MapExtPDX
                 { "TerrainToR16Patch", (h) => h.CreateClassProcessor(typeof(TerrainToR16Patch)).Patch() },
 
                 // PatchSet2:WaterSystem
-                // v2.1.0增加WaterSimulationPatch_Static/WaterSimulationLegacyPatch_Static
                 { "WaterSystemPatch_Static", (h) => h.CreateClassProcessor(typeof(WaterSystemMethodPatches)).Patch() },
                 { "WaterSimulationPatch_Static", (h) => h.CreateClassProcessor(typeof(WaterSimulationMethodPatches)).Patch() },
                 { "WaterSimulationLegacyPatch_Static", (h) => h.CreateClassProcessor(typeof(WaterSimulationLegacyMethodPatches)).Patch() },
-                // v2.1.1增加WaterLevelChangeSystemMethodPatches
                 { "WaterLevelChangeSystemMethodPatches_Static", (h) => h.CreateClassProcessor(typeof(WaterLevelChangeSystemMethodPatches)).Patch() },
-                // { "WaterSystemPatch_GetSurfaceData", (h) => h.CreateClassProcessor(typeof(WaterSystem_GetSurfaceData_Patch)).Patch() }, // v2.1.1去除
-                // v2.1.1增加WaterSystem_BaseDataReader_Patch(集中调用方式)
                 { "WaterSystem_BaseDataReader_Patch", (h) => WaterSystem_BaseDataReader_Patch.Apply(h) },
 
+                // v2.2.0改动
                 // PatchSet3:CellMapSystem<T>托管代码部分
-                { "CellMapSystemPatch_Field", (h) => h.CreateClassProcessor(typeof(CellMapSystem_KMapSize_Field_Patches)).Patch() },
-                { "CellMapSystemPatch_Method", (h) => h.CreateClassProcessor(typeof(CellMapSystem_KMapSize_Method_Patches)).Patch() },
+                //{ "CellMapSystemPatch_Field", (h) => h.CreateClassProcessor(typeof(CellMapSystem_KMapSize_Field_Patches)).Patch() },
+                //{ "CellMapSystemPatch_Method", (h) => h.CreateClassProcessor(typeof(CellMapSystem_KMapSize_Method_Patches)).Patch() },
 
                 // PatchSet4:AirWaySystem
                 { "AirwaySystemPatch", (h) => h.CreateClassProcessor(typeof(AirwaySystem_OnUpdate_Patch)).Patch() },
@@ -104,9 +104,7 @@ namespace MapExtPDX
                         "WaterSimulationLegacyPatch_Static",
                         "WaterLevelChangeSystemMethodPatches_Static",
                         "WaterSystem_BaseDataReader_Patch",
-                        //"WaterSystemPatch_GetSurfaceData",
-                        "CellMapSystemPatch_Field",
-                        "CellMapSystemPatch_Method",
+                        //"CellMapSystemPatch",
                         "AirwaySystemPatch",
                         "ReBurstSystemsPatches",
                     };
@@ -121,10 +119,8 @@ namespace MapExtPDX
                         "WaterSimulationLegacyPatch_Static",
                         "WaterLevelChangeSystemMethodPatches_Static",
                         "WaterSystem_BaseDataReader_Patch",
-                        //"WaterSystemPatch_GetSurfaceData",
-                        "CellMapSystemPatch_Field",
-                        "CellMapSystemPatch_Method",
-                        "AirWaySystemPatch",
+                        //"CellMapSystemPatch",
+                        "AirwaySystemPatch",
                         "ReBurstSystemsPatches",
                     };
 
@@ -138,31 +134,10 @@ namespace MapExtPDX
                         "WaterSimulationLegacyPatch_Static",
                         "WaterLevelChangeSystemMethodPatches_Static",
                         "WaterSystem_BaseDataReader_Patch",
-                        //"WaterSystemPatch_GetSurfaceData",
-                        "CellMapSystemPatch_Field",
-                        "CellMapSystemPatch_Method",
-                        "AirWaySystemPatch",
+                        //"CellMapSystemPatch",
+                        "AirwaySystemPatch",
                         "ReBurstSystemsPatches",
                     };
-
-                /*
-            case PatchModeSetting.ModeD: // 模式229km
-                return new List<string>
-                {
-                    "TerrainSystemPatch",
-                    "TerrainToR16Patch",
-                    "WaterSystemPatch_Static",
-                    "WaterSimulationPatch_Static",
-                    "WaterSimulationLegacyPatch_Static",
-                    "WaterLevelChangeSystemMethodPatches_Static",
-                    "WaterSystem_BaseDataReader_Patch",
-                    //"WaterSystemPatch_GetSurfaceData",
-                    "CellMapSystemPatch_Field",
-                    "CellMapSystemPatch_Method",
-                    "AirWaySystemPatch",
-                    "ReBurstSystemsPatches",
-                };
-                */
 
                 case PatchModeSetting.None:  // 14km vanilla模式
                     return new List<string>
@@ -186,6 +161,8 @@ namespace MapExtPDX
 
             // 核心方法：执行模式加载
             ApplyPatchesForMode(_currentMode);
+
+            Info("PatchManager初始化完成应用！(所有MapSize Modes Transpiler补丁完成执行；所有Pre/Postfix将在方法调用时执行.)");
         }
 
         // 核心功能方法
@@ -207,9 +184,6 @@ namespace MapExtPDX
             }
 
             Info($"Switching patch mode from {_currentMode} (CV: {CurrentCoreValue}) to {newMode}");
-
-            // 0.5 提前额外清理ReBurstJob上下文
-            GenericJobReplacePatch.CleanUpAllContexts();
 
             // 1. 移除所有旧补丁，确保干净的状态
             Info("Unpatching all previous MapSize patchsets...");
@@ -301,18 +275,18 @@ namespace MapExtPDX
         }
 
         // 暂不使用
-        public static void UnpatchAll()
-        {
-            if (_modePatcher != null)
-            {
-                GenericJobReplacePatch.CleanUpAllContexts();
-                _modePatcher.UnpatchAll(_modePatcher.Id);
-                Info($"All patches with ID {_modePatcher.Id} have been removed by PatchManager.");
-            }
-            // 重置为vanilla;待验证
-            _currentMode = PatchModeSetting.None;
-            CurrentCoreValue = GetCoreValueForMode(PatchModeSetting.None);
-            Info($"PatchManager reset. CurrentMode: {_currentMode}, CurrentCoreValue: {CurrentCoreValue}");
-        }
+        //public static void UnpatchAll()
+        //{
+        //    if (_modePatcher != null)
+        //    {
+        //        GenericJobReplacePatch.CleanUpAllContexts();
+        //        _modePatcher.UnpatchAll(_modePatcher.Id);
+        //        Info($"All patches with ID {_modePatcher.Id} have been removed by PatchManager.");
+        //    }
+        //    // 重置为vanilla;待验证
+        //    _currentMode = PatchModeSetting.None;
+        //    CurrentCoreValue = GetCoreValueForMode(PatchModeSetting.None);
+        //    Info($"PatchManager reset. CurrentMode: {_currentMode}, CurrentCoreValue: {CurrentCoreValue}");
+        //}
     }
 }
