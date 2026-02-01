@@ -7,7 +7,7 @@
 		<Description>MapSize Extend 28/57/114km</Description>
 		<Authors>Noel2</Authors>
 		<Copyright>Copyright (c) [2025] [Noel2/Noel-leoN/=Noel=]</Copyright>
-		<Title>MapExt(Test version)</Title>
+		<Title>MapExt: Big Map, Economy and Performance</Title>
 		<Version>2.2.0</Version>
 
 		<!--The file where mod information which is required for publishing mod on PDX mods are stored-->
@@ -16,39 +16,18 @@
 		<TreatWarningsAsErrors>True</TreatWarningsAsErrors>
 		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 	</PropertyGroup>
+
+	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+	  <WarningLevel>5</WarningLevel>
+	</PropertyGroup>
+
+	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+	  <WarningLevel>5</WarningLevel>
+	</PropertyGroup>
 	
 	<!--Imports must be after PropertyGroup block-->
 	<Import Project="$([System.Environment]::GetEnvironmentVariable('CSII_TOOLPATH', 'EnvironmentVariableTarget.User'))\Mod.props" />
 	<Import Project="$([System.Environment]::GetEnvironmentVariable('CSII_TOOLPATH', 'EnvironmentVariableTarget.User'))\Mod.targets" />
-	<ItemGroup>
-	  <Compile Remove="MapExt\ReBurstCellSystem\ReBurstJobPak_ModeA_57km\ReBurstCellMapTextureAddOn\**" />
-	  <EmbeddedResource Remove="MapExt\ReBurstCellSystem\ReBurstJobPak_ModeA_57km\ReBurstCellMapTextureAddOn\**" />
-	  <None Remove="MapExt\ReBurstCellSystem\ReBurstJobPak_ModeA_57km\ReBurstCellMapTextureAddOn\**" />
-	</ItemGroup>
-	<ItemGroup>
-	  <Compile Remove="MapExt\MapSizePatchSet\PatchSet2WaterSurfaceData.cs" />
-	  <Compile Remove="MapExt\MapSizePatchSet\PatchSet3CellMapFields - 复制.cs" />
-	  <Compile Remove="MapExt\MapSizePatchSet\PatchSet3CellMapSizeFields.cs" />
-	  <Compile Remove="MapExt\MapSizePatchSet\PatchSet3CellMapSizeMethod.cs" />
-	  <Compile Remove="MapExt\ReBurstCellSystem\GenericJobReplacer_v7 - 复制%282%29.cs" />
-	  <Compile Remove="MapExt\ReBurstCellSystem\GenericJobReplacer_v7 - 复制.cs" />
-	  <Compile Remove="MapExt\ReBurstCellSystem\ReBurstJobPak_ModeA_57km\CellMapTextureReSizeConfig.cs" />
-	  <Compile Remove="MapExt\ReBurstCellSystem\ReBurstJobPak_ModeA_57km\CellMapTextureReSizePatcher.cs" />
-	  <Compile Remove="MapExt\ReBurstCellSystem\ReBurstJobPak_ModeA_57km\CellMapTextureResizeSystem.cs" />
-	  <Compile Remove="MapExt\ReBurstCellSystem\ReBurstJobPak_ModeA_57km\ReBurstCellMapRef2\BuildingHappinessRe.cs" />
-	  <Compile Remove="MapExt\ReBurstCellSystem\ReBurstJobPak_ModeA_57km\ReBurstCellMapRef2\PropertyUtilsRe.cs" />
-	  <Compile Remove="MapExt\ReBurstEcoSystem\EcoSystemModeA_57km\A5_HouseholdBehaviorSystemMod - 复制%282%29.cs" />
-	  <Compile Remove="MapExt\ReBurstEcoSystem\EcoSystemModeA_57km\A5_HouseholdBehaviorSystemMod - 复制.cs" />
-	  <Compile Remove="MapExt\ReBurstEcoSystem\EcoSystemModeA_57km\B2_CommercialDemandSystemMod.cs" />
-	  <Compile Remove="MapExt\ReBurstEcoSystem\EcoSystemModeA_57km\B3_IndustrialDemandSystemMod.cs" />
-	  <Compile Remove="MapExt\ReBurstEcoSystem\EcoSystemModeA_57km\B3_IndustrialDemandSystemRe - 复制.cs" />
-	  <Compile Remove="MapExt\ReBurstEcoSystem\EcoSystemModeA_57km\D1_TripNeededSystemMod.cs" />
-	  <Compile Remove="MapExt\ReBurstEcoSystem\EcoSystemModeA_57km\E1_TripNeededSystem.cs" />
-	  <Compile Remove="MapExt\ReBurstEcoSystem\EcoSystemModeA_57km\E1_TripNeededSystemRe.cs" />
-	</ItemGroup>
-	<ItemGroup>
-	  <None Remove="修补CellMapFields.docx" />
-	</ItemGroup>	
 
 	<ItemGroup>
 		<Reference Include="Game">			
@@ -108,10 +87,6 @@
 		<Reference Update="System.Data">
 			<Private>false</Private>
 		</Reference>
-		<!--		<Reference Include="mscorlib">
-			<Private>false</Private>
-		<HintPath>$(ManagedPath)\mscorlib.dll</HintPath>
-		</Reference>-->
 	</ItemGroup>
 	
 	<ItemGroup>
@@ -140,9 +115,6 @@
 	<Import Project="Properties\PublishConfiguration.csproj" />
 	<ItemGroup>
 		<None Include="Properties\PublishConfiguration.csproj" />
-	</ItemGroup>
-	<ItemGroup>
-	  <Folder Include="MapExt\ReBurstCellSystem\ReBurstJobPak_ModeE_vanilla\" />
 	</ItemGroup>
 
 </Project>

@@ -40,21 +40,10 @@ namespace MapExtPDX.MapExt.ReBurstEcoSystemModeA
     /// 负责为无家可归者或想要搬家的家庭寻找合适的住所。
     /// 包括计算房产吸引力、处理寻路请求以及执行搬入逻辑。 
     /// </summary>
-    // 原版主要流程分为两步：
+    // 主要流程分为两步：
     // 1. PreparePropertyJob：遍历所有可用的住宅物业，预先计算并缓存其质量得分和空余位置数量。
     // 2. FindPropertyJob：遍历需要寻找住所的家庭，发起寻路查询，以寻找附近且评分高的住所。
     // 3. CitizenPathFindSetup.SetupFindHomeJob 处理寻路，当寻路结果返回后，系统会评估最佳的房产，如果找到合适的，则为家庭安排租赁。
-    // 原版严重问题：
-    // 1. PreparePropertyJob 的无效计算 (极大的性能浪费)。每16帧，系统会遍历全图所有的空闲房产，计算其详细的 GenericApartmentQuality（包含污染、服务覆盖、噪音等昂贵的计算），并存入 m_PropertyData 哈希表。99% 的房产在这一帧并不会被任何家庭选中，计算结果直接被丢弃。SetupFindHomeJob（寻路启发式评分）根本不使用这个哈希表，而是自己重新计算了一遍！只有当 FindPropertyJob 确认路径搜索成功后，为了最后校验才会用到这个数据。结论：完全可以删除该Job，改为按需计算（Lazy Evaluation）。
-    // 2. SetupFindHomeJob 的算法复杂度 (N*M)！。原版逻辑：这是一个 IJobChunk，它遍历的是“房产建筑的Chunk”。但是在Job内部，它对 m_SetupData（所有正在寻找房子的家庭请求列表）进行了遍历。结构：For Each Seeker(家庭) -> For Each Building(房产) -> Calculate Score。问题：GetPropertyScore 内部包含获取服务覆盖率、污染贴图采样等操作。对于同一个建筑，如果有10个家庭在找房，这些环境参数被重复计算了10次。优化：将建筑的环境评分（静态部分）与家庭的个性化评分（通勤距离、经济能力）分离。在内层循环前先算出建筑的静态分。
-    // 3. FindPropertyJob 的结构与逻辑缺陷。IJob vs IJobChunk：原版使用 IJob 并通过 NativeList 传递实体的做法在处理几百万家庭实体时会造成主线程（或单线程Job）巨大的Copy开销和遍历压力。改为 IJobChunk 并行处理。高空置率原因：代码中 askingRent > income 的判断过于生硬。如果不满足收入要求，直接跳过，导致穷人即使有空房也住不进去，最终变为无家可归并离开城市。寻路系统（Pathfind）的 heuristic（启发式）阶段如果返回负分过低，可能导致寻路直接失败，而不产生结果。
-    // 4. 混淆刚需和改善住房家庭，导致新进家庭找不到房，改善家庭频繁换房。
-
-    // 改版逻辑：
-    // 1. 去除PreparePropertyJob
-    // 2. FindPropertyJob IJobChunk并行化
-    // 3. 分为Homeless/新市民家庭刚需/寻求改善住房家庭分别处理剪枝和频度，提高找房成功率
-    // 4. SetupFindHomeJob剪枝优化
 
     // =========================================================================================
     // 1. Mod 自定义系统类型 (当前类)
@@ -65,6 +54,24 @@ namespace MapExtPDX.MapExt.ReBurstEcoSystemModeA
 
     public partial class HouseholdFindPropertySystemMod : GameSystemBase
     {
+
+
+#if DEBUG
+        public enum DebugStatIndex
+        {
+            TotalProcessed = 0,
+            CooldownSkipped = 1,
+            PathfindStarted = 2,
+            PathfindResultReceived = 3,
+            MovedIn = 4,
+            FailedNoCandidate = 5,
+            Count // 总数
+        }
+
+        // 新增：调试计数器
+        private NativeArray<int> m_DebugStats;
+        private bool m_EnableDebug = false; // 开发时设为 true，发布设为 false
+#endif
 
         #region 内部数据结构
 
@@ -93,16 +100,13 @@ namespace MapExtPDX.MapExt.ReBurstEcoSystemModeA
 
         #region 常量与配置
 
-        // Job Tick 更新周期
-        public override int GetUpdateInterval(SystemUpdatePhase phase) => 16;
+        private const int UPDATE_INTERVAL = 16;
+        public override int GetUpdateInterval(SystemUpdatePhase phase) => UPDATE_INTERVAL;
 
         public static readonly int kMaxProcessNormalHouseholdPerUpdate = 256; // 每帧处理的最大普通家庭数
         public static readonly int kMaxProcessHomelessHouseholdPerUpdate = 1024; // 每帧处理的最大无家可归家庭数
-
-        // 寻房冷却时间（帧）
-        public static readonly int kFindPropertyCoolDown = 2000; 
-        
-        // 新增：对于失败者的惩罚性冷却（约0.5个游戏天）
+        public static readonly int kFindPropertyCoolDown = 2000; // 寻房冷却时间（帧）
+                                                                 // 新增：对于失败者的惩罚性冷却（约0.5个游戏天）
         public static readonly int kFailedCoolDown = 15000;
 
         #endregion
@@ -167,6 +171,11 @@ namespace MapExtPDX.MapExt.ReBurstEcoSystemModeA
 #endif
             }
 
+#if DEBUG
+            // 使用 Persistent 分配，一直存在，不需要每帧 Dispose
+            m_DebugStats = new NativeArray<int>((int)DebugStatIndex.Count, Allocator.Persistent);
+#endif
+
             // 获取系统引用
             m_EndFrameBarrier = World.GetOrCreateSystemManaged<EndFrameBarrier>();
             m_PathfindSetupSystem = World.GetOrCreateSystemManaged<PathfindSetupSystem>();
@@ -197,19 +206,19 @@ namespace MapExtPDX.MapExt.ReBurstEcoSystemModeA
                 .WithNone<HomelessHousehold, MovingAway, TouristHousehold, CommuterHousehold, CurrentBuilding, Deleted, Temp>()
                 .Build();
 
-            //// 3. 空闲房产：查询所有可能有空位的建筑或公园
-            //var shelterDesc = new EntityQueryDesc
-            //{
-            //    All = new ComponentType[] { ComponentType.ReadOnly<Building>() },
-            //    Any = new ComponentType[] { ComponentType.ReadOnly<Abandoned>(), ComponentType.ReadOnly<Game.Buildings.Park>() },
-            //    None = new ComponentType[] { ComponentType.ReadOnly<Deleted>(), ComponentType.ReadOnly<Destroyed>(), ComponentType.ReadOnly<Temp>() }
-            //};
-            //var residentialDesc = new EntityQueryDesc
-            //{
-            //    All = new ComponentType[] { ComponentType.ReadOnly<PropertyOnMarket>(), ComponentType.ReadOnly<ResidentialProperty>(), ComponentType.ReadOnly<Building>() },
-            //    None = new ComponentType[] { ComponentType.ReadOnly<Abandoned>(), ComponentType.ReadOnly<Deleted>(), ComponentType.ReadOnly<Destroyed>(), ComponentType.ReadOnly<Temp>(), ComponentType.ReadOnly<Condemned>() }
-            //};
-            //m_FreePropertyQuery = GetEntityQuery(shelterDesc, residentialDesc);
+            // 3. 空闲房产：查询所有可能有空位的建筑或公园
+            var shelterDesc = new EntityQueryDesc
+            {
+                All = new ComponentType[] { ComponentType.ReadOnly<Building>() },
+                Any = new ComponentType[] { ComponentType.ReadOnly<Abandoned>(), ComponentType.ReadOnly<Game.Buildings.Park>() },
+                None = new ComponentType[] { ComponentType.ReadOnly<Deleted>(), ComponentType.ReadOnly<Destroyed>(), ComponentType.ReadOnly<Temp>() }
+            };
+            var residentialDesc = new EntityQueryDesc
+            {
+                All = new ComponentType[] { ComponentType.ReadOnly<PropertyOnMarket>(), ComponentType.ReadOnly<ResidentialProperty>(), ComponentType.ReadOnly<Building>() },
+                None = new ComponentType[] { ComponentType.ReadOnly<Abandoned>(), ComponentType.ReadOnly<Deleted>(), ComponentType.ReadOnly<Destroyed>(), ComponentType.ReadOnly<Temp>(), ComponentType.ReadOnly<Condemned>() }
+            };
+            m_FreePropertyQuery = GetEntityQuery(shelterDesc, residentialDesc);
 
             // 4. 参数查询初始化
             m_EconomyParameterQuery = GetEntityQuery(ComponentType.ReadOnly<EconomyParameterData>());
@@ -235,65 +244,82 @@ namespace MapExtPDX.MapExt.ReBurstEcoSystemModeA
 
         protected override void OnUpdate()
         {
+#if DEBUG
+            // 0. 每帧开始前重置计数器 (或者每隔 N 帧)
+            if (m_EnableDebug)
+            {
+                // 在主线程打印上一帧的数据
+                // 为了防止 Log 刷屏，建议只在有搬入发生时，或者每隔 60 帧打印
+                if (m_DebugStats[(int)DebugStatIndex.MovedIn] > 0 || UnityEngine.Time.frameCount % 64 == 0)
+                {
+                    UnityEngine.Debug.Log($"[FindHome] Total:{m_DebugStats[0]} | Cool:{m_DebugStats[1]} | StartPath:{m_DebugStats[2]} | Res:{m_DebugStats[3]} | OK:{m_DebugStats[4]} | Fail:{m_DebugStats[5]}");
+                }
+
+                // 清零
+                for (int i = 0; i < (int)DebugStatIndex.Count; i++) m_DebugStats[i] = 0;
+            }
+#endif
+
+
             // 1. 准备污染和覆盖率数据
             NativeArray<GroundPollution> groundPollutionMap = m_GroundPollutionSystem.GetMap(true, out JobHandle groundDeps);
             NativeArray<AirPollution> airPollutionMap = m_AirPollutionSystem.GetMap(true, out JobHandle airDeps);
             NativeArray<NoisePollution> noiseMap = m_NoisePollutionSystem.GetMap(true, out JobHandle noiseDeps);
             CellMapData<TelecomCoverage> telecomCoverage = m_TelecomCoverageSystem.GetData(true, out JobHandle telecomDeps);
 
-            //// 2. 创建并调度 PreparePropertyJob
-            //// 该Job负责计算所有可用房产的质量和剩余空间，写入Hashmap中
-            //NativeParallelHashMap<Entity, CachedPropertyInformation> cachedPropertyInfo =
-            // new NativeParallelHashMap<Entity, CachedPropertyInformation>(m_FreePropertyQuery.CalculateEntityCount(), Allocator.TempJob);
+            // 2. 创建并调度 PreparePropertyJob
+            // 该Job负责计算所有可用房产的质量和剩余空间，写入Hashmap中
+            NativeParallelHashMap<Entity, CachedPropertyInformation> cachedPropertyInfo =
+             new NativeParallelHashMap<Entity, CachedPropertyInformation>(m_FreePropertyQuery.CalculateEntityCount(), Allocator.TempJob);
 
-            //var prepareJob = new PreparePropertyJob
-            //{
-            //    m_EntityType = SystemAPI.GetEntityTypeHandle(),
-            //    m_BuildingProperties = SystemAPI.GetComponentLookup<BuildingPropertyData>(false), // 虽然是Lookup，但在CountProperties中可能需要读取
-            //    m_Prefabs = SystemAPI.GetComponentLookup<PrefabRef>(true),
-            //    m_BuildingDatas = SystemAPI.GetComponentLookup<BuildingData>(true),
-            //    m_ParkDatas = SystemAPI.GetComponentLookup<ParkData>(true),
-            //    m_Renters = SystemAPI.GetBufferLookup<Renter>(true),
-            //    m_Households = SystemAPI.GetComponentLookup<Household>(true),
-            //    m_Abandoneds = SystemAPI.GetComponentLookup<Abandoned>(true),
-            //    m_Parks = SystemAPI.GetComponentLookup<Game.Buildings.Park>(true),
-            //    m_SpawnableDatas = SystemAPI.GetComponentLookup<SpawnableBuildingData>(true),
-            //    m_BuildingPropertyData = SystemAPI.GetComponentLookup<BuildingPropertyData>(true),
-            //    m_Buildings = SystemAPI.GetComponentLookup<Building>(true),
-            //    m_ServiceCoverages = SystemAPI.GetBufferLookup<Game.Net.ServiceCoverage>(true),
-            //    m_Crimes = SystemAPI.GetComponentLookup<CrimeProducer>(true),
-            //    m_Locked = SystemAPI.GetComponentLookup<Locked>(true),
-            //    m_Transforms = SystemAPI.GetComponentLookup<Transform>(true),
-            //    m_CityModifiers = SystemAPI.GetBufferLookup<CityModifier>(true),
-            //    m_ElectricityConsumers = SystemAPI.GetComponentLookup<ElectricityConsumer>(true),
-            //    m_WaterConsumers = SystemAPI.GetComponentLookup<WaterConsumer>(true),
-            //    m_GarbageProducers = SystemAPI.GetComponentLookup<GarbageProducer>(true),
-            //    m_MailProducers = SystemAPI.GetComponentLookup<MailProducer>(true),
+            var prepareJob = new PreparePropertyJob
+            {
+                m_EntityType = SystemAPI.GetEntityTypeHandle(),
+                m_BuildingProperties = SystemAPI.GetComponentLookup<BuildingPropertyData>(false), // 虽然是Lookup，但在CountProperties中可能需要读取
+                m_Prefabs = SystemAPI.GetComponentLookup<PrefabRef>(true),
+                m_BuildingDatas = SystemAPI.GetComponentLookup<BuildingData>(true),
+                m_ParkDatas = SystemAPI.GetComponentLookup<ParkData>(true),
+                m_Renters = SystemAPI.GetBufferLookup<Renter>(true),
+                m_Households = SystemAPI.GetComponentLookup<Household>(true),
+                m_Abandoneds = SystemAPI.GetComponentLookup<Abandoned>(true),
+                m_Parks = SystemAPI.GetComponentLookup<Game.Buildings.Park>(true),
+                m_SpawnableDatas = SystemAPI.GetComponentLookup<SpawnableBuildingData>(true),
+                m_BuildingPropertyData = SystemAPI.GetComponentLookup<BuildingPropertyData>(true),
+                m_Buildings = SystemAPI.GetComponentLookup<Building>(true),
+                m_ServiceCoverages = SystemAPI.GetBufferLookup<Game.Net.ServiceCoverage>(true),
+                m_Crimes = SystemAPI.GetComponentLookup<CrimeProducer>(true),
+                m_Locked = SystemAPI.GetComponentLookup<Locked>(true),
+                m_Transforms = SystemAPI.GetComponentLookup<Transform>(true),
+                m_CityModifiers = SystemAPI.GetBufferLookup<CityModifier>(true),
+                m_ElectricityConsumers = SystemAPI.GetComponentLookup<ElectricityConsumer>(true),
+                m_WaterConsumers = SystemAPI.GetComponentLookup<WaterConsumer>(true),
+                m_GarbageProducers = SystemAPI.GetComponentLookup<GarbageProducer>(true),
+                m_MailProducers = SystemAPI.GetComponentLookup<MailProducer>(true),
 
-            //    m_PollutionMap = groundPollutionMap,
-            //    m_AirPollutionMap = airPollutionMap,
-            //    m_NoiseMap = noiseMap,
-            //    m_TelecomCoverages = telecomCoverage,
+                m_PollutionMap = groundPollutionMap,
+                m_AirPollutionMap = airPollutionMap,
+                m_NoiseMap = noiseMap,
+                m_TelecomCoverages = telecomCoverage,
 
-            //    // 单例数据获取
-            //    m_HealthcareParameters = m_HealthcareParameterQuery.GetSingleton<HealthcareParameterData>(),
-            //    m_ParkParameters = m_ParkParameterQuery.GetSingleton<ParkParameterData>(),
-            //    m_EducationParameters = m_EducationParameterQuery.GetSingleton<EducationParameterData>(),
-            //    m_TelecomParameters = m_TelecomParameterQuery.GetSingleton<TelecomParameterData>(),
-            //    m_GarbageParameters = m_GarbageParameterQuery.GetSingleton<GarbageParameterData>(),
-            //    m_PoliceParameters = m_PoliceParameterQuery.GetSingleton<PoliceConfigurationData>(),
-            //    m_CitizenHappinessParameterData = m_CitizenHappinessParameterQuery.GetSingleton<CitizenHappinessParameterData>(),
+                // 单例数据获取
+                m_HealthcareParameters = m_HealthcareParameterQuery.GetSingleton<HealthcareParameterData>(),
+                m_ParkParameters = m_ParkParameterQuery.GetSingleton<ParkParameterData>(),
+                m_EducationParameters = m_EducationParameterQuery.GetSingleton<EducationParameterData>(),
+                m_TelecomParameters = m_TelecomParameterQuery.GetSingleton<TelecomParameterData>(),
+                m_GarbageParameters = m_GarbageParameterQuery.GetSingleton<GarbageParameterData>(),
+                m_PoliceParameters = m_PoliceParameterQuery.GetSingleton<PoliceConfigurationData>(),
+                m_CitizenHappinessParameterData = m_CitizenHappinessParameterQuery.GetSingleton<CitizenHappinessParameterData>(),
 
-            //    m_City = m_CitySystem.City,
-            //    m_PropertyData = cachedPropertyInfo.AsParallelWriter()
-            //};
+                m_City = m_CitySystem.City,
+                m_PropertyData = cachedPropertyInfo.AsParallelWriter()
+            };
 
-            //// 组合依赖并调度 PrepareJob
-            //JobHandle prepareJobHandle = JobChunkExtensions.ScheduleParallel(
-            //    prepareJob,
-            //    m_FreePropertyQuery,
-            //    JobUtils.CombineDependencies(Dependency, groundDeps, airDeps, noiseDeps, telecomDeps)
-            //);
+            // 组合依赖并调度 PrepareJob
+            JobHandle prepareJobHandle = JobChunkExtensions.ScheduleParallel(
+                prepareJob,
+                m_FreePropertyQuery,
+                JobUtils.CombineDependencies(Dependency, groundDeps, airDeps, noiseDeps, telecomDeps)
+            );
 
             // 3. 关键修改：移除 ToEntityListAsync，改用 IJobChunk 并行处理
             // 这样可以处理 200万+ 家庭而不会在主线程卡顿
@@ -301,8 +327,7 @@ namespace MapExtPDX.MapExt.ReBurstEcoSystemModeA
             NativeQueue<RentAction>.ParallelWriter rentActionQueue = m_PropertyProcessingSystem.GetRentActionQueue(out JobHandle rentQueueDeps).AsParallelWriter();
             NativeQueue<SetupQueueItem>.ParallelWriter pathfindQueue = m_PathfindSetupSystem.GetQueue(this, 80, 16).AsParallelWriter();
 
-            // 1. 处理无家可归者 (高优先级)
-            var findHomelessJob = new FindPropertyJobChunk
+            var findJob = new FindPropertyParallelJob
             {
                 // 输入句柄
                 m_EntityType = SystemAPI.GetEntityTypeHandle(),
@@ -311,6 +336,8 @@ namespace MapExtPDX.MapExt.ReBurstEcoSystemModeA
                 m_HomelessHouseholdType = SystemAPI.GetComponentTypeHandle<HomelessHousehold>(true),
                 m_HouseholdCitizenType = SystemAPI.GetBufferTypeHandle<HouseholdCitizen>(true),
                 m_PathInformationType = SystemAPI.GetBufferTypeHandle<PathInformations>(true), // ReadOnly? 可能是 RW 如果需要移除
+
+                m_CachedPropertyInfo = cachedPropertyInfo,
 
                 // Lookups
                 m_BuildingDatas = SystemAPI.GetComponentLookup<BuildingData>(true),
@@ -342,7 +369,7 @@ namespace MapExtPDX.MapExt.ReBurstEcoSystemModeA
                 m_CurrentBuildings = SystemAPI.GetComponentLookup<CurrentBuilding>(true),
                 m_CurrentTransports = SystemAPI.GetComponentLookup<CurrentTransport>(true),
                 m_PathInformations = SystemAPI.GetComponentLookup<PathInformation>(true),
-                m_Renters = SystemAPI.GetBufferLookup<Renter>(true), // 新增：用于检查目标房产是否满员
+                // 注意：BufferLookup 用于随机访问，Chunk处理时直接访问Chunk数据效率更高
 
                 // 数据
                 m_AirPollutionMap = airPollutionMap,
@@ -367,15 +394,24 @@ namespace MapExtPDX.MapExt.ReBurstEcoSystemModeA
                 m_PathfindQueue = pathfindQueue,
                 m_RentActionQueue = rentActionQueue,
 
+#if DEBUG
+                // 传入 Debug 字段
+                m_DebugStats = m_DebugStats,
+                m_EnableDebug = m_EnableDebug
+#endif
             };
 
-            JobHandle homelessHandle = findHomelessJob.ScheduleParallel(m_HomelessHouseholdQuery, base.Dependency);
+            // 联合 Homeless 和 普通 Household 查询一起并行执行
+            JobHandle jobHandle1 = JobChunkExtensions.ScheduleParallel(findJob, m_HomelessHouseholdQuery,
+                JobHandle.CombineDependencies(prepareJobHandle, rentQueueDeps));
 
-            // 2. 处理普通家庭 (逻辑一样，只是Query不同，并行处理)
-            // 注意：为了防止Job冲突，可以合并处理或者依赖调度。这里使用相同Job结构体。
-            JobHandle normalHandle = findHomelessJob.ScheduleParallel(m_HouseholdQuery, homelessHandle);
+            JobHandle jobHandle2 = JobChunkExtensions.ScheduleParallel(findJob, m_HouseholdQuery,
+                JobHandle.CombineDependencies(jobHandle1, rentQueueDeps));
 
-            base.Dependency = normalHandle;
+            // 清理
+            cachedPropertyInfo.Dispose(jobHandle2);
+
+            Dependency = jobHandle2;
             m_EndFrameBarrier.AddJobHandleForProducer(Dependency);
             m_PathfindSetupSystem.AddQueueWriter(Dependency);
 
@@ -391,6 +427,9 @@ namespace MapExtPDX.MapExt.ReBurstEcoSystemModeA
 
         protected override void OnDestroy()
         {
+#if DEBUG
+            if (m_DebugStats.IsCreated) m_DebugStats.Dispose();
+#endif
             base.OnDestroy();
         }
 
@@ -399,15 +438,170 @@ namespace MapExtPDX.MapExt.ReBurstEcoSystemModeA
         #region Jobs
 
         /// <summary>
+        /// 预处理房产Job
+        /// 遍历所有潜在的住宅建筑，计算其剩余空间和质量评分，存入HashMap。
+        /// </summary>
+        [BurstCompile]
+        private struct PreparePropertyJob : IJobChunk
+        {
+            [ReadOnly] public EntityTypeHandle m_EntityType;
+
+            // 组件查找表
+            [ReadOnly] public ComponentLookup<BuildingPropertyData> m_BuildingProperties;
+            [ReadOnly] public ComponentLookup<PrefabRef> m_Prefabs;
+            [ReadOnly] public BufferLookup<Renter> m_Renters;
+            [ReadOnly] public ComponentLookup<Abandoned> m_Abandoneds;
+            [ReadOnly] public ComponentLookup<Game.Buildings.Park> m_Parks;
+            [ReadOnly] public ComponentLookup<BuildingData> m_BuildingDatas;
+            [ReadOnly] public ComponentLookup<ParkData> m_ParkDatas;
+            [ReadOnly] public ComponentLookup<Household> m_Households;
+            [ReadOnly] public ComponentLookup<Building> m_Buildings;
+            [ReadOnly] public ComponentLookup<SpawnableBuildingData> m_SpawnableDatas;
+            [ReadOnly] public ComponentLookup<BuildingPropertyData> m_BuildingPropertyData;
+            [ReadOnly] public BufferLookup<Game.Net.ServiceCoverage> m_ServiceCoverages;
+            [ReadOnly] public ComponentLookup<CrimeProducer> m_Crimes;
+            [ReadOnly] public ComponentLookup<Transform> m_Transforms;
+            [ReadOnly] public ComponentLookup<Locked> m_Locked;
+            [ReadOnly] public BufferLookup<CityModifier> m_CityModifiers;
+            [ReadOnly] public ComponentLookup<ElectricityConsumer> m_ElectricityConsumers;
+            [ReadOnly] public ComponentLookup<WaterConsumer> m_WaterConsumers;
+            [ReadOnly] public ComponentLookup<GarbageProducer> m_GarbageProducers;
+            [ReadOnly] public ComponentLookup<MailProducer> m_MailProducers;
+
+            // 环境数据
+            [ReadOnly] public NativeArray<AirPollution> m_AirPollutionMap;
+            [ReadOnly] public NativeArray<GroundPollution> m_PollutionMap;
+            [ReadOnly] public NativeArray<NoisePollution> m_NoiseMap;
+            [ReadOnly] public CellMapData<TelecomCoverage> m_TelecomCoverages;
+
+            // 全局参数
+            public HealthcareParameterData m_HealthcareParameters;
+            public ParkParameterData m_ParkParameters;
+            public EducationParameterData m_EducationParameters;
+            public TelecomParameterData m_TelecomParameters;
+            public GarbageParameterData m_GarbageParameters;
+            public PoliceConfigurationData m_PoliceParameters;
+            public CitizenHappinessParameterData m_CitizenHappinessParameterData;
+            public Entity m_City;
+
+            // 输出
+            public NativeParallelHashMap<Entity, CachedPropertyInformation>.ParallelWriter m_PropertyData;
+
+            /// <summary>
+            /// 计算建筑内的空余位置
+            /// </summary>
+            //private int CalculateFree(Entity property)
+            //{
+            //    Entity prefab = m_Prefabs[property].m_Prefab;
+            //    int freeCount = 0;
+
+            //    // 1. 如果是避难所或允许流浪者的公园
+            //    if (m_BuildingDatas.HasComponent(prefab) &&
+            //       (m_Abandoneds.HasComponent(property) || (m_Parks.HasComponent(property) && m_ParkDatas[prefab].m_AllowHomeless)))
+            //    {
+            //        // 计算流浪者容量 - 当前租户数量
+            //        freeCount = BuildingUtils.GetShelterHomelessCapacity(prefab, ref m_BuildingDatas, ref m_BuildingPropertyData) - m_Renters[property].Length;
+            //    }
+            //    // 2. 如果是普通住宅建筑
+            //    else if (m_BuildingProperties.HasComponent(prefab))
+            //    {
+            //        BuildingPropertyData buildingPropertyData = m_BuildingProperties[prefab];
+            //        DynamicBuffer<Renter> renters = m_Renters[property];
+            //        // 总住宅属性数量
+            //        freeCount = buildingPropertyData.CountProperties(AreaType.Residential);
+
+            //        // 减去已被家庭占用的数量
+            //        for (int i = 0; i < renters.Length; i++)
+            //        {
+            //            Entity renter = renters[i].m_Renter;
+            //            if (m_Households.HasComponent(renter))
+            //            {
+            //                freeCount--;
+            //            }
+            //        }
+            //    }
+            //    return freeCount;
+            //}
+
+            public void Execute(in ArchetypeChunk chunk, int unfilteredChunkIndex, bool useEnabledMask, in v128 chunkEnabledMask)
+            {
+                NativeArray<Entity> entities = chunk.GetNativeArray(m_EntityType);
+                for (int i = 0; i < entities.Length; i++)
+                {
+                    Entity entity = entities[i];
+                    //int freeSlots = CalculateFree(entity);
+
+                    Entity prefab = m_Prefabs[entity].m_Prefab;
+
+                    int freeCount = 0;
+
+                    // 计算空位逻辑 (简化版展示)
+                    if (m_BuildingDatas.HasComponent(prefab) && (m_Abandoneds.HasComponent(entity) || m_Parks.HasComponent(entity)))
+                    {
+                        freeCount = BuildingUtils.GetShelterHomelessCapacity(prefab, ref m_BuildingDatas, ref m_BuildingProperties) - m_Renters[entity].Length;
+                    }
+                    else if (m_BuildingProperties.HasComponent(prefab))
+                    {
+                        freeCount = m_BuildingProperties[prefab].CountProperties(AreaType.Residential);
+                        var renters = m_Renters[entity];
+                        for (int r = 0; r < renters.Length; r++)
+                            if (m_Households.HasComponent(renters[r].m_Renter)) freeCount--;
+                    }
+
+                    if (freeCount > 0)
+                    {
+                        //Entity prefab = m_Prefabs[entity].m_Prefab;
+                        Building buildingData = m_Buildings[entity];
+                        DynamicBuffer<CityModifier> cityModifiers = m_CityModifiers[m_City];
+
+                        // 计算房产质量评分
+                        GenericApartmentQuality quality = GetGenericApartmentQuality(
+                            entity, prefab, ref buildingData, ref m_BuildingProperties, ref m_BuildingDatas,
+                            ref m_SpawnableDatas, ref m_Crimes, ref m_ServiceCoverages, ref m_Locked,
+                            ref m_ElectricityConsumers, ref m_WaterConsumers, ref m_GarbageProducers,
+                            ref m_MailProducers, ref m_Transforms, ref m_Abandoneds,
+                            m_PollutionMap, m_AirPollutionMap, m_NoiseMap, m_TelecomCoverages,
+                            cityModifiers,
+                            m_HealthcareParameters.m_HealthcareServicePrefab,
+                            m_ParkParameters.m_ParkServicePrefab,
+                            m_EducationParameters.m_EducationServicePrefab,
+                            m_TelecomParameters.m_TelecomServicePrefab,
+                            m_GarbageParameters.m_GarbageServicePrefab,
+                            m_PoliceParameters.m_PoliceServicePrefab,
+                            m_CitizenHappinessParameterData,
+                            m_GarbageParameters
+                        );
+
+                        // 缓存结果
+                        m_PropertyData.TryAdd(entity, new CachedPropertyInformation
+                        {
+                            free = freeCount,
+                            quality = quality
+                        });
+                    }
+                }
+            }
+        }
+
+        /// <summary>
         /// 寻找房产Job
         /// 处理家庭的搬迁逻辑，包括发起寻路请求、评估寻路结果、决定是否搬入。
         /// </summary>
         [BurstCompile]
-        private struct FindPropertyJobChunk : IJobChunk 
+        private
+#if DEBUG
+        unsafe
+#endif
+            struct FindPropertyParallelJob : IJobChunk // DEBUG必须标记为 unsafe
         {
+            //public NativeList<Entity> m_HomelessHouseholdEntities;
+            //public NativeList<Entity> m_MovedInHouseholdEntities;
+            public NativeParallelHashMap<Entity, CachedPropertyInformation> m_CachedPropertyInfo;
+
             // --- 实体句柄 ---
             [ReadOnly] public EntityTypeHandle m_EntityType;
             [ReadOnly] public ComponentTypeHandle<Household> m_HouseholdType;
+            //[ReadOnly] public ComponentTypeHandle<PropertySeeker> m_PropertySeekerType;
             [ReadOnly] public ComponentTypeHandle<HomelessHousehold> m_HomelessHouseholdType;
             [ReadOnly] public BufferTypeHandle<HouseholdCitizen> m_HouseholdCitizenType;
 
@@ -418,6 +612,7 @@ namespace MapExtPDX.MapExt.ReBurstEcoSystemModeA
             // 大量组件Lookup用于评分和判断
             [ReadOnly] public ComponentLookup<BuildingData> m_BuildingDatas;
             [ReadOnly] public ComponentLookup<PropertyOnMarket> m_PropertiesOnMarket;
+            //[ReadOnly] public BufferLookup<PathInformations> m_PathInformationBuffers;
             [ReadOnly] public ComponentLookup<PrefabRef> m_PrefabRefs;
             [ReadOnly] public ComponentLookup<Building> m_Buildings;
             [ReadOnly] public ComponentLookup<Worker> m_Workers;
@@ -447,7 +642,6 @@ namespace MapExtPDX.MapExt.ReBurstEcoSystemModeA
             [ReadOnly] public ComponentLookup<PathInformation> m_PathInformations;
             //[ReadOnly] public BufferLookup<HouseholdCitizen> m_CitizenBuffers;
             // m_CitizenBuffers 不需要Lookup，从Chunk获取
-            [ReadOnly] public BufferLookup<Renter> m_Renters; // 新增
 
             // 环境参数
             [ReadOnly] public NativeArray<AirPollution> m_AirPollutionMap;
@@ -475,29 +669,47 @@ namespace MapExtPDX.MapExt.ReBurstEcoSystemModeA
             public NativeQueue<SetupQueueItem>.ParallelWriter m_PathfindQueue;
             public NativeQueue<RentAction>.ParallelWriter m_RentActionQueue;
 
+#if DEBUG
+            // 允许并行写入的 Attribute
+            [NativeDisableParallelForRestriction]
+            public NativeArray<int> m_DebugStats;
+            public bool m_EnableDebug;
+#endif
+
             /// <summary>
             /// 发起寻路请求，帮助家庭寻找新住处
             /// </summary>
 
             public void Execute(in ArchetypeChunk chunk, int unfilteredChunkIndex, bool useEnabledMask, in v128 chunkEnabledMask)
             {
-                NativeArray<Entity> entities = chunk.GetNativeArray(m_EntityType);   
-                NativeArray<Household> householdDatas = chunk.GetNativeArray(ref m_HouseholdType);
+#if DEBUG
+                // 获取原始指针 (极快，无 GC) 用于原子操作
+                int* statsPtr = (int*)m_DebugStats.GetUnsafePtr(); 
+#endif
+
+                NativeArray<Entity> entities = chunk.GetNativeArray(m_EntityType);
                 NativeArray<PropertySeeker> seekers = chunk.GetNativeArray(ref m_PropertySeekerType);
+                NativeArray<Household> householdDatas = chunk.GetNativeArray(ref m_HouseholdType);
                 BufferAccessor<HouseholdCitizen> citizenBuffers = chunk.GetBufferAccessor(ref m_HouseholdCitizenType);
 
-                // HomelessHousehold单独处理
-                bool isHomelessChunk = chunk.Has(ref m_HomelessHouseholdType);
-                NativeArray<HomelessHousehold> homelessDatas = isHomelessChunk ? chunk.GetNativeArray(ref m_HomelessHouseholdType) : default;
+                // 可选组件
+                bool hasHomeless = chunk.Has(ref m_HomelessHouseholdType);
+                NativeArray<HomelessHousehold> homelessDatas = hasHomeless ? chunk.GetNativeArray(ref m_HomelessHouseholdType) : default;
 
                 bool hasPathInfos = chunk.Has(ref m_PathInformationType);
                 BufferAccessor<PathInformations> pathInfoBuffers = hasPathInfos ? chunk.GetBufferAccessor(ref m_PathInformationType) : default;
 
-                // 遍历HomelessHouseholdQuery/HouseholdQuery的chunks
                 for (int i = 0; i < entities.Length; i++)
                 {
+#if DEBUG
+                    // 统计总数
+                    if (m_EnableDebug) Interlocked.Increment(ref statsPtr[(int)DebugStatIndex.TotalProcessed]);
+
+#endif
+
                     Entity entity = entities[i];
                     PropertySeeker seeker = seekers[i];
+                    Household household = householdDatas[i];
                     DynamicBuffer<HouseholdCitizen> citizens = citizenBuffers[i];
 
                     // 跳过空家庭
@@ -505,14 +717,18 @@ namespace MapExtPDX.MapExt.ReBurstEcoSystemModeA
 
                     // int householdIncome = EconomyUtils.GetHouseholdIncome(citizens, ref m_Workers, ref m_Citizens, ref m_HealthProblems, ref m_EconomyParameters, m_TaxRates);
 
-                    // 1. 检查是否有寻路返回结果
+                    // 1. 处理寻路结果
                     bool isPathFinding = false;
                     if (hasPathInfos && pathInfoBuffers.Length > i)
                     {
                         DynamicBuffer<PathInformations> pathInfos = pathInfoBuffers[i];
                         if (pathInfos.Length > 0)
                         {
-                            // 如果状态是 Pending，说明寻路还在进行中，跳过此家庭，等待下一tick
+#if DEBUG
+                            if (m_EnableDebug) Interlocked.Increment(ref statsPtr[(int)DebugStatIndex.PathfindResultReceived]);
+
+#endif
+                            // 如果状态是 Pending，说明寻路还在进行中，跳过此人，等待下一帧
                             if ((pathInfos[0].m_State & PathFlags.Pending) != 0)
                             {
                                 isPathFinding = true; // 正在寻路中，不要再发起新请求，也不要进入冷却检查
@@ -520,239 +736,307 @@ namespace MapExtPDX.MapExt.ReBurstEcoSystemModeA
                             else
                             {
                                 // 寻路已完成，处理结果
-                                ProcessPathResult(entity,
-                                                  pathInfos,
-                                                  ref seeker,
-                                                  citizens,
-                                                  unfilteredChunkIndex); 
+#if DEBUG
+                                if (m_EnableDebug) Interlocked.Increment(ref statsPtr[(int)DebugStatIndex.PathfindResultReceived]); 
+#endif
+
+                                ProcessPathInformations(entity, pathInfos, ref seeker, citizens, unfilteredChunkIndex
+                                    #if DEBUG
+		, statsPtr 
+	#endif
+                                    ); // 收入传0即可
                                 seekers[i] = seeker;
-                                // 移除Buffer和Component，彻底清理
-                                m_CommandBuffer.RemoveComponent<PathInformations>(unfilteredChunkIndex, entity);
-                                m_CommandBuffer.RemoveComponent<PathInformation>(unfilteredChunkIndex, entity);
+                                continue; // 处理完毕，退出
                             }
                         }
                     }
 
                     // 如果正在寻路中，直接跳过后续逻辑
-                    if (isPathFinding) continue;                    
+                    if (isPathFinding) continue;
+
+                    // =========================================================
+                    // 2. 获取当前住所 (关键修正：在这里定义变量)
+                    // =========================================================
+                    // 即使是冷却中，我们也需要知道他是不是流浪汉，这决定了冷却策略
+                    // 【修复 1】：将冷却检查移到最外层，对所有人都生效
+                    // 逻辑：如果在冷却期内，且不是无家可归者急需找房（或者你可以让无家可归者也遵守冷却），则跳过
+                    Entity currentHome = GetHouseholdHomeBuilding(entity, ref m_PropertyRenters, ref m_HomelessHouseholds);
+                    bool isHomeless = currentHome == Entity.Null;
 
                     // =========================================================
                     // 3. 冷却检查 (Cooldown)
                     // =========================================================
                     // 流浪汉(Homeless)通常比较急，可以设置较短的冷却，或者和普通人一样
-                    if (m_SimulationFrame < seeker.m_LastPropertySeekFrame + kFindPropertyCoolDown) continue;
+                    if (seeker.m_LastPropertySeekFrame + kFindPropertyCoolDown > m_SimulationFrame)
+                    {
+#if DEBUG
+                        if (m_EnableDebug) Interlocked.Increment(ref statsPtr[(int)DebugStatIndex.CooldownSkipped]);
+#endif
+                        if (isHomeless)
+                        {                           
+                            // 简单的逃离检查逻辑，全城总空房少于10
+                            if (math.csum(m_ResidentialPropertyData.m_FreeProperties) < 10)
+                                CitizenUtils.HouseholdMoveAway(m_CommandBuffer, unfilteredChunkIndex, entity, MoveAwayReason.NoSuitableProperty);
+                        
+                        }
+                        continue; // 【关键】冷却中，跳过！
+                    }
+
+                    //                    // 2. 检查冷却
+                    //                    Entity currentHome = GetHouseholdHomeBuilding(entity, ref m_PropertyRenters, ref m_HomelessHouseholds);
+                    //                    if (currentHome == Entity.Null && seeker.m_LastPropertySeekFrame + HouseholdFindPropertySystemMod.kFindPropertyCoolDown > m_SimulationFrame)
+                    //                    {
+                    //#if DEBUG
+                    //                        if (m_EnableDebug) Interlocked.Increment(ref statsPtr[(int)DebugStatIndex.CooldownSkipped]); 
+                    //#endif
+
+                    //                        // 简单逃离逻辑
+                    //                        if (math.csum(m_ResidentialPropertyData.m_FreeProperties) < 10 && !hasPathInfos) // 如果没在寻路且没房
+                    //                        {
+                    //                            CitizenUtils.HouseholdMoveAway(m_CommandBuffer, unfilteredChunkIndex, entity, MoveAwayReason.NoSuitableProperty);
+                    //                        }
+                    //                        continue;
+                    //                    }
 
                     // =========================================================
-                    // 2. 获取当前住所
+                    // 4. 随机限流 (关键性能优化)
                     // =========================================================
-                    Entity currentHome = GetHouseholdHomeBuilding(entity, ref m_PropertyRenters, ref m_HomelessHouseholds);
-                    bool isHomeless = currentHome == Entity.Null;
+                    // 即使冷却结束了，也不要让几万人在同一帧全部发起寻路。
+                    // 我们引入一个随机概率，将负载分散到接下来的几十帧里。
 
-                    // 搬离检查 (MoveAway)
-                    // 如果是无家可归，且找了很久(frame > 0)，且全城几乎没房 -> 离开城市
-                    if (isHomeless && seeker.m_LastPropertySeekFrame > 0 && math.csum(m_ResidentialPropertyData.m_FreeProperties) < 10)
+                    // 使用 Entity Index 和 帧数 制造伪随机
+                    var random = Unity.Mathematics.Random.CreateFromIndex((uint)(entity.Index + m_SimulationFrame));
+
+                    // 设定概率：比如只有 5% 的人能在冷却结束的当帧发起请求
+                    // 流浪汉可以给高一点的优先级 (比如 20%)
+                    float chance = isHomeless ? 0.10f : 0.05f;
+
+                    if (random.NextFloat() > chance)
+                    {
+                        // 虽然冷却好了，但这次轮空。
+                        // 技巧：把 LastSeekFrame 设为最近的某个时间，让它在未来几帧内再次尝试，而不是下一帧立刻重试
+                        // 这样能完美地把压力抹平
+                        seeker.m_LastPropertySeekFrame = m_SimulationFrame - (uint)random.NextInt(100, 500);
+                        seekers[i] = seeker;
+                        continue;
+                    }
+
+                    // =========================================================
+                    // 5. 评估当前状态 & 发起寻路
+                    // =========================================================
+                    float currentScore = float.NegativeInfinity;
+                    Entity currentHomeForScore = GetHouseholdHomeBuilding(entity, ref m_PropertyRenters, ref m_HomelessHouseholds);
+
+                    // 3. 评估当前状态 (如果已有房子)
+
+                    //if (currentHomeForScore != Entity.Null)
+                    //{
+                    //    // 为了性能，增加随机概率检查：只有 2% 的有房家庭在冷却结束后会真正尝试计算分数搬家
+                    //    // 这样可以避免一波冷却结束后所有人同时发起寻路
+                    //    // 使用 entity.Index 做伪随机，或者引入 Random
+                    //    var random = Unity.Mathematics.Random.CreateFromIndex((uint)(entity.Index + m_SimulationFrame));
+                    //    if (random.NextFloat() > 0.02f)
+                    //    {
+                    //        // 虽然冷却好了，但这次算了，稍微推迟一下，避免峰值
+                    //        seeker.m_LastPropertySeekFrame = m_SimulationFrame - (uint)random.NextInt(100, 500); // 设为不久前刚搜过，稍后重试
+                    //        seekers[i] = seeker;
+                    //        continue;
+                    //    }
+
+                    //    currentScore = GetPropertyScore(...);
+                    //}
+
+                    // 3. 评估当前状态
+                    //float currentScore = float.NegativeInfinity;
+                    if (currentHome != Entity.Null)
+                    {
+                        // 这里可以直接调用 GetPropertyScore，但如果想极致优化，可以只在特定间隔调用
+                        currentScore = GetPropertyScore(
+                            currentHome, entity, citizens,
+                            ref m_PrefabRefs, ref m_BuildingProperties, ref m_Buildings, ref m_BuildingDatas,
+                            ref m_Households, ref m_Citizens, ref m_Students, ref m_Workers, ref m_SpawnableDatas,
+                            ref m_Crimes, ref m_ServiceCoverages, ref m_Lockeds, ref m_ElectricityConsumers,
+                            ref m_WaterConsumers, ref m_GarbageProducers, ref m_MailProducers, ref m_Transforms,
+                            ref m_Abandoneds, ref m_Parks, ref m_Availabilities, m_TaxRates, m_PollutionMap,
+                            m_AirPollutionMap, m_NoiseMap, m_TelecomCoverages, m_CityModifiers[m_City],
+                            m_HealthcareParameters.m_HealthcareServicePrefab, m_ParkParameters.m_ParkServicePrefab,
+                            m_EducationParameters.m_EducationServicePrefab, m_TelecomParameters.m_TelecomServicePrefab,
+                            m_GarbageParameters.m_GarbageServicePrefab, m_PoliceParameters.m_PoliceServicePrefab,
+                            m_CitizenHappinessParameterData, m_GarbageParameters
+                        );
+                    }
+
+                    // 4. 发起寻路
+                    Entity commuter = Entity.Null;
+                    Entity workOrSchool = GetFirstWorkplaceOrSchool(citizens, ref commuter);
+                    bool targetIsOrigin = (workOrSchool == Entity.Null);
+                    Entity searchOrigin = targetIsOrigin ? GetCurrentLocation(citizens) : workOrSchool;
+
+                    if (currentHome == Entity.Null && searchOrigin == Entity.Null)
                     {
                         CitizenUtils.HouseholdMoveAway(m_CommandBuffer, unfilteredChunkIndex, entity, MoveAwayReason.NoSuitableProperty);
                         continue;
                     }
 
-                    // 发起新的寻路请求
-                    Entity commuteCitizen = Entity.Null;
-                    Entity workplace = GetFirstWorkplaceOrSchool(citizens, ref commuteCitizen);
-                    Entity origin = (workplace != Entity.Null) ? workplace : GetCurrentLocation(citizens);
+                    // 更新 Seeker 状态
+                    seeker.m_TargetProperty = workOrSchool;
+                    seeker.m_BestProperty = currentHome;
+                    seeker.m_BestPropertyScore = currentScore;
+                    seeker.m_LastPropertySeekFrame = m_SimulationFrame;
+                    seekers[i] = seeker;
 
-                    if (origin != Entity.Null || currentHome != Entity.Null)
-                    {
-                        float currentScore = float.NegativeInfinity;
-                        if (currentHome != Entity.Null)
-                        {
-                            // 计算当前居住评分，用于改善性换房
-                            currentScore = CalculatePropertyScore(currentHome, entity, citizens);
-                        }
+                    // 【关键】更新冷却时间，防止下一帧立刻重试
+                    seeker.m_LastPropertySeekFrame = m_SimulationFrame;
+                    seekers[i] = seeker;
 
-                        seeker.m_BestProperty = currentHome;
-                        seeker.m_BestPropertyScore = currentScore;
-                        seeker.m_LastPropertySeekFrame = m_SimulationFrame;
-                        seekers[i] = seeker;
+                    StartHomeFinding(entity, commuter, searchOrigin, currentHome, currentScore, targetIsOrigin, citizens, unfilteredChunkIndex);
 
-                        StartHomeFinding(unfilteredChunkIndex, entity, commuteCitizen, origin, currentHome, currentScore, workplace == Entity.Null, citizens);
-                    }
-                    else if (currentHome == Entity.Null)
-                    {
-                        // 既没家也没位置信息，直接移出
-                        CitizenUtils.HouseholdMoveAway(m_CommandBuffer, unfilteredChunkIndex, entity, MoveAwayReason.NoSuitableProperty);
-                    }
+#if DEBUG
+                    if (m_EnableDebug) Interlocked.Increment(ref statsPtr[(int)DebugStatIndex.PathfindStarted]);
 
-                    
+#endif
                 }
             }
 
-            private bool IsPropertyFree(Entity property)
+            /// <summary>
+            /// 处理寻路返回的候选房产列表
+            /// </summary>
+            private void ProcessPathInformations(Entity householdEntity, DynamicBuffer<PathInformations> pathInformations, ref PropertySeeker propertySeeker, DynamicBuffer<HouseholdCitizen> citizens, int sortKey
+#if DEBUG
+        , int* statsPtr 
+#endif
+                )
             {
-                // 实时检查，避免并发冲突
-                Entity prefab = m_PrefabRefs[property].m_Prefab;
-                int currentRenters = 0;
-                if (m_Renters.TryGetBuffer(property, out var renters)) currentRenters = renters.Length;
-
-                if (m_Abandoneds.HasComponent(property) || m_Parks.HasComponent(property))
-                {
-                    return BuildingUtils.GetShelterHomelessCapacity(prefab, ref m_BuildingDatas, ref m_BuildingProperties) > currentRenters;
-                }
-                if (m_BuildingProperties.HasComponent(prefab))
-                {
-                    // 普通住宅
-                    return m_BuildingProperties[prefab].CountProperties(AreaType.Residential) > currentRenters;
-                }
-                return false;
-            }
-
-            private void ProcessPathResult(int jobIndex, Entity household, DynamicBuffer<PathInformations> pathInfos, ref PropertySeeker seeker, DynamicBuffer<HouseholdCitizen> citizens, int income, bool isHomeless)
-            {
+                // 寻找最佳候选
                 Entity bestCandidate = Entity.Null;
-                float bestScore = seeker.m_BestPropertyScore;
+                // float bestCandidateScore = float.NegativeInfinity;
+                bool hasTarget = propertySeeker.m_TargetProperty != Entity.Null;
 
-                // 检查是否是"有钱的无家可归者" (失房者)
-                // 逻辑：如果是Homeless组件，但收入还不错，不要去住避难所
-                bool isDisplacedNotPoor = isHomeless && income > 500; // 500是一个经验值，可调整
-
-                for (int k = 0; k < pathInfos.Length; k++)
+                // 遍历所有寻路返回的结果 (通常是按 Cost 排序，即分数从高到低)
+                for (int i = 0; i < pathInformations.Length; i++)
                 {
-                    PathInformations info = pathInfos[k];
-                    if ((info.m_State & PathFlags.Pending) != 0) return;
+                    var pathInfo = pathInformations[i];
+                    Entity candidate = hasTarget ? pathInfo.m_Origin : pathInfo.m_Destination;
 
-                    Entity candidate = (seeker.m_TargetProperty != Entity.Null) ? info.m_Origin : info.m_Destination;
-                    if (candidate == Entity.Null) continue;
-
-                    // 1. 基础检查：是否空闲
-                    if (!IsPropertyFree(candidate)) continue;
-
-                    bool isShelter = BuildingUtils.IsHomelessShelterBuilding(candidate, ref m_Parks, ref m_Abandoneds);
-
-                    // 2. 避难所逻辑过滤 (优化核心)
-                    if (isShelter)
+                    // 1. 快速有效性检查：必须在缓存中且有空位
+                    // 注意：这里读 HashMap 是安全的，但不能写 (free--)
+                    if (!m_CachedPropertyInfo.TryGetValue(candidate, out var cachedInfo) || cachedInfo.free <= 0)
                     {
-                        // 如果是有钱人被拆迁，且这不是最后一次尝试(冷却很久了)，则拒绝避难所，强迫寻找住宅
-                        // 除非实在找不到(BestScore极低)
-                        if (isDisplacedNotPoor && bestScore > -5000f) continue;
-                    }
-                    else
-                    {
-                        // 3. 住宅逻辑过滤：买得起吗？
-                        if (m_PropertiesOnMarket.HasComponent(candidate))
-                        {
-                            if (m_PropertiesOnMarket[candidate].m_AskingRent > income) continue;
-                        }
+                        continue;
                     }
 
-                    // 4. 计算得分 (Heavy Calculation)
-                    // 只有通过前面过滤的才进行计算
-                    float candidateScore = CalculatePropertyScore(candidate, household, citizens);
-
-                    // 如果是避难所，手动降低分数权重，确保如果列表中有普通住宅，优先选住宅
-                    if (isShelter) candidateScore -= 2000f;
-
-                    if (candidateScore > bestScore)
-                    {
-                        bestScore = candidateScore;
-                        bestCandidate = candidate;
-                    }
+                    // 2. 详细评分 (如果需要，或者直接信任 Pathfinding 的结果顺序)
+                    // 由于 SetupJob 已经做了大量计算，这里可以信任第一个符合条件的
+                    bestCandidate = candidate;
+                    break; // 找到第一个有效的就停止
                 }
 
-                if (bestCandidate != Entity.Null && bestCandidate != seeker.m_BestProperty)
+                if (bestCandidate != Entity.Null)
                 {
-                    // 成功找到，加入租房队列
+#if DEBUG
+                    // 搬入成功
+                    if (m_EnableDebug) Interlocked.Increment(ref statsPtr[(int)DebugStatIndex.MovedIn]);
+
+#endif
+
+                    // 决定搬入
+                    // 这里不再进行复杂的 Score 重算，因为 SetupJob 已经算过了。
+                    // 除非需要对比 CurrentHome 的分数 (propertySeeker.m_BestPropertyScore)
+
+                    // 发送租赁动作
                     m_RentActionQueue.Enqueue(new RentAction
                     {
                         m_Property = bestCandidate,
-                        m_Renter = household
+                        m_Renter = householdEntity
                     });
-                    // 关闭 Seeker 组件，防止下一帧继续找
-                    m_CommandBuffer.SetComponentEnabled<PropertySeeker>(jobIndex, household, false);
+
+                    // 防止在等待租赁结果的几帧内重复发起搜索，设置一个小冷却
+                    propertySeeker.m_LastPropertySeekFrame = m_SimulationFrame + 200;
+
+                    // 不再手动减少 cachedInfo.free，避免竞态。
+                    // 让 SimulationSystem 在下一帧处理失败的情况（如果被抢占了）。
+                    m_CommandBuffer.SetComponentEnabled<PropertySeeker>(sortKey, householdEntity, false);
                 }
                 else
                 {
-                    // 没找到合适的，重置状态等待下一次 CoolDown
-                    seeker.m_BestProperty = Entity.Null;
-                    seeker.m_BestPropertyScore = float.NegativeInfinity;
+#if DEBUG
+                    // 失败
+                    if (m_EnableDebug) Interlocked.Increment(ref statsPtr[(int)DebugStatIndex.FailedNoCandidate]);
+
+#endif
+                    // [FIX] 失败：没有候选 (可能买不起，或没空房)
+                    // 施加惩罚性冷却，防止死循环洪水
+                    propertySeeker.m_LastPropertySeekFrame = m_SimulationFrame + (uint)kFailedCoolDown;
+
+                    // 重置最佳记录，让其下次降低标准
+                    propertySeeker.m_BestProperty = Entity.Null;
+                    propertySeeker.m_BestPropertyScore = float.NegativeInfinity;
+
+                    // 流浪者多次没找到
+                    if (m_HomelessHouseholds.HasComponent(householdEntity) && m_HomelessHouseholds[householdEntity].m_TempHome == Entity.Null)
+                    {
+                        // 失败多次后强制离开
+                        int failcount = 0;failcount++;
+                        if (failcount == 3)
+                            CitizenUtils.HouseholdMoveAway(m_CommandBuffer, sortKey, householdEntity, MoveAwayReason.NoSuitableProperty);
+                    }
                 }
+
+                // 【关键修复】：处理完毕后，必须移除 PathInformation 和 PathInformations 组件！
+                // 否则下一帧还会重复处理这个结果。
+                // 1. 移除路径数据 Buffer
+                m_CommandBuffer.RemoveComponent<PathInformations>(sortKey, householdEntity);
+                // 2. 移除路径状态 Component (新增修复)
+                m_CommandBuffer.RemoveComponent<PathInformation>(sortKey, householdEntity);
+
             }
 
-            // 封装的算分函数
-            private float CalculatePropertyScore(Entity property, Entity household, DynamicBuffer<HouseholdCitizen> citizens)
+            private void StartHomeFinding(Entity household, Entity commuteCitizen, Entity targetLocation, Entity oldHome, float minimumScore, bool targetIsOrigin, DynamicBuffer<HouseholdCitizen> citizens, int sortKey)
             {
-                // 如果是避难所，使用简化算分 (优化Q2)
-                if (BuildingUtils.IsHomelessShelterBuilding(property, ref m_Parks, ref m_Abandoneds))
-                {
-                    // 避难所不需要算污染、教育加成，只要有地方住就行
-                    // 返回一个相对固定的负分，但比无处可去好
-                    return -100f;
-                }
+                // 标记PathInfo为挂起状态
+                //m_CommandBuffer.AddComponent(sortKey, household, new PathInformation { m_State = PathFlags.Pending });
+                m_CommandBuffer.AddComponent(sortKey, household, new PathInformation { m_State = PathFlags.Pending });
 
-                return GetPropertyScore(
-                   property, household, citizens,
-                   ref m_PrefabRefs, ref m_BuildingProperties, ref m_Buildings, ref m_BuildingDatas,
-                   ref m_Households, // 注意：原版这里可能需要HouseholdsLookup，但在Score里一般只用Buildings查数据
-                   ref m_Citizens, ref m_Students, ref m_Workers,
-                   ref m_SpawnableDatas, ref m_Crimes, ref m_ServiceCoverages, ref m_Lockeds,
-                   ref m_ElectricityConsumers, ref m_WaterConsumers, ref m_GarbageProducers, ref m_MailProducers,
-                   ref m_Transforms, ref m_Abandoneds, ref m_Parks, ref m_Availabilities,
-                   m_TaxRates, m_PollutionMap, m_AirPollutionMap, m_NoiseMap, m_TelecomCoverages,
-                   m_CityModifiers[m_City],
-                   m_HealthcareParameters.m_HealthcareServicePrefab, m_ParkParameters.m_ParkServicePrefab,
-                   m_EducationParameters.m_EducationServicePrefab, m_TelecomParameters.m_TelecomServicePrefab,
-                   m_GarbageParameters.m_GarbageServicePrefab, m_PoliceParameters.m_PoliceServicePrefab,
-                   m_CitizenHappinessParameterData, m_GarbageParameters
-               );
-            }
 
-            // 辅助方法保持原版逻辑适配
-            private Entity GetFirstWorkplaceOrSchool(DynamicBuffer<HouseholdCitizen> citizens, ref Entity commuteCitizen)
-            {
-                for (int i = 0; i < citizens.Length; i++)
-                {
-                    Entity citizen = citizens[i].m_Citizen;
-                    if (m_Workers.HasComponent(citizen)) { commuteCitizen = citizen; return m_Workers[citizen].m_Workplace; }
-                    if (m_Students.HasComponent(citizen)) { commuteCitizen = citizen; return m_Students[citizen].m_School; }
-                }
-                return Entity.Null;
-            }
-
-            private Entity GetCurrentLocation(DynamicBuffer<HouseholdCitizen> citizens)
-            {
-                for (int i = 0; i < citizens.Length; i++)
-                {
-                    if (m_CurrentBuildings.TryGetComponent(citizens[i].m_Citizen, out CurrentBuilding b)) return b.m_CurrentBuilding;
-                    if (m_CurrentTransports.TryGetComponent(citizens[i].m_Citizen, out CurrentTransport t)) return t.m_CurrentTransport;
-                }
-                return Entity.Null;
-            }
-
-            private void StartHomeFinding(int jobIndex, Entity household, Entity commuteCitizen, Entity targetLocation, Entity oldHome, float minimumScore, bool targetIsOrigin, DynamicBuffer<HouseholdCitizen> citizens)
-            {
-                // 创建 PathInformation 组件
-                m_CommandBuffer.AddComponent(jobIndex, household, new PathInformation { m_State = PathFlags.Pending });
-
-                // 计算权重
+                // 计算寻路权重
+                Household householdData = m_Households[household];
                 PathfindWeights weights = default;
-                if (commuteCitizen != Entity.Null && m_Citizens.HasComponent(commuteCitizen))
-                    weights = CitizenUtils.GetPathfindWeights(m_Citizens[commuteCitizen], new Household(), citizens.Length); // 简化Household传入
+                if (m_Citizens.TryGetComponent(commuteCitizen, out var citizenData))
+                {
+                    weights = CitizenUtils.GetPathfindWeights(citizenData, householdData, citizens.Length);
+                }
                 else
-                    weights.m_Value = 0.5f; // 默认权重
+                {
+                    // 如果没有主要通勤者，平均计算所有成员
+                    for (int i = 0; i < citizens.Length; i++)
+                    {
+                        if (m_Citizens.TryGetComponent(citizens[i].m_Citizen, out var cData))
+                        {
+                            weights.m_Value += CitizenUtils.GetPathfindWeights(cData, householdData, citizens.Length).m_Value;
+                        }
+                    }
+                    weights.m_Value *= 1f / (float)citizens.Length;
+                }
 
+                // 设置寻路参数
                 PathfindParameters parameters = new PathfindParameters
                 {
-                    m_MaxSpeed = 111.111f,
-                    m_WalkSpeed = 1.667f,
+                    m_MaxSpeed = 111.111115f,
+                    m_WalkSpeed = 1.6666667f,
                     m_Weights = weights,
-                    m_Methods = PathMethod.Pedestrian | PathMethod.PublicTransportDay,
+                    m_Methods = (PathMethod.Pedestrian | PathMethod.PublicTransportDay),
                     m_MaxCost = CitizenBehaviorSystem.kMaxPathfindCost,
-                    m_PathfindFlags = PathfindFlags.Simplified | PathfindFlags.IgnorePath,
-                    m_MaxResultCount = 10
+                    m_PathfindFlags = (PathfindFlags.Simplified | PathfindFlags.IgnorePath)
                 };
 
-                // 设置寻路目标
-                SetupQueueTarget originTarget = new SetupQueueTarget { m_Type = SetupTargetType.CurrentLocation, m_Methods = PathMethod.Pedestrian, m_Entity = targetLocation };
-                SetupQueueTarget destTarget = new SetupQueueTarget
+                // 设置起点和终点
+                SetupQueueTarget targetA = new SetupQueueTarget
+                {
+                    m_Type = SetupTargetType.CurrentLocation,
+                    m_Methods = PathMethod.Pedestrian,
+                    m_Entity = targetLocation
+                };
+                SetupQueueTarget targetB = new SetupQueueTarget
                 {
                     m_Type = SetupTargetType.FindHome,
                     m_Methods = PathMethod.Pedestrian,
@@ -761,22 +1045,75 @@ namespace MapExtPDX.MapExt.ReBurstEcoSystemModeA
                     m_Value2 = minimumScore
                 };
 
-                // 车辆逻辑
-                if (m_OwnedVehicles.TryGetBuffer(household, out var vehicles) && vehicles.Length > 0)
+                // 如果拥有车辆，调整寻路规则
+                if (m_OwnedVehicles.TryGetBuffer(household, out var vehicles) && vehicles.Length != 0)
                 {
-                    parameters.m_Methods |= (PathMethod)(targetIsOrigin ? 8194 : 8198);
-                    parameters.m_ParkingSize = -float.MaxValue; // 忽略停车位大小限制
-                    originTarget.m_Methods |= PathMethod.Road;
-                    destTarget.m_Methods |= PathMethod.Road;
+                    parameters.m_Methods |= (PathMethod)(targetIsOrigin ? 8194 : 8198); // Road | Medium Road
+                    parameters.m_ParkingSize = float.MinValue;
+                    parameters.m_IgnoredRules |= RuleFlags.ForbidCombustionEngines | RuleFlags.ForbidHeavyTraffic | RuleFlags.ForbidSlowTraffic | RuleFlags.AvoidBicycles;
+                    targetA.m_Methods |= PathMethod.Road | PathMethod.MediumRoad;
+                    targetA.m_RoadTypes |= RoadTypes.Car;
+                    targetB.m_Methods |= PathMethod.Road | PathMethod.MediumRoad;
+                    targetB.m_RoadTypes |= RoadTypes.Car;
                 }
 
-                if (!targetIsOrigin) CommonUtils.Swap(ref originTarget, ref destTarget);
+                if (targetIsOrigin)
+                {
+                    parameters.m_MaxSpeed.y = 277.77777f;
+                    parameters.m_Methods |= PathMethod.Taxi | PathMethod.PublicTransportNight;
+                    parameters.m_TaxiIgnoredRules = VehicleUtils.GetIgnoredPathfindRulesTaxiDefaults();
+                }
+                else
+                {
+                    CommonUtils.Swap(ref targetA, ref targetB);
+                }
 
-                m_CommandBuffer.AddBuffer<PathInformations>(jobIndex, household).Add(new PathInformations { m_State = PathFlags.Pending });
+                parameters.m_MaxResultCount = 10;
+                parameters.m_PathfindFlags |= (PathfindFlags)(targetIsOrigin ? 256 : 128); // MultipleDestinations : MultipleOrigins
 
-                m_PathfindQueue.Enqueue(new SetupQueueItem(household, parameters, originTarget, destTarget));
+                // 添加路径缓冲区
+                m_CommandBuffer.AddBuffer<PathInformations>(sortKey, household).Add(new PathInformations { m_State = PathFlags.Pending });
+
+
+                // 入队寻路任务
+                SetupQueueItem item = new SetupQueueItem(household, parameters, targetA, targetB);
+                m_PathfindQueue.Enqueue(item);
             }
 
+            // 获取家庭中第一个有工作或上学的成员的目的地（工作场所或学校）
+            private Entity GetFirstWorkplaceOrSchool(DynamicBuffer<HouseholdCitizen> citizens, ref Entity citizen)
+            {
+                for (int i = 0; i < citizens.Length; i++)
+                {
+                    citizen = citizens[i].m_Citizen;
+                    if (m_Workers.HasComponent(citizen))
+                        return m_Workers[citizen].m_Workplace;
+                    if (m_Students.HasComponent(citizen))
+                        return m_Students[citizen].m_School;
+                }
+                return Entity.Null;
+            }
+
+            // 获取家庭成员当前的物理位置
+            private Entity GetCurrentLocation(DynamicBuffer<HouseholdCitizen> citizens)
+            {
+                for (int i = 0; i < citizens.Length; i++)
+                {
+                    if (m_CurrentBuildings.TryGetComponent(citizens[i].m_Citizen, out var building))
+                        return building.m_CurrentBuilding;
+                    if (m_CurrentTransports.TryGetComponent(citizens[i].m_Citizen, out var transport))
+                        return transport.m_CurrentTransport;
+                }
+                return Entity.Null;
+            }
+
+            // --- 辅助方法: 计算收入 (简化版) ---
+            //public int GetHouseholdIncome(DynamicBuffer<HouseholdCitizen> citizens)
+            //{
+            //    // 这里应调用 EconomyUtils.GetHouseholdIncome，为性能内联或简化
+            //    // 假设已引用 EconomyUtils
+            //    return EconomyUtils.GetHouseholdIncome(citizens, ref m_Workers, ref m_Citizens, ref m_HealthProblems, ref m_EconomyParameters, m_TaxRates);
+            //}
         }
 
         #endregion

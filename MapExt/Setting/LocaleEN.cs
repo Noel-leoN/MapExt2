@@ -54,7 +54,7 @@ namespace MapExtPDX
 
                 { m_Setting.GetOptionGroupLocaleID(ModSettings.kEcoGroup), "Economy Overhaul" },
                 { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.kEcoGroup)), "Logic & Perf. Optimization" },
-                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.isEnableEconomyFix)), "Economy System Logic & Perf. Optimization" },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.isEnableEconomyFix)), "Economy System Logic & Perf. Optimization 🚕 🚌 🚎 🚆 🚇 ✈️ 🚢" },
                 { m_Setting.GetOptionDescLocaleID(nameof(ModSettings.isEnableEconomyFix)), "Fix the following systems to adapt to cities with populations in the millions:\r\n Residential/Commercial/Industrail demand system\r\n Household home search system\r\n Household behavior system (consumer behavior adjustment)\r\n Citizen job search system\r\n Rent calculation system" },
 
                 { m_Setting.GetOptionGroupLocaleID(ModSettings.kNoteGroup), "⚠️Caution!" },

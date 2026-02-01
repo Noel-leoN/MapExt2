@@ -9,7 +9,7 @@ using MapExtPDX.MapExt.ReBurstSystem;
 using System;
 using System.Collections.Generic;
 
-namespace MapExtPDX
+namespace MapExtPDX.MapExt.CoreHelper
 {
     /// <summary>
     /// MapSize模式补丁集管理器

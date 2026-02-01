@@ -78,7 +78,6 @@ namespace MapExtPDX
             // === B. 获取设置setting ===
             // 将当前实例赋值给静态属性(use for Setting)
             Instance = this;
-            m_Setting = new ModSettings(this);
 
             // Initialize settings
             m_Setting = new ModSettings(this);
@@ -461,7 +460,7 @@ namespace MapExtPDX
                 _globalPatcher.CreateClassProcessor(typeof(MapExt.ReBurstEcoSystemModeE.LandValueSystemMod.Patches)).Patch();
 
                 // HarmonyPrefix修补CitizenPathfindSetup.SetupFindHomeJob(HouseholdFindPropertySystem关联)
-                _globalPatcher.CreateClassProcessor(typeof(MapExt.ReBurstEcoSystemModeC.PathfindSetupSystem_FindTargets_Patch)).Patch(); updateSystem.UpdateAt<MapExt.ReBurstEcoSystemModeE.HouseholdFindPropertySystemMod>(SystemUpdatePhase.GameSimulation);
+                _globalPatcher.CreateClassProcessor(typeof(MapExt.ReBurstEcoSystemModeE.PathfindSetupSystem_FindTargets_Patch)).Patch(); updateSystem.UpdateAt<MapExt.ReBurstEcoSystemModeE.HouseholdFindPropertySystemMod>(SystemUpdatePhase.GameSimulation);
 
                 updateSystem.UpdateAt<MapExt.ReBurstEcoSystemModeE.HouseholdBehaviorSystemMod>(SystemUpdatePhase.GameSimulation);
 
