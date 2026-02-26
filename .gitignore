@@ -3,12 +3,47 @@ _KnowledgeBase/
 _ReferenceSolution/
 EconomyExt/
 
-# Standard Unity/C# Build & IDE Ignores
-[Bb]in/
+# Unity generated
+[Ll]ibrary/
+[Tt]emp/
 [Oo]bj/
+[Bb]uild/
+[Bb]uilds/
+[Ll]ogs/
+[Uu]ser[Ss]ettings/
+[Mm]emoryCaptures/
+[Rr]ecordings/
+
+# Visual Studio / Rider generated
 .vs/
 .idea/
-.trae/
+*.csproj.DotSettings
 *.user
+*.userprefs
+*.pidb
+*.booproj
+*.svne
+*.suser
 *.suo
 *.cache
+
+# OS generated
+.DS_Store
+Thumbs.db
+
+# Compilation
+*.pdb
+*.mdb
+*.opendb
+*.VC.db
+
+# Burst
+BurstDebugInformation_DoNotShip/
+
+# Build output
+[Bb]in/
+
+# Tooling
+.clinerules
+.agent/
+.trae/
