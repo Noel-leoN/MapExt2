@@ -1,0 +1,29 @@
+* text=auto eol=lf
+
+*.cs text=auto eol=lf
+*.shader text=auto eol=lf
+*.cginc text=auto eol=lf
+*.xml text=auto eol=lf
+*.json text=auto eol=lf
+*.txt text=auto eol=lf
+*.md text=auto eol=lf
+*.yaml text=auto eol=lf
+
+# Unity YAML merging
+*.asset merge=unityyamlmerge eol=lf
+*.prefab merge=unityyamlmerge eol=lf
+*.unity merge=unityyamlmerge eol=lf
+*.meta merge=unityyamlmerge eol=lf
+
+# Binary files
+*.dll binary
+*.so binary
+*.dylib binary
+*.exe binary
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.tga binary
+*.tif binary
+*.tiff binary
+*.psd binary

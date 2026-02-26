@@ -1,37 +1,14 @@
-# Unity generated
-/[Ll]ibrary/
-/[Tt]emp/
-/[Oo]bj/
-/[Bb]uild/
-/[Bb]uilds/
-/[Ll]ogs/
-/[Uu]ser[Ss]ettings/
-/[Mm]emoryCaptures/
-/[Rr]ecordings/
+# Reference Code & External Solutions
+_KnowledgeBase/
+_ReferenceSolution/
+EconomyExt/
 
-# Visual Studio / Rider generated
+# Standard Unity/C# Build & IDE Ignores
+[Bb]in/
+[Oo]bj/
 .vs/
 .idea/
-*.csproj.DotSettings
+.trae/
 *.user
-*.userprefs
-*.pidb
-*.booproj
-*.svne
-*.suser
-
-# OS generated
-.DS_Store
-Thumbs.db
-
-# Compilation
-*.pdb
-*.mdb
-*.opendb
-*.VC.db
-
-# Burst
-BurstDebugInformation_DoNotShip/
-
-# Tooling
-.clinerules
+*.suo
+*.cache
