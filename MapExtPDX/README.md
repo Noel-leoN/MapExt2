@@ -1,10 +1,10 @@
-﻿# Cities Skylines 2 Map Extended Mod (28/57/114/vanilla) with Economy Fix & Performance Improvement (Test)
+﻿# Cities Skylines 2 Map Extended Mod (28/57/114/vanilla) with Economy Fix &amp; Performance Improvement (Test)
 
 ## ⚠️ IMPORTANT: READ BEFORE USE
 
 * **Use at your own risk:** This mod makes extensive modifications to the game engine. There may be unknown issues or conflicts with other mods.
 * **Backup your saves:** ALWAYS use "Save As" to create new save files. Do not directly overwrite existing saves. **Never** attempt to load and overwrite a save created with MapExt if the mod fails to load or is uninstalled.
-* **Match Map Sizes:** In the Option UI, you must select the precise map size (28km / 57km / 114km / Vanilla 14km) that matches your currently loaded map or save. *(Note: A failsafe prevents loading incorrect sizes for save games, but this does NOT apply to the Map Editor).*
+* **Match Map Sizes:** In the Option UI, you must select the precise map size (28km / 57km / 114km / Vanilla 14km) that matches your currently loaded map or save. ⚠️ Note: A failsafe prevents loading incorrect sizes for save games, but this does NOT apply to the Map Editor.
 * **Hardware Requirements:** A GPU with 10GB+ VRAM is recommended (this mod uses an additional 1-2GB of VRAM). If the game crashes while loading, you likely have too many custom assets. We strongly recommend creating a pristine, minimal Playset on your first use.
 
 ## Introduction
@@ -12,11 +12,11 @@
 * **Map Size Modes:**
   * **57km (Default):** 4x4 vanilla map dimensions (DEM-14m resolution).
   * **28km:** 2x2 dimensions (DEM-7m resolution).
-  * **114km:** 8x8 dimensions (DEM-28m resolution). *Not recommended due to extremely low terrain resolution, edge tearing, and simulation calculation errors.*
+  * **114km:** 8x8 dimensions (DEM-28m resolution). ❌ Not recommended due to extremely low terrain resolution, edge tearing, and simulation calculation errors.
   * **14km:** Vanilla 1x1 dimensions (DEM-3.5m resolution).
 * **Terrain Limitation:** As the map size expands, terrain resolution inevitably decreases. Coastlines and mountains may appear jagged and rough. Due to structural complexity and performance impacts, this mod currently cannot artificially improve terrain resolution. You can mitigate this visually by planting trees or using other objects to cover rough patches. For high-resolution massive maps, consider waiting for the upcoming `LargerMap` mod by algernon.
 * The number of unlockable map tiles remains fixed at **529**.
-* **Economy Fix & Performance Optimization (v2.2.3+):** The mod now includes an experimental, **permanently enabled** suite of optimizations specifically tuned for mega-cities (millions of population). This refactors the demand logic, land value, housing search, citizen behaviors, and rent systems to prevent late-game pathfinding jams and economic collapses.
+* **Economy Fix &amp; Performance Optimization (v2.2.3+):** The mod now includes an experimental, **permanently enabled** suite of optimizations specifically tuned for mega-cities (millions of population). This refactors the demand logic, land value, housing search, citizen behaviors, and rent systems to prevent late-game pathfinding jams and economic collapses.
 * **Integrated Features:** This mod includes simple performance tweaks I've previously authored (such as NoDogs and CS2LiteBoost). These can be toggled on inside the Option UI, meaning you can unsubscribe from their standalone versions.
 
 ## Usage
@@ -30,13 +30,13 @@ In the Map Editor, import a heightmap/worldmap image of the corresponding size:
 * **114km Playable Area:** Heightmap 114,688m / Worldmap 458,752m
 
 * **Supported Image Formats:** 4096x4096 16-bit grayscale (PNG or TIFF).
-* *(Note: You can import heightmaps with resolutions up to 14336x14336; the mod will automatically downsample/scale them to 4096x4096.)*
+* 💡 Note: You can import heightmaps with resolutions up to 14336x14336; the mod will automatically downsample/scale them to 4096x4096.
 * **Scaling Warning:** If the physical dimensions of your imported map do not mathematically match the target size, the terrain will stretch.
 * **Performance Tip:** For maps larger than 57km, do NOT import a fake "Worldmap" in order to save performance. The worldmap is purely visual dressing and provides no gameplay benefit.
 
 ### Useful Directory Paths (Paste into File Explorer)
 
-* Heightmaps & Worldmaps: `%USERPROFILE%\AppData\LocalLow\Colossal Order\Cities Skylines II\Heightmaps`
+* Heightmaps &amp; Worldmaps: `%USERPROFILE%\AppData\LocalLow\Colossal Order\Cities Skylines II\Heightmaps`
 * Overlay Maps: `%USERPROFILE%\AppData\LocalLow\Colossal Order\Cities Skylines II\Overlays`
 * Game Logs (for bug reporting): `%USERPROFILE%\AppData\LocalLow\Colossal Order\Cities Skylines II\Logs`
 * Local Mods Folder: `%USERPROFILE%\AppData\LocalLow\Colossal Order\Cities Skylines II\Mods`
@@ -62,9 +62,9 @@ In the Map Editor, import a heightmap/worldmap image of the corresponding size:
 ## Tips
 
 * **Quick Water Generation:** Since large maps take extremely long to manually fill with water, we recommend Yenyang's **Water Features** mod. Enable experimental features, max out the "flowness" slider, and minimize evaporation for quick results. Alternatively, instantly fill the oceans by setting the Sea Level via the in-game Developer UI (though you still need physical water sources to maintain it over time).
-* **Bug Reporting & Support:** Please report issues or find more advanced tips in the Discord community linked below, or on GitHub.
+* **Bug Reporting &amp; Support:** Please report issues or find more advanced tips in the Discord community linked below, or on GitHub.
 
-## Credits & Acknowledgements
+## Credits &amp; Acknowledgements
 
 * [Cities: Skylines Modding Discord](https://discord.gg/s6BcrFKepF) (Primary discussion hub)
 * [Cities 2 Modding Discord](https://discord.gg/ABrJqdZJNE)
@@ -80,7 +80,7 @@ In the Map Editor, import a heightmap/worldmap image of the corresponding size:
 
 * **风险提示**：本模组对原版底层代码进行了大量深度修改，可能存在未知问题或与其他模组冲突，请自行承担风险。
 * **勤备份存档**：强烈建议养成每次**“另存为”新文档**的习惯，切勿直接覆盖旧存档。**绝对不要**在模组卸载或加载失败时，强行读取并覆盖 MapExt 存档。
-* **匹配地图尺寸**：在选项界面中，必须设置与当前游玩地图相匹配的绝对尺寸（28km、57km、114km 或 原版14km）。*(注：模组已内置防错机制，会阻止跨尺寸读取存档，但该机制**不适用于地图编辑器**。)*
+* **匹配地图尺寸**：在选项界面中，必须设置与当前游玩地图相匹配的绝对尺寸（28km、57km、114km 或 原版14km）。⚠️ 注：模组已内置防错机制，会阻止跨尺寸读取存档，但该机制**不适用于地图编辑器**。
 * **硬件建议**：推荐显存 10GB 以上（本模组将额外占用 1-2GB 显存）。若加载地图时崩溃，通常是因为加载了过多资产模组导致显存爆满。首次使用建议创建一个精简的 Playset 播放集，确认正常后再逐步添加资产。
 
 ## 介绍
@@ -106,7 +106,7 @@ In the Map Editor, import a heightmap/worldmap image of the corresponding size:
 * **114公里可玩区域**：高程图 114688 米 / 世界贴图 458752 米
 
 * **支持的图像格式**：4096x4096 16位灰度图（PNG 或 TIFF）。
-* *(注：可以直接导入不高于 14336x14336 分辨率的地形高程图，模组会自动将其智能缩放至 4096x4096)*
+* 💡 注：可以直接导入不高于 14336x14336 分辨率的地形高程图，模组会自动将其智能缩放至 4096x4096
 * **拉伸警告**：若导入的现实尺寸与上述设定的比例不匹配，地形将被错误拉伸。
 * **性能提示**：对于超过 57公里的地图，为了节省性能开销，强烈建议不要导入只作背景板用的“假”世界贴图。（世界贴图仅提供边缘视觉过度，对游玩毫无物理作用）。
 

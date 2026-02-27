@@ -54,7 +54,7 @@ $([System.IO.File]::ReadAllText('.\ReadMe.md').TrimEnd())
 </LongDescription>
 
     <!-- Thumbnail. -->
-    <Thumbnail Value="Properties/Thumbnail.png" />
+    <Thumbnail Value="Properties/Thumbnail.jpg" />
 
     <!-- Screenshot.  Copied from Screenshots folder.  Include no spaces in file names.  Max file size is 2.1MB.  Can be set multiple times. -->
 $(Screenshot00)$(Screenshot01)$(Screenshot02)$(Screenshot03)$(Screenshot04)$(Screenshot05)$(Screenshot06)$(Screenshot07)$(Screenshot08)$(Screenshot09)$(Screenshot10)
