@@ -297,8 +297,10 @@ namespace MapExtPDX.ModeB
 
         #region Jobs
 
+#if DEBUG
         private NativeArray<int> m_DebugStats;
         private bool m_EnableDebug = true;
+#endif
 
         public enum DebugStatIndex
         {
