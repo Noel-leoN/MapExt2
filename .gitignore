@@ -47,3 +47,13 @@ BurstDebugInformation_DoNotShip/
 .clinerules
 .agent/
 .trae/
+
+# Auto-generated publish config (built from .csproj)
+**/PublishConfiguration.xml
+
+# Backup & draft files
+*.bak
+*.TestVersion
+
+# Internal documentation (not for public)
+**/docs/
