@@ -143,10 +143,10 @@ In the Editor, Import the correct size heightmap/worldmap terrain image：
     <ForumLink Value="https://forum.paradoxplaza.com/forum/threads/map-extended-mod-beta-57km-version.1738213/" />
 
     <!-- Version of the mod.  Copied from assembly Version. -->
-    <ModVersion Value="2.2.2" />
+    <ModVersion Value="2.2.3" />
 
     <!-- Recommended version of the base game to use the mod. -->
-    <GameVersion Value="1.5.3*" />
+    <GameVersion Value="1.5.5*" />
 
     <!-- Dependency for the mod.  Can be set multiple times. -->
     <Dependency Id="" />

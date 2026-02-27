@@ -22,16 +22,18 @@ namespace MapExtPDX
         ModeA, // CoreValue = 4  // 57km (default)
         ModeB, // CoreValue = 2  // 28km
         ModeC, // CoreValue = 8  // 114km
+
         // ModeD, // CoreValue = 16 // 229km
-        None   // Vanilla = 1
+        None // Vanilla = 1
     }
 
     //[FileLocation(nameof(MapExtPDX))]
     [FileLocation("ModsSettings/" + Mod.ModName + "/" + Mod.ModName)]
     [SettingsUITabOrder(kMapSizeModeTab, kPerformanceToolTab, kMiscTab, kDebugTab)]
-    [SettingsUIGroupOrder(kMainModeGroup, kResetGroup, kInfoGroup, kEcoGroup, kNoteGroup, kPerformanceToolGroup, kMiscGroup, /*kAirwayGroup,*/ kDebugGroup)]
-    [SettingsUIShowGroupName(kMainModeGroup, kResetGroup, kInfoGroup, kEcoGroup, kNoteGroup, kPerformanceToolGroup, kMiscGroup, /*kAirwayGroup,*/ kDebugGroup)]
-
+    [SettingsUIGroupOrder(kMainModeGroup, kResetGroup, kInfoGroup, kEcoGroup, kNoteGroup, kPerformanceToolGroup,
+        kMiscGroup, /*kAirwayGroup,*/ kDebugGroup)]
+    [SettingsUIShowGroupName(kMainModeGroup, kResetGroup, kInfoGroup, kEcoGroup, kNoteGroup, kPerformanceToolGroup,
+        kMiscGroup, /*kAirwayGroup,*/ kDebugGroup)]
     public class ModSettings : ModSetting
     {
         public const string kMapSizeModeTab = "MapSize Mode";
@@ -46,6 +48,7 @@ namespace MapExtPDX
         public const string kResetGroup = "Reset";
         public const string kPerformanceToolGroup = "PerformanceTool";
         public const string kMiscGroup = "Misc";
+
         public const string kDebugGroup = "Debug";
         //public const string kAirwayGroup = "AirwayRegenerate";
         //public const string kPatchSettingsGroup = "PatchSettings"; // New group for our patch controls
@@ -78,7 +81,8 @@ namespace MapExtPDX
 
         // --- PATCH SETTINGS ---
         [SettingsUISection(kMapSizeModeTab, kMainModeGroup)]
-        [SettingsUIDropdown(typeof(ModSettings), nameof(GetPatchModeDropdownItems))] // Use this for enums if want custom display names
+        [SettingsUIDropdown(typeof(ModSettings),
+            nameof(GetPatchModeDropdownItems))] // Use this for enums if want custom display names
         [SettingsUIHideByCondition(typeof(ModSettings), nameof(IsNotInMainMenu))]
         public PatchModeSetting PatchModeChoice { get; set; } // = PatchModeSetting.ModeA; // Default to ModeA
 
@@ -106,7 +110,6 @@ namespace MapExtPDX
                 // 传递用户在UI中选择的 PatchModeChoice
                 Mod.Instance?.OnPatchModeChanged(this.PatchModeChoice);
                 Mod.Info($"Settings changes applied via button for mode: {this.PatchModeChoice}");
-
             }
         }
 
@@ -149,6 +152,7 @@ namespace MapExtPDX
                     displayName = GetPatchModeDisplayName(mode)
                 });
             }
+
             return items.ToArray();
         }
 
@@ -169,7 +173,17 @@ namespace MapExtPDX
         // === 经济系统补丁 ===
         [SettingsUISection(kMapSizeModeTab, kEcoGroup)]
         [SettingsUIHideByCondition(typeof(ModSettings), nameof(IsNotInMainMenu))]
-        public bool isEnableEconomyFix { get; set; } = true;
+        [SettingsUIDisableByCondition(typeof(ModSettings), nameof(IsEconomyFixLocked))]
+        public bool isEnableEconomyFix
+        {
+            get => PatchModeChoice != PatchModeSetting.None || m_isEnableEconomyFix;
+            set => m_isEnableEconomyFix = value;
+        }
+
+        private bool m_isEnableEconomyFix = true;
+
+        // 當處於大尺寸地圖(非原版None)時，鎖定並強制啟用經濟系統補丁，僅作為 UI 顯示
+        public bool IsEconomyFixLocked => PatchModeChoice != PatchModeSetting.None;
 
         //[SettingsUISection(kMapSizeModeTab, kEcoGroup)]
         //[SettingsUIButton]
@@ -213,7 +227,6 @@ namespace MapExtPDX
         }
 
 
-
         // 设置字段初始化器默认值
         private bool m_NoDogsSystem = false;
         private bool m_NoThroughTrafficSystem = false;
@@ -236,15 +249,18 @@ namespace MapExtPDX
                 }
             }
         }
+
         public void UpdateNoDogsSystemStates()
         {
-            Mod.Info($"Setting 'HouseholdPetSpawnSystem' is now: {nameof(Game.Simulation.HouseholdPetSpawnSystem)}. Updating system enabled state.");
+            Mod.Info(
+                $"Setting 'HouseholdPetSpawnSystem' is now: {nameof(Game.Simulation.HouseholdPetSpawnSystem)}. Updating system enabled state.");
 
             // 获取系统实例并根据设置更新其 .Enabled 属性
             // 当 DisableMyOptionalSystem 为 true 时, .Enabled 应为 false
             // 当 DisableMyOptionalSystem 为 false 时, .Enabled 应为 true
             // 所以逻辑是 .Enabled = !DisableMyOptionalSystem
-            World.DefaultGameObjectInjectionWorld.GetOrCreateSystemManaged<Game.Simulation.HouseholdPetSpawnSystem>().Enabled = !m_NoDogsSystem;
+            World.DefaultGameObjectInjectionWorld.GetOrCreateSystemManaged<Game.Simulation.HouseholdPetSpawnSystem>()
+                .Enabled = !m_NoDogsSystem;
 
             // 如果多个系统需要控制，可以继续在这里添加
             // World.DefaultGameObjectInjectionWorld.GetOrCreateSystemManaged<AnotherSystem>().Enabled = !this.SomeOtherSetting;
@@ -267,10 +283,13 @@ namespace MapExtPDX
                 }
             }
         }
+
         public void UpdateNoThroughTrafficSystemStates()
         {
-            Mod.Info($"Setting 'TrafficSpawnerAISystem' is now: {nameof(Game.Simulation.TrafficSpawnerAISystem)}. Updating system enabled state.");
-            World.DefaultGameObjectInjectionWorld.GetOrCreateSystemManaged<Game.Simulation.TrafficSpawnerAISystem>().Enabled = !m_NoThroughTrafficSystem;
+            Mod.Info(
+                $"Setting 'TrafficSpawnerAISystem' is now: {nameof(Game.Simulation.TrafficSpawnerAISystem)}. Updating system enabled state.");
+            World.DefaultGameObjectInjectionWorld.GetOrCreateSystemManaged<Game.Simulation.TrafficSpawnerAISystem>()
+                .Enabled = !m_NoThroughTrafficSystem;
 
             Mod.Info($"NoThroughTraffic补丁已应用.(全局并行)");
         }
@@ -280,7 +299,7 @@ namespace MapExtPDX
         //public bool NoRandomTraffic { get; set; }
 
         [SettingsUISection(kMiscTab, kMiscGroup)]
-        [SettingsUIDisableByCondition(typeof(ModSettings), nameof(IsPatchUnAvailable))]  // 暂时禁用
+        [SettingsUIDisableByCondition(typeof(ModSettings), nameof(IsPatchUnAvailable))] // 暂时禁用
         public bool LandValueRemake
         {
             get => m_LandValueRemakeSystem;
@@ -305,6 +324,5 @@ namespace MapExtPDX
         // 开关LoadGame验证系统
         [SettingsUISection(kDebugTab, kDebugGroup)]
         public bool DisableLoadGameValidation { get; set; } = false;
-
     }
 }

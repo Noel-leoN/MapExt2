@@ -8,7 +8,7 @@
 		<Authors>Noel2</Authors>
 		<Copyright>Copyright (c) [2025] [Noel2/Noel-leoN/=Noel=]</Copyright>
 		<Title>MapExt(Test): Big Map, Economy and Performance</Title>
-		<Version>2.2.2</Version>
+		<Version>2.2.3</Version>
 
 		<!--The file where mod information which is required for publishing mod on PDX mods are stored-->
 		<PublishConfigurationPath>Properties\PublishConfiguration.xml</PublishConfigurationPath>
@@ -123,8 +123,15 @@
     </ItemGroup>
 
 	<ItemGroup>
+		<Compile Remove="MapExt\ReBurstSystem\Core\**" />
 		<Compile Remove="_Backup_Before_T4\**" />
 		<None Include="_Backup_Before_T4\**" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <EmbeddedResource Remove="MapExt\ReBurstSystem\Core\**" />
+	  <None Remove="MapExt\ReBurstSystem\Core\**" />
+	  <TextTemplate Remove="MapExt\ReBurstSystem\Core\**" />
 	</ItemGroup>
 
 	<!--
@@ -136,16 +143,16 @@
 
 	<!-- XCellMapSystemRe: 源文件参与编译(namespace ReBurstSystemCore 与生成文件不冲突)，旧文件排除 -->
 	<ItemGroup>
-		<Compile Remove="MapExt\ReBurstSystem\Core\CellMapSystemRe.cs" />
-		<None Include="MapExt\ReBurstSystem\Core\XCellMapSystemRe.Generate.ps1" />
+		<None Include="MapExt\ReBurstSystem\ReBurstCore\XCellMapSystemRe.Generate.ps1" />
 		<!-- 告诉 VS 这两个文件是构建输入，修改它们会触发 VS 取消 "Up-To-Date" 而是去调用 MSBuild -->
 		<UpToDateCheckInput Include="MapExt\ReBurstSystem\Core\XCellMapSystemRe.cs" />
-		<UpToDateCheckInput Include="MapExt\ReBurstSystem\Core\XCellMapSystemRe.Generate.ps1" />
+		<UpToDateCheckInput Include="MapExt\ReBurstSystem\ReBurstCore\XCellMapSystemRe.Generate.ps1" />
 	</ItemGroup>
 
 	<!-- PreBuild: 从源文件自动生成各 Mode 的 XCellMapSystemRe.cs -->
 	<Target Name="GenerateXCellMapSystemRe" BeforeTargets="BeforeBuild">
-		<Exec Command="powershell -ExecutionPolicy Bypass -File &quot;$(ProjectDir)MapExt\ReBurstSystem\Core\XCellMapSystemRe.Generate.ps1&quot; -Force" />
+		<Exec Command="powershell -ExecutionPolicy Bypass -File &quot;$(ProjectDir)MapExt\ReBurstSystem\ReBurstCore\XCellMapSystemRe.Generate.ps1&quot; -Force" />
 	</Target>
 
 </Project>
+

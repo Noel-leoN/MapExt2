@@ -70,70 +70,70 @@ namespace MapExtPDX.MapExt.Core
                 // ==================================================
                 // --- CellMapSystem<T> ECS替换 ---
                 // ==================================================
-                updateSystem.UpdateAt<ReBurstSystemModeA.AirPollutionSystemMod>(SystemUpdatePhase
+                updateSystem.UpdateAt<MapExtPDX.ModeA.AirPollutionSystemMod>(SystemUpdatePhase
                     .GameSimulation);
-                globalPatcher.CreateClassProcessor(typeof(ReBurstSystemModeA.AirPollutionSystemMod.Patches))
+                globalPatcher.CreateClassProcessor(typeof(MapExtPDX.ModeA.AirPollutionSystemMod.Patches))
                     .Patch();
 
-                updateSystem.UpdateAt<ReBurstSystemModeA.AvailabilityInfoToGridSystemMod>(SystemUpdatePhase
+                updateSystem.UpdateAt<MapExtPDX.ModeA.AvailabilityInfoToGridSystemMod>(SystemUpdatePhase
                     .GameSimulation);
                 globalPatcher
-                    .CreateClassProcessor(typeof(ReBurstSystemModeA.AvailabilityInfoToGridSystemMod.Patches))
+                    .CreateClassProcessor(typeof(MapExtPDX.ModeA.AvailabilityInfoToGridSystemMod.Patches))
                     .Patch();
 
-                updateSystem.UpdateAt<ReBurstSystemModeA.GroundPollutionSystemMod>(SystemUpdatePhase
+                updateSystem.UpdateAt<MapExtPDX.ModeA.GroundPollutionSystemMod>(SystemUpdatePhase
                     .GameSimulation);
-                globalPatcher.CreateClassProcessor(typeof(ReBurstSystemModeA.GroundPollutionSystemMod.Patches))
+                globalPatcher.CreateClassProcessor(typeof(MapExtPDX.ModeA.GroundPollutionSystemMod.Patches))
                     .Patch();
 
-                updateSystem.UpdateAt<ReBurstSystemModeA.GroundWaterSystemMod>(SystemUpdatePhase.GameSimulation);
-                globalPatcher.CreateClassProcessor(typeof(ReBurstSystemModeA.GroundWaterSystemMod.Patches))
+                updateSystem.UpdateAt<MapExtPDX.ModeA.GroundWaterSystemMod>(SystemUpdatePhase.GameSimulation);
+                globalPatcher.CreateClassProcessor(typeof(MapExtPDX.ModeA.GroundWaterSystemMod.Patches))
                     .Patch();
 
 
-                updateSystem.UpdateAt<ReBurstSystemModeA.NaturalResourceSystemMod>(SystemUpdatePhase
+                updateSystem.UpdateAt<MapExtPDX.ModeA.NaturalResourceSystemMod>(SystemUpdatePhase
                     .GameSimulation);
-                updateSystem.UpdateAt<ReBurstSystemModeA.NaturalResourceSystemMod>(SystemUpdatePhase
+                updateSystem.UpdateAt<MapExtPDX.ModeA.NaturalResourceSystemMod>(SystemUpdatePhase
                     .EditorSimulation);
-                updateSystem.UpdateAfter<PostDeserialize<ReBurstSystemModeA.NaturalResourceSystemMod>>(
+                updateSystem.UpdateAfter<PostDeserialize<MapExtPDX.ModeA.NaturalResourceSystemMod>>(
                     SystemUpdatePhase.Deserialize);
-                globalPatcher.CreateClassProcessor(typeof(ReBurstSystemModeA.NaturalResourceSystemMod.Patches))
+                globalPatcher.CreateClassProcessor(typeof(MapExtPDX.ModeA.NaturalResourceSystemMod.Patches))
                     .Patch();
 
-                updateSystem.UpdateAt<ReBurstSystemModeA.NoisePollutionSystemMod>(SystemUpdatePhase
+                updateSystem.UpdateAt<MapExtPDX.ModeA.NoisePollutionSystemMod>(SystemUpdatePhase
                     .GameSimulation);
-                globalPatcher.CreateClassProcessor(typeof(ReBurstSystemModeA.NoisePollutionSystemMod.Patches))
+                globalPatcher.CreateClassProcessor(typeof(MapExtPDX.ModeA.NoisePollutionSystemMod.Patches))
                     .Patch();
 
-                updateSystem.UpdateAt<ReBurstSystemModeA.PopulationToGridSystemMod>(SystemUpdatePhase
+                updateSystem.UpdateAt<MapExtPDX.ModeA.PopulationToGridSystemMod>(SystemUpdatePhase
                     .GameSimulation);
-                globalPatcher.CreateClassProcessor(typeof(ReBurstSystemModeA.PopulationToGridSystemMod.Patches))
+                globalPatcher.CreateClassProcessor(typeof(MapExtPDX.ModeA.PopulationToGridSystemMod.Patches))
                     .Patch();
 
-                updateSystem.UpdateAt<ReBurstSystemModeA.SoilWaterSystemMod>(SystemUpdatePhase.GameSimulation);
-                //updateSystem.UpdateAfter<MapExt.ReBurstSystemModeA.SoilWaterSystemMod>(SystemUpdatePhase.Deserialize);
-                globalPatcher.CreateClassProcessor(typeof(ReBurstSystemModeA.SoilWaterSystemMod.Patches))
+                updateSystem.UpdateAt<MapExtPDX.ModeA.SoilWaterSystemMod>(SystemUpdatePhase.GameSimulation);
+                //updateSystem.UpdateAfter<MapExtPDX.ModeA.SoilWaterSystemMod>(SystemUpdatePhase.Deserialize);
+                globalPatcher.CreateClassProcessor(typeof(MapExtPDX.ModeA.SoilWaterSystemMod.Patches))
                     .Patch();
 
-                updateSystem.UpdateAt<ReBurstSystemModeA.TerrainAttractivenessSystemMod>(SystemUpdatePhase
+                updateSystem.UpdateAt<MapExtPDX.ModeA.TerrainAttractivenessSystemMod>(SystemUpdatePhase
                     .GameSimulation);
                 globalPatcher
-                    .CreateClassProcessor(typeof(ReBurstSystemModeA.TerrainAttractivenessSystemMod.Patches))
+                    .CreateClassProcessor(typeof(MapExtPDX.ModeA.TerrainAttractivenessSystemMod.Patches))
                     .Patch();
 
-                updateSystem.UpdateAt<ReBurstSystemModeA.TrafficAmbienceSystemMod>(SystemUpdatePhase
+                updateSystem.UpdateAt<MapExtPDX.ModeA.TrafficAmbienceSystemMod>(SystemUpdatePhase
                     .GameSimulation);
-                globalPatcher.CreateClassProcessor(typeof(ReBurstSystemModeA.TrafficAmbienceSystemMod.Patches))
+                globalPatcher.CreateClassProcessor(typeof(MapExtPDX.ModeA.TrafficAmbienceSystemMod.Patches))
                     .Patch();
 
-                updateSystem.UpdateAt<ReBurstSystemModeA.ZoneAmbienceSystemMod>(SystemUpdatePhase
+                updateSystem.UpdateAt<MapExtPDX.ModeA.ZoneAmbienceSystemMod>(SystemUpdatePhase
                     .GameSimulation);
-                globalPatcher.CreateClassProcessor(typeof(ReBurstSystemModeA.ZoneAmbienceSystemMod.Patches))
+                globalPatcher.CreateClassProcessor(typeof(MapExtPDX.ModeA.ZoneAmbienceSystemMod.Patches))
                     .Patch();
 
                 // --- LandValueSystemRemake + UI设置 ---
-                updateSystem.UpdateAt<ReBurstSystemModeA.LandValueSystemMod>(SystemUpdatePhase.GameSimulation);
-                globalPatcher.CreateClassProcessor(typeof(ReBurstSystemModeA.LandValueSystemMod.Patches))
+                updateSystem.UpdateAt<MapExtPDX.ModeA.LandValueSystemMod>(SystemUpdatePhase.GameSimulation);
+                globalPatcher.CreateClassProcessor(typeof(MapExtPDX.ModeA.LandValueSystemMod.Patches))
                     .Patch();
                 // updateSystem.UpdateAt<LandValueConfigSyncSystem>(SystemUpdatePhase.GameSimulation);
                 // ======================================================
@@ -144,27 +144,27 @@ namespace MapExtPDX.MapExt.Core
 
                 // if (setting.isEnableEconomyFix == true)
                 {
-                    //globalPatcher.CreateClassProcessor(typeof(MapExt.ReBurstEcoSystemModeA.CommercialDemandSystemMod.Patches)).Patch();
-                    //updateSystem.UpdateAt<MapExt.ReBurstEcoSystemModeA.CommercialDemandSystemMod>(SystemUpdatePhase.GameSimulation);
+                    //globalPatcher.CreateClassProcessor(typeof(MapExtPDX.ModeA.CommercialDemandSystemMod.Patches)).Patch();
+                    //updateSystem.UpdateAt<MapExtPDX.ModeA.CommercialDemandSystemMod>(SystemUpdatePhase.GameSimulation);
 
                     // 暂不替换HouseholdSpawnSystem
-                    // updateSystem.UpdateAt<MapExt.ReBurstSystemModeA.HouseholdSpawnSystemMod>(SystemUpdatePhase.GameSimulation);
+                    // updateSystem.UpdateAt<MapExtPDX.ModeA.HouseholdSpawnSystemMod>(SystemUpdatePhase.GameSimulation);
                     // Mod.Info($"已执行{nameof(HouseholdSpawnSystemMod)}.");
 
                     // HarmonyPrefix修补CitizenPathfindSetup.SetupFindHomeJob(HouseholdFindPropertySystem关联)
                     globalPatcher
                         .CreateClassProcessor(
-                            typeof(ReBurstEcoSystemModeA.PathfindSetupSystem_FindTargets_Patch)).Patch();
-                    updateSystem.UpdateAt<ReBurstEcoSystemModeA.HouseholdFindPropertySystemMod>(SystemUpdatePhase
+                            typeof(MapExtPDX.ModeA.PathfindSetupSystem_FindTargets_Patch)).Patch();
+                    updateSystem.UpdateAt<MapExtPDX.ModeA.HouseholdFindPropertySystemMod>(SystemUpdatePhase
                         .GameSimulation);
 
-                    updateSystem.UpdateAt<ReBurstEcoSystemModeA.HouseholdBehaviorSystemMod>(SystemUpdatePhase
+                    updateSystem.UpdateAt<MapExtPDX.ModeA.HouseholdBehaviorSystemMod>(SystemUpdatePhase
                         .GameSimulation);
 
-                    updateSystem.UpdateAt<ReBurstEcoSystemModeA.CitizenFindJobSystemMod>(SystemUpdatePhase
+                    updateSystem.UpdateAt<MapExtPDX.ModeA.CitizenFindJobSystemMod>(SystemUpdatePhase
                         .GameSimulation);
 
-                    updateSystem.UpdateAt<ReBurstEcoSystemModeA.FindJobSystemMod>(SystemUpdatePhase
+                    updateSystem.UpdateAt<MapExtPDX.ModeA.FindJobSystemMod>(SystemUpdatePhase
                         .GameSimulation);
 
                     // Job通用替换修补ResidentialDemand/IndustrialDemand/RentAdjust
@@ -179,70 +179,70 @@ namespace MapExtPDX.MapExt.Core
                 // ==================================================
                 // --- CellMapSystem<T> ECS替换 ---
                 // ==================================================
-                updateSystem.UpdateAt<ReBurstSystemModeB.AirPollutionSystemMod>(SystemUpdatePhase
+                updateSystem.UpdateAt<MapExtPDX.ModeB.AirPollutionSystemMod>(SystemUpdatePhase
                     .GameSimulation);
-                globalPatcher.CreateClassProcessor(typeof(ReBurstSystemModeB.AirPollutionSystemMod.Patches))
+                globalPatcher.CreateClassProcessor(typeof(MapExtPDX.ModeB.AirPollutionSystemMod.Patches))
                     .Patch();
 
-                updateSystem.UpdateAt<ReBurstSystemModeB.AvailabilityInfoToGridSystemMod>(SystemUpdatePhase
+                updateSystem.UpdateAt<MapExtPDX.ModeB.AvailabilityInfoToGridSystemMod>(SystemUpdatePhase
                     .GameSimulation);
                 globalPatcher
-                    .CreateClassProcessor(typeof(ReBurstSystemModeB.AvailabilityInfoToGridSystemMod.Patches))
+                    .CreateClassProcessor(typeof(MapExtPDX.ModeB.AvailabilityInfoToGridSystemMod.Patches))
                     .Patch();
 
-                updateSystem.UpdateAt<ReBurstSystemModeB.GroundPollutionSystemMod>(SystemUpdatePhase
+                updateSystem.UpdateAt<MapExtPDX.ModeB.GroundPollutionSystemMod>(SystemUpdatePhase
                     .GameSimulation);
-                globalPatcher.CreateClassProcessor(typeof(ReBurstSystemModeB.GroundPollutionSystemMod.Patches))
+                globalPatcher.CreateClassProcessor(typeof(MapExtPDX.ModeB.GroundPollutionSystemMod.Patches))
                     .Patch();
 
-                updateSystem.UpdateAt<ReBurstSystemModeB.GroundWaterSystemMod>(SystemUpdatePhase.GameSimulation);
-                globalPatcher.CreateClassProcessor(typeof(ReBurstSystemModeB.GroundWaterSystemMod.Patches))
+                updateSystem.UpdateAt<MapExtPDX.ModeB.GroundWaterSystemMod>(SystemUpdatePhase.GameSimulation);
+                globalPatcher.CreateClassProcessor(typeof(MapExtPDX.ModeB.GroundWaterSystemMod.Patches))
                     .Patch();
 
 
-                updateSystem.UpdateAt<ReBurstSystemModeB.NaturalResourceSystemMod>(SystemUpdatePhase
+                updateSystem.UpdateAt<MapExtPDX.ModeB.NaturalResourceSystemMod>(SystemUpdatePhase
                     .GameSimulation);
-                updateSystem.UpdateAt<ReBurstSystemModeB.NaturalResourceSystemMod>(SystemUpdatePhase
+                updateSystem.UpdateAt<MapExtPDX.ModeB.NaturalResourceSystemMod>(SystemUpdatePhase
                     .EditorSimulation);
-                updateSystem.UpdateAfter<PostDeserialize<ReBurstSystemModeB.NaturalResourceSystemMod>>(
+                updateSystem.UpdateAfter<PostDeserialize<MapExtPDX.ModeB.NaturalResourceSystemMod>>(
                     SystemUpdatePhase.Deserialize);
-                globalPatcher.CreateClassProcessor(typeof(ReBurstSystemModeB.NaturalResourceSystemMod.Patches))
+                globalPatcher.CreateClassProcessor(typeof(MapExtPDX.ModeB.NaturalResourceSystemMod.Patches))
                     .Patch();
 
-                updateSystem.UpdateAt<ReBurstSystemModeB.NoisePollutionSystemMod>(SystemUpdatePhase
+                updateSystem.UpdateAt<MapExtPDX.ModeB.NoisePollutionSystemMod>(SystemUpdatePhase
                     .GameSimulation);
-                globalPatcher.CreateClassProcessor(typeof(ReBurstSystemModeB.NoisePollutionSystemMod.Patches))
+                globalPatcher.CreateClassProcessor(typeof(MapExtPDX.ModeB.NoisePollutionSystemMod.Patches))
                     .Patch();
 
-                updateSystem.UpdateAt<ReBurstSystemModeB.PopulationToGridSystemMod>(SystemUpdatePhase
+                updateSystem.UpdateAt<MapExtPDX.ModeB.PopulationToGridSystemMod>(SystemUpdatePhase
                     .GameSimulation);
-                globalPatcher.CreateClassProcessor(typeof(ReBurstSystemModeB.PopulationToGridSystemMod.Patches))
+                globalPatcher.CreateClassProcessor(typeof(MapExtPDX.ModeB.PopulationToGridSystemMod.Patches))
                     .Patch();
 
-                updateSystem.UpdateAt<ReBurstSystemModeB.SoilWaterSystemMod>(SystemUpdatePhase.GameSimulation);
-                //updateSystem.UpdateAfter<MapExt.ReBurstSystemModeA.SoilWaterSystemMod>(SystemUpdatePhase.Deserialize);
-                globalPatcher.CreateClassProcessor(typeof(ReBurstSystemModeB.SoilWaterSystemMod.Patches))
+                updateSystem.UpdateAt<MapExtPDX.ModeB.SoilWaterSystemMod>(SystemUpdatePhase.GameSimulation);
+                //updateSystem.UpdateAfter<MapExtPDX.ModeA.SoilWaterSystemMod>(SystemUpdatePhase.Deserialize);
+                globalPatcher.CreateClassProcessor(typeof(MapExtPDX.ModeB.SoilWaterSystemMod.Patches))
                     .Patch();
 
-                updateSystem.UpdateAt<ReBurstSystemModeB.TerrainAttractivenessSystemMod>(SystemUpdatePhase
+                updateSystem.UpdateAt<MapExtPDX.ModeB.TerrainAttractivenessSystemMod>(SystemUpdatePhase
                     .GameSimulation);
                 globalPatcher
-                    .CreateClassProcessor(typeof(ReBurstSystemModeB.TerrainAttractivenessSystemMod.Patches))
+                    .CreateClassProcessor(typeof(MapExtPDX.ModeB.TerrainAttractivenessSystemMod.Patches))
                     .Patch();
 
-                updateSystem.UpdateAt<ReBurstSystemModeB.TrafficAmbienceSystemMod>(SystemUpdatePhase
+                updateSystem.UpdateAt<MapExtPDX.ModeB.TrafficAmbienceSystemMod>(SystemUpdatePhase
                     .GameSimulation);
-                globalPatcher.CreateClassProcessor(typeof(ReBurstSystemModeB.TrafficAmbienceSystemMod.Patches))
+                globalPatcher.CreateClassProcessor(typeof(MapExtPDX.ModeB.TrafficAmbienceSystemMod.Patches))
                     .Patch();
 
-                updateSystem.UpdateAt<ReBurstSystemModeB.ZoneAmbienceSystemMod>(SystemUpdatePhase
+                updateSystem.UpdateAt<MapExtPDX.ModeB.ZoneAmbienceSystemMod>(SystemUpdatePhase
                     .GameSimulation);
-                globalPatcher.CreateClassProcessor(typeof(ReBurstSystemModeB.ZoneAmbienceSystemMod.Patches))
+                globalPatcher.CreateClassProcessor(typeof(MapExtPDX.ModeB.ZoneAmbienceSystemMod.Patches))
                     .Patch();
 
                 // --- LandValueSystemRemake + UI设置 ---
-                updateSystem.UpdateAt<ReBurstSystemModeB.LandValueSystemMod>(SystemUpdatePhase.GameSimulation);
-                globalPatcher.CreateClassProcessor(typeof(ReBurstSystemModeB.LandValueSystemMod.Patches))
+                updateSystem.UpdateAt<MapExtPDX.ModeB.LandValueSystemMod>(SystemUpdatePhase.GameSimulation);
+                globalPatcher.CreateClassProcessor(typeof(MapExtPDX.ModeB.LandValueSystemMod.Patches))
                     .Patch();
                 // updateSystem.UpdateAt<LandValueConfigSyncSystem>(SystemUpdatePhase.GameSimulation);
                 // ======================================================
@@ -253,27 +253,27 @@ namespace MapExtPDX.MapExt.Core
 
                 // if (setting.isEnableEconomyFix == true)
                 {
-                    //globalPatcher.CreateClassProcessor(typeof(MapExt.ReBurstEcoSystemModeA.CommercialDemandSystemMod.Patches)).Patch();
-                    //updateSystem.UpdateAt<MapExt.ReBurstEcoSystemModeA.CommercialDemandSystemMod>(SystemUpdatePhase.GameSimulation);
+                    //globalPatcher.CreateClassProcessor(typeof(MapExtPDX.ModeA.CommercialDemandSystemMod.Patches)).Patch();
+                    //updateSystem.UpdateAt<MapExtPDX.ModeA.CommercialDemandSystemMod>(SystemUpdatePhase.GameSimulation);
 
                     // 暂不替换HouseholdSpawnSystem
-                    // updateSystem.UpdateAt<MapExt.ReBurstSystemModeA.HouseholdSpawnSystemMod>(SystemUpdatePhase.GameSimulation);
+                    // updateSystem.UpdateAt<MapExtPDX.ModeA.HouseholdSpawnSystemMod>(SystemUpdatePhase.GameSimulation);
                     // Mod.Info($"已执行{nameof(HouseholdSpawnSystemMod)}.");
 
                     // HarmonyPrefix修补CitizenPathfindSetup.SetupFindHomeJob(HouseholdFindPropertySystem关联)
                     globalPatcher
                         .CreateClassProcessor(
-                            typeof(ReBurstEcoSystemModeB.PathfindSetupSystem_FindTargets_Patch)).Patch();
-                    updateSystem.UpdateAt<ReBurstEcoSystemModeB.HouseholdFindPropertySystemMod>(SystemUpdatePhase
+                            typeof(MapExtPDX.ModeB.PathfindSetupSystem_FindTargets_Patch)).Patch();
+                    updateSystem.UpdateAt<MapExtPDX.ModeB.HouseholdFindPropertySystemMod>(SystemUpdatePhase
                         .GameSimulation);
 
-                    updateSystem.UpdateAt<ReBurstEcoSystemModeB.HouseholdBehaviorSystemMod>(SystemUpdatePhase
+                    updateSystem.UpdateAt<MapExtPDX.ModeB.HouseholdBehaviorSystemMod>(SystemUpdatePhase
                         .GameSimulation);
 
-                    updateSystem.UpdateAt<ReBurstEcoSystemModeB.CitizenFindJobSystemMod>(SystemUpdatePhase
+                    updateSystem.UpdateAt<MapExtPDX.ModeB.CitizenFindJobSystemMod>(SystemUpdatePhase
                         .GameSimulation);
 
-                    updateSystem.UpdateAt<ReBurstEcoSystemModeB.FindJobSystemMod>(SystemUpdatePhase
+                    updateSystem.UpdateAt<MapExtPDX.ModeB.FindJobSystemMod>(SystemUpdatePhase
                         .GameSimulation);
 
                     // Job通用替换修补ResidentialDemand/IndustrialDemand/RentAdjust
@@ -288,70 +288,70 @@ namespace MapExtPDX.MapExt.Core
                 // ==================================================
                 // --- CellMapSystem<T> ECS替换 ---
                 // ==================================================
-                updateSystem.UpdateAt<ReBurstSystemModeC.AirPollutionSystemMod>(SystemUpdatePhase
+                updateSystem.UpdateAt<MapExtPDX.ModeC.AirPollutionSystemMod>(SystemUpdatePhase
                     .GameSimulation);
-                globalPatcher.CreateClassProcessor(typeof(ReBurstSystemModeC.AirPollutionSystemMod.Patches))
+                globalPatcher.CreateClassProcessor(typeof(MapExtPDX.ModeC.AirPollutionSystemMod.Patches))
                     .Patch();
 
-                updateSystem.UpdateAt<ReBurstSystemModeC.AvailabilityInfoToGridSystemMod>(SystemUpdatePhase
+                updateSystem.UpdateAt<MapExtPDX.ModeC.AvailabilityInfoToGridSystemMod>(SystemUpdatePhase
                     .GameSimulation);
                 globalPatcher
-                    .CreateClassProcessor(typeof(ReBurstSystemModeC.AvailabilityInfoToGridSystemMod.Patches))
+                    .CreateClassProcessor(typeof(MapExtPDX.ModeC.AvailabilityInfoToGridSystemMod.Patches))
                     .Patch();
 
-                updateSystem.UpdateAt<ReBurstSystemModeC.GroundPollutionSystemMod>(SystemUpdatePhase
+                updateSystem.UpdateAt<MapExtPDX.ModeC.GroundPollutionSystemMod>(SystemUpdatePhase
                     .GameSimulation);
-                globalPatcher.CreateClassProcessor(typeof(ReBurstSystemModeC.GroundPollutionSystemMod.Patches))
+                globalPatcher.CreateClassProcessor(typeof(MapExtPDX.ModeC.GroundPollutionSystemMod.Patches))
                     .Patch();
 
-                updateSystem.UpdateAt<ReBurstSystemModeC.GroundWaterSystemMod>(SystemUpdatePhase.GameSimulation);
-                globalPatcher.CreateClassProcessor(typeof(ReBurstSystemModeC.GroundWaterSystemMod.Patches))
+                updateSystem.UpdateAt<MapExtPDX.ModeC.GroundWaterSystemMod>(SystemUpdatePhase.GameSimulation);
+                globalPatcher.CreateClassProcessor(typeof(MapExtPDX.ModeC.GroundWaterSystemMod.Patches))
                     .Patch();
 
 
-                updateSystem.UpdateAt<ReBurstSystemModeC.NaturalResourceSystemMod>(SystemUpdatePhase
+                updateSystem.UpdateAt<MapExtPDX.ModeC.NaturalResourceSystemMod>(SystemUpdatePhase
                     .GameSimulation);
-                updateSystem.UpdateAt<ReBurstSystemModeC.NaturalResourceSystemMod>(SystemUpdatePhase
+                updateSystem.UpdateAt<MapExtPDX.ModeC.NaturalResourceSystemMod>(SystemUpdatePhase
                     .EditorSimulation);
-                updateSystem.UpdateAfter<PostDeserialize<ReBurstSystemModeC.NaturalResourceSystemMod>>(
+                updateSystem.UpdateAfter<PostDeserialize<MapExtPDX.ModeC.NaturalResourceSystemMod>>(
                     SystemUpdatePhase.Deserialize);
-                globalPatcher.CreateClassProcessor(typeof(ReBurstSystemModeC.NaturalResourceSystemMod.Patches))
+                globalPatcher.CreateClassProcessor(typeof(MapExtPDX.ModeC.NaturalResourceSystemMod.Patches))
                     .Patch();
 
-                updateSystem.UpdateAt<ReBurstSystemModeC.NoisePollutionSystemMod>(SystemUpdatePhase
+                updateSystem.UpdateAt<MapExtPDX.ModeC.NoisePollutionSystemMod>(SystemUpdatePhase
                     .GameSimulation);
-                globalPatcher.CreateClassProcessor(typeof(ReBurstSystemModeC.NoisePollutionSystemMod.Patches))
+                globalPatcher.CreateClassProcessor(typeof(MapExtPDX.ModeC.NoisePollutionSystemMod.Patches))
                     .Patch();
 
-                updateSystem.UpdateAt<ReBurstSystemModeC.PopulationToGridSystemMod>(SystemUpdatePhase
+                updateSystem.UpdateAt<MapExtPDX.ModeC.PopulationToGridSystemMod>(SystemUpdatePhase
                     .GameSimulation);
-                globalPatcher.CreateClassProcessor(typeof(ReBurstSystemModeC.PopulationToGridSystemMod.Patches))
+                globalPatcher.CreateClassProcessor(typeof(MapExtPDX.ModeC.PopulationToGridSystemMod.Patches))
                     .Patch();
 
-                updateSystem.UpdateAt<ReBurstSystemModeC.SoilWaterSystemMod>(SystemUpdatePhase.GameSimulation);
-                //updateSystem.UpdateAfter<MapExt.ReBurstSystemModeA.SoilWaterSystemMod>(SystemUpdatePhase.Deserialize);
-                globalPatcher.CreateClassProcessor(typeof(ReBurstSystemModeC.SoilWaterSystemMod.Patches))
+                updateSystem.UpdateAt<MapExtPDX.ModeC.SoilWaterSystemMod>(SystemUpdatePhase.GameSimulation);
+                //updateSystem.UpdateAfter<MapExtPDX.ModeA.SoilWaterSystemMod>(SystemUpdatePhase.Deserialize);
+                globalPatcher.CreateClassProcessor(typeof(MapExtPDX.ModeC.SoilWaterSystemMod.Patches))
                     .Patch();
 
-                updateSystem.UpdateAt<ReBurstSystemModeC.TerrainAttractivenessSystemMod>(SystemUpdatePhase
+                updateSystem.UpdateAt<MapExtPDX.ModeC.TerrainAttractivenessSystemMod>(SystemUpdatePhase
                     .GameSimulation);
                 globalPatcher
-                    .CreateClassProcessor(typeof(ReBurstSystemModeC.TerrainAttractivenessSystemMod.Patches))
+                    .CreateClassProcessor(typeof(MapExtPDX.ModeC.TerrainAttractivenessSystemMod.Patches))
                     .Patch();
 
-                updateSystem.UpdateAt<ReBurstSystemModeC.TrafficAmbienceSystemMod>(SystemUpdatePhase
+                updateSystem.UpdateAt<MapExtPDX.ModeC.TrafficAmbienceSystemMod>(SystemUpdatePhase
                     .GameSimulation);
-                globalPatcher.CreateClassProcessor(typeof(ReBurstSystemModeC.TrafficAmbienceSystemMod.Patches))
+                globalPatcher.CreateClassProcessor(typeof(MapExtPDX.ModeC.TrafficAmbienceSystemMod.Patches))
                     .Patch();
 
-                updateSystem.UpdateAt<ReBurstSystemModeC.ZoneAmbienceSystemMod>(SystemUpdatePhase
+                updateSystem.UpdateAt<MapExtPDX.ModeC.ZoneAmbienceSystemMod>(SystemUpdatePhase
                     .GameSimulation);
-                globalPatcher.CreateClassProcessor(typeof(ReBurstSystemModeC.ZoneAmbienceSystemMod.Patches))
+                globalPatcher.CreateClassProcessor(typeof(MapExtPDX.ModeC.ZoneAmbienceSystemMod.Patches))
                     .Patch();
 
                 // --- LandValueSystemRemake + UI设置 ---
-                updateSystem.UpdateAt<ReBurstSystemModeC.LandValueSystemMod>(SystemUpdatePhase.GameSimulation);
-                globalPatcher.CreateClassProcessor(typeof(ReBurstSystemModeC.LandValueSystemMod.Patches))
+                updateSystem.UpdateAt<MapExtPDX.ModeC.LandValueSystemMod>(SystemUpdatePhase.GameSimulation);
+                globalPatcher.CreateClassProcessor(typeof(MapExtPDX.ModeC.LandValueSystemMod.Patches))
                     .Patch();
                 // updateSystem.UpdateAt<LandValueConfigSyncSystem>(SystemUpdatePhase.GameSimulation);
                 // ======================================================
@@ -363,27 +363,27 @@ namespace MapExtPDX.MapExt.Core
 
                 // if (setting.isEnableEconomyFix == true)
                 {
-                    //globalPatcher.CreateClassProcessor(typeof(MapExt.ReBurstEcoSystemModeA.CommercialDemandSystemMod.Patches)).Patch();
-                    //updateSystem.UpdateAt<MapExt.ReBurstEcoSystemModeA.CommercialDemandSystemMod>(SystemUpdatePhase.GameSimulation);
+                    //globalPatcher.CreateClassProcessor(typeof(MapExtPDX.ModeA.CommercialDemandSystemMod.Patches)).Patch();
+                    //updateSystem.UpdateAt<MapExtPDX.ModeA.CommercialDemandSystemMod>(SystemUpdatePhase.GameSimulation);
 
                     // 暂不替换HouseholdSpawnSystem
-                    // updateSystem.UpdateAt<MapExt.ReBurstSystemModeA.HouseholdSpawnSystemMod>(SystemUpdatePhase.GameSimulation);
+                    // updateSystem.UpdateAt<MapExtPDX.ModeA.HouseholdSpawnSystemMod>(SystemUpdatePhase.GameSimulation);
                     // Mod.Info($"已执行{nameof(HouseholdSpawnSystemMod)}.");
 
                     // HarmonyPrefix修补CitizenPathfindSetup.SetupFindHomeJob(HouseholdFindPropertySystem关联)
                     globalPatcher
                         .CreateClassProcessor(
-                            typeof(ReBurstEcoSystemModeC.PathfindSetupSystem_FindTargets_Patch)).Patch();
-                    updateSystem.UpdateAt<ReBurstEcoSystemModeC.HouseholdFindPropertySystemMod>(SystemUpdatePhase
+                            typeof(MapExtPDX.ModeC.PathfindSetupSystem_FindTargets_Patch)).Patch();
+                    updateSystem.UpdateAt<MapExtPDX.ModeC.HouseholdFindPropertySystemMod>(SystemUpdatePhase
                         .GameSimulation);
 
-                    updateSystem.UpdateAt<ReBurstEcoSystemModeC.HouseholdBehaviorSystemMod>(SystemUpdatePhase
+                    updateSystem.UpdateAt<MapExtPDX.ModeC.HouseholdBehaviorSystemMod>(SystemUpdatePhase
                         .GameSimulation);
 
-                    updateSystem.UpdateAt<ReBurstEcoSystemModeC.CitizenFindJobSystemMod>(SystemUpdatePhase
+                    updateSystem.UpdateAt<MapExtPDX.ModeC.CitizenFindJobSystemMod>(SystemUpdatePhase
                         .GameSimulation);
 
-                    updateSystem.UpdateAt<ReBurstEcoSystemModeC.FindJobSystemMod>(SystemUpdatePhase
+                    updateSystem.UpdateAt<MapExtPDX.ModeC.FindJobSystemMod>(SystemUpdatePhase
                         .GameSimulation);
 
                     // Job通用替换修补ResidentialDemand/IndustrialDemand/RentAdjust
@@ -407,25 +407,25 @@ namespace MapExtPDX.MapExt.Core
 
                 // === 自定义系统启===
                 // --- LandValueSystemRemake + UI设置 ---
-                updateSystem.UpdateAt<ReBurstEcoSystemModeE.LandValueSystemMod>(SystemUpdatePhase
+                updateSystem.UpdateAt<MapExtPDX.ModeE.LandValueSystemMod>(SystemUpdatePhase
                     .GameSimulation);
-                globalPatcher.CreateClassProcessor(typeof(ReBurstEcoSystemModeE.LandValueSystemMod.Patches))
+                globalPatcher.CreateClassProcessor(typeof(MapExtPDX.ModeE.LandValueSystemMod.Patches))
                     .Patch();
 
                 // HarmonyPrefix修补CitizenPathfindSetup.SetupFindHomeJob(HouseholdFindPropertySystem关联)
                 globalPatcher
-                    .CreateClassProcessor(typeof(ReBurstEcoSystemModeE.PathfindSetupSystem_FindTargets_Patch))
+                    .CreateClassProcessor(typeof(MapExtPDX.ModeE.PathfindSetupSystem_FindTargets_Patch))
                     .Patch();
-                updateSystem.UpdateAt<ReBurstEcoSystemModeE.HouseholdFindPropertySystemMod>(SystemUpdatePhase
+                updateSystem.UpdateAt<MapExtPDX.ModeE.HouseholdFindPropertySystemMod>(SystemUpdatePhase
                     .GameSimulation);
 
-                updateSystem.UpdateAt<ReBurstEcoSystemModeE.HouseholdBehaviorSystemMod>(SystemUpdatePhase
+                updateSystem.UpdateAt<MapExtPDX.ModeE.HouseholdBehaviorSystemMod>(SystemUpdatePhase
                     .GameSimulation);
 
-                updateSystem.UpdateAt<ReBurstEcoSystemModeE.CitizenFindJobSystemMod>(SystemUpdatePhase
+                updateSystem.UpdateAt<MapExtPDX.ModeE.CitizenFindJobSystemMod>(SystemUpdatePhase
                     .GameSimulation);
 
-                updateSystem.UpdateAt<ReBurstEcoSystemModeE.FindJobSystemMod>(SystemUpdatePhase.GameSimulation);
+                updateSystem.UpdateAt<MapExtPDX.ModeE.FindJobSystemMod>(SystemUpdatePhase.GameSimulation);
 
                 // Job通用替换修补ResidentialDemand/CommerialDemand/IndustrialDemand/RentAdjust
                 JobPatchHelper.Apply(globalPatcher, JobPatchDefinitions.GetEcoSystemTargets(PatchModeSetting.None));
@@ -433,3 +433,6 @@ namespace MapExtPDX.MapExt.Core
         }
     }
 }
+
+
+
