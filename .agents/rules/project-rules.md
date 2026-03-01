@@ -21,6 +21,7 @@ trigger: always_on
 - **Tech**: Unity 2022.3.62f+ (DOTS/ECS), Burst (AOT), C# 9.0, Harmony 2.2.2.
 - **Forbidden**: No BepInEx or HarmonyX.
 - **Reference**: Use `_KnowledgeBase` (decompiled Game.dll) & [Modding Wiki](https://cities-skylines-2-modding.wiki/).
+- **Compilation**: The main project file is `d:/CS2.WorkSpace/CS2Mod/A.Mod/MapExt2/MapExtPDX/MapExt2.csproj`. Always use this path for compilation.
 
 ## 2. Modding Strategies
 
@@ -64,3 +65,11 @@ trigger: always_on
 - **Structure**: `Constants` -> `Fields` -> `Lifecycle` -> `Jobs` (use `#region`).
 - **Logic**: Preserve inheritance, business logic, and Job dependency chains. Remove redundant inline code.
 - **Documentation**: Follow Section 3 rules (Chinese comments, standard XML tags).
+
+## 6. Documentation Saving Convention
+
+- **Location**: Save generated analysis/research documents to `docs/{TopicSubdir}/` under the workspace root (`d:/CS2.WorkSpace/CS2Mod/A.Mod/MapExt2/docs/`).
+- **Subdirectory**: Create a topic-based subdirectory for each research area (e.g., `HouseholdLifecycle`, `EconomySystem`).
+- **Naming**: Use descriptive filenames in English (e.g., `Household_Lifecycle_Analysis.md`).
+- **Format**: Markdown with Mermaid diagrams, tables, and file links where appropriate.
+- **Updates**: When extending an existing topic, update the existing document or add new files to the same subdirectory.

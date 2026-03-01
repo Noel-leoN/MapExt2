@@ -57,3 +57,10 @@ BurstDebugInformation_DoNotShip/
 
 # Internal documentation (not for public)
 **/docs/
+
+# AI Agent & GitNexus
+.gitnexus
+.claude/
+.agents/skills/gitnexus*/
+AGENTS.md
+CLAUDE.md

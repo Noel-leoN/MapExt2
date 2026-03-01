@@ -1146,6 +1146,16 @@ namespace MapExtPDX.ModeA
                 Entity householdEntity = targetSeeker.m_SetupQueueTarget.m_Entity;
                 if (!this.m_HouseholdCitizens.TryGetBuffer(householdEntity, out var householdMembers)) continue;
 
+                // 1. Identify New or Homeless Household (Priority & Income target)
+                bool isNewOrHomeless = (targetSeeker.m_SetupQueueTarget.m_Entity2 == Entity.Null);
+
+                // 2. Fetch origin position for Spatial Culling
+                float3 searchOrigin = float.NegativeInfinity;
+                if (this.m_Transforms.HasComponent(householdEntity))
+                {
+                    searchOrigin = this.m_Transforms[householdEntity].m_Position;
+                }
+
                 bool isAlreadyInShelter = this.m_HomelessHouseholds.HasComponent(householdEntity) &&
                                           this.m_HomelessHouseholds[householdEntity].m_TempHome != Entity.Null;
 
@@ -1154,6 +1164,32 @@ namespace MapExtPDX.ModeA
                     ref this.m_HealthProblems, ref this.m_EconomyParameters, this.m_TaxRates);
                 bool needsWelfare =
                     CitizenUtils.IsHouseholdNeedSupport(householdMembers, ref this.m_Citizens, ref this.m_Students);
+
+                // 3. Calculate Anticipated Income & Tolerance for New Arrivals
+                float toleranceMultiplier = 1.0f;
+                int anticipatedIncome = householdIncome;
+
+                if (isNewOrHomeless)
+                {
+                    int maxEducation = 0;
+                    for (int c = 0; c < householdMembers.Length; c++)
+                    {
+                        if (this.m_Citizens.TryGetComponent(householdMembers[c].m_Citizen, out var citData))
+                        {
+                            maxEducation = math.max(maxEducation, citData.GetEducationLevel());
+                        }
+                    }
+
+                    // e.g. Level 4 (University) -> 3x income expectation; Level 0 -> 1x
+                    anticipatedIncome = (int)(householdIncome * (1f + maxEducation * 0.5f));
+                    toleranceMultiplier = 1.2f; // Slight tolerance for settling in
+                }
+                else
+                {
+                    toleranceMultiplier = 1.5f; // Established residents adjusting homes get higher tolerance
+                }
+
+                float maxDistanceSq = 14336f * 14336f; // 15km squared for Spatial Culling
 
                 for (int j = 0; j < chunkEntities.Length; j++)
                 {
@@ -1206,6 +1242,16 @@ namespace MapExtPDX.ModeA
 
                     if (chunkRenters[j].Length >= totalProperties) continue;
 
+                    // Spatial Culling: Exclude properties too far to save CPU
+                    if (!searchOrigin.Equals(float.NegativeInfinity) && this.m_Transforms.HasComponent(buildingEntity))
+                    {
+                        float3 buildingPos = this.m_Transforms[buildingEntity].m_Position;
+                        if (math.distancesq(searchOrigin, buildingPos) > maxDistanceSq)
+                        {
+                            continue;
+                        }
+                    }
+
                     // 3.  (Affordability)
                     int garbageFeePerHousehold = this.m_ServiceFeeParameterData.m_GarbageFeeRCIO.x / totalProperties;
 
@@ -1218,8 +1264,10 @@ namespace MapExtPDX.ModeA
                             density switch { ZoneDensity.Medium => 0.7f, ZoneDensity.Low => 0.5f, _ => 1f };
                     }
 
+                    // Mod: Use anticipatedIncome and toleranceMultiplier
                     bool canAfford = needsWelfare || ((float)(askingRent + garbageFeePerHousehold) <=
-                                                      (float)householdIncome * rentBudgetFactor);
+                                                      (float)anticipatedIncome * rentBudgetFactor *
+                                                      toleranceMultiplier);
 
                     if (!canAfford) continue;
 
@@ -1249,6 +1297,12 @@ namespace MapExtPDX.ModeA
                     float finalCost = -propertyScore +
                                       500f * (chunkRenters[j].Length / (float)totalProperties) +
                                       random.NextFloat(0, 100f);
+
+                    // Priority Boost for New/Homeless Arrivals
+                    if (isNewOrHomeless)
+                    {
+                        finalCost -= 5000f;
+                    }
 
                     targetSeeker.FindTargets(buildingEntity, finalCost);
                 }
