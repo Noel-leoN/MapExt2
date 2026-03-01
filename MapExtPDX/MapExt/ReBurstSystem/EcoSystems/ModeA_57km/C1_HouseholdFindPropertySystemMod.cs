@@ -1207,6 +1207,12 @@ namespace MapExtPDX.ModeA
                     if (BuildingUtils.IsHomelessShelterBuilding(buildingEntity, ref this.m_Parks,
                             ref this.m_Abandoneds))
                     {
+                        // [Mod] Shelter Culling: Prevent out-of-towner households (no Transform) from pathfinding to local parks when housing is 0
+                        if (isNewOrHomeless && searchOrigin.Equals(float.NegativeInfinity))
+                        {
+                            continue;
+                        }
+
                         if (!isAlreadyInShelter)
                         {
                             float policeCoverage = NetUtils.GetServiceCoverage(
@@ -1302,6 +1308,14 @@ namespace MapExtPDX.ModeA
                     if (isNewOrHomeless)
                     {
                         finalCost -= 5000f;
+                    }
+
+                    // [Mod] Dynamic Cost Culling: Stop spamming the pathfinder with vastly inferior targets
+                    // If the current property is 8000 points worse than the best one we've queued, discard it
+                    float currentBestScore = targetSeeker.m_SetupQueueTarget.m_Value;
+                    if (isNewOrHomeless && finalCost > currentBestScore + 8000f)
+                    {
+                        continue;
                     }
 
                     targetSeeker.FindTargets(buildingEntity, finalCost);
