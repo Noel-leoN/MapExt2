@@ -27,11 +27,18 @@ using Transform = Game.Objects.Transform;
 
 namespace MapExtPDX.ModeA
 {
-	// 修正1：原计算将收全部储蓄作为支付能力，收入为零但储蓄较多的家庭会显得富有并且能够负担得起高昂的租金。但实际收入的家庭不会将所有储蓄全部用于支付高额租金，原计算将向他们收取高昂的租金，将导致迅速耗尽积蓄后被迫搬出去。参照现实通行规律，国际标准建议住房支出占收入 0%,住房支出中，储蓄贡献不超10%5% 的总储 现改为收入的30%+储蓄/10;
-	// 修正2 ：原逻辑v1.3.6f版本改动)如果一个家庭目前的租金低于其经济能力的一，他们就会寻求新房产。其目的是模拟中产阶级化——富裕的公民搬到更昂贵的住房。然而，由于 renterUpkeepCapacity 包括他们所有的储蓄（参见修#1），一个刚刚获得大笔遗产或勤奋储蓄的家庭将被标记为“太富有”，即使他们的收入没有改变，也将被迫寻找新的住房。这可能导致不必要且可能不受欢迎的居民洗牌。此外，原逻辑为一旦付不起租金或能够改善时立即开始找房，与现实中大多数人会尝试通过其他方式（如增加工作时间、削减开支等）来维持现有住房的行为不符。现改为：仅当租金过高（付不起）时，家庭才会寻求新房；当租金过低（低0%）时，家庭有30%的概率寻求升级住房。并且引入检查周期，避免每帧都检查导致的性能问题和频繁搬家
-	// 修正3：原逻辑为仅当建筑物空置时才显示高租金警告，一旦满员就不会显示，这与现实情况不符。可能有意设计为高租金阻止新租户入住的提醒，但这种信息并不完整。现改为当建筑物无论是否有空置房源，只要大部分租户负担不起租金时就显示高租金警告
-	// 修正4 ：调试代码删
-    
+	/*
+	 * 🟢 [Mod Modifications Summary]
+	 * 1. 🔧 破产驱逐线修复: 恢复原版的 renterUpkeepCapacity = Income + Savings 作为绝对破产生死线，避免大规模死循环驱逐。
+	 * 2. 🎲 住房改善逻辑平滑化: 家庭租金花销低于收入 15% 时，仅有 30% 的概率触发升级寻房，减少全城无意义搬家引发的CPU负担。
+	 * 3. ⚠️ 高租金警告提示优化: 即使建筑满员，当绝大多数租户面临经济压力但未破产时，也会显示高租金警告，给玩家提供真实的经济反馈。
+	 * 4. 🗑️ 异常清理与调度还原: 清理导致跳帧的错误降频逻辑，恢复原生 ECS UpdateFrame 调度；移除无效实体残留。
+	 */
+
+	/// <summary>
+	/// 🔧 [MOD] 租金定期调整系统 (RentAdjustSystem) 的重写版本
+	/// 负责处理全图建筑的租金计算、租户破产驱逐以及公司经营预警更新。
+	/// </summary>
 	public partial class RentAdjustSystemMod : GameSystemBase
 	{
 		#region Constants
@@ -197,484 +204,461 @@ namespace MapExtPDX.ModeA
 			base.Dependency = rentAdjustJobHandle;
 		}
 
-
 		#endregion
 
 		#region Jobs
 
 		[BurstCompile]
-    private struct AdjustRentJob : IJobChunk
-    {
-        [ReadOnly] public EntityTypeHandle m_EntityType;
-        public BufferTypeHandle<Renter> m_RenterType;
-        [ReadOnly] public SharedComponentTypeHandle<UpdateFrame> m_UpdateFrameType;
-        [NativeDisableParallelForRestriction] public ComponentLookup<PropertyRenter> m_PropertyRenters;
-        [NativeDisableParallelForRestriction] public ComponentLookup<Building> m_Buildings;
-        [ReadOnly] public ComponentLookup<PrefabRef> m_Prefabs;
-        [ReadOnly] public ComponentLookup<BuildingPropertyData> m_BuildingProperties;
-        [ReadOnly] public ComponentLookup<BuildingData> m_BuildingDatas;
-        [ReadOnly] public ComponentLookup<WorkProvider> m_WorkProviders;
-        [ReadOnly] public ComponentLookup<WorkplaceData> m_WorkplaceDatas;
-        [ReadOnly] public ComponentLookup<CompanyNotifications> m_CompanyNotifications;
-        [ReadOnly] public ComponentLookup<Attached> m_Attached;
-        [ReadOnly] public ComponentLookup<Game.Areas.Lot> m_Lots;
-        [ReadOnly] public ComponentLookup<Geometry> m_Geometries;
-        [ReadOnly] public ComponentLookup<LandValue> m_LandValues;
-        [NativeDisableParallelForRestriction] public ComponentLookup<PropertyOnMarket> m_OnMarkets;
-        [ReadOnly] public BufferLookup<HouseholdCitizen> m_HouseholdCitizenBufs;
-        [ReadOnly] public BufferLookup<Game.Areas.SubArea> m_SubAreas;
-        [ReadOnly] public BufferLookup<InstalledUpgrade> m_InstalledUpgrades;
-        [ReadOnly] public ComponentLookup<Abandoned> m_Abandoned;
-        [ReadOnly] public ComponentLookup<Destroyed> m_Destroyed;
-        [ReadOnly] public ComponentLookup<Transform> m_Transforms;
-        [ReadOnly] public BufferLookup<CityModifier> m_CityModifiers;
-        [ReadOnly] public ComponentLookup<HealthProblem> m_HealthProblems;
-        [ReadOnly] public ComponentLookup<Worker> m_Workers;
-        [ReadOnly] public ComponentLookup<Citizen> m_Citizens;
-        [ReadOnly] public ComponentLookup<SpawnableBuildingData> m_SpawnableBuildingData;
-        [ReadOnly] public ComponentLookup<ZoneData> m_ZoneData;
-        [ReadOnly] public BufferLookup<Game.Economy.Resources> m_ResourcesBuf;
-        [ReadOnly] public ComponentLookup<ExtractorProperty> m_ExtractorProperties;
-        [ReadOnly] public ComponentLookup<IndustrialProcessData> m_ProcessDatas;
-        [ReadOnly] public BufferLookup<OwnedVehicle> m_OwnedVehicles;
-        [ReadOnly] public ComponentLookup<Game.Vehicles.DeliveryTruck> m_DeliveryTrucks;
-        [ReadOnly] public BufferLookup<LayoutElement> m_LayoutElements;
-        [ReadOnly] public ResourcePrefabs m_ResourcePrefabs;
-        [ReadOnly] public ComponentLookup<ResourceData> m_ResourceDatas;
-        [ReadOnly] public ComponentLookup<ZonePropertiesData> m_ZonePropertiesDatas;
-        [ReadOnly] public ComponentLookup<ServiceAvailable> m_ServiceAvailables;
-        [ReadOnly] public ComponentLookup<UnderConstruction> m_UnderConstructions;
-        [NativeDisableParallelForRestriction] public ComponentLookup<BuildingNotifications> m_BuildingNotifications;
-        [ReadOnly] public NativeArray<int> m_TaxRates;
-        [ReadOnly] public NativeArray<AirPollution> m_AirPollutionMap;
-        [ReadOnly] public NativeArray<GroundPollution> m_PollutionMap;
-        [ReadOnly] public NativeArray<NoisePollution> m_NoiseMap;
-        public CitizenHappinessParameterData m_CitizenHappinessParameterData;
-        public BuildingConfigurationData m_BuildingConfigurationData;
-        public PollutionParameterData m_PollutionParameters;
-        public ServiceFeeParameterData m_FeeParameters;
-        public IconCommandBuffer m_IconCommandBuffer;
-        public uint m_UpdateFrameIndex;
-        [ReadOnly] public Entity m_City;
-        public EconomyParameterData m_EconomyParameterData;
-        public EntityCommandBuffer.ParallelWriter m_CommandBuffer;
+		private struct AdjustRentJob : IJobChunk
+		{
+			[ReadOnly] public EntityTypeHandle m_EntityType;
+			public BufferTypeHandle<Renter> m_RenterType;
+			[ReadOnly] public SharedComponentTypeHandle<UpdateFrame> m_UpdateFrameType;
+			[NativeDisableParallelForRestriction] public ComponentLookup<PropertyRenter> m_PropertyRenters;
+			[NativeDisableParallelForRestriction] public ComponentLookup<Building> m_Buildings;
+			[ReadOnly] public ComponentLookup<PrefabRef> m_Prefabs;
+			[ReadOnly] public ComponentLookup<BuildingPropertyData> m_BuildingProperties;
+			[ReadOnly] public ComponentLookup<BuildingData> m_BuildingDatas;
+			[ReadOnly] public ComponentLookup<WorkProvider> m_WorkProviders;
+			[ReadOnly] public ComponentLookup<WorkplaceData> m_WorkplaceDatas;
+			[ReadOnly] public ComponentLookup<CompanyNotifications> m_CompanyNotifications;
+			[ReadOnly] public ComponentLookup<Attached> m_Attached;
+			[ReadOnly] public ComponentLookup<Game.Areas.Lot> m_Lots;
+			[ReadOnly] public ComponentLookup<Geometry> m_Geometries;
+			[ReadOnly] public ComponentLookup<LandValue> m_LandValues;
+			[NativeDisableParallelForRestriction] public ComponentLookup<PropertyOnMarket> m_OnMarkets;
+			[ReadOnly] public BufferLookup<HouseholdCitizen> m_HouseholdCitizenBufs;
+			[ReadOnly] public BufferLookup<Game.Areas.SubArea> m_SubAreas;
+			[ReadOnly] public BufferLookup<InstalledUpgrade> m_InstalledUpgrades;
+			[ReadOnly] public ComponentLookup<Abandoned> m_Abandoned;
+			[ReadOnly] public ComponentLookup<Destroyed> m_Destroyed;
+			[ReadOnly] public ComponentLookup<Transform> m_Transforms;
+			[ReadOnly] public BufferLookup<CityModifier> m_CityModifiers;
+			[ReadOnly] public ComponentLookup<HealthProblem> m_HealthProblems;
+			[ReadOnly] public ComponentLookup<Worker> m_Workers;
+			[ReadOnly] public ComponentLookup<Citizen> m_Citizens;
+			[ReadOnly] public ComponentLookup<SpawnableBuildingData> m_SpawnableBuildingData;
+			[ReadOnly] public ComponentLookup<ZoneData> m_ZoneData;
+			[ReadOnly] public BufferLookup<Game.Economy.Resources> m_ResourcesBuf;
+			[ReadOnly] public ComponentLookup<ExtractorProperty> m_ExtractorProperties;
+			[ReadOnly] public ComponentLookup<IndustrialProcessData> m_ProcessDatas;
+			[ReadOnly] public BufferLookup<OwnedVehicle> m_OwnedVehicles;
+			[ReadOnly] public ComponentLookup<Game.Vehicles.DeliveryTruck> m_DeliveryTrucks;
+			[ReadOnly] public BufferLookup<LayoutElement> m_LayoutElements;
+			[ReadOnly] public ResourcePrefabs m_ResourcePrefabs;
+			[ReadOnly] public ComponentLookup<ResourceData> m_ResourceDatas;
+			[ReadOnly] public ComponentLookup<ZonePropertiesData> m_ZonePropertiesDatas;
+			[ReadOnly] public ComponentLookup<ServiceAvailable> m_ServiceAvailables;
+			[ReadOnly] public ComponentLookup<UnderConstruction> m_UnderConstructions;
+			[NativeDisableParallelForRestriction] public ComponentLookup<BuildingNotifications> m_BuildingNotifications;
+			[ReadOnly] public NativeArray<int> m_TaxRates;
+			[ReadOnly] public NativeArray<AirPollution> m_AirPollutionMap;
+			[ReadOnly] public NativeArray<GroundPollution> m_PollutionMap;
+			[ReadOnly] public NativeArray<NoisePollution> m_NoiseMap;
+			public CitizenHappinessParameterData m_CitizenHappinessParameterData;
+			public BuildingConfigurationData m_BuildingConfigurationData;
+			public PollutionParameterData m_PollutionParameters;
+			public ServiceFeeParameterData m_FeeParameters;
+			public IconCommandBuffer m_IconCommandBuffer;
+			public uint m_UpdateFrameIndex;
+			[ReadOnly] public Entity m_City;
+			public EconomyParameterData m_EconomyParameterData;
+			public EntityCommandBuffer.ParallelWriter m_CommandBuffer;
 
-        /// <summary>
-        /// 判断是否应该显示“高租金”警告图标
-        /// 避免在有更严重问题（如无客户、无员工、全员死亡）时显示租金图标，减少视觉干扰
-        /// </summary>
-        private bool CanDisplayHighRentWarnIcon(DynamicBuffer<Renter> renters)
-        {
-            // 默认显示，除非发现更高优先级的严重问
-            bool canDisplay = true;
+			/// <summary>
+			/// 判断是否应当显示高租金警告图标。
+			/// 若建筑内的公司或居民存在更严重的致命问题（如无货可卖、全家灭门），则优先显示严重问题，不报高租金警告。
+			/// </summary>
+			private bool CanDisplayHighRentWarnIcon(DynamicBuffer<Renter> renters)
+			{
+				bool canDisplay = true;
 
-            for (int i = 0; i < renters.Length; i++)
-            {
-                Entity renter = renters[i].m_Renter;
+				for (int i = 0; i < renters.Length; i++)
+				{
+					Entity renter = renters[i].m_Renter;
 
-                // 1. 检查公司是否有更严重的问题（如：没有客户、没有原材料
-                if (this.m_CompanyNotifications.HasComponent(renter))
-                {
-                    CompanyNotifications companyNotifications = this.m_CompanyNotifications[renter];
-                    // 如果存在"无客无输的问题，优先显示那些图标，不显示高租金图
-                    if (companyNotifications.m_NoCustomersEntity != Entity.Null ||
-                        companyNotifications.m_NoInputEntity != Entity.Null)
-                    {
-                        canDisplay = false;
-                        break;
-                    }
-                }
+					// --- 检查公司状态 ---
+					if (this.m_CompanyNotifications.HasComponent(renter))
+					{
+						CompanyNotifications companyNotifications = this.m_CompanyNotifications[renter];
+						if (companyNotifications.m_NoCustomersEntity != Entity.Null ||
+						    companyNotifications.m_NoInputEntity != Entity.Null)
+						{
+							canDisplay = false;
+							break;
+						}
+					}
 
-                // 2. 检查是否有员工教育水平不匹配的问题
-                if (this.m_WorkProviders.HasComponent(renter))
-                {
-                    WorkProvider workProvider = this.m_WorkProviders[renter];
-                    if (workProvider.m_EducatedNotificationEntity != Entity.Null ||
-                        workProvider.m_UneducatedNotificationEntity != Entity.Null)
-                    {
-                        canDisplay = false; // A more critical issue exists.
-                        break;
-                    }
-                }
+					// --- 检查员工状态 ---
+					if (this.m_WorkProviders.HasComponent(renter))
+					{
+						WorkProvider workProvider = this.m_WorkProviders[renter];
+						if (workProvider.m_EducatedNotificationEntity != Entity.Null ||
+						    workProvider.m_UneducatedNotificationEntity != Entity.Null)
+						{
+							canDisplay = false;
+							break;
+						}
+					}
 
-                // 3. 家庭检查：确保至少有一个家庭成员是活着
-                if (!this.m_HouseholdCitizenBufs.HasBuffer(renter))
-                {
-                    continue;
-                }
+					if (!this.m_HouseholdCitizenBufs.HasBuffer(renter))
+					{
+						continue;
+					}
 
-                DynamicBuffer<HouseholdCitizen> householdCitizens = this.m_HouseholdCitizenBufs[renter];
-                canDisplay = false;
-                for (int j = 0; j < householdCitizens.Length; j++)
-                {
-                    if (!CitizenUtils.IsDead(householdCitizens[j].m_Citizen, ref this.m_HealthProblems))
-                    {
-                        canDisplay = true;
-                        break;
-                    }
-                }
-            }
+					// --- 检查家庭生命体征 ---
+					DynamicBuffer<HouseholdCitizen> householdCitizens = this.m_HouseholdCitizenBufs[renter];
+					canDisplay = false;
+					for (int j = 0; j < householdCitizens.Length; j++)
+					{
+						if (!CitizenUtils.IsDead(householdCitizens[j].m_Citizen, ref this.m_HealthProblems))
+						{
+							canDisplay = true;
+							break;
+						}
+					}
+				}
 
-            return canDisplay;
-        }
+				return canDisplay;
+			}
 
-        // =========================================================
-        // 核心执行逻辑
-        // =========================================================
-        public void Execute(in ArchetypeChunk chunk, int unfilteredChunkIndex, bool useEnabledMask,
-            in v128 chunkEnabledMask)
-        {
-            // 性能优化：只在特定的模拟帧处理该Chunk，分散负
-            if (chunk.GetSharedComponent(this.m_UpdateFrameType).m_Index != this.m_UpdateFrameIndex)
-            {
-                return;
-            }
+			// === 核心执行逻辑 ===
+			public void Execute(in ArchetypeChunk chunk, int unfilteredChunkIndex, bool useEnabledMask,
+				in v128 chunkEnabledMask)
+			{
+				// --- 性能优化：原生更新帧限制 ---
+				if (chunk.GetSharedComponent(this.m_UpdateFrameType).m_Index != this.m_UpdateFrameIndex)
+				{
+					return;
+				}
 
-            NativeArray<Entity> buildingEntities = chunk.GetNativeArray(this.m_EntityType);
-            BufferAccessor<Renter> renterBuffers = chunk.GetBufferAccessor(ref this.m_RenterType);
-            DynamicBuffer<CityModifier> cityModifiers = this.m_CityModifiers[this.m_City];
+				NativeArray<Entity> buildingEntities = chunk.GetNativeArray(this.m_EntityType);
+				BufferAccessor<Renter> renterBuffers = chunk.GetBufferAccessor(ref this.m_RenterType);
+				DynamicBuffer<CityModifier> cityModifiers = this.m_CityModifiers[this.m_City];
 
-            // 遍历Chunk中的所有建筑实
-            for (int i = 0; i < buildingEntities.Length; i++)
-            {
-                Entity buildingEntity = buildingEntities[i];
-                Entity buildingPrefab = this.m_Prefabs[buildingEntity].m_Prefab;
+				// --- 遍历 Chunk 中的实体 ---
+				for (int i = 0; i < buildingEntities.Length; i++)
+				{
+					Entity buildingEntity = buildingEntities[i];
+					Entity buildingPrefab = this.m_Prefabs[buildingEntity].m_Prefab;
 
-                // 跳过非租赁类建筑
-                if (!this.m_BuildingProperties.HasComponent(buildingPrefab))
-                {
-                    continue;
-                }
+					if (!this.m_BuildingProperties.HasComponent(buildingPrefab))
+					{
+						continue;
+					}
 
-                // ====== 1. 获取建筑基础数据 ======
-                BuildingPropertyData buildingPropertyData = this.m_BuildingProperties[buildingPrefab];
-                Building building = this.m_Buildings[buildingEntity];
-                DynamicBuffer<Renter> renters = renterBuffers[i];
-                BuildingData buildingData = this.m_BuildingDatas[buildingPrefab];
+					// ====== 1. 获取建筑基础数据 ======
+					BuildingPropertyData buildingPropertyData = this.m_BuildingProperties[buildingPrefab];
+					Building building = this.m_Buildings[buildingEntity];
+					DynamicBuffer<Renter> renters = renterBuffers[i];
+					BuildingData buildingData = this.m_BuildingDatas[buildingPrefab];
 
-                // 计算地块大小
-                int lotSize = buildingData.m_LotSize.x * buildingData.m_LotSize.y;
+					int lotSize = buildingData.m_LotSize.x * buildingData.m_LotSize.y;
+					float landValueBase = 0f;
 
-                // 获取基础地价 (RoadEdge)
-                float landValueBase = 0f;
-                if (this.m_LandValues.HasComponent(building.m_RoadEdge))
-                {
-                    landValueBase = this.m_LandValues[building.m_RoadEdge].m_LandValue;
-                }
+					if (this.m_LandValues.HasComponent(building.m_RoadEdge))
+					{
+						landValueBase = this.m_LandValues[building.m_RoadEdge].m_LandValue;
+					}
 
-                // ====== 2. 确定区域类型 (住宅/商业/工业/办公) ======
-                Game.Zones.AreaType areaType = Game.Zones.AreaType.None;
-                int buildingLevel = PropertyUtils.GetBuildingLevel(buildingPrefab, this.m_SpawnableBuildingData);
-                bool ignoreLandValue = false;
-                bool isOffice = false;
+					// ====== 2. 确定区域类型 ======
+					Game.Zones.AreaType areaType = Game.Zones.AreaType.None;
+					int buildingLevel = PropertyUtils.GetBuildingLevel(buildingPrefab, this.m_SpawnableBuildingData);
+					bool ignoreLandValue = false;
+					bool isOffice = false;
 
-                if (this.m_SpawnableBuildingData.HasComponent(buildingPrefab))
-                {
-                    SpawnableBuildingData spawnableBuildingData = this.m_SpawnableBuildingData[buildingPrefab];
-                    areaType = this.m_ZoneData[spawnableBuildingData.m_ZonePrefab].m_AreaType;
+					if (this.m_SpawnableBuildingData.HasComponent(buildingPrefab))
+					{
+						SpawnableBuildingData spawnableBuildingData = this.m_SpawnableBuildingData[buildingPrefab];
+						areaType = this.m_ZoneData[spawnableBuildingData.m_ZonePrefab].m_AreaType;
 
-                    // 检查区域属性（例如某些低密度区可能忽略地价影响
-                    if (this.m_ZonePropertiesDatas.TryGetComponent(spawnableBuildingData.m_ZonePrefab,
-                            out var componentData))
-                    {
-                        ignoreLandValue = componentData.m_IgnoreLandValue;
-                    }
+						if (this.m_ZonePropertiesDatas.TryGetComponent(spawnableBuildingData.m_ZonePrefab,
+							    out var componentData))
+						{
+							ignoreLandValue = componentData.m_IgnoreLandValue;
+						}
 
-                    isOffice = (this.m_ZoneData[spawnableBuildingData.m_ZonePrefab].m_ZoneFlags & ZoneFlags.Office) !=
-                               0;
-                }
+						isOffice =
+							(this.m_ZoneData[spawnableBuildingData.m_ZonePrefab].m_ZoneFlags & ZoneFlags.Office) !=
+							0;
+					}
 
-                // --- 3. 处理污染通知 (仅住 ---
-                this.ProcessPollutionNotification(areaType, buildingEntity, cityModifiers);
+					// ====== 3. 处理污染通知 ======
+					this.ProcessPollutionNotification(areaType, buildingEntity, cityModifiers);
 
-                // --- 4. 计算每户租金 ---
-                int buildingGarbageFeePerDay = this.m_FeeParameters.GetBuildingGarbageFeePerDay(areaType, isOffice);
-                int rentPerRenter = PropertyUtils.GetRentPricePerRenter(buildingPropertyData, buildingLevel, lotSize,
-                    landValueBase, areaType, ref this.m_EconomyParameterData, ignoreLandValue);
+					// ====== 4. 计算地租与市场挂牌价 ======
+					int buildingGarbageFeePerDay = this.m_FeeParameters.GetBuildingGarbageFeePerDay(areaType, isOffice);
+					int rentPerRenter = PropertyUtils.GetRentPricePerRenter(buildingPropertyData, buildingLevel,
+						lotSize,
+						landValueBase, areaType, ref this.m_EconomyParameterData, ignoreLandValue);
 
-                // 更新市场挂牌价格
-                if (this.m_OnMarkets.HasComponent(buildingEntity))
-                {
-                    PropertyOnMarket onMarketData = this.m_OnMarkets[buildingEntity];
-                    onMarketData.m_AskingRent = rentPerRenter;
-                    this.m_OnMarkets[buildingEntity] = onMarketData;
-                }
+					if (this.m_OnMarkets.HasComponent(buildingEntity))
+					{
+						PropertyOnMarket onMarketData = this.m_OnMarkets[buildingEntity];
+						onMarketData.m_AskingRent = rentPerRenter;
+						this.m_OnMarkets[buildingEntity] = onMarketData;
+					}
 
-                int propertyCount = buildingPropertyData.CountProperties();
-                bool rentersWereRemoved = false; // 标记是否有租户被移除
-                // x = 付不起的人数, y = 检查的总人
-                int2 affordabilityStats = default(int2);
-                bool isExtractorBuilding = this.m_ExtractorProperties.HasComponent(buildingEntity); // 是否为采集设施（如油井）
+					int propertyCount = buildingPropertyData.CountProperties();
+					bool rentersWereRemoved = false;
+					int2 affordabilityStats = default(int2);
+					bool isExtractorBuilding = this.m_ExtractorProperties.HasComponent(buildingEntity);
 
-                // --- 5. 遍历该建筑内的所有租(倒序遍历以便移除) ---
-                for (int renterIndex = renters.Length - 1; renterIndex >= 0; renterIndex--)
-                {
-                    Entity renter = renters[renterIndex].m_Renter;
-                    if (this.m_PropertyRenters.HasComponent(renter))
-                    {
-                        PropertyRenter propertyRenterData = this.m_PropertyRenters[renter];
+					// ====== 5. 结算建筑内的所有租户 ======
+					for (int renterIndex = renters.Length - 1; renterIndex >= 0; renterIndex--)
+					{
+						Entity renter = renters[renterIndex].m_Renter;
+						if (this.m_PropertyRenters.HasComponent(renter))
+						{
+							PropertyRenter propertyRenterData = this.m_PropertyRenters[renter];
 
-                        if (!this.m_ResourcesBuf.HasBuffer(renter))
-                        {
-                            // [Mod修改逻辑] 调试代码，绝不应出现在生产版本！应该包装#if UNITY_EDITOR 预处理器指令中或完全删除
-                            // UnityEngine.Debug.Log($"no resources:{renter.Index}");
-                            // 新增修正：当Resources buffer缺失时，移除该租户
-                            this.m_CommandBuffer.RemoveComponent<PropertyRenter>(unfilteredChunkIndex, renter);
-                            continue;
-                        }
+							// 🗑️ [MOD功能] 异常清理防御：资源缓冲缺失的关联实体予以直接拆除，防止游戏报错奔溃。
+							if (!this.m_ResourcesBuf.HasBuffer(renter))
+							{
+								this.m_CommandBuffer.RemoveComponent<PropertyRenter>(unfilteredChunkIndex, renter);
+								continue;
+							}
 
-                        // --- 5a. 计算租户支付能力 (Income / Budget) ---
-                        int renterUpkeepCapacity = 0;
-                        bool isHousehold = this.m_HouseholdCitizenBufs.HasBuffer(renter);
+							// --- 5a. 计算租户支付能力 ---
+							int renterUpkeepCapacity = 0;
+							int householdIncome = 0;
+							bool isHousehold = this.m_HouseholdCitizenBufs.HasBuffer(renter);
 
-                        if (isHousehold) // 家庭实体
-                        {
-                            // [Mod修改逻辑] 支付能力 = 收入的30% + 存款的10%
-                            // 目的：减少因存款过高而触发的不必要升级找房
-                            int householdIncome = EconomyUtils.GetHouseholdIncome(this.m_HouseholdCitizenBufs[renter],
-                                ref this.m_Workers, ref this.m_Citizens, ref this.m_HealthProblems,
-                                ref this.m_EconomyParameterData, this.m_TaxRates);
-                            int householdSavings = math.max(0,
-                                EconomyUtils.GetResources(Game.Economy.Resource.Money, this.m_ResourcesBuf[renter]));
-                            renterUpkeepCapacity = (int)(householdIncome * 0.3f + householdSavings * 0.1f);
-                        }
-                        else // 公司实体
-                        {
-                            Entity renterPrefab = this.m_Prefabs[renter].m_Prefab;
-                            // 检查公司数据完整
-                            if (!this.m_ProcessDatas.HasComponent(renterPrefab) ||
-                                !this.m_WorkProviders.HasComponent(renter) ||
-                                !this.m_WorkplaceDatas.HasComponent(renterPrefab))
-                            {
-                                continue; // Skip if company data is missing.
-                            }
+							if (isHousehold)
+							{
+								householdIncome = EconomyUtils.GetHouseholdIncome(
+									this.m_HouseholdCitizenBufs[renter],
+									ref this.m_Workers, ref this.m_Citizens, ref this.m_HealthProblems,
+									ref this.m_EconomyParameterData, this.m_TaxRates);
+								int householdSavings = math.max(0,
+									EconomyUtils.GetResources(Game.Economy.Resource.Money,
+										this.m_ResourcesBuf[renter]));
+								// 🔧 [MOD修复] 恢复原版 "Income + Savings" 作为绝对破产生死线，有效阻止由于小人不合理存款引发的死循环驱离。
+								renterUpkeepCapacity = householdIncome + householdSavings;
+							}
+							else
+							{
+								Entity renterPrefab = this.m_Prefabs[renter].m_Prefab;
+								if (!this.m_ProcessDatas.HasComponent(renterPrefab) ||
+								    !this.m_WorkProviders.HasComponent(renter) ||
+								    !this.m_WorkplaceDatas.HasComponent(renterPrefab))
+								{
+									continue;
+								}
 
-                            IndustrialProcessData industrialProcessData = this.m_ProcessDatas[renterPrefab];
-                            bool isIndustrial = !this.m_ServiceAvailables.HasComponent(renter);
+								IndustrialProcessData industrialProcessData = this.m_ProcessDatas[renterPrefab];
+								bool isIndustrial = !this.m_ServiceAvailables.HasComponent(renter);
 
-                            // 估算公司最大日利润
-                            int companyMaxProfitPerDay = EconomyUtils.GetCompanyMaxProfitPerDay(
-                                this.m_WorkProviders[renter], areaType == Game.Zones.AreaType.Industrial, buildingLevel,
-                                this.m_ProcessDatas[renterPrefab], this.m_ResourcePrefabs,
-                                this.m_WorkplaceDatas[renterPrefab], ref this.m_ResourceDatas,
-                                ref this.m_EconomyParameterData);
+								int companyMaxProfitPerDay = EconomyUtils.GetCompanyMaxProfitPerDay(
+									this.m_WorkProviders[renter], areaType == Game.Zones.AreaType.Industrial,
+									buildingLevel,
+									this.m_ProcessDatas[renterPrefab], this.m_ResourcePrefabs,
+									this.m_WorkplaceDatas[renterPrefab], ref this.m_ResourceDatas,
+									ref this.m_EconomyParameterData);
 
-                            // 公司预算预期利润 公司总资中的较大特定逻辑
-                            renterUpkeepCapacity = ((companyMaxProfitPerDay >= renterUpkeepCapacity)
-                                ? companyMaxProfitPerDay
-                                : ((!this.m_OwnedVehicles.HasBuffer(renter))
-                                    ? EconomyUtils.GetCompanyTotalWorth(isIndustrial, industrialProcessData,
-                                        this.m_ResourcesBuf[renter], this.m_ResourcePrefabs, ref this.m_ResourceDatas)
-                                    : EconomyUtils.GetCompanyTotalWorth(isIndustrial, industrialProcessData,
-                                        this.m_ResourcesBuf[renter], this.m_OwnedVehicles[renter],
-                                        ref this.m_LayoutElements, ref this.m_DeliveryTrucks, this.m_ResourcePrefabs,
-                                        ref this.m_ResourceDatas)));
-                        }
+								renterUpkeepCapacity = ((companyMaxProfitPerDay >= renterUpkeepCapacity)
+									? companyMaxProfitPerDay
+									: ((!this.m_OwnedVehicles.HasBuffer(renter))
+										? EconomyUtils.GetCompanyTotalWorth(isIndustrial, industrialProcessData,
+											this.m_ResourcesBuf[renter], this.m_ResourcePrefabs,
+											ref this.m_ResourceDatas)
+										: EconomyUtils.GetCompanyTotalWorth(isIndustrial, industrialProcessData,
+											this.m_ResourcesBuf[renter], this.m_OwnedVehicles[renter],
+											ref this.m_LayoutElements, ref this.m_DeliveryTrucks,
+											this.m_ResourcePrefabs,
+											ref this.m_ResourceDatas)));
+							}
 
-                        // --- 5b. 更新租金并检查是否需要搬---
-                        propertyRenterData.m_Rent = rentPerRenter;
-                        this.m_PropertyRenters[renter] = propertyRenterData;
+							propertyRenterData.m_Rent = rentPerRenter;
+							this.m_PropertyRenters[renter] = propertyRenterData;
 
-                        int totalCostPerDay = rentPerRenter + buildingGarbageFeePerDay;
+							int totalCostPerDay = rentPerRenter + buildingGarbageFeePerDay;
 
-                        // [Mod修改逻辑] 分批检查 + 降低升级频率
-                        if (isHousehold)
-                        {
-                            // 利用 Entity.Index 和 m_UpdateFrameIndex 确定性分批
-                            // 付不起(高租金)：每2个更新周期检查一次
-                            // 改善住房(低租金)：每4个更新周期检查一次，且仅30%概率触发
-                            int kUpdatesPerDay = RentAdjustSystem.kUpdatesPerDay; // 16
-                            int checkPeriodHigh = 2 * kUpdatesPerDay; // 32帧
-                            int checkPeriodLow = 4 * kUpdatesPerDay; // 64帧
+							// --- 5b. 结算驱逐/升迁状态 ---
+							if (isHousehold)
+							{
+								// 🔧 [MOD修复] 彻底分离强迫驱离与自主改善房屋的逻辑：
+								if (totalCostPerDay > renterUpkeepCapacity)
+								{
+									// 此家庭已被榨干最后一丝潜能，挂起待赶指令 (PropertySeeker)
+									this.m_CommandBuffer.SetComponentEnabled<PropertySeeker>(unfilteredChunkIndex,
+										renter, value: true);
+								}
+								// 🎲 [MOD平滑设定] 改善住房：当生活成本 < 家庭收入 15% 时表明手头极其充裕。
+								// 以 renter Index 平抑曲线并加入 30% 几率寻求改善，避免全城搬迁拥堵寻路网。
+								else if (totalCostPerDay < householdIncome * 0.15f)
+								{
+									if (((uint)renter.Index + m_UpdateFrameIndex) % 10 < 3)
+									{
+										this.m_CommandBuffer.SetComponentEnabled<PropertySeeker>(unfilteredChunkIndex,
+											renter, value: true);
+									}
+								}
+							}
+							else
+							{
+								// 公司单位统一以自身估值和流水维持破产线运转
+								if (totalCostPerDay > renterUpkeepCapacity)
+								{
+									this.m_CommandBuffer.SetComponentEnabled<PropertySeeker>(unfilteredChunkIndex,
+										renter, value: true);
+								}
+							}
 
-                            bool isMyFrameHigh = (m_UpdateFrameIndex % checkPeriodHigh ==
-                                                  (uint)renter.Index % (uint)checkPeriodHigh);
-                            bool isMyFrameLow = (m_UpdateFrameIndex % checkPeriodLow ==
-                                                 (uint)renter.Index % (uint)checkPeriodLow);
+							// --- 5c. 统计支付能力数据 ---
+							affordabilityStats.y++;
+							if (rentPerRenter > renterUpkeepCapacity)
+							{
+								affordabilityStats.x++;
+							}
+						}
+						else
+						{
+							renters.RemoveAt(renterIndex);
+							rentersWereRemoved = true;
+						}
+					}
 
-                            if (totalCostPerDay > renterUpkeepCapacity && isMyFrameHigh)
-                            {
-                                this.m_CommandBuffer.SetComponentEnabled<PropertySeeker>(unfilteredChunkIndex,
-                                    renter, value: true);
-                            }
-                            else if (totalCostPerDay < renterUpkeepCapacity / 2 && isMyFrameLow)
-                            {
-                                // 30%概率触发升级
-                                if (((uint)renter.Index + (uint)(m_UpdateFrameIndex / checkPeriodLow)) % 10 < 3)
-                                {
-                                    this.m_CommandBuffer.SetComponentEnabled<PropertySeeker>(unfilteredChunkIndex,
-                                        renter, value: true);
-                                }
-                            }
-                        }
-                        else
-                        {
-                            // 公司：与原版一致，直接触发
-                            if (totalCostPerDay > renterUpkeepCapacity)
-                            {
-                                this.m_CommandBuffer.SetComponentEnabled<PropertySeeker>(unfilteredChunkIndex, renter,
-                                    value: true);
-                            }
-                        }
+					// ====== 6. 界面警告与通知 ======
+					float highRentRatio = affordabilityStats.x / math.max(1f, affordabilityStats.y);
 
-                        // --- 5c. 统计支付能力数据 ---
-                        affordabilityStats.y++;
-                        if (rentPerRenter > renterUpkeepCapacity)
-                        {
-                            affordabilityStats.x++; // 付不起的人数 +1
-                        }
-                    }
-                    else
-                    {
-                        // 数据异常：Buffer里有实体但没有PropertyRenter组件，移除之
-                        renters.RemoveAt(renterIndex);
-                        rentersWereRemoved = true;
-                    }
-                }
+					// 若破产或绝收率 <= 70% 或这栋楼其实有更惨痛的问题（断货/无人工等），则撤底清除租金警告以防碍眼
+					if (highRentRatio <= 0.7f || !this.CanDisplayHighRentWarnIcon(renters))
+					{
+						this.m_IconCommandBuffer.Remove(buildingEntity,
+							this.m_BuildingConfigurationData.m_HighRentNotification);
+						building.m_Flags &= ~Game.Buildings.BuildingFlags.HighRentWarning;
+						this.m_Buildings[buildingEntity] = building;
+					}
+					// ⚠️ [MOD功能] 高级提示策略：即使目前房间全满 (将 > 置换为 >=), 只要超过 70% 的居民哀鸿遍野叫苦连天，照样显示高级报警！
+					// 给玩家提供全图最直观的租差反馈体系
+					else if (renters.Length > 0 && !isExtractorBuilding && propertyCount >= renters.Length &&
+					         (building.m_Flags & Game.Buildings.BuildingFlags.HighRentWarning) == 0)
+					{
+						this.m_IconCommandBuffer.Add(buildingEntity,
+							this.m_BuildingConfigurationData.m_HighRentNotification, IconPriority.Problem);
+						building.m_Flags |= Game.Buildings.BuildingFlags.HighRentWarning;
+						this.m_Buildings[buildingEntity] = building;
+					}
 
-                // ====== 6. 处理“高租金”图标逻辑 ======
-                // 计算付不起租金的比例
-                float highRentRatio = affordabilityStats.x / math.max(1f, affordabilityStats.y);
+					// ====== 7. 结算与收尾清理工作 ======
 
-                // 如果比例低于70% 有更重要的问题，移除图标
-                if (highRentRatio <= 0.7f || !this.CanDisplayHighRentWarnIcon(renters))
-                {
-                    this.m_IconCommandBuffer.Remove(buildingEntity,
-                        this.m_BuildingConfigurationData.m_HighRentNotification);
-                    building.m_Flags &= ~Game.Buildings.BuildingFlags.HighRentWarning;
-                    this.m_Buildings[buildingEntity] = building;
-                }
+					// 清理超员租客：比如建筑升级、或被拆毁等导致人口容积暴减并挤压现有住户，进行最后一单剪辑驱赶。
+					if (renters.Length > 0 && renters.Length > propertyCount)
+					{
+						Entity lastRenter = renters[^1].m_Renter;
+						if (this.m_PropertyRenters.HasComponent(lastRenter))
+						{
+							this.m_CommandBuffer.RemoveComponent<PropertyRenter>(unfilteredChunkIndex,
+								renters[^1].m_Renter);
+							renters.RemoveAt(renters.Length - 1);
+						}
+					}
 
-                // [Mod修改]
-                // 原逻辑为仅当建筑物空置时才显示高租金警告，一旦满员就不会显示，这与现实情况不符。可能有意设计为高租金阻止新租户入住的提醒，但这种信息并不完整。现改为当建筑物无论是否有空置房源，只要大部分租户负担不起租金时就显示高租金警告
-                // mod：将>改为>=;即使满员也会警告，提示玩家经济压
-                else if (renters.Length > 0 && !isExtractorBuilding && propertyCount >= renters.Length &&
-                         (building.m_Flags & Game.Buildings.BuildingFlags.HighRentWarning) == 0)
-                {
-                    this.m_IconCommandBuffer.Add(buildingEntity,
-                        this.m_BuildingConfigurationData.m_HighRentNotification, IconPriority.Problem);
-                    building.m_Flags |= Game.Buildings.BuildingFlags.HighRentWarning;
-                    this.m_Buildings[buildingEntity] = building;
-                }
+					// 建筑空置：若全部人员已跑尽，务必连带着移除遗留警告指令。
+					if (renters.Length == 0 && (building.m_Flags & Game.Buildings.BuildingFlags.HighRentWarning) !=
+					    Game.Buildings.BuildingFlags.None)
+					{
+						this.m_IconCommandBuffer.Remove(buildingEntity,
+							this.m_BuildingConfigurationData.m_HighRentNotification);
+						building.m_Flags &= ~Game.Buildings.BuildingFlags.HighRentWarning;
+						this.m_Buildings[buildingEntity] = building;
+					}
 
-                // ====== 7. 清理与收======
+					// 更新挂牌与重投机制：若有租客迁出后空开房源并且没遭废弃，则重新上架待租
+					if (this.m_Prefabs.HasComponent(buildingEntity) && !this.m_Abandoned.HasComponent(buildingEntity) &&
+					    !this.m_Destroyed.HasComponent(buildingEntity) && rentersWereRemoved &&
+					    propertyCount > renters.Length)
+					{
+						this.m_CommandBuffer.AddComponent(unfilteredChunkIndex, buildingEntity, new PropertyOnMarket
+						{
+							m_AskingRent = rentPerRenter
+						});
+					}
+				}
+			}
 
-                // 超员处理：如果租户数量超过建筑容量，驱逐最后一
-                if (renters.Length > 0 && renters.Length > propertyCount)
-                {
-                    Entity lastRenter = renters[^1].m_Renter;
-                    if (this.m_PropertyRenters.HasComponent(lastRenter))
-                    {
-                        this.m_CommandBuffer.RemoveComponent<PropertyRenter>(unfilteredChunkIndex,
-                            renters[^1].m_Renter);
-                        renters.RemoveAt(renters.Length - 1);
-                    }
-                    // 修正5调试代码，绝不应出现在生产版本！
-                    // UnityEngine.Debug.LogWarning($"Removed extra renter from building:{buildingEntity.Index}");
-                }
+			// === 综合污染警示系统 ===
+			private void ProcessPollutionNotification(Game.Zones.AreaType areaType, Entity buildingEntity,
+				DynamicBuffer<CityModifier> cityModifiers)
+			{
+				if (areaType == Game.Zones.AreaType.Residential)
+				{
+					// 🔧 [MOD] 静态类桥接，无封缝引入最新 XCellMapSystemRe 内方法处理各修正算法逻辑
+					int2 groundPollutionBonuses = XCellMapSystemRe.GetGroundPollutionBonuses(buildingEntity,
+						ref this.m_Transforms, this.m_PollutionMap, cityModifiers,
+						in this.m_CitizenHappinessParameterData);
+					int2 noiseBonuses = XCellMapSystemRe.GetNoiseBonuses(buildingEntity, ref this.m_Transforms,
+						this.m_NoiseMap, in this.m_CitizenHappinessParameterData);
+					int2 airPollutionBonuses = XCellMapSystemRe.GetAirPollutionBonuses(buildingEntity,
+						ref this.m_Transforms, this.m_AirPollutionMap, cityModifiers,
+						in this.m_CitizenHappinessParameterData);
 
-                // 如果建筑变空了，确保移除警告
-                if (renters.Length == 0 && (building.m_Flags & Game.Buildings.BuildingFlags.HighRentWarning) !=
-                    Game.Buildings.BuildingFlags.None)
-                {
-                    this.m_IconCommandBuffer.Remove(buildingEntity,
-                        this.m_BuildingConfigurationData.m_HighRentNotification);
-                    building.m_Flags &= ~Game.Buildings.BuildingFlags.HighRentWarning;
-                    this.m_Buildings[buildingEntity] = building;
-                }
+					bool isUnderConstruction = this.m_UnderConstructions.HasComponent(buildingEntity);
 
-                // 如果有租户搬被移除，且建筑未废弃/损毁，且还有空位，将其重新挂牌上
-                if (this.m_Prefabs.HasComponent(buildingEntity) && !this.m_Abandoned.HasComponent(buildingEntity) &&
-                    !this.m_Destroyed.HasComponent(buildingEntity) && rentersWereRemoved &&
-                    propertyCount > renters.Length)
-                {
-                    this.m_CommandBuffer.AddComponent(unfilteredChunkIndex, buildingEntity, new PropertyOnMarket
-                    {
-                        m_AskingRent = rentPerRenter
-                    });
-                }
-            }
-        }
+					bool isGroundPollutionBad = !isUnderConstruction &&
+					                            groundPollutionBonuses.x + groundPollutionBonuses.y <
+					                            2 * this.m_PollutionParameters.m_GroundPollutionNotificationLimit;
+					bool isAirPollutionBad = !isUnderConstruction && airPollutionBonuses.x + airPollutionBonuses.y <
+						2 * this.m_PollutionParameters.m_AirPollutionNotificationLimit;
+					bool isNoisePollutionBad = !isUnderConstruction && noiseBonuses.x + noiseBonuses.y <
+						2 * this.m_PollutionParameters.m_NoisePollutionNotificationLimit;
 
-        private void ProcessPollutionNotification(Game.Zones.AreaType areaType, Entity buildingEntity,
-            DynamicBuffer<CityModifier> cityModifiers)
-        {
-            if (areaType == Game.Zones.AreaType.Residential)
-            {
-                // mod v2.* 修改：GetGroundPollutionBonuses 等静态方法重定向
-                int2 groundPollutionBonuses = XCellMapSystemRe.GetGroundPollutionBonuses(buildingEntity,
-                    ref this.m_Transforms, this.m_PollutionMap, cityModifiers, in this.m_CitizenHappinessParameterData);
-                int2 noiseBonuses = XCellMapSystemRe.GetNoiseBonuses(buildingEntity, ref this.m_Transforms,
-                    this.m_NoiseMap, in this.m_CitizenHappinessParameterData);
-                int2 airPollutionBonuses = XCellMapSystemRe.GetAirPollutionBonuses(buildingEntity,
-                    ref this.m_Transforms, this.m_AirPollutionMap, cityModifiers,
-                    in this.m_CitizenHappinessParameterData);
+					BuildingNotifications notifications = this.m_BuildingNotifications[buildingEntity];
 
-                // v1.4.2新增：如果建筑正在建设中，则不显示污染相关通知
-                bool isUnderConstruction = this.m_UnderConstructions.HasComponent(buildingEntity);
+					// --- 地面污染 ---
+					if (isGroundPollutionBad && !notifications.HasNotification(BuildingNotification.GroundPollution))
+					{
+						this.m_IconCommandBuffer.Add(buildingEntity,
+							this.m_PollutionParameters.m_GroundPollutionNotification, IconPriority.Problem);
+						notifications.m_Notifications |= BuildingNotification.GroundPollution;
+						this.m_BuildingNotifications[buildingEntity] = notifications;
+					}
+					else if (!isGroundPollutionBad &&
+					         notifications.HasNotification(BuildingNotification.GroundPollution))
+					{
+						this.m_IconCommandBuffer.Remove(buildingEntity,
+							this.m_PollutionParameters.m_GroundPollutionNotification);
+						notifications.m_Notifications &= ~BuildingNotification.GroundPollution;
+						this.m_BuildingNotifications[buildingEntity] = notifications;
+					}
 
-                bool isGroundPollutionBad = !isUnderConstruction &&
-                                            groundPollutionBonuses.x + groundPollutionBonuses.y <
-                                            2 * this.m_PollutionParameters.m_GroundPollutionNotificationLimit;
-                bool isAirPollutionBad = !isUnderConstruction && airPollutionBonuses.x + airPollutionBonuses.y <
-                    2 * this.m_PollutionParameters.m_AirPollutionNotificationLimit;
-                bool isNoisePollutionBad = !isUnderConstruction && noiseBonuses.x + noiseBonuses.y <
-                    2 * this.m_PollutionParameters.m_NoisePollutionNotificationLimit;
+					// --- 空气污染 ---
+					if (isAirPollutionBad && !notifications.HasNotification(BuildingNotification.AirPollution))
+					{
+						this.m_IconCommandBuffer.Add(buildingEntity,
+							this.m_PollutionParameters.m_AirPollutionNotification,
+							IconPriority.Problem);
+						notifications.m_Notifications |= BuildingNotification.AirPollution;
+						this.m_BuildingNotifications[buildingEntity] = notifications;
+					}
+					else if (!isAirPollutionBad && notifications.HasNotification(BuildingNotification.AirPollution))
+					{
+						this.m_IconCommandBuffer.Remove(buildingEntity,
+							this.m_PollutionParameters.m_AirPollutionNotification);
+						notifications.m_Notifications &= ~BuildingNotification.AirPollution;
+						this.m_BuildingNotifications[buildingEntity] = notifications;
+					}
 
-                BuildingNotifications notifications = this.m_BuildingNotifications[buildingEntity];
-
-                // 处理地面污染图标
-                if (isGroundPollutionBad && !notifications.HasNotification(BuildingNotification.GroundPollution))
-                {
-                    this.m_IconCommandBuffer.Add(buildingEntity,
-                        this.m_PollutionParameters.m_GroundPollutionNotification, IconPriority.Problem);
-                    notifications.m_Notifications |= BuildingNotification.GroundPollution;
-                    this.m_BuildingNotifications[buildingEntity] = notifications;
-                }
-                else if (!isGroundPollutionBad && notifications.HasNotification(BuildingNotification.GroundPollution))
-                {
-                    this.m_IconCommandBuffer.Remove(buildingEntity,
-                        this.m_PollutionParameters.m_GroundPollutionNotification);
-                    notifications.m_Notifications &= ~BuildingNotification.GroundPollution;
-                    this.m_BuildingNotifications[buildingEntity] = notifications;
-                }
-
-                // 处理空气污染图标
-                if (isAirPollutionBad && !notifications.HasNotification(BuildingNotification.AirPollution))
-                {
-                    this.m_IconCommandBuffer.Add(buildingEntity, this.m_PollutionParameters.m_AirPollutionNotification,
-                        IconPriority.Problem);
-                    notifications.m_Notifications |= BuildingNotification.AirPollution;
-                    this.m_BuildingNotifications[buildingEntity] = notifications;
-                }
-                else if (!isAirPollutionBad && notifications.HasNotification(BuildingNotification.AirPollution))
-                {
-                    this.m_IconCommandBuffer.Remove(buildingEntity,
-                        this.m_PollutionParameters.m_AirPollutionNotification);
-                    notifications.m_Notifications &= ~BuildingNotification.AirPollution;
-                    this.m_BuildingNotifications[buildingEntity] = notifications;
-                }
-
-                // 处理噪音污染图标
-                if (isNoisePollutionBad && !notifications.HasNotification(BuildingNotification.NoisePollution))
-                {
-                    this.m_IconCommandBuffer.Add(buildingEntity,
-                        this.m_PollutionParameters.m_NoisePollutionNotification, IconPriority.Problem);
-                    notifications.m_Notifications |= BuildingNotification.NoisePollution;
-                    this.m_BuildingNotifications[buildingEntity] = notifications;
-                }
-                else if (!isNoisePollutionBad && notifications.HasNotification(BuildingNotification.NoisePollution))
-                {
-                    this.m_IconCommandBuffer.Remove(buildingEntity,
-                        this.m_PollutionParameters.m_NoisePollutionNotification);
-                    notifications.m_Notifications &= ~BuildingNotification.NoisePollution;
-                    this.m_BuildingNotifications[buildingEntity] = notifications;
-                }
-            }
-        }
-    }
+					// --- 废渣噪音 ---
+					if (isNoisePollutionBad && !notifications.HasNotification(BuildingNotification.NoisePollution))
+					{
+						this.m_IconCommandBuffer.Add(buildingEntity,
+							this.m_PollutionParameters.m_NoisePollutionNotification, IconPriority.Problem);
+						notifications.m_Notifications |= BuildingNotification.NoisePollution;
+						this.m_BuildingNotifications[buildingEntity] = notifications;
+					}
+					else if (!isNoisePollutionBad && notifications.HasNotification(BuildingNotification.NoisePollution))
+					{
+						this.m_IconCommandBuffer.Remove(buildingEntity,
+							this.m_PollutionParameters.m_NoisePollutionNotification);
+						notifications.m_Notifications &= ~BuildingNotification.NoisePollution;
+						this.m_BuildingNotifications[buildingEntity] = notifications;
+					}
+				}
+			}
+		}
 	}
-
 
 	#endregion
 }

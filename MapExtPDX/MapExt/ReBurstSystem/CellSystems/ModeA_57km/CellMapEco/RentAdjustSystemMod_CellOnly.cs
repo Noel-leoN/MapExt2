@@ -1,4 +1,5 @@
 ﻿using Colossal.Entities;
+using Game;
 using Game.Agents;
 using Game.Areas;
 using Game.Buildings;
@@ -11,18 +12,15 @@ using Game.Net;
 using Game.Notifications;
 using Game.Objects;
 using Game.Prefabs;
+using Game.Simulation;
 using Game.Tools;
 using Game.Vehicles;
-using Game.Zones;
 using Unity.Burst;
 using Unity.Burst.Intrinsics;
 using Unity.Collections;
 using Unity.Entities;
 using Unity.Jobs;
 using Unity.Mathematics;
-using UnityEngine;
-using Game;
-using Game.Simulation;
 
 namespace MapExtPDX.ModeA
 {
@@ -190,7 +188,6 @@ namespace MapExtPDX.ModeA
 			this.m_IconCommandSystem.AddCommandBufferWriter(rentAdjustJobHandle);
 			base.Dependency = rentAdjustJobHandle;
 		}
-
 
 		#endregion
 
@@ -442,7 +439,7 @@ namespace MapExtPDX.ModeA
 						}
 					}
 
-					if (!((float)renterPovertyStats.x / math.max(1f, renterPovertyStats.y) > 0.7f) ||
+					if (!(renterPovertyStats.x / math.max(1f, renterPovertyStats.y) > 0.7f) ||
 					    !this.CanDisplayHighRentWarnIcon(renters))
 					{
 						this.m_IconCommandBuffer.Remove(entity,
