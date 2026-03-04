@@ -30,21 +30,6 @@ $modes = @(
     },
     @{
         Dir       = "."
-        Namespace = "ModeA"
-        MapSize   = "57344"
-    },
-    @{
-        Dir       = "."
-        Namespace = "ModeB"
-        MapSize   = "28672"
-    },
-    @{
-        Dir       = "."
-        Namespace = "ModeC"
-        MapSize   = "114688"
-    },
-    @{
-        Dir       = "."
         Namespace = "ModeE"
         MapSize   = "14336"
     }
@@ -73,10 +58,10 @@ foreach ($mode in $modes) {
     $content = $content -replace '(?m)^// 构建时由.*$', "// Mode: $($mode.Namespace), kMapSize: $($mode.MapSize)"
     $content = $content -replace '(?m)^// 注意: 本文件.*$', "// kTextureSize 倍率由 CellMapTextureSizeMultiplier 在编译时自动计算"
     
-    # Replace namespace
+    # Replace namespace (不加 .MapExt 中间层)
     $content = $content -replace `
         'namespace MapExtPDX\.MapExt\.ReBurstSystemCore', `
-        "namespace MapExtPDX.MapExt.$($mode.Namespace)"
+        "namespace MapExtPDX.$($mode.Namespace)"
     
     # Replace kMapSize value (match the const declaration line)
     $content = $content -replace `

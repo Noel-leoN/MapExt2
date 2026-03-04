@@ -14,7 +14,7 @@ using Unity.Entities;
 using Unity.Mathematics;
 using UnityEngine;
 
-namespace MapExtPDX.MapExt.ModeC
+namespace MapExtPDX.ModeC
 {
     /// <summary>
     /// 重定义CellMapSystem<T>.kMapSize/ClosedGenericType.kTextureSize
@@ -92,7 +92,7 @@ namespace MapExtPDX.MapExt.ModeC
 
         public static float3 GetCellCenter(int2 cell, int textureSize)
         {
-            int num = unchecked(kMapSize / textureSize);
+            int num = kMapSize / textureSize;
             return new float3(-0.5f * kMapSize + (cell.x + 0.5f) * num, 0f, -0.5f * kMapSize + (cell.y + 0.5f) * num);
         }
 
@@ -1081,16 +1081,244 @@ namespace MapExtPDX.MapExt.ModeC
         // 僅用於HouseholdFindPopertySystemMod
         //#region Game.Buildings.PropertyUtils 重定向静态方法
 
-        //public struct GenericApartmentQuality
-        //{
-        //    public float apartmentSize;
-        //    public float2 educationBonus;
-        //    public float welfareBonus;
-        //    public float score;
-        //    public int level;
-        //}
+        public static float GetPropertyScore(Entity property, Entity household,
+            DynamicBuffer<HouseholdCitizen> citizenBuffer, ref ComponentLookup<PrefabRef> prefabRefs,
+            ref ComponentLookup<BuildingPropertyData> buildingProperties, ref ComponentLookup<Building> buildings,
+            ref ComponentLookup<BuildingData> buildingDatas, ref ComponentLookup<Household> households,
+            ref ComponentLookup<Citizen> citizens, ref ComponentLookup<Game.Citizens.Student> students,
+            ref ComponentLookup<Worker> workers, ref ComponentLookup<SpawnableBuildingData> spawnableDatas,
+            ref ComponentLookup<CrimeProducer> crimes, ref BufferLookup<Game.Net.ServiceCoverage> serviceCoverages,
+            ref ComponentLookup<Locked> locked, ref ComponentLookup<ElectricityConsumer> electricityConsumers,
+            ref ComponentLookup<WaterConsumer> waterConsumers, ref ComponentLookup<GarbageProducer> garbageProducers,
+            ref ComponentLookup<MailProducer> mailProducers, ref ComponentLookup<Game.Objects.Transform> transforms,
+            ref ComponentLookup<Abandoned> abandoneds, ref ComponentLookup<Game.Buildings.Park> parks,
+            ref BufferLookup<Game.Net.ResourceAvailability> availabilities, NativeArray<int> taxRates,
+            NativeArray<GroundPollution> pollutionMap, NativeArray<AirPollution> airPollutionMap,
+            NativeArray<NoisePollution> noiseMap, CellMapData<TelecomCoverage> telecomCoverages,
+            DynamicBuffer<CityModifier> cityModifiers, Entity healthcareService, Entity entertainmentService,
+            Entity educationService, Entity telecomService, Entity garbageService, Entity policeService,
+            CitizenHappinessParameterData citizenHappinessParameterData, GarbageParameterData garbageParameterData)
+        {
+            if (!buildings.HasComponent(property))
+            {
+                return float.NegativeInfinity;
+            }
 
-        //public static float GetPropertyScore
+            bool flag = (households[household].m_Flags & HouseholdFlags.MovedIn) != 0;
+            bool flag2 = BuildingUtils.IsHomelessShelterBuilding(property, ref parks, ref abandoneds);
+            if (flag2 && !flag)
+            {
+                return float.NegativeInfinity;
+            }
+
+            Building buildingData = buildings[property];
+            Entity prefab = prefabRefs[property].m_Prefab;
+            GenericApartmentQuality genericApartmentQuality =
+                GetGenericApartmentQuality(property, prefab, ref buildingData, ref buildingProperties,
+                    ref buildingDatas, ref spawnableDatas, ref crimes, ref serviceCoverages, ref locked,
+                    ref electricityConsumers, ref waterConsumers, ref garbageProducers, ref mailProducers,
+                    ref transforms, ref abandoneds, pollutionMap, airPollutionMap, noiseMap, telecomCoverages,
+                    cityModifiers, healthcareService, entertainmentService, educationService, telecomService,
+                    garbageService, policeService, citizenHappinessParameterData, garbageParameterData);
+            int length = citizenBuffer.Length;
+            float num = 0f;
+            int num2 = 0;
+            int num3 = 0;
+            int num4 = 0;
+            int num5 = 0;
+            int num6 = 0;
+            unchecked
+            {
+                for (int i = 0; i < citizenBuffer.Length; i++)
+                {
+                    Entity citizen = citizenBuffer[i].m_Citizen;
+                    Citizen citizen2 = citizens[citizen];
+                    num4 += citizen2.Happiness;
+                    if (citizen2.GetAge() == CitizenAge.Child)
+                    {
+                        num5++;
+                    }
+                    else
+                    {
+                        num3++;
+                        num6 += CitizenHappinessSystem.GetTaxBonuses(citizen2.GetEducationLevel(), taxRates,
+                            cityModifiers, in citizenHappinessParameterData).y;
+                    }
+
+                    if (students.HasComponent(citizen))
+                    {
+                        num2++;
+                        Game.Citizens.Student student = students[citizen];
+                        if (student.m_School != property)
+                        {
+                            num += student.m_LastCommuteTime;
+                        }
+                    }
+                    else if (workers.HasComponent(citizen))
+                    {
+                        num2++;
+                        Worker worker = workers[citizen];
+                        if (worker.m_Workplace != property)
+                        {
+                            num += worker.m_LastCommuteTime;
+                        }
+                    }
+                }
+
+                if (num2 > 0)
+                {
+                    num /= (float)num2;
+                }
+
+                if (citizenBuffer.Length > 0)
+                {
+                    num4 /= citizenBuffer.Length;
+                    if (num3 > 0)
+                    {
+                        num6 /= num3;
+                    }
+                }
+
+                float serviceAvailability = PropertyUtils.GetServiceAvailability(buildingData.m_RoadEdge,
+                    buildingData.m_CurvePosition, availabilities);
+                float cachedApartmentQuality =
+                    GetCachedApartmentQuality(length, num5, num4, genericApartmentQuality);
+                float num7 = (flag2 ? (-1000) : 0);
+                return serviceAvailability + cachedApartmentQuality * 10f + (float)(2 * num6) - num + num7;
+            }
+        }
+
+        public static GenericApartmentQuality GetGenericApartmentQuality(Entity building,
+            Entity buildingPrefab, ref Building buildingData,
+            ref ComponentLookup<BuildingPropertyData> buildingProperties,
+            ref ComponentLookup<BuildingData> buildingDatas, ref ComponentLookup<SpawnableBuildingData> spawnableDatas,
+            ref ComponentLookup<CrimeProducer> crimes, ref BufferLookup<Game.Net.ServiceCoverage> serviceCoverages,
+            ref ComponentLookup<Locked> locked, ref ComponentLookup<ElectricityConsumer> electricityConsumers,
+            ref ComponentLookup<WaterConsumer> waterConsumers, ref ComponentLookup<GarbageProducer> garbageProducers,
+            ref ComponentLookup<MailProducer> mailProducers, ref ComponentLookup<Game.Objects.Transform> transforms,
+            ref ComponentLookup<Abandoned> abandoneds, NativeArray<GroundPollution> pollutionMap,
+            NativeArray<AirPollution> airPollutionMap, NativeArray<NoisePollution> noiseMap,
+            CellMapData<TelecomCoverage> telecomCoverages, DynamicBuffer<CityModifier> cityModifiers,
+            Entity healthcareService, Entity entertainmentService, Entity educationService, Entity telecomService,
+            Entity garbageService, Entity policeService, CitizenHappinessParameterData happinessParameterData,
+            GarbageParameterData garbageParameterData)
+        {
+            GenericApartmentQuality result =
+                default(GenericApartmentQuality);
+            bool flag = true;
+            BuildingPropertyData buildingPropertyData = default(BuildingPropertyData);
+            SpawnableBuildingData spawnableBuildingData = default(SpawnableBuildingData);
+            if (buildingProperties.HasComponent(buildingPrefab))
+            {
+                buildingPropertyData = buildingProperties[buildingPrefab];
+                flag = false;
+            }
+
+            BuildingData buildingData2 = buildingDatas[buildingPrefab];
+            if (spawnableDatas.HasComponent(buildingPrefab) && !abandoneds.HasComponent(building))
+            {
+                spawnableBuildingData = spawnableDatas[buildingPrefab];
+            }
+            else
+            {
+                flag = true;
+            }
+
+            result.apartmentSize = (flag
+                ? PropertyUtils.kHomelessApartmentSize
+                : (buildingPropertyData.m_SpaceMultiplier * buildingData2.m_LotSize.x *
+                    buildingData2.m_LotSize.y / math.max(1f, buildingPropertyData.m_ResidentialProperties)));
+            result.level = spawnableBuildingData.m_Level;
+            int2 int5 = default(int2);
+            if (serviceCoverages.HasBuffer(buildingData.m_RoadEdge))
+            {
+                DynamicBuffer<Game.Net.ServiceCoverage> serviceCoverage = serviceCoverages[buildingData.m_RoadEdge];
+                int2 healthcareBonuses = CitizenHappinessSystem.GetHealthcareBonuses(buildingData.m_CurvePosition,
+                    serviceCoverage, ref locked, healthcareService, in happinessParameterData);
+                int5 += healthcareBonuses;
+                healthcareBonuses = CitizenHappinessSystem.GetEntertainmentBonuses(buildingData.m_CurvePosition,
+                    serviceCoverage, cityModifiers, ref locked, entertainmentService, in happinessParameterData);
+                int5 += healthcareBonuses;
+                result.welfareBonus = CitizenHappinessSystem.GetWelfareValue(buildingData.m_CurvePosition,
+                    serviceCoverage, in happinessParameterData);
+                result.educationBonus = CitizenHappinessSystem.GetEducationBonuses(buildingData.m_CurvePosition,
+                    serviceCoverage, ref locked, educationService, in happinessParameterData, 1);
+            }
+
+            int2 crimeBonuses = CitizenHappinessSystem.GetCrimeBonuses(default(CrimeVictim), building, ref crimes,
+                ref locked, policeService, in happinessParameterData);
+            unchecked
+            {
+                int2 healthcareBonuses =
+                    (flag ? new int2(0, -happinessParameterData.m_MaxCrimePenalty - crimeBonuses.y) : crimeBonuses);
+                int5 += healthcareBonuses;
+                healthcareBonuses = GetGroundPollutionBonuses(building, ref transforms,
+                    pollutionMap, cityModifiers, in happinessParameterData);
+                int5 += healthcareBonuses;
+                healthcareBonuses = GetAirPollutionBonuses(building, ref transforms,
+                    airPollutionMap, cityModifiers, in happinessParameterData);
+                int5 += healthcareBonuses;
+                healthcareBonuses =
+                    GetNoiseBonuses(building, ref transforms, noiseMap,
+                        in happinessParameterData);
+                int5 += healthcareBonuses;
+                healthcareBonuses = CitizenHappinessSystem.GetTelecomBonuses(building, ref transforms, telecomCoverages,
+                    ref locked, telecomService, in happinessParameterData);
+                int5 += healthcareBonuses;
+                healthcareBonuses = PropertyUtils.GetElectricityBonusForApartmentQuality(building,
+                    ref electricityConsumers, in happinessParameterData);
+                int5 += healthcareBonuses;
+                healthcareBonuses =
+                    PropertyUtils.GetWaterBonusForApartmentQuality(building, ref waterConsumers,
+                        in happinessParameterData);
+                int5 += healthcareBonuses;
+                healthcareBonuses =
+                    PropertyUtils.GetSewageBonusForApartmentQuality(building, ref waterConsumers,
+                        in happinessParameterData);
+                int5 += healthcareBonuses;
+                healthcareBonuses = CitizenHappinessSystem.GetWaterPollutionBonuses(building, ref waterConsumers,
+                    cityModifiers, in happinessParameterData);
+                int5 += healthcareBonuses;
+                healthcareBonuses = CitizenHappinessSystem.GetGarbageBonuses(building, ref garbageProducers, ref locked,
+                    garbageService, in garbageParameterData);
+                int5 += healthcareBonuses;
+                healthcareBonuses = CitizenHappinessSystem.GetMailBonuses(building, ref mailProducers, ref locked,
+                    telecomService, in happinessParameterData);
+                int5 += healthcareBonuses;
+                if (flag)
+                {
+                    healthcareBonuses = CitizenHappinessSystem.GetHomelessBonuses(in happinessParameterData);
+                    int5 += healthcareBonuses;
+                }
+
+                result.score = int5.x + int5.y;
+                return result;
+            }
+        }
+
+        public static float GetCachedApartmentQuality(
+            int familySize,
+            int children,
+            int averageHappiness,
+            GenericApartmentQuality quality)
+        {
+            int2 cachedWelfareBonuses =
+                CitizenHappinessSystem.GetCachedWelfareBonuses(quality.welfareBonus, averageHappiness);
+
+            return CitizenHappinessSystem.GetApartmentWellbeing(quality.apartmentSize / familySize,
+                       quality.level) + math.sqrt(children) *
+                   (quality.educationBonus.x + quality.educationBonus.y) +
+                   cachedWelfareBonuses.x + cachedWelfareBonuses.y + quality.score;
+        }
+
+        public struct GenericApartmentQuality
+        {
+            public float apartmentSize;
+            public float2 educationBonus;
+            public float welfareBonus;
+            public float score;
+            public int level;
+        }
 
         //#endregion
     }

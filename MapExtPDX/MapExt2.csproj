@@ -102,7 +102,6 @@
 		<None Include="$(ModPropsFile)" Link="Properties\Mod.props" />
 		<None Include="$(ModTargetsFile)" Link="Properties\Mod.targets" />
 		<None Include="MapExt2.sln" />
-		<None Include="MapExt\ReBurstSystem\Core\GenericJobReplacer.cs" />		
 		<None Include="Properties\PublishConfiguration.csproj" />
 	</ItemGroup>
 
@@ -123,15 +122,12 @@
     </ItemGroup>
 
 	<ItemGroup>
-		<Compile Remove="MapExt\ReBurstSystem\Core\**" />
 		<Compile Remove="_Backup_Before_T4\**" />
 		<None Include="_Backup_Before_T4\**" />
 	</ItemGroup>
 
 	<ItemGroup>
-	  <EmbeddedResource Remove="MapExt\ReBurstSystem\Core\**" />
-	  <None Remove="MapExt\ReBurstSystem\Core\**" />
-	  <TextTemplate Remove="MapExt\ReBurstSystem\Core\**" />
+	  <Compile Remove="MapExt\ReBurstSystem\CellSystems\ModeA_57km\CellMapEco\HouseholdFindPropertySystemMod.cs" />
 	</ItemGroup>
 
 	<!--
@@ -145,8 +141,11 @@
 	<ItemGroup>
 		<None Include="MapExt\ReBurstSystem\ReBurstCore\XCellMapSystemRe.Generate.ps1" />
 		<!-- 告诉 VS 这两个文件是构建输入，修改它们会触发 VS 取消 "Up-To-Date" 而是去调用 MSBuild -->
-		<UpToDateCheckInput Include="MapExt\ReBurstSystem\Core\XCellMapSystemRe.cs" />
+		<UpToDateCheckInput Include="MapExt\ReBurstSystem\ReBurstCore\XCellMapSystemRe.cs" />
 		<UpToDateCheckInput Include="MapExt\ReBurstSystem\ReBurstCore\XCellMapSystemRe.Generate.ps1" />
+	</ItemGroup>
+	<ItemGroup>
+	  <Folder Include="MapExt\ReBurstSystem\CellSystems\ModeA_57km\CellMapEco\" />
 	</ItemGroup>
 
 	<!-- PreBuild: 从源文件自动生成各 Mode 的 XCellMapSystemRe.cs -->

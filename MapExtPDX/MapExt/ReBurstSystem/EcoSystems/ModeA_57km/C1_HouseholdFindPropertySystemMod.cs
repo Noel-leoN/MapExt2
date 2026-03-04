@@ -34,7 +34,6 @@ namespace MapExtPDX.ModeA
     // =========================================================================================
     using ModSystem = HouseholdFindPropertySystemMod;
     using TargetSystem = HouseholdFindPropertySystem;
-
     // =========================================================================================
 
     public partial class HouseholdFindPropertySystemMod : GameSystemBase
@@ -259,15 +258,27 @@ namespace MapExtPDX.ModeA
                 m_PathfindQueue = pathfindQueue,
                 m_RentActionQueue = rentActionQueue,
 
+                // [Mod] Rate-limiting counter (1 element NativeArray)
+                m_PathfindStartCounter = new NativeArray<int>(1, Allocator.TempJob),
+
 #if DEBUG
                 m_DebugStats = m_DebugStats,
                 m_EnableDebug = m_EnableDebug
 #endif
             };
 
+            // 先處理 Homeless (上限 1024)
             JobHandle homelessHandle = findHomelessJob.ScheduleParallel(m_HomelessHouseholdQuery, base.Dependency);
 
-            JobHandle normalHandle = findHomelessJob.ScheduleParallel(m_HouseholdQuery, homelessHandle);
+            // 重置計數器，再處理 Normal (上限 256)
+            // 由於 ScheduleParallel 之間有依賴鏈 (homelessHandle)，計數器會在 homeless 完成後才被重置
+            var resetJob = new ResetCounterJob { m_Counter = findHomelessJob.m_PathfindStartCounter };
+            JobHandle resetHandle = resetJob.Schedule(homelessHandle);
+
+            JobHandle normalHandle = findHomelessJob.ScheduleParallel(m_HouseholdQuery, resetHandle);
+
+            // Dispose counter after both batches complete
+            findHomelessJob.m_PathfindStartCounter.Dispose(normalHandle);
 
             base.Dependency = normalHandle;
             m_EndFrameBarrier.AddJobHandleForProducer(Dependency);
@@ -381,6 +392,9 @@ namespace MapExtPDX.ModeA
             public EntityCommandBuffer.ParallelWriter m_CommandBuffer;
             public NativeQueue<SetupQueueItem>.ParallelWriter m_PathfindQueue;
             public NativeQueue<RentAction>.ParallelWriter m_RentActionQueue;
+
+            // [Mod] Rate-limiting: 共享原子計數器, index 0 = 已啟動的尋路數
+            [NativeDisableParallelForRestriction] public NativeArray<int> m_PathfindStartCounter;
 
 #if DEBUG
             [NativeDisableParallelForRestriction] public NativeArray<int> m_DebugStats;
@@ -496,6 +510,18 @@ namespace MapExtPDX.ModeA
 
                     if (origin != Entity.Null || currentHome != Entity.Null)
                     {
+                        // [Mod] Rate-limiting: 檢查是否已超過每次更新的上限
+                        int maxPerUpdate = isHomelessChunk
+                            ? kMaxProcessHomelessHouseholdPerUpdate // 1024
+                            : kMaxProcessNormalHouseholdPerUpdate; // 256
+                        int currentCount = m_PathfindStartCounter[0];
+                        if (currentCount >= maxPerUpdate)
+                        {
+                            continue; // 超過速率限制，跳過本次更新
+                        }
+
+                        m_PathfindStartCounter[0] = currentCount + 1;
+
                         float currentScore = float.NegativeInfinity;
                         if (currentHome != Entity.Null)
                         {
@@ -737,6 +763,20 @@ namespace MapExtPDX.ModeA
                     .Add(new PathInformations { m_State = PathFlags.Pending });
 
                 m_PathfindQueue.Enqueue(new SetupQueueItem(household, parameters, originTarget, destTarget));
+            }
+        }
+
+        /// <summary>
+        /// 用於在 Homeless 批次和 Normal 批次之間重置計數器
+        /// </summary>
+        [BurstCompile]
+        private struct ResetCounterJob : IJob
+        {
+            public NativeArray<int> m_Counter;
+
+            public void Execute()
+            {
+                m_Counter[0] = 0;
             }
         }
 
@@ -1159,35 +1199,12 @@ namespace MapExtPDX.ModeA
                 bool isAlreadyInShelter = this.m_HomelessHouseholds.HasComponent(householdEntity) &&
                                           this.m_HomelessHouseholds[householdEntity].m_TempHome != Entity.Null;
 
+                // 3. Welfare Check (Strict Vanilla logic)
                 int householdIncome = EconomyUtils.GetHouseholdIncome(
                     householdMembers, ref this.m_Workers, ref this.m_Citizens,
                     ref this.m_HealthProblems, ref this.m_EconomyParameters, this.m_TaxRates);
                 bool needsWelfare =
                     CitizenUtils.IsHouseholdNeedSupport(householdMembers, ref this.m_Citizens, ref this.m_Students);
-
-                // 3. Calculate Anticipated Income & Tolerance for New Arrivals
-                float toleranceMultiplier = 1.0f;
-                int anticipatedIncome = householdIncome;
-
-                if (isNewOrHomeless)
-                {
-                    int maxEducation = 0;
-                    for (int c = 0; c < householdMembers.Length; c++)
-                    {
-                        if (this.m_Citizens.TryGetComponent(householdMembers[c].m_Citizen, out var citData))
-                        {
-                            maxEducation = math.max(maxEducation, citData.GetEducationLevel());
-                        }
-                    }
-
-                    // e.g. Level 4 (University) -> 3x income expectation; Level 0 -> 1x
-                    anticipatedIncome = (int)(householdIncome * (1f + maxEducation * 0.5f));
-                    toleranceMultiplier = 1.2f; // Slight tolerance for settling in
-                }
-                else
-                {
-                    toleranceMultiplier = 1.5f; // Established residents adjusting homes get higher tolerance
-                }
 
                 float maxDistanceSq = 14336f * 14336f; // 15km squared for Spatial Culling
 
@@ -1207,12 +1224,6 @@ namespace MapExtPDX.ModeA
                     if (BuildingUtils.IsHomelessShelterBuilding(buildingEntity, ref this.m_Parks,
                             ref this.m_Abandoneds))
                     {
-                        // [Mod] Shelter Culling: Prevent out-of-towner households (no Transform) from pathfinding to local parks when housing is 0
-                        if (isNewOrHomeless && searchOrigin.Equals(float.NegativeInfinity))
-                        {
-                            continue;
-                        }
-
                         if (!isAlreadyInShelter)
                         {
                             float policeCoverage = NetUtils.GetServiceCoverage(
@@ -1224,9 +1235,10 @@ namespace MapExtPDX.ModeA
 
                             if (chunkRenters[j].Length < shelterCapacity)
                             {
-                                float cost = 10f * policeCoverage +
-                                             100f * (float)chunkRenters[j].Length / (float)shelterCapacity +
-                                             2000f;
+                                // [Mod→Vanilla] 恢復原版 Shelter Cost 參數
+                                float cost = 100f * policeCoverage +
+                                             1000f * (float)chunkRenters[j].Length / (float)shelterCapacity +
+                                             10000f;
                                 targetSeeker.FindTargets(buildingEntity, cost);
                             }
                         }
@@ -1270,10 +1282,12 @@ namespace MapExtPDX.ModeA
                             density switch { ZoneDensity.Medium => 0.7f, ZoneDensity.Low => 0.5f, _ => 1f };
                     }
 
-                    // Mod: Use anticipatedIncome and toleranceMultiplier
+                    // [Mod] Reverted to absolute strict Vanilla logic: `needsWelfare` OR `Rent <= Income`
+                    needsWelfare = CitizenUtils.IsHouseholdNeedSupport(
+                        householdMembers, ref this.m_Citizens, ref this.m_Students);
+
                     bool canAfford = needsWelfare || ((float)(askingRent + garbageFeePerHousehold) <=
-                                                      (float)anticipatedIncome * rentBudgetFactor *
-                                                      toleranceMultiplier);
+                                                      (float)householdIncome * rentBudgetFactor);
 
                     if (!canAfford) continue;
 
@@ -1298,25 +1312,10 @@ namespace MapExtPDX.ModeA
                         this.m_PoliceParameters.m_PoliceServicePrefab,
                         this.m_CitizenHappinessParameterData, this.m_GarbageParameters);
 
-                    // 6.  Cost
-                    // propertyScore Cost ?
-                    float finalCost = -propertyScore +
-                                      500f * (chunkRenters[j].Length / (float)totalProperties) +
-                                      random.NextFloat(0, 100f);
-
-                    // Priority Boost for New/Homeless Arrivals
-                    if (isNewOrHomeless)
-                    {
-                        finalCost -= 5000f;
-                    }
-
-                    // [Mod] Dynamic Cost Culling: Stop spamming the pathfinder with vastly inferior targets
-                    // If the current property is 8000 points worse than the best one we've queued, discard it
-                    float currentBestScore = targetSeeker.m_SetupQueueTarget.m_Value;
-                    if (isNewOrHomeless && finalCost > currentBestScore + 8000f)
-                    {
-                        continue;
-                    }
+                    // [Mod→Vanilla] 恢復原版 Property Cost 參數
+                    float finalCost = 0f - propertyScore +
+                                      1000f * (float)chunkRenters[j].Length / (float)totalProperties +
+                                      (float)random.NextInt(500);
 
                     targetSeeker.FindTargets(buildingEntity, finalCost);
                 }

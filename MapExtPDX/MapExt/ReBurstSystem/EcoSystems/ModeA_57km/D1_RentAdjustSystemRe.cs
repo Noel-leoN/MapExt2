@@ -255,14 +255,13 @@ namespace MapExtPDX.ModeA
 
                         if (isHousehold) // 家庭实体
                         {
-                            // [Mod修改逻辑]
-                            // 原计算将收入+全部储蓄作为支付能力，收入为零但储蓄较多的家庭会显得富有并且能够负担得起高昂的租金。但实际收入的家庭不会将所有储蓄全部用于支付高额租金，原计算将向他们收取高昂的租金，将导致迅速耗尽积蓄后被迫搬出去。参照现实通行规律，国际标准建议住房支出占收入 0%,住房支出中，储蓄贡献不超10%5% 的总储 现改为收入的30%+储蓄/10;
+                            // [Mod修改逻辑] 支付能力 = 收入的30% + 存款的10%
+                            // 目的：减少因存款过高而触发的不必要升级找房
                             int householdIncome = EconomyUtils.GetHouseholdIncome(this.m_HouseholdCitizenBufs[renter],
                                 ref this.m_Workers, ref this.m_Citizens, ref this.m_HealthProblems,
                                 ref this.m_EconomyParameterData, this.m_TaxRates);
                             int householdSavings = math.max(0,
                                 EconomyUtils.GetResources(Resource.Money, this.m_ResourcesBuf[renter]));
-                            // 核心修改：支付能= 收入0% + 存款0%
                             renterUpkeepCapacity = (int)(householdIncome * 0.3f + householdSavings * 0.1f);
                         }
                         else // 公司实体
@@ -302,69 +301,47 @@ namespace MapExtPDX.ModeA
                         propertyRenterData.m_Rent = rentPerRenter;
                         this.m_PropertyRenters[renter] = propertyRenterData;
 
-                        // [Mod修改逻辑]
-                        // 原逻辑v1.3.6f版本改动)如果一个家庭目前的租金低于其经济能力的一，他们就会寻求新房产。其目的是模拟中产阶级化——富裕的公民搬到更昂贵的住房。然而，由于 renterUpkeepCapacity 包括他们所有的储蓄（参见修#1），一个刚刚获得大笔遗产或勤奋储蓄的家庭将被标记为“太富有”，即使他们的收入没有改变，也将被迫寻找新的住房。这可能导致不必要且可能不受欢迎的居民洗牌。此外，原逻辑为一旦付不起租金或能够改善时立即开始找房，与现实中大多数人会尝试通过其他方式（如增加工作时间、削减开支等）来维持现有住房的行为不符。现改为：当租金过高（付不起）时，家庭会寻求新房；当租金过低（低0%）时，家庭有30%的概率寻求升级住房。并且引入检查周期，避免每帧都检查导致的性能问题和频繁搬家
-
                         int totalCostPerDay = rentPerRenter + buildingGarbageFeePerDay;
 
+                        // [Mod修改逻辑] 分批检查 + 降低升级频率
                         if (isHousehold)
                         {
-                            // 定义检查周期（RentAdjustSystem 的更新次数为单位
-                            // 游戏= RentAdjustSystem.kUpdatesPerDay (值为16)，即此Job每天运行16次
-                            // 【待测试】根据需要可调整检查频率以平衡性能和响应性
-                            int kUpdatesPerDay = RentAdjustSystem.kUpdatesPerDay;
-                            int checkPeriodForHighRent = 2 * kUpdatesPerDay;
-                            int checkPeriodForLowRent = 4 * kUpdatesPerDay;
+                            // 利用 Entity.Index 和 m_UpdateFrameIndex 确定性分批
+                            // 付不起(高租金)：每2个更新周期检查一次
+                            // 改善住房(低租金)：每4个更新周期检查一次，且仅30%概率触发
+                            int kUpdatesPerDay = RentAdjustSystem.kUpdatesPerDay; // 16
+                            int checkPeriodHigh = 2 * kUpdatesPerDay; // 32帧
+                            int checkPeriodLow = 4 * kUpdatesPerDay; // 64帧
 
-                            // 利用实体索引值，将家庭分散到不同的检查“批次”中
-                            // (uint)renter.Index % checkPeriodForHighRent 会给每个家庭一0 (period-1) 的固定偏移量
-                            // 这确保了在任何一个时刻，只有1/period 的家庭会进行检查
+                            bool isMyFrameHigh = (m_UpdateFrameIndex % checkPeriodHigh ==
+                                                  (uint)renter.Index % (uint)checkPeriodHigh);
+                            bool isMyFrameLow = (m_UpdateFrameIndex % checkPeriodLow ==
+                                                 (uint)renter.Index % (uint)checkPeriodLow);
 
-                            // 利用 Entity.Index 对检查时间进行分
-                            // `m_UpdateFrameIndex` 在此Job中是单调递增的，可以看作是时间
-                            bool isCheckFrameHigh = (m_UpdateFrameIndex % checkPeriodForHighRent ==
-                                                     (uint)renter.Index % checkPeriodForHighRent);
-                            bool isCheckFrameLow = (m_UpdateFrameIndex % checkPeriodForLowRent ==
-                                                    (uint)renter.Index % checkPeriodForLowRent);
-
-                            // 【条 租金过高 (付不
-                            // 只有当“今天”轮到这个家庭检查时，才执行逻辑
-
-                            if (totalCostPerDay > renterUpkeepCapacity && isCheckFrameHigh)
+                            if (totalCostPerDay > renterUpkeepCapacity && isMyFrameHigh)
                             {
-                                // 如果满足条件，且该家庭当前不在找房，则启用PropertySeeker
-                                if (!this.m_OnMarkets.IsComponentEnabled(renter))
+                                this.m_CommandBuffer.SetComponentEnabled<PropertySeeker>(unfilteredChunkIndex,
+                                    renter, value: true);
+                            }
+                            else if (totalCostPerDay < renterUpkeepCapacity / 2 && isMyFrameLow)
+                            {
+                                // 30%概率触发升级
+                                if (((uint)renter.Index + (uint)(m_UpdateFrameIndex / checkPeriodLow)) % 10 < 3)
                                 {
                                     this.m_CommandBuffer.SetComponentEnabled<PropertySeeker>(unfilteredChunkIndex,
                                         renter, value: true);
                                 }
                             }
-                            // 【条 租金过低 (改善住房)
-                            // 只有当“今天”轮到这个家庭检查时...
-                            else if (totalCostPerDay < renterUpkeepCapacity && isCheckFrameLow)
-                            {
-                                // 并且，满0%的概率条件时，才触发
-                                // 我们使用一个简单的确定性随机算法，确保结果可重复且分布均匀
-                                if (((uint)renter.Index + (uint)(m_UpdateFrameIndex / checkPeriodForLowRent)) % 10 < 3)
-                                {
-                                    if (!this.m_OnMarkets.IsComponentEnabled(renter))
-                                    {
-                                        this.m_CommandBuffer.SetComponentEnabled<PropertySeeker>(unfilteredChunkIndex,
-                                            renter, value: true);
-                                    }
-                                }
-                            }
                         }
-
                         else
                         {
+                            // 公司：与原版一致，直接触发
                             if (totalCostPerDay > renterUpkeepCapacity)
                             {
                                 this.m_CommandBuffer.SetComponentEnabled<PropertySeeker>(unfilteredChunkIndex, renter,
                                     value: true);
                             }
                         }
-                        // 修正结束
 
                         // --- 5c. 统计支付能力数据 ---
                         affordabilityStats.y++;
