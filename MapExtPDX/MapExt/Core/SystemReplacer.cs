@@ -35,7 +35,8 @@ namespace MapExtPDX.MapExt.Core
             {
                 // CellMapSystem<T> ECS替换
                 updateSystem.World.GetOrCreateSystemManaged<Game.Simulation.AirPollutionSystem>().Enabled = false;
-                updateSystem.World.GetOrCreateSystemManaged<Game.Simulation.AvailabilityInfoToGridSystem>().Enabled = false;
+                updateSystem.World.GetOrCreateSystemManaged<Game.Simulation.AvailabilityInfoToGridSystem>().Enabled =
+                    false;
                 updateSystem.World.GetOrCreateSystemManaged<Game.Simulation.GroundPollutionSystem>().Enabled = false;
                 updateSystem.World.GetOrCreateSystemManaged<Game.Simulation.GroundWaterSystem>().Enabled = false;
                 updateSystem.World.GetOrCreateSystemManaged<Game.Simulation.LandValueSystem>().Enabled = false;
@@ -43,7 +44,8 @@ namespace MapExtPDX.MapExt.Core
                 updateSystem.World.GetOrCreateSystemManaged<Game.Simulation.NoisePollutionSystem>().Enabled = false;
                 updateSystem.World.GetOrCreateSystemManaged<Game.Simulation.PopulationToGridSystem>().Enabled = false;
                 updateSystem.World.GetOrCreateSystemManaged<Game.Simulation.SoilWaterSystem>().Enabled = false;
-                updateSystem.World.GetOrCreateSystemManaged<Game.Simulation.TerrainAttractivenessSystem>().Enabled = false;
+                updateSystem.World.GetOrCreateSystemManaged<Game.Simulation.TerrainAttractivenessSystem>().Enabled =
+                    false;
                 updateSystem.World.GetOrCreateSystemManaged<Game.Simulation.TrafficAmbienceSystem>().Enabled = false;
                 updateSystem.World.GetOrCreateSystemManaged<Game.Simulation.ZoneAmbienceSystem>().Enabled = false;
 
@@ -54,6 +56,7 @@ namespace MapExtPDX.MapExt.Core
                     // ResidentialDemand/CommercialDemandSystem/IndustrialDemand/RentAdjust 采用Job通用替换修补，无需禁用原系统
 
                     // updateSystem.World.GetOrCreateSystemManaged<Game.Simulation.HouseholdSpawnSystem>().Enabled = false;
+                    updateSystem.World.GetOrCreateSystemManaged<Game.Simulation.RentAdjustSystem>().Enabled = false;
                     updateSystem.World.GetOrCreateSystemManaged<Game.Simulation.HouseholdFindPropertySystem>().Enabled =
                         false;
                     updateSystem.World.GetOrCreateSystemManaged<Game.Simulation.HouseholdBehaviorSystem>().Enabled =
@@ -61,7 +64,6 @@ namespace MapExtPDX.MapExt.Core
                     updateSystem.World.GetOrCreateSystemManaged<Game.Simulation.CitizenFindJobSystem>().Enabled = false;
                     updateSystem.World.GetOrCreateSystemManaged<Game.Simulation.FindJobSystem>().Enabled = false;
                 }
-
             }
 
             // 57km ModeA
@@ -142,15 +144,8 @@ namespace MapExtPDX.MapExt.Core
                 // --- 经济系统 ECS替换 ---
                 // ======================
 
-                // if (setting.isEnableEconomyFix == true)
+                if (setting.isEnableEconomyFix)
                 {
-                    //globalPatcher.CreateClassProcessor(typeof(MapExtPDX.ModeA.CommercialDemandSystemMod.Patches)).Patch();
-                    //updateSystem.UpdateAt<MapExtPDX.ModeA.CommercialDemandSystemMod>(SystemUpdatePhase.GameSimulation);
-
-                    // 暂不替换HouseholdSpawnSystem
-                    // updateSystem.UpdateAt<MapExtPDX.ModeA.HouseholdSpawnSystemMod>(SystemUpdatePhase.GameSimulation);
-                    // Mod.Info($"已执行{nameof(HouseholdSpawnSystemMod)}.");
-
                     // HarmonyPrefix修补CitizenPathfindSetup.SetupFindHomeJob(HouseholdFindPropertySystem关联)
                     globalPatcher
                         .CreateClassProcessor(
@@ -167,10 +162,21 @@ namespace MapExtPDX.MapExt.Core
                     updateSystem.UpdateAt<MapExtPDX.ModeA.FindJobSystemMod>(SystemUpdatePhase
                         .GameSimulation);
 
-                    // Job通用替换修补ResidentialDemand/IndustrialDemand/RentAdjust
-                    JobPatchHelper.Apply(globalPatcher,
-                        JobPatchDefinitions.GetEcoSystemTargets(PatchModeSetting.ModeA));
+                    updateSystem.UpdateAt<MapExtPDX.ModeA.RentAdjustSystemMod>(SystemUpdatePhase
+                        .GameSimulation);
                 }
+                else
+                {
+                    updateSystem.UpdateAt<MapExtPDX.ModeA.HouseholdFindPropertySystemMod_CellOnly>(SystemUpdatePhase
+                        .GameSimulation);
+
+                    updateSystem.UpdateAt<MapExtPDX.ModeA.RentAdjustSystemMod_CellOnly>(SystemUpdatePhase
+                        .GameSimulation);
+                }
+
+                // Job通用替换修补ResidentialDemand/IndustrialDemand/RentAdjust
+                JobPatchHelper.Apply(globalPatcher,
+                    JobPatchDefinitions.GetEcoSystemTargets(PatchModeSetting.ModeA));
             }
 
             // 28km ModeB
@@ -251,15 +257,8 @@ namespace MapExtPDX.MapExt.Core
                 // --- 经济系统 ECS替换 ---
                 // ======================
 
-                // if (setting.isEnableEconomyFix == true)
+                if (setting.isEnableEconomyFix)
                 {
-                    //globalPatcher.CreateClassProcessor(typeof(MapExtPDX.ModeA.CommercialDemandSystemMod.Patches)).Patch();
-                    //updateSystem.UpdateAt<MapExtPDX.ModeA.CommercialDemandSystemMod>(SystemUpdatePhase.GameSimulation);
-
-                    // 暂不替换HouseholdSpawnSystem
-                    // updateSystem.UpdateAt<MapExtPDX.ModeA.HouseholdSpawnSystemMod>(SystemUpdatePhase.GameSimulation);
-                    // Mod.Info($"已执行{nameof(HouseholdSpawnSystemMod)}.");
-
                     // HarmonyPrefix修补CitizenPathfindSetup.SetupFindHomeJob(HouseholdFindPropertySystem关联)
                     globalPatcher
                         .CreateClassProcessor(
@@ -276,10 +275,21 @@ namespace MapExtPDX.MapExt.Core
                     updateSystem.UpdateAt<MapExtPDX.ModeB.FindJobSystemMod>(SystemUpdatePhase
                         .GameSimulation);
 
-                    // Job通用替换修补ResidentialDemand/IndustrialDemand/RentAdjust
-                    JobPatchHelper.Apply(globalPatcher,
-                        JobPatchDefinitions.GetEcoSystemTargets(PatchModeSetting.ModeB));
+                    updateSystem.UpdateAt<MapExtPDX.ModeB.RentAdjustSystemMod>(SystemUpdatePhase
+                        .GameSimulation);
                 }
+                else
+                {
+                    updateSystem.UpdateAt<MapExtPDX.ModeB.HouseholdFindPropertySystemMod_CellOnly>(SystemUpdatePhase
+                        .GameSimulation);
+
+                    updateSystem.UpdateAt<MapExtPDX.ModeB.RentAdjustSystemMod_CellOnly>(SystemUpdatePhase
+                        .GameSimulation);
+                }
+
+                // Job通用替换修补ResidentialDemand/IndustrialDemand/RentAdjust
+                JobPatchHelper.Apply(globalPatcher,
+                    JobPatchDefinitions.GetEcoSystemTargets(PatchModeSetting.ModeB));
             }
 
             // 114km ModeC
@@ -361,15 +371,8 @@ namespace MapExtPDX.MapExt.Core
                 // --- 经济系统 ECS替换 ---
                 // ======================
 
-                // if (setting.isEnableEconomyFix == true)
+                if (setting.isEnableEconomyFix)
                 {
-                    //globalPatcher.CreateClassProcessor(typeof(MapExtPDX.ModeA.CommercialDemandSystemMod.Patches)).Patch();
-                    //updateSystem.UpdateAt<MapExtPDX.ModeA.CommercialDemandSystemMod>(SystemUpdatePhase.GameSimulation);
-
-                    // 暂不替换HouseholdSpawnSystem
-                    // updateSystem.UpdateAt<MapExtPDX.ModeA.HouseholdSpawnSystemMod>(SystemUpdatePhase.GameSimulation);
-                    // Mod.Info($"已执行{nameof(HouseholdSpawnSystemMod)}.");
-
                     // HarmonyPrefix修补CitizenPathfindSetup.SetupFindHomeJob(HouseholdFindPropertySystem关联)
                     globalPatcher
                         .CreateClassProcessor(
@@ -386,24 +389,28 @@ namespace MapExtPDX.MapExt.Core
                     updateSystem.UpdateAt<MapExtPDX.ModeC.FindJobSystemMod>(SystemUpdatePhase
                         .GameSimulation);
 
-                    // Job通用替换修补ResidentialDemand/IndustrialDemand/RentAdjust
-                    JobPatchHelper.Apply(globalPatcher,
-                        JobPatchDefinitions.GetEcoSystemTargets(PatchModeSetting.ModeC));
+                    updateSystem.UpdateAt<MapExtPDX.ModeC.RentAdjustSystemMod>(SystemUpdatePhase
+                        .GameSimulation);
                 }
+                else
+                {
+                    updateSystem.UpdateAt<MapExtPDX.ModeC.HouseholdFindPropertySystemMod_CellOnly>(SystemUpdatePhase
+                        .GameSimulation);
+
+                    updateSystem.UpdateAt<MapExtPDX.ModeC.RentAdjustSystemMod_CellOnly>(SystemUpdatePhase
+                        .GameSimulation);
+                }
+
+                // Job通用替换修补ResidentialDemand/IndustrialDemand/RentAdjust
+                JobPatchHelper.Apply(globalPatcher,
+                    JobPatchDefinitions.GetEcoSystemTargets(PatchModeSetting.ModeC));
             }
 
             // vanilla ModeE (None)
-            if (PatchManager.CurrentCoreValue == 1 /*&& setting.isEnableEconomyFix == true*/)
+            if (PatchManager.CurrentCoreValue == 1)
             {
                 // === 原系统禁用 ===
                 updateSystem.World.GetOrCreateSystemManaged<Game.Simulation.LandValueSystem>().Enabled = false;
-
-                // updateSystem.World.GetOrCreateSystemManaged<Game.Simulation.HouseholdSpawnSystem>().Enabled = false;
-                updateSystem.World.GetOrCreateSystemManaged<Game.Simulation.HouseholdFindPropertySystem>().Enabled =
-                    false;
-                updateSystem.World.GetOrCreateSystemManaged<Game.Simulation.HouseholdBehaviorSystem>().Enabled = false;
-                updateSystem.World.GetOrCreateSystemManaged<Game.Simulation.CitizenFindJobSystem>().Enabled = false;
-                updateSystem.World.GetOrCreateSystemManaged<Game.Simulation.FindJobSystem>().Enabled = false;
 
                 // === 自定义系统启===
                 // --- LandValueSystemRemake + UI设置 ---
@@ -412,23 +419,38 @@ namespace MapExtPDX.MapExt.Core
                 globalPatcher.CreateClassProcessor(typeof(MapExtPDX.ModeE.LandValueSystemMod.Patches))
                     .Patch();
 
-                // HarmonyPrefix修补CitizenPathfindSetup.SetupFindHomeJob(HouseholdFindPropertySystem关联)
-                globalPatcher
-                    .CreateClassProcessor(typeof(MapExtPDX.ModeE.PathfindSetupSystem_FindTargets_Patch))
-                    .Patch();
-                updateSystem.UpdateAt<MapExtPDX.ModeE.HouseholdFindPropertySystemMod>(SystemUpdatePhase
-                    .GameSimulation);
+                if (setting.isEnableEconomyFix)
+                {
+                    // === 原系统禁用 === (Economy)
+                    updateSystem.World.GetOrCreateSystemManaged<Game.Simulation.RentAdjustSystem>().Enabled = false;
+                    updateSystem.World.GetOrCreateSystemManaged<Game.Simulation.HouseholdFindPropertySystem>().Enabled =
+                        false;
+                    updateSystem.World.GetOrCreateSystemManaged<Game.Simulation.HouseholdBehaviorSystem>().Enabled =
+                        false;
+                    updateSystem.World.GetOrCreateSystemManaged<Game.Simulation.CitizenFindJobSystem>().Enabled = false;
+                    updateSystem.World.GetOrCreateSystemManaged<Game.Simulation.FindJobSystem>().Enabled = false;
 
-                updateSystem.UpdateAt<MapExtPDX.ModeE.HouseholdBehaviorSystemMod>(SystemUpdatePhase
-                    .GameSimulation);
+                    // HarmonyPrefix修补CitizenPathfindSetup.SetupFindHomeJob(HouseholdFindPropertySystem关联)
+                    globalPatcher
+                        .CreateClassProcessor(typeof(MapExtPDX.ModeE.PathfindSetupSystem_FindTargets_Patch))
+                        .Patch();
 
-                updateSystem.UpdateAt<MapExtPDX.ModeE.CitizenFindJobSystemMod>(SystemUpdatePhase
-                    .GameSimulation);
+                    updateSystem.UpdateAt<MapExtPDX.ModeE.HouseholdFindPropertySystemMod>(SystemUpdatePhase
+                        .GameSimulation);
 
-                updateSystem.UpdateAt<MapExtPDX.ModeE.FindJobSystemMod>(SystemUpdatePhase.GameSimulation);
+                    updateSystem.UpdateAt<MapExtPDX.ModeE.HouseholdBehaviorSystemMod>(SystemUpdatePhase
+                        .GameSimulation);
 
-                // Job通用替换修补ResidentialDemand/CommerialDemand/IndustrialDemand/RentAdjust
-                JobPatchHelper.Apply(globalPatcher, JobPatchDefinitions.GetEcoSystemTargets(PatchModeSetting.None));
+                    updateSystem.UpdateAt<MapExtPDX.ModeE.CitizenFindJobSystemMod>(SystemUpdatePhase
+                        .GameSimulation);
+
+                    updateSystem.UpdateAt<MapExtPDX.ModeE.FindJobSystemMod>(SystemUpdatePhase.GameSimulation);
+
+                    updateSystem.UpdateAt<MapExtPDX.ModeE.RentAdjustSystemMod>(SystemUpdatePhase.GameSimulation);
+
+                    // Job通用替换修补ResidentialDemand/CommerialDemand/IndustrialDemand/RentAdjust
+                    JobPatchHelper.Apply(globalPatcher, JobPatchDefinitions.GetEcoSystemTargets(PatchModeSetting.None));
+                }
             }
         }
     }

@@ -1,6 +1,4 @@
-﻿// Game.Simulation.RentAdjustSystem
-// 独立系统，可考虑ECS替换
-
+﻿using Colossal.Entities;
 using Game.Agents;
 using Game.Areas;
 using Game.Buildings;
@@ -13,23 +11,194 @@ using Game.Net;
 using Game.Notifications;
 using Game.Objects;
 using Game.Prefabs;
-using Game.Simulation;
+using Game.Tools;
 using Game.Vehicles;
+using Game.Zones;
 using Unity.Burst;
 using Unity.Burst.Intrinsics;
 using Unity.Collections;
 using Unity.Entities;
+using Unity.Jobs;
 using Unity.Mathematics;
+using UnityEngine;
+using Game;
+using Game.Simulation;
+using Transform = Game.Objects.Transform;
 
-namespace MapExtPDX.ModeA
+namespace MapExtPDX.ModeC
 {
-    // 修正1：原计算将收全部储蓄作为支付能力，收入为零但储蓄较多的家庭会显得富有并且能够负担得起高昂的租金。但实际收入的家庭不会将所有储蓄全部用于支付高额租金，原计算将向他们收取高昂的租金，将导致迅速耗尽积蓄后被迫搬出去。参照现实通行规律，国际标准建议住房支出占收入 0%,住房支出中，储蓄贡献不超10%5% 的总储 现改为收入的30%+储蓄/10;
-    // 修正2 ：原逻辑v1.3.6f版本改动)如果一个家庭目前的租金低于其经济能力的一，他们就会寻求新房产。其目的是模拟中产阶级化——富裕的公民搬到更昂贵的住房。然而，由于 renterUpkeepCapacity 包括他们所有的储蓄（参见修#1），一个刚刚获得大笔遗产或勤奋储蓄的家庭将被标记为“太富有”，即使他们的收入没有改变，也将被迫寻找新的住房。这可能导致不必要且可能不受欢迎的居民洗牌。此外，原逻辑为一旦付不起租金或能够改善时立即开始找房，与现实中大多数人会尝试通过其他方式（如增加工作时间、削减开支等）来维持现有住房的行为不符。现改为：仅当租金过高（付不起）时，家庭才会寻求新房；当租金过低（低0%）时，家庭有30%的概率寻求升级住房。并且引入检查周期，避免每帧都检查导致的性能问题和频繁搬家
-    // 修正3：原逻辑为仅当建筑物空置时才显示高租金警告，一旦满员就不会显示，这与现实情况不符。可能有意设计为高租金阻止新租户入住的提醒，但这种信息并不完整。现改为当建筑物无论是否有空置房源，只要大部分租户负担不起租金时就显示高租金警告
-    // 修正4 ：调试代码删
+	public partial class RentAdjustSystemMod : GameSystemBase
+	{
+		#region Constants
 
-    [BurstCompile]
-    public struct AdjustRentJob : IJobChunk
+		public static readonly int kUpdatesPerDay = 16;
+
+		public override int GetUpdateInterval(SystemUpdatePhase phase) =>
+			262144 / (kUpdatesPerDay * 16);
+
+		#endregion
+
+		#region Fields
+
+		private EntityQuery m_EconomyParameterQuery;
+		private EntityQuery m_DemandParameterQuery;
+		private SimulationSystem m_SimulationSystem;
+		private EndFrameBarrier m_EndFrameBarrier;
+		private ResourceSystem m_ResourceSystem;
+		private GroundPollutionSystem m_GroundPollutionSystem;
+		private AirPollutionSystem m_AirPollutionSystem;
+		private NoisePollutionSystem m_NoisePollutionSystem;
+		private TelecomCoverageSystem m_TelecomCoverageSystem;
+		private CitySystem m_CitySystem;
+		private TaxSystem m_TaxSystem;
+		private IconCommandSystem m_IconCommandSystem;
+		private EntityQuery m_HealthcareParameterQuery;
+		private EntityQuery m_ExtractorParameterQuery;
+		private EntityQuery m_ParkParameterQuery;
+		private EntityQuery m_EducationParameterQuery;
+		private EntityQuery m_TelecomParameterQuery;
+		private EntityQuery m_GarbageParameterQuery;
+		private EntityQuery m_PoliceParameterQuery;
+		private EntityQuery m_CitizenHappinessParameterQuery;
+		private EntityQuery m_BuildingParameterQuery;
+		private EntityQuery m_PollutionParameterQuery;
+		private EntityQuery m_FeeParameterQuery;
+		private EntityQuery m_BuildingQuery;
+		protected int cycles;
+
+		#endregion
+
+		#region Lifecycle
+
+		protected override void OnCreate()
+		{
+			base.OnCreate();
+			this.m_SimulationSystem = World.GetOrCreateSystemManaged<SimulationSystem>();
+			this.m_EndFrameBarrier = World.GetOrCreateSystemManaged<EndFrameBarrier>();
+			this.m_ResourceSystem = World.GetOrCreateSystemManaged<ResourceSystem>();
+			this.m_GroundPollutionSystem = World.GetOrCreateSystemManaged<GroundPollutionSystem>();
+			this.m_AirPollutionSystem = World.GetOrCreateSystemManaged<AirPollutionSystem>();
+			this.m_NoisePollutionSystem = World.GetOrCreateSystemManaged<NoisePollutionSystem>();
+			this.m_TelecomCoverageSystem = World.GetOrCreateSystemManaged<TelecomCoverageSystem>();
+			this.m_CitySystem = World.GetOrCreateSystemManaged<CitySystem>();
+			this.m_TaxSystem = World.GetOrCreateSystemManaged<TaxSystem>();
+			this.m_IconCommandSystem = World.GetOrCreateSystemManaged<IconCommandSystem>();
+			this.m_EconomyParameterQuery = GetEntityQuery(ComponentType.ReadOnly<EconomyParameterData>());
+			this.m_DemandParameterQuery = GetEntityQuery(ComponentType.ReadOnly<DemandParameterData>());
+			this.m_BuildingParameterQuery = GetEntityQuery(ComponentType.ReadOnly<BuildingConfigurationData>());
+			this.m_BuildingQuery = GetEntityQuery(ComponentType.ReadOnly<Building>(),
+				ComponentType.ReadOnly<UpdateFrame>(), ComponentType.ReadWrite<Renter>(),
+				ComponentType.Exclude<StorageProperty>(), ComponentType.Exclude<Temp>(),
+				ComponentType.Exclude<Deleted>());
+			this.m_ExtractorParameterQuery = GetEntityQuery(ComponentType.ReadOnly<ExtractorParameterData>());
+			this.m_HealthcareParameterQuery = GetEntityQuery(ComponentType.ReadOnly<HealthcareParameterData>());
+			this.m_ParkParameterQuery = GetEntityQuery(ComponentType.ReadOnly<ParkParameterData>());
+			this.m_EducationParameterQuery = GetEntityQuery(ComponentType.ReadOnly<EducationParameterData>());
+			this.m_TelecomParameterQuery = GetEntityQuery(ComponentType.ReadOnly<TelecomParameterData>());
+			this.m_GarbageParameterQuery = GetEntityQuery(ComponentType.ReadOnly<GarbageParameterData>());
+			this.m_PoliceParameterQuery = GetEntityQuery(ComponentType.ReadOnly<PoliceConfigurationData>());
+			this.m_CitizenHappinessParameterQuery =
+				GetEntityQuery(ComponentType.ReadOnly<CitizenHappinessParameterData>());
+			this.m_PollutionParameterQuery = GetEntityQuery(ComponentType.ReadOnly<PollutionParameterData>());
+			this.m_FeeParameterQuery = GetEntityQuery(ComponentType.ReadOnly<ServiceFeeParameterData>());
+			RequireForUpdate(this.m_EconomyParameterQuery);
+			RequireForUpdate(this.m_DemandParameterQuery);
+			RequireForUpdate(this.m_HealthcareParameterQuery);
+			RequireForUpdate(this.m_ParkParameterQuery);
+			RequireForUpdate(this.m_EducationParameterQuery);
+			RequireForUpdate(this.m_TelecomParameterQuery);
+			RequireForUpdate(this.m_GarbageParameterQuery);
+			RequireForUpdate(this.m_PoliceParameterQuery);
+			RequireForUpdate(this.m_FeeParameterQuery);
+			RequireForUpdate(this.m_BuildingQuery);
+		}
+
+		protected override void OnUpdate()
+		{
+			uint updateFrame = SimulationUtils.GetUpdateFrame(this.m_SimulationSystem.frameIndex,
+				RentAdjustSystemMod.kUpdatesPerDay, 16);
+			JobHandle groundPollutionDependencies;
+			JobHandle airPollutionDependencies;
+			JobHandle noisePollutionDependencies;
+			JobHandle rentAdjustJobHandle = JobChunkExtensions.ScheduleParallel(new AdjustRentJob
+				{
+					m_EntityType = SystemAPI.GetEntityTypeHandle(),
+					m_RenterType = SystemAPI.GetBufferTypeHandle<Renter>(isReadOnly: false),
+					m_UpdateFrameType = GetSharedComponentTypeHandle<UpdateFrame>(),
+					m_PropertyRenters = SystemAPI.GetComponentLookup<PropertyRenter>(isReadOnly: false),
+					m_OnMarkets = SystemAPI.GetComponentLookup<PropertyOnMarket>(isReadOnly: false),
+					m_Buildings = SystemAPI.GetComponentLookup<Building>(isReadOnly: false),
+					m_Prefabs = SystemAPI.GetComponentLookup<PrefabRef>(isReadOnly: true),
+					m_BuildingProperties = SystemAPI.GetComponentLookup<BuildingPropertyData>(isReadOnly: true),
+					m_BuildingDatas = SystemAPI.GetComponentLookup<BuildingData>(isReadOnly: true),
+					m_WorkProviders = SystemAPI.GetComponentLookup<WorkProvider>(isReadOnly: true),
+					m_CompanyNotifications = SystemAPI.GetComponentLookup<CompanyNotifications>(isReadOnly: true),
+					m_Attached = SystemAPI.GetComponentLookup<Attached>(isReadOnly: true),
+					m_Lots = SystemAPI.GetComponentLookup<Game.Areas.Lot>(isReadOnly: true),
+					m_Geometries = SystemAPI.GetComponentLookup<Geometry>(isReadOnly: true),
+					m_LandValues = SystemAPI.GetComponentLookup<LandValue>(isReadOnly: true),
+					m_WorkplaceDatas = SystemAPI.GetComponentLookup<WorkplaceData>(isReadOnly: true),
+					m_HouseholdCitizenBufs = SystemAPI.GetBufferLookup<HouseholdCitizen>(isReadOnly: true),
+					m_SubAreas = SystemAPI.GetBufferLookup<Game.Areas.SubArea>(isReadOnly: true),
+					m_InstalledUpgrades = SystemAPI.GetBufferLookup<InstalledUpgrade>(isReadOnly: true),
+					m_Abandoned = SystemAPI.GetComponentLookup<Abandoned>(isReadOnly: true),
+					m_Destroyed = SystemAPI.GetComponentLookup<Destroyed>(isReadOnly: true),
+					m_Transforms = SystemAPI.GetComponentLookup<Game.Objects.Transform>(isReadOnly: true),
+					m_CityModifiers = SystemAPI.GetBufferLookup<CityModifier>(isReadOnly: true),
+					m_HealthProblems = SystemAPI.GetComponentLookup<HealthProblem>(isReadOnly: true),
+					m_SpawnableBuildingData = SystemAPI.GetComponentLookup<SpawnableBuildingData>(isReadOnly: true),
+					m_ZoneData = SystemAPI.GetComponentLookup<ZoneData>(isReadOnly: true),
+					m_BuildingNotifications = SystemAPI.GetComponentLookup<BuildingNotifications>(isReadOnly: false),
+					m_ExtractorProperties = SystemAPI.GetComponentLookup<ExtractorProperty>(isReadOnly: true),
+					m_ResourcesBuf = SystemAPI.GetBufferLookup<Game.Economy.Resources>(isReadOnly: true),
+					m_OwnedVehicles = SystemAPI.GetBufferLookup<OwnedVehicle>(isReadOnly: true),
+					m_LayoutElements = SystemAPI.GetBufferLookup<LayoutElement>(isReadOnly: true),
+					m_Workers = SystemAPI.GetComponentLookup<Worker>(isReadOnly: true),
+					m_Citizens = SystemAPI.GetComponentLookup<Citizen>(isReadOnly: true),
+					m_ProcessDatas = SystemAPI.GetComponentLookup<IndustrialProcessData>(isReadOnly: true),
+					m_ResourcePrefabs = this.m_ResourceSystem.GetPrefabs(),
+					m_ResourceDatas = SystemAPI.GetComponentLookup<ResourceData>(isReadOnly: true),
+					m_TaxRates = this.m_TaxSystem.GetTaxRates(),
+					m_PollutionMap =
+						this.m_GroundPollutionSystem.GetMap(readOnly: true, out groundPollutionDependencies),
+					m_AirPollutionMap = this.m_AirPollutionSystem.GetMap(readOnly: true, out airPollutionDependencies),
+					m_NoiseMap = this.m_NoisePollutionSystem.GetMap(readOnly: true, out noisePollutionDependencies),
+					m_CitizenHappinessParameterData =
+						this.m_CitizenHappinessParameterQuery.GetSingleton<CitizenHappinessParameterData>(),
+					m_BuildingConfigurationData =
+						this.m_BuildingParameterQuery.GetSingleton<BuildingConfigurationData>(),
+					m_PollutionParameters = this.m_PollutionParameterQuery.GetSingleton<PollutionParameterData>(),
+					m_FeeParameters = this.m_FeeParameterQuery.GetSingleton<ServiceFeeParameterData>(),
+					m_DeliveryTrucks = SystemAPI.GetComponentLookup<Game.Vehicles.DeliveryTruck>(isReadOnly: true),
+					m_ZonePropertiesDatas = SystemAPI.GetComponentLookup<ZonePropertiesData>(isReadOnly: true),
+					m_ServiceAvailables = SystemAPI.GetComponentLookup<ServiceAvailable>(isReadOnly: true),
+					m_UnderConstructions = SystemAPI.GetComponentLookup<UnderConstruction>(isReadOnly: true),
+					m_EconomyParameterData = this.m_EconomyParameterQuery.GetSingleton<EconomyParameterData>(),
+					m_City = this.m_CitySystem.City,
+					m_UpdateFrameIndex = updateFrame,
+					m_CommandBuffer = this.m_EndFrameBarrier.CreateCommandBuffer().AsParallelWriter(),
+					m_IconCommandBuffer = this.m_IconCommandSystem.CreateCommandBuffer()
+				}, this.m_BuildingQuery,
+				JobUtils.CombineDependencies(groundPollutionDependencies, airPollutionDependencies,
+					noisePollutionDependencies, base.Dependency));
+			this.m_EndFrameBarrier.AddJobHandleForProducer(rentAdjustJobHandle);
+			this.m_ResourceSystem.AddPrefabsReader(rentAdjustJobHandle);
+			this.m_GroundPollutionSystem.AddReader(rentAdjustJobHandle);
+			this.m_AirPollutionSystem.AddReader(rentAdjustJobHandle);
+			this.m_NoisePollutionSystem.AddReader(rentAdjustJobHandle);
+			this.m_TelecomCoverageSystem.AddReader(rentAdjustJobHandle);
+			this.m_TaxSystem.AddReader(rentAdjustJobHandle);
+			this.m_IconCommandSystem.AddCommandBufferWriter(rentAdjustJobHandle);
+			base.Dependency = rentAdjustJobHandle;
+		}
+
+
+		#endregion
+
+		#region Jobs
+
+		[BurstCompile]
+    private struct AdjustRentJob : IJobChunk
     {
         [ReadOnly] public EntityTypeHandle m_EntityType;
         public BufferTypeHandle<Renter> m_RenterType;
@@ -59,7 +228,7 @@ namespace MapExtPDX.ModeA
         [ReadOnly] public ComponentLookup<Citizen> m_Citizens;
         [ReadOnly] public ComponentLookup<SpawnableBuildingData> m_SpawnableBuildingData;
         [ReadOnly] public ComponentLookup<ZoneData> m_ZoneData;
-        [ReadOnly] public BufferLookup<Resources> m_ResourcesBuf;
+        [ReadOnly] public BufferLookup<Game.Economy.Resources> m_ResourcesBuf;
         [ReadOnly] public ComponentLookup<ExtractorProperty> m_ExtractorProperties;
         [ReadOnly] public ComponentLookup<IndustrialProcessData> m_ProcessDatas;
         [ReadOnly] public BufferLookup<OwnedVehicle> m_OwnedVehicles;
@@ -261,7 +430,7 @@ namespace MapExtPDX.ModeA
                                 ref this.m_Workers, ref this.m_Citizens, ref this.m_HealthProblems,
                                 ref this.m_EconomyParameterData, this.m_TaxRates);
                             int householdSavings = math.max(0,
-                                EconomyUtils.GetResources(Resource.Money, this.m_ResourcesBuf[renter]));
+                                EconomyUtils.GetResources(Game.Economy.Resource.Money, this.m_ResourcesBuf[renter]));
                             renterUpkeepCapacity = (int)(householdIncome * 0.3f + householdSavings * 0.1f);
                         }
                         else // 公司实体
@@ -499,6 +668,8 @@ namespace MapExtPDX.ModeA
             }
         }
     }
+	}
+
+
+	#endregion
 }
-
-

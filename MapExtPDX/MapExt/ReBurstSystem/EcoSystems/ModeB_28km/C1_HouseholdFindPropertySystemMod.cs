@@ -113,14 +113,7 @@ namespace MapExtPDX.ModeB
             base.OnCreate();
 
             var originalSystem = World.GetExistingSystemManaged<TargetSystem>();
-            if (originalSystem != null)
-            {
-                originalSystem.Enabled = false;
-#if DEBUG
-                Mod.Info($"[{typeof(ModSystem).Name}] Disabled original system: {typeof(TargetSystem).Name}");
-#endif
-            }
-            else
+            if (originalSystem == null)
             {
 #if DEBUG
                 Mod.Error(

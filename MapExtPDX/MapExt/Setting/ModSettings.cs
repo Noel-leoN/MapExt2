@@ -173,17 +173,7 @@ namespace MapExtPDX
         // === 经济系统补丁 ===
         [SettingsUISection(kMapSizeModeTab, kEcoGroup)]
         [SettingsUIHideByCondition(typeof(ModSettings), nameof(IsNotInMainMenu))]
-        [SettingsUIDisableByCondition(typeof(ModSettings), nameof(IsEconomyFixLocked))]
-        public bool isEnableEconomyFix
-        {
-            get => PatchModeChoice != PatchModeSetting.None || m_isEnableEconomyFix;
-            set => m_isEnableEconomyFix = value;
-        }
-
-        private bool m_isEnableEconomyFix = true;
-
-        // 當處於大尺寸地圖(非原版None)時，鎖定並強制啟用經濟系統補丁，僅作為 UI 顯示
-        public bool IsEconomyFixLocked => PatchModeChoice != PatchModeSetting.None;
+        public bool isEnableEconomyFix { get; set; } = true;
 
         //[SettingsUISection(kMapSizeModeTab, kEcoGroup)]
         //[SettingsUIButton]
@@ -219,13 +209,6 @@ namespace MapExtPDX
         /// 
         // 选项可用性
         public bool IsPatchUnAvailable => true;
-
-        // 实时应用并保存
-        public override void Apply()
-        {
-            base.Apply(); // 保存设置到文件
-        }
-
 
         // 设置字段初始化器默认值
         private bool m_NoDogsSystem = false;
