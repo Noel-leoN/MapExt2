@@ -76,7 +76,8 @@ trigger: always_on
 
 ## 7. Multi-Mode Synchronization (CRITICAL)
 
-- **Scope**: `EcoSystems/` directory contains identical system logic replicated across map modes (`ModeA_57km`, `ModeB_28km`, `ModeC_114km`, `ModeE_vanilla`). Only `namespace` differs between modes.
-- **Rule**: When modifying **any** file under `EcoSystems/ModeX/`, you **MUST** propagate the same change to **all other modes** in `EcoSystems/`. The only allowed difference is the `namespace MapExtPDX.Mode{X}` declaration.
-- **Exclusion**: `CellSystems/` 下的 `_CellOnly` 变体 **不需要** 同步，它们有独立的逻辑分支。
-- **Method**: Use `ModeA_57km` as the canonical source. After editing ModeA, copy the file content to other modes and replace the namespace letter accordingly (`ModeA` → `ModeB` / `ModeC` / `ModeE`).
+- **Scope**: Both `EcoSystems/` and `CellSystems/` directories contain identical system logic replicated across map modes (`ModeA_57km`, `ModeB_28km`, etc.). Only `namespace` differs between modes.
+- **Rule (EcoSystems)**: When modifying **any** file under `EcoSystems/ModeX/`, you **MUST** propagate the same change to **all other modes** in `EcoSystems/`.
+- **Rule (CellSystems)**: When modifying **any** file under `CellSystems/ModeX/` (including `_CellOnly` variants), you **MUST** propagate the same change to **all other modes** in `CellSystems/`.
+- **Isolation Rule**: `EcoSystems` and `CellSystems` are isolated from each other. Even if they both patch the same original game system (e.g., `RentAdjustSystem`), **DO NOT** cross-sync between the two directories. Sync EcoSystems to EcoSystems, and CellSystems to CellSystems.
+- **Method**: Use `ModeA_57km` as the canonical source. After editing ModeA within a specific directory (EcoSystems or CellSystems), copy the file content to other modes **within the same directory** and replace the namespace letter accordingly (`ModeA` → `ModeB` / `ModeC` / `ModeE`).
