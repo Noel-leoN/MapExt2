@@ -73,3 +73,10 @@ trigger: always_on
 - **Naming**: Use descriptive filenames in English (e.g., `Household_Lifecycle_Analysis.md`).
 - **Format**: Markdown with Mermaid diagrams, tables, and file links where appropriate.
 - **Updates**: When extending an existing topic, update the existing document or add new files to the same subdirectory.
+
+## 7. Multi-Mode Synchronization (CRITICAL)
+
+- **Scope**: `EcoSystems/` directory contains identical system logic replicated across map modes (`ModeA_57km`, `ModeB_28km`, `ModeC_114km`, `ModeE_vanilla`). Only `namespace` differs between modes.
+- **Rule**: When modifying **any** file under `EcoSystems/ModeX/`, you **MUST** propagate the same change to **all other modes** in `EcoSystems/`. The only allowed difference is the `namespace MapExtPDX.Mode{X}` declaration.
+- **Exclusion**: `CellSystems/` 下的 `_CellOnly` 变体 **不需要** 同步，它们有独立的逻辑分支。
+- **Method**: Use `ModeA_57km` as the canonical source. After editing ModeA, copy the file content to other modes and replace the namespace letter accordingly (`ModeA` → `ModeB` / `ModeC` / `ModeE`).
