@@ -36,20 +36,20 @@ namespace MapExtPDX
         kMiscGroup, /*kAirwayGroup,*/ kDebugGroup)]
     public class ModSettings : ModSetting
     {
-        public const string kMapSizeModeTab = "🗺️ MapSize Mode";
-        public const string kPerformanceToolTab = "🚀 PerformanceTool";
-        public const string kMiscTab = "🧩 Misc";
-        public const string kDebugTab = "🛠️ Debug";
-        public const string kMainModeGroup = "🎯 MainMode";
-        public const string kApplyModeGroup = "✅ ApplyMode";
-        public const string kInfoGroup = "ℹ️ GameInfo";
-        public const string kEcoGroup = "📈 Economy Logic & Perf.";
-        public const string kNoteGroup = "⚠️ Warning!";
-        public const string kResetGroup = "🔄 Reset";
-        public const string kPerformanceToolGroup = "⚡ PerformanceTool";
-        public const string kMiscGroup = "🪄 Misc";
+        public const string kMapSizeModeTab = "▍MapSize Mode";
+        public const string kPerformanceToolTab = "▍PerformanceTool";
+        public const string kMiscTab = "▍Misc";
+        public const string kDebugTab = "▍Debug";
+        public const string kMainModeGroup = "▍MainMode";
+        public const string kApplyModeGroup = "▍ApplyMode";
+        public const string kInfoGroup = "▍GameInfo";
+        public const string kEcoGroup = "▍Economy Logic & Perf.";
+        public const string kNoteGroup = "▍Warning!";
+        public const string kResetGroup = "▍Reset";
+        public const string kPerformanceToolGroup = "▍PerformanceTool";
+        public const string kMiscGroup = "▍Misc";
 
-        public const string kDebugGroup = "🐛 Debug";
+        public const string kDebugGroup = "▍Debug";
         //public const string kAirwayGroup = "AirwayRegenerate";
         //public const string kPatchSettingsGroup = "PatchSettings"; // New group for our patch controls
 
@@ -161,11 +161,11 @@ namespace MapExtPDX
         {
             switch (mode)
             {
-                case PatchModeSetting.ModeA: return "🟢 ModeA 57km (4x4)";
-                case PatchModeSetting.ModeB: return "🟡 ModeB 28km (2x2)";
-                case PatchModeSetting.ModeC: return "🔴 ModeC 114km (8x8) (Not Recommended)";
+                case PatchModeSetting.ModeA: return "• ModeA 57km (4x4)";
+                case PatchModeSetting.ModeB: return "• ModeB 28km (2x2)";
+                case PatchModeSetting.ModeC: return "• ModeC 114km (8x8) (Not Recommended)";
                 // case PatchModeSetting.ModeD: return "🟣 ModeD 229km (16x16) (Test Only!)";
-                case PatchModeSetting.None: return "⚪ None 14km (Vanilla)";
+                case PatchModeSetting.None: return "• None 14km (Vanilla)";
                 default: return mode.ToString();
             }
         }
