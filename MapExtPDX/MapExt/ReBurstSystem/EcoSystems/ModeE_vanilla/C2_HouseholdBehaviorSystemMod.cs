@@ -5,6 +5,7 @@
 
 // Game.Simulation.HouseholdBehaviorSystem替换
 // v1.4.2较大变化
+
 using Colossal.Mathematics;
 using Game;
 using Game.Agents;
@@ -27,6 +28,14 @@ using Unity.Mathematics;
 
 namespace MapExtPDX.ModeE
 {
+    // =========================================================================================
+    // 1. Mod 自定义系统类型 (当前类)
+    using ModSystem = HouseholdBehaviorSystemMod;
+    // 2. 原版系统类型 (用于禁用和定位)
+    using TargetSystem = HouseholdBehaviorSystem;
+
+    // =========================================================================================
+
     /// <summary>
     /// v2.2.0修复：
     /// 1. HouseholdBehaviorSystem 引发的找房过度问题
@@ -35,43 +44,40 @@ namespace MapExtPDX.ModeE
     /// 4. 修正一些性能低下的算法
     /// 5. 增加"虚拟网购"功能(暂去除)
     /// </summary>
-
-    // =========================================================================================
-    // 1. Mod 自定义系统类型 (当前类)
-    using ModSystem = HouseholdBehaviorSystemMod;
-    // 2. 原版系统类型 (用于禁用和定位)
-    using TargetSystem = HouseholdBehaviorSystem;
-    // =========================================================================================
-
     public partial class HouseholdBehaviorSystemMod : GameSystemBase
     {
         #region 静态常量 - 游戏规则参数
+
         // === 配置中心(自定义) ===
         /// <summary>每天的更新次数基数</summary>
         // 原版值256
         public static readonly int kUpdatesPerDay = 128;
+
         // 计算更新间隔帧数。262144 等于一天(月)。
         public override int GetUpdateInterval(SystemUpdatePhase phase) => 262144 / (kUpdatesPerDay * 16);
+
         // 消耗补偿系数 (tick频率降低，单次消耗需按比例增加)
         public static readonly int kUpdateScale = 256 / kUpdatesPerDay;
 
         // === 游戏性参数 ===
-        public static readonly int kMaxShoppingPossibility = 80;    // 最大购物概率%
-        public static readonly int kMaxHouseholdNeedAmount = 2000;  // 单次最大购买量
-        public static readonly int kCarAmount = 50;                 // 购车资源单位
-        public static readonly int kCarBuyingMinimumMoney = 10000;  // 购车最低存款
-        public static readonly int KMinimumShoppingAmount = 50;     // 资源剩余多少时触发购物检查
-        public static readonly int kMinimumShoppingMoney = 1000;    // 最低可支配资金 // 注意也被ResourceBuyerSystem引用，谨慎修改
+        public static readonly int KMaxShoppingPossibility = 80; // 最大购物概率%
+        public static readonly int kMaxHouseholdNeedAmount = 2000; // 单次最大购买量
+        public static readonly int kCarAmount = 50; // 购车资源单位
+        public static readonly int kCarBuyingMinimumMoney = 10000; // 购车最低存款
+        public static readonly int KMinimumShoppingAmount = 50; // 资源剩余多少时触发购物检查
+        public static readonly int kMinimumShoppingMoney = 1000; // 最低可支配资金 // 注意也被ResourceBuyerSystem引用，谨慎修改
 
         // 每个市民的资源需求倍率
         // 默认似乎为1f, 提高以适配消耗倍率
         private static readonly float kResourceDemandPerCitizenMultiplier = 3.5f;
 
-        public static readonly float kTrafficReduction = 0.0004f; // EconomyPrefab预制：交通拥堵对购物欲望的负面影响系数 // 同时被其他多个系统引用，行为无关，可单独设置
+        public static readonly float
+            kTrafficReduction = 0.0004f; // EconomyPrefab预制：交通拥堵对购物欲望的负面影响系数 // 同时被其他多个系统引用，行为无关，可单独设置
 
         #endregion
 
         #region 系统依赖和查询字段
+
         private EntityQuery m_HouseholdGroup;
         private EntityQuery m_EconomyParameterGroup;
         private EntityQuery m_GameModeSettingQuery;
@@ -81,6 +87,7 @@ namespace MapExtPDX.ModeE
         private ResourceSystem m_ResourceSystem;
         private TaxSystem m_TaxSystem;
         private CitySystem m_CitySystem;
+
         #endregion
 
         #region System Loop
@@ -121,10 +128,10 @@ namespace MapExtPDX.ModeE
 
             // 创建家庭查询 - 包含所有正常家庭（排除游客、搬走的、已删除的、临时的）
             m_HouseholdGroup = SystemAPI.QueryBuilder()
-               .WithAllRW<Household, HouseholdNeed>()
-               .WithAll<HouseholdCitizen, Resources, UpdateFrame>()
-               .WithNone<TouristHousehold, MovingAway, Deleted, Temp>()
-               .Build();
+                .WithAllRW<Household, HouseholdNeed>()
+                .WithAll<HouseholdCitizen, Resources, UpdateFrame>()
+                .WithNone<TouristHousehold, MovingAway, Deleted, Temp>()
+                .Build();
 
             // 创建游戏模式设置查询(单查询保留原版方式)
             m_GameModeSettingQuery = SystemAPI.QueryBuilder()
@@ -134,7 +141,6 @@ namespace MapExtPDX.ModeE
             // 设置系统运行所需的查询条件
             RequireForUpdate(m_HouseholdGroup);
             RequireForUpdate(m_EconomyParameterGroup);
-
         }
 
         protected override void OnDestroy()
@@ -145,7 +151,8 @@ namespace MapExtPDX.ModeE
         protected override void OnUpdate()
         {
             // 计算当前更新帧索引（用于分批更新家庭，避免单帧压力过大）
-            uint updateFrameWithInterval = SimulationUtils.GetUpdateFrameWithInterval(m_SimulationSystem.frameIndex, (uint)GetUpdateInterval(SystemUpdatePhase.GameSimulation), 16); // 将家庭分为16批次更新
+            uint updateFrameWithInterval = SimulationUtils.GetUpdateFrameWithInterval(m_SimulationSystem.frameIndex,
+                (uint)GetUpdateInterval(SystemUpdatePhase.GameSimulation), 16); // 将家庭分为16批次更新
 
             // 创建家庭更新任务
             var householdTickJob = new HouseholdTickJob
@@ -216,6 +223,7 @@ namespace MapExtPDX.ModeE
             // 通知税收系统有读取操作，用于依赖管理
             m_TaxSystem.AddReader(Dependency);
         }
+
         #endregion
 
 
@@ -224,75 +232,105 @@ namespace MapExtPDX.ModeE
         {
             // 获取实体的Handle
             [ReadOnly] public EntityTypeHandle m_EntityType;
+
             // 家庭组件，包含金钱、资源存量等
             public ComponentTypeHandle<Household> m_HouseholdType;
+
             // 家庭需求组件，记录当前需要购买的资源
             public ComponentTypeHandle<HouseholdNeed> m_HouseholdNeedType;
+
             // 家庭成员列表缓冲区
             [ReadOnly] public BufferTypeHandle<HouseholdCitizen> m_HouseholdCitizenType;
+
             // 资源缓冲区(资源种类和数量)
             public BufferTypeHandle<Resources> m_ResourceType;
+
             // 用于分帧更新的组件
             [ReadOnly] public SharedComponentTypeHandle<UpdateFrame> m_UpdateFrameType;
+
             // 游客家庭标记
             public ComponentTypeHandle<TouristHousehold> m_TouristHouseholdType;
+
             // 通勤家庭标记（住在城外）
             [ReadOnly] public ComponentTypeHandle<CommuterHousehold> m_CommuterHouseholdType;
+
             // 寻找住宿者标记（游客找旅馆）
             [ReadOnly] public ComponentTypeHandle<LodgingSeeker> m_LodgingSeekerType;
+
             // 无家可归状态查找表
             [ReadOnly] public ComponentLookup<HomelessHousehold> m_HomelessHouseholds;
+
             // 拥有的车辆查找表
             [ReadOnly] public BufferLookup<OwnedVehicle> m_OwnedVehicles;
+
             // 租赁者缓冲区（建筑侧）
             [ReadOnly] public BufferLookup<Renter> m_RenterBufs;
+
             // 房产寻找者查找表
             [ReadOnly] public ComponentLookup<PropertySeeker> m_PropertySeekers;
+
             // 房产租赁者（家庭侧，指向居住的建筑）
             [ReadOnly] public ComponentLookup<PropertyRenter> m_PropertyRenters;
+
             // 工人组件查找表
             [ReadOnly] public ComponentLookup<Worker> m_Workers;
+
             // 资源数据配置
             [ReadOnly] public ComponentLookup<ResourceData> m_ResourceDatas;
+
             // 住宿提供者（旅馆/避难所）
             [ReadOnly] public ComponentLookup<LodgingProvider> m_LodgingProviders;
+
             // 城市人口统计
             [ReadOnly] public ComponentLookup<Population> m_Populations;
+
             // 市民个体数据（年龄、快乐度等）
             [ReadOnly] public ComponentLookup<Citizen> m_CitizenDatas;
+
             // 消费数据配置
             [ReadOnly] public ComponentLookup<ConsumptionData> m_ConsumptionDatas;
+
             // 预制体引用
             [ReadOnly] public ComponentLookup<PrefabRef> m_PrefabRefs;
+
             // 健康问题查找表
             [ReadOnly] public ComponentLookup<HealthProblem> m_HealthProblems;
+
             // 资源预制体映射
             [ReadOnly] public ResourcePrefabs m_ResourcePrefabs;
+
             // 当前税率数组
             [ReadOnly] public NativeArray<int> m_TaxRates;
+
             // 随机数种子
             public RandomSeed m_RandomSeed;
+
             // 每个市民的资源需求乘数
             public float m_ResourceDemandPerCitizenMultiplier;
+
             // 经济参数
             public EconomyParameterData m_EconomyParameters;
+
             // 并行实体命令缓冲区（用于添加/删除组件）
             public EntityCommandBuffer.ParallelWriter m_CommandBuffer;
+
             // 当前需要更新的帧索引（用于分帧）
             public uint m_UpdateFrameIndex;
+
             // 当前游戏全局帧索引
             public uint m_FrameIndex;
+
             // 城市实体（用于获取人口等全局数据）
             public Entity m_City;
 
             private struct HouseholdCache
             {
-                public int TotalWealth;       // 总财富
-                public int CarCount;          // 车辆数
-                public int4 AgeCounts;        // x:Child, y:Teen, z:Adult, w:Elderly
-                public float AvgHappiness;      // 平均幸福度
-                public int LastDayIncome;     // 昨日收入
-                public int FamilySize;        // 家庭人数
+                public int TotalWealth; // 总财富
+                public int CarCount; // 车辆数
+                public int4 AgeCounts; // x:Child, y:Teen, z:Adult, w:Elderly
+                public float AvgHappiness; // 平均幸福度
+                public int LastDayIncome; // 昨日收入
+                public int FamilySize; // 家庭人数
             }
 
             // 统一计算家庭成员年龄结构/幸福度/收入
@@ -302,7 +340,7 @@ namespace MapExtPDX.ModeE
                 Household household,
                 DynamicBuffer<HouseholdCitizen> citizens,
                 DynamicBuffer<Game.Economy.Resources> resources
-                )
+            )
             {
                 // --- 基础数据 ---
                 HouseholdCache basecache = new()
@@ -365,11 +403,13 @@ namespace MapExtPDX.ModeE
                             }
                             else
                             {
-                                if (citizenData.m_UnemploymentCounter < m_EconomyParameters.m_UnemploymentAllowanceMaxDays * PayWageSystem.kUpdatesPerDay)
+                                if (citizenData.m_UnemploymentCounter <
+                                    m_EconomyParameters.m_UnemploymentAllowanceMaxDays * PayWageSystem.kUpdatesPerDay)
                                 {
                                     householdIncome += m_EconomyParameters.m_UnemploymentBenefit;
                                 }
                             }
+
                             break;
                     }
 
@@ -387,7 +427,8 @@ namespace MapExtPDX.ModeE
             private int GetWeightOptimized(int spendableMoney, ResourceData data, HouseholdCache cache)
             {
                 // 预判：如果权重因子都是0，直接返回
-                if (data.m_ChildWeight == 0 && data.m_TeenWeight == 0 && data.m_AdultWeight == 0 && data.m_ElderlyWeight == 0 && data.m_CarConsumption == 0)
+                if (data.m_ChildWeight == 0 && data.m_TeenWeight == 0 && data.m_AdultWeight == 0 &&
+                    data.m_ElderlyWeight == 0 && data.m_CarConsumption == 0)
                     return 0;
 
                 // 基础消耗
@@ -417,9 +458,9 @@ namespace MapExtPDX.ModeE
             private bool NeedsCar(int spendableMoney, int4 ageCounts, int cars, ref Random random)
             {
                 // 【优化】 车辆购买条件
-                // 当家庭可支配资金低于最低购车门槛，或者车辆数已经达到或超过家庭成人数量，不考虑买车。
+                // 当家庭可支配资金低于最低购车门槛，或者车辆数已经达到或超过家庭成人与老人(能开车的人)数量，不考虑买车。
                 // 
-                if (spendableMoney <= kCarBuyingMinimumMoney || cars >= ageCounts.z)
+                if (spendableMoney <= kCarBuyingMinimumMoney || cars >= ageCounts.z + ageCounts.w)
                 {
                     return false;
                 }
@@ -428,7 +469,8 @@ namespace MapExtPDX.ModeE
                 return random.NextFloat() < (0f - math.log((float)cars + 0.1f)) / 10f + 0.1;
             }
 
-            public void Execute(in ArchetypeChunk chunk, int unfilteredChunkIndex, bool useEnabledMask, in v128 chunkEnabledMask)
+            public void Execute(in ArchetypeChunk chunk, int unfilteredChunkIndex, bool useEnabledMask,
+                in v128 chunkEnabledMask)
             {
                 // 检查当前Chunk是否属于本帧需要更新的，如果不是则跳过，这是分帧更新的标准做法。
                 if (chunk.GetSharedComponent(m_UpdateFrameType).m_Index != m_UpdateFrameIndex) return;
@@ -437,7 +479,8 @@ namespace MapExtPDX.ModeE
                 NativeArray<Entity> householdEntities = chunk.GetNativeArray(m_EntityType);
                 NativeArray<Household> households = chunk.GetNativeArray(ref m_HouseholdType);
                 NativeArray<HouseholdNeed> householdNeeds = chunk.GetNativeArray(ref m_HouseholdNeedType);
-                BufferAccessor<HouseholdCitizen> householdCitizenBuffers = chunk.GetBufferAccessor(ref m_HouseholdCitizenType);
+                BufferAccessor<HouseholdCitizen> householdCitizenBuffers =
+                    chunk.GetBufferAccessor(ref m_HouseholdCitizenType);
                 BufferAccessor<Resources> resourceBuffers = chunk.GetBufferAccessor(ref m_ResourceType);
                 NativeArray<TouristHousehold> touristHouseholds = chunk.GetNativeArray(ref m_TouristHouseholdType);
 
@@ -463,7 +506,7 @@ namespace MapExtPDX.ModeE
                 int baseshopChance = (int)math.round(200f / popFactor);
 
                 // 低人口时遵循原版，百万人口后单次通过率限制在 1% - 5% 之间
-                baseshopChance = math.clamp(baseshopChance, 1, kMaxShoppingPossibility);
+                baseshopChance = math.clamp(baseshopChance, 1, KMaxShoppingPossibility);
 
                 // =========================================================
                 // --- B. 主循环逻辑 ---
@@ -506,7 +549,8 @@ namespace MapExtPDX.ModeE
                     // 【优化】预计算家庭数据：人口结构年龄/幸福度/日收入/总财富/可支配资金/车辆数等
                     // 家庭成员次循环，将 GetAgeWeight 及多处内部循环提取一次计算，避免反复遍历
 
-                    HouseholdCache basecache = PrecalculateHouseholdData(householdEntity, household, citizens, resources);
+                    HouseholdCache basecache =
+                        PrecalculateHouseholdData(householdEntity, household, citizens, resources);
 
                     // 更新昨日收入
                     household.m_SalaryLastDay = basecache.LastDayIncome;
@@ -544,14 +588,17 @@ namespace MapExtPDX.ModeE
 
                     // 决定迁出原因：没有成年人 -> 不开心 -> 破产 -> 不迁出
                     MoveAwayReason moveAwayReason =
-                        hasNoAdults ? MoveAwayReason.NoAdults :
-                        (isUnhappyAndConsideringMoving ? MoveAwayReason.NotHappy :
-                        (isBankrupt ? MoveAwayReason.NoMoney : MoveAwayReason.None));
+                        hasNoAdults
+                            ? MoveAwayReason.NoAdults
+                            : (isUnhappyAndConsideringMoving
+                                ? MoveAwayReason.NotHappy
+                                : (isBankrupt ? MoveAwayReason.NoMoney : MoveAwayReason.None));
 
                     // 如果决定迁出，则执行迁出命令(添加迁出组件)并跳过后续处理。
                     if (moveAwayReason != MoveAwayReason.None)
                     {
-                        CitizenUtils.HouseholdMoveAway(m_CommandBuffer, unfilteredChunkIndex, householdEntity, moveAwayReason);
+                        CitizenUtils.HouseholdMoveAway(m_CommandBuffer, unfilteredChunkIndex, householdEntity,
+                            moveAwayReason);
                         continue;
                     }
 
@@ -563,7 +610,8 @@ namespace MapExtPDX.ModeE
                     {
                         bool hasHome = true;
                         // 没有无家可归组件，但也没有租房组件或者租房组件指向空实体(原版修复失去房产或其他原因导致无房的家庭却没有纳入无家可归的bug)
-                        if (!m_PropertyRenters.HasComponent(householdEntity) || m_PropertyRenters[householdEntity].m_Property == Entity.Null)
+                        if (!m_PropertyRenters.HasComponent(householdEntity) ||
+                            m_PropertyRenters[householdEntity].m_Property == Entity.Null)
                         {
                             // 如果已经标记为"搬入" (MovedIn)，则说明失去了房子，变为无家可归，则添加标记为无家可归状态
                             if ((household.m_Flags & HouseholdFlags.MovedIn) != HouseholdFlags.None)
@@ -597,7 +645,6 @@ namespace MapExtPDX.ModeE
                                 chunkHasLodgingSeeker,
                                 baseshopChance);
                         }
-
                     }
                     else // 具有无家可归组件
                     {
@@ -613,20 +660,22 @@ namespace MapExtPDX.ModeE
                     if (!chunkHasTourist && !chunkHasCommuter && !isSeeker)
                     {
                         // 检查当前家庭所在的建筑
-                        Entity householdHomeBuilding = BuildingUtils.GetHouseholdHomeBuilding(householdEntity, ref m_PropertyRenters, ref m_HomelessHouseholds);
+                        Entity householdHomeBuilding = BuildingUtils.GetHouseholdHomeBuilding(householdEntity,
+                            ref m_PropertyRenters, ref m_HomelessHouseholds);
 
                         // --- 修改代码 ---
                         // 【优化】仅当家庭确实没有房屋时才强制启用 PropertySeeker，保证最基本、最必要的找房逻辑。
                         // m_RenterBufs额外健壮性检查，防止房屋没有租户列表。
                         if (householdHomeBuilding == Entity.Null || !m_RenterBufs.HasBuffer(householdHomeBuilding))
                         {
-                            m_CommandBuffer.SetComponentEnabled<PropertySeeker>(unfilteredChunkIndex, householdEntities[i], value: true);
+                            m_CommandBuffer.SetComponentEnabled<PropertySeeker>(unfilteredChunkIndex,
+                                householdEntities[i], value: true);
                         }
                         // 【优化】整个 'else' 分支被移除，彻底杜绝所有基于随机数的“改善性”找房请求。
                         // RentAdjustSystem 已经存在同类逻辑
                         // “寻求改善”的逻辑现在完全交由 RentAdjustSystem 来更智能地处理。
-
                     }
+
                     // 将修改后的 household 实体数据写回 Household 数组
                     households[i] = household;
                 }
@@ -747,7 +796,8 @@ namespace MapExtPDX.ModeE
                 // 注意：kMinimumShoppingMoney = 1000
                 // 此时才计算可支配资金 (Lazy Evaluation)
                 PropertyRenter renter = m_PropertyRenters.HasComponent(entity) ? m_PropertyRenters[entity] : default;
-                int spendableMoney = EconomyUtils.GetHouseholdSpendableMoney(household, resources, ref m_RenterBufs, ref m_ConsumptionDatas, ref m_PrefabRefs, renter);
+                int spendableMoney = EconomyUtils.GetHouseholdSpendableMoney(household, resources, ref m_RenterBufs,
+                    ref m_ConsumptionDatas, ref m_PrefabRefs, renter);
 
                 // 没钱，清空需求
                 if (spendableMoney < kMinimumShoppingMoney)
@@ -769,7 +819,7 @@ namespace MapExtPDX.ModeE
                 while (iterator.Next())
                 {
                     ResourceData resData = m_ResourceDatas[m_ResourcePrefabs[iterator.resource]];
-                    if (!resData.m_IsLeisure)   // 仅计算非娱乐资源
+                    if (!resData.m_IsLeisure) // 仅计算非娱乐资源
                         currentTotalWeight += GetWeightOptimized(spendableMoney, resData, cache);
                 }
 
@@ -796,13 +846,14 @@ namespace MapExtPDX.ModeE
                         if (iterator.resource == Resource.Vehicles)
                         {
                             // 此时才计算是否需要买车
-                            bool needsCar = NeedsCar(spendableMoney, cache.FamilySize, cache.CarCount, ref random);
+                            bool needsCar = NeedsCar(spendableMoney, cache.AgeCounts, cache.CarCount, ref random);
                             if (needsCar)
                             {
                                 currentNeed.m_Resource = Resource.Vehicles;
                                 currentNeed.m_Amount = kCarAmount;
                                 householdNeeds[index] = currentNeed;
                             }
+
                             break;
                         }
 
@@ -812,7 +863,8 @@ namespace MapExtPDX.ModeE
                             float marketPrice = EconomyUtils.GetMarketPrice(resData);
 
                             // 计算购买量：尽可能买满，实现"低频大额"
-                            int affordAmount = math.clamp((int)(spendableMoney / marketPrice), 0, kMaxHouseholdNeedAmount);
+                            int affordAmount = math.clamp((int)(spendableMoney / marketPrice), 0,
+                                kMaxHouseholdNeedAmount);
                             int finalAmount = (int)(affordAmount * m_ResourceDemandPerCitizenMultiplier);
 
                             // 最小购买量限制：防止只买1个单位
@@ -822,6 +874,7 @@ namespace MapExtPDX.ModeE
                                 currentNeed.m_Amount = math.max(0, finalAmount);
                                 householdNeeds[index] = currentNeed;
                             }
+
                             break; // 选中后退出
                         }
                     }
@@ -831,9 +884,9 @@ namespace MapExtPDX.ModeE
             // 原版方法
             public static float GetConsumptionMultiplier(float2 parameter, int householdWealth)
             {
-                return parameter.x + parameter.y * math.smoothstep(0f, 1f, (float)(math.max(0, householdWealth) + 1000) / 6000f);
+                return parameter.x + parameter.y *
+                    math.smoothstep(0f, 1f, (float)(math.max(0, householdWealth) + 1000) / 6000f);
             }
-
         } // job
     } // class
 } // namespace

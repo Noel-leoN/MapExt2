@@ -458,9 +458,9 @@ namespace MapExtPDX.ModeA
             private bool NeedsCar(int spendableMoney, int4 ageCounts, int cars, ref Random random)
             {
                 // 【优化】 车辆购买条件
-                // 当家庭可支配资金低于最低购车门槛，或者车辆数已经达到或超过家庭成人数量，不考虑买车。
+                // 当家庭可支配资金低于最低购车门槛，或者车辆数已经达到或超过家庭成人与老人(能开车的人)数量，不考虑买车。
                 // 
-                if (spendableMoney <= kCarBuyingMinimumMoney || cars >= ageCounts.z)
+                if (spendableMoney <= kCarBuyingMinimumMoney || cars >= ageCounts.z + ageCounts.w)
                 {
                     return false;
                 }
@@ -846,7 +846,7 @@ namespace MapExtPDX.ModeA
                         if (iterator.resource == Resource.Vehicles)
                         {
                             // 此时才计算是否需要买车
-                            bool needsCar = NeedsCar(spendableMoney, cache.FamilySize, cache.CarCount, ref random);
+                            bool needsCar = NeedsCar(spendableMoney, cache.AgeCounts, cache.CarCount, ref random);
                             if (needsCar)
                             {
                                 currentNeed.m_Resource = Resource.Vehicles;
