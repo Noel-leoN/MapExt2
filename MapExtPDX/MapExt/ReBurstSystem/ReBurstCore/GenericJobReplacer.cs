@@ -128,24 +128,6 @@ namespace MapExtPDX.MapExt.ReBurstSystem.Core
             MethodBase originalMethod)
         {
             var result = TranspilerInternal(instructions, il, originalMethod).ToList();
-            try
-            {
-                string dumpPath = System.IO.Path.Combine(
-                    "D:\\CS2.WorkSpace\\CS2Mod\\A.Mod\\MapExt2\\_ReferenceSolution",
-                    $"IL_DUMP_{originalMethod.DeclaringType.Name}_{originalMethod.Name}.txt");
-                var sb = new System.Text.StringBuilder();
-                sb.AppendLine($"--- IL Dump for {originalMethod.DeclaringType.Name}.{originalMethod.Name} ---");
-                for (int i = 0; i < result.Count; i++)
-                {
-                    sb.AppendLine($"IL_{i:X4}: " + result[i].ToString());
-                }
-
-                System.IO.File.WriteAllText(dumpPath, sb.ToString() + "\n");
-            }
-            catch
-            {
-            }
-
             return result;
         }
 

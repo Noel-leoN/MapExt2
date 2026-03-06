@@ -61,6 +61,10 @@ BurstDebugInformation_DoNotShip/
 # AI Agent & GitNexus
 .gitnexus
 .claude/
-.agents/skills/gitnexus*/
+.agents/
 AGENTS.md
 CLAUDE.md
+
+# IDE & Version Control
+.vscode/
+.github/
