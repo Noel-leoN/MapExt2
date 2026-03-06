@@ -31,21 +31,37 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
 
         // Fields for AirwaySystem
         private static readonly FieldInfo m_AirwayDataField = AccessTools.Field(typeof(AirwaySystem), "m_AirwayData");
-        private static readonly FieldInfo m_LoadGameSystemField = AccessTools.Field(typeof(AirwaySystem), "m_LoadGameSystem");
-        private static readonly FieldInfo m_TerrainSystemField = AccessTools.Field(typeof(AirwaySystem), "m_TerrainSystem");
+
+        private static readonly FieldInfo m_LoadGameSystemField =
+            AccessTools.Field(typeof(AirwaySystem), "m_LoadGameSystem");
+
+        private static readonly FieldInfo m_TerrainSystemField =
+            AccessTools.Field(typeof(AirwaySystem), "m_TerrainSystem");
+
         private static readonly FieldInfo m_WaterSystemField = AccessTools.Field(typeof(AirwaySystem), "m_WaterSystem");
 
         // Properties for AirwayHelpers.AirwayData
-        private static readonly PropertyInfo m_HelicopterMapProperty = AccessTools.Property(typeof(AirwayHelpers.AirwayData), "helicopterMap");
-        private static readonly PropertyInfo m_AirplaneMapProperty = AccessTools.Property(typeof(AirwayHelpers.AirwayData), "airplaneMap");
+        private static readonly PropertyInfo m_HelicopterMapProperty =
+            AccessTools.Property(typeof(AirwayHelpers.AirwayData), "helicopterMap");
+
+        private static readonly PropertyInfo m_AirplaneMapProperty =
+            AccessTools.Property(typeof(AirwayHelpers.AirwayData), "airplaneMap");
 
         // Fields for AirwayHelpers.AirwayMap
-        private static readonly FieldInfo m_GridSizeField = AccessTools.Field(typeof(AirwayHelpers.AirwayMap), "m_GridSize");
-        private static readonly FieldInfo m_CellSizeField = AccessTools.Field(typeof(AirwayHelpers.AirwayMap), "m_CellSize");
-        private static readonly FieldInfo m_PathHeightField = AccessTools.Field(typeof(AirwayHelpers.AirwayMap), "m_PathHeight");
-        private static readonly FieldInfo m_EntitiesField = AccessTools.Field(typeof(AirwayHelpers.AirwayMap), "m_Entities");
+        private static readonly FieldInfo m_GridSizeField =
+            AccessTools.Field(typeof(AirwayHelpers.AirwayMap), "m_GridSize");
 
-        private static readonly PropertyInfo DependencyProperty = AccessTools.Property(typeof(SystemBase), "Dependency");
+        private static readonly FieldInfo m_CellSizeField =
+            AccessTools.Field(typeof(AirwayHelpers.AirwayMap), "m_CellSize");
+
+        private static readonly FieldInfo m_PathHeightField =
+            AccessTools.Field(typeof(AirwayHelpers.AirwayMap), "m_PathHeight");
+
+        private static readonly FieldInfo m_EntitiesField =
+            AccessTools.Field(typeof(AirwayHelpers.AirwayMap), "m_Entities");
+
+        private static readonly PropertyInfo
+            DependencyProperty = AccessTools.Property(typeof(SystemBase), "Dependency");
 
 
         // This runs BEFORE the original OnUpdate. Its only job is to manage the session lock.
@@ -98,7 +114,8 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
                 Mod.Info($"[Airway Patch Postfix] Current game purpose: {purpose}");
 
                 // only care about modifying airways in a real game or map editor session.
-                if (purpose != Purpose.NewGame && purpose != Purpose.LoadGame && purpose != Purpose.NewMap && purpose != Purpose.LoadMap)
+                if (purpose != Purpose.NewGame && purpose != Purpose.LoadGame && purpose != Purpose.NewMap &&
+                    purpose != Purpose.LoadMap)
                 {
                     Mod.Info($"[Airway Patch Postfix] Purpose is not relevant. Skipping.");
                     return;
@@ -115,7 +132,8 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
                 float mapSize = 14336f * PatchManager.CurrentCoreValue;
                 float targetHeliCellSize = mapSize / 29f;
 
-                Mod.Info($"[Airway Patch Postfix] Current CellSize: {currentCellSize}, Target CellSize: {targetHeliCellSize}");
+                Mod.Info(
+                    $"[Airway Patch Postfix] Current CellSize: {currentCellSize}, Target CellSize: {targetHeliCellSize}");
 
                 // --- The Core Logic: Check if modification is needed ---
                 if (Mathf.Approximately(currentCellSize, targetHeliCellSize))
@@ -125,7 +143,8 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
                     return;
                 }
 
-                Mod.Info("[Airway Patch Postfix] Size mismatch detected. Rebuilding airway data in memory and scheduling update job...");
+                Mod.Info(
+                    "[Airway Patch Postfix] Size mismatch detected. Rebuilding airway data in memory and scheduling update job...");
 
                 // --- Rebuild AirwayData in memory with new sizes but OLD entities ---
                 // not creating or destroying anything, just creating new C# structs.
@@ -147,10 +166,12 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
                 // pass Allocator.None because NOT allocating new arrays. The constructor will just store our references.
                 // CORRECTION: The constructor *always* allocates. So it must dispose the old and create new with proper allocator.
                 // re-read AirwayMap constructor. It takes an allocator. So it must provide one.
-                var newHeliMap = new AirwayHelpers.AirwayMap(oldHeliGridSize, targetHeliCellSize, oldHeliPathHeight, Allocator.Persistent);
+                var newHeliMap = new AirwayHelpers.AirwayMap(oldHeliGridSize, targetHeliCellSize, oldHeliPathHeight,
+                    Allocator.Persistent);
                 newHeliMap.entities.CopyFrom(oldHeliEntities); // Copy entity references
 
-                var newAirplaneMap = new AirwayHelpers.AirwayMap(oldAirplaneGridSize, targetAirplaneCellSize, oldAirplanePathHeight, Allocator.Persistent);
+                var newAirplaneMap = new AirwayHelpers.AirwayMap(oldAirplaneGridSize, targetAirplaneCellSize,
+                    oldAirplanePathHeight, Allocator.Persistent);
                 newAirplaneMap.entities.CopyFrom(oldAirplaneEntities); // Copy entity references
 
                 // 4. Create a new top-level data struct
@@ -180,12 +201,19 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
                 // 3. Schedule our job.
                 JobHandle updateJobHandle = updateCurvesJob.Schedule(combinedDeps);
 
+                // --- NEW FIX: 释放旧的 NativeArray 防止内存泄漏 ---
+                JobHandle disposeHeliHandle = oldHeliEntities.Dispose(updateJobHandle);
+                JobHandle disposeAirplaneHandle = oldAirplaneEntities.Dispose(updateJobHandle);
+
+                // 4. 将 Dispose 的 JobHandle 结合起来，作为最终传递给系统 Dependency 的 Handle
+                JobHandle finalDeps = JobHandle.CombineDependencies(disposeHeliHandle, disposeAirplaneHandle);
+
                 // These calls are the same
                 terrainSystem.AddCPUHeightReader(updateJobHandle);
                 waterSystem.AddSurfaceReader(updateJobHandle);
 
-                // 4. SET the system's dependency to new job's handle using reflection.
-                DependencyProperty.SetValue(__instance, updateJobHandle);
+                // 5. SET the system's dependency to new job's handle using reflection.
+                DependencyProperty.SetValue(__instance, finalDeps);
 
                 Mod.Info("[Airway Patch Postfix] Update job scheduled. Engaging session lock.");
                 s_HasRunThisSession = true;
@@ -204,17 +232,12 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
         [BurstCompile]
         private struct UpdateAirwayCurvesJob : IJob
         {
-            [ReadOnly]
-            public AirwayHelpers.AirwayMap m_HelicopterMap;
-            [ReadOnly]
-            public AirwayHelpers.AirwayMap m_AirplaneMap;
-            [ReadOnly]
-            public TerrainHeightData m_TerrainHeightData;
-            [ReadOnly]
-            public WaterSurfaceData<SurfaceWater> m_WaterSurfaceData;
+            [ReadOnly] public AirwayHelpers.AirwayMap m_HelicopterMap;
+            [ReadOnly] public AirwayHelpers.AirwayMap m_AirplaneMap;
+            [ReadOnly] public TerrainHeightData m_TerrainHeightData;
+            [ReadOnly] public WaterSurfaceData<SurfaceWater> m_WaterSurfaceData;
 
-            [NativeDisableParallelForRestriction]
-            public ComponentLookup<Curve> m_CurveData;
+            [NativeDisableParallelForRestriction] public ComponentLookup<Curve> m_CurveData;
 
             public void Execute()
             {
@@ -267,8 +290,10 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
 
                 float3 nodePosition = map.GetNodePosition(startNode);
                 float3 nodePosition2 = map.GetNodePosition(endNode);
-                nodePosition.y += WaterUtils.SampleHeight(ref m_WaterSurfaceData, ref m_TerrainHeightData, nodePosition);
-                nodePosition2.y += WaterUtils.SampleHeight(ref m_WaterSurfaceData, ref m_TerrainHeightData, nodePosition2);
+                nodePosition.y +=
+                    WaterUtils.SampleHeight(ref m_WaterSurfaceData, ref m_TerrainHeightData, nodePosition);
+                nodePosition2.y +=
+                    WaterUtils.SampleHeight(ref m_WaterSurfaceData, ref m_TerrainHeightData, nodePosition2);
 
                 Curve value2 = default(Curve);
                 value2.m_Bezier = NetUtils.StraightCurve(nodePosition, nodePosition2);

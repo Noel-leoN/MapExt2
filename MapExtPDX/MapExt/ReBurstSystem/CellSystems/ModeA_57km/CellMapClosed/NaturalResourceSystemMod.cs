@@ -26,8 +26,6 @@ using UnityEngine.Scripting;
 
 namespace MapExtPDX.ModeA
 {
-    using MapExtPDX.MapExt.Core;
-    using static Game.Areas.AreaResourceSystem;
     // =========================================================================================
     // [配置区域]
     // =========================================================================================
@@ -245,7 +243,7 @@ namespace MapExtPDX.ModeA
             {
                 // 参数配置
                 m_FertilityRegenerationRate = kFertilityRegenerationRate,
-                m_FishRegenerationRate = kFertilityRegenerationRate,
+                m_FishRegenerationRate = kFishRegenerationRate,
                 m_PollutionRate = pollutionParams.m_FertilityGroundMultiplier / 32f,
                 m_WaterCellFactor = 300f / (waterResFactor.x * waterResFactor.y),
                 m_MapOffset = -0.5f * XCellMapSystemRe.kMapSize,
@@ -703,11 +701,25 @@ namespace MapExtPDX.ModeA
                         }
                         else
                         {
-                            // 尺寸不匹配：读取到临时数组并丢弃 (必须读取以推进流位置)
+                            // 尺寸不匹配：读取到临时数组
                             var dummy = new NativeArray<TargetType>(storedCount, Allocator.TempJob);
                             reader.Read(dummy);
+
+                            // 采用最临近插值法 (Nearest Neighbor Interpolation) 将旧数据映射到新尺寸
+                            int oldSize = (int)math.sqrt(storedCount);
+                            float scale = (float)oldSize / kTextureSize;
+                            for (int y = 0; y < kTextureSize; y++)
+                            {
+                                for (int x = 0; x < kTextureSize; x++)
+                                {
+                                    int oldX = math.clamp((int)(x * scale), 0, oldSize - 1);
+                                    int oldY = math.clamp((int)(y * scale), 0, oldSize - 1);
+                                    m_Map[y * kTextureSize + x] = dummy[oldY * oldSize + oldX];
+                                }
+                            }
+
                             dummy.Dispose();
-                            // m_Map 保持为 0
+                            // m_Map 已被插值填充
                         }
                     }
                     // 3. 如果是压缩数据 (Length < 0)
@@ -729,7 +741,30 @@ namespace MapExtPDX.ModeA
                                 m_ReaderData.GetReader<TReader>(compressedBuffer, pos).Read(m_Map);
                                 pos.Dispose();
                             }
-                            // 否则：只读取字节流，不解压，m_Map 保持为 0
+                            else
+                            {
+                                // 尺寸不匹配：解压到临时数组并插值
+                                var dummy = new NativeArray<TargetType>(actualCount, Allocator.TempJob);
+                                NativeReference<int> pos = new NativeReference<int>(0, Allocator.Temp);
+                                m_ReaderData.GetReader<TReader>(compressedBuffer, pos).Read(dummy);
+                                pos.Dispose();
+
+                                // 采用最临近插值法 (Nearest Neighbor Interpolation) 将旧数据映射到新尺寸
+                                int oldSize = (int)math.sqrt(actualCount);
+                                float scale = (float)oldSize / kTextureSize;
+                                for (int y = 0; y < kTextureSize; y++)
+                                {
+                                    for (int x = 0; x < kTextureSize; x++)
+                                    {
+                                        int oldX = math.clamp((int)(x * scale), 0, oldSize - 1);
+                                        int oldY = math.clamp((int)(y * scale), 0, oldSize - 1);
+                                        m_Map[y * kTextureSize + x] = dummy[oldY * oldSize + oldX];
+                                    }
+                                }
+
+                                dummy.Dispose();
+                                // m_Map 已被插值填充
+                            }
                         }
                         finally
                         {
