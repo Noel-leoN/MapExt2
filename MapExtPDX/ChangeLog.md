@@ -1,4 +1,40 @@
-﻿## v2.2.3 - Major Update
+﻿## v2.2.4 - Maintenance and Optimization Update
+
+### [New Features and Improvements]
+
+* **Housing Search System Optimization:** Fixed logic flaws in homeless property search to reduce pathfinding loops and improve efficiency.
+* **Economic System Patch Isolation:** Decoupled economic modules between different map modes (ModeA/B/C/E) for better stability and easier maintenance.
+* **Simulation Refinement:** Adjusted internal rent and behavior weights for more stable economic growth in mega-cities.
+
+### [Other Fixes]
+
+* Fixed minor bugs in Burst job execution and improved code robustness.
+
+---
+
+### 主要改动 (Chinese Patch Notes)
+
+#### 【新增与改进】
+
+**1. 找房系统优化**
+
+* 优化了流浪家庭寻找住所的判定逻辑，修复了寻找休息点时的潜在死循环问题，降低了 CPU 寻路开销。
+
+**2. 经济系统补丁隔离**
+
+* 实现了各尺寸地图模式下经济补丁的逻辑解耦，避免了跨模式的逻辑干扰。
+
+**3. 模拟逻辑微调**
+
+* 针对百万人口级城市微调了交租与市民行为权重，提升了整体经济模拟的平顺度。
+
+#### 【其他修复】
+
+* 修复了若干 Burst 任务中的微小逻辑错误，提升系统稳定性。
+
+---
+
+## v2.2.3 - Major Update
 
 ### [New Features]
 
@@ -6,7 +42,7 @@
 
 * CellMap resolution raised to vanilla levels, improving simulation accuracy and UI display for: Air, Ground, Noise pollution, Land Value, Attractiveness, Traffic view, Livability, Population density, etc.
 
-**Economic System Logic &amp; Performance Optimization (Experimental)**
+**Economic System Logic and Performance Optimization (Experimental)**
 Logic and performance tuned for mega cities (population in the millions):
 
 * **Demand System (Residential/Commercial/Industrial/Office):** Fixed vanilla bugs and improved algorithms for large-population cities.

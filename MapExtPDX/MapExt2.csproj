@@ -8,7 +8,7 @@
 		<Authors>Noel2</Authors>
 		<Copyright>Copyright (c) [2025] [Noel2/Noel-leoN/=Noel=]</Copyright>
 		<Title>MapExt(Test): Big Map, Economy and Performance</Title>
-		<Version>2.2.4</Version>
+		<Version>2.2.4.1</Version>
 
 		<!--The file where mod information which is required for publishing mod on PDX mods are stored-->
 		<PublishConfigurationPath>Properties\PublishConfiguration.xml</PublishConfigurationPath>
@@ -93,11 +93,7 @@
 		<PackageReference Include="Lib.Harmony" Version="2.2.2" />
 	</ItemGroup>
 	
-	<!--
-	<ItemGroup>
-		<PackageReference Include="BepInEx.Core" Version="5.4.21" IncludeAssets="compile" />
-	</ItemGroup>
--->
+
 	<ItemGroup>
 		<None Include="$(ModPropsFile)" Link="Properties\Mod.props" />
 		<None Include="$(ModTargetsFile)" Link="Properties\Mod.targets" />
@@ -117,25 +113,7 @@
 		<None Include="Properties\PublishConfiguration.csproj" />
 	</ItemGroup>
 
-	<ItemGroup>
-        <TextTemplate Include="**\*.tt" Exclude="**\*.ttinclude" />
-    </ItemGroup>
-
-	<ItemGroup>
-		<Compile Remove="_Backup_Before_T4\**" />
-		<None Include="_Backup_Before_T4\**" />
-	</ItemGroup>
-
-	<ItemGroup>
-	  <Compile Remove="MapExt\ReBurstSystem\CellSystems\ModeA_57km\CellMapEco\HouseholdFindPropertySystemMod.cs" />
-	</ItemGroup>
-
-	<!--
-	<Target Name="TextTemplateTransform" BeforeTargets="BeforeBuild">
-		<Message Text="Transforming: %(TextTemplate.Identity)" Importance="high" />
-		<Exec Command="dotnet t4 -o &quot;$(ProjectDir)MapExt\ReBurst\Generated\%(TextTemplate.Filename).cs&quot; &quot;%(TextTemplate.Identity)&quot;" />
-	</Target>
-	-->
+	
 
 	<!-- XCellMapSystemRe: 源文件参与编译(namespace ReBurstSystemCore 与生成文件不冲突)，旧文件排除 -->
 	<ItemGroup>
@@ -144,9 +122,7 @@
 		<UpToDateCheckInput Include="MapExt\ReBurstSystem\ReBurstCore\XCellMapSystemRe.cs" />
 		<UpToDateCheckInput Include="MapExt\ReBurstSystem\ReBurstCore\XCellMapSystemRe.Generate.ps1" />
 	</ItemGroup>
-	<ItemGroup>
-	  <Folder Include="MapExt\ReBurstSystem\CellSystems\ModeA_57km\CellMapEco\" />
-	</ItemGroup>
+
 
 	<!-- PreBuild: 从源文件自动生成各 Mode 的 XCellMapSystemRe.cs -->
 	<Target Name="GenerateXCellMapSystemRe" BeforeTargets="BeforeBuild">
