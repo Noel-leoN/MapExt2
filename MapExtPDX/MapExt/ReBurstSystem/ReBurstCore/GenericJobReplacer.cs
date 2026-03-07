@@ -78,9 +78,7 @@ namespace MapExtPDX.MapExt.ReBurstSystem.Core
                     }
                 }
 
-#if DEBUG
                 Info($"✅ 注册映射 | 方法: {method.Name}\n    └─ Job: {originalJobType.Name} -> {replacementJobType.Name}");
-#endif
 
                 // 注册字段映射
                 void RegisterFields(Type oldType, Type newType)
@@ -375,10 +373,8 @@ namespace MapExtPDX.MapExt.ReBurstSystem.Core
                 yield return instruction;
             }
 
-#if DEBUG
-            Info($"✅ 方法处理完成 | 发生 {replacementCount} 处关键替换");
+            Info($"✅ 方法 {originalMethod.Name} 处理完成 | 发生 {replacementCount} 处关键 IL 指令替换");
             Info($"==============================================================");
-#endif
         }
 
         // --- 辅助函数 ---

@@ -72,9 +72,7 @@ namespace MapExtPDX.MapExt.ReBurstSystem.Core
                         transpiler: new HarmonyMethod(typeof(GenericJobReplacePatch),
                             nameof(GenericJobReplacePatch.Transpiler)));
                     successMethods++;
-#if DEBUG
                     Info($"✅ 已挂载 Patch: {method.DeclaringType?.Name}.{method.Name}");
-#endif
                 }
                 catch (Exception ex)
                 {
