@@ -11,7 +11,7 @@ namespace EconomyEX
     {
         public const string Name        = "EconomyEX";
         public const string Version     = "1.0.0";
-        public const string Title       = "Economy Fix and Performance Boost";
-        public const string Description = "Economy Fix and Performance Boost";
+        public const string Title       = "EconomyEX";
+        public const string Description = "Economy Extra Fix and Performance Boost";
     }
 }

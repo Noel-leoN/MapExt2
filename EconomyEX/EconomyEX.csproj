@@ -4,10 +4,10 @@
 		<Configurations>Debug;Release</Configurations>
 		<AssemblyName>EconomyEX</AssemblyName>
 		<RootNamespace>EconomyEX</RootNamespace>
-		<Description>Economy Fix and Performance Boost</Description>
+		<Description>Economy Extra Fix and Performance Boost</Description>
 		<Authors>Noel2</Authors>
 		<Copyright>Copyright (c) [2025] [Noel2/Noel-leoN/=Noel=]</Copyright>
-		<Title>Economy Fix and Performance Boost</Title>
+		<Title>EconomyEX</Title>
 		<Version>1.0.0</Version>
 
 		<!--The file where mod information which is required for publishing mod on PDX mods are stored-->
