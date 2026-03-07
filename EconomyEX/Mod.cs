@@ -6,7 +6,6 @@ using Game;
 using Game.Modding;
 using Game.SceneFlow;
 using HarmonyLib;
-using EconomyEX.Detection;
 using EconomyEX.Systems;
 using EconomyEX.Settings;
 using EconomyEX.Helpers;

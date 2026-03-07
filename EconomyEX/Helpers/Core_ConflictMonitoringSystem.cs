@@ -6,7 +6,7 @@ using Game.Simulation;
 using EconomyEX.Systems;
 using Unity.Entities;
 
-namespace EconomyEX.Detection
+namespace EconomyEX.Helpers
 {
     public partial class ConflictMonitoringSystem : SystemBase
     {

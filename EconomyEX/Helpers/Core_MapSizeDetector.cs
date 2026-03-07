@@ -2,7 +2,7 @@ using HarmonyLib;
 using Game.Simulation;
 using Unity.Mathematics;
 
-namespace EconomyEX.Detection
+namespace EconomyEX.Helpers
 {
     public static class MapSizeDetector
     {

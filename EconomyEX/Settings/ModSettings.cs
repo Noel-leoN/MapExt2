@@ -1,7 +1,7 @@
 using Colossal.IO.AssetDatabase;
 using Game.Modding;
 using Game.Settings;
-using EconomyEX.Detection;
+using EconomyEX.Helpers;
 
 namespace EconomyEX.Settings
 {
@@ -34,7 +34,7 @@ namespace EconomyEX.Settings
             {
                 StatusInfo = "ACTIVE: Economy Fixes Enabled (Vanilla Map Detected).";
             }
-            else if (Detection.MapSizeDetector.HasCheckedMapSize && !Mod.IsVanillaMap)
+            else if (Helpers.MapSizeDetector.HasCheckedMapSize && !Mod.IsVanillaMap)
             {
                  StatusInfo = "DISABLED: Large Map Detected. This mod is for Vanilla maps only.";
             }

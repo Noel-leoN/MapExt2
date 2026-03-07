@@ -6,7 +6,7 @@ using Game.Simulation;
 using EconomyEX.Systems;
 using Unity.Entities;
 
-namespace EconomyEX.Systems
+namespace EconomyEX.Helpers
 {
     /// <summary>
     /// Manages the registration and lifecycle (Enable/Disable) of EconomyEX systems.
