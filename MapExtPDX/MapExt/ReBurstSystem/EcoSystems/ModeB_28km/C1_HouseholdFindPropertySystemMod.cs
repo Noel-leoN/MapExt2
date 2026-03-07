@@ -381,7 +381,7 @@ namespace MapExtPDX.ModeB
                      (this.m_Parks.HasComponent(propertyEntity) &&
                       this.m_ParkDatas[propertyPrefab].m_AllowHomeless)))
                 {
-                    // [BUGFIX] 将剩余容量正确赋值给 freeCapacity (反编译漏掉了赋值操作)
+                    // 将剩余容量正确赋值给 freeCapacity
                     freeCapacity =
                         BuildingUtils.GetShelterHomelessCapacity(propertyPrefab, ref this.m_BuildingDatas,
                             ref this.m_BuildingPropertyData) - this.m_Renters[propertyEntity].Length;
@@ -932,6 +932,15 @@ namespace MapExtPDX.ModeB
                     propertySeeker.m_BestProperty = default(Entity);
                     propertySeeker.m_BestPropertyScore = float.NegativeInfinity;
                     this.m_PropertySeekers[householdEntity] = propertySeeker;
+
+                    // [MOD FIX: 斩断原版的无限重试死循环]
+                    // 如果不是无家可归者（说明在试图搬家改善环境），并且本次寻路失败（由于满员、太贵或确实比现在差），
+                    // 强制关闭其找房意向组件，迫使其进入引擎原装系统级的冷却池中等待唤醒。
+                    // 否则这个家庭会在下一帧无视一切 Cooldown 瞬间发起下一轮全城最高级 A* 暴搜。
+                    if (currentHomeBuilding != Entity.Null)
+                    {
+                        this.m_CommandBuffer.SetComponentEnabled<PropertySeeker>(householdEntity, value: false);
+                    }
                 }
             }
         }

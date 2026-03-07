@@ -932,6 +932,15 @@ namespace MapExtPDX.ModeA
                     propertySeeker.m_BestProperty = default(Entity);
                     propertySeeker.m_BestPropertyScore = float.NegativeInfinity;
                     this.m_PropertySeekers[householdEntity] = propertySeeker;
+
+                    // [MOD FIX: 斩断原版的无限重试死循环]
+                    // 如果不是无家可归者（说明在试图搬家改善环境），并且本次寻路失败（由于满员、太贵或确实比现在差），
+                    // 强制关闭其找房意向组件，迫使其进入引擎原装系统级的冷却池中等待唤醒。
+                    // 否则这个家庭会在下一帧无视一切 Cooldown 瞬间发起下一轮全城最高级 A* 暴搜。
+                    if (currentHomeBuilding != Entity.Null)
+                    {
+                        this.m_CommandBuffer.SetComponentEnabled<PropertySeeker>(householdEntity, value: false);
+                    }
                 }
             }
         }
