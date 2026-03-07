@@ -1,4 +1,22 @@
-﻿## v2.2.4 - Maintenance and Optimization Update
+﻿## v2.2.5 - Economy & Demand Balance Update
+
+### [New Features and Improvements]
+
+* **Demand Balance Adjustments:** Overhauled RCI demand sensitivity. Highly penalizes immigration during extreme unemployment (enforcing a 4.5% NAIRU baseline) and unlocks strong industrial stimulus during labor surplus to encourage export-oriented economies. Alleviated the low-density residential "instant max demand" issue.
+
+---
+
+### 主要改动 (Chinese Patch Notes)
+
+#### 【经济与供需平衡重构】
+
+* **住宅惩罚**：纠正了原版20%容忍失业率的谬误，强制实施4.5%自然失业率红线，重罚高失业对人口涌入的吸引力。
+* **低密度刚需缓解**：下调了低密度别墅由于容量极小导致的极易触发“零空置率最高需求补偿”的敏感度。
+* **工业激活**：彻底放宽了大量失业人口（廉价劳动力红利）对工业建厂的刺激上限，激活后期的“出口导向型加工厂”硬核物流玩法。
+
+---
+
+## v2.2.4 - Maintenance and Optimization Update
 
 ### [New Features and Improvements]
 
@@ -55,7 +73,7 @@ Logic and performance tuned for mega cities (population in the millions):
 ### [Other Fixes]
 
 * Improved overall code stability.
-* Code optimizations: Switched to Burst-friendly math libraries, cleaned up leftover Debug logic in BurstJobs, and improved various internal algorithms.
+* Code optimizations.
 
 ---
 
@@ -80,4 +98,4 @@ Logic and performance tuned for mega cities (population in the millions):
 #### 【其他修复】
 
 * 改善了核心处理代码的整体稳定性。
-* 内部性能调优：全面更换可由底层 Burst 编译器执行的数学库，清理了多个 BurstJobs 中的废弃 Debug，并优化了若干并发算法。
+* 内部性能调优。

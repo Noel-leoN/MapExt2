@@ -16,6 +16,7 @@ using Unity.Entities;
 using Unity.Jobs;
 using Unity.Mathematics;
 using UnityEngine;
+
 // using UnityEngine; // 使用Unity.Mathematics代替以符合Burs
 
 
@@ -28,19 +29,19 @@ namespace MapExtPDX.ModeB
     public struct UpdateIndustrialDemandJob : IJob
     {
         // ----------------- 输入/输出数据定义 --------------------
-        [DeallocateOnJobCompletion][ReadOnly] public NativeArray<ZoneData> m_UnlockedZoneDatas; // 已解锁的分区数据
+        [DeallocateOnJobCompletion] [ReadOnly] public NativeArray<ZoneData> m_UnlockedZoneDatas; // 已解锁的分区数据
 
         // 区块数据 (ArchetypeChunks)存放实体
         [ReadOnly] public NativeList<ArchetypeChunk> m_IndustrialPropertyChunks; // 实体工业地块 (制造业/仓储)
-        [ReadOnly] public NativeList<ArchetypeChunk> m_OfficePropertyChunks;     // 办公地块 (无形产业)
-        [ReadOnly] public NativeList<ArchetypeChunk> m_StorageCompanyChunks;     // 仓储公司实体
-        [ReadOnly] public NativeList<ArchetypeChunk> m_CityServiceChunks;        // 城市服务实体
+        [ReadOnly] public NativeList<ArchetypeChunk> m_OfficePropertyChunks; // 办公地块 (无形产业)
+        [ReadOnly] public NativeList<ArchetypeChunk> m_StorageCompanyChunks; // 仓储公司实体
+        [ReadOnly] public NativeList<ArchetypeChunk> m_CityServiceChunks; // 城市服务实体
 
         // 组件句柄 (TypeHandles)
         [ReadOnly] public EntityTypeHandle m_EntityType;
         [ReadOnly] public ComponentTypeHandle<PrefabRef> m_PrefabType;
         [ReadOnly] public ComponentTypeHandle<CityServiceUpkeep> m_ServiceUpkeepType;
-        [ReadOnly] public ComponentTypeHandle<PropertyOnMarket> m_PropertyOnMarketType;// 正在招租的物业
+        [ReadOnly] public ComponentTypeHandle<PropertyOnMarket> m_PropertyOnMarketType; // 正在招租的物业
 
         // 组件查找 (ComponentLookups)
         [ReadOnly] public ComponentLookup<Population> m_Populations;
@@ -48,7 +49,7 @@ namespace MapExtPDX.ModeB
         [ReadOnly] public ComponentLookup<PropertyRenter> m_PropertyRenters;
         [ReadOnly] public ComponentLookup<PrefabRef> m_Prefabs;
         [ReadOnly] public ComponentLookup<BuildingData> m_BuildingDatas; // 建筑大小、标志
-        [ReadOnly] public ComponentLookup<BuildingPropertyData> m_BuildingPropertyDatas;// 建筑类别属性
+        [ReadOnly] public ComponentLookup<BuildingPropertyData> m_BuildingPropertyDatas; // 建筑类别属性
         [ReadOnly] public ComponentLookup<Attached> m_Attached;
         [ReadOnly] public ComponentLookup<ResourceData> m_ResourceDatas;
         [ReadOnly] public ComponentLookup<StorageLimitData> m_StorageLimitDatas;
@@ -65,20 +66,20 @@ namespace MapExtPDX.ModeB
         public DemandParameterData m_DemandParameters;
         [ReadOnly] public ResourcePrefabs m_ResourcePrefabs;
         [ReadOnly] public NativeArray<int> m_EmployableByEducation; // 按教育水平划分的可用劳动力
-        [ReadOnly] public NativeArray<int> m_TaxRates;              // 税率
-        [ReadOnly] public Workplaces m_FreeWorkplaces;              // 各学历空缺岗位
+        [ReadOnly] public NativeArray<int> m_TaxRates; // 税率
+        [ReadOnly] public Workplaces m_FreeWorkplaces; // 各学历空缺岗位
 
         public Entity m_City;
 
         // ================================================
         // 输出：全局需求 (UI显示用，0-100)
         // ================================================
-        public NativeValue<int> m_IndustrialCompanyDemand;  // 实体工业-企业经营意愿总和
+        public NativeValue<int> m_IndustrialCompanyDemand; // 实体工业-企业经营意愿总和
         public NativeValue<int> m_IndustrialBuildingDemand; // 实体工业-建筑规划需求 (黄色条)
-        public NativeValue<int> m_StorageCompanyDemand;     // 仓储-企业经营意愿总和
-        public NativeValue<int> m_StorageBuildingDemand;    // 仓储-建筑规划需求
-        public NativeValue<int> m_OfficeCompanyDemand;      // 办公-企业经营意愿总和
-        public NativeValue<int> m_OfficeBuildingDemand;     // 办公-建筑规划需求 (紫色条)
+        public NativeValue<int> m_StorageCompanyDemand; // 仓储-企业经营意愿总和
+        public NativeValue<int> m_StorageBuildingDemand; // 仓储-建筑规划需求
+        public NativeValue<int> m_OfficeCompanyDemand; // 办公-企业经营意愿总和
+        public NativeValue<int> m_OfficeBuildingDemand; // 办公-建筑规划需求 (紫色条)
 
         // 输出：UI提示因子 (如: "受高税收影响", "受劳动力不足影响")
         public NativeArray<int> m_IndustrialDemandFactors;
@@ -86,23 +87,23 @@ namespace MapExtPDX.ModeB
 
         // 输出：每种具体资源的需求详情 (供下游系统引用)
         public NativeArray<int> m_IndustrialCompanyDemands; // 具体资源的企业入驻意愿
-        public NativeArray<int> m_IndustrialBuildingDemands;// 具体资源的建筑需求
+        public NativeArray<int> m_IndustrialBuildingDemands; // 具体资源的建筑需求
         public NativeArray<int> m_StorageBuildingDemands;
         public NativeArray<int> m_StorageCompanyDemands;
 
         // 经济统计数据
-        [ReadOnly] public NativeArray<int> m_Productions;             // 当前生产量
-        [ReadOnly] public NativeArray<int> m_CompanyResourceDemands;  // 企业资源需求/消耗量
-        [ReadOnly] public NativeArray<int> m_HouseholdResourceDemands;// 家庭资源需求/消耗量
+        [ReadOnly] public NativeArray<int> m_Productions; // 当前生产量
+        [ReadOnly] public NativeArray<int> m_CompanyResourceDemands; // 企业资源需求/消耗量
+        [ReadOnly] public NativeArray<int> m_HouseholdResourceDemands; // 家庭资源需求/消耗量
 
         // 统计计算用临时数组
-        public NativeArray<int> m_FreeProperties;    // 可用空置物业
+        public NativeArray<int> m_FreeProperties; // 可用空置物业
         [ReadOnly] public NativeArray<int> m_Propertyless; // 有公司但无物业的流浪公司数量
 
-        public NativeArray<int> m_FreeStorages;      // 空闲仓库数量
-        public NativeArray<int> m_Storages;          // 现有仓库数量
+        public NativeArray<int> m_FreeStorages; // 空闲仓库数量
+        public NativeArray<int> m_Storages; // 现有仓库数量
         public NativeArray<int> m_StorageCapacities; // 仓库总容量(单位)
-        public NativeArray<int> m_ResourceDemands;   // 资源总缺口 (计算中间值)
+        public NativeArray<int> m_ResourceDemands; // 资源总缺口 (计算中间值)
 
         public float m_IndustrialOfficeTaxEffectDemandOffset; // 税收影响偏移量
         public bool m_UnlimitedDemand; // 作弊模式：无限需求
@@ -154,21 +155,25 @@ namespace MapExtPDX.ModeB
                 if (EconomyUtils.IsOfficeResource(resourceIter.resource))
                 {
                     // 办公资源需求权重较高（家庭需求+公司需求 * 2）
-                    m_ResourceDemands[resIndex] = (m_HouseholdResourceDemands[resIndex] + m_CompanyResourceDemands[resIndex]) * 2;
+                    m_ResourceDemands[resIndex] =
+                        (m_HouseholdResourceDemands[resIndex] + m_CompanyResourceDemands[resIndex]) * 2;
                 }
                 // 有形产品(非办公资源,实体工业资源)
                 else
                 {
                     // 制造业资源：如果是非办公需求且是工业原料/产品(即产业链未起步)，给予100的基础引导需求，否则使用实际公司需求
-                    bool isBaseIndustrial = EconomyUtils.IsIndustrialResource(resData, includeMaterial: false, includeOffice: false);
-                    m_ResourceDemands[resIndex] = ((m_CompanyResourceDemands[resIndex] == 0 && isBaseIndustrial) ? 100 : m_CompanyResourceDemands[resIndex]);
+                    bool isBaseIndustrial =
+                        EconomyUtils.IsIndustrialResource(resData, includeMaterial: false, includeOffice: false);
+                    m_ResourceDemands[resIndex] = ((m_CompanyResourceDemands[resIndex] == 0 && isBaseIndustrial)
+                        ? 100
+                        : m_CompanyResourceDemands[resIndex]);
                 }
 
                 // 重置计数器
-                m_FreeProperties[resIndex] = 0;     // 市场上适合该资源的空房产
-                m_Storages[resIndex] = 0;           // 该资源的仓库数量
-                m_FreeStorages[resIndex] = 0;       // 该资源的全局可用空闲仓库位
-                m_StorageCapacities[resIndex] = 0;  // 该资源的全局最大存储容量
+                m_FreeProperties[resIndex] = 0; // 市场上适合该资源的空房产
+                m_Storages[resIndex] = 0; // 该资源的仓库数量
+                m_FreeStorages[resIndex] = 0; // 该资源的全局可用空闲仓库位
+                m_StorageCapacities[resIndex] = 0; // 该资源的全局最大存储容量
             }
 
             // 重置需求因子 UI 数据
@@ -201,7 +206,8 @@ namespace MapExtPDX.ModeB
                             ServiceUpkeepData upkeep = upkeepBuffer[u];
                             if (upkeep.m_Upkeep.m_Resource != Resource.Money)
                             {
-                                m_ResourceDemands[EconomyUtils.GetResourceIndex(upkeep.m_Upkeep.m_Resource)] += upkeep.m_Upkeep.m_Amount;
+                                m_ResourceDemands[EconomyUtils.GetResourceIndex(upkeep.m_Upkeep.m_Resource)] +=
+                                    upkeep.m_Upkeep.m_Amount;
                             }
                         }
                     }
@@ -213,7 +219,8 @@ namespace MapExtPDX.ModeB
                         for (int u = 0; u < upgradeBuffer.Length; u++)
                         {
                             // 如果升级是关闭状态，则跳过
-                            if (BuildingUtils.CheckOption(upgradeBuffer[u], BuildingOption.Inactive) || !m_Prefabs.HasComponent(upgradeBuffer[u].m_Upgrade))
+                            if (BuildingUtils.CheckOption(upgradeBuffer[u], BuildingOption.Inactive) ||
+                                !m_Prefabs.HasComponent(upgradeBuffer[u].m_Upgrade))
                                 continue;
 
                             Entity upgradePrefab = m_Prefabs[upgradeBuffer[u].m_Upgrade].m_Prefab;
@@ -222,7 +229,9 @@ namespace MapExtPDX.ModeB
                                 DynamicBuffer<ServiceUpkeepData> upgradeUpkeeps = m_Upkeeps[upgradePrefab];
                                 for (int uu = 0; uu < upgradeUpkeeps.Length; uu++)
                                 {
-                                    m_ResourceDemands[EconomyUtils.GetResourceIndex(upgradeUpkeeps[uu].m_Upkeep.m_Resource)] += upgradeUpkeeps[uu].m_Upkeep.m_Amount;
+                                    m_ResourceDemands[
+                                            EconomyUtils.GetResourceIndex(upgradeUpkeeps[uu].m_Upkeep.m_Resource)] +=
+                                        upgradeUpkeeps[uu].m_Upkeep.m_Amount;
                                 }
                             }
                         }
@@ -251,13 +260,15 @@ namespace MapExtPDX.ModeB
                     if (m_IndustrialProcessDatas.HasComponent(prefab))
                     {
                         // 获取该仓库存储的资源类型
-                        int resIndex = EconomyUtils.GetResourceIndex(m_IndustrialProcessDatas[prefab].m_Output.m_Resource);
+                        int resIndex =
+                            EconomyUtils.GetResourceIndex(m_IndustrialProcessDatas[prefab].m_Output.m_Resource);
                         m_Storages[resIndex]++; // 增加该资源的仓库计数
 
                         StorageLimitData limitData = m_StorageLimitDatas[prefab];
 
                         // 检查是否已经有租户（PropertyRenter）
-                        if (!m_PropertyRenters.HasComponent(entity) || !m_Prefabs.HasComponent(m_PropertyRenters[entity].m_Property))
+                        if (!m_PropertyRenters.HasComponent(entity) ||
+                            !m_Prefabs.HasComponent(m_PropertyRenters[entity].m_Property))
                         {
                             // 无租户/空闲仓库
                             // 这是一个“空壳”仓储公司（尚未完全激活或没有物业关联）
@@ -273,7 +284,9 @@ namespace MapExtPDX.ModeB
                             // 有租户，累加其实际容量
                             Entity property = m_PropertyRenters[entity].m_Property;
                             Entity propertyPrefab = m_Prefabs[property].m_Prefab;
-                            m_StorageCapacities[resIndex] += limitData.GetAdjustedLimitForWarehouse(m_SpawnableBuildingDatas[propertyPrefab], m_BuildingDatas[propertyPrefab]);
+                            m_StorageCapacities[resIndex] +=
+                                limitData.GetAdjustedLimitForWarehouse(m_SpawnableBuildingDatas[propertyPrefab],
+                                    m_BuildingDatas[propertyPrefab]);
                         }
                     }
                 }
@@ -302,7 +315,8 @@ namespace MapExtPDX.ModeB
                     // 如果是附属建筑，检查父建筑的生产限制
                     if (m_Attached.TryGetComponent(entities[i], out Attached attached) &&
                         m_Prefabs.TryGetComponent(attached.m_Parent, out PrefabRef parentPrefabRef) &&
-                        m_BuildingPropertyDatas.TryGetComponent(parentPrefabRef.m_Prefab, out BuildingPropertyData parentPropData))
+                        m_BuildingPropertyDatas.TryGetComponent(parentPrefabRef.m_Prefab,
+                            out BuildingPropertyData parentPropData))
                     {
                         propData.m_AllowedManufactured &= parentPropData.m_AllowedManufactured;
                     }
@@ -317,6 +331,7 @@ namespace MapExtPDX.ModeB
                         {
                             m_FreeProperties[resIndex]++;
                         }
+
                         // 允许仓储的建筑/仓库(算仓库且只能存储)
                         if ((propData.m_AllowedStored & allowIterator.resource) != Resource.NoResource)
                         {
@@ -367,6 +382,7 @@ namespace MapExtPDX.ModeB
                     {
                         m_StorageCompanyDemands[resIndex] = 1;
                     }
+
                     // 如果没有空闲仓库位置，产生仓储建筑需求
                     if (m_FreeStorages[resIndex] < 0)
                     {
@@ -386,21 +402,27 @@ namespace MapExtPDX.ModeB
                 // 等同于企业经营意愿计算 (Company Profitability/Demand)
 
                 // 1. 基础需求分
-                float baseDemand = (isMaterial ? m_DemandParameters.m_ExtractorBaseDemand : m_DemandParameters.m_IndustrialBaseDemand);
+                float baseDemand = (isMaterial
+                    ? m_DemandParameters.m_ExtractorBaseDemand
+                    : m_DemandParameters.m_IndustrialBaseDemand);
 
                 // 2. 市场供需比率 (Supply/Demand Ratio)
                 // 需求越高，生产越少，比率越高，刺激需求
-                float supplyDemandRatio = (1f + (float)m_ResourceDemands[resIndex] - (float)m_Productions[resIndex]) / ((float)m_ResourceDemands[resIndex] + 1f);
+                float supplyDemandRatio = (1f + (float)m_ResourceDemands[resIndex] - (float)m_Productions[resIndex]) /
+                                          ((float)m_ResourceDemands[resIndex] + 1f);
 
                 // 3. 应用特定城市修正 (Modifiers) : 电子产品(有形)/软件(无形)
                 if (resourceIter.resource == Resource.Electronics)
-                    CityUtils.ApplyModifier(ref baseDemand, cityModifiers, CityModifierType.IndustrialElectronicsDemand);
+                    CityUtils.ApplyModifier(ref baseDemand, cityModifiers,
+                        CityModifierType.IndustrialElectronicsDemand);
                 else if (resourceIter.resource == Resource.Software)
                     CityUtils.ApplyModifier(ref baseDemand, cityModifiers, CityModifierType.OfficeSoftwareDemand);
 
 
                 // 4. 税收影响 (Tax Effect)
-                int taxRate = (isOfficeResource ? TaxSystem.GetOfficeTaxRate(resourceIter.resource, m_TaxRates) : TaxSystem.GetIndustrialTaxRate(resourceIter.resource, m_TaxRates));
+                int taxRate = (isOfficeResource
+                    ? TaxSystem.GetOfficeTaxRate(resourceIter.resource, m_TaxRates)
+                    : TaxSystem.GetIndustrialTaxRate(resourceIter.resource, m_TaxRates));
 
                 // 税率低于 10% 产生正向刺激，高于 10% 产生负向抑制
                 // 税率偏移：(税率 - 10%) * -0.05 * 敏感度。税率高于10%降低需求，反之提升需求。
@@ -411,14 +433,15 @@ namespace MapExtPDX.ModeB
                 // 5. 劳动力可用性影响 (Workforce Effect)
                 // [MODIFIED 2] 
                 int highEduWorkerSurplus = 0; // 高学历劳动力得分 (Office偏好)
-                int lowEduWorkerSurplus = 0;  // 低学历劳动力得分 (Industrial偏好)
+                int lowEduWorkerSurplus = 0; // 低学历劳动力得分 (Industrial偏好)
                 float neutralUnemploymentRatio = m_DemandParameters.m_NeutralUnemployment / 100f;
 
                 //// 遍历5个教育等级 (0-4)
                 for (int eduLevel = 0; eduLevel < 5; eduLevel++)
                 {
                     // 计算：可用劳动力 - 自然失业 - 现有空缺
-                    int laborDelta = (int)(m_EmployableByEducation[eduLevel] * (1f - neutralUnemploymentRatio)) - m_FreeWorkplaces[eduLevel];
+                    int laborDelta = (int)(m_EmployableByEducation[eduLevel] * (1f - neutralUnemploymentRatio)) -
+                                     m_FreeWorkplaces[eduLevel];
 
                     // 原逻辑为使用绝对数量计算
                     // 修正：按人口比例归一化差值。防止百万人口时数值过大。
@@ -430,17 +453,20 @@ namespace MapExtPDX.ModeB
                 }
 
 
-                // 应用劳动力对需求的加成映射
-                // 注意：这里传入 scaledLaborDelta (缩放后的值)，因此 MapAndClaimWorkforceEffect 的 -2000~20 范围现在依然有效
+                // 注意：这里传入 scaledLaborDelta (缩放后的值)，因此 MapAndClaimWorkforceEffect 的 -2000~[Max] 范围现在依然有效
                 if (taxEffectVal > 0f)
                 {
-                    highEduWorkerSurplus = (int)MapAndClaimWorkforceEffect(highEduWorkerSurplus, 0f - math.max(10f + taxEffectVal, 10f), 10f);
-                    lowEduWorkerSurplus = (int)MapAndClaimWorkforceEffect(lowEduWorkerSurplus, 0f - math.max(10f + taxEffectVal, 10f), 15f);
+                    // [MODIFIED 3] 放开廉价劳力红利上限，激活出口加工业玩法
+                    highEduWorkerSurplus = (int)MapAndClaimWorkforceEffect(highEduWorkerSurplus,
+                        0f - math.max(10f + taxEffectVal, 10f), 25f);
+                    lowEduWorkerSurplus = (int)MapAndClaimWorkforceEffect(lowEduWorkerSurplus,
+                        0f - math.max(10f + taxEffectVal, 10f), 40f);
                 }
                 else
                 {
-                    highEduWorkerSurplus = math.clamp(highEduWorkerSurplus, -10, 10);
-                    lowEduWorkerSurplus = math.clamp(lowEduWorkerSurplus, -10, 15);
+                    // [MODIFIED 3] 同上
+                    highEduWorkerSurplus = math.clamp(highEduWorkerSurplus, -10, 25);
+                    lowEduWorkerSurplus = math.clamp(lowEduWorkerSurplus, -10, 40);
                 }
 
                 // 6. 综合计算总市场需求(本地需求)
@@ -453,7 +479,9 @@ namespace MapExtPDX.ModeB
                 if (isOfficeResource)
                 {
                     // 办公：市场 + 税收 + 高学历
-                    calculatedCompanyDemand = (marketDemand > 0f) ? Mathf.RoundToInt(marketDemand + taxEffectVal + highEduWorkerSurplus) : 0;
+                    calculatedCompanyDemand = (marketDemand > 0f)
+                        ? Mathf.RoundToInt(marketDemand + taxEffectVal + highEduWorkerSurplus)
+                        : 0;
                     calculatedCompanyDemand = math.clamp(calculatedCompanyDemand, 0, 100);
 
                     m_IndustrialCompanyDemands[resIndex] = calculatedCompanyDemand; // 更新对应资源的公司总需求
@@ -465,11 +493,13 @@ namespace MapExtPDX.ModeB
                 else
                 {
                     // 工业：市场 + 税收 + 全学历
-                    calculatedCompanyDemand = Mathf.RoundToInt(marketDemand + taxEffectVal + highEduWorkerSurplus + lowEduWorkerSurplus);
+                    calculatedCompanyDemand =
+                        Mathf.RoundToInt(marketDemand + taxEffectVal + highEduWorkerSurplus + lowEduWorkerSurplus);
                     calculatedCompanyDemand = math.clamp(calculatedCompanyDemand, 0, 100);
 
                     m_IndustrialCompanyDemands[resIndex] = calculatedCompanyDemand; // 更新对应资源的公司总需求
-                    m_IndustrialCompanyDemand.value += math.min(int.MaxValue - 1000, calculatedCompanyDemand); // 累加到工业公司总需求
+                    m_IndustrialCompanyDemand.value +=
+                        math.min(int.MaxValue - 1000, calculatedCompanyDemand); // 累加到工业公司总需求
 
                     if (!isMaterial) industrialResourceCount++; // 仅限非原料类资源
                 }
@@ -520,7 +550,8 @@ namespace MapExtPDX.ModeB
                 if (isOfficeResource)
                 {
                     // 仅当有上一帧需求 或 当前有强劲新需求时才更新 UI，避免 UI 闪烁
-                    if (!wasOfficeBuildingDemandPositive || (m_IndustrialBuildingDemands[resIndex] > 0 && m_IndustrialCompanyDemands[resIndex] > 0))
+                    if (!wasOfficeBuildingDemandPositive || (m_IndustrialBuildingDemands[resIndex] > 0 &&
+                                                             m_IndustrialCompanyDemands[resIndex] > 0))
                     {
                         m_OfficeDemandFactors[2] += highEduWorkerSurplus; // High Skill Labor
                         m_OfficeDemandFactors[4] += (int)marketDemand; // Local Demand/Market
@@ -548,7 +579,8 @@ namespace MapExtPDX.ModeB
             // a. 处理因子显示逻辑：如果为0则设为-1 (可能用于隐藏UI条)，否则保持原值
             m_OfficeDemandFactors[4] = ((m_OfficeDemandFactors[4] == 0) ? (-1) : m_OfficeDemandFactors[4]);
             m_IndustrialDemandFactors[4] = ((m_IndustrialDemandFactors[4] == 0) ? (-1) : m_IndustrialDemandFactors[4]);
-            m_IndustrialDemandFactors[13] = ((m_IndustrialDemandFactors[13] == 0) ? (-1) : m_IndustrialDemandFactors[13]);
+            m_IndustrialDemandFactors[13] =
+                ((m_IndustrialDemandFactors[13] == 0) ? (-1) : m_IndustrialDemandFactors[13]);
             m_OfficeDemandFactors[13] = ((m_OfficeDemandFactors[13] == 0) ? (-1) : m_OfficeDemandFactors[13]);
 
             // b. 如果城市没有人口，强制将市场需求因子置为 0
@@ -565,6 +597,7 @@ namespace MapExtPDX.ModeB
                 m_IndustrialDemandFactors[18] = m_IndustrialDemandFactors[13];
                 m_IndustrialDemandFactors[13] = 0;
             }
+
             if (m_OfficePropertyChunks.Length == 0)
             {
                 m_OfficeDemandFactors[18] = m_OfficeDemandFactors[13];
@@ -578,7 +611,9 @@ namespace MapExtPDX.ModeB
             // 工业建筑总需求
             //===========修正：增加0除判断=============
             if (industrialResourceCount > 0)
-                m_IndustrialBuildingDemand.value = (hasIndustrialZoneUnlocked ? (2 * m_IndustrialBuildingDemand.value / industrialResourceCount) : 0);
+                m_IndustrialBuildingDemand.value = (hasIndustrialZoneUnlocked
+                    ? (2 * m_IndustrialBuildingDemand.value / industrialResourceCount)
+                    : 0);
 
             // 办公公司总需求
             // this.m_OfficeCompanyDemand.value *= 2 * this.m_OfficeCompanyDemand.value / officeResourceCount;
@@ -591,7 +626,9 @@ namespace MapExtPDX.ModeB
                 m_OfficeCompanyDemand.value = 2 * m_OfficeCompanyDemand.value / officeResourceCount;
 
                 // 办公建筑需求通常跟随公司需求，但也需要归一化
-                m_OfficeBuildingDemand.value = (m_OfficeBuildingDemand.value > 0) ? (2 * m_OfficeBuildingDemand.value / officeResourceCount) : 0;
+                m_OfficeBuildingDemand.value = (m_OfficeBuildingDemand.value > 0)
+                    ? (2 * m_OfficeBuildingDemand.value / officeResourceCount)
+                    : 0;
             }
 
             // f. 建筑需求最终钳位到 0-100
@@ -626,14 +663,13 @@ namespace MapExtPDX.ModeB
                 valueToClamp = math.clamp(valueToClamp, 0f, 1f);
                 return math.lerp(min, 0f, valueToClamp);
             }
+
             // 注意这里期望输入是 20
             float valueToClamp2 = math.unlerp(0f, 20f, value);
             valueToClamp2 = math.clamp(valueToClamp2, 0f, 1f);
             return math.lerp(0f, max, valueToClamp2);
         }
-
     }
-
 }
 
 

@@ -14,6 +14,7 @@ using Unity.Collections;
 using Unity.Entities;
 using Unity.Jobs;
 using Unity.Mathematics;
+
 // using UnityEngine; // 使用Unity.Mathematics代替以符合Burs
 
 
@@ -27,7 +28,6 @@ namespace MapExtPDX.ModeC
     /// 2.部分逻辑存在严重缺陷，如空置率逻辑、学生效应等；
     /// 3.建筑需求与家庭需求混淆，比如空置率高时建筑需求砍至0，同时连带家庭需求砍至0；
     /// </summary>
-
     /// 【参考模型】
     /// 城市人口增长和房地产发展需求动力分析模型：
     /// (原系统属于相当简陋的模型并且数值不尽合理)
@@ -49,7 +49,6 @@ namespace MapExtPDX.ModeC
     /// 治安与公共安全(4%)：
     /// 医疗卫生(3%)：
     /// 环境质量与气候(3%)： 空气污染、气候舒适度。
-
     [BurstCompile]
     public struct UpdateResidentialDemandJob : IJob
     {
@@ -95,14 +94,14 @@ namespace MapExtPDX.ModeC
             float buildingHighFactor = 1f; // 高密度住宅
 
             // --- 基础权重 (决定各因子对总分的影响力) ---
-            float kHappinessWeight = 1.0f;      // 幸福度权重
-            float kTaxWeight = 1.0f;            // 税收权重
-            float kHomelessPenaltyWeight = 1.0f;// 无家可归(负面)权重
-            float kHomelessBonusWeight = 1.0f;  // 无家可归(高密度正面)权重
-            float ksimJobWeight = 1.0f;            // 简单工作就业权重
-            float kcomJobWeight = 1.0f;            // 复杂工作就业权重
-            float kStudentWeight = 1.0f;        // 教育资源权重
-            float kUnemploymentWeight = 1.0f;   // 失业率权重
+            float kHappinessWeight = 1.0f; // 幸福度权重
+            float kTaxWeight = 1.0f; // 税收权重
+            float kHomelessPenaltyWeight = 1.0f; // 无家可归(负面)权重
+            float kHomelessBonusWeight = 1.0f; // 无家可归(高密度正面)权重
+            float ksimJobWeight = 1.0f; // 简单工作就业权重
+            float kcomJobWeight = 1.0f; // 复杂工作就业权重
+            float kStudentWeight = 1.0f; // 教育资源权重
+            float kUnemploymentWeight = 1.0f; // 失业率权重
 
             // 空置率影响设定
             // 1. 目标健康空置率 (比如 5%，参考国际平均水平)
@@ -124,6 +123,8 @@ namespace MapExtPDX.ModeC
             // float kBuildWeight = 1.0f;
             // 空置率高吸引移民权重
             // float kMoveInWeight = 0.5f;
+            // [MODIFIED] 低密度专属较温和的敏感度
+            float kVacancySensitivityLow = 500f;
 
             // 无家可归中性率 (全球通行标准一般容忍度0.05% )
             float kNeutralHomelessRate = 0.0005f;
@@ -171,6 +172,7 @@ namespace MapExtPDX.ModeC
             {
                 totalStudentSlots += m_StudyPositions[j];
             }
+
             float studentCoverage = (float)totalStudentSlots / (popCount * 0.2f); // 假设20%人口上学
             float studentFactor = paramsData.m_StudentEffect * math.clamp(studentCoverage * 5f, 0f, 5f);
 
@@ -178,7 +180,8 @@ namespace MapExtPDX.ModeC
             // 平均幸福度 vs 最低幸福度阈值
             // 采用相对值，无需修改
             int effectiveHappiness = math.max(paramsData.m_MinimumHappiness, cityPopulation.m_AverageHappiness);
-            float happinessFactor = paramsData.m_HappinessEffect * (float)(effectiveHappiness - paramsData.m_NeutralHappiness);
+            float happinessFactor = paramsData.m_HappinessEffect *
+                                    (float)(effectiveHappiness - paramsData.m_NeutralHappiness);
 
             // --- [税收因子] ---
             // 计算所有学历等级的平均税率与 10% 的差值
@@ -189,6 +192,7 @@ namespace MapExtPDX.ModeC
             {
                 avgTaxDeviation += (float)(-(TaxSystem.GetResidentialTaxRate(k, m_TaxRates) - 10));
             }
+
             float taxFactor = paramsData.m_TaxEffect.x * (avgTaxDeviation / 5f);
 
             // --- [就业率因子] ---
@@ -211,9 +215,14 @@ namespace MapExtPDX.ModeC
             complexJobFactor = math.clamp(complexJobFactor, 0f, 20f);
 
             // --- [失业率因子] ---
+            // [MODIFIED] 修正：自然失业率(NAIRU)强制为 4.5% (东亚+欧美紧凑型)，抛弃原版内置20%魔幻参数影响
             // (中性失业率 - 当前失业率)。如果当前失业率高，结果为负，降低需求。
-            // 采用相对值，无需修改
-            float unemploymentFactor = paramsData.m_NeutralUnemployment - m_UnemploymentRate;
+            float unemploymentFactor = 4.5f - m_UnemploymentRate;
+            if (unemploymentFactor < 0f)
+            {
+                // [MODIFIED] 重拳出击：突破NAIRU时，成倍扣减家庭需求，截断失业潮人口涌入
+                unemploymentFactor *= 2.5f;
+            }
 
             //--- [流浪人口因子] ---
             // 修复：改为比例
@@ -229,19 +238,23 @@ namespace MapExtPDX.ModeC
             // C. 应用权重 (加权处理)
             populationBonusFactor = GetFactorValue(populationBonusFactor, m_ResidentialDemandWeightsSelector);
             happinessFactor = GetFactorValue(happinessFactor * kHappinessWeight, m_ResidentialDemandWeightsSelector);
-            homelessPenalty = GetFactorValue(homelessPenalty * kHomelessPenaltyWeight, m_ResidentialDemandWeightsSelector);
-            homelessBonus = this.GetFactorValue(homelessBonus * kHomelessBonusWeight, this.m_ResidentialDemandWeightsSelector);
+            homelessPenalty =
+                GetFactorValue(homelessPenalty * kHomelessPenaltyWeight, m_ResidentialDemandWeightsSelector);
+            homelessBonus = this.GetFactorValue(homelessBonus * kHomelessBonusWeight,
+                this.m_ResidentialDemandWeightsSelector);
             taxFactor = GetFactorValue(taxFactor * kTaxWeight, m_ResidentialDemandWeightsSelector);
             simpleJobFactor = GetFactorValue(simpleJobFactor * ksimJobWeight, m_ResidentialDemandWeightsSelector);
             complexJobFactor = GetFactorValue(complexJobFactor * kcomJobWeight, m_ResidentialDemandWeightsSelector);
             studentFactor = GetFactorValue(studentFactor * kStudentWeight, m_ResidentialDemandWeightsSelector);
-            unemploymentFactor = GetFactorValue(unemploymentFactor * kUnemploymentWeight, m_ResidentialDemandWeightsSelector);
+            unemploymentFactor =
+                GetFactorValue(unemploymentFactor * kUnemploymentWeight, m_ResidentialDemandWeightsSelector);
 
             // D. 计算总家庭迁入需求 (Household Demand)
             // 基础池子，决定了有多少人想进城
             // 人口/幸福度/税收/失业率/工作机会/学生资源/无家可归惩罚等综合影响
             // 无家可归加成只影响建筑需求，不影响家庭需求
-            float baseHouseholdScore = populationBonusFactor + happinessFactor + homelessPenalty + taxFactor + unemploymentFactor + studentFactor + math.max(simpleJobFactor, complexJobFactor);
+            float baseHouseholdScore = populationBonusFactor + happinessFactor + homelessPenalty + taxFactor +
+                                       unemploymentFactor + studentFactor + math.max(simpleJobFactor, complexJobFactor);
             // 限制在 0-200 之间
             m_HouseholdDemand.value = (int)math.clamp(baseHouseholdScore * kHouseholdDemandFactor, 0f, 200f);
 
@@ -253,15 +266,22 @@ namespace MapExtPDX.ModeC
             //============================================================================
 
             // 计算空置率影响
-            int offsetLow = GetSmoothedVacancyOffset(freeProperties.x, totalProperties.x, kVirtualHousingBuffer, kTargetVacancyRate, kVacancySensitivity);
-            int offsetMed = GetSmoothedVacancyOffset(freeProperties.y, totalProperties.y, kVirtualHousingBuffer, kTargetVacancyRate, kVacancySensitivity);
-            int offsetHigh = GetSmoothedVacancyOffset(freeProperties.z, totalProperties.z, kVirtualHousingBuffer, kTargetVacancyRate, kVacancySensitivity);
+            // [MODIFIED] 低密度因为自身建筑容量小，使用专属的温和敏感度(kVacancySensitivityLow)，避免需求大起大落
+            int offsetLow = GetSmoothedVacancyOffset(freeProperties.x, totalProperties.x, kVirtualHousingBuffer,
+                kTargetVacancyRate, kVacancySensitivityLow);
+            int offsetMed = GetSmoothedVacancyOffset(freeProperties.y, totalProperties.y, kVirtualHousingBuffer,
+                kTargetVacancyRate, kVacancySensitivity);
+            int offsetHigh = GetSmoothedVacancyOffset(freeProperties.z, totalProperties.z, kVirtualHousingBuffer,
+                kTargetVacancyRate, kVacancySensitivity);
 
             // E+. 计算熔断系数 (Cutoff Multiplier)
             // 修复空城风险：如果空置率过高，直接乘0
-            float cutOffLow = GetVacancyMultiplier(freeProperties.x, totalProperties.x, kVirtualHousingBuffer, kPanicVacancyRate);
-            float cutOffMed = GetVacancyMultiplier(freeProperties.y, totalProperties.y, kVirtualHousingBuffer, kPanicVacancyRate);
-            float cutOffHigh = GetVacancyMultiplier(freeProperties.z, totalProperties.z, kVirtualHousingBuffer, kPanicVacancyRate);
+            float cutOffLow = GetVacancyMultiplier(freeProperties.x, totalProperties.x, kVirtualHousingBuffer,
+                kPanicVacancyRate);
+            float cutOffMed = GetVacancyMultiplier(freeProperties.y, totalProperties.y, kVirtualHousingBuffer,
+                kPanicVacancyRate);
+            float cutOffHigh = GetVacancyMultiplier(freeProperties.z, totalProperties.z, kVirtualHousingBuffer,
+                kPanicVacancyRate);
 
             // F. 组合最终需求
             // 公式：(家庭需求 + 空置率修正) * 熔断乘数
@@ -274,9 +294,9 @@ namespace MapExtPDX.ModeC
             float finalHigh = (m_HouseholdDemand.value + homelessBonus + offsetHigh) * cutOffHigh;
 
             m_BuildingDemand.value = new int3(
-             (int)math.clamp(finalLow * buildingLowFactor, 0f, 100f),
-             (int)math.clamp(finalMed * buildingMedFactor, 0f, 100f),
-             (int)math.clamp(finalHigh * buildingHighFactor, 0f, 100f)
+                (int)math.clamp(finalLow * buildingLowFactor, 0f, 100f),
+                (int)math.clamp(finalMed * buildingMedFactor, 0f, 100f),
+                (int)math.clamp(finalHigh * buildingHighFactor, 0f, 100f)
             );
 
             // F. 填充 UI 因子数组 (Low/Medium/High DemandFactors)
@@ -318,6 +338,7 @@ namespace MapExtPDX.ModeC
                 if (m_MediumDemandFactors[6] > 0) m_MediumDemandFactors[6] = 0;
                 if (m_HighDemandFactors[6] > 0) m_HighDemandFactors[6] = 0;
             }
+
             if (cityPopulation.m_Population == 0)
             {
                 m_LowDemandFactors[5] = 0;
@@ -361,7 +382,8 @@ namespace MapExtPDX.ModeC
 
             // J. 触发器 (Trigger)
             float totalPropCount = (float)(totalProperties.x + totalProperties.y + totalProperties.z);
-            float totalDemandSum = (float)(m_BuildingDemand.value.x + m_BuildingDemand.value.y + m_BuildingDemand.value.z);
+            float totalDemandSum =
+                (float)(m_BuildingDemand.value.x + m_BuildingDemand.value.y + m_BuildingDemand.value.z);
 
             m_TriggerQueue.Enqueue(new TriggerAction(TriggerType.ResidentialDemand, Entity.Null,
                 (totalPropCount > 100) ? (totalDemandSum / 100f) : 0f));
@@ -378,6 +400,7 @@ namespace MapExtPDX.ModeC
             {
                 return (int)(factorValue * weightSelector.y); // 正值乘 y
             }
+
             return (int)(factorValue * weightSelector.x); // 负值乘 
         }
 
