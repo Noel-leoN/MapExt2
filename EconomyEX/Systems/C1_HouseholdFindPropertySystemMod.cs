@@ -1066,6 +1066,12 @@ namespace EconomyEX.Systems
                 bool isTempHomeless = m_HomelessHouseholds.HasComponent(originEntity) &&
                                       m_HomelessHouseholds[originEntity].m_TempHome != Entity.Null;
 
+                // === 🌟 [性能优化 (Q3)] 提取在内层大循环里不变的计算结果 ===
+                int householdIncome = EconomyUtils.GetHouseholdIncome(citizensBuffer, ref m_Workers, ref m_Citizens,
+                    ref m_HealthProblems, ref m_EconomyParameters, m_TaxRates);
+                bool isHouseholdNeedSupport =
+                    CitizenUtils.IsHouseholdNeedSupport(citizensBuffer, ref m_Citizens, ref m_Students);
+
                 // === 🚨 [HOTFIX: Early Exit Optimization - 次优目标提前退出] ===
                 // 🔢 局部计数器：记录当前家庭已经成功收集了几个合格的候选房屋。
                 // 🎯 我们不再追求“全图最优解”，只要找到足够多的备选项组合，就直接抛给 A* 引擎。
@@ -1127,10 +1133,8 @@ namespace EconomyEX.Systems
 
                     // 💰 3. 租金预判
                     int garbageFeePerProperty = m_ServiceFeeParameterData.m_GarbageFeeRCIO.x / maxPropertiesInBuilding;
-                    int householdIncome = EconomyUtils.GetHouseholdIncome(citizensBuffer, ref m_Workers, ref m_Citizens,
-                        ref m_HealthProblems, ref m_EconomyParameters, m_TaxRates);
-                    bool isHouseholdNeedSupport =
-                        CitizenUtils.IsHouseholdNeedSupport(citizensBuffer, ref m_Citizens, ref m_Students);
+                    // householdIncome 已经提取到外层循环
+                    // isHouseholdNeedSupport 已经提取到外层循环
                     Entity zonePrefab = m_SpawnableDatas[prefab].m_ZonePrefab;
                     if (m_ZonePropertiesDatas.TryGetComponent(zonePrefab, out var componentData))
                     {
@@ -1147,7 +1151,7 @@ namespace EconomyEX.Systems
                         {
                             // === 💀 🚨 全系统最大的算力黑洞：极其昂贵的一对一定向打分 ===
                             // ⚠️ 注意：这里没有引入到目标住宅的空间距离 (Distance)，只要买得起，南极的雪屋也会在北极打工人的考虑之中！
-                            float propertyScore = PropertyUtils.GetPropertyScore(candidateProperty, originEntity,
+                            float propertyScore = XCellMapSystemRe.GetPropertyScore(candidateProperty, originEntity,
                                 citizensBuffer,
                                 ref m_PrefabRefs, ref m_BuildingProperties, ref m_Buildings, ref m_BuildingDatas,
                                 ref m_Households, ref m_Citizens, ref m_Students, ref m_Workers, ref m_SpawnableDatas,
@@ -1192,8 +1196,10 @@ namespace EconomyEX.Systems
     [HarmonyPatch]
     public static class PathfindSetupSystem_FindTargets_Patch
     {
-        //private static int _callCount = 0;
-        //private static bool _hasLoggedSuccess = false;
+#if DEBUG
+        private static int _callCount = 0;
+        private static bool _hasLoggedSuccess = false; 
+#endif
 
         [HarmonyTargetMethod]
         public static MethodBase TargetMethod()
@@ -1235,16 +1241,17 @@ namespace EconomyEX.Systems
 
             var desc1 = new EntityQueryDesc
             {
-                All = new ComponentType[]
+                All = new ComponentType[] { ComponentType.ReadOnly<Building>() },
+                Any = new ComponentType[]
                 {
-                    ComponentType.ReadOnly<PropertyOnMarket>(), ComponentType.ReadOnly<ResidentialProperty>(),
-                    ComponentType.ReadOnly<Building>()
+                    ComponentType.ReadOnly<Abandoned>(),
+                    ComponentType.ReadOnly<Game.Buildings.Park>()
                 },
                 None = new ComponentType[]
                 {
-                    ComponentType.ReadOnly<Abandoned>(), ComponentType.ReadOnly<Deleted>(),
-                    ComponentType.ReadOnly<Destroyed>(), ComponentType.ReadOnly<Temp>(),
-                    ComponentType.ReadOnly<Condemned>()
+                    ComponentType.ReadOnly<Deleted>(),
+                    ComponentType.ReadOnly<Destroyed>(),
+                    ComponentType.ReadOnly<Temp>()
                 }
             };
             var desc2 = new EntityQueryDesc
@@ -1285,12 +1292,14 @@ namespace EconomyEX.Systems
                 return true;
             }
 
-            //_callCount++;
-            //if (!_hasLoggedSuccess || _callCount % 600 == 0)
-            //{
-            //    Mod.Logger.Info($"[SetupFindHomeJob] FindHome Patch Triggered! Count: {_callCount}");
-            //    _hasLoggedSuccess = true;
-            //}
+#if DEBUG
+            _callCount++;
+            if (!_hasLoggedSuccess || _callCount % 600 == 0)
+            {
+                Mod.Logger.Info($"[SetupFindHomeJob] FindHome Patch Triggered! Count: {_callCount}");
+                _hasLoggedSuccess = true;
+            } 
+#endif
 
             EnsureInitialized(__instance);
 
@@ -1379,8 +1388,3 @@ namespace EconomyEX.Systems
 
     #endregion
 }
-
-
-
-
-
