@@ -20,10 +20,10 @@ The vanilla game is optimized for "Standard Cities" (up to ~150k population). As
 
 ## 🛠️ What EconomyEX Fixes
 
-### 📈 Demand & Growth Scaling
+### 📈 Demand and Growth Scaling
 
 - **Proportional Demand**: Demand calculations are now based on **Percentages** rather than absolute numbers. Your metropolis will require realistically proportional vacancy rates to stall demand.
-- **Fixed Commercial & Industrial**: Commercial demand now scales linearly with your true consumer base. Industrial labor impacts are normalized so a 5% unemployment rate behaves correctly at any city size.
+- **Fixed Commercial and Industrial**: Commercial demand now scales linearly with your true consumer base. Industrial labor impacts are normalized so a 5% unemployment rate behaves correctly at any city size.
 
 ### ⚡ Extreme CPU Optimization (Anti-Lag)
 
@@ -31,7 +31,7 @@ The vanilla game is optimized for "Standard Cities" (up to ~150k population). As
 - **Smart Shopping**: As your population explodes, citizens slightly reduce shopping trip frequency (simulating bulk buying), preventing "Traffic Apocalypses" and saving CPU costs.
 - **Burst Protection**: Restricts how many homeless families can search for houses simultaneously, preventing game freezes.
 
-### 🏘️ Fair Rent & Unified Land Value
+### 🏘️ Fair Rent and Unified Land Value
 
 - **Lifesavings Rent Survival**: Families now use their **Income + Savings** to stay in their homes. Truly broke households are the only ones evicted.
 - **Unified Land Value**: Merges the "Economic Land Value" and "UI Heat Map" into a single, optimized system. 100% accuracy, zero redundant calculations.

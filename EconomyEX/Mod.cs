@@ -20,6 +20,7 @@ namespace EconomyEX
         public static void Warn(string text) => Logger.Warn(text);
         public static void Error(string text) => Logger.Error(text);
         public static void Error(Exception e, string text) => Logger.Error(e, text);
+        public static void Debug(string text) => Logger.Info(text);
 
         public static Mod Instance { get; private set; }
         public ModSettings Settings { get; private set; }
@@ -48,6 +49,8 @@ namespace EconomyEX
             // 2. Initialize Settings
             Settings = new ModSettings(this);
             Settings.RegisterInOptionsUI();
+            GameManager.instance.localizationManager.AddSource("en-US", new LocaleEN(Settings));
+            GameManager.instance.localizationManager.AddSource("zh-HANS", new LocaleHANS(Settings));
             Colossal.IO.AssetDatabase.AssetDatabase.global.LoadSettings(ModName, Settings, new ModSettings(this));
             
             // Update UI status immediately
@@ -112,6 +115,10 @@ namespace EconomyEX
             
             // Apply Job Patches (if any)
             JobPatchHelper.Apply(_harmony, JobPatchDefinitions.GetEcoSystemTargets());
+
+            // Apply manual Harmony Patches for System Replacements
+            _harmony.CreateClassProcessor(typeof(PathfindSetupSystem_FindTargets_Patch)).Patch();
+            _harmony.CreateClassProcessor(typeof(LandValueSystemMod.Patches)).Patch();
 
             Settings.UpdateStatus();
         }
