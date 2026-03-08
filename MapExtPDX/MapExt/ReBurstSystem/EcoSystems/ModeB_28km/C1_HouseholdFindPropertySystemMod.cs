@@ -1131,8 +1131,9 @@ namespace MapExtPDX.ModeB
                     }
 
                     // 💰 3. 租金预判
-                    // garbageFeePerProperty 需要根据该房屋的最大容量动态算，依然留在内层
                     int garbageFeePerProperty = m_ServiceFeeParameterData.m_GarbageFeeRCIO.x / maxPropertiesInBuilding;
+                    // householdIncome 已经提取到外层循环
+                    // isHouseholdNeedSupport 已经提取到外层循环
                     Entity zonePrefab = m_SpawnableDatas[prefab].m_ZonePrefab;
                     if (m_ZonePropertiesDatas.TryGetComponent(zonePrefab, out var componentData))
                     {
@@ -1148,7 +1149,7 @@ namespace MapExtPDX.ModeB
                                                         (float)householdIncome * zoneDensityMultiplier))
                         {
                             // === 💀 🚨 全系统最大的算力黑洞：极其昂贵的一对一定向打分 ===
-                            // [MOD FIX (Q2)] 替换原来耗时的原版计分引擎 PropertyUtils 为高度优化后的自主计分器 XCellMapSystemRe
+                            // ⚠️ 注意：这里没有引入到目标住宅的空间距离 (Distance)，只要买得起，南极的雪屋也会在北极打工人的考虑之中！
                             float propertyScore = XCellMapSystemRe.GetPropertyScore(candidateProperty, originEntity,
                                 citizensBuffer,
                                 ref m_PrefabRefs, ref m_BuildingProperties, ref m_Buildings, ref m_BuildingDatas,
@@ -1189,39 +1190,194 @@ namespace MapExtPDX.ModeB
     }
 
     // =========================================================
-    // PartB: Harmony RePatcher (Transpiler 机制)
+    // PartB: Harmony RePatcher
     // =========================================================
     [HarmonyPatch]
     public static class PathfindSetupSystem_FindTargets_Patch
     {
+        //private static int _callCount = 0;
+        //private static bool _hasLoggedSuccess = false;
+
         [HarmonyTargetMethod]
         public static MethodBase TargetMethod()
         {
-            return typeof(Game.Simulation.CitizenPathfindSetup).GetMethod("SetupFindHome",
-                BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+            return typeof(PathfindSetupSystem).GetMethod("FindTargets",
+                BindingFlags.NonPublic | BindingFlags.Instance,
+                null,
+                new Type[] { typeof(SetupTargetType), typeof(PathfindSetupSystem.SetupData).MakeByRefType() },
+                null);
         }
 
-        [HarmonyPrepare]
-        public static bool Prepare(MethodBase original)
+        private static EntityQuery _findHomeQuery;
+        private static EntityQuery _healthcareParamQuery;
+        private static EntityQuery _parkParamQuery;
+        private static EntityQuery _educationParamQuery;
+        private static EntityQuery _economyParamQuery;
+        private static EntityQuery _telecomParamQuery;
+        private static EntityQuery _garbageParamQuery;
+        private static EntityQuery _policeParamQuery;
+        private static EntityQuery _serviceFeeParamQuery;
+        private static EntityQuery _citizenHappinessParamQuery;
+
+        private static Func<SystemBase, JobHandle> _getDependencyAccessor;
+
+        private static void EnsureInitialized(PathfindSetupSystem system)
         {
-            if (original != null)
+            // 1.  ( Dependency )
+            if (_getDependencyAccessor == null)
             {
-                Type originalJobType = typeof(Game.Simulation.CitizenPathfindSetup).GetNestedType("SetupFindHomeJob",
-                    BindingFlags.NonPublic | BindingFlags.Public);
-                MapExtPDX.MapExt.ReBurstSystem.Core.GenericJobReplacePatch.AddReplacementToContext(
-                    original, originalJobType, typeof(CustomSetupFindHomeJob));
+                MethodInfo dependencyGetter = AccessTools.PropertyGetter(typeof(SystemBase), "Dependency");
+                _getDependencyAccessor =
+                    (Func<SystemBase, JobHandle>)Delegate.CreateDelegate(typeof(Func<SystemBase, JobHandle>),
+                        dependencyGetter);
             }
 
-            return true;
+            // 2.  Queries ( CS1503 )
+            if (_findHomeQuery != default) return;
+
+
+            var desc1 = new EntityQueryDesc
+            {
+                All = new ComponentType[] { ComponentType.ReadOnly<Building>() },
+                Any = new ComponentType[]
+                {
+                    ComponentType.ReadOnly<Abandoned>(),
+                    ComponentType.ReadOnly<Game.Buildings.Park>()
+                },
+                None = new ComponentType[]
+                {
+                    ComponentType.ReadOnly<Deleted>(),
+                    ComponentType.ReadOnly<Destroyed>(),
+                    ComponentType.ReadOnly<Temp>()
+                }
+            };
+            var desc2 = new EntityQueryDesc
+            {
+                All = new ComponentType[]
+                {
+                    ComponentType.ReadOnly<PropertyOnMarket>(), ComponentType.ReadOnly<ResidentialProperty>(),
+                    ComponentType.ReadOnly<Building>()
+                },
+                None = new ComponentType[]
+                {
+                    ComponentType.ReadOnly<Abandoned>(), ComponentType.ReadOnly<Deleted>(),
+                    ComponentType.ReadOnly<Destroyed>(), ComponentType.ReadOnly<Temp>(),
+                    ComponentType.ReadOnly<Condemned>()
+                }
+            };
+            _findHomeQuery = system.GetSetupQuery(desc1, desc2);
+
+            _healthcareParamQuery = system.GetSetupQuery(ComponentType.ReadOnly<HealthcareParameterData>());
+            _parkParamQuery = system.GetSetupQuery(ComponentType.ReadOnly<ParkParameterData>());
+            _educationParamQuery = system.GetSetupQuery(ComponentType.ReadOnly<EducationParameterData>());
+            _economyParamQuery = system.GetSetupQuery(ComponentType.ReadOnly<EconomyParameterData>());
+            _telecomParamQuery = system.GetSetupQuery(ComponentType.ReadOnly<TelecomParameterData>());
+            _garbageParamQuery = system.GetSetupQuery(ComponentType.ReadOnly<GarbageParameterData>());
+            _policeParamQuery = system.GetSetupQuery(ComponentType.ReadOnly<PoliceConfigurationData>());
+            _serviceFeeParamQuery = system.GetSetupQuery(ComponentType.ReadOnly<ServiceFeeParameterData>());
+            _citizenHappinessParamQuery = system.GetSetupQuery(ComponentType.ReadOnly<CitizenHappinessParameterData>());
         }
 
-        [HarmonyTranspiler]
-        public static System.Collections.Generic.IEnumerable<CodeInstruction> Transpiler(
-            System.Collections.Generic.IEnumerable<CodeInstruction> instructions,
-            System.Reflection.Emit.ILGenerator il, MethodBase originalMethod)
+        public static bool Prefix(
+            PathfindSetupSystem __instance,
+            SetupTargetType targetType,
+            ref PathfindSetupSystem.SetupData setupData,
+            ref JobHandle __result)
         {
-            return MapExtPDX.MapExt.ReBurstSystem.Core.GenericJobReplacePatch.Transpiler(instructions, il,
-                originalMethod);
+            if (targetType != SetupTargetType.FindHome)
+            {
+                return true;
+            }
+
+            //_callCount++;
+            //if (!_hasLoggedSuccess || _callCount % 600 == 0)
+            //{
+            //    Mod.Logger.Info($"[SetupFindHomeJob] FindHome Patch Triggered! Count: {_callCount}");
+            //    _hasLoggedSuccess = true;
+            //}
+
+            EnsureInitialized(__instance);
+
+            var world = __instance.World;
+            var taxSystem = world.GetOrCreateSystemManaged<TaxSystem>();
+            var groundPollutionSystem = world.GetOrCreateSystemManaged<GroundPollutionSystem>();
+            var airPollutionSystem = world.GetOrCreateSystemManaged<AirPollutionSystem>();
+            var noisePollutionSystem = world.GetOrCreateSystemManaged<NoisePollutionSystem>();
+            var telecomCoverageSystem = world.GetOrCreateSystemManaged<TelecomCoverageSystem>();
+            var citySystem = world.GetOrCreateSystemManaged<CitySystem>();
+
+            // HarmonySystemAPI__instance
+            var jobData = new CustomSetupFindHomeJob
+            {
+                m_EntityType = __instance.GetEntityTypeHandle(),
+                m_RenterType = __instance.GetBufferTypeHandle<Renter>(true),
+                m_PrefabType = __instance.GetComponentTypeHandle<PrefabRef>(true),
+
+                m_Buildings = __instance.GetComponentLookup<Building>(true),
+                m_Households = __instance.GetComponentLookup<Household>(true),
+                m_HomelessHouseholds = __instance.GetComponentLookup<HomelessHousehold>(true),
+                m_BuildingDatas = __instance.GetComponentLookup<BuildingData>(true),
+                m_Coverages = __instance.GetBufferLookup<Game.Net.ServiceCoverage>(true),
+                m_PropertiesOnMarket = __instance.GetComponentLookup<PropertyOnMarket>(true),
+                m_Availabilities = __instance.GetBufferLookup<ResourceAvailability>(true),
+                m_SpawnableDatas = __instance.GetComponentLookup<SpawnableBuildingData>(true),
+                m_BuildingProperties = __instance.GetComponentLookup<BuildingPropertyData>(true),
+                m_PrefabRefs = __instance.GetComponentLookup<PrefabRef>(true),
+                m_ServiceCoverages = __instance.GetBufferLookup<Game.Net.ServiceCoverage>(true),
+                m_Citizens = __instance.GetComponentLookup<Citizen>(true),
+                m_Crimes = __instance.GetComponentLookup<CrimeProducer>(true),
+                m_Lockeds = __instance.GetComponentLookup<Locked>(true),
+                m_Transforms = __instance.GetComponentLookup<Transform>(true),
+                m_CityModifiers = __instance.GetBufferLookup<CityModifier>(true),
+                m_HouseholdCitizens = __instance.GetBufferLookup<HouseholdCitizen>(true),
+                m_Abandoneds = __instance.GetComponentLookup<Abandoned>(true),
+                m_Parks = __instance.GetComponentLookup<Game.Buildings.Park>(true),
+                m_ElectricityConsumers = __instance.GetComponentLookup<ElectricityConsumer>(true),
+                m_WaterConsumers = __instance.GetComponentLookup<WaterConsumer>(true),
+                m_GarbageProducers = __instance.GetComponentLookup<GarbageProducer>(true),
+                m_MailProducers = __instance.GetComponentLookup<MailProducer>(true),
+                m_HealthProblems = __instance.GetComponentLookup<HealthProblem>(true),
+                m_Workers = __instance.GetComponentLookup<Worker>(true),
+                m_Students = __instance.GetComponentLookup<Game.Citizens.Student>(true),
+                m_ResourcesBufs = __instance.GetBufferLookup<Resources>(true),
+                m_ZoneDatas = __instance.GetComponentLookup<ZoneData>(true),
+                m_ZonePropertiesDatas = __instance.GetComponentLookup<ZonePropertiesData>(true),
+
+                m_TaxRates = taxSystem.GetTaxRates(),
+                m_PollutionMap = groundPollutionSystem.GetMap(true, out var dep1),
+                m_AirPollutionMap = airPollutionSystem.GetMap(true, out var dep2),
+                m_NoiseMap = noisePollutionSystem.GetMap(true, out var dep3),
+                m_TelecomCoverages = telecomCoverageSystem.GetData(true, out var dep4),
+
+                m_HealthcareParameters = _healthcareParamQuery.GetSingleton<HealthcareParameterData>(),
+                m_ParkParameters = _parkParamQuery.GetSingleton<ParkParameterData>(),
+                m_EducationParameters = _educationParamQuery.GetSingleton<EducationParameterData>(),
+                m_EconomyParameters = _economyParamQuery.GetSingleton<EconomyParameterData>(),
+                m_TelecomParameters = _telecomParamQuery.GetSingleton<TelecomParameterData>(),
+                m_GarbageParameters = _garbageParamQuery.GetSingleton<GarbageParameterData>(),
+                m_PoliceParameters = _policeParamQuery.GetSingleton<PoliceConfigurationData>(),
+                m_ServiceFeeParameterData = _serviceFeeParamQuery.GetSingleton<ServiceFeeParameterData>(),
+                m_CitizenHappinessParameterData =
+                    _citizenHappinessParamQuery.GetSingleton<CitizenHappinessParameterData>(),
+
+                m_City = citySystem.City,
+                m_SetupData = setupData
+            };
+
+            JobHandle inputDeps = _getDependencyAccessor(__instance);
+
+            JobHandle combinedDeps = JobUtils.CombineDependencies(inputDeps, dep1, dep2, dep3, dep4);
+
+            JobHandle jobHandle = JobChunkExtensions.ScheduleParallel(jobData, _findHomeQuery, combinedDeps);
+
+            groundPollutionSystem.AddReader(jobHandle);
+            airPollutionSystem.AddReader(jobHandle);
+            noisePollutionSystem.AddReader(jobHandle);
+            telecomCoverageSystem.AddReader(jobHandle);
+            taxSystem.AddReader(jobHandle);
+
+            __result = jobHandle;
+            return false;
         }
     }
 
