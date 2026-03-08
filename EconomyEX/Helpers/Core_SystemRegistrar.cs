@@ -1,0 +1,111 @@
+// Copyright (c) 2024 Noel2(Noel-leoN)
+// Licensed under the MIT License.
+
+using Game;
+using Game.Simulation;
+using EconomyEX.Systems;
+using Unity.Entities;
+
+namespace EconomyEX.Helpers
+{
+    /// <summary>
+    /// Manages the registration and lifecycle (Enable/Disable) of EconomyEX systems.
+    /// 注意: A1-A3 需求系统(Residential/Commercial/Industrial)仅含 Job 结构体，
+    /// 通过 Harmony Transpiler 替换原版 Job，不做系统替换注册。
+    /// D2 LandValueSystem 因依赖 MapExtPDX 核心库，暂不移植。
+    /// </summary>
+    public static class SystemRegistrar
+    {
+        public static void RegisterSystems(UpdateSystem updateSystem)
+        {
+            // Register Mod Systems to the Game Update Loop
+            // Phase: GameSimulation (Main Simulation Loop)
+            
+            // === 系统替换 (System Replacement) ===
+            // B 系列: 求职系统
+            updateSystem.UpdateAt<CitizenFindJobSystemMod>(SystemUpdatePhase.GameSimulation);
+            updateSystem.UpdateAt<FindJobSystemMod>(SystemUpdatePhase.GameSimulation);
+
+            // C 系列: 家庭行为系统
+            updateSystem.UpdateAt<HouseholdFindPropertySystemMod>(SystemUpdatePhase.GameSimulation);
+            updateSystem.UpdateAt<HouseholdBehaviorSystemMod>(SystemUpdatePhase.GameSimulation);
+
+            // D 系列: 租金与地价系统
+            updateSystem.UpdateAt<RentAdjustSystemMod>(SystemUpdatePhase.GameSimulation);
+            updateSystem.UpdateAt<LandValueSystemMod>(SystemUpdatePhase.GameSimulation);
+
+            // 注意: A1-A3 需求系统仅通过 JobPatchHelper Transpiler 替换 Job，无需注册系统
+
+            // Initial State: DISABLED (Waiting for Map Size Check)
+            DisableEconomySystems();
+        }
+
+        /// <summary>
+        /// Enables EconomyEX systems and Disables Vanilla counterparts.
+        /// Call this when Vanilla Map is detected.
+        /// </summary>
+        public static void EnableEconomySystems()
+        {
+            var world = World.DefaultGameObjectInjectionWorld;
+            if (world == null) return;
+
+            // 1. Disable Vanilla Systems (仅禁用有替换系统的原版)
+            SetSystemEnabled<HouseholdFindPropertySystem>(world, false);
+            SetSystemEnabled<HouseholdBehaviorSystem>(world, false);
+            SetSystemEnabled<CitizenFindJobSystem>(world, false);
+            SetSystemEnabled<FindJobSystem>(world, false);
+            SetSystemEnabled<RentAdjustSystem>(world, false);
+            SetSystemEnabled<LandValueSystem>(world, false);
+            // 注意: ResidentialDemandSystem/CommercialDemandSystem/IndustrialDemandSystem
+            // 保持启用 — 它们的 Job 会被 Transpiler 替换
+            // 注意: LandValueSystem 保持原版
+
+            // 2. Enable Mod Systems
+            SetSystemEnabled<HouseholdFindPropertySystemMod>(world, true);
+            SetSystemEnabled<HouseholdBehaviorSystemMod>(world, true);
+            SetSystemEnabled<CitizenFindJobSystemMod>(world, true);
+            SetSystemEnabled<FindJobSystemMod>(world, true);
+            SetSystemEnabled<RentAdjustSystemMod>(world, true);
+            SetSystemEnabled<LandValueSystemMod>(world, true);
+
+            Mod.Info("EconomyEX Systems ENABLED. Vanilla Systems DISABLED.");
+        }
+
+        /// <summary>
+        /// Disables EconomyEX systems and Restores Vanilla counterparts.
+        /// Call this when Large Map is detected or Mod is unloading.
+        /// </summary>
+        public static void DisableEconomySystems()
+        {
+            var world = World.DefaultGameObjectInjectionWorld;
+            if (world == null) return;
+
+            // 1. Restore Vanilla Systems
+            SetSystemEnabled<HouseholdFindPropertySystem>(world, true);
+            SetSystemEnabled<HouseholdBehaviorSystem>(world, true);
+            SetSystemEnabled<CitizenFindJobSystem>(world, true);
+            SetSystemEnabled<FindJobSystem>(world, true);
+            SetSystemEnabled<RentAdjustSystem>(world, true);
+            SetSystemEnabled<LandValueSystem>(world, true);
+
+            // 2. Disable Mod Systems
+            SetSystemEnabled<HouseholdFindPropertySystemMod>(world, false);
+            SetSystemEnabled<HouseholdBehaviorSystemMod>(world, false);
+            SetSystemEnabled<CitizenFindJobSystemMod>(world, false);
+            SetSystemEnabled<FindJobSystemMod>(world, false);
+            SetSystemEnabled<RentAdjustSystemMod>(world, false);
+            SetSystemEnabled<LandValueSystemMod>(world, false);
+
+            Mod.Info("EconomyEX Systems DISABLED. Framework restored to Vanilla.");
+        }
+
+        private static void SetSystemEnabled<T>(World world, bool enabled) where T : GameSystemBase
+        {
+            var system = world.GetOrCreateSystemManaged<T>();
+            if (system != null)
+            {
+                system.Enabled = enabled;
+            }
+        }
+    }
+}
