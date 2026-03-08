@@ -57,6 +57,11 @@ BurstDebugInformation_DoNotShip/
 # Internal documentation (not for public)
 **/docs/
 
+# Temporary Files
+*.log
+*.binlog
+*.ps1
+
 # AI Agent & GitNexus
 .gitnexus
 .claude/
