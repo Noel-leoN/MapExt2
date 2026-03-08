@@ -188,10 +188,8 @@ namespace MapExtPDX.MapExt.ReBurstSystem.Core
                         if (context.JobReplacements.TryGetValue(localVar.LocalType, out var newType))
                         {
                             localRedirects[localVar.LocalIndex] = il.DeclareLocal(newType);
-#if DEBUG
                             Info(
                                 $"    🔎 发现待替换变量 [{localVar.LocalIndex}] | {localVar.LocalType.Name} -> {newType.Name}");
-#endif
                         }
                     }
                 }
@@ -352,9 +350,7 @@ namespace MapExtPDX.MapExt.ReBurstSystem.Core
                                 var newM = method.GetGenericMethodDefinition().MakeGenericMethod(newArgs);
                                 finalInst = new CodeInstruction(instruction.opcode, newM);
                                 replacementCount++;
-#if DEBUG
                                 Info($"    🔗 [GenericCall] 更新泛型参数: {method.Name}");
-#endif
                             }
                             catch (Exception e)
                             {
@@ -375,10 +371,8 @@ namespace MapExtPDX.MapExt.ReBurstSystem.Core
                 yield return instruction;
             }
 
-#if DEBUG
             Info($"✅ 方法处理完成 | 发生 {replacementCount} 处关键替换");
             Info($"==============================================================");
-#endif
         }
 
         // --- 辅助函数 ---
