@@ -1195,8 +1195,8 @@ namespace MapExtPDX.ModeC
     [HarmonyPatch]
     public static class PathfindSetupSystem_FindTargets_Patch
     {
-        //private static int _callCount = 0;
-        //private static bool _hasLoggedSuccess = false;
+        private static int _callCount = 0;
+        private static bool _hasLoggedSuccess = false;
 
         [HarmonyTargetMethod]
         public static MethodBase TargetMethod()
@@ -1289,12 +1289,12 @@ namespace MapExtPDX.ModeC
                 return true;
             }
 
-            //_callCount++;
-            //if (!_hasLoggedSuccess || _callCount % 600 == 0)
-            //{
-            //    Mod.Logger.Info($"[SetupFindHomeJob] FindHome Patch Triggered! Count: {_callCount}");
-            //    _hasLoggedSuccess = true;
-            //}
+            _callCount++;
+            if (!_hasLoggedSuccess || _callCount % 600 == 0)
+            {
+                Mod.Logger.Info($"[SetupFindHomeJob] FindHome Patch Triggered! Count: {_callCount}");
+                _hasLoggedSuccess = true;
+            }
 
             EnsureInitialized(__instance);
 
