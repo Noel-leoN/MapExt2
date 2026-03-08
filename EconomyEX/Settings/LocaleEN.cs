@@ -31,7 +31,7 @@ namespace EconomyEX.Settings
                 { m_Setting.GetOptionGroupLocaleID(ModSettings.kSectionGeneral), "General" },
                 
                 { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.EnableEconomyFix)), "• Enable Economy Fix & Performance Boost" },
-                { m_Setting.GetOptionDescLocaleID(nameof(ModSettings.EnableEconomyFix)), "Enable to replace vanilla logic with optimized systems for large cities.\n\n⚠️ Game restart is required after changing this setting!" },
+                { m_Setting.GetOptionDescLocaleID(nameof(ModSettings.EnableEconomyFix)), "Enable to replace vanilla logic with optimized systems for large cities.\n\n⚠️ Game restart is required after changing this setting!\n\n------------------------------------------------\nEconomyEX is an economy system fix and optimization mod. It re-engineers several core vanilla simulation systems to solve severe economic stagnation (e.g. 0 Demand) and debilitating PC performance issues (e.g. Agent Floods) that occur when your city grows into a massive Metropolis." },
             };
         }
 
