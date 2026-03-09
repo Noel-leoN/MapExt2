@@ -20,7 +20,7 @@ using Unity.Entities;
 using Unity.Jobs;
 using Unity.Mathematics;
 
-namespace MapExtPDX.ModeA
+namespace MapExtPDX.ModeE
 {
 	public partial class ServiceCoverageSystemMod : GameSystemBase
 	{

@@ -1,5 +1,4 @@
-using System.Runtime.CompilerServices;
-using Game;
+﻿using Game;
 using Game.Simulation;
 using Colossal.Collections;
 using Game.Agents;
@@ -12,7 +11,6 @@ using Game.Companies;
 using Game.Creatures;
 using Game.Debug;
 using Game.Economy;
-using Game.Events;
 using Game.Net;
 using Game.Objects;
 using Game.Pathfind;
@@ -26,22 +24,23 @@ using Unity.Burst.Intrinsics;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Entities;
-using Unity.Entities.Internal;
 using Unity.Jobs;
 using Unity.Mathematics;
 using UnityEngine;
-using UnityEngine.Scripting;
 
-namespace MapExt.ModeB
+namespace MapExtPDX.ModeB
 {
-	public partial class E1_TripNeededSystem : GameSystemBase
+	public partial class TripNeededSystemMod : GameSystemBase
 	{
 		#region Constants
+
 		private const int UPDATE_INTERVAL = 16;
-		public override int GetUpdateInterval(SystemUpdatePhase phase) => 16;
+		public override int GetUpdateInterval(SystemUpdatePhase phase) => UPDATE_INTERVAL;
+
 		#endregion
 
 		#region Fields
+
 		private EntityQuery m_CitizenGroup;
 		private EntityQuery m_ResidentPrefabGroup;
 		private EntityQuery m_CompanyGroup;
@@ -70,6 +69,7 @@ namespace MapExt.ModeB
 		[DebugWatchValue] private DebugWatchDistribution m_DebugPedestrianDuration;
 		[DebugWatchValue] private DebugWatchDistribution m_DebugCarDuration;
 		[DebugWatchValue] private DebugWatchDistribution m_DebugPedestrianDurationShort;
+
 		public bool debugDisableSpawning { get; set; }
 
 		#endregion
@@ -90,6 +90,7 @@ namespace MapExt.ModeB
 			m_DebugPedestrianDuration = new DebugWatchDistribution(persistent: true);
 			m_DebugCarDuration = new DebugWatchDistribution(persistent: true);
 			m_DebugPedestrianDurationShort = new DebugWatchDistribution(persistent: true);
+
 			m_EndFrameBarrier = World.GetOrCreateSystemManaged<EndFrameBarrier>();
 			m_TimeSystem = World.GetOrCreateSystemManaged<TimeSystem>();
 			m_CityConfigurationSystem = World.GetOrCreateSystemManaged<CityConfigurationSystem>();
@@ -108,10 +109,10 @@ namespace MapExt.ModeB
 				.WithNone<Deleted, Temp>()
 				.Build();
 			m_CarPrefabQuery = GetEntityQuery(PersonalCarSelectData.GetEntityQueryDesc());
-			m_HandleRequestArchetype = base.EntityManager.CreateArchetype(ComponentType.ReadWrite<HandleRequest>(),
+			m_HandleRequestArchetype = EntityManager.CreateArchetype(ComponentType.ReadWrite<HandleRequest>(),
 				ComponentType.ReadWrite<Game.Events.Event>());
-			m_ResetTripArchetype = base.EntityManager.CreateArchetype(ComponentType.ReadWrite<Game.Common.Event>(),
-				ComponentType.ReadWrite<ResetTrip>());
+			m_ResetTripArchetype =
+				EntityManager.CreateArchetype(ComponentType.ReadWrite<Event>(), ComponentType.ReadWrite<ResetTrip>());
 			m_HumanSpawnTypes = new ComponentTypeSet(ComponentType.ReadWrite<HumanCurrentLane>(),
 				ComponentType.ReadWrite<TripSource>(), ComponentType.ReadWrite<Unspawned>());
 			m_PathfindTypes = new ComponentTypeSet(ComponentType.ReadWrite<PathInformation>(),
@@ -124,7 +125,7 @@ namespace MapExt.ModeB
 				ComponentType.ReadWrite<HumanCurrentLane>(),
 				ComponentType.ReadWrite<Blocker>()
 			});
-			m_PathfindSetupSystem = base.World.GetOrCreateSystemManaged<PathfindSetupSystem>();
+			m_PathfindSetupSystem = World.GetOrCreateSystemManaged<PathfindSetupSystem>();
 			RequireAnyForUpdate(m_CitizenGroup, m_CompanyGroup);
 		}
 
@@ -146,12 +147,11 @@ namespace MapExt.ModeB
 
 		protected override void OnUpdate()
 		{
-			JobHandle outJobHandle;
 			NativeList<ArchetypeChunk> humanChunks =
-				m_ResidentPrefabGroup.ToArchetypeChunkListAsync(Allocator.TempJob, out outJobHandle);
+				m_ResidentPrefabGroup.ToArchetypeChunkListAsync(Allocator.TempJob, out var outJobHandle);
 			m_PersonalCarSelectData.PreUpdate(this, m_CityConfigurationSystem, m_CarPrefabQuery, Allocator.TempJob,
 				out var jobHandle);
-			JobHandle jobHandle2 = JobHandle.CombineDependencies(base.Dependency, outJobHandle, jobHandle);
+			JobHandle jobHandle2 = JobHandle.CombineDependencies(Dependency, outJobHandle, jobHandle);
 			JobHandle jobHandle3 = default(JobHandle);
 			if (!m_CitizenGroup.IsEmptyIgnoreFilter)
 			{
@@ -168,7 +168,7 @@ namespace MapExt.ModeB
 				NativeQueue<int> debugCarDuration = default(NativeQueue<int>);
 				NativeQueue<int> debugPedestrianDuration = default(NativeQueue<int>);
 				NativeQueue<int> debugPedestrianDurationShort = default(NativeQueue<int>);
-				JobHandle deps = default(JobHandle);
+				JobHandle deps;
 				if (m_DebugPathCostsCar.IsEnabled)
 				{
 					debugPathQueueCar = m_DebugPathCostsCar.GetQueue(clear: false, out deps);
@@ -369,7 +369,7 @@ namespace MapExt.ModeB
 			}
 
 			humanChunks.Dispose(jobHandle2);
-			base.Dependency = jobHandle3;
+			Dependency = jobHandle3;
 		}
 
 		#endregion
@@ -1295,7 +1295,7 @@ namespace MapExt.ModeB
 						}
 
 						isMailSender = (isDead && trips[0].m_Purpose == Purpose.Deathcare) ||
-						                    (isCarried && trips[0].m_Purpose == Purpose.Hospital);
+						               (isCarried && trips[0].m_Purpose == Purpose.Hospital);
 						if (!isHomeless && !isMailSender)
 						{
 							m_CommandBuffer.AddComponent(unfilteredChunkIndex, entity, in m_PathfindTypes);
@@ -1316,16 +1316,42 @@ namespace MapExt.ModeB
 
 							Household household2 = m_Households[household];
 							DynamicBuffer<HouseholdCitizen> dynamicBuffer2 = m_HouseholdCitizens[household];
+
+							// [MOD EXT] 动态代价系统与超远距离防爆逻辑
+							float dynamicMaxCost = math.select(CitizenBehaviorSystem.kMaxPathfindCost,
+								CitizenBehaviorSystem.kMaxMovingAwayCost, isMovingIn);
+							TripNeeded tripInfo = trips[0];
+							if (tripInfo.m_Purpose == Purpose.Sightseeing ||
+							    tripInfo.m_Purpose == Purpose.VisitAttractions)
+							{
+								dynamicMaxCost = 8000f; // 缩短非刚需（观光等地标探索）的寻路范围，避免满地图搜索
+							}
+
+							PathMethod methods = (PathMethod.Pedestrian | PathMethod.Taxi |
+							                      RouteUtils.GetPublicTransportMethods(m_TimeOfDay));
+
+							// 判断两点直线距离，如果确定要去超远的地方（如特定的工作地，回家），强制禁止完全步行的网格搜索
+							float distance = 0f;
+							if (m_Transforms.HasComponent(currentBuilding) &&
+							    m_Transforms.HasComponent(target.m_Target))
+							{
+								distance = math.distance(m_Transforms[currentBuilding].m_Position,
+									m_Transforms[target.m_Target].m_Position);
+								if (distance > 10000f)
+								{
+									// 超过 10km，拿掉 Pedestrian 漫游探测，必须使用载具或公共交通
+									methods &= ~PathMethod.Pedestrian;
+								}
+							}
+
 							PathfindParameters parameters = new PathfindParameters
 							{
 								m_MaxSpeed = 277.77777f,
 								m_WalkSpeed = humanData.m_WalkSpeed,
 								m_Weights = CitizenUtils.GetPathfindWeights(citizen, household2, dynamicBuffer2.Length),
-								m_Methods = (PathMethod.Pedestrian | PathMethod.Taxi |
-								             RouteUtils.GetPublicTransportMethods(m_TimeOfDay)),
+								m_Methods = methods,
 								m_TaxiIgnoredRules = VehicleUtils.GetIgnoredPathfindRulesTaxiDefaults(),
-								m_MaxCost = math.select(CitizenBehaviorSystem.kMaxPathfindCost,
-									CitizenBehaviorSystem.kMaxMovingAwayCost, isMovingIn)
+								m_MaxCost = dynamicMaxCost
 							};
 							SetupQueueTarget origin = new SetupQueueTarget
 							{
@@ -1872,9 +1898,7 @@ namespace MapExt.ModeB
 		private struct AnimalTargetInfo
 		{
 			public Entity m_Animal;
-
 			public Entity m_Source;
-
 			public Entity m_Target;
 		}
 

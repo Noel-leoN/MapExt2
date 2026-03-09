@@ -1,4 +1,4 @@
-using Game;
+﻿using Game;
 using Game.Simulation;
 using Colossal.Collections;
 using Game.Agents;
@@ -28,9 +28,9 @@ using Unity.Jobs;
 using Unity.Mathematics;
 using UnityEngine;
 
-namespace MapExt.ModeA
+namespace MapExtPDX.ModeA
 {
-	public partial class E1_TripNeededSystem : GameSystemBase
+	public partial class TripNeededSystemMod : GameSystemBase
 	{
 		#region Constants
 
@@ -90,7 +90,7 @@ namespace MapExt.ModeA
 			m_DebugPedestrianDuration = new DebugWatchDistribution(persistent: true);
 			m_DebugCarDuration = new DebugWatchDistribution(persistent: true);
 			m_DebugPedestrianDurationShort = new DebugWatchDistribution(persistent: true);
-            
+
 			m_EndFrameBarrier = World.GetOrCreateSystemManaged<EndFrameBarrier>();
 			m_TimeSystem = World.GetOrCreateSystemManaged<TimeSystem>();
 			m_CityConfigurationSystem = World.GetOrCreateSystemManaged<CityConfigurationSystem>();
@@ -1316,16 +1316,42 @@ namespace MapExt.ModeA
 
 							Household household2 = m_Households[household];
 							DynamicBuffer<HouseholdCitizen> dynamicBuffer2 = m_HouseholdCitizens[household];
+
+							// [MOD EXT] 动态代价系统与超远距离防爆逻辑
+							float dynamicMaxCost = math.select(CitizenBehaviorSystem.kMaxPathfindCost,
+								CitizenBehaviorSystem.kMaxMovingAwayCost, isMovingIn);
+							TripNeeded tripInfo = trips[0];
+							if (tripInfo.m_Purpose == Purpose.Sightseeing ||
+							    tripInfo.m_Purpose == Purpose.VisitAttractions)
+							{
+								dynamicMaxCost = 8000f; // 缩短非刚需（观光等地标探索）的寻路范围，避免满地图搜索
+							}
+
+							PathMethod methods = (PathMethod.Pedestrian | PathMethod.Taxi |
+							                      RouteUtils.GetPublicTransportMethods(m_TimeOfDay));
+
+							// 判断两点直线距离，如果确定要去超远的地方（如特定的工作地，回家），强制禁止完全步行的网格搜索
+							float distance = 0f;
+							if (m_Transforms.HasComponent(currentBuilding) &&
+							    m_Transforms.HasComponent(target.m_Target))
+							{
+								distance = math.distance(m_Transforms[currentBuilding].m_Position,
+									m_Transforms[target.m_Target].m_Position);
+								if (distance > 10000f)
+								{
+									// 超过 10km，拿掉 Pedestrian 漫游探测，必须使用载具或公共交通
+									methods &= ~PathMethod.Pedestrian;
+								}
+							}
+
 							PathfindParameters parameters = new PathfindParameters
 							{
 								m_MaxSpeed = 277.77777f,
 								m_WalkSpeed = humanData.m_WalkSpeed,
 								m_Weights = CitizenUtils.GetPathfindWeights(citizen, household2, dynamicBuffer2.Length),
-								m_Methods = (PathMethod.Pedestrian | PathMethod.Taxi |
-								             RouteUtils.GetPublicTransportMethods(m_TimeOfDay)),
+								m_Methods = methods,
 								m_TaxiIgnoredRules = VehicleUtils.GetIgnoredPathfindRulesTaxiDefaults(),
-								m_MaxCost = math.select(CitizenBehaviorSystem.kMaxPathfindCost,
-									CitizenBehaviorSystem.kMaxMovingAwayCost, isMovingIn)
+								m_MaxCost = dynamicMaxCost
 							};
 							SetupQueueTarget origin = new SetupQueueTarget
 							{

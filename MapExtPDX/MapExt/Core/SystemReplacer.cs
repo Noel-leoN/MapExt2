@@ -63,6 +63,17 @@ namespace MapExtPDX.MapExt.Core
                         false;
                     updateSystem.World.GetOrCreateSystemManaged<Game.Simulation.CitizenFindJobSystem>().Enabled = false;
                     updateSystem.World.GetOrCreateSystemManaged<Game.Simulation.FindJobSystem>().Enabled = false;
+
+                    // 寻路优化系统 ECS替换
+                    updateSystem.World.GetOrCreateSystemManaged<Game.Simulation.TripNeededSystem>().Enabled = false;
+                    updateSystem.World.GetOrCreateSystemManaged<Game.Simulation.ServiceCoverageSystem>().Enabled =
+                        false;
+                    updateSystem.World.GetOrCreateSystemManaged<Game.Simulation.ResourceBuyerSystem>().Enabled = false;
+
+                    // Harmony修补：拦截 Game.Tools 等外部系统对 SetupPathfindMethods 的调用
+                    globalPatcher
+                        .CreateClassProcessor(
+                            typeof(MapExtPDX.ModeA.ServiceCoverageSystem_SetupPathfindMethods_Patch)).Patch();
                 }
             }
 
@@ -163,6 +174,14 @@ namespace MapExtPDX.MapExt.Core
                         .GameSimulation);
 
                     updateSystem.UpdateAt<MapExtPDX.ModeA.RentAdjustSystemMod>(SystemUpdatePhase
+                        .GameSimulation);
+
+                    // 寻路优化系统
+                    updateSystem.UpdateAt<MapExtPDX.ModeA.TripNeededSystemMod>(SystemUpdatePhase
+                        .GameSimulation);
+                    updateSystem.UpdateAt<MapExtPDX.ModeA.ServiceCoverageSystemMod>(SystemUpdatePhase
+                        .GameSimulation);
+                    updateSystem.UpdateAt<MapExtPDX.ModeA.ResourceBuyerSystemMod>(SystemUpdatePhase
                         .GameSimulation);
                 }
                 else
@@ -276,6 +295,14 @@ namespace MapExtPDX.MapExt.Core
                         .GameSimulation);
 
                     updateSystem.UpdateAt<MapExtPDX.ModeB.RentAdjustSystemMod>(SystemUpdatePhase
+                        .GameSimulation);
+
+                    // 寻路优化系统
+                    updateSystem.UpdateAt<MapExtPDX.ModeB.TripNeededSystemMod>(SystemUpdatePhase
+                        .GameSimulation);
+                    updateSystem.UpdateAt<MapExtPDX.ModeB.ServiceCoverageSystemMod>(SystemUpdatePhase
+                        .GameSimulation);
+                    updateSystem.UpdateAt<MapExtPDX.ModeB.ResourceBuyerSystemMod>(SystemUpdatePhase
                         .GameSimulation);
                 }
                 else
@@ -391,6 +418,14 @@ namespace MapExtPDX.MapExt.Core
 
                     updateSystem.UpdateAt<MapExtPDX.ModeC.RentAdjustSystemMod>(SystemUpdatePhase
                         .GameSimulation);
+
+                    // 寻路优化系统
+                    updateSystem.UpdateAt<MapExtPDX.ModeC.TripNeededSystemMod>(SystemUpdatePhase
+                        .GameSimulation);
+                    updateSystem.UpdateAt<MapExtPDX.ModeC.ServiceCoverageSystemMod>(SystemUpdatePhase
+                        .GameSimulation);
+                    updateSystem.UpdateAt<MapExtPDX.ModeC.ResourceBuyerSystemMod>(SystemUpdatePhase
+                        .GameSimulation);
                 }
                 else
                 {
@@ -447,6 +482,20 @@ namespace MapExtPDX.MapExt.Core
                     updateSystem.UpdateAt<MapExtPDX.ModeE.FindJobSystemMod>(SystemUpdatePhase.GameSimulation);
 
                     updateSystem.UpdateAt<MapExtPDX.ModeE.RentAdjustSystemMod>(SystemUpdatePhase.GameSimulation);
+
+                    // 寻路优化系统
+                    updateSystem.World.GetOrCreateSystemManaged<Game.Simulation.TripNeededSystem>().Enabled = false;
+                    updateSystem.World.GetOrCreateSystemManaged<Game.Simulation.ServiceCoverageSystem>().Enabled =
+                        false;
+                    updateSystem.World.GetOrCreateSystemManaged<Game.Simulation.ResourceBuyerSystem>().Enabled = false;
+                    updateSystem.UpdateAt<MapExtPDX.ModeE.TripNeededSystemMod>(SystemUpdatePhase.GameSimulation);
+                    updateSystem.UpdateAt<MapExtPDX.ModeE.ServiceCoverageSystemMod>(SystemUpdatePhase.GameSimulation);
+                    updateSystem.UpdateAt<MapExtPDX.ModeE.ResourceBuyerSystemMod>(SystemUpdatePhase.GameSimulation);
+
+                    // Harmony修补：拦截 Game.Tools 等外部系统对 SetupPathfindMethods 的调用
+                    globalPatcher
+                        .CreateClassProcessor(
+                            typeof(MapExtPDX.ModeE.ServiceCoverageSystem_SetupPathfindMethods_Patch)).Patch();
 
                     // Job通用替换修补ResidentialDemand/CommerialDemand/IndustrialDemand/RentAdjust
                     JobPatchHelper.Apply(globalPatcher, JobPatchDefinitions.GetEcoSystemTargets(PatchModeSetting.None));

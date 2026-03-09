@@ -24,7 +24,7 @@ using Unity.Jobs;
 using Unity.Mathematics;
 using UnityEngine;
 
-namespace MapExtPDX.ModeA
+namespace MapExtPDX.ModeB
 {
 	public partial class ResourceBuyerSystemMod : GameSystemBase
 	{
