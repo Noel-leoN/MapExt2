@@ -7,8 +7,8 @@
 		<Description>MapSize Extend 28/57/114km</Description>
 		<Authors>Noel2</Authors>
 		<Copyright>Copyright (c) [2025] [Noel2/Noel-leoN/=Noel=]</Copyright>
-		<Title>MapExt(Test): Big Map, Economy and Performance</Title>
-		<Version>2.2.6</Version>
+		<Title>MapExt: Big Map, Economy and Performance</Title>
+		<Version>2.2.7</Version>
 
 		<!--The file where mod information which is required for publishing mod on PDX mods are stored-->
 		<PublishConfigurationPath>Properties\PublishConfiguration.xml</PublishConfigurationPath>
