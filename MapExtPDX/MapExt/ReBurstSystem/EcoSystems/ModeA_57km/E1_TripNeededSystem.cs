@@ -90,6 +90,7 @@ namespace MapExt.ModeA
 			m_DebugPedestrianDuration = new DebugWatchDistribution(persistent: true);
 			m_DebugCarDuration = new DebugWatchDistribution(persistent: true);
 			m_DebugPedestrianDurationShort = new DebugWatchDistribution(persistent: true);
+            
 			m_EndFrameBarrier = World.GetOrCreateSystemManaged<EndFrameBarrier>();
 			m_TimeSystem = World.GetOrCreateSystemManaged<TimeSystem>();
 			m_CityConfigurationSystem = World.GetOrCreateSystemManaged<CityConfigurationSystem>();
