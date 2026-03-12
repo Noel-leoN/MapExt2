@@ -193,7 +193,9 @@ namespace MapExtPDX.ModeB
 					m_CommandBuffer = m_EndFrameBarrier.CreateCommandBuffer().AsParallelWriter(),
 					m_EconomyParameterData = m_EconomyParameterQuery.GetSingleton<EconomyParameterData>(),
 					m_City = m_CitySystem.City,
-					m_SalesQueue = m_SalesQueue.AsParallelWriter()
+					m_SalesQueue = m_SalesQueue.AsParallelWriter(),
+					// [MOD EXT]
+					m_DynamicShoppingMaxCost = MapExtPDX.Mod.Instance.CurrentSettings.ShoppingMaxCost
 				};
 				base.Dependency = JobChunkExtensions.ScheduleParallel(jobData, m_BuyerQuery,
 					JobHandle.CombineDependencies(base.Dependency, outJobHandle, jobHandle));
@@ -558,6 +560,9 @@ namespace MapExtPDX.ModeB
 			public Entity m_City;
 			public NativeQueue<SalesEvent>.ParallelWriter m_SalesQueue;
 
+			// [MOD EXT]
+			public float m_DynamicShoppingMaxCost;
+
 			public void Execute(in ArchetypeChunk chunk, int unfilteredChunkIndex, bool useEnabledMask,
 				in v128 chunkEnabledMask)
 			{
@@ -803,7 +808,7 @@ namespace MapExtPDX.ModeB
 
 				// [MOD EXT] 缩减购物寻路的最大代价，避免市民跨越大半个地图去找一家商店
 				// 原版 kMaxPathfindCost = 17000f，对于 57km 地图上的购物行为过于宽泛
-				const float kShoppingMaxCost = 8000f;
+				// const float kShoppingMaxCost = 8000f;
 				PathfindParameters parameters = new PathfindParameters
 				{
 					m_MaxSpeed = 277.77777f,
@@ -812,7 +817,7 @@ namespace MapExtPDX.ModeB
 					m_Methods = (PathMethod.Pedestrian | PathMethod.Taxi |
 					             RouteUtils.GetPublicTransportMethods(m_TimeOfDay)),
 					m_TaxiIgnoredRules = VehicleUtils.GetIgnoredPathfindRulesTaxiDefaults(),
-					m_MaxCost = kShoppingMaxCost
+					m_MaxCost = m_DynamicShoppingMaxCost
 				};
 				SetupQueueTarget origin = new SetupQueueTarget
 				{
@@ -989,3 +994,5 @@ namespace MapExtPDX.ModeB
 		#endregion
 	}
 }
+
+

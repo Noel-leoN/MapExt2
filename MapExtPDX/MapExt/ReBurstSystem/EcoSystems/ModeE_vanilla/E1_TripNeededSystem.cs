@@ -304,7 +304,9 @@ namespace MapExtPDX.ModeE
 					m_LeaveQueue = leaveQueue.AsParallelWriter(),
 					m_CommandBuffer = m_EndFrameBarrier.CreateCommandBuffer().AsParallelWriter(),
 					m_TriggerBuffer = m_TriggerSystem.CreateActionBuffer().AsParallelWriter(),
-					m_DebugDisableSpawning = debugDisableSpawning
+					m_DebugDisableSpawning = debugDisableSpawning,
+					// [MOD EXT]
+					m_DynamicLeisureMaxCost = MapExtPDX.Mod.Instance.CurrentSettings.LeisureMaxCost
 				};
 				PetTargetJob jobData2 = new PetTargetJob
 				{
@@ -867,7 +869,11 @@ namespace MapExtPDX.ModeE
 			public NativeQueue<AnimalTargetInfo>.ParallelWriter m_AnimalQueue;
 			public NativeQueue<Entity>.ParallelWriter m_LeaveQueue;
 			public NativeQueue<TriggerAction>.ParallelWriter m_TriggerBuffer;
+
 			public bool m_DebugDisableSpawning;
+
+			// [MOD EXT]
+			public float m_DynamicLeisureMaxCost;
 
 			private void GetResidentFlags(Entity citizen, Entity currentBuilding, bool isMailSender, bool pathFailed,
 				ref Target target, ref Purpose purpose, ref Purpose divertPurpose, ref uint timer,
@@ -1324,7 +1330,7 @@ namespace MapExtPDX.ModeE
 							if (tripInfo.m_Purpose == Purpose.Sightseeing ||
 							    tripInfo.m_Purpose == Purpose.VisitAttractions)
 							{
-								dynamicMaxCost = 8000f; // 缩短非刚需（观光等地标探索）的寻路范围，避免满地图搜索
+								dynamicMaxCost = m_DynamicLeisureMaxCost; // 缩短非刚需（观光等地标探索）的寻路范围，并使其跟随本地化滑动条配置
 							}
 
 							PathMethod methods = (PathMethod.Pedestrian | PathMethod.Taxi |
@@ -1905,3 +1911,5 @@ namespace MapExtPDX.ModeE
 		#endregion
 	}
 }
+
+

@@ -114,6 +114,18 @@ namespace MapExtPDX
                     "重新制作地价系统，恢复到较早版本的深度模拟，修复原始地价数值过高错误，并参考现实经济模型，实现住工商/高中低密度/人口/地段/学区/景观/财富差异化地价因子。"
                 },
 
+                { m_Setting.GetOptionGroupLocaleID(ModSettings.kEconomyTweakGroup), "▍大地图寻路优化" },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.ShoppingMaxCost)), "购物最高寻路成本" },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.ShoppingMaxCost)),
+                    "控制市民为了购买商品（如杂货、餐饮）愿意承受的最大出行成本。数值越低，市民在找不到商店时放弃得越快，能大幅降低大地图下的CPU负担。建议特大地图设置在 8000 左右。\n(原版默认: 17000)"
+                },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.LeisureMaxCost)), "休闲观光最高寻路成本" },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.LeisureMaxCost)),
+                    "控制市民为了游览公园、地标或观光愿意承受的最大出行成本。数值越低，全图无目的闲逛引发的寻路计算越少。建议特大地图设置在 8000 左右。\n(原版默认: 17000)"
+                },
+
                 { m_Setting.GetOptionTabLocaleID(ModSettings.kDebugTab), "▍开发者选项" },
                 { m_Setting.GetOptionGroupLocaleID(ModSettings.kDebugGroup), "▍开发者选项" },
                 { m_Setting.GetOptionLabelLocaleID(ModSettings.kDebugTab), "▍开发者选项" },

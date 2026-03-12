@@ -31,9 +31,9 @@ namespace MapExtPDX
     [FileLocation("ModsSettings/" + Mod.ModName + "/" + Mod.ModName)]
     [SettingsUITabOrder(kMapSizeModeTab, kPerformanceToolTab, kMiscTab, kDebugTab)]
     [SettingsUIGroupOrder(kMainModeGroup, kResetGroup, kInfoGroup, kEcoGroup, kNoteGroup, kPerformanceToolGroup,
-        kMiscGroup, /*kAirwayGroup,*/ kDebugGroup)]
+        kMiscGroup, kEconomyTweakGroup, /*kAirwayGroup,*/ kDebugGroup)]
     [SettingsUIShowGroupName(kMainModeGroup, kResetGroup, kInfoGroup, kEcoGroup, kNoteGroup, kPerformanceToolGroup,
-        kMiscGroup, /*kAirwayGroup,*/ kDebugGroup)]
+        kMiscGroup, kEconomyTweakGroup, /*kAirwayGroup,*/ kDebugGroup)]
     public class ModSettings : ModSetting
     {
         public const string kMapSizeModeTab = "▍MapSize Mode";
@@ -48,6 +48,7 @@ namespace MapExtPDX
         public const string kResetGroup = "▍Reset";
         public const string kPerformanceToolGroup = "▍PerformanceTool";
         public const string kMiscGroup = "▍Misc";
+        public const string kEconomyTweakGroup = "▍EconomyTweak";
 
         public const string kDebugGroup = "▍Debug";
         //public const string kAirwayGroup = "AirwayRegenerate";
@@ -138,6 +139,8 @@ namespace MapExtPDX
         {
             // 设置默认的补丁模式
             PatchModeChoice = PatchModeSetting.ModeA;
+            ShoppingMaxCost = 8000f;
+            LeisureMaxCost = 8000f;
         }
 
         // Helper for the dropdown (optional, direct enum use is fine too but this gives more control)
@@ -302,6 +305,19 @@ namespace MapExtPDX
             //Mod.Info($"Setting 'LandValueRemakeSystem' is now: {nameof(Game.Simulation.LandValueSystem)}. Updating system enabled state.");
             //World.DefaultGameObjectInjectionWorld.GetOrCreateSystemManaged<Game.Simulation.LandValueSystem>().Enabled = !m_LandValueRemakeSystem;
         }
+
+        // ==========================================
+        // 寻路优化参数
+        // ==========================================
+        [SettingsUISection(kMiscTab, kEconomyTweakGroup)]
+        [SettingsUISlider(min = 1000f, max = 17000f, step = 500f, scalarMultiplier = 1f,
+            unit = Game.UI.Unit.kFloatSingleFraction)]
+        public float ShoppingMaxCost { get; set; } = 8000f;
+
+        [SettingsUISection(kMiscTab, kEconomyTweakGroup)]
+        [SettingsUISlider(min = 1000f, max = 17000f, step = 500f, scalarMultiplier = 1f,
+            unit = Game.UI.Unit.kFloatSingleFraction)]
+        public float LeisureMaxCost { get; set; } = 8000f;
 
         // private bool m_LoadGameValidatorPatch;
         // 开关LoadGame验证系统
