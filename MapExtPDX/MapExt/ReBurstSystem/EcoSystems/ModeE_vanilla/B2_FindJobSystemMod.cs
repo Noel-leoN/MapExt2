@@ -1,4 +1,4 @@
-﻿// Game.Simulation.FindJobSystem
+// Game.Simulation.FindJobSystem
 // v1.4.2无变化
 
 using Colossal.Collections;

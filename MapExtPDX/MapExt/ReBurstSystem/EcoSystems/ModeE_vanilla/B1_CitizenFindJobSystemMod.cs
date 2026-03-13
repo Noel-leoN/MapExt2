@@ -1,4 +1,4 @@
-﻿// Game.Simulation.CitizenFindJobSystem
+// Game.Simulation.CitizenFindJobSystem
 // v1.4.2无变化
 
 using System.Threading;
@@ -63,7 +63,7 @@ namespace MapExtPDX.ModeE
         private const int kMaxSeekersPerFrame = 500;
 
         // [优化] 激进剪枝阈值：如果某等级空缺少于此值，视为无空缺，不发起寻路
-        private const int kMinVacanciesToSearch = 50;
+        private const int kMinVacanciesToSearch = 5;
 
         // [优化] 用于跨线程计数的原子计数器
         private NativeArray<int> m_CreatedSeekerCount;
@@ -215,7 +215,7 @@ namespace MapExtPDX.ModeE
             float marketSaturation = math.clamp(currentVacancyRate / kHealthyVacancyRate, 0f, 1f);
 
             // 基于饱和度计算实际概率
-            float actualUnemployedChance = kMaxUnemployedSearchChance * marketSaturation;
+            float actualUnemployedChance = math.max(0.2f, kMaxUnemployedSearchChance * marketSaturation);
             float actualEmployedSwitchChance = citizenParams.m_SwitchJobRate * marketSaturation; // 岗位少时，极少跳槽
 
             // 1. 失业者找工作
