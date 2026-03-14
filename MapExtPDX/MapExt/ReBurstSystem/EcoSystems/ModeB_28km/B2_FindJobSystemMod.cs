@@ -1,4 +1,4 @@
-// Game.Simulation.FindJobSystem
+﻿// Game.Simulation.FindJobSystem
 // v1.4.2无变化
 
 using Colossal.Collections;
@@ -33,9 +33,9 @@ namespace MapExtPDX.ModeB
 
     // =========================================================================================
     // 1. Mod 自定义系统类型 (当前类)
-    using ModSystem = CitizenFindJobSystemMod;
+    using ModSystem = FindJobSystemMod;
     // 2. 原版系统类型 (用于禁用和定位)
-    using TargetSystem = CitizenFindJobSystem;
+    using TargetSystem = FindJobSystem;
     // =========================================================================================
 
     public partial class FindJobSystemMod : GameSystemBase
@@ -839,6 +839,10 @@ namespace MapExtPDX.ModeB
                                 }
                             }
                         }
+                        else if ((m_Citizens[citizenEntity].m_State & CitizenFlags.Commuter) != CitizenFlags.None)
+                        {
+                            m_CommandBuffer.AddComponent(citizenEntity, default(Deleted));
+                        }
 
 #if DEBUG
                         // 统计失败原因
@@ -871,5 +875,6 @@ namespace MapExtPDX.ModeB
     } // class
 
 }
+
 
 
