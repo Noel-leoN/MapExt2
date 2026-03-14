@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2024 Noel2(Noel-leoN)
+// Copyright (c) 2024 Noel2(Noel-leoN)
 // Licensed under the MIT License.
 // See LICENSE in the project root for full license information.
 // When using this part of the code, please clearly credit [Project Name] and the author.
@@ -123,7 +123,17 @@ namespace MapExtPDX
                 { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.LeisureMaxCost)), "休闲观光最高寻路成本" },
                 {
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.LeisureMaxCost)),
-                    "控制市民为了游览公园、地标或观光愿意承受的最大出行成本。数值越低，全图无目的闲逛引发的寻路计算越少。建议特大地图设置在 8000 左右。\n(原版默认: 17000)"
+                    "控制市民为了游览公园、地标或观光愿意承受的最大出行成本。数值越低，全图无目的闲逛引发的寻路计算越少。建议特大地图设置在 12000 左右。\n(原版默认: 17000)"
+                },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.FindJobMaxCost)), "找工作最高寻路成本" },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.FindJobMaxCost)),
+                    "控制市民为了寻求工作岗位，最多愿意跨越多大规模的地图。数值越高（最大20万），大地图远郊孤岛小镇越容易招到工人。该行为频率极低，建议直接拉满（对性能影响不明显）。\n(原版默认: 17000)"
+                },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.FindHomeMaxCost)), "找房（搬家）最高寻路成本" },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.FindHomeMaxCost)),
+                    "控制市民搬家找房时的最大搜索范围上限。提升此数值可让市民跨越整张特大地图寻找新住宅，避免偏远新城无人入住。该行为频率较低，建议直接拉满。\n(原版默认: 17000)"
                 },
 
                 { m_Setting.GetOptionTabLocaleID(ModSettings.kDebugTab), "▍开发者选项" },

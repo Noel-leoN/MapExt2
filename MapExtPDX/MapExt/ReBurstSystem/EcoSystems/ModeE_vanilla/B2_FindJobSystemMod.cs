@@ -1,4 +1,4 @@
-﻿// Game.Simulation.FindJobSystem
+// Game.Simulation.FindJobSystem
 // v1.4.2无变化
 
 using Colossal.Collections;
@@ -257,6 +257,7 @@ namespace MapExtPDX.ModeE
                 m_FreeCache = m_FreeCache,
                 m_EmployableByEducation = m_CountHouseholdDataSystem.GetEmployables(),
                 m_RandomSeed = RandomSeed.Next(),
+                m_DynamicFindJobMaxCost = MapExtPDX.Mod.Instance.CurrentSettings.FindJobMaxCost,
 
                 // [优化] 传入计数器进行限流
                 m_RequestCount = m_RequestCount,
@@ -463,6 +464,8 @@ namespace MapExtPDX.ModeE
 
             public RandomSeed m_RandomSeed; // 随机种子
 
+            public float m_DynamicFindJobMaxCost; // 动态最大寻路成本
+
             // [优化] 限流参数
             [NativeDisableUnsafePtrRestriction]
             public NativeArray<int> m_RequestCount;
@@ -639,7 +642,7 @@ namespace MapExtPDX.ModeE
                             m_WalkSpeed = 1.6666667f, // 步行速度 (~6km/h)
                             m_Weights = CitizenUtils.GetPathfindWeights(citizenData, householdData, householdCitizens.Length),
                             m_Methods = (PathMethod.Pedestrian | PathMethod.PublicTransportDay | PathMethod.PublicTransportNight),
-                            m_MaxCost = CitizenBehaviorSystem.kMaxPathfindCost,
+                            m_MaxCost = m_DynamicFindJobMaxCost,
                             m_PathfindFlags = (PathfindFlags.Simplified | PathfindFlags.IgnorePath) // 简化寻路，不需要实际路径，只需要找到目的地
                         };
 
@@ -875,6 +878,5 @@ namespace MapExtPDX.ModeE
     } // class
 
 }
-
 
 

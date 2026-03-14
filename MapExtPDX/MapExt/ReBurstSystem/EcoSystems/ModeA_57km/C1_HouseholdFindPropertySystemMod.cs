@@ -1,4 +1,4 @@
-﻿// Game.Simulation.HouseholdFindPropertySystem
+// Game.Simulation.HouseholdFindPropertySystem
 
 // Game.Simulation.CitizenPathFindSetup + SetupFindHomeJob
 
@@ -296,7 +296,8 @@ namespace MapExtPDX.ModeA
                 m_RentActionQueue = m_PropertyProcessingSystem.GetRentActionQueue(out deps).AsParallelWriter(),
                 m_City = m_CitySystem.City,
                 m_PathfindQueue = m_PathfindSetupSystem.GetQueue(this, 80, 16).AsParallelWriter(),
-                m_CommandBuffer = m_EndFrameBarrier.CreateCommandBuffer()
+                m_CommandBuffer = m_EndFrameBarrier.CreateCommandBuffer(),
+                m_DynamicFindHomeMaxCost = Mod.Instance.CurrentSettings.FindHomeMaxCost
             };
             JobHandle prepareJobHandle = preparePropertyJobData.ScheduleParallel(m_FreePropertyQuery,
                 JobUtils.CombineDependencies(Dependency, groundPollutionDependencies, noisePollutionDependencies,
@@ -524,6 +525,7 @@ namespace MapExtPDX.ModeA
             [ReadOnly] public Entity m_City;
             public NativeQueue<SetupQueueItem>.ParallelWriter m_PathfindQueue;
             public NativeQueue<RentAction>.ParallelWriter m_RentActionQueue;
+            public float m_DynamicFindHomeMaxCost;
 
             /// <summary>
             /// 🧳 构造寻找新家的参数（起点、方法、权重及目标分）并发出寻路请求。
@@ -566,7 +568,7 @@ namespace MapExtPDX.ModeA
                     m_WalkSpeed = 1.6666667f,
                     m_Weights = weights,
                     m_Methods = (PathMethod.Pedestrian | PathMethod.PublicTransportDay),
-                    m_MaxCost = CitizenBehaviorSystem.kMaxPathfindCost,
+                    m_MaxCost = m_DynamicFindHomeMaxCost,
                     m_PathfindFlags = (PathfindFlags.Simplified | PathfindFlags.IgnorePath)
                 };
 

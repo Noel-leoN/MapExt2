@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2024 Noel2(Noel-leoN)
+// Copyright (c) 2024 Noel2(Noel-leoN)
 // Licensed under the MIT License.
 // See LICENSE in the project root for full license information.
 // When using this part of the code, please clearly credit [Project Name] and the author.
@@ -140,7 +140,9 @@ namespace MapExtPDX
             // 设置默认的补丁模式
             PatchModeChoice = PatchModeSetting.ModeA;
             ShoppingMaxCost = 8000f;
-            LeisureMaxCost = 8000f;
+            LeisureMaxCost = 12000f;
+            FindJobMaxCost = 200000f;
+            FindHomeMaxCost = 200000f;
         }
 
         // Helper for the dropdown (optional, direct enum use is fine too but this gives more control)
@@ -310,14 +312,24 @@ namespace MapExtPDX
         // 寻路优化参数
         // ==========================================
         [SettingsUISection(kMiscTab, kEconomyTweakGroup)]
-        [SettingsUISlider(min = 1000f, max = 17000f, step = 500f, scalarMultiplier = 1f,
+        [SettingsUISlider(min = 1000f, max = 200000f, step = 1000f, scalarMultiplier = 1f,
             unit = Game.UI.Unit.kFloatSingleFraction)]
         public float ShoppingMaxCost { get; set; } = 8000f;
 
         [SettingsUISection(kMiscTab, kEconomyTweakGroup)]
-        [SettingsUISlider(min = 1000f, max = 17000f, step = 500f, scalarMultiplier = 1f,
+        [SettingsUISlider(min = 1000f, max = 200000f, step = 1000f, scalarMultiplier = 1f,
             unit = Game.UI.Unit.kFloatSingleFraction)]
-        public float LeisureMaxCost { get; set; } = 8000f;
+        public float LeisureMaxCost { get; set; } = 12000f;
+
+        [SettingsUISection(kMiscTab, kEconomyTweakGroup)]
+        [SettingsUISlider(min = 17000f, max = 200000f, step = 1000f, scalarMultiplier = 1f,
+            unit = Game.UI.Unit.kFloatSingleFraction)]
+        public float FindJobMaxCost { get; set; } = 200000f;
+
+        [SettingsUISection(kMiscTab, kEconomyTweakGroup)]
+        [SettingsUISlider(min = 17000f, max = 200000f, step = 1000f, scalarMultiplier = 1f,
+            unit = Game.UI.Unit.kFloatSingleFraction)]
+        public float FindHomeMaxCost { get; set; } = 200000f;
 
         // private bool m_LoadGameValidatorPatch;
         // 开关LoadGame验证系统
