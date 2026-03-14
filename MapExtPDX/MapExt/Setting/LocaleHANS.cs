@@ -63,10 +63,30 @@ namespace MapExtPDX
 
                 { m_Setting.GetOptionGroupLocaleID(ModSettings.kEcoGroup), "▍经济系统修复" },
                 { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.kEcoGroup)), "• 经济逻辑和性能优化" },
-                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.isEnableEconomyFix)), "• 经济逻辑修复 & 性能优化" },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.isEnableEconomyFix)), "• 经济逻辑修复 & 性能优化 (总开关)" },
                 {
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.isEnableEconomyFix)),
                     "优化并修复以下系统，以适配百万人口规模的巨型城市：\n - 住宅/商业/工业需求系统\n - 家庭找房系统\n - 家庭行为系统 (消费行为修正)\n - 市民寻找工作系统\n - 租金计算系统\n\n⚠️ 【重要】：更改此项设置后，【必须重启游戏】，否则不会生效并且会引发不可预知的 Bug！"
+                },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.EnableDemandEcoSystem)), "  ├─ 需求调节系统 (重启生效)" },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.EnableDemandEcoSystem)),
+                    "启用后，将接管并优化原版的居住、商业、工业建筑物需求计算机制。包含 A1/A2/A3 核心系统。\n\n⚠️ 更改后需重启游戏。"
+                },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.EnableJobSearchEcoSystem)), "  ├─ 找工作系统组 (重启生效)" },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.EnableJobSearchEcoSystem)),
+                    "启用后，将接管并优化市民个人的找工作行为。包含 B1/B2 找工作子系统。\n\n⚠️ 更改后需重启游戏。"
+                },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.EnableHouseholdPropertyEcoSystem)), "  ├─ 找房与租金系统组 (重启生效 - 核心)" },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.EnableHouseholdPropertyEcoSystem)),
+                    "启用后，将接管家庭行为、家庭找房以及建筑租金调整系统。这三个系统相互深度绑定。包含 C1/C2/D1 系统。\n\n⚠️ 更改后需重启游戏。"
+                },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.EnableResourceBuyerEcoSystem)), "  └─ 消费与路程规划系统组 (重启生效)" },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.EnableResourceBuyerEcoSystem)),
+                    "启用后，将接管市民外出购物、企业采购等需求的车程和资源匹配系统。包含 E1/E2/E3 系统。\n\n⚠️ 更改后需重启游戏。"
                 },
 
                 { m_Setting.GetOptionGroupLocaleID(ModSettings.kNoteGroup), "▍警告" },
@@ -105,35 +125,52 @@ namespace MapExtPDX
                     "让宠物都待在家里或去外地旅游，街上不再出现宠物，降低计算量。 (在已建城市中需要等待宠物们回家或去往外地)"
                 },
 
-                { m_Setting.GetOptionTabLocaleID(ModSettings.kMiscTab), "▍特色工具" },
-                { m_Setting.GetOptionGroupLocaleID(ModSettings.kMiscTab), "▍特色工具" },
-                { m_Setting.GetOptionLabelLocaleID(ModSettings.kMiscTab), "• 特色工具" },
-                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.LandValueRemake)), "• 现实地价重制版 (当前尚不可用)" },
+                { m_Setting.GetOptionTabLocaleID(ModSettings.kMiscTab), "▍经济补丁设置" },
+                { m_Setting.GetOptionGroupLocaleID(ModSettings.kMiscTab), "▍经济补丁设置" },
+                { m_Setting.GetOptionLabelLocaleID(ModSettings.kMiscTab), "• 经济补丁设置" },
+                /*{ m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.LandValueRemake)), "• 现实地价重制版 (当前尚不可用)" },
                 {
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.LandValueRemake)),
                     "重新制作地价系统，恢复到较早版本的深度模拟，修复原始地价数值过高错误，并参考现实经济模型，实现住工商/高中低密度/人口/地段/学区/景观/财富差异化地价因子。"
-                },
+                },*/
 
                 { m_Setting.GetOptionGroupLocaleID(ModSettings.kEconomyTweakGroup), "▍大地图寻路优化" },
                 { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.ShoppingMaxCost)), "购物最高寻路成本" },
                 {
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.ShoppingMaxCost)),
-                    "控制市民为了购买商品（如杂货、餐饮）愿意承受的最大出行成本。数值越低，市民在找不到商店时放弃得越快，能大幅降低大地图下的CPU负担。建议特大地图设置在 8000 左右。\n(原版默认: 17000)"
+                    "控制市民为了买东西（如杂货、餐饮）愿意承受的最大出行成本。数值越低，市民在找不到商店时放弃得越快，能大幅降低大地图下的CPU负担。\n" +
+                    "★ 建议值：\n" +
+                    " - 14km / 28km： 8000\n" +
+                    " - 57km / 114km：8000 ~ 12000"
+                },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.CompanyShoppingMaxCost)), "公司货运最高寻路成本" },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.CompanyShoppingMaxCost)),
+                    "控制公司（工厂/商店）寻找材料并呼叫货车送货的最大搜索范围。由于公司补货通常不局限于本地，极高数值（最大20万）可允许公司在全图范围内寻找资源，防止在大地图中出现材料荒。\n" +
+                    "★ 建议值：\n" +
+                    " - 全地形全局通用：200000"
                 },
                 { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.LeisureMaxCost)), "休闲观光最高寻路成本" },
                 {
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.LeisureMaxCost)),
-                    "控制市民为了游览公园、地标或观光愿意承受的最大出行成本。数值越低，全图无目的闲逛引发的寻路计算越少。建议特大地图设置在 12000 左右。\n(原版默认: 17000)"
+                    "控制市民为了游览公园、地标或观光愿意承受的最大出行成本。数值越低，全图无目的闲逛引发的寻路计算越少。\n" +
+                    "★ 建议值：\n" +
+                    " - 14km / 28km： 8000 ~ 12000\n" +
+                    " - 57km / 114km：12000 ~ 20000"
                 },
                 { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.FindJobMaxCost)), "找工作最高寻路成本" },
                 {
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.FindJobMaxCost)),
-                    "控制市民为了寻求工作岗位，最多愿意跨越多大规模的地图。数值越高（最大20万），大地图远郊孤岛小镇越容易招到工人。该行为频率极低，建议直接拉满（对性能影响不明显）。\n(原版默认: 17000)"
+                    "控制市民为了寻求工作岗位，最多愿意跨越多大规模的地图。数值越高（最大20万），大地图远郊孤岛小镇越容易招到工人。该行为频率极低，建议直接拉满（对性能影响不明显）。\n" +
+                    "★ 建议值：\n" +
+                    " - 全地形全局通用：200000"
                 },
                 { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.FindHomeMaxCost)), "找房（搬家）最高寻路成本" },
                 {
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.FindHomeMaxCost)),
-                    "控制市民搬家找房时的最大搜索范围上限。提升此数值可让市民跨越整张特大地图寻找新住宅，避免偏远新城无人入住。该行为频率较低，建议直接拉满。\n(原版默认: 17000)"
+                    "控制市民搬家找房时的最大搜索范围上限。提升此数值可让市民跨越整张特大地图寻找新住宅，避免偏远新城无人入住。该行为频率较低，建议直接拉满。\n" +
+                    "★ 建议值：\n" +
+                    " - 全地形全局通用：200000"
                 },
 
                 { m_Setting.GetOptionTabLocaleID(ModSettings.kDebugTab), "▍开发者选项" },

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Runtime.CompilerServices;
 using Game;
 using Game.Simulation;
@@ -195,7 +195,8 @@ namespace MapExtPDX.ModeA
 					m_City = m_CitySystem.City,
 					m_SalesQueue = m_SalesQueue.AsParallelWriter(),
 					// [MOD EXT]
-					m_DynamicShoppingMaxCost = MapExtPDX.Mod.Instance.CurrentSettings.ShoppingMaxCost
+					m_DynamicShoppingMaxCost = MapExtPDX.Mod.Instance.CurrentSettings.ShoppingMaxCost,
+					m_CompanyShoppingMaxCost = MapExtPDX.Mod.Instance.CurrentSettings.CompanyShoppingMaxCost
 				};
 				base.Dependency = JobChunkExtensions.ScheduleParallel(jobData, m_BuyerQuery,
 					JobHandle.CombineDependencies(base.Dependency, outJobHandle, jobHandle));
@@ -562,6 +563,7 @@ namespace MapExtPDX.ModeA
 
 			// [MOD EXT]
 			public float m_DynamicShoppingMaxCost;
+			public float m_CompanyShoppingMaxCost;
 
 			public void Execute(in ArchetypeChunk chunk, int unfilteredChunkIndex, bool useEnabledMask,
 				in v128 chunkEnabledMask)
@@ -647,6 +649,8 @@ namespace MapExtPDX.ModeA
 							if (num <= 0 || (!flag2 && num < resourceBuyer.m_AmountNeeded / 2))
 							{
 								m_CommandBuffer.RemoveComponent(unfilteredChunkIndex, entity, in m_PathfindTypes);
+								// [MOD EXT] BUG FIX: Vanilla fails to remove the ResourceBuyer component when stock is insufficient, leading to an infinite pathfinding loop.
+								m_CommandBuffer.RemoveComponent<ResourceBuyer>(unfilteredChunkIndex, entity);
 								continue;
 							}
 
@@ -942,7 +946,8 @@ namespace MapExtPDX.ModeA
 					m_WalkSpeed = 5.555556f,
 					m_Weights = new PathfindWeights(1f, 1f, transportCost, 1f),
 					m_Methods = (PathMethod.Road | PathMethod.CargoLoading),
-					m_IgnoredRules = (RuleFlags.ForbidSlowTraffic | RuleFlags.AvoidBicycles)
+					m_IgnoredRules = (RuleFlags.ForbidSlowTraffic | RuleFlags.AvoidBicycles),
+					m_MaxCost = m_CompanyShoppingMaxCost // [MOD EXT] Give company trucks their own custom configurable max cost
 				};
 				SetupQueueTarget origin = new SetupQueueTarget
 				{

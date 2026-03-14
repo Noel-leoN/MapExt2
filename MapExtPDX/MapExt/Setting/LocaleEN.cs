@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2024 Noel2(Noel-leoN)
+// Copyright (c) 2024 Noel2(Noel-leoN)
 // Licensed under the MIT License.
 // See LICENSE in the project root for full license information.
 // When using this part of the code, please clearly credit [Project Name] and the author.
@@ -75,11 +75,31 @@ namespace MapExtPDX
                 { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.kEcoGroup)), "• Logic & Perf. Optimization" },
                 {
                     m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.isEnableEconomyFix)),
-                    "• Economy Logic & Perf. Optimization"
+                    "• Economy Logic & Perf. Optimization (Master Switch)"
                 },
                 {
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.isEnableEconomyFix)),
                     "Fixes and optimizes the following systems to adapt to cities with populations in the millions:\n - Residential/Commercial/Industrial demand systems\n - Household home-search system\n - Household behavior system (consumer behavior adjustment)\n - Citizen job-search system\n - Rent calculation system\n\n⚠️ [CRITICAL]: Changing this option requires a GAME RESTART to take effect safely. Otherwise, severe logical bugs will occur!"
+                },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.EnableDemandEcoSystem)), "  ├─ Demand Systems (Restart Required)" },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.EnableDemandEcoSystem)),
+                    "Takes over and optimizes vanilla Residential/Commercial/Industrial demand calculations. (Includes A1/A2/A3 systems)\n\n⚠️ Restart Required."
+                },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.EnableJobSearchEcoSystem)), "  ├─ Job Search Systems (Restart Required)" },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.EnableJobSearchEcoSystem)),
+                    "Takes over and optimizes citizen job-finding behaviors. (Includes B1/B2 systems)\n\n⚠️ Restart Required."
+                },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.EnableHouseholdPropertyEcoSystem)), "  ├─ Household, Property & Rent Systems (Restart Required - CORE)" },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.EnableHouseholdPropertyEcoSystem)),
+                    "Takes over Household Behavior, Home Searching, and Rent Adjustment systems. These three systems are deeply coupled. (Includes C1/C2/D1 systems)\n\n⚠️ Restart Required."
+                },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.EnableResourceBuyerEcoSystem)), "  └─ Consumer & Service Pathing Systems (Restart Required)" },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.EnableResourceBuyerEcoSystem)),
+                    "Takes over pathfinding and resource matching for citizens shopping and companies restocking. (Includes E1/E2/E3 systems)\n\n⚠️ Restart Required."
                 },
 
                 { m_Setting.GetOptionGroupLocaleID(ModSettings.kNoteGroup), "▍Caution!" },
@@ -111,34 +131,46 @@ namespace MapExtPDX
                     "It'll take effect after the game has been running for a while, so just wait for the dogs to come home or go on a trip to another city."
                 },
 
-                { m_Setting.GetOptionTabLocaleID(ModSettings.kMiscTab), "▍Misc Tools" },
-                { m_Setting.GetOptionGroupLocaleID(ModSettings.kMiscTab), "▍Misc Tools" },
-                { m_Setting.GetOptionLabelLocaleID(ModSettings.kMiscTab), "• Misc Feature Tools" },
+                { m_Setting.GetOptionTabLocaleID(ModSettings.kMiscTab), "▍EconomyTweak" },
+                { m_Setting.GetOptionGroupLocaleID(ModSettings.kMiscTab), "▍EconomyTweak" },
+                { m_Setting.GetOptionLabelLocaleID(ModSettings.kMiscTab), "• Economy Detail Tweak" },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.ShoppingMaxCost)), "Max Shopping Pathfind Cost" },
                 {
-                    m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.LandValueRemake)),
-                    "• LandValue Remake (Currently unavailable)"
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.ShoppingMaxCost)),
+                    "Controls the maximum travel cost citizens are willing to endure for shopping (groceries, dining). A lower value makes citizens give up faster when shops are far, significantly reducing CPU load on large maps.\n" +
+                    "★ Recommended values:\n" +
+                    " - 14km / 28km: 8000\n" +
+                    " - 57km / 114km: 8000 ~ 12000"
                 },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.CompanyShoppingMaxCost)), "Company Max Delivery Pathfind Cost" },
                 {
-                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.LandValueRemake)),
-                    "Remake the landvalue system to bring back the deeper economic systems from earlier versions! (with bug fixed and enhanced)."
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.CompanyShoppingMaxCost)),
+                    "Controls the maximum search distance when companies (factories/stores) attempt to restock materials via cargo delivery. A higher value (up to 200k) allows companies to search across the entire map, preventing extreme material shortages on large maps.\n" +
+                    "★ Recommended values:\n" +
+                    " - All Map Sizes: 200000"
                 },
-
-                { m_Setting.GetOptionTabLocaleID(ModSettings.kDebugTab), "▍Debug" },
-                { m_Setting.GetOptionGroupLocaleID(ModSettings.kDebugGroup), "▍Debug" },
-                { m_Setting.GetOptionLabelLocaleID(ModSettings.kDebugTab), "▍Debug" },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.LeisureMaxCost)), "Max Leisure/Sightseeing Pathfind Cost" },
                 {
-                    m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.DisableLoadGameValidation)),
-                    "× Disable LoadGame Validation"
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.LeisureMaxCost)),
+                    "Controls the maximum travel cost citizens are willing to endure to visit parks, landmarks, or sightseeing. A lower value prevents excessive pathfinding for aimless wandering.\n" +
+                    "★ Recommended values:\n" +
+                    " - 14km / 28km: 8000 ~ 12000\n" +
+                    " - 57km / 114km: 12000 ~ 20000"
                 },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.FindJobMaxCost)), "Max Find Job Pathfind Cost" },
                 {
-                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.DisableLoadGameValidation)),
-                    "⚠️ Warn! Disable LoadGame Validation function. Usually don't click! Use only if your legacy MapExt savegame is not recognized. Legacy savegame need to be in the correct mode selected in the MapSize option, otherwise the savegame may be corrupted."
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.FindJobMaxCost)),
+                    "Controls how far citizens are willing to search across the map for a job. A higher value (up to 200k) helps isolated towns on large maps finding workers. This occurs very rarely, so it's recommended to max it out (minimal performance impact).\n" +
+                    "★ Recommended:\n" +
+                    " - All Map Sizes: 200000"
                 },
-
-                //{ m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.ApplyAirwayRegenerate)), "Apply Airway Regenerate" },
-                //{ m_Setting.GetOptionGroupLocaleID(ModSettings.kAirwayGroup), "Airway Regenerator" },
-                //{ m_Setting.GetOptionDescLocaleID(nameof(ModSettings.ApplyAirwayRegenerate)), "After adding the new airplane path boundary point, just click this to make it active in the game." },
-                //{ m_Setting.GetOptionWarningLocaleID(nameof(ModSettings.ApplyAirwayRegenerate)), "All airway will be rebuilt soon." },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.FindHomeMaxCost)), "Max Find Home Pathfind Cost" },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.FindHomeMaxCost)),
+                    "Controls the maximum search distance when citizens look for a new home. Increasing this allows citizens to relocate across the entire large map, preventing remote towns from being empty. This occurs rarely, recommended to max it out.\n" +
+                    "★ Recommended:\n" +
+                    " - All Map Sizes: 200000"
+                },
             };
             return entries;
         }

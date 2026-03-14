@@ -29,11 +29,11 @@ namespace MapExtPDX
 
     //[FileLocation(nameof(MapExtPDX))]
     [FileLocation("ModsSettings/" + Mod.ModName + "/" + Mod.ModName)]
-    [SettingsUITabOrder(kMapSizeModeTab, kPerformanceToolTab, kMiscTab, kDebugTab)]
-    [SettingsUIGroupOrder(kMainModeGroup, kResetGroup, kInfoGroup, kEcoGroup, kNoteGroup, kPerformanceToolGroup,
-        kMiscGroup, kEconomyTweakGroup, /*kAirwayGroup,*/ kDebugGroup)]
-    [SettingsUIShowGroupName(kMainModeGroup, kResetGroup, kInfoGroup, kEcoGroup, kNoteGroup, kPerformanceToolGroup,
-        kMiscGroup, kEconomyTweakGroup, /*kAirwayGroup,*/ kDebugGroup)]
+    [SettingsUITabOrder(kMapSizeModeTab, kMiscTab, kPerformanceToolTab, kDebugTab)]
+    [SettingsUIGroupOrder(kMainModeGroup, kResetGroup, kInfoGroup, kEcoGroup, kNoteGroup, 
+        kMiscGroup, kEconomyTweakGroup, kPerformanceToolGroup, kDebugGroup)]
+    [SettingsUIShowGroupName(kMainModeGroup, kResetGroup, kInfoGroup, kEcoGroup, kNoteGroup, 
+        kMiscGroup, kEconomyTweakGroup, kPerformanceToolGroup, kDebugGroup)]
     public class ModSettings : ModSetting
     {
         public const string kMapSizeModeTab = "▍MapSize Mode";
@@ -140,9 +140,16 @@ namespace MapExtPDX
             // 设置默认的补丁模式
             PatchModeChoice = PatchModeSetting.ModeA;
             ShoppingMaxCost = 8000f;
+            CompanyShoppingMaxCost = 200000f;
             LeisureMaxCost = 12000f;
             FindJobMaxCost = 200000f;
             FindHomeMaxCost = 200000f;
+            
+            isEnableEconomyFix = true;
+            EnableDemandEcoSystem = true;
+            EnableJobSearchEcoSystem = true;
+            EnableHouseholdPropertyEcoSystem = true;
+            EnableResourceBuyerEcoSystem = true;
         }
 
         // Helper for the dropdown (optional, direct enum use is fine too but this gives more control)
@@ -179,6 +186,28 @@ namespace MapExtPDX
         [SettingsUISection(kMapSizeModeTab, kEcoGroup)]
         [SettingsUIHideByCondition(typeof(ModSettings), nameof(IsNotInMainMenu))]
         public bool isEnableEconomyFix { get; set; } = true;
+
+        public bool IsEconomyFixDisabled => !isEnableEconomyFix;
+
+        [SettingsUISection(kMapSizeModeTab, kEcoGroup)]
+        [SettingsUIDisableByCondition(typeof(ModSettings), nameof(IsEconomyFixDisabled))]
+        [SettingsUIHideByCondition(typeof(ModSettings), nameof(IsNotInMainMenu))]
+        public bool EnableDemandEcoSystem { get; set; } = true;
+
+        [SettingsUISection(kMapSizeModeTab, kEcoGroup)]
+        [SettingsUIDisableByCondition(typeof(ModSettings), nameof(IsEconomyFixDisabled))]
+        [SettingsUIHideByCondition(typeof(ModSettings), nameof(IsNotInMainMenu))]
+        public bool EnableJobSearchEcoSystem { get; set; } = true;
+
+        [SettingsUISection(kMapSizeModeTab, kEcoGroup)]
+        [SettingsUIDisableByCondition(typeof(ModSettings), nameof(IsEconomyFixDisabled))]
+        [SettingsUIHideByCondition(typeof(ModSettings), nameof(IsNotInMainMenu))]
+        public bool EnableHouseholdPropertyEcoSystem { get; set; } = true;
+
+        [SettingsUISection(kMapSizeModeTab, kEcoGroup)]
+        [SettingsUIDisableByCondition(typeof(ModSettings), nameof(IsEconomyFixDisabled))]
+        [SettingsUIHideByCondition(typeof(ModSettings), nameof(IsNotInMainMenu))]
+        public bool EnableResourceBuyerEcoSystem { get; set; } = true;
 
         //[SettingsUISection(kMapSizeModeTab, kEcoGroup)]
         //[SettingsUIButton]
@@ -315,6 +344,11 @@ namespace MapExtPDX
         [SettingsUISlider(min = 1000f, max = 200000f, step = 1000f, scalarMultiplier = 1f,
             unit = Game.UI.Unit.kFloatSingleFraction)]
         public float ShoppingMaxCost { get; set; } = 8000f;
+
+        [SettingsUISection(kMiscTab, kEconomyTweakGroup)]
+        [SettingsUISlider(min = 1000f, max = 200000f, step = 1000f, scalarMultiplier = 1f,
+            unit = Game.UI.Unit.kFloatSingleFraction)]
+        public float CompanyShoppingMaxCost { get; set; } = 200000f;
 
         [SettingsUISection(kMiscTab, kEconomyTweakGroup)]
         [SettingsUISlider(min = 1000f, max = 200000f, step = 1000f, scalarMultiplier = 1f,
