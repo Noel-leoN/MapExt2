@@ -150,6 +150,7 @@ namespace MapExtPDX
             EnableJobSearchEcoSystem = true;
             EnableHouseholdPropertyEcoSystem = true;
             EnableResourceBuyerEcoSystem = true;
+            EnableResidentAIEcoSystem = true;
         }
 
         // Helper for the dropdown (optional, direct enum use is fine too but this gives more control)
@@ -208,6 +209,11 @@ namespace MapExtPDX
         [SettingsUIDisableByCondition(typeof(ModSettings), nameof(IsEconomyFixDisabled))]
         [SettingsUIHideByCondition(typeof(ModSettings), nameof(IsNotInMainMenu))]
         public bool EnableResourceBuyerEcoSystem { get; set; } = true;
+
+        [SettingsUISection(kMapSizeModeTab, kEcoGroup)]
+        [SettingsUIDisableByCondition(typeof(ModSettings), nameof(IsEconomyFixDisabled))]
+        [SettingsUIHideByCondition(typeof(ModSettings), nameof(IsNotInMainMenu))]
+        public bool EnableResidentAIEcoSystem { get; set; } = true;
 
         //[SettingsUISection(kMapSizeModeTab, kEcoGroup)]
         //[SettingsUIButton]

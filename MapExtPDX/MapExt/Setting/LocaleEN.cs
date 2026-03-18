@@ -107,11 +107,19 @@ namespace MapExtPDX
                 },
                 {
                     m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.EnableResourceBuyerEcoSystem)),
-                    "  └─ Consumer & Service Pathing Systems (Restart Required)"
+                    "  ├─ Consumer & Service Pathing Systems (Restart Required)"
                 },
                 {
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.EnableResourceBuyerEcoSystem)),
                     "Takes over pathfinding and resource matching for citizens shopping and companies restocking. (Includes E1/E2/E3 systems)\n\n⚠️ Restart Required."
+                },
+                {
+                    m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.EnableResidentAIEcoSystem)),
+                    "  └─ Resident AI Pathing System (Restart Required)"
+                },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.EnableResidentAIEcoSystem)),
+                    "Optimizes citizen pathfinding logic and prevents critical memory overflows on large maps. (Includes F1 system)\n\n⚠️ Restart Required."
                 },
 
                 { m_Setting.GetOptionGroupLocaleID(ModSettings.kNoteGroup), "▍Caution!" },
