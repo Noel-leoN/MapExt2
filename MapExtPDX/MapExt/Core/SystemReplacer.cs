@@ -134,7 +134,7 @@ namespace MapExtPDX.MapExt.Core
                     .Patch();
 
                 updateSystem.UpdateAt<ModeA.SoilWaterSystemMod>(SystemUpdatePhase.GameSimulation);
-                //updateSystem.UpdateAfter<MapExtPDX.ModeA.SoilWaterSystemMod>(SystemUpdatePhase.Deserialize);
+                updateSystem.UpdateAfter<PostDeserialize<ModeA.SoilWaterSystemMod>>(SystemUpdatePhase.Deserialize);
                 globalPatcher.CreateClassProcessor(typeof(ModeA.SoilWaterSystemMod.Patches))
                     .Patch();
 
@@ -260,7 +260,7 @@ namespace MapExtPDX.MapExt.Core
                     .Patch();
 
                 updateSystem.UpdateAt<ModeB.SoilWaterSystemMod>(SystemUpdatePhase.GameSimulation);
-                //updateSystem.UpdateAfter<MapExtPDX.ModeA.SoilWaterSystemMod>(SystemUpdatePhase.Deserialize);
+                updateSystem.UpdateAfter<PostDeserialize<ModeB.SoilWaterSystemMod>>(SystemUpdatePhase.Deserialize);
                 globalPatcher.CreateClassProcessor(typeof(ModeB.SoilWaterSystemMod.Patches))
                     .Patch();
 
@@ -386,7 +386,7 @@ namespace MapExtPDX.MapExt.Core
                     .Patch();
 
                 updateSystem.UpdateAt<ModeC.SoilWaterSystemMod>(SystemUpdatePhase.GameSimulation);
-                //updateSystem.UpdateAfter<MapExtPDX.ModeA.SoilWaterSystemMod>(SystemUpdatePhase.Deserialize);
+                updateSystem.UpdateAfter<PostDeserialize<ModeC.SoilWaterSystemMod>>(SystemUpdatePhase.Deserialize);
                 globalPatcher.CreateClassProcessor(typeof(ModeC.SoilWaterSystemMod.Patches))
                     .Patch();
 
