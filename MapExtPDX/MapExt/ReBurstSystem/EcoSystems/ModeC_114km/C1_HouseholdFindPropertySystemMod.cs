@@ -1,4 +1,4 @@
-// Game.Simulation.HouseholdFindPropertySystem
+﻿// Game.Simulation.HouseholdFindPropertySystem
 
 // Game.Simulation.CitizenPathFindSetup + SetupFindHomeJob
 
@@ -11,6 +11,7 @@ using Game.Buildings;
 using Game.Citizens;
 using Game.City;
 using Game.Common;
+using Game.Companies;
 using Game.Debug;
 using Game.Economy;
 using Game.Net;
@@ -297,7 +298,7 @@ namespace MapExtPDX.ModeC
                 m_City = m_CitySystem.City,
                 m_PathfindQueue = m_PathfindSetupSystem.GetQueue(this, 80, 16).AsParallelWriter(),
                 m_CommandBuffer = m_EndFrameBarrier.CreateCommandBuffer(),
-                m_DynamicFindHomeMaxCost = MapExtPDX.Mod.Instance.CurrentSettings.FindHomeMaxCost
+                m_DynamicFindHomeMaxCost = Mod.Instance.CurrentSettings.FindHomeMaxCost
             };
             JobHandle prepareJobHandle = preparePropertyJobData.ScheduleParallel(m_FreePropertyQuery,
                 JobUtils.CombineDependencies(Dependency, groundPollutionDependencies, noisePollutionDependencies,
@@ -1031,6 +1032,7 @@ namespace MapExtPDX.ModeC
         [ReadOnly] public NativeArray<GroundPollution> m_PollutionMap;
         [ReadOnly] public NativeArray<NoisePollution> m_NoiseMap;
         [ReadOnly] public CellMapData<TelecomCoverage> m_TelecomCoverages;
+        [ReadOnly] public ComponentLookup<CompanyData> m_Companies;
 
         public HealthcareParameterData m_HealthcareParameters;
         public ParkParameterData m_ParkParameters;
@@ -1120,10 +1122,16 @@ namespace MapExtPDX.ModeC
 
                     // 🏠 2. 分支二：常规住宅处理 (Regular Property)
                     int askingRent = m_PropertiesOnMarket[candidateProperty].m_AskingRent;
+                    int residentialCapacity = 0;
                     int maxPropertiesInBuilding = 1;
+                    int nonResidentialCapacity = 0;
+
                     if (m_BuildingProperties.HasComponent(prefab))
                     {
                         maxPropertiesInBuilding = m_BuildingProperties[prefab].CountProperties();
+                        residentialCapacity = m_BuildingProperties[prefab].CountProperties(Game.Zones.AreaType.Residential);
+                        nonResidentialCapacity += m_BuildingProperties[prefab].CountProperties(Game.Zones.AreaType.Commercial);
+                        nonResidentialCapacity += m_BuildingProperties[prefab].CountProperties(Game.Zones.AreaType.Industrial);
                     }
 
                     // 🚫 快速筛选：房子租客要是满了直接不要
@@ -1132,7 +1140,31 @@ namespace MapExtPDX.ModeC
                         continue;
                     }
 
-                    // 💰 3. 租金预判
+                    // 🏢 混合建筑筛选：剔除公司租客，校验住宅空位
+                    if (nonResidentialCapacity == 0)
+                    {
+                        if (bufferAccessor[j].Length >= residentialCapacity)
+                        {
+                            continue;
+                        }
+                    }
+                    else
+                    {
+                        int companyCount = 0;
+                        for (int k = 0; k < bufferAccessor[j].Length; k++)
+                        {
+                            if (m_Companies.HasComponent(bufferAccessor[j][k].m_Renter))
+                            {
+                                companyCount++;
+                            }
+                        }
+                        if (bufferAccessor[j].Length - companyCount >= residentialCapacity)
+                        {
+                            continue;
+                        }
+                    }
+
+                    // 💰 3. 租金预判 (注意：垃圾费依旧以总户数 maxPropertiesInBuilding 分摊)
                     int garbageFeePerProperty = m_ServiceFeeParameterData.m_GarbageFeeRCIO.x / maxPropertiesInBuilding;
                     // householdIncome 已经提取到外层循环
                     // isHouseholdNeedSupport 已经提取到外层循环
@@ -1348,6 +1380,7 @@ namespace MapExtPDX.ModeC
                 m_ResourcesBufs = __instance.GetBufferLookup<Resources>(true),
                 m_ZoneDatas = __instance.GetComponentLookup<ZoneData>(true),
                 m_ZonePropertiesDatas = __instance.GetComponentLookup<ZonePropertiesData>(true),
+                m_Companies = __instance.GetComponentLookup<CompanyData>(true),
 
                 m_TaxRates = taxSystem.GetTaxRates(),
                 m_PollutionMap = groundPollutionSystem.GetMap(true, out var dep1),

@@ -195,7 +195,8 @@ namespace MapExtPDX.ModeC
 					m_City = m_CitySystem.City,
 					m_SalesQueue = m_SalesQueue.AsParallelWriter(),
 					// [MOD EXT]
-					m_DynamicShoppingMaxCost = MapExtPDX.Mod.Instance.CurrentSettings.ShoppingMaxCost
+					m_DynamicShoppingMaxCost = MapExtPDX.Mod.Instance.CurrentSettings.ShoppingMaxCost,
+					m_CompanyShoppingMaxCost = MapExtPDX.Mod.Instance.CurrentSettings.CompanyShoppingMaxCost
 				};
 				base.Dependency = JobChunkExtensions.ScheduleParallel(jobData, m_BuyerQuery,
 					JobHandle.CombineDependencies(base.Dependency, outJobHandle, jobHandle));
@@ -562,6 +563,7 @@ namespace MapExtPDX.ModeC
 
 			// [MOD EXT]
 			public float m_DynamicShoppingMaxCost;
+			public float m_CompanyShoppingMaxCost;
 
 			public void Execute(in ArchetypeChunk chunk, int unfilteredChunkIndex, bool useEnabledMask,
 				in v128 chunkEnabledMask)
@@ -647,6 +649,8 @@ namespace MapExtPDX.ModeC
 							if (num <= 0 || (!flag2 && num < resourceBuyer.m_AmountNeeded / 2))
 							{
 								m_CommandBuffer.RemoveComponent(unfilteredChunkIndex, entity, in m_PathfindTypes);
+								// [MOD EXT] BUG FIX: Vanilla fails to remove the ResourceBuyer component when stock is insufficient, leading to an infinite pathfinding loop.
+								m_CommandBuffer.RemoveComponent<ResourceBuyer>(unfilteredChunkIndex, entity);
 								continue;
 							}
 
@@ -767,6 +771,20 @@ namespace MapExtPDX.ModeC
 					}
 					else
 					{
+						// [MOD EXT] 帧哈希节流阀：将购物寻路请求均匀撑平到 256 帧内，避免“找不到商店→立刻重试”的无限风暴
+						if (citizens.Length > 0 && ((entity.Index + (int)m_FrameIndex) % 256 != 0))
+						{
+							// 本帧不是该市民的轮次，静默丢弃购物意图（下一轮次再来）
+							m_CommandBuffer.RemoveComponent<ResourceBuyer>(unfilteredChunkIndex, entity);
+							continue;
+						}
+						// 企业采购节流：64帧一轮
+						if (citizens.Length == 0 && ((entity.Index + (int)m_FrameIndex) % 64 != 0))
+						{
+							m_CommandBuffer.RemoveComponent<ResourceBuyer>(unfilteredChunkIndex, entity);
+							continue;
+						}
+
 						Citizen citizen = default(Citizen);
 						if (citizens.Length > 0)
 						{
@@ -942,7 +960,8 @@ namespace MapExtPDX.ModeC
 					m_WalkSpeed = 5.555556f,
 					m_Weights = new PathfindWeights(1f, 1f, transportCost, 1f),
 					m_Methods = (PathMethod.Road | PathMethod.CargoLoading),
-					m_IgnoredRules = (RuleFlags.ForbidSlowTraffic | RuleFlags.AvoidBicycles)
+					m_IgnoredRules = (RuleFlags.ForbidSlowTraffic | RuleFlags.AvoidBicycles),
+					m_MaxCost = m_CompanyShoppingMaxCost // [MOD EXT] Give company trucks their own custom configurable max cost
 				};
 				SetupQueueTarget origin = new SetupQueueTarget
 				{
@@ -994,5 +1013,4 @@ namespace MapExtPDX.ModeC
 		#endregion
 	}
 }
-
 

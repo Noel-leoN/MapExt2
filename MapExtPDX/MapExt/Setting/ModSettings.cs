@@ -32,7 +32,7 @@ namespace MapExtPDX
     [SettingsUITabOrder(kMapSizeModeTab, kMiscTab, kPerformanceToolTab, kDebugTab)]
     [SettingsUIGroupOrder(kMainModeGroup, kResetGroup, kInfoGroup, kEcoGroup, kNoteGroup, 
         kMiscGroup, kEconomyTweakGroup, kPerformanceToolGroup, kDebugGroup)]
-    [SettingsUIShowGroupName(kMainModeGroup, kResetGroup, kInfoGroup, kEcoGroup, kNoteGroup, 
+    [SettingsUIShowGroupName(kMainModeGroup, kResetGroup, kEcoGroup, 
         kMiscGroup, kEconomyTweakGroup, kPerformanceToolGroup, kDebugGroup)]
     public class ModSettings : ModSetting
     {
@@ -247,7 +247,7 @@ namespace MapExtPDX
         // 设置字段初始化器默认值
         private bool m_NoDogsSystem = false;
         private bool m_NoThroughTrafficSystem = false;
-        private bool m_LandValueRemakeSystem = false;
+        // private bool m_LandValueRemakeSystem = false;
 
         [SettingsUISection(kPerformanceToolTab, kPerformanceToolGroup)]
         //[SettingsUIDisableByConditionAttribute(typeof(ModSettings), nameof(IsPatchUnAvailable))]
@@ -315,21 +315,21 @@ namespace MapExtPDX
         //[SettingsUIDisableByConditionAttribute(typeof(ModSettings), nameof(IsPatchUnAvailable))]
         //public bool NoRandomTraffic { get; set; }
 
-        [SettingsUISection(kMiscTab, kMiscGroup)]
-        [SettingsUIDisableByCondition(typeof(ModSettings), nameof(IsPatchUnAvailable))] // 暂时禁用
-        public bool LandValueRemake
-        {
-            get => m_LandValueRemakeSystem;
-            set
-            {
-                if (m_LandValueRemakeSystem != value)
-                {
-                    m_LandValueRemakeSystem = value;
+        //[SettingsUISection(kMiscTab, kMiscGroup)]
+        //[SettingsUIDisableByCondition(typeof(ModSettings), nameof(IsPatchUnAvailable))] // 暂时禁用
+        //public bool LandValueRemake
+        //{
+        //    get => m_LandValueRemakeSystem;
+        //    set
+        //    {
+        //        if (m_LandValueRemakeSystem != value)
+        //        {
+        //            m_LandValueRemakeSystem = value;
 
-                    UpdateLandValueRemakeSystemStates();
-                }
-            }
-        }
+        //            UpdateLandValueRemakeSystemStates();
+        //        }
+        //    }
+        //}
 
         public void UpdateLandValueRemakeSystemStates()
         {

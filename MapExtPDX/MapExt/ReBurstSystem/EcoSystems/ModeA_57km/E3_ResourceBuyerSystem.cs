@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Runtime.CompilerServices;
 using Game;
 using Game.Simulation;
@@ -771,6 +771,20 @@ namespace MapExtPDX.ModeA
 					}
 					else
 					{
+						// [MOD EXT] 帧哈希节流阀：将购物寻路请求均匀撑平到 256 帧内，避免“找不到商店→立刻重试”的无限风暴
+						if (citizens.Length > 0 && ((entity.Index + (int)m_FrameIndex) % 256 != 0))
+						{
+							// 本帧不是该市民的轮次，静默丢弃购物意图（下一轮次再来）
+							m_CommandBuffer.RemoveComponent<ResourceBuyer>(unfilteredChunkIndex, entity);
+							continue;
+						}
+						// 企业采购节流：64帧一轮
+						if (citizens.Length == 0 && ((entity.Index + (int)m_FrameIndex) % 64 != 0))
+						{
+							m_CommandBuffer.RemoveComponent<ResourceBuyer>(unfilteredChunkIndex, entity);
+							continue;
+						}
+
 						Citizen citizen = default(Citizen);
 						if (citizens.Length > 0)
 						{

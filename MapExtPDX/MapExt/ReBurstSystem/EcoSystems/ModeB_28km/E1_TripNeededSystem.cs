@@ -306,7 +306,8 @@ namespace MapExtPDX.ModeB
 					m_TriggerBuffer = m_TriggerSystem.CreateActionBuffer().AsParallelWriter(),
 					m_DebugDisableSpawning = debugDisableSpawning,
 					// [MOD EXT]
-					m_DynamicLeisureMaxCost = MapExtPDX.Mod.Instance.CurrentSettings.LeisureMaxCost
+					m_DynamicLeisureMaxCost = MapExtPDX.Mod.Instance.CurrentSettings.LeisureMaxCost,
+					m_DynamicShoppingMaxCost = MapExtPDX.Mod.Instance.CurrentSettings.ShoppingMaxCost
 				};
 				PetTargetJob jobData2 = new PetTargetJob
 				{
@@ -874,6 +875,7 @@ namespace MapExtPDX.ModeB
 
 			// [MOD EXT]
 			public float m_DynamicLeisureMaxCost;
+			public float m_DynamicShoppingMaxCost;
 
 			private void GetResidentFlags(Entity citizen, Entity currentBuilding, bool isMailSender, bool pathFailed,
 				ref Target target, ref Purpose purpose, ref Purpose divertPurpose, ref uint timer,
@@ -1323,31 +1325,39 @@ namespace MapExtPDX.ModeB
 							Household household2 = m_Households[household];
 							DynamicBuffer<HouseholdCitizen> dynamicBuffer2 = m_HouseholdCitizens[household];
 
-							// [MOD EXT] 动态代价系统与超远距离防爆逻辑
-							float dynamicMaxCost = math.select(CitizenBehaviorSystem.kMaxPathfindCost,
-								CitizenBehaviorSystem.kMaxMovingAwayCost, isMovingIn);
+							// [MOD EXT] 按出行目的分级设置最大寻路成本
 							TripNeeded tripInfo = trips[0];
-							if (tripInfo.m_Purpose == Purpose.Sightseeing ||
-							    tripInfo.m_Purpose == Purpose.VisitAttractions)
+							float dynamicMaxCost;
+							if (isMovingIn)
 							{
-								dynamicMaxCost = m_DynamicLeisureMaxCost; // 缩短非刚需（观光等地标探索）的寻路范围，并使其跟随本地化滑动条配置
+								// 搬家离城：使用超大范围确保能到达外部连接
+								dynamicMaxCost = CitizenBehaviorSystem.kMaxMovingAwayCost;
 							}
-
-							PathMethod methods = (PathMethod.Pedestrian | PathMethod.Taxi |
-							                      RouteUtils.GetPublicTransportMethods(m_TimeOfDay));
-
-							// 判断两点直线距离，如果确定要去超远的地方（如特定的工作地，回家），强制禁止完全步行的网格搜索
-							float distance = 0f;
-							if (m_Transforms.HasComponent(currentBuilding) &&
-							    m_Transforms.HasComponent(target.m_Target))
+							else if (tripInfo.m_Purpose == Purpose.GoingHome ||
+							         tripInfo.m_Purpose == Purpose.GoingToWork ||
+							         tripInfo.m_Purpose == Purpose.GoingToSchool)
 							{
-								distance = math.distance(m_Transforms[currentBuilding].m_Position,
-									m_Transforms[target.m_Target].m_Position);
-								if (distance > 10000f)
-								{
-									// 超过 10km，拿掉 Pedestrian 漫游探测，必须使用载具或公共交通
-									methods &= ~PathMethod.Pedestrian;
-								}
+								// 刚需出行（回家/上班/上学）：使用全图可达范围，防止大地图远郊市民回不了家
+								dynamicMaxCost = CitizenBehaviorSystem.kMaxMovingAwayCost;
+							}
+							else if (tripInfo.m_Purpose == Purpose.Shopping ||
+							         tripInfo.m_Purpose == Purpose.CompanyShopping)
+							{
+								// 购物出行：与 E3 保持一致，使用用户可调的购物滑块
+								dynamicMaxCost = m_DynamicShoppingMaxCost;
+							}
+							else if (tripInfo.m_Purpose == Purpose.Sightseeing ||
+							         tripInfo.m_Purpose == Purpose.VisitAttractions ||
+							         tripInfo.m_Purpose == Purpose.Leisure ||
+							         tripInfo.m_Purpose == Purpose.Relaxing)
+							{
+								// 休闲观光出行：使用用户可调的休闲滑块
+								dynamicMaxCost = m_DynamicLeisureMaxCost;
+							}
+							else
+							{
+								// 其他一般出行：保持原版默认
+								dynamicMaxCost = CitizenBehaviorSystem.kMaxPathfindCost;
 							}
 
 							PathfindParameters parameters = new PathfindParameters
@@ -1355,7 +1365,8 @@ namespace MapExtPDX.ModeB
 								m_MaxSpeed = 277.77777f,
 								m_WalkSpeed = humanData.m_WalkSpeed,
 								m_Weights = CitizenUtils.GetPathfindWeights(citizen, household2, dynamicBuffer2.Length),
-								m_Methods = methods,
+								m_Methods = (PathMethod.Pedestrian | PathMethod.Taxi |
+								             RouteUtils.GetPublicTransportMethods(m_TimeOfDay)),
 								m_TaxiIgnoredRules = VehicleUtils.GetIgnoredPathfindRulesTaxiDefaults(),
 								m_MaxCost = dynamicMaxCost
 							};
@@ -1911,5 +1922,4 @@ namespace MapExtPDX.ModeB
 		#endregion
 	}
 }
-
 
