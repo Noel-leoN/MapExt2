@@ -1,4 +1,4 @@
-﻿// Game.Simulation.IndustrialDemandSystem
+// Game.Simulation.IndustrialDemandSystem
 // 系统实例被多个外部系统调用，采用Job通用替换。
 
 using Colossal.Collections;
@@ -16,9 +16,6 @@ using Unity.Entities;
 using Unity.Jobs;
 using Unity.Mathematics;
 using UnityEngine;
-
-// using UnityEngine; // 使用Unity.Mathematics代替以符合Burs
-
 
 namespace MapExtPDX.ModeA
 {
@@ -154,9 +151,9 @@ namespace MapExtPDX.ModeA
                 // 无形产品(办公资源)
                 if (EconomyUtils.IsOfficeResource(resourceIter.resource))
                 {
-                    // 办公资源需求权重较高（家庭需求+公司需求 * 2）
+                    // 办公资源需求权重较高 (IceFlake Studios 官方补丁跟进：由2倍提升至3倍)
                     m_ResourceDemands[resIndex] =
-                        (m_HouseholdResourceDemands[resIndex] + m_CompanyResourceDemands[resIndex]) * 2;
+                        (m_HouseholdResourceDemands[resIndex] + m_CompanyResourceDemands[resIndex]) * 3;
                 }
                 // 有形产品(非办公资源,实体工业资源)
                 else
