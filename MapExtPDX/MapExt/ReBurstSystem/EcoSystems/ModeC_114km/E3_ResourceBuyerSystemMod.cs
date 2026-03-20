@@ -771,17 +771,16 @@ namespace MapExtPDX.ModeC
 					}
 					else
 					{
-						// [MOD EXT] 帧哈希节流阀：将购物寻路请求均匀撑平到 256 帧内，避免“找不到商店→立刻重试”的无限风暴
-						if (citizens.Length > 0 && ((entity.Index + (int)m_FrameIndex) % 256 != 0))
+						// [MOD EXT] Tick 节流阀：将购物寻路请求均匀分散到多个 tick 内
+						// 不移除 ResourceBuyer，保留购物意图到下一个 ResourceBuyerSystem tick (16帧)
+						// 市民：每 4 tick 处理一次 (4 × 16帧 = 64帧周期)
+						if (citizens.Length > 0 && ((entity.Index + (int)(m_FrameIndex / 16)) % 4 != 0))
 						{
-							// 本帧不是该市民的轮次，静默丢弃购物意图（下一轮次再来）
-							m_CommandBuffer.RemoveComponent<ResourceBuyer>(unfilteredChunkIndex, entity);
 							continue;
 						}
-						// 企业采购节流：64帧一轮
-						if (citizens.Length == 0 && ((entity.Index + (int)m_FrameIndex) % 64 != 0))
+						// 企业采购节流：每 2 tick 处理一次 (2 × 16帧 = 32帧周期)
+						if (citizens.Length == 0 && ((entity.Index + (int)(m_FrameIndex / 16)) % 2 != 0))
 						{
-							m_CommandBuffer.RemoveComponent<ResourceBuyer>(unfilteredChunkIndex, entity);
 							continue;
 						}
 

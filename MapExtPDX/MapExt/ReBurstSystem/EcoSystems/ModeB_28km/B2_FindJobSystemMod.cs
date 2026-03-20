@@ -1,4 +1,4 @@
-// Game.Simulation.FindJobSystem
+﻿// Game.Simulation.FindJobSystem
 // v1.4.2无变化
 
 using Colossal.Collections;
@@ -317,7 +317,8 @@ namespace MapExtPDX.ModeB
 #endif
             };
 
-            // 串行调度，保证线程安全，但比原版 IJob 拷贝大量数据要快得多
+            // ⚠️ 串行调度 (.Schedule)：该 Job 直接写入 m_EmployeeBuffers / m_FreeWorkplaces 等共享组件，
+            // 且使用非 ParallelWriter 的 EntityCommandBuffer。 禁止改为 .ScheduleParallel()，否则将引发竞态条件。
             Dependency = startWorkingJob.Schedule(m_ResultsQuery, Dependency);
 
             m_TriggerSystem.AddActionBufferWriter(Dependency);
@@ -587,11 +588,12 @@ namespace MapExtPDX.ModeB
                         if (targetJobLevel == -1)
                         {
                             EndJobSeeking(unfilteredChunkIndex, citizenEntity, jobSeekerEntity);
-                            if (!isSwitcher)
 #if DEBUG
+                            // ⚠️ 统计：区分失业者和跳槽者的"全城无空缺"计数
+                            if (!isSwitcher)
                                 unsafe { System.Threading.Interlocked.Increment(ref ((int*)m_DebugStats.GetUnsafePtr())[IDX_Unemp_NoVacancy]); }
 #endif
-                            continue;
+                            continue; // 无论失业者还是跳槽者，都应跳过后续逻辑
                         }
 
                         // 6. 概率放弃（模拟市场竞争或换工作意愿）：

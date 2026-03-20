@@ -1082,8 +1082,11 @@ namespace MapExtPDX.ModeE
                 const int kMaxCandidatesToFind = 5;
 
                 // --- 🔄 核心耗时循环：遍历本 Chunk 内的所有售/租建筑 (O(N) 全图遍历) ---
-                for (int j = 0; j < nativeArray.Length; j++)
+                // [MOD OPT] 随机起始偏移：避免先创建的建筑总是被优先评估，提高新旧城区的公平性
+                int startOffset = (nativeArray.Length > 0) ? random.NextInt(nativeArray.Length) : 0;
+                for (int jj = 0; jj < nativeArray.Length; jj++)
                 {
+                    int j = (startOffset + jj) % nativeArray.Length;
                     Entity candidateProperty = nativeArray[j];
                     Entity prefab = nativeArray2[j].m_Prefab;
                     Building building = m_Buildings[candidateProperty];
