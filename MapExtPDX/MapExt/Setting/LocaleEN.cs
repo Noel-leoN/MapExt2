@@ -87,7 +87,7 @@ namespace MapExtPDX
                 },
                 {
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.EnableDemandEcoSystem)),
-                    "Takes over and optimizes vanilla Residential/Commercial/Industrial demand calculations. (Includes A1/A2/A3 systems)\n\n⚠️ Restart Required."
+                    "Optimizes Residential, Commercial, and Industrial demand calculation models for a smoother experience.\n\n⚠️ Restart Required."
                 },
                 {
                     m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.EnableJobSearchEcoSystem)),
@@ -95,7 +95,7 @@ namespace MapExtPDX
                 },
                 {
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.EnableJobSearchEcoSystem)),
-                    "Takes over and optimizes citizen job-finding behaviors. (Includes B1/B2 systems)\n\n⚠️ Restart Required."
+                    "Optimizes citizen job-search behavior and matching algorithms to improve efficiency.\n\n⚠️ Incompatible with Realistic JobSearch and similar mods!\n⚠️ Restart Required."
                 },
                 {
                     m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.EnableHouseholdPropertyEcoSystem)),
@@ -103,7 +103,7 @@ namespace MapExtPDX
                 },
                 {
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.EnableHouseholdPropertyEcoSystem)),
-                    "Takes over Household Behavior, Home Searching, and Rent Adjustment systems. These three systems are deeply coupled. (Includes C1/C2/D1 systems)\n\n⚠️ Restart Required."
+                    "Optimizes household home-searching pathfinding; includes a realistic Land Value remake to make location values more reasonable; and heavily refactors the expensive rent adjustment mechanism.\n\n⚠️ Restart Required."
                 },
                 {
                     m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.EnableResourceBuyerEcoSystem)),
@@ -111,7 +111,7 @@ namespace MapExtPDX
                 },
                 {
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.EnableResourceBuyerEcoSystem)),
-                    "Takes over pathfinding and resource matching for citizens shopping and companies restocking. (Includes E1/E2/E3 systems)\n\n⚠️ Restart Required."
+                    "Optimizes resource matching for citizen shopping and company restocking, greatly reducing performance overhead from extreme-distance pathfinding.\n\n⚠️ Incompatible with Realistic PathFinding and similar mods!\n⚠️ Restart Required."
                 },
                 {
                     m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.EnableResidentAIEcoSystem)),
@@ -119,7 +119,7 @@ namespace MapExtPDX
                 },
                 {
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.EnableResidentAIEcoSystem)),
-                    "Optimizes citizen pathfinding logic and prevents critical memory overflows on large maps. (Includes F1 system)\n\n⚠️ Restart Required."
+                    "Fixes citizen pathfinding AI wait time logic flaws and mitigates critical memory overflows caused by large map path calculations.\n\n⚠️ Incompatible with Realistic PathFinding and similar mods!\n⚠️ Restart Required."
                 },
 
                 { m_Setting.GetOptionGroupLocaleID(ModSettings.kNoteGroup), "▍Caution!" },

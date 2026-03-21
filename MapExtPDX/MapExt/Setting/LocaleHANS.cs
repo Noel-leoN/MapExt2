@@ -71,27 +71,27 @@ namespace MapExtPDX
                 { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.EnableDemandEcoSystem)), "  ├─ 需求调节系统 (重启生效)" },
                 {
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.EnableDemandEcoSystem)),
-                    "启用后，将接管并优化原版的居住、商业、工业建筑物需求计算机制。包含 A1/A2/A3 核心系统。\n\n⚠️ 更改后需重启游戏。"
+                    "优化居住、商业、工业需求计算模型，使之更平滑合理。\n\n⚠️ 修改后需重启游戏生效。"
                 },
                 { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.EnableJobSearchEcoSystem)), "  ├─ 找工作系统组 (重启生效)" },
                 {
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.EnableJobSearchEcoSystem)),
-                    "启用后，将接管并优化市民个人的找工作行为。包含 B1/B2 找工作子系统。\n\n⚠️ 更改后需重启游戏。"
+                    "优化市民找工作行为与匹配算法，提升分配效率。\n\n⚠️ 与 Realistic JobSearch 等 Mod 不兼容！\n⚠️ 修改后需重启游戏生效。"
                 },
                 { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.EnableHouseholdPropertyEcoSystem)), "  ├─ 找房与租金系统组 (重启生效 - 核心)" },
                 {
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.EnableHouseholdPropertyEcoSystem)),
-                    "启用后，将接管家庭行为、家庭找房以及建筑租金调整系统。这三个系统相互深度绑定。包含 C1/C2/D1 系统。\n\n⚠️ 更改后需重启游戏。"
+                    "优化家庭找房寻路计算；包含底层地价（Land Value）重构，使地段价值更加合理；并重构高昂的建筑租金调节机制。\n\n⚠️ 修改后需重启游戏生效。"
                 },
                 { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.EnableResourceBuyerEcoSystem)), "  ├─ 消费与路程规划系统组 (重启生效)" },
                 {
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.EnableResourceBuyerEcoSystem)),
-                    "启用后，将接管市民外出购物、企业采购等需求的车程和资源匹配系统。包含 E1/E2/E3 系统。\n\n⚠️ 更改后需重启游戏。"
+                    "优化市民购物与企业采购的资源匹配，大幅降低超远路程规划产生的性能开销。\n\n⚠️ 与 Realistic PathFinding 等寻路 Mod 不兼容！\n⚠️ 修改后需重启游戏生效。"
                 },
                 { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.EnableResidentAIEcoSystem)), "  └─ 寻路优化补丁 (重启生效)" },
                 {
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.EnableResidentAIEcoSystem)),
-                    "启用后，将接管并修复市民寻路AI的等待时间逻辑漏洞，并优化大地图底层寻路内存暴溢出的问题。包含 F1 核心系统。\n\n⚠️ 更改后需重启游戏。"
+                    "修复市民寻路AI等待时间的逻辑缺陷，缓解大地图底层寻路内存暴溢出的问题。\n\n⚠️ 与 Realistic PathFinding 等寻路 Mod 不兼容！\n⚠️ 修改后需重启游戏生效。"
                 },
 
                 { m_Setting.GetOptionGroupLocaleID(ModSettings.kNoteGroup), "▍警告" },

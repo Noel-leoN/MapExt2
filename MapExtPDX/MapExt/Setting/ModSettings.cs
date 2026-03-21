@@ -241,6 +241,7 @@ namespace MapExtPDX
         //}
 
         [SettingsUISection(kMapSizeModeTab, kNoteGroup)]
+        [SettingsUIHideByCondition(typeof(ModSettings), nameof(IsNotInMainMenu))]
         public string ModeChangeWarningMessage => "";
 
         /// <summary>
