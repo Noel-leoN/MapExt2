@@ -83,6 +83,7 @@ namespace MapExtPDX.MapExt.Core
                     if (setting.isEnableEconomyFix && setting.EnableResidentAIEcoSystem)
                     {
                         updateSystem.World.GetOrCreateSystemManaged<Game.Simulation.ResidentAISystem>().Enabled = false;
+                        updateSystem.World.GetOrCreateSystemManaged<Game.Simulation.ResidentAISystem.Actions>().Enabled = false;
                     }
                 }
             }
@@ -198,6 +199,7 @@ namespace MapExtPDX.MapExt.Core
                     if (setting.EnableResidentAIEcoSystem)
                     {
                         updateSystem.UpdateAt<ModeA.ResidentAISystemMod>(SystemUpdatePhase.GameSimulation);
+                        updateSystem.UpdateAfter<ModeA.ResidentAISystemMod.Actions, ModeA.ResidentAISystemMod>(SystemUpdatePhase.GameSimulation);
                     }
                 }
                 else
@@ -324,6 +326,7 @@ namespace MapExtPDX.MapExt.Core
                     if (setting.EnableResidentAIEcoSystem)
                     {
                         updateSystem.UpdateAt<ModeB.ResidentAISystemMod>(SystemUpdatePhase.GameSimulation);
+                        updateSystem.UpdateAfter<ModeB.ResidentAISystemMod.Actions, ModeB.ResidentAISystemMod>(SystemUpdatePhase.GameSimulation);
                     }
                 }
                 else
@@ -451,6 +454,7 @@ namespace MapExtPDX.MapExt.Core
                     if (setting.EnableResidentAIEcoSystem)
                     {
                         updateSystem.UpdateAt<ModeC.ResidentAISystemMod>(SystemUpdatePhase.GameSimulation);
+                        updateSystem.UpdateAfter<ModeC.ResidentAISystemMod.Actions, ModeC.ResidentAISystemMod>(SystemUpdatePhase.GameSimulation);
                     }
                 }
                 else
@@ -523,7 +527,9 @@ namespace MapExtPDX.MapExt.Core
                     if (setting.EnableResidentAIEcoSystem)
                     {
                         updateSystem.World.GetOrCreateSystemManaged<Game.Simulation.ResidentAISystem>().Enabled = false;
+                        updateSystem.World.GetOrCreateSystemManaged<Game.Simulation.ResidentAISystem.Actions>().Enabled = false;
                         updateSystem.UpdateAt<ModeE.ResidentAISystemMod>(SystemUpdatePhase.GameSimulation);
+                        updateSystem.UpdateAfter<ModeE.ResidentAISystemMod.Actions, ModeE.ResidentAISystemMod>(SystemUpdatePhase.GameSimulation);
                     }
                 }
 
