@@ -152,8 +152,9 @@ namespace MapExtPDX
                 },
 
                 { m_Setting.GetOptionTabLocaleID(ModSettings.kMiscTab), "▍EconomyTweak" },
-                { m_Setting.GetOptionGroupLocaleID(ModSettings.kMiscTab), "▍EconomyTweak" },
+                { m_Setting.GetOptionGroupLocaleID(ModSettings.kMiscGroup), "▍EconomyTweak" },
                 { m_Setting.GetOptionLabelLocaleID(ModSettings.kMiscTab), "• Economy Detail Tweak" },
+                { m_Setting.GetOptionGroupLocaleID(ModSettings.kEconomyTweakGroup), "▍EconomyTweak" },
                 { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.ShoppingMaxCost)), "Max Shopping Pathfind Cost" },
                 {
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.ShoppingMaxCost)),
