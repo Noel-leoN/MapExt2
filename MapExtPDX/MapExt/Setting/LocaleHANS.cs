@@ -62,36 +62,42 @@ namespace MapExtPDX
                 { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.kInfoGroup)), "▍地图尺寸信息" },
 
                 { m_Setting.GetOptionGroupLocaleID(ModSettings.kEcoGroup), "▍经济系统修复" },
-                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.kEcoGroup)), "• 经济逻辑和性能优化" },
-                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.isEnableEconomyFix)), "• 经济逻辑修复 & 性能优化 (总开关)" },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.kEcoGroup)), "• 经济系统修复 & 性能优化" },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.isEnableEconomyFix)), "• 经济系统修复 & 性能优化 (总开关)" },
                 {
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.isEnableEconomyFix)),
-                    "优化并修复以下系统，以适配百万人口规模的巨型城市：\n - 住宅/商业/工业需求系统\n - 家庭找房系统\n - 家庭行为系统 (消费行为修正)\n - 市民寻找工作系统\n - 租金计算系统\n\n⚠️ 【重要】：更改此项设置后，【必须重启游戏】，否则不会生效并且会引发不可预知的 Bug！"
+                    "优化并修复以下系统，以适配百万人口规模的巨型城市：\n - 住宅/商业/工业需求系统\n - 家庭找房系统\n - 家庭行为系统 (消费行为修正)\n - 市民寻找工作系统\n - 租金计算系统\n - 资源采购与服务覆盖寻路系统\n - 居民AI寻路优化补丁\n\n⚠️ 【重要】：更改此项设置后，【必须重启游戏】，否则不会生效并且会引发不可预知的 Bug！"
                 },
-                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.EnableDemandEcoSystem)), "  ├─ 需求调节系统 (重启生效)" },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.EnableDemandEcoSystem)), "  ├─ RCI需求调节系统" },
                 {
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.EnableDemandEcoSystem)),
-                    "优化居住、商业、工业需求计算模型，使之更平滑合理。\n\n⚠️ 修改后需重启游戏生效。"
+                    "优化居住、商业、工业需求计算模型，使之更平滑合理，并匹配百万人口规模的巨型城市。\n\n⚠️ 修改后需重启游戏生效。"
                 },
-                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.EnableJobSearchEcoSystem)), "  ├─ 找工作系统组 (重启生效)" },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.EnableJobSearchEcoSystem)), "  ├─ 找工作系统组" },
                 {
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.EnableJobSearchEcoSystem)),
-                    "优化市民找工作行为与匹配算法，提升分配效率。\n\n⚠️ 与 Realistic JobSearch 等 Mod 不兼容！\n⚠️ 修改后需重启游戏生效。"
+                    "优化市民找工作行为与匹配算法，提升就业匹配效率。\n\n⚠️ 与 Realistic JobSearch 等 Mod 不兼容！\n⚠️ 修改后需重启游戏生效。"
                 },
-                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.EnableHouseholdPropertyEcoSystem)), "  ├─ 找房与租金系统组 (重启生效 - 核心)" },
+                {
+                    m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.EnableHouseholdPropertyEcoSystem)),
+                    "  ├─ 找房与租金系统组"
+                },
                 {
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.EnableHouseholdPropertyEcoSystem)),
-                    "优化家庭找房寻路计算；包含底层地价（Land Value）重构，使地段价值更加合理；并重构高昂的建筑租金调节机制。\n\n⚠️ 修改后需重启游戏生效。"
+                    "优化家庭找房寻路计算；包含真实地价和租金计算（Land Value）重构，使之更加合理。\n\n⚠️ 修改后需重启游戏生效。"
                 },
-                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.EnableResourceBuyerEcoSystem)), "  ├─ 消费与路程规划系统组 (重启生效)" },
+                {
+                    m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.EnableResourceBuyerEcoSystem)),
+                    "  ├─ 消费采购与服务覆盖寻路系统组"
+                },
                 {
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.EnableResourceBuyerEcoSystem)),
-                    "优化市民购物与企业采购的资源匹配，大幅降低超远路程规划产生的性能开销。\n\n⚠️ 与 Realistic PathFinding 等寻路 Mod 不兼容！\n⚠️ 修改后需重启游戏生效。"
+                    "优化市民购物与企业采购的资源匹配，并优化服务覆盖寻路，大幅降低超远路程规划产生的性能开销。\n\n⚠️ 与 Realistic PathFinding 等寻路 Mod 不兼容！\n⚠️ 修改后需重启游戏生效。"
                 },
-                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.EnableResidentAIEcoSystem)), "  └─ 寻路优化补丁 (重启生效)" },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.EnableResidentAIEcoSystem)), "  └─ 居民AI寻路优化补丁" },
                 {
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.EnableResidentAIEcoSystem)),
-                    "修复市民寻路AI等待时间的逻辑缺陷，缓解大地图底层寻路内存暴溢出的问题。\n\n⚠️ 与 Realistic PathFinding 等寻路 Mod 不兼容！\n⚠️ 修改后需重启游戏生效。"
+                    "修复市民寻路AI等待时间的逻辑缺陷，缓解大地图底层寻路内存溢出的问题。\n\n⚠️ 与 Realistic PathFinding 等寻路 Mod 不兼容！\n⚠️ 修改后需重启游戏生效。"
                 },
 
                 { m_Setting.GetOptionGroupLocaleID(ModSettings.kNoteGroup), "▍警告" },
@@ -139,7 +145,7 @@ namespace MapExtPDX
                     "重新制作地价系统，恢复到较早版本的深度模拟，修复原始地价数值过高错误，并参考现实经济模型，实现住工商/高中低密度/人口/地段/学区/景观/财富差异化地价因子。"
                 },*/
 
-                { m_Setting.GetOptionGroupLocaleID(ModSettings.kEconomyTweakGroup), "▍大地图寻路优化" },
+                { m_Setting.GetOptionGroupLocaleID(ModSettings.kEconomyTweakGroup), "▍大地图寻路优化(可于游戏中实时调节)" },
                 { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.ShoppingMaxCost)), "购物最高寻路成本" },
                 {
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.ShoppingMaxCost)),

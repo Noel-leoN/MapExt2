@@ -1,4 +1,4 @@
-﻿using System.Runtime.CompilerServices;
+using System.Runtime.CompilerServices;
 using Game;
 using Game.Simulation;
 using System.Threading;
@@ -40,11 +40,7 @@ namespace MapExtPDX.ModeC
 {
 	public partial class ResidentAISystemMod : GameSystemBase
 	{
-		#region Constants
 
-		public override int GetUpdateInterval(SystemUpdatePhase phase) => 256;
-
-		#endregion
 
 		#region Fields
 

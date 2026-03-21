@@ -83,7 +83,7 @@ namespace MapExtPDX
                 },
                 {
                     m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.EnableDemandEcoSystem)),
-                    "  ├─ Demand Systems (Restart Required)"
+                    "  ├─ RCI Demand Systems"
                 },
                 {
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.EnableDemandEcoSystem)),
@@ -91,7 +91,7 @@ namespace MapExtPDX
                 },
                 {
                     m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.EnableJobSearchEcoSystem)),
-                    "  ├─ Job Search Systems (Restart Required)"
+                    "  ├─ Job Search Systems"
                 },
                 {
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.EnableJobSearchEcoSystem)),
@@ -99,7 +99,7 @@ namespace MapExtPDX
                 },
                 {
                     m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.EnableHouseholdPropertyEcoSystem)),
-                    "  ├─ Household, Property & Rent Systems (Restart Required - CORE)"
+                    "  ├─ Household, Property & Rent Systems"
                 },
                 {
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.EnableHouseholdPropertyEcoSystem)),
@@ -107,7 +107,7 @@ namespace MapExtPDX
                 },
                 {
                     m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.EnableResourceBuyerEcoSystem)),
-                    "  ├─ Consumer & Service Pathing Systems (Restart Required)"
+                    "  ├─ Consumer & Service Pathing Systems"
                 },
                 {
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.EnableResourceBuyerEcoSystem)),
@@ -115,7 +115,7 @@ namespace MapExtPDX
                 },
                 {
                     m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.EnableResidentAIEcoSystem)),
-                    "  └─ Resident AI Pathing System (Restart Required)"
+                    "  └─ Resident AI Pathing System"
                 },
                 {
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.EnableResidentAIEcoSystem)),
