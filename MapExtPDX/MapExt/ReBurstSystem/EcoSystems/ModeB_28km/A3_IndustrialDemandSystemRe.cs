@@ -1,4 +1,4 @@
-// Game.Simulation.IndustrialDemandSystem
+﻿// Game.Simulation.IndustrialDemandSystem
 // 系统实例被多个外部系统调用，采用Job通用替换。
 
 using Colossal.Collections;
@@ -16,9 +16,6 @@ using Unity.Entities;
 using Unity.Jobs;
 using Unity.Mathematics;
 using UnityEngine;
-
-// using UnityEngine; // 使用Unity.Mathematics代替以符合Burs
-
 
 namespace MapExtPDX.ModeB
 {
@@ -671,5 +668,6 @@ namespace MapExtPDX.ModeB
         }
     }
 }
+
 
 

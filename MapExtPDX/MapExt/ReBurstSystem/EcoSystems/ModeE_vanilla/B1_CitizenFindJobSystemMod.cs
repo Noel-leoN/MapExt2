@@ -1,4 +1,4 @@
-// Game.Simulation.CitizenFindJobSystem
+﻿// Game.Simulation.CitizenFindJobSystem
 // v1.4.2无变化
 
 using System.Threading;
@@ -722,3 +722,4 @@ namespace MapExtPDX.ModeE
         #endregion
     }
 }
+

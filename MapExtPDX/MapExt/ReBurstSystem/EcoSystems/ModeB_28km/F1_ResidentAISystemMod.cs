@@ -1,5 +1,4 @@
-using System.Runtime.CompilerServices;
-using Game;
+﻿using Game;
 using Game.Simulation;
 using System.Threading;
 using Colossal.Collections;
@@ -30,11 +29,9 @@ using Unity.Burst.Intrinsics;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Entities;
-using Unity.Entities.Internal;
 using Unity.Jobs;
 using Unity.Mathematics;
 using UnityEngine;
-using UnityEngine.Scripting;
 
 namespace MapExtPDX.ModeB
 {
@@ -2594,7 +2591,7 @@ namespace MapExtPDX.ModeB
 					}
 
 					divert.m_Data += random.NextInt(1, 3);
-					
+
 					// 📌 [MOD: MapExt2 - Logic Fix] ----------------------------------------------------
 					// 修正官方魔法值遗漏：ReachWaitingHome 中的等待时间阈值同步修复为 250 (原版误留为2500)
 					// 这能有效防止在大地图路径计算频繁失败时，市民原地发呆变成卡死的僵尸
@@ -2634,7 +2631,7 @@ namespace MapExtPDX.ModeB
 				ref Divert divert, ref PathOwner pathOwner)
 			{
 				divert.m_Data += random.NextInt(1, 3);
-				
+
 				// 📌 [MOD: MapExt2 - Logic Fix] ----------------------------------------------------
 				// 此处官方最新版已修复为 250，配合上方的 ReachWaitingHome 补丁保持逻辑一致
 				// ----------------------------------------------------------------------------------
@@ -2727,7 +2724,7 @@ namespace MapExtPDX.ModeB
 					pathOwner.m_ElementIndex = 0;
 					DynamicBuffer<PathElement> dynamicBuffer = m_PathElements[entity];
 					dynamicBuffer.Clear();
-					
+
 					// 🚀 [MOD: MapExt2 - Performance Optimization] -------------------------------------
 					// 替换 Allocator.Temp 为结构体容量固定的 FixedList128Bytes<Entity>
 					// 完全消除了在大地图中由于大量寻路连续失败，引发严重的 Temp 内存分配溢出和线程崩溃死机问题！

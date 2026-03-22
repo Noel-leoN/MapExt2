@@ -61,12 +61,15 @@ namespace MapExtPDX
                 { m_Setting.GetOptionGroupLocaleID(ModSettings.kInfoGroup), "▍地图尺寸信息" },
                 { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.kInfoGroup)), "▍地图尺寸信息" },
 
-                { m_Setting.GetOptionGroupLocaleID(ModSettings.kEcoGroup), "▍经济系统修复" },
-                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.kEcoGroup)), "• 经济系统修复 & 性能优化" },
-                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.isEnableEconomyFix)), "• 经济系统修复 & 性能优化 (总开关)" },
+                { m_Setting.GetOptionGroupLocaleID(ModSettings.kEcoGroup), "▍经济系统修复 (Beta)" },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.kEcoGroup)), "• 经济系统修复 & 性能优化 (Beta)" },
+                {
+                    m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.isEnableEconomyFix)),
+                    "• 经济系统修复 & 性能优化 (Beta 总开关)"
+                },
                 {
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.isEnableEconomyFix)),
-                    "优化并修复以下系统，以适配百万人口规模的巨型城市：\n - 住宅/商业/工业需求系统\n - 家庭找房系统\n - 家庭行为系统 (消费行为修正)\n - 市民寻找工作系统\n - 租金计算系统\n - 资源采购与服务覆盖寻路系统\n - 居民AI寻路优化补丁\n\n⚠️ 【重要】：更改此项设置后，【必须重启游戏】，否则不会生效并且会引发不可预知的 Bug！"
+                    "【此补丁目前处于测试阶段 (Beta)】\n优化并修复以下系统，以适配百万人口规模的巨型城市：\n - 住宅/商业/工业需求系统\n - 家庭找房系统\n - 家庭行为系统 (消费行为修正)\n - 市民寻找工作系统\n - 租金计算系统\n - 资源采购与服务覆盖寻路系统\n - 居民AI寻路优化补丁\n\n⚠️ 【重要】：更改此项设置后，【必须重启游戏】，否则不会生效并且会引发不可预知的 Bug！"
                 },
                 { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.EnableDemandEcoSystem)), "  ├─ RCI需求调节系统组" },
                 {
@@ -136,9 +139,9 @@ namespace MapExtPDX
                     "让宠物都待在家里或去外地旅游，街上不再出现宠物，降低计算量。 (在已建城市中需要等待宠物们回家或去往外地)"
                 },
 
-                { m_Setting.GetOptionTabLocaleID(ModSettings.kMiscTab), "▍经济补丁设置" },
-                { m_Setting.GetOptionGroupLocaleID(ModSettings.kMiscTab), "▍经济补丁设置" },
-                { m_Setting.GetOptionLabelLocaleID(ModSettings.kMiscTab), "• 经济补丁设置" },
+                { m_Setting.GetOptionTabLocaleID(ModSettings.kMiscTab), "▍经济补丁设置 (Beta)" },
+                { m_Setting.GetOptionGroupLocaleID(ModSettings.kMiscTab), "▍经济补丁设置 (Beta)" },
+                { m_Setting.GetOptionLabelLocaleID(ModSettings.kMiscTab), "• 经济补丁设置 (Beta)" },
                 /*{ m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.LandValueRemake)), "• 现实地价重制版 (当前尚不可用)" },
                 {
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.LandValueRemake)),
@@ -176,7 +179,7 @@ namespace MapExtPDX
                     "★ 建议值：\n" +
                     " - 全地形全局通用：200000"
                 },
-                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.FindHomeMaxCost)), "找房（搬家）最高寻路成本" },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.FindHomeMaxCost)), "找房搬家最高寻路成本" },
                 {
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.FindHomeMaxCost)),
                     "控制市民搬家找房时的最大搜索范围上限。提升此数值可让市民跨越整张特大地图寻找新住宅，避免偏远新城无人入住。该行为频率较低，建议直接拉满。\n" +

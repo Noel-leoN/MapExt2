@@ -71,15 +71,15 @@ namespace MapExtPDX
                     "⚠️ Warning: Although MapExt has loadgame validation to prevent loading wrong size game saves, Please BACKUP ALL of your GameSaves (Strongly recommand SKYVE) before Loading them with this mod!!! Otherwise, there is a risk that the save may be corrupted due to game crashes or other special reasons"
                 },
 
-                { m_Setting.GetOptionGroupLocaleID(ModSettings.kEcoGroup), "▍Economy Overhaul" },
-                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.kEcoGroup)), "• Logic & Perf. Optimization" },
+                { m_Setting.GetOptionGroupLocaleID(ModSettings.kEcoGroup), "▍Economy Overhaul (Beta)" },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.kEcoGroup)), "• Logic & Perf. Optimization (Beta)" },
                 {
                     m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.isEnableEconomyFix)),
-                    "• Economy Logic & Perf. Optimization (Master Switch)"
+                    "• Economy Logic & Perf. Optimization (Beta Master Switch)"
                 },
                 {
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.isEnableEconomyFix)),
-                    "Fixes and optimizes the following systems to adapt to cities with populations in the millions:\n - Residential/Commercial/Industrial demand systems\n - Household home-search system\n - Household behavior system (consumer behavior adjustment)\n - Citizen job-search system\n - Rent calculation system\n\n⚠️ [CRITICAL]: Changing this option requires a GAME RESTART to take effect safely. Otherwise, severe logical bugs will occur!"
+                    "(This patch is currently in the testing phase (Beta))\nFixes and optimizes the following systems to adapt to cities with populations in the millions:\n - Residential/Commercial/Industrial demand systems\n - Household home-search system\n - Household behavior system (consumer behavior adjustment)\n - Citizen job-search system\n - Rent calculation system\n\n⚠️ [CRITICAL]: Changing this option requires a GAME RESTART to take effect safely. Otherwise, severe logical bugs will occur!"
                 },
                 {
                     m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.EnableDemandEcoSystem)),
@@ -151,10 +151,13 @@ namespace MapExtPDX
                     "It'll take effect after the game has been running for a while, so just wait for the dogs to come home or go on a trip to another city."
                 },
 
-                { m_Setting.GetOptionTabLocaleID(ModSettings.kMiscTab), "▍EconomyTweak" },
-                { m_Setting.GetOptionGroupLocaleID(ModSettings.kMiscGroup), "▍EconomyTweak" },
-                { m_Setting.GetOptionLabelLocaleID(ModSettings.kMiscTab), "• Economy Detail Tweak" },
-                { m_Setting.GetOptionGroupLocaleID(ModSettings.kEconomyTweakGroup), "▍EconomyTweak" },
+                { m_Setting.GetOptionTabLocaleID(ModSettings.kMiscTab), "▍EconomyTweak (Beta)" },
+                { m_Setting.GetOptionGroupLocaleID(ModSettings.kMiscGroup), "▍EconomyTweak (Beta)" },
+                { m_Setting.GetOptionLabelLocaleID(ModSettings.kMiscTab), "• Economy Detail Tweak (Beta)" },
+                {
+                    m_Setting.GetOptionGroupLocaleID(ModSettings.kEconomyTweakGroup),
+                    "▍Pathfinding Optimization(Can be Adjusted In Game)"
+                },
                 { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.ShoppingMaxCost)), "Max Shopping Pathfind Cost" },
                 {
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.ShoppingMaxCost)),

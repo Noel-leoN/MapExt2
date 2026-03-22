@@ -1,10 +1,10 @@
 ﻿# 🚀 Cities Skylines 2 Map Extended Mod (28/57/114/vanilla) with Economy Fix & Performance Improvement
 
-## 🚀 v2.2.3 Update Notice
+## 🚀 Update Notice
 
 * **💎 Economy Fix & Performance Optimization (Experimental):** This version includes a suite of optimizations specifically tuned for mega-cities (millions of population). It refactors demand logic, land value, housing search, citizen behaviors, and rent systems.
 
-* **⏳ Simulation Catch-up:** Loading an old save (pre-v2.2.3) may result in extremely slow simulation initially as the new economic logic recalculates everything. Please allow the simulation to run for a while for performance to stabilize.
+* **⏳ Simulation Catch-up:** Loading an old save may result in extremely slow simulation initially as the new economic logic recalculates everything. Please allow the simulation to run for a while for performance to stabilize.
 
 * **🌍 Resources Map Loss:** Due to architectural changes in the resource system, **ore, oil, and other natural resources may disappear from existing saves.** You will need to use the `ExtraLandScapingTool` mod to manually repaint them.
 
