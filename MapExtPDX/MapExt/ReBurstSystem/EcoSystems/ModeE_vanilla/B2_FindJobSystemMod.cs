@@ -1,4 +1,4 @@
-﻿// Game.Simulation.FindJobSystem
+// Game.Simulation.FindJobSystem
 // v1.4.2无变化
 
 using Colossal.Collections;
@@ -257,7 +257,7 @@ namespace MapExtPDX.ModeE
                 m_FreeCache = m_FreeCache,
                 m_EmployableByEducation = m_CountHouseholdDataSystem.GetEmployables(),
                 m_RandomSeed = RandomSeed.Next(),
-                m_DynamicFindJobMaxCost = MapExtPDX.Mod.Instance.CurrentSettings.FindJobMaxCost,
+                m_DynamicFindJobMaxCost = Mod.Instance.Settings.FindJobMaxCost,
 
                 // [优化] 传入计数器进行限流
                 m_RequestCount = m_RequestCount,

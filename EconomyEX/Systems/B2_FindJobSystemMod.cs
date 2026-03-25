@@ -1,4 +1,4 @@
-﻿// Game.Simulation.FindJobSystem
+// Game.Simulation.FindJobSystem
 // v1.4.2无变化
 
 using Colossal.Collections;
@@ -33,9 +33,9 @@ namespace EconomyEX.Systems
 
     // =========================================================================================
     // 1. Mod 自定义系统类型 (当前类)
-    using ModSystem = CitizenFindJobSystemMod;
+    using ModSystem = FindJobSystemMod;
     // 2. 原版系统类型 (用于禁用和定位)
-    using TargetSystem = CitizenFindJobSystem;
+    using TargetSystem = FindJobSystem;
     // =========================================================================================
 
     public partial class FindJobSystemMod : GameSystemBase
@@ -257,6 +257,7 @@ namespace EconomyEX.Systems
                 m_FreeCache = m_FreeCache,
                 m_EmployableByEducation = m_CountHouseholdDataSystem.GetEmployables(),
                 m_RandomSeed = RandomSeed.Next(),
+                m_DynamicFindJobMaxCost = Mod.Instance.Settings.FindJobMaxCost,
 
                 // [优化] 传入计数器进行限流
                 m_RequestCount = m_RequestCount,
@@ -316,7 +317,8 @@ namespace EconomyEX.Systems
 #endif
             };
 
-            // 串行调度，保证线程安全，但比原版 IJob 拷贝大量数据要快得多
+            // ⚠️ 串行调度 (.Schedule)：该 Job 直接写入 m_EmployeeBuffers / m_FreeWorkplaces 等共享组件，
+            // 且使用非 ParallelWriter 的 EntityCommandBuffer。 禁止改为 .ScheduleParallel()，否则将引发竞态条件。
             Dependency = startWorkingJob.Schedule(m_ResultsQuery, Dependency);
 
             m_TriggerSystem.AddActionBufferWriter(Dependency);
@@ -463,6 +465,8 @@ namespace EconomyEX.Systems
 
             public RandomSeed m_RandomSeed; // 随机种子
 
+            public float m_DynamicFindJobMaxCost; // 动态最大寻路成本
+
             // [优化] 限流参数
             [NativeDisableUnsafePtrRestriction]
             public NativeArray<int> m_RequestCount;
@@ -584,11 +588,12 @@ namespace EconomyEX.Systems
                         if (targetJobLevel == -1)
                         {
                             EndJobSeeking(unfilteredChunkIndex, citizenEntity, jobSeekerEntity);
-                            if (!isSwitcher)
 #if DEBUG
+                            // ⚠️ 统计：区分失业者和跳槽者的"全城无空缺"计数
+                            if (!isSwitcher)
                                 unsafe { System.Threading.Interlocked.Increment(ref ((int*)m_DebugStats.GetUnsafePtr())[IDX_Unemp_NoVacancy]); }
 #endif
-                            continue;
+                            continue; // 无论失业者还是跳槽者，都应跳过后续逻辑
                         }
 
                         // 6. 概率放弃（模拟市场竞争或换工作意愿）：
@@ -639,7 +644,7 @@ namespace EconomyEX.Systems
                             m_WalkSpeed = 1.6666667f, // 步行速度 (~6km/h)
                             m_Weights = CitizenUtils.GetPathfindWeights(citizenData, householdData, householdCitizens.Length),
                             m_Methods = (PathMethod.Pedestrian | PathMethod.PublicTransportDay | PathMethod.PublicTransportNight),
-                            m_MaxCost = CitizenBehaviorSystem.kMaxPathfindCost,
+                            m_MaxCost = m_DynamicFindJobMaxCost,
                             m_PathfindFlags = (PathfindFlags.Simplified | PathfindFlags.IgnorePath) // 简化寻路，不需要实际路径，只需要找到目的地
                         };
 
@@ -839,6 +844,10 @@ namespace EconomyEX.Systems
                                 }
                             }
                         }
+                        else if ((m_Citizens[citizenEntity].m_State & CitizenFlags.Commuter) != CitizenFlags.None)
+                        {
+                            m_CommandBuffer.AddComponent(citizenEntity, default(Deleted));
+                        }
 
 #if DEBUG
                         // 统计失败原因
@@ -871,5 +880,6 @@ namespace EconomyEX.Systems
     } // class
 
 }
+
 
 

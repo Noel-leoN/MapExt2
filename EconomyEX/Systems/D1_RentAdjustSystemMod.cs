@@ -1,4 +1,4 @@
-﻿using Colossal.Entities;
+using Colossal.Entities;
 using Game.Agents;
 using Game.Areas;
 using Game.Buildings;
@@ -23,8 +23,8 @@ using Unity.Mathematics;
 using UnityEngine;
 using Game;
 using Game.Simulation;
-using Transform = Game.Objects.Transform;
 using EconomyEX.Helpers;
+using Transform = Game.Objects.Transform;
 
 namespace EconomyEX.Systems
 {

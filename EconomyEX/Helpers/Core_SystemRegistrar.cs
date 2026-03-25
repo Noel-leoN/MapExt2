@@ -5,6 +5,7 @@ using Game;
 using Game.Simulation;
 using EconomyEX.Systems;
 using Unity.Entities;
+using HarmonyLib;
 
 namespace EconomyEX.Helpers
 {
@@ -12,7 +13,8 @@ namespace EconomyEX.Helpers
     /// Manages the registration and lifecycle (Enable/Disable) of EconomyEX systems.
     /// 注意: A1-A3 需求系统(Residential/Commercial/Industrial)仅含 Job 结构体，
     /// 通过 Harmony Transpiler 替换原版 Job，不做系统替换注册。
-    /// D2 LandValueSystem 因依赖 MapExtPDX 核心库，暂不移植。
+    /// E1-E3: 出行/服务覆盖/资源采购系统 (ECS 替换)
+    /// F1: 居民AI系统 (ECS 替换，含嵌套 Actions 子系统)
     /// </summary>
     public static class SystemRegistrar
     {
@@ -33,6 +35,15 @@ namespace EconomyEX.Helpers
             // D 系列: 租金与地价系统
             updateSystem.UpdateAt<RentAdjustSystemMod>(SystemUpdatePhase.GameSimulation);
             updateSystem.UpdateAt<LandValueSystemMod>(SystemUpdatePhase.GameSimulation);
+
+            // E 系列: 出行/服务覆盖/资源采购系统
+            updateSystem.UpdateAt<TripNeededSystemMod>(SystemUpdatePhase.GameSimulation);
+            updateSystem.UpdateAt<ServiceCoverageSystemMod>(SystemUpdatePhase.GameSimulation);
+            updateSystem.UpdateAt<ResourceBuyerSystemMod>(SystemUpdatePhase.GameSimulation);
+
+            // F 系列: 居民AI系统 (含嵌套 Actions 子系统)
+            updateSystem.UpdateAt<ResidentAISystemMod>(SystemUpdatePhase.GameSimulation);
+            updateSystem.UpdateAfter<ResidentAISystemMod.Actions, ResidentAISystemMod>(SystemUpdatePhase.GameSimulation);
 
             // 注意: A1-A3 需求系统仅通过 JobPatchHelper Transpiler 替换 Job，无需注册系统
 
@@ -56,9 +67,13 @@ namespace EconomyEX.Helpers
             SetSystemEnabled<FindJobSystem>(world, false);
             SetSystemEnabled<RentAdjustSystem>(world, false);
             SetSystemEnabled<LandValueSystem>(world, false);
+            SetSystemEnabled<TripNeededSystem>(world, false);
+            SetSystemEnabled<ServiceCoverageSystem>(world, false);
+            SetSystemEnabled<ResourceBuyerSystem>(world, false);
+            SetSystemEnabled<ResidentAISystem>(world, false);
+            SetSystemEnabled<ResidentAISystem.Actions>(world, false);
             // 注意: ResidentialDemandSystem/CommercialDemandSystem/IndustrialDemandSystem
             // 保持启用 — 它们的 Job 会被 Transpiler 替换
-            // 注意: LandValueSystem 保持原版
 
             // 2. Enable Mod Systems
             SetSystemEnabled<HouseholdFindPropertySystemMod>(world, true);
@@ -67,6 +82,11 @@ namespace EconomyEX.Helpers
             SetSystemEnabled<FindJobSystemMod>(world, true);
             SetSystemEnabled<RentAdjustSystemMod>(world, true);
             SetSystemEnabled<LandValueSystemMod>(world, true);
+            SetSystemEnabled<TripNeededSystemMod>(world, true);
+            SetSystemEnabled<ServiceCoverageSystemMod>(world, true);
+            SetSystemEnabled<ResourceBuyerSystemMod>(world, true);
+            SetSystemEnabled<ResidentAISystemMod>(world, true);
+            SetSystemEnabled<ResidentAISystemMod.Actions>(world, true);
 
             Mod.Info("EconomyEX Systems ENABLED. Vanilla Systems DISABLED.");
         }
@@ -87,6 +107,11 @@ namespace EconomyEX.Helpers
             SetSystemEnabled<FindJobSystem>(world, true);
             SetSystemEnabled<RentAdjustSystem>(world, true);
             SetSystemEnabled<LandValueSystem>(world, true);
+            SetSystemEnabled<TripNeededSystem>(world, true);
+            SetSystemEnabled<ServiceCoverageSystem>(world, true);
+            SetSystemEnabled<ResourceBuyerSystem>(world, true);
+            SetSystemEnabled<ResidentAISystem>(world, true);
+            SetSystemEnabled<ResidentAISystem.Actions>(world, true);
 
             // 2. Disable Mod Systems
             SetSystemEnabled<HouseholdFindPropertySystemMod>(world, false);
@@ -95,6 +120,11 @@ namespace EconomyEX.Helpers
             SetSystemEnabled<FindJobSystemMod>(world, false);
             SetSystemEnabled<RentAdjustSystemMod>(world, false);
             SetSystemEnabled<LandValueSystemMod>(world, false);
+            SetSystemEnabled<TripNeededSystemMod>(world, false);
+            SetSystemEnabled<ServiceCoverageSystemMod>(world, false);
+            SetSystemEnabled<ResourceBuyerSystemMod>(world, false);
+            SetSystemEnabled<ResidentAISystemMod>(world, false);
+            SetSystemEnabled<ResidentAISystemMod.Actions>(world, false);
 
             Mod.Info("EconomyEX Systems DISABLED. Framework restored to Vanilla.");
         }

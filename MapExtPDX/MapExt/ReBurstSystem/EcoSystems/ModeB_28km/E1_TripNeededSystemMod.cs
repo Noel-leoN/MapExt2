@@ -1,4 +1,4 @@
-﻿using Game;
+using Game;
 using Game.Simulation;
 using Colossal.Collections;
 using Game.Agents;
@@ -306,8 +306,8 @@ namespace MapExtPDX.ModeB
 					m_TriggerBuffer = m_TriggerSystem.CreateActionBuffer().AsParallelWriter(),
 					m_DebugDisableSpawning = debugDisableSpawning,
 					// [MOD EXT]
-					m_DynamicLeisureMaxCost = MapExtPDX.Mod.Instance.CurrentSettings.LeisureMaxCost,
-					m_DynamicShoppingMaxCost = MapExtPDX.Mod.Instance.CurrentSettings.ShoppingMaxCost
+					m_DynamicLeisureMaxCost = Mod.Instance.Settings.LeisureMaxCost,
+					m_DynamicShoppingMaxCost = Mod.Instance.Settings.ShoppingMaxCost
 				};
 				PetTargetJob jobData2 = new PetTargetJob
 				{

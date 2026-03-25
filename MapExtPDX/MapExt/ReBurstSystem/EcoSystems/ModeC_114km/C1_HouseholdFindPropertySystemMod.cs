@@ -1,4 +1,4 @@
-﻿// Game.Simulation.HouseholdFindPropertySystem
+// Game.Simulation.HouseholdFindPropertySystem
 
 // Game.Simulation.CitizenPathFindSetup + SetupFindHomeJob
 
@@ -298,7 +298,7 @@ namespace MapExtPDX.ModeC
                 m_City = m_CitySystem.City,
                 m_PathfindQueue = m_PathfindSetupSystem.GetQueue(this, 80, 16).AsParallelWriter(),
                 m_CommandBuffer = m_EndFrameBarrier.CreateCommandBuffer(),
-                m_DynamicFindHomeMaxCost = Mod.Instance.CurrentSettings.FindHomeMaxCost
+                m_DynamicFindHomeMaxCost = Mod.Instance.Settings.FindHomeMaxCost
             };
             JobHandle prepareJobHandle = preparePropertyJobData.ScheduleParallel(m_FreePropertyQuery,
                 JobUtils.CombineDependencies(Dependency, groundPollutionDependencies, noisePollutionDependencies,

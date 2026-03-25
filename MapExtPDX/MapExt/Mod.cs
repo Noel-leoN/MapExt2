@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2024 Noel2(Noel-leoN)
+// Copyright (c) 2024 Noel2(Noel-leoN)
 // Licensed under the MIT License.
 // See LICENSE in the project root for full license information.
 // When using this part of the code, please clearly credit [Project Name] and the author.
@@ -29,6 +29,10 @@ namespace MapExtPDX
         // 定义设置UI
         private ModSettings m_Setting;
         public ModSettings CurrentSettings => m_Setting;
+        /// <summary>
+        /// Settings 别名，使 EcoSystems 代码与 EconomyEX 保持一致的访问路径。
+        /// </summary>
+        public ModSettings Settings => m_Setting;
 
         // 日志初始化
         // 日志归结到Logs\ModName.log，不要放在Player.log

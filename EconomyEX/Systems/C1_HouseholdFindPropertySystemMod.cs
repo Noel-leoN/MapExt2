@@ -1,4 +1,4 @@
-﻿// Game.Simulation.HouseholdFindPropertySystem
+// Game.Simulation.HouseholdFindPropertySystem
 
 // Game.Simulation.CitizenPathFindSetup + SetupFindHomeJob
 
@@ -12,6 +12,7 @@ using Game.Buildings;
 using Game.Citizens;
 using Game.City;
 using Game.Common;
+using Game.Companies;
 using Game.Debug;
 using Game.Economy;
 using Game.Net;
@@ -297,7 +298,8 @@ namespace EconomyEX.Systems
                 m_RentActionQueue = m_PropertyProcessingSystem.GetRentActionQueue(out deps).AsParallelWriter(),
                 m_City = m_CitySystem.City,
                 m_PathfindQueue = m_PathfindSetupSystem.GetQueue(this, 80, 16).AsParallelWriter(),
-                m_CommandBuffer = m_EndFrameBarrier.CreateCommandBuffer()
+                m_CommandBuffer = m_EndFrameBarrier.CreateCommandBuffer(),
+                m_DynamicFindHomeMaxCost = Mod.Instance.Settings.FindHomeMaxCost
             };
             JobHandle prepareJobHandle = preparePropertyJobData.ScheduleParallel(m_FreePropertyQuery,
                 JobUtils.CombineDependencies(Dependency, groundPollutionDependencies, noisePollutionDependencies,
@@ -525,6 +527,7 @@ namespace EconomyEX.Systems
             [ReadOnly] public Entity m_City;
             public NativeQueue<SetupQueueItem>.ParallelWriter m_PathfindQueue;
             public NativeQueue<RentAction>.ParallelWriter m_RentActionQueue;
+            public float m_DynamicFindHomeMaxCost;
 
             /// <summary>
             /// 🧳 构造寻找新家的参数（起点、方法、权重及目标分）并发出寻路请求。
@@ -567,7 +570,7 @@ namespace EconomyEX.Systems
                     m_WalkSpeed = 1.6666667f,
                     m_Weights = weights,
                     m_Methods = (PathMethod.Pedestrian | PathMethod.PublicTransportDay),
-                    m_MaxCost = CitizenBehaviorSystem.kMaxPathfindCost,
+                    m_MaxCost = m_DynamicFindHomeMaxCost,
                     m_PathfindFlags = (PathfindFlags.Simplified | PathfindFlags.IgnorePath)
                 };
 
@@ -1030,6 +1033,7 @@ namespace EconomyEX.Systems
         [ReadOnly] public NativeArray<GroundPollution> m_PollutionMap;
         [ReadOnly] public NativeArray<NoisePollution> m_NoiseMap;
         [ReadOnly] public CellMapData<TelecomCoverage> m_TelecomCoverages;
+        [ReadOnly] public ComponentLookup<CompanyData> m_Companies;
 
         public HealthcareParameterData m_HealthcareParameters;
         public ParkParameterData m_ParkParameters;
@@ -1079,8 +1083,11 @@ namespace EconomyEX.Systems
                 const int kMaxCandidatesToFind = 5;
 
                 // --- 🔄 核心耗时循环：遍历本 Chunk 内的所有售/租建筑 (O(N) 全图遍历) ---
-                for (int j = 0; j < nativeArray.Length; j++)
+                // [MOD OPT] 随机起始偏移：避免先创建的建筑总是被优先评估，提高新旧城区的公平性
+                int startOffset = (nativeArray.Length > 0) ? random.NextInt(nativeArray.Length) : 0;
+                for (int jj = 0; jj < nativeArray.Length; jj++)
                 {
+                    int j = (startOffset + jj) % nativeArray.Length;
                     Entity candidateProperty = nativeArray[j];
                     Entity prefab = nativeArray2[j].m_Prefab;
                     Building building = m_Buildings[candidateProperty];
@@ -1119,10 +1126,16 @@ namespace EconomyEX.Systems
 
                     // 🏠 2. 分支二：常规住宅处理 (Regular Property)
                     int askingRent = m_PropertiesOnMarket[candidateProperty].m_AskingRent;
+                    int residentialCapacity = 0;
                     int maxPropertiesInBuilding = 1;
+                    int nonResidentialCapacity = 0;
+
                     if (m_BuildingProperties.HasComponent(prefab))
                     {
                         maxPropertiesInBuilding = m_BuildingProperties[prefab].CountProperties();
+                        residentialCapacity = m_BuildingProperties[prefab].CountProperties(Game.Zones.AreaType.Residential);
+                        nonResidentialCapacity += m_BuildingProperties[prefab].CountProperties(Game.Zones.AreaType.Commercial);
+                        nonResidentialCapacity += m_BuildingProperties[prefab].CountProperties(Game.Zones.AreaType.Industrial);
                     }
 
                     // 🚫 快速筛选：房子租客要是满了直接不要
@@ -1131,7 +1144,31 @@ namespace EconomyEX.Systems
                         continue;
                     }
 
-                    // 💰 3. 租金预判
+                    // 🏢 混合建筑筛选：剔除公司租客，校验住宅空位
+                    if (nonResidentialCapacity == 0)
+                    {
+                        if (bufferAccessor[j].Length >= residentialCapacity)
+                        {
+                            continue;
+                        }
+                    }
+                    else
+                    {
+                        int companyCount = 0;
+                        for (int k = 0; k < bufferAccessor[j].Length; k++)
+                        {
+                            if (m_Companies.HasComponent(bufferAccessor[j][k].m_Renter))
+                            {
+                                companyCount++;
+                            }
+                        }
+                        if (bufferAccessor[j].Length - companyCount >= residentialCapacity)
+                        {
+                            continue;
+                        }
+                    }
+
+                    // 💰 3. 租金预判 (注意：垃圾费依旧以总户数 maxPropertiesInBuilding 分摊)
                     int garbageFeePerProperty = m_ServiceFeeParameterData.m_GarbageFeeRCIO.x / maxPropertiesInBuilding;
                     // householdIncome 已经提取到外层循环
                     // isHouseholdNeedSupport 已经提取到外层循环
@@ -1347,6 +1384,7 @@ namespace EconomyEX.Systems
                 m_ResourcesBufs = __instance.GetBufferLookup<Resources>(true),
                 m_ZoneDatas = __instance.GetComponentLookup<ZoneData>(true),
                 m_ZonePropertiesDatas = __instance.GetComponentLookup<ZonePropertiesData>(true),
+                m_Companies = __instance.GetComponentLookup<CompanyData>(true),
 
                 m_TaxRates = taxSystem.GetTaxRates(),
                 m_PollutionMap = groundPollutionSystem.GetMap(true, out var dep1),
@@ -1388,3 +1426,7 @@ namespace EconomyEX.Systems
 
     #endregion
 }
+
+
+
+

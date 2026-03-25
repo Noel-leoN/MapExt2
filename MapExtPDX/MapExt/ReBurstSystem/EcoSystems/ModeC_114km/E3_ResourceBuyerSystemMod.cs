@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Runtime.CompilerServices;
 using Game;
 using Game.Simulation;
@@ -195,8 +195,8 @@ namespace MapExtPDX.ModeC
 					m_City = m_CitySystem.City,
 					m_SalesQueue = m_SalesQueue.AsParallelWriter(),
 					// [MOD EXT]
-					m_DynamicShoppingMaxCost = MapExtPDX.Mod.Instance.CurrentSettings.ShoppingMaxCost,
-					m_CompanyShoppingMaxCost = MapExtPDX.Mod.Instance.CurrentSettings.CompanyShoppingMaxCost
+					m_DynamicShoppingMaxCost = Mod.Instance.Settings.ShoppingMaxCost,
+					m_CompanyShoppingMaxCost = Mod.Instance.Settings.CompanyShoppingMaxCost
 				};
 				base.Dependency = JobChunkExtensions.ScheduleParallel(jobData, m_BuyerQuery,
 					JobHandle.CombineDependencies(base.Dependency, outJobHandle, jobHandle));

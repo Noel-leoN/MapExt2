@@ -119,6 +119,7 @@ namespace EconomyEX
             // Apply manual Harmony Patches for System Replacements
             _harmony.CreateClassProcessor(typeof(PathfindSetupSystem_FindTargets_Patch)).Patch();
             _harmony.CreateClassProcessor(typeof(LandValueSystemMod.Patches)).Patch();
+            _harmony.CreateClassProcessor(typeof(ServiceCoverageSystem_SetupPathfindMethods_Patch)).Patch();
 
             Settings.UpdateStatus();
         }
