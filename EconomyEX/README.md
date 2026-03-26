@@ -6,7 +6,7 @@
 
 - **Do NOT install this mod if you already use MapExt (MapExtPDX)**. MapExt already includes this exact economy module built-in. If you subscribe to both, EconomyEX will auto-disable itself to prevent conflicts.
 - **Large Maps (28 km+)**: Auto-disables; only activates on vanilla maps.
-- **Realistic PathFinding**: ⚠️ Resource Buyer & Resident AI modules may conflict — disable them individually in EconomyEX settings.
+- **Realistic PathFinding**: ⚠️ Resource Buyer and Resident AI modules may conflict — disable them individually in EconomyEX settings.
 - **Realistic JobSearch**: ⚠️ Job Search module may conflict — disable it individually in EconomyEX settings.
 - **Asset / Visual Mods**: ✅ Highly compatible (ECS system replacement).
 
@@ -71,7 +71,7 @@ Subscribe on Paradox Mods. No additional dependencies.
 - **购物降频**：人口越多，购物出行适度降频（模拟大宗采购），缓解交通与海量寻路压力。
 - **爆发保护**：严格限制同一时刻允许的最大无房家庭寻路请求数量，防止引发瞬时掉帧与卡顿。
 
-### 🏘️ 租金 & 地价
+### 🏘️ 租金和地价
 - **储蓄抗租**：家庭以"收入 + 储蓄"综合判定是否交得起租金，终结"富人集体驱逐"的崩坏循环。
 - **地价统一**：将经济地价与 UI 热力图合并为一套系统，所见即所得，同时消除游戏原版的冗余计算浪费。
 
