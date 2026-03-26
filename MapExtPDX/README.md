@@ -1,8 +1,8 @@
-﻿# 🚀 Cities Skylines 2 Map Extended Mod (28/57/114/vanilla) with Economy Fix & Performance Improvement
+# 🚀 Cities Skylines 2 Map Extended Mod (28/57/114/vanilla) with Economy Fix and Performance Improvement
 
 ## 🚀 Update Notice
 
-* **💎 Economy Fix & Performance Optimization (Experimental):** This version includes a suite of optimizations specifically tuned for mega-cities (millions of population). It refactors demand logic, land value, housing search, citizen behaviors, and rent systems.
+* **💎 Economy Fix and Performance Optimization (Experimental):** This version includes a suite of optimizations specifically tuned for mega-cities (millions of population). It refactors demand logic, land value, housing search, citizen behaviors, and rent systems.
 
 * **⏳ Simulation Catch-up:** Loading an old save may result in extremely slow simulation initially as the new economic logic recalculates everything. Please allow the simulation to run for a while for performance to stabilize.
 
@@ -60,7 +60,7 @@ In the Map Editor, import a heightmap/worldmap image of the corresponding size:
 
 ### 📂 Useful Directory Paths (Paste into File Explorer)
 
-* **🗺️ Heightmaps & Worldmaps:** `%USERPROFILE%\AppData\LocalLow\Colossal Order\Cities Skylines II\Heightmaps`
+* **🗺️ Heightmaps and Worldmaps:** `%USERPROFILE%\AppData\LocalLow\Colossal Order\Cities Skylines II\Heightmaps`
 
 * **🖼️ Overlay Maps:** `%USERPROFILE%\AppData\LocalLow\Colossal Order\Cities Skylines II\Overlays`
 
@@ -100,9 +100,9 @@ In the Map Editor, import a heightmap/worldmap image of the corresponding size:
 
 * **💧 Quick Water Generation:** Since large maps take extremely long to manually fill with water, we recommend Yenyang's **Water Features** mod. Enable experimental features, max out the "flowness" slider, and minimize evaporation for quick results. Alternatively, instantly fill the oceans by setting the Sea Level via the in-game Developer UI (though you still need physical water sources to maintain it over time).
 
-* **📢 Bug Reporting & Support:** Please report issues or find more advanced tips in the Discord community linked below, or on GitHub.
+* **📢 Bug Reporting and Support:** Please report issues or find more advanced tips in the Discord community linked below, or on GitHub.
 
-## 🏆 Credits & Acknowledgements
+## 🏆 Credits and Acknowledgements
 
 * [Cities: Skylines Modding Discord](https://discord.gg/s6BcrFKepF) (Primary discussion hub)
 

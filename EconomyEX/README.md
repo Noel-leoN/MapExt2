@@ -1,8 +1,8 @@
-# 🏢 EconomyEX — Metropolis Economy Fix & Performance Boost
+# 🏢 EconomyEX — Metropolis Economy Fix and Performance Boost
 
-> **For**: Cities: Skylines 2 · **Map Size**: Standard / Vanilla maps (≤14 km)
+## For**: Cities: Skylines 2 · **Map Size**: Standard / Vanilla maps (14 km)
 
-## ⚠️ Compatibility & Conflicts (Important!)
+## ⚠️ Compatibility and Conflicts (Important!)
 
 - **Do NOT install this mod if you already use MapExt (MapExtPDX)**. MapExt already includes this exact economy module built-in. If you subscribe to both, EconomyEX will auto-disable itself to prevent conflicts.
 - **Large Maps (28 km+)**: Auto-disables; only activates on vanilla maps.
@@ -27,7 +27,7 @@ When your city grows past **500K–1M** population, the vanilla game suffers fro
 - **Shopping Throttling**: Slightly reduces shopping trip frequency at high population (simulates bulk buying).
 - **Burst Protection**: Caps simultaneous homeless pathfinding requests to prevent frame spikes.
 
-### 🏘️ Rent & Land Value
+### 🏘️ Rent and Land Value
 - **Savings-Based Rent**: Households use income + savings to pay rent — stops unfair mass evictions.
 - **Unified Land Value**: Merges the economic and UI heat-map land value into one optimized system.
 
@@ -44,7 +44,7 @@ Subscribe on Paradox Mods. No additional dependencies.
 
 # 🏢 EconomyEX — 大都市经济修复与性能优化
 
-> **适用版本**：Cities: Skylines 2 · **适用地图**：标准/原版地图（≤14 km）
+## **适用版本**：Cities: Skylines 2 · **适用地图**：标准/原版地图（14 km）
 
 ## ⚠️ 兼容性与模组冲突（必看！）
 
