@@ -28,8 +28,6 @@ namespace EconomyEX.Systems
 
 		public const uint COVERAGE_UPDATE_INTERVAL = 256u;
 
-		public override int GetUpdateInterval(SystemUpdatePhase phase) => 256;
-
 		#endregion
 
 		#region Fields

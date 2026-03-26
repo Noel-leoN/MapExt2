@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using HarmonyLib;
 using Game;
 using Game.Simulation;
@@ -28,7 +28,7 @@ namespace MapExtPDX.ModeC
 
 		public const uint COVERAGE_UPDATE_INTERVAL = 256u;
 
-		public override int GetUpdateInterval(SystemUpdatePhase phase) => 256;
+
 
 		#endregion
 
