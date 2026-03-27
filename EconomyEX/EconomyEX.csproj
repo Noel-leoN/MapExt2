@@ -8,7 +8,7 @@
 		<Authors>Noel2</Authors>
 		<Copyright>Copyright (c) [2025] [Noel2/Noel-leoN/=Noel=]</Copyright>
 		<Title>EconomyEX</Title>
-		<Version>1.1.5</Version>
+		<Version>1.1.6</Version>
 
 		<!--The file where mod information which is required for publishing mod on PDX mods are stored-->
 		<PublishConfigurationPath>Properties\PublishConfiguration.xml</PublishConfigurationPath>

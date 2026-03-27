@@ -1,4 +1,4 @@
-﻿// Game.Simulation.CitizenFindJobSystem
+// Game.Simulation.CitizenFindJobSystem
 // v1.4.2无变化
 
 using System.Threading;
@@ -50,11 +50,12 @@ namespace MapExtPDX.ModeC
         // [配置] 只有当具体空缺数 > 0 且 满足概率时才寻找。
         // 这里定义 "市场饱和" 时的最大概率
         private const float kMaxUnemployedSearchChance = 0.8f; // 失业者最大每日寻找概率
+        private const float kMinUnemployedSearchChance = 0.4f; // 失业者最低每日寻找概率（市场紧缺时兜底）
         //private const float kMaxEmployedSwitchChance = 0.05f;  // 在职者最大每日跳槽概率
 
         // [优化] 动态冷却范围
         public static readonly int kCoolDownMin_Abundant = 2000;  // 岗位充足，冷却短
-        public static readonly int kCoolDownMax_Scarce = 30000;   // 岗位紧缺，冷却极长
+        public static readonly int kCoolDownMax_Scarce = 20000;   // 岗位紧缺，冷却较长（~1.2天）
 
         // 失业时间累加值
         private const float kUnemploymentIncrement = 1f / 256f; // 1f / kUpdatesPerDay
@@ -63,7 +64,7 @@ namespace MapExtPDX.ModeC
         private const int kMaxSeekersPerFrame = 500;
 
         // [优化] 激进剪枝阈值：如果某等级空缺少于此值，视为无空缺，不发起寻路
-        private const int kMinVacanciesToSearch = 5;
+        private const int kMinVacanciesToSearch = 1;
 
         // [优化] 用于跨线程计数的原子计数器
         private NativeArray<int> m_CreatedSeekerCount;
@@ -215,11 +216,12 @@ namespace MapExtPDX.ModeC
             float marketSaturation = math.clamp(currentVacancyRate / kHealthyVacancyRate, 0f, 1f);
 
             // 基于饱和度计算实际概率
-            float actualUnemployedChance = math.max(0.2f, kMaxUnemployedSearchChance * marketSaturation);
+            float actualUnemployedChance = math.max(kMinUnemployedSearchChance, kMaxUnemployedSearchChance * marketSaturation);
             float actualEmployedSwitchChance = citizenParams.m_SwitchJobRate * marketSaturation; // 岗位少时，极少跳槽
 
             // 1. 失业者找工作
-            if (totalUnemployedFree > kMinVacanciesToSearch)
+            // [Fix] 使用 totalFree（全部空缺）而非 totalUnemployedFree（仅特定类别），避免误判无空缺
+            if (totalFree > kMinVacanciesToSearch)
             {
                 ScheduleJob(
                     m_UnemployedQuery,
@@ -722,4 +724,3 @@ namespace MapExtPDX.ModeC
         #endregion
     }
 }
-
