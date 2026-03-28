@@ -68,7 +68,7 @@ namespace MapExtPDX
                 },
                 {
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.ModSettingCoreValue)),
-                    "⚠️ Warning: Although MapExt has loadgame validation to prevent loading wrong size game saves, Please BACKUP ALL of your GameSaves (Strongly recommand SKYVE) before Loading them with this mod!!! Otherwise, there is a risk that the save may be corrupted due to game crashes or other special reasons"
+                    "The currently selected and successfully applied map size. This size refers to the edge length of the map. Unit is in meters.\n⚠️ Warning: Although MapExt has loadgame validation to prevent loading wrong size game saves, Please BACKUP ALL of your GameSaves (Strongly recommand SKYVE) before Loading them with this mod!!! Otherwise, there is a risk that the save may be corrupted due to game crashes or other special reasons."
                 },
 
                 { m_Setting.GetOptionGroupLocaleID(ModSettings.kEcoGroup), "▍Economy Overhaul (Beta)" },
@@ -79,7 +79,7 @@ namespace MapExtPDX
                 },
                 {
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.isEnableEconomyFix)),
-                    "(This patch is currently in the testing phase (Beta))\nFixes and optimizes the following systems to adapt to cities with populations in the millions:\n - Residential/Commercial/Industrial demand systems\n - Household home-search system\n - Household behavior system (consumer behavior adjustment)\n - Citizen job-search system\n - Rent calculation system\n\n⚠️ [CRITICAL]: Changing this option requires a GAME RESTART to take effect safely. Otherwise, severe logical bugs will occur!"
+                    "(This patch is currently in the testing phase (Beta))\nFixes and optimizes the following systems to adapt to cities with populations in the millions:\n - Residential/Commercial/Industrial demand systems\n - Household home-search system\n - Household behavior system (consumer behavior adjustment)\n - Citizen job-search system\n - Rent calculation system\n - Resource procurement & service coverage pathfinding systems\n - Resident AI pathfinding optimization patch\n\n⚠️ [CRITICAL]: Changing this option requires a GAME RESTART to take effect safely. Otherwise, severe logical bugs will occur!"
                 },
                 {
                     m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.EnableDemandEcoSystem)),
@@ -202,6 +202,17 @@ namespace MapExtPDX
                     "Controls the maximum search distance when citizens look for a new home. Increasing this allows citizens to relocate across the entire large map, preventing remote towns from being empty. This occurs rarely, recommended to max it out.\n" +
                     "★ Recommended:\n" +
                     " - All Map Sizes: 200000"
+                },
+
+                { m_Setting.GetOptionTabLocaleID(ModSettings.kDebugTab), "▍Developer Options" },
+                { m_Setting.GetOptionGroupLocaleID(ModSettings.kDebugGroup), "▍Developer Options" },
+                { m_Setting.GetOptionLabelLocaleID(ModSettings.kDebugTab), "▍Developer Options" },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.DisableLoadGameValidation)), "× Disable LoadGame Validation" },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.DisableLoadGameValidation)),
+                    "⚠️ WARNING! Enabled by default (unchecked). LoadGame validation prevents loading saves with incorrect map size modes, which corrupts saves!\n" +
+                    "Checking this will disable the validation. Only use this for special cases, such as unrecognised saves from older MapExt versions. Please ensure you've selected the correct 'MapSize Mode' before loading, or you might corrupt your save!\n" +
+                    "Always backup your saves before using this feature."
                 },
             };
             return entries;

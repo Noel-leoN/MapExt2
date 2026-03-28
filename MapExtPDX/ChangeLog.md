@@ -1,9 +1,9 @@
-## v2.2.9 - Job Matching Fix
+## v2.3.0 - Shopping Behavior Optimization
 
-* **Job Matching:** Improved job-seeking logic so that unemployed citizens can now find and fill vacant positions more quickly and reliably.
+* **Shopping Behavior Fix:** Fixed an issue where households would make redundant shopping trips in the same day, reducing unnecessary traffic and CPU load.
 
 ---
 
 ### 主要改动
 
-* **就业匹配优化：** 改善了市民求职逻辑，使失业市民能够更快速、更稳定地匹配到空缺岗位。
+* **购物行为修复：** 修复了家庭在同一天内重复外出购物的问题，减少了不必要的交通流量与寻路负担。

@@ -140,7 +140,7 @@ namespace MapExtPDX
                 },
 
                 { m_Setting.GetOptionTabLocaleID(ModSettings.kMiscTab), "▍经济补丁设置 (Beta)" },
-                { m_Setting.GetOptionGroupLocaleID(ModSettings.kMiscTab), "▍经济补丁设置 (Beta)" },
+                { m_Setting.GetOptionGroupLocaleID(ModSettings.kMiscGroup), "▍经济补丁设置 (Beta)" },
                 { m_Setting.GetOptionLabelLocaleID(ModSettings.kMiscTab), "• 经济补丁设置 (Beta)" },
                 /*{ m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.LandValueRemake)), "• 现实地价重制版 (当前尚不可用)" },
                 {
