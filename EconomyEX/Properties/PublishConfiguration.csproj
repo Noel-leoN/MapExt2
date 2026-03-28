@@ -63,7 +63,7 @@ $(Screenshot00)$(Screenshot01)$(Screenshot02)$(Screenshot03)$(Screenshot04)$(Scr
     <Tag Value="Code Mod" />
 
     <!-- Link to the forum post where the mod can be discussed. -->
-    <ForumLink Value="https://forum.paradoxplaza.com/forum/threads/map-extended-mod-beta-57km-version.1738213/" />
+    <ForumLink Value="https://forum.paradoxplaza.com/forum/threads/economyex-metropolis-economy-fix-and-performance-boost.1913429/" />
 
     <!-- Version of the mod.  Copied from assembly Version. -->
     <ModVersion Value="$(Version)" />
