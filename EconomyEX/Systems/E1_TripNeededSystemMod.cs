@@ -603,7 +603,7 @@ namespace EconomyEX.Systems
 						validLocations--;
 					}
 
-					if (validLocations > maxCount)
+					if (validLocations > maxCount && validLocations > 0)
 					{
 						probability = maxCount * 100 / validLocations;
 					}

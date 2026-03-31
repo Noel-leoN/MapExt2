@@ -778,6 +778,7 @@ namespace MapExtPDX.ModeA
 						{
 							continue;
 						}
+
 						// 企业采购节流：每 2 tick 处理一次 (2 × 16帧 = 32帧周期)
 						if (citizens.Length == 0 && ((entity.Index + (int)(m_FrameIndex / 16)) % 2 != 0))
 						{
@@ -960,7 +961,8 @@ namespace MapExtPDX.ModeA
 					m_Weights = new PathfindWeights(1f, 1f, transportCost, 1f),
 					m_Methods = (PathMethod.Road | PathMethod.CargoLoading),
 					m_IgnoredRules = (RuleFlags.ForbidSlowTraffic | RuleFlags.AvoidBicycles),
-					m_MaxCost = m_CompanyShoppingMaxCost // [MOD EXT] Give company trucks their own custom configurable max cost
+					m_MaxCost =
+						m_CompanyShoppingMaxCost // [MOD EXT] Give company trucks their own custom configurable max cost
 				};
 				SetupQueueTarget origin = new SetupQueueTarget
 				{
@@ -984,12 +986,6 @@ namespace MapExtPDX.ModeA
 
 				SetupQueueItem value = new SetupQueueItem(buyer, parameters, origin, destination);
 				m_PathfindQueue.Enqueue(value);
-			}
-
-			void IJobChunk.Execute(in ArchetypeChunk chunk, int unfilteredChunkIndex, bool useEnabledMask,
-				in v128 chunkEnabledMask)
-			{
-				Execute(in chunk, unfilteredChunkIndex, useEnabledMask, in chunkEnabledMask);
 			}
 		}
 

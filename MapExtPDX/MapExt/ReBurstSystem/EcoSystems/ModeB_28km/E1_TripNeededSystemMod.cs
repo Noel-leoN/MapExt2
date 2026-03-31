@@ -603,7 +603,7 @@ namespace MapExtPDX.ModeB
 						validLocations--;
 					}
 
-					if (validLocations > maxCount)
+					if (validLocations > maxCount && validLocations > 0)
 					{
 						probability = maxCount * 100 / validLocations;
 					}
