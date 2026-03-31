@@ -469,7 +469,7 @@ namespace MapExtPDX.ModeE
 
 					Entity entity2 = m_PersonalCarSelectData.CreateVehicle(m_CommandBuffer, ref random, passengerAmount,
 						requiredCapacity, avoidTrailers: true, noSlowVehicles: false, bicycle: false, transform,
-						property, Entity.Null, (PersonalCarFlags)0u, stopped: true);
+						property, Entity.Null, 0, stopped: true);
 					if (entity2 != Entity.Null)
 					{
 						m_CommandBuffer.AddComponent(entity2, new Owner(entity));

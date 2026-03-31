@@ -24,13 +24,6 @@ using Unity.Jobs;
 
 namespace MapExtPDX.ModeA
 {
-    /// <summary>
-    /// 为无业和寻求更好工作的市民寻找工作岗位。
-    /// 系统会分两步执行：
-    /// 1. 为所有符合条件的无业市民寻找工作。
-    /// 2. 为一小部分已就业但学历高于当前职位的市民寻找更好的工作。
-    /// </summary>
-
     // =========================================================================================
     // 1. Mod 自定义系统类型 (当前类)
     using ModSystem = FindJobSystemMod;
@@ -38,6 +31,12 @@ namespace MapExtPDX.ModeA
     using TargetSystem = FindJobSystem;
     // =========================================================================================
 
+    /// <summary>
+    /// 为无业和寻求更好工作的市民寻找工作岗位。
+    /// 系统会分两步执行：
+    /// 1. 为所有符合条件的无业市民寻找工作。
+    /// 2. 为一小部分已就业但学历高于当前职位的市民寻找更好的工作。
+    /// </summary>
     public partial class FindJobSystemMod : GameSystemBase
     {
         #region Constants
@@ -69,7 +68,7 @@ namespace MapExtPDX.ModeA
         private const int DEBUG_ARRAY_SIZE = 12;
         // 用于在 Job 和主线程间传递统计数据
         private NativeArray<int> m_DebugStats;       // Debug统计数组
-        private bool m_EnableDebug = false; // 开发时设为 true，发布设为 false
+        private readonly bool m_EnableDebug = false; // 开发时设为 true，发布设为 false
 #endif
 
         #endregion
@@ -184,7 +183,7 @@ namespace MapExtPDX.ModeA
         {
             // --- Debug 输出逻辑 ---
 #if DEBUG
-            if (m_EnableDebug == true)
+            if (m_EnableDebug)
             {
                 PrintDebugLog();
             }
@@ -233,8 +232,8 @@ namespace MapExtPDX.ModeA
             {
                 // Entity 和组件类型句柄
                 m_EntityType = SystemAPI.GetEntityTypeHandle(),
-                m_JobSeekerType = SystemAPI.GetComponentTypeHandle<JobSeeker>(false),
-                m_OwnerType = SystemAPI.GetComponentTypeHandle<Owner>(false),
+                m_JobSeekerType = SystemAPI.GetComponentTypeHandle<JobSeeker>(),
+                m_OwnerType = SystemAPI.GetComponentTypeHandle<Owner>(),
                 m_CurrentBuildingType = SystemAPI.GetComponentTypeHandle<CurrentBuilding>(true),
 
                 // 组件查找
@@ -296,8 +295,8 @@ namespace MapExtPDX.ModeA
                 // 组件查找
                 m_Citizens = SystemAPI.GetComponentLookup<Citizen>(true),
                 m_Prefabs = SystemAPI.GetComponentLookup<PrefabRef>(true),
-                m_EmployeeBuffers = SystemAPI.GetBufferLookup<Employee>(false),
-                m_FreeWorkplaces = SystemAPI.GetComponentLookup<FreeWorkplaces>(false),
+                m_EmployeeBuffers = SystemAPI.GetBufferLookup<Employee>(),
+                m_FreeWorkplaces = SystemAPI.GetComponentLookup<FreeWorkplaces>(),
                 m_WorkplaceDatas = SystemAPI.GetComponentLookup<WorkplaceData>(true),
                 m_Deleteds = SystemAPI.GetComponentLookup<Deleted>(true),
                 m_Workers = SystemAPI.GetComponentLookup<Worker>(true),
@@ -406,14 +405,20 @@ namespace MapExtPDX.ModeA
                 // 本地缓存减少原子操作次数
                 int c0 = 0, c1 = 0, c2 = 0, c3 = 0, c4 = 0;
 
-                for (int i = 0; i < freeWorkplaces.Length; i++)
+                foreach (var fw in freeWorkplaces)
+
                 {
-                    FreeWorkplaces fw = freeWorkplaces[i];
+
                     c0 += fw.m_Uneducated;
+
                     c1 += fw.m_PoorlyEducated;
+
                     c2 += fw.m_Educated;
+
                     c3 += fw.m_WellEducated;
+
                     c4 += fw.m_HighlyEducated;
+
                 }
 
                 unsafe
@@ -599,7 +604,7 @@ namespace MapExtPDX.ModeA
                         // 6. 概率放弃（模拟市场竞争或换工作意愿）：
                         float freeJobsCount = this.m_FreeCache[targetJobLevel];
                         // 计算竞争比：该学历的总待业人数 / 该等级的空缺职位数
-                        float competitionRatio = (float)this.m_EmployableByEducation[targetJobLevel] / freeJobsCount;
+                        float competitionRatio = this.m_EmployableByEducation[targetJobLevel] / freeJobsCount;
 
                         // 如果已有工作，且竞争激烈（ratio > 2），有一定概率放弃跳槽
                         if (isSwitcher && random.NextFloat(competitionRatio) > 2f)

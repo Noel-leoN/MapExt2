@@ -1,4 +1,4 @@
-﻿// Game.Simulation.ResidentialDemandSystem
+// Game.Simulation.ResidentialDemandSystem
 // 系统实例被多个外部系统调用，采用Job通用替换。
 
 using Colossal.Collections;
@@ -133,12 +133,12 @@ namespace MapExtPDX.ModeB
             // A. 检查已解锁的密度类型
 
             bool3 unlockedDensities = default(bool3);
-            for (int i = 0; i < m_UnlockedZonePrefabs.Length; i++)
+            foreach (Entity prefab in m_UnlockedZonePrefabs)
             {
-                ZoneData zoneData = m_ZoneDatas[m_UnlockedZonePrefabs[i]];
+                ZoneData zoneData = m_ZoneDatas[prefab];
                 if (zoneData.m_AreaType == AreaType.Residential)
                 {
-                    ZonePropertiesData zoneProp = m_ZonePropertiesDatas[m_UnlockedZonePrefabs[i]];
+                    ZonePropertiesData zoneProp = m_ZonePropertiesDatas[prefab];
                     switch (PropertyUtils.GetZoneDensity(zoneData, zoneProp))
                     {
                         case ZoneDensity.Low: unlockedDensities.x = true; break;

@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2024 Noel2(Noel-leoN)
+// Copyright (c) 2024 Noel2(Noel-leoN)
 // Licensed under the MIT License.
 // See LICENSE in the project root for full license information.
 // When using this part of the code, please clearly credit [Project Name] and the author.
@@ -13,7 +13,6 @@ using Game.Buildings;
 using Game.Citizens;
 using Game.City;
 using Game.Common;
-using Game.Companies;
 using Game.Economy;
 using Game.Prefabs;
 using Game.Prefabs.Modes;
@@ -148,10 +147,6 @@ namespace MapExtPDX.ModeA
             RequireForUpdate(m_EconomyParameterGroup);
         }
 
-        protected override void OnDestroy()
-        {
-            base.OnDestroy();
-        }
 
         // P3: 恢复 ModeSettingData 读取，与原版一致
         protected override void OnGameLoaded(Colossal.Serialization.Entities.Context serializationContext)
@@ -181,9 +176,9 @@ namespace MapExtPDX.ModeA
             {
                 // 获取类型句柄
                 m_EntityType = SystemAPI.GetEntityTypeHandle(),
-                m_HouseholdType = SystemAPI.GetComponentTypeHandle<Household>(false),
-                m_HouseholdNeedType = SystemAPI.GetComponentTypeHandle<HouseholdNeed>(false),
-                m_ResourceType = SystemAPI.GetBufferTypeHandle<Resources>(false),
+                m_HouseholdType = SystemAPI.GetComponentTypeHandle<Household>(),
+                m_HouseholdNeedType = SystemAPI.GetComponentTypeHandle<HouseholdNeed>(),
+                m_ResourceType = SystemAPI.GetBufferTypeHandle<Resources>(),
                 m_HouseholdCitizenType = SystemAPI.GetBufferTypeHandle<HouseholdCitizen>(true),
                 m_CommuterHouseholdType = SystemAPI.GetComponentTypeHandle<CommuterHousehold>(true),
                 m_UpdateFrameType = SystemAPI.GetSharedComponentTypeHandle<UpdateFrame>(),
@@ -231,7 +226,7 @@ namespace MapExtPDX.ModeA
             };
 
             // 调度任务并行执行
-            Dependency = JobChunkExtensions.ScheduleParallel(householdTickJob, m_HouseholdGroup, Dependency);
+            Dependency = householdTickJob.ScheduleParallel(m_HouseholdGroup, Dependency);
 
             // 将依赖关系添加到帧结束屏障，确保命令缓冲区在正确时机执行
             m_EndFrameBarrier.AddJobHandleForProducer(Dependency);
@@ -357,19 +352,16 @@ namespace MapExtPDX.ModeA
                 HouseholdCache basecache = new()
                 {
                     FamilySize = citizens.Length,
-                    TotalWealth = EconomyUtils.GetHouseholdTotalWealth(household, resources)
+                    TotalWealth = EconomyUtils.GetHouseholdTotalWealth(household, resources),
+                    // --- 车辆统计 ---
+                    CarCount = m_OwnedVehicles.HasBuffer(householdEntity) ? m_OwnedVehicles[householdEntity].Length : 0,
+                    // 初始化后续将被累加的年龄组合值
+                    AgeCounts = int4.zero
                 };
-
-                // --- 车辆统计 ---
-                if (m_OwnedVehicles.HasBuffer(householdEntity))
-                    basecache.CarCount = m_OwnedVehicles[householdEntity].Length;
-                else
-                    basecache.CarCount = 0;
 
                 // --- 成员遍历统计 (整合收入、年龄、幸福度) ---
                 int householdIncome = 0;
                 int totalHappiness = 0;
-                basecache.AgeCounts = int4.zero;
 
                 for (int i = 0; i < citizens.Length; i++)
                 {
@@ -441,14 +433,13 @@ namespace MapExtPDX.ModeA
             private int GetWeightOptimized(int spendableMoney, ResourceData data, HouseholdCache cache)
             {
                 // 预判：如果权重因子都是0，直接返回
-                if (data.m_ChildWeight == 0 && data.m_TeenWeight == 0 && data.m_AdultWeight == 0 &&
-                    data.m_ElderlyWeight == 0 && data.m_CarConsumption == 0)
+                if (data is { m_ChildWeight: 0, m_TeenWeight: 0, m_AdultWeight: 0, m_ElderlyWeight: 0, m_CarConsumption: 0 })
                     return 0;
 
                 // 基础消耗
                 float baseConsumption = data.m_BaseConsumption;
                 // 车辆消耗
-                baseConsumption += (float)(cache.CarCount * data.m_CarConsumption);
+                baseConsumption += cache.CarCount * data.m_CarConsumption;
 
                 // 财富修正
                 float wealthMod = data.m_WealthModifier;
@@ -480,7 +471,7 @@ namespace MapExtPDX.ModeA
                 }
 
                 // 否则使用原有的递减概率
-                return random.NextFloat() < (0f - math.log((float)cars + 0.1f)) / 10f + 0.1;
+                return random.NextFloat() < (0f - math.log(cars + 0.1f)) / 10f + 0.1;
             }
 
             public void Execute(in ArchetypeChunk chunk, int unfilteredChunkIndex, bool useEnabledMask,
@@ -511,9 +502,9 @@ namespace MapExtPDX.ModeA
                 // 预计算避免放入主循环内重复计算
 
                 //// 1. 基础购物概率 (随人口指数衰减)
-                ///
+                //
                 // 计算基于人口的概率因子 (人口越多，单次判定通过率越低)
-                float popFactor = math.max(1f, math.sqrt(kTrafficReduction * (float)cityPopulation));
+                float popFactor = math.max(1f, math.sqrt(kTrafficReduction * cityPopulation));
                 int baseshopChance = (int)math.round(200f / popFactor);
 
                 // 低人口时遵循原版，百万人口后单次通过率限制在 1% - 5% 之间
@@ -761,7 +752,7 @@ namespace MapExtPDX.ModeA
                 // 3. P0修复：安全阀仅在「库存彻底耗尽 + 当天还没买过」时激活
                 //    修复前: 低库存时无条件 max(25) 覆盖了 ÷20 的衰减，导致已购物家庭仍 25% 概率重复购物
                 //    修复后: 已购物家庭遵循 ÷20 衰减(~2%)，未购物且零库存家庭保留高概率保底
-                if (household.m_Resources == 0 && household.m_ShoppedValuePerDay == 0)
+                if (household is { m_Resources: 0, m_ShoppedValuePerDay: 0 })
                 {
                     finalShopChance = math.max(finalShopChance, 30); // 零库存+首次购物: 至少30%
                 }
@@ -862,7 +853,7 @@ namespace MapExtPDX.ModeA
             public static float GetConsumptionMultiplier(float2 parameter, int householdWealth)
             {
                 return parameter.x + parameter.y *
-                    math.smoothstep(0f, 1f, (float)(math.max(0, householdWealth) + 1000) / 6000f);
+                    math.smoothstep(0f, 1f, (math.max(0, householdWealth) + 1000) / 6000f);
             }
         } // job
     } // class

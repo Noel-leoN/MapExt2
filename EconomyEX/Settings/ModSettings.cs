@@ -71,6 +71,12 @@ namespace EconomyEX.Settings
 
         [SettingsUISection(kSectionGeneral, kSectionPathfinding)]
         [SettingsUIDisableByCondition(typeof(ModSettings), nameof(IsEconomyFixDisabled))]
+        [SettingsUISlider(min = 1000f, max = 17000f, step = 500f, scalarMultiplier = 1f,
+            unit = Game.UI.Unit.kFloatSingleFraction)]
+        public float EmergencyMaxCost { get; set; } = 6000f;
+
+        [SettingsUISection(kSectionGeneral, kSectionPathfinding)]
+        [SettingsUIDisableByCondition(typeof(ModSettings), nameof(IsEconomyFixDisabled))]
         [SettingsUISlider(min = 17000f, max = 200000f, step = 1000f, scalarMultiplier = 1f,
             unit = Game.UI.Unit.kFloatSingleFraction)]
         public float FindJobMaxCost { get; set; } = 200000f;
@@ -112,6 +118,7 @@ namespace EconomyEX.Settings
             ShoppingMaxCost = 8000f;
             CompanyShoppingMaxCost = 200000f;
             LeisureMaxCost = 12000f;
+            EmergencyMaxCost = 6000f;
             FindJobMaxCost = 200000f;
             FindHomeMaxCost = 200000f;
         }

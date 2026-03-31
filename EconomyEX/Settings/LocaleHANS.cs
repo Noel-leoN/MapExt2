@@ -67,6 +67,13 @@ namespace EconomyEX.Settings
                     "控制市民为了游览公园、地标或观光愿意承受的最大出行成本。数值越低，全图无目的闲逛引发的寻路计算越少。\n" +
                     "★ 建议值：8000 ~ 12000"
                 },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.EmergencyMaxCost)), "医院/犯罪最高寻路成本" },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.EmergencyMaxCost)),
+                    "控制市民生病就医或犯罪时的最大搜索范围。较低的值将这些行为限制在就近区域，鼓励本地化的公共服务规划。\n" +
+                    "★ 提示：建议在此成本范围内合理布局医院与警局。若相关设施非常密集，可进一步降低此值。\n" +
+                    "★ 建议值：4000 ~ 8000（默认：6000）"
+                },
                 { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.FindJobMaxCost)), "找工作最高寻路成本" },
                 {
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.FindJobMaxCost)),

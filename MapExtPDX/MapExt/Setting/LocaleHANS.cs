@@ -172,6 +172,14 @@ namespace MapExtPDX
                     " - 14km / 28km： 8000 ~ 12000\n" +
                     " - 57km / 114km：12000 ~ 20000"
                 },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.EmergencyMaxCost)), "医院/犯罪最高寻路成本" },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.EmergencyMaxCost)),
+                    "控制市民生病就医或犯罪时的最大搜索范围。较低的值将这些行为限制在就近区域，鼓励本地化的公共服务规划。\n" +
+                    "★ 提示：建议在此成本范围内合理布局医院与警局。若相关设施非常密集，可进一步降低此值。\n" +
+                    "★ 建议值：\n" +
+                    " - 全地图通用：4000 ~ 8000（默认：6000）"
+                },
                 { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.FindJobMaxCost)), "找工作最高寻路成本" },
                 {
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.FindJobMaxCost)),

@@ -1410,7 +1410,7 @@ namespace MapExtPDX.ModeB
 
             JobHandle combinedDeps = JobUtils.CombineDependencies(inputDeps, dep1, dep2, dep3, dep4);
 
-            JobHandle jobHandle = JobChunkExtensions.ScheduleParallel(jobData, _findHomeQuery, combinedDeps);
+            JobHandle jobHandle = jobData.ScheduleParallel(_findHomeQuery, combinedDeps);
 
             groundPollutionSystem.AddReader(jobHandle);
             airPollutionSystem.AddReader(jobHandle);

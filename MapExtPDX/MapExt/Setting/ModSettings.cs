@@ -142,6 +142,7 @@ namespace MapExtPDX
             ShoppingMaxCost = 8000f;
             CompanyShoppingMaxCost = 200000f;
             LeisureMaxCost = 12000f;
+            EmergencyMaxCost = 6000f;
             FindJobMaxCost = 200000f;
             FindHomeMaxCost = 200000f;
             
@@ -361,6 +362,11 @@ namespace MapExtPDX
         [SettingsUISlider(min = 1000f, max = 200000f, step = 1000f, scalarMultiplier = 1f,
             unit = Game.UI.Unit.kFloatSingleFraction)]
         public float LeisureMaxCost { get; set; } = 12000f;
+
+        [SettingsUISection(kMiscTab, kEconomyTweakGroup)]
+        [SettingsUISlider(min = 1000f, max = 17000f, step = 500f, scalarMultiplier = 1f,
+            unit = Game.UI.Unit.kFloatSingleFraction)]
+        public float EmergencyMaxCost { get; set; } = 6000f;
 
         [SettingsUISection(kMiscTab, kEconomyTweakGroup)]
         [SettingsUISlider(min = 17000f, max = 200000f, step = 1000f, scalarMultiplier = 1f,

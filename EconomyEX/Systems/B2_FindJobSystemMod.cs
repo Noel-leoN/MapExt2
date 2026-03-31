@@ -24,13 +24,6 @@ using Unity.Jobs;
 
 namespace EconomyEX.Systems
 {
-    /// <summary>
-    /// 为无业和寻求更好工作的市民寻找工作岗位。
-    /// 系统会分两步执行：
-    /// 1. 为所有符合条件的无业市民寻找工作。
-    /// 2. 为一小部分已就业但学历高于当前职位的市民寻找更好的工作。
-    /// </summary>
-
     // =========================================================================================
     // 1. Mod 自定义系统类型 (当前类)
     using ModSystem = FindJobSystemMod;
@@ -38,6 +31,12 @@ namespace EconomyEX.Systems
     using TargetSystem = FindJobSystem;
     // =========================================================================================
 
+    /// <summary>
+    /// 为无业和寻求更好工作的市民寻找工作岗位。
+    /// 系统会分两步执行：
+    /// 1. 为所有符合条件的无业市民寻找工作。
+    /// 2. 为一小部分已就业但学历高于当前职位的市民寻找更好的工作。
+    /// </summary>
     public partial class FindJobSystemMod : GameSystemBase
     {
         #region Constants

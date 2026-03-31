@@ -37,8 +37,6 @@ namespace MapExtPDX.ModeA
 {
 	public partial class ResidentAISystemMod : GameSystemBase
 	{
-
-
 		#region Fields
 
 		private EndFrameBarrier m_EndFrameBarrier;
@@ -88,7 +86,7 @@ namespace MapExtPDX.ModeA
 				ComponentType.ReadWrite<ResetTrip>());
 			m_ParkedToMovingCarRemoveTypes = new ComponentTypeSet(ComponentType.ReadWrite<ParkedCar>(),
 				ComponentType.ReadWrite<Stopped>());
-			m_ParkedToMovingCarAddTypes = new ComponentTypeSet(new ComponentType[12]
+			m_ParkedToMovingCarAddTypes = new ComponentTypeSet(new[]
 			{
 				ComponentType.ReadWrite<Moving>(),
 				ComponentType.ReadWrite<TransformFrame>(),
@@ -103,7 +101,7 @@ namespace MapExtPDX.ModeA
 				ComponentType.ReadWrite<Swaying>(),
 				ComponentType.ReadWrite<Updated>()
 			});
-			m_ParkedToMovingTrailerAddTypes = new ComponentTypeSet(new ComponentType[6]
+			m_ParkedToMovingTrailerAddTypes = new ComponentTypeSet(new[]
 			{
 				ComponentType.ReadWrite<Moving>(),
 				ComponentType.ReadWrite<TransformFrame>(),
@@ -248,15 +246,15 @@ namespace MapExtPDX.ModeA
 				m_ActionQueue = m_Actions.m_ActionQueue.AsParallelWriter(),
 				m_CommandBuffer = m_EndFrameBarrier.CreateCommandBuffer().AsParallelWriter()
 			};
-			JobHandle dependsOn = JobChunkExtensions.ScheduleParallel(jobData, m_CreatureQuery,
-				JobHandle.CombineDependencies(base.Dependency, jobHandle));
+			JobHandle dependsOn = jobData.ScheduleParallel(m_CreatureQuery,
+				JobHandle.CombineDependencies(Dependency, jobHandle));
 			jobData.m_GroupMember = true;
-			JobHandle jobHandle2 = JobChunkExtensions.ScheduleParallel(jobData, m_GroupCreatureQuery, dependsOn);
+			JobHandle jobHandle2 = jobData.ScheduleParallel(m_GroupCreatureQuery, dependsOn);
 			m_PersonalCarSelectData.PostUpdate(jobHandle2);
 			m_PathfindSetupSystem.AddQueueWriter(jobHandle2);
 			m_EndFrameBarrier.AddJobHandleForProducer(jobHandle2);
 			m_Actions.m_Dependency = jobHandle2;
-			base.Dependency = jobHandle2;
+			Dependency = jobHandle2;
 		}
 
 		#endregion
@@ -278,184 +276,118 @@ namespace MapExtPDX.ModeA
 
 			[ReadOnly] public EntityTypeHandle m_EntityType;
 			[ReadOnly] public ComponentTypeHandle<CurrentVehicle> m_CurrentVehicleType;
-
 			[ReadOnly] public ComponentTypeHandle<GroupMember> m_GroupMemberType;
 			[ReadOnly] public ComponentTypeHandle<Unspawned> m_UnspawnedType;
-
 			[ReadOnly] public ComponentTypeHandle<HumanNavigation> m_HumanNavigationType;
 			[ReadOnly] public ComponentTypeHandle<PrefabRef> m_PrefabRefType;
-
 			[ReadOnly] public BufferTypeHandle<GroupCreature> m_GroupCreatureType;
 			public ComponentTypeHandle<Game.Creatures.Resident> m_ResidentType;
-
 			public ComponentTypeHandle<Creature> m_CreatureType;
-
-			[NativeDisableContainerSafetyRestriction]
-			public ComponentTypeHandle<Human> m_HumanType;
-
+			[NativeDisableContainerSafetyRestriction] public ComponentTypeHandle<Human> m_HumanType;
 			public ComponentTypeHandle<HumanCurrentLane> m_CurrentLaneType;
-
-			[NativeDisableContainerSafetyRestriction]
-			public ComponentTypeHandle<Target> m_TargetType;
-
+			[NativeDisableContainerSafetyRestriction] public ComponentTypeHandle<Target> m_TargetType;
 			public ComponentTypeHandle<Divert> m_DivertType;
-
 			[ReadOnly] public EntityStorageInfoLookup m_EntityLookup;
 			[ReadOnly] public ComponentLookup<Game.Objects.Transform> m_TransformData;
-
 			[ReadOnly] public ComponentLookup<Owner> m_OwnerData;
-
-			[NativeDisableContainerSafetyRestriction] [ReadOnly]
-			public ComponentLookup<Target> m_TargetData;
-
+			[NativeDisableContainerSafetyRestriction] [ReadOnly] public ComponentLookup<Target> m_TargetData;
 			[ReadOnly] public ComponentLookup<PseudoRandomSeed> m_PseudoRandomSeedData;
-
 			[ReadOnly] public ComponentLookup<CurrentVehicle> m_CurrentVehicleData;
 			[ReadOnly] public ComponentLookup<Destroyed> m_DestroyedData;
-
 			[ReadOnly] public ComponentLookup<Deleted> m_DeletedData;
 			[ReadOnly] public ComponentLookup<Unspawned> m_UnspawnedData;
-
 			[ReadOnly] public ComponentLookup<RideNeeder> m_RideNeederData;
 			[ReadOnly] public ComponentLookup<Dispatched> m_Dispatched;
-
 			[ReadOnly] public ComponentLookup<ServiceRequest> m_ServiceRequestData;
 			[ReadOnly] public ComponentLookup<Moving> m_MovingData;
-
 			[ReadOnly] public ComponentLookup<Game.Objects.SpawnLocation> m_SpawnLocation;
 			[ReadOnly] public ComponentLookup<Animal> m_AnimalData;
-
 			[ReadOnly] public ComponentLookup<OnFire> m_OnFireData;
 			[ReadOnly] public ComponentLookup<Game.Net.Edge> m_EdgeData;
-
 			[ReadOnly] public ComponentLookup<Curve> m_CurveData;
 			[ReadOnly] public ComponentLookup<Lane> m_LaneData;
-
 			[ReadOnly] public ComponentLookup<EdgeLane> m_EdgeLaneData;
 			[ReadOnly] public ComponentLookup<Game.Net.ParkingLane> m_ParkingLaneData;
-
 			[ReadOnly] public ComponentLookup<GarageLane> m_GarageLaneData;
 			[ReadOnly] public ComponentLookup<Game.Net.PedestrianLane> m_PedestrianLaneData;
-
 			[ReadOnly] public ComponentLookup<Game.Net.ConnectionLane> m_ConnectionLaneData;
 			[ReadOnly] public ComponentLookup<LaneSignal> m_LaneSignalData;
-
 			[ReadOnly] public ComponentLookup<HangaroundLocation> m_HangaroundLocationData;
 			[ReadOnly] public ComponentLookup<Citizen> m_CitizenData;
-
 			[ReadOnly] public ComponentLookup<HouseholdMember> m_HouseholdMembers;
 			[ReadOnly] public ComponentLookup<Household> m_HouseholdData;
-
 			[ReadOnly] public ComponentLookup<CurrentBuilding> m_CurrentBuildingData;
 			[ReadOnly] public ComponentLookup<CurrentTransport> m_CurrentTransportData;
-
 			[ReadOnly] public ComponentLookup<Worker> m_WorkerData;
 			[ReadOnly] public ComponentLookup<CarKeeper> m_CarKeeperData;
-
 			[ReadOnly] public ComponentLookup<BicycleOwner> m_BicycleOwnerData;
 			[ReadOnly] public ComponentLookup<HealthProblem> m_HealthProblemData;
-
 			[ReadOnly] public ComponentLookup<TravelPurpose> m_TravelPurposeData;
 			[ReadOnly] public ComponentLookup<TouristHousehold> m_TouristHouseholds;
-
 			[ReadOnly] public ComponentLookup<HomelessHousehold> m_HomelessHouseholdData;
 			[ReadOnly] public ComponentLookup<HouseholdNeed> m_HouseholdNeedData;
-
 			[ReadOnly] public ComponentLookup<AttendingMeeting> m_AttendingMeetingData;
 			[ReadOnly] public ComponentLookup<CoordinatedMeeting> m_CoordinatedMeetingData;
-
 			[ReadOnly] public ComponentLookup<MovingAway> m_MovingAwayData;
 			[ReadOnly] public ComponentLookup<ServiceAvailable> m_ServiceAvailableData;
-
 			[ReadOnly] public ComponentLookup<ParkedCar> m_ParkedCarData;
 			[ReadOnly] public ComponentLookup<Game.Vehicles.PersonalCar> m_PersonalCarData;
-
 			[ReadOnly] public ComponentLookup<Game.Vehicles.Taxi> m_TaxiData;
 			[ReadOnly] public ComponentLookup<Game.Vehicles.PublicTransport> m_PublicTransportData;
-
 			[ReadOnly] public ComponentLookup<Game.Vehicles.PoliceCar> m_PoliceCarData;
 			[ReadOnly] public ComponentLookup<Game.Vehicles.Ambulance> m_AmbulanceData;
-
 			[ReadOnly] public ComponentLookup<Game.Vehicles.Hearse> m_HearseData;
 			[ReadOnly] public ComponentLookup<Controller> m_ControllerData;
-
 			[ReadOnly] public ComponentLookup<Vehicle> m_VehicleData;
 			[ReadOnly] public ComponentLookup<Train> m_TrainData;
-
 			[ReadOnly] public ComponentLookup<PropertyRenter> m_PropertyRenters;
 			[ReadOnly] public ComponentLookup<AttractivenessProvider> m_AttractivenessProviderData;
-
 			[ReadOnly] public ComponentLookup<Connected> m_RouteConnectedData;
 			[ReadOnly] public ComponentLookup<BoardingVehicle> m_BoardingVehicleData;
-
 			[ReadOnly] public ComponentLookup<CurrentRoute> m_CurrentRouteData;
 			[ReadOnly] public ComponentLookup<TransportLine> m_TransportLineData;
-
 			[ReadOnly] public ComponentLookup<AccessLane> m_AccessLaneLaneData;
 			[ReadOnly] public ComponentLookup<PrefabRef> m_PrefabRefData;
-
 			[ReadOnly] public ComponentLookup<CreatureData> m_PrefabCreatureData;
 			[ReadOnly] public ComponentLookup<HumanData> m_PrefabHumanData;
-
 			[ReadOnly] public ComponentLookup<ObjectGeometryData> m_PrefabObjectGeometryData;
 			[ReadOnly] public ComponentLookup<CarData> m_PrefabCarData;
-
 			[ReadOnly] public ComponentLookup<IndustrialProcessData> m_PrefabIndustrialProcessData;
 			[ReadOnly] public ComponentLookup<TransportStopData> m_PrefabTransportStopData;
-
 			[ReadOnly] public ComponentLookup<SpawnLocationData> m_PrefabSpawnLocationData;
 			[ReadOnly] public BufferLookup<HouseholdAnimal> m_HouseholdAnimals;
-
 			[ReadOnly] public BufferLookup<HouseholdCitizen> m_HouseholdCitizens;
 			[ReadOnly] public BufferLookup<ConnectedRoute> m_ConnectedRoutes;
-
 			[ReadOnly] public BufferLookup<RouteWaypoint> m_RouteWaypoints;
 			[ReadOnly] public BufferLookup<LayoutElement> m_VehicleLayouts;
-
 			[ReadOnly] public BufferLookup<CarNavigationLane> m_CarNavigationLanes;
 			[ReadOnly] public BufferLookup<ConnectedEdge> m_ConnectedEdges;
-
 			[ReadOnly] public BufferLookup<Game.Net.SubLane> m_SubLanes;
 			[ReadOnly] public BufferLookup<Game.Areas.Node> m_AreaNodes;
-
 			[ReadOnly] public BufferLookup<Triangle> m_AreaTriangles;
 			[ReadOnly] public BufferLookup<ConnectedBuilding> m_ConnectedBuildings;
-
 			[ReadOnly] public BufferLookup<Renter> m_Renters;
 			[ReadOnly] public BufferLookup<SpawnLocationElement> m_SpawnLocationElements;
-
 			[ReadOnly] public BufferLookup<Game.Economy.Resources> m_Resources;
 			[ReadOnly] public BufferLookup<ServiceDispatch> m_ServiceDispatches;
-
 			[ReadOnly] public BufferLookup<ActivityLocationElement> m_PrefabActivityLocationElements;
-
-			[NativeDisableContainerSafetyRestriction]
-			public ComponentLookup<Human> m_HumanData;
-
+			[NativeDisableContainerSafetyRestriction] public ComponentLookup<Human> m_HumanData;
 			[NativeDisableParallelForRestriction] public ComponentLookup<PathOwner> m_PathOwnerData;
 			[NativeDisableParallelForRestriction] public BufferLookup<PathElement> m_PathElements;
-
 			[ReadOnly] public float m_TimeOfDay;
 			[ReadOnly] public RandomSeed m_RandomSeed;
-
 			[ReadOnly] public uint m_SimulationFrameIndex;
 			[ReadOnly] public bool m_LefthandTraffic;
-
 			[ReadOnly] public bool m_GroupMember;
 			[ReadOnly] public PersonalCarSelectData m_PersonalCarSelectData;
-
 			[ReadOnly] public EntityArchetype m_ResetTripArchetype;
 			[ReadOnly] public ComponentTypeSet m_ParkedToMovingCarRemoveTypes;
-
 			[ReadOnly] public ComponentTypeSet m_ParkedToMovingCarAddTypes;
 			[ReadOnly] public ComponentTypeSet m_ParkedToMovingTrailerAddTypes;
-
 			[ReadOnly] public NativeArray<int> m_DeletedResidents;
 			public NativeQueue<SetupQueueItem>.ParallelWriter m_PathfindQueue;
-
 			public NativeQueue<Boarding>.ParallelWriter m_BoardingQueue;
 			public NativeQueue<ResidentAction>.ParallelWriter m_ActionQueue;
-
 			public EntityCommandBuffer.ParallelWriter m_CommandBuffer;
 
 			public void Execute(in ArchetypeChunk chunk, int unfilteredChunkIndex, bool useEnabledMask,
@@ -1034,7 +966,7 @@ namespace MapExtPDX.ModeA
 				}
 
 				m_BoardingQueue.Enqueue(Boarding.TryEnterVehicle(entity, groupMember.m_Leader, vehicle,
-					currentVehicle.m_Vehicle, Entity.Null, transform.m_Position, (CreatureVehicleFlags)0u));
+					currentVehicle.m_Vehicle, Entity.Null, transform.m_Position, 0));
 			}
 
 			private void TickWalking(int jobIndex, ref Unity.Mathematics.Random random, Entity entity,
@@ -1084,7 +1016,7 @@ namespace MapExtPDX.ModeA
 					if (divert.m_Purpose != Purpose.None)
 					{
 						SetDivert(jobIndex, entity, ref resident, ref currentLane, ref divert, ref pathOwner,
-							Purpose.None, Entity.Null, 0, Resource.NoResource);
+							Purpose.None, Entity.Null);
 					}
 					else if (ReturnHome(jobIndex, entity, ref random, ref resident, ref currentLane, ref target,
 						         ref divert, ref pathOwner))
@@ -1386,7 +1318,7 @@ namespace MapExtPDX.ModeA
 							ref m_OwnerData, ref m_LaneData, ref m_EdgeLaneData, ref m_ConnectionLaneData,
 							ref m_CurveData, ref m_SubLanes, ref m_AreaNodes, ref m_AreaTriangles);
 						PathElement pathElement2 = path[pathOwner.m_ElementIndex];
-						CreatureLaneFlags creatureLaneFlags = (CreatureLaneFlags)0u;
+						CreatureLaneFlags creatureLaneFlags = 0u;
 						if (pathElement2.m_TargetDelta.y < pathElement2.m_TargetDelta.x)
 						{
 							creatureLaneFlags |= CreatureLaneFlags.Backward;
@@ -1647,7 +1579,7 @@ namespace MapExtPDX.ModeA
 
 			private HumanFlags SelectAttractionFlags(ref Unity.Mathematics.Random random, ActivityMask actionMask)
 			{
-				HumanFlags result = (HumanFlags)0u;
+				HumanFlags result = 0;
 				int count = 0;
 				CheckActionFlags(ref result, ref count, ref random, actionMask, ActivityType.Selfies,
 					HumanFlags.Selfies);
@@ -1717,8 +1649,7 @@ namespace MapExtPDX.ModeA
 
 							PrefabRef prefabRef = m_PrefabRefData[renter];
 							if (m_PrefabIndustrialProcessData.HasComponent(prefabRef.m_Prefab) &&
-							    (m_PrefabIndustrialProcessData[prefabRef.m_Prefab].m_Output.m_Resource &
-							     householdNeed.m_Resource) != Resource.NoResource)
+							    m_PrefabIndustrialProcessData[prefabRef.m_Prefab].m_Output.m_Resource == householdNeed.m_Resource)
 							{
 								ServiceAvailable serviceAvailable = m_ServiceAvailableData[renter];
 								DynamicBuffer<Game.Economy.Resources> resources = m_Resources[renter];
@@ -3376,6 +3307,10 @@ namespace MapExtPDX.ModeA
 							        (componentData13.m_Flags & HealthProblemFlags.RequireTransport) != 0;
 							break;
 						}
+						// [MOD] 刚需出行：回家/上班/上学需全图可达，与 TripNeededSystem 分支A对齐
+						case Purpose.GoingHome:
+						case Purpose.GoingToWork:
+						case Purpose.GoingToSchool:
 						case Purpose.MovingAway:
 							parameters.m_MaxCost = CitizenBehaviorSystem.kMaxMovingAwayCost;
 							break;
@@ -3600,7 +3535,7 @@ namespace MapExtPDX.ModeA
 				Game.Objects.Transform tractorTransform = m_TransformData[carEntity];
 				PrefabRef prefabRef = m_PrefabRefData[carEntity];
 				Entity entity2 = m_PersonalCarSelectData.CreateTrailer(m_CommandBuffer, jobIndex, ref random, num3,
-					num4, noSlowVehicles: false, prefabRef.m_Prefab, tractorTransform, (PersonalCarFlags)0u,
+					num4, noSlowVehicles: false, prefabRef.m_Prefab, tractorTransform, 0,
 					stopped: false);
 				if (entity2 != Entity.Null)
 				{
@@ -3762,6 +3697,7 @@ namespace MapExtPDX.ModeA
 					PrefabRef prefabRef = m_PrefabRefData[passenger];
 					ObjectGeometryData geometryData = m_ObjectGeometryData[prefabRef.m_Prefab];
 					Bounds3 bounds = ObjectUtils.CalculateBounds(position, quaternion.identity, geometryData);
+					m_SearchTree.TryRemove(passenger); // 防御性移除，防止重复添加崩溃
 					m_SearchTree.Add(passenger, new QuadTreeBoundsXZ(bounds));
 				}
 

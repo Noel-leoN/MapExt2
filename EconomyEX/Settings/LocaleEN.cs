@@ -67,6 +67,13 @@ namespace EconomyEX.Settings
                     "Controls the maximum travel cost for citizens visiting parks, landmarks, or sightseeing. Lower values reduce aimless wandering pathfinding.\n" +
                     "★ Recommended: 8000 ~ 12000"
                 },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.EmergencyMaxCost)), "Max Hospital/Crime Pathfind Cost" },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.EmergencyMaxCost)),
+                    "Controls the maximum search range for citizens seeking hospitals (when sick/injured) or committing crimes. A lower value restricts these activities to nearby areas, encouraging locally planned services.\n" +
+                    "★ Tip: Build hospitals and police stations within this cost radius of residential areas. If your facilities are very close, you can further reduce this value.\n" +
+                    "★ Recommended: 4000 ~ 8000 (Default: 6000)"
+                },
                 { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.FindJobMaxCost)), "Max Find Job Pathfind Cost" },
                 {
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.FindJobMaxCost)),

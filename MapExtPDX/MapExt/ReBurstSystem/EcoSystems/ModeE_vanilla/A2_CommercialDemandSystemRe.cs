@@ -1,4 +1,4 @@
-﻿using Colossal.Collections;
+using Colossal.Collections;
 using Game.Buildings;
 using Game.City;
 using Game.Companies;
@@ -146,7 +146,7 @@ namespace MapExtPDX.ModeE
                     ResourceIterator validResourceIter = ResourceIterator.GetIterator();
                     while (validResourceIter.Next())
                     {
-                        if ((buildingData.m_AllowedSold & validResourceIter.resource) != Resource.NoResource)
+                        if (((long)buildingData.m_AllowedSold & (long)validResourceIter.resource) != 0L)
                         {
                             this.m_FreeProperties[EconomyUtils.GetResourceIndex(validResourceIter.resource)]++;
                         }

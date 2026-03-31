@@ -33,12 +33,6 @@ using Unity.Mathematics;
 
 namespace MapExtPDX.ModeA
 {
-    // =========================================================================================
-    using ModSystem = HouseholdFindPropertySystemMod;
-    using TargetSystem = HouseholdFindPropertySystem;
-
-    // =========================================================================================
-
     public partial class HouseholdFindPropertySystemMod : GameSystemBase
     {
         #region Constants
@@ -1111,8 +1105,8 @@ namespace MapExtPDX.ModeA
                             if (bufferAccessor[j].Length < shelterHomelessCapacity)
                             {
                                 targetSeeker.FindTargets(candidateProperty,
-                                    100f * serviceCoverage + 1000f * (float)bufferAccessor[j].Length /
-                                    (float)shelterHomelessCapacity + 10000f);
+                                    100f * serviceCoverage + 1000f * bufferAccessor[j].Length /
+                                    shelterHomelessCapacity + 10000f);
 
                                 // === 🏁 [Early Exit Optimization] ===
                                 // ➕ 找到一个合格收容所，计入候选
@@ -1182,8 +1176,8 @@ namespace MapExtPDX.ModeA
                                 _ => 1f,
                             };
                         // 🩺 只有在家庭确实急需救助 (isHouseholdNeedSupport) 或者 能够承担该公寓地段租金 的情况下
-                        if (isHouseholdNeedSupport || !((float)(askingRent + garbageFeePerProperty) >
-                                                        (float)householdIncome * zoneDensityMultiplier))
+                        if (isHouseholdNeedSupport || !(askingRent + garbageFeePerProperty >
+                                                        householdIncome * zoneDensityMultiplier))
                         {
                             // === 💀 🚨 全系统最大的算力黑洞：极其昂贵的一对一定向打分 ===
                             // ⚠️ 注意：这里没有引入到目标住宅的空间距离 (Distance)，只要买得起，南极的雪屋也会在北极打工人的考虑之中！
@@ -1204,9 +1198,9 @@ namespace MapExtPDX.ModeA
                             // 🧮 转化分数为 Cost（因为 A* Pathfinding 是最小堆，Cost 越小越好）。
                             // 📉 综合分数取负后，再叠加拥挤度惩罚因子和随机抖动因子，发往寻路队列。
                             targetSeeker.FindTargets(candidateProperty,
-                                0f - propertyScore + 1000f * (float)bufferAccessor[j].Length /
-                                (float)maxPropertiesInBuilding +
-                                (float)random.NextInt(500));
+                                0f - propertyScore + 1000f * bufferAccessor[j].Length /
+                                maxPropertiesInBuilding +
+                                random.NextInt(500));
 
                             // === 🏁 [Early Exit Optimization] ===
                             // 找到一套付得起且已完成计分的备选房，计入候选
@@ -1243,7 +1237,7 @@ namespace MapExtPDX.ModeA
             return typeof(PathfindSetupSystem).GetMethod("FindTargets",
                 BindingFlags.NonPublic | BindingFlags.Instance,
                 null,
-                new Type[] { typeof(SetupTargetType), typeof(PathfindSetupSystem.SetupData).MakeByRefType() },
+                new[] { typeof(SetupTargetType), typeof(PathfindSetupSystem.SetupData).MakeByRefType() },
                 null);
         }
 
@@ -1277,13 +1271,13 @@ namespace MapExtPDX.ModeA
 
             var desc1 = new EntityQueryDesc
             {
-                All = new ComponentType[] { ComponentType.ReadOnly<Building>() },
-                Any = new ComponentType[]
+                All = new[] { ComponentType.ReadOnly<Building>() },
+                Any = new[]
                 {
                     ComponentType.ReadOnly<Abandoned>(),
                     ComponentType.ReadOnly<Game.Buildings.Park>()
                 },
-                None = new ComponentType[]
+                None = new[]
                 {
                     ComponentType.ReadOnly<Deleted>(),
                     ComponentType.ReadOnly<Destroyed>(),
@@ -1292,12 +1286,12 @@ namespace MapExtPDX.ModeA
             };
             var desc2 = new EntityQueryDesc
             {
-                All = new ComponentType[]
+                All = new[]
                 {
                     ComponentType.ReadOnly<PropertyOnMarket>(), ComponentType.ReadOnly<ResidentialProperty>(),
                     ComponentType.ReadOnly<Building>()
                 },
-                None = new ComponentType[]
+                None = new[]
                 {
                     ComponentType.ReadOnly<Abandoned>(), ComponentType.ReadOnly<Deleted>(),
                     ComponentType.ReadOnly<Destroyed>(), ComponentType.ReadOnly<Temp>(),
@@ -1410,7 +1404,7 @@ namespace MapExtPDX.ModeA
 
             JobHandle combinedDeps = JobUtils.CombineDependencies(inputDeps, dep1, dep2, dep3, dep4);
 
-            JobHandle jobHandle = JobChunkExtensions.ScheduleParallel(jobData, _findHomeQuery, combinedDeps);
+            JobHandle jobHandle = jobData.ScheduleParallel(_findHomeQuery, combinedDeps);
 
             groundPollutionSystem.AddReader(jobHandle);
             airPollutionSystem.AddReader(jobHandle);

@@ -1,4 +1,4 @@
-﻿// Game.Simulation.IndustrialDemandSystem
+// Game.Simulation.IndustrialDemandSystem
 // 系统实例被多个外部系统调用，采用Job通用替换。
 
 using Colossal.Collections;
@@ -315,7 +315,7 @@ namespace MapExtPDX.ModeC
                         m_BuildingPropertyDatas.TryGetComponent(parentPrefabRef.m_Prefab,
                             out BuildingPropertyData parentPropData))
                     {
-                        propData.m_AllowedManufactured &= parentPropData.m_AllowedManufactured;
+                        propData.m_AllowedManufactured = (Resource)((long)propData.m_AllowedManufactured & (long)parentPropData.m_AllowedManufactured);
                     }
 
                     // 遍历资源，标记该建筑允许生产或存储哪些资源
@@ -324,13 +324,13 @@ namespace MapExtPDX.ModeC
                     {
                         int resIndex = EconomyUtils.GetResourceIndex(allowIterator.resource);
                         // 可生产资源的建筑(含有少量存储空间但不算仓库)
-                        if ((propData.m_AllowedManufactured & allowIterator.resource) != Resource.NoResource)
+                        if (((long)propData.m_AllowedManufactured & (long)allowIterator.resource) != 0L)
                         {
                             m_FreeProperties[resIndex]++;
                         }
 
                         // 允许仓储的建筑/仓库(算仓库且只能存储)
-                        if ((propData.m_AllowedStored & allowIterator.resource) != Resource.NoResource)
+                        if (((long)propData.m_AllowedStored & (long)allowIterator.resource) != 0L)
                         {
                             m_FreeStorages[resIndex]++;
                         }

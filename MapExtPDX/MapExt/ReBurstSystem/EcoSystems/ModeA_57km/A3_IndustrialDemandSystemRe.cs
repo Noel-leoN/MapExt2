@@ -118,7 +118,7 @@ namespace MapExtPDX.ModeA
             int currentPopulation = m_Populations[m_City].m_Population;
             // 计算缩放因子：基准为10,000人。如果是1M人口，缩放因子为100。
             // 这样1000人的劳动力缺口在1M人口城市会被视为等同于1w人口城市的10人缺口。
-            float populationScaler = math.max(1f, (float)currentPopulation / 10000f);
+            float populationScaler = math.max(1f, currentPopulation / 10000f);
 
             // -----------------------------------------------------------------------
             // 1. 区域解锁检查
@@ -181,9 +181,8 @@ namespace MapExtPDX.ModeA
             // 3. 统计城市服务的资源消耗
             // 城市服务（如发电厂、警局）的维护也会产生资源需求。包括有形和无形资源。
             // -----------------------------------------------------------------------
-            for (int chunkIdx = 0; chunkIdx < m_CityServiceChunks.Length; chunkIdx++)
+            foreach (var serviceChunk in m_CityServiceChunks)
             {
-                ArchetypeChunk serviceChunk = m_CityServiceChunks[chunkIdx];
                 if (!serviceChunk.Has(ref m_ServiceUpkeepType)) continue;
 
                 NativeArray<Entity> entities = serviceChunk.GetNativeArray(m_EntityType);
@@ -198,14 +197,20 @@ namespace MapExtPDX.ModeA
                     if (m_ServiceUpkeeps.HasBuffer(prefabEntity))
                     {
                         DynamicBuffer<ServiceUpkeepData> upkeepBuffer = m_ServiceUpkeeps[prefabEntity];
-                        for (int u = 0; u < upkeepBuffer.Length; u++)
+                        foreach (var upkeep in upkeepBuffer)
+
                         {
-                            ServiceUpkeepData upkeep = upkeepBuffer[u];
+
                             if (upkeep.m_Upkeep.m_Resource != Resource.Money)
+
                             {
+
                                 m_ResourceDemands[EconomyUtils.GetResourceIndex(upkeep.m_Upkeep.m_Resource)] +=
+
                                     upkeep.m_Upkeep.m_Amount;
+
                             }
+
                         }
                     }
 
@@ -234,6 +239,7 @@ namespace MapExtPDX.ModeA
                         }
                     }
                 }
+
             }
 
             // -----------------------------------------------------------------------
@@ -241,9 +247,8 @@ namespace MapExtPDX.ModeA
             // 遍历现有的仓储公司，统计各资源的存储能力。
             // 仓库只处理有形资源。
             // -----------------------------------------------------------------------
-            for (int chunkIdx = 0; chunkIdx < m_StorageCompanyChunks.Length; chunkIdx++)
+            foreach (var storageChunk in m_StorageCompanyChunks)
             {
-                ArchetypeChunk storageChunk = m_StorageCompanyChunks[chunkIdx];
                 NativeArray<Entity> entities = storageChunk.GetNativeArray(m_EntityType);
                 NativeArray<PrefabRef> prefabs = storageChunk.GetNativeArray(ref m_PrefabType);
 
@@ -287,15 +292,15 @@ namespace MapExtPDX.ModeA
                         }
                     }
                 }
+
             }
 
             // -----------------------------------------------------------------------
             // 5. 统计空闲工业/办公地产(办公地产包含在工业地产内)
             // 查看市场上有哪些空房子（PropertyOnMarket），并记录它们适合生产/存储什么资源。
             // -----------------------------------------------------------------------
-            for (int chunkIndex = 0; chunkIndex < m_IndustrialPropertyChunks.Length; chunkIndex++)
+            foreach (var chunk in m_IndustrialPropertyChunks)
             {
-                ArchetypeChunk chunk = m_IndustrialPropertyChunks[chunkIndex];
                 // 必须是“市场上待租”的物业
                 if (!chunk.Has(ref m_PropertyOnMarketType)) continue;
 
@@ -315,7 +320,7 @@ namespace MapExtPDX.ModeA
                         m_BuildingPropertyDatas.TryGetComponent(parentPrefabRef.m_Prefab,
                             out BuildingPropertyData parentPropData))
                     {
-                        propData.m_AllowedManufactured &= parentPropData.m_AllowedManufactured;
+                        propData.m_AllowedManufactured = (Resource)((long)propData.m_AllowedManufactured & (long)parentPropData.m_AllowedManufactured);
                     }
 
                     // 遍历资源，标记该建筑允许生产或存储哪些资源
@@ -324,18 +329,19 @@ namespace MapExtPDX.ModeA
                     {
                         int resIndex = EconomyUtils.GetResourceIndex(allowIterator.resource);
                         // 可生产资源的建筑(含有少量存储空间但不算仓库)
-                        if ((propData.m_AllowedManufactured & allowIterator.resource) != Resource.NoResource)
+                        if (((long)propData.m_AllowedManufactured & (long)allowIterator.resource) != 0L)
                         {
                             m_FreeProperties[resIndex]++;
                         }
 
                         // 允许仓储的建筑/仓库(算仓库且只能存储)
-                        if ((propData.m_AllowedStored & allowIterator.resource) != Resource.NoResource)
+                        if (((long)propData.m_AllowedStored & (long)allowIterator.resource) != 0L)
                         {
                             m_FreeStorages[resIndex]++;
                         }
                     }
                 }
+
             }
 
             // ---------------- 核心需求计算逻辑 -----------------
@@ -405,8 +411,8 @@ namespace MapExtPDX.ModeA
 
                 // 2. 市场供需比率 (Supply/Demand Ratio)
                 // 需求越高，生产越少，比率越高，刺激需求
-                float supplyDemandRatio = (1f + (float)m_ResourceDemands[resIndex] - (float)m_Productions[resIndex]) /
-                                          ((float)m_ResourceDemands[resIndex] + 1f);
+                float supplyDemandRatio = (1f + m_ResourceDemands[resIndex] - m_Productions[resIndex]) /
+                                          (m_ResourceDemands[resIndex] + 1f);
 
                 // 3. 应用特定城市修正 (Modifiers) : 电子产品(有形)/软件(无形)
                 if (resourceIter.resource == Resource.Electronics)
@@ -423,7 +429,7 @@ namespace MapExtPDX.ModeA
 
                 // 税率低于 10% 产生正向刺激，高于 10% 产生负向抑制
                 // 税率偏移：(税率 - 10%) * -0.05 * 敏感度。税率高于10%降低需求，反之提升需求。
-                float taxFactor = m_DemandParameters.m_TaxEffect.z * -0.05f * ((float)taxRate - 10f);
+                float taxFactor = m_DemandParameters.m_TaxEffect.z * -0.05f * (taxRate - 10f);
                 taxFactor += m_IndustrialOfficeTaxEffectDemandOffset;
                 float taxEffectVal = 100f * taxFactor; // 放大用于计算
 

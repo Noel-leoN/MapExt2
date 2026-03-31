@@ -16,16 +16,11 @@ using Unity.Burst.Intrinsics;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Entities;
-using Unity.Jobs;
 using Unity.Mathematics;
 
 // 原始代码备份模板
 namespace MapExtPDX.ModeA
 {
-    /// <summary>
-    /// 市民寻找工作的系统。处理失业者找工作和在职者寻找更好工作的逻辑。
-    /// </summary>
-
     // =========================================================================================
     // 1. Mod 自定义系统类型 (当前类)
     using ModSystem = CitizenFindJobSystemMod;
@@ -85,7 +80,7 @@ namespace MapExtPDX.ModeA
         private const int DBG_Offset_Employed = 7;
         private const int DBG_ArrayLength = 14;
         private NativeArray<int> m_DebugCounters;
-        private bool m_EnableDebug = false; // 开发时设为 true，发布设为 false
+        private readonly bool m_EnableDebug = false; // 开发时设为 true，发布设为 false
 #endif
 
         #endregion
@@ -201,18 +196,18 @@ namespace MapExtPDX.ModeA
             var totalCapacity = m_CountWorkplacesSystem.GetTotalWorkplaces();
 
             int totalFree = 0;
-            int totalUnemployedFree = 0;
+            // int totalUnemployedFree = 0;
             int totalCapacitySum = 0;
             for (int i = 0; i < 5; i++)
             {
                 totalFree += freeWorkplaces[i];
-                totalUnemployedFree += unemployedWorkplaces[i];
+                // totalUnemployedFree += unemployedWorkplaces[i];
                 totalCapacitySum += totalCapacity[i];
             }
 
             // [需求1 & 2] 动态计算市场饱和度 (Saturation)
             // 饱和度 1.0 表示岗位非常充足(达到15%空置率)，0.0 表示完全无岗位
-            float currentVacancyRate = (totalCapacitySum > 0) ? (float)totalFree / (float)totalCapacitySum : 0f;
+            float currentVacancyRate = (totalCapacitySum > 0) ? (float)totalFree / totalCapacitySum : 0f;
             float marketSaturation = math.clamp(currentVacancyRate / kHealthyVacancyRate, 0f, 1f);
 
             // 基于饱和度计算实际概率
@@ -296,7 +291,7 @@ namespace MapExtPDX.ModeA
             {
                 // Handle Types
                 m_EntityType = SystemAPI.GetEntityTypeHandle(),
-                m_CitizenType = SystemAPI.GetComponentTypeHandle<Citizen>(false),
+                m_CitizenType = SystemAPI.GetComponentTypeHandle<Citizen>(),
                 m_CurrentBuildingType = SystemAPI.GetComponentTypeHandle<CurrentBuilding>(true),
                 m_WorkerType = SystemAPI.GetComponentTypeHandle<Worker>(true),
                 m_UpdateFrameType = SystemAPI.GetSharedComponentTypeHandle<UpdateFrame>(),
@@ -479,7 +474,7 @@ namespace MapExtPDX.ModeA
                         uint lastSeekFrame = m_HasJobSeekers[citizenEntity].m_LastJobSeekFrameIndex;
 
                         // [优化] 使用动态冷却
-                        int cooldown = random.NextInt(coolDownMin, coolDownMax); ;
+                        int cooldown = random.NextInt(coolDownMin, coolDownMax);
 
                         if (lastSeekFrame + cooldown > m_SimulationFrame)
                         {

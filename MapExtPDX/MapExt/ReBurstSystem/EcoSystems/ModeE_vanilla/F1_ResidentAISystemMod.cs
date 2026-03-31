@@ -1,4 +1,4 @@
-﻿using Game;
+using Game;
 using Game.Simulation;
 using System.Threading;
 using Colossal.Collections;
@@ -1034,7 +1034,7 @@ namespace MapExtPDX.ModeE
 				}
 
 				m_BoardingQueue.Enqueue(Boarding.TryEnterVehicle(entity, groupMember.m_Leader, vehicle,
-					currentVehicle.m_Vehicle, Entity.Null, transform.m_Position, (CreatureVehicleFlags)0u));
+					currentVehicle.m_Vehicle, Entity.Null, transform.m_Position, 0));
 			}
 
 			private void TickWalking(int jobIndex, ref Unity.Mathematics.Random random, Entity entity,
@@ -1386,7 +1386,7 @@ namespace MapExtPDX.ModeE
 							ref m_OwnerData, ref m_LaneData, ref m_EdgeLaneData, ref m_ConnectionLaneData,
 							ref m_CurveData, ref m_SubLanes, ref m_AreaNodes, ref m_AreaTriangles);
 						PathElement pathElement2 = path[pathOwner.m_ElementIndex];
-						CreatureLaneFlags creatureLaneFlags = (CreatureLaneFlags)0u;
+						CreatureLaneFlags creatureLaneFlags = 0u;
 						if (pathElement2.m_TargetDelta.y < pathElement2.m_TargetDelta.x)
 						{
 							creatureLaneFlags |= CreatureLaneFlags.Backward;
@@ -1647,7 +1647,7 @@ namespace MapExtPDX.ModeE
 
 			private HumanFlags SelectAttractionFlags(ref Unity.Mathematics.Random random, ActivityMask actionMask)
 			{
-				HumanFlags result = (HumanFlags)0u;
+				HumanFlags result = 0;
 				int count = 0;
 				CheckActionFlags(ref result, ref count, ref random, actionMask, ActivityType.Selfies,
 					HumanFlags.Selfies);
@@ -1717,8 +1717,7 @@ namespace MapExtPDX.ModeE
 
 							PrefabRef prefabRef = m_PrefabRefData[renter];
 							if (m_PrefabIndustrialProcessData.HasComponent(prefabRef.m_Prefab) &&
-							    (m_PrefabIndustrialProcessData[prefabRef.m_Prefab].m_Output.m_Resource &
-							     householdNeed.m_Resource) != Resource.NoResource)
+							    m_PrefabIndustrialProcessData[prefabRef.m_Prefab].m_Output.m_Resource == householdNeed.m_Resource)
 							{
 								ServiceAvailable serviceAvailable = m_ServiceAvailableData[renter];
 								DynamicBuffer<Game.Economy.Resources> resources = m_Resources[renter];
@@ -3377,6 +3376,10 @@ namespace MapExtPDX.ModeE
 							break;
 						}
 						case Purpose.MovingAway:
+						// [MOD] 刚需出行：回家/上班/上学需全图可达，与 TripNeededSystem 分支A对齐
+						case Purpose.GoingHome:
+						case Purpose.GoingToWork:
+						case Purpose.GoingToSchool:
 							parameters.m_MaxCost = CitizenBehaviorSystem.kMaxMovingAwayCost;
 							break;
 					}
@@ -3600,7 +3603,7 @@ namespace MapExtPDX.ModeE
 				Game.Objects.Transform tractorTransform = m_TransformData[carEntity];
 				PrefabRef prefabRef = m_PrefabRefData[carEntity];
 				Entity entity2 = m_PersonalCarSelectData.CreateTrailer(m_CommandBuffer, jobIndex, ref random, num3,
-					num4, noSlowVehicles: false, prefabRef.m_Prefab, tractorTransform, (PersonalCarFlags)0u,
+					num4, noSlowVehicles: false, prefabRef.m_Prefab, tractorTransform, 0,
 					stopped: false);
 				if (entity2 != Entity.Null)
 				{
@@ -3762,6 +3765,7 @@ namespace MapExtPDX.ModeE
 					PrefabRef prefabRef = m_PrefabRefData[passenger];
 					ObjectGeometryData geometryData = m_ObjectGeometryData[prefabRef.m_Prefab];
 					Bounds3 bounds = ObjectUtils.CalculateBounds(position, quaternion.identity, geometryData);
+					m_SearchTree.TryRemove(passenger); // 防御性移除，防止重复添加崩溃
 					m_SearchTree.Add(passenger, new QuadTreeBoundsXZ(bounds));
 				}
 

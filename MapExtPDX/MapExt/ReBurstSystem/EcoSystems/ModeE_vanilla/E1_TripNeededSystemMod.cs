@@ -307,7 +307,8 @@ namespace MapExtPDX.ModeE
 					m_DebugDisableSpawning = debugDisableSpawning,
 					// [MOD EXT]
 					m_DynamicLeisureMaxCost = Mod.Instance.Settings.LeisureMaxCost,
-					m_DynamicShoppingMaxCost = Mod.Instance.Settings.ShoppingMaxCost
+					m_DynamicShoppingMaxCost = Mod.Instance.Settings.ShoppingMaxCost,
+					m_DynamicEmergencyMaxCost = Mod.Instance.Settings.EmergencyMaxCost
 				};
 				PetTargetJob jobData2 = new PetTargetJob
 				{
@@ -459,7 +460,7 @@ namespace MapExtPDX.ModeE
 				}
 
 				Unity.Mathematics.Random random = m_RandomSeed.GetRandom(owner.Index);
-				DeliveryTruckFlags deliveryTruckFlags = (DeliveryTruckFlags)0u;
+				DeliveryTruckFlags deliveryTruckFlags = 0;
 				Resource resource = trip.m_Resource;
 				Resource resource2 = Resource.NoResource;
 				int amount = math.abs(trip.m_Data);
@@ -521,7 +522,7 @@ namespace MapExtPDX.ModeE
 					deliveryTruckFlags |= DeliveryTruckFlags.UpdateOwnerQuantity;
 				}
 
-				Resource resources = resource | resource2;
+				Resource resources = (Resource)((long)resource | (long)resource2);
 				int capacity = math.max(amount, returnAmount);
 				if (!m_DeliveryTruckSelectData.TrySelectItem(ref random, resources, capacity, out var item))
 				{
@@ -876,6 +877,7 @@ namespace MapExtPDX.ModeE
 			// [MOD EXT]
 			public float m_DynamicLeisureMaxCost;
 			public float m_DynamicShoppingMaxCost;
+			public float m_DynamicEmergencyMaxCost;
 
 			private void GetResidentFlags(Entity citizen, Entity currentBuilding, bool isMailSender, bool pathFailed,
 				ref Target target, ref Purpose purpose, ref Purpose divertPurpose, ref uint timer,
@@ -969,7 +971,7 @@ namespace MapExtPDX.ModeE
 				if (m_PathElements.TryGetBuffer(citizen, out var bufferData) && bufferData.Length > 0)
 				{
 					PathElement pathElement = bufferData[0];
-					CreatureLaneFlags creatureLaneFlags = (CreatureLaneFlags)0u;
+					CreatureLaneFlags creatureLaneFlags = 0u;
 					if ((pathElement.m_Flags & PathElementFlags.Secondary) != 0)
 					{
 						Unity.Mathematics.Random random = citizenData.GetPseudoRandom(CitizenPseudoRandom.BicycleModel);
@@ -1755,6 +1757,30 @@ namespace MapExtPDX.ModeE
 
 							Household household3 = m_Households[household];
 							DynamicBuffer<HouseholdCitizen> dynamicBuffer6 = m_HouseholdCitizens[household];
+							// [MOD] 分支B：按 Purpose 动态分级 MaxCost
+							float dynamicMaxCost;
+							switch (trips[0].m_Purpose)
+							{
+								case Purpose.GoingHome:
+									// 通勤者回外部连接：必须全范围
+									dynamicMaxCost = CitizenBehaviorSystem.kMaxMovingAwayCost;
+									break;
+								case Purpose.Sightseeing:
+								case Purpose.VisitAttractions:
+									// 休闲观光：复用用户可调滑块
+									dynamicMaxCost = m_DynamicLeisureMaxCost;
+									break;
+								case Purpose.Hospital:
+								case Purpose.Crime:
+									// 就近服务/就近犯罪：用户可调独立滑块
+									dynamicMaxCost = m_DynamicEmergencyMaxCost;
+									break;
+								default:
+									// Safety / Escape / EmergencyShelter / 其他：保持原版默认
+									dynamicMaxCost = CitizenBehaviorSystem.kMaxPathfindCost;
+									break;
+							}
+
 							PathfindParameters parameters2 = new PathfindParameters
 							{
 								m_MaxSpeed = 277.77777f,
@@ -1764,7 +1790,7 @@ namespace MapExtPDX.ModeE
 								m_Methods = (PathMethod.Pedestrian | PathMethod.Taxi |
 								             RouteUtils.GetPublicTransportMethods(m_TimeOfDay)),
 								m_TaxiIgnoredRules = VehicleUtils.GetIgnoredPathfindRulesTaxiDefaults(),
-								m_MaxCost = CitizenBehaviorSystem.kMaxPathfindCost
+								m_MaxCost = dynamicMaxCost
 							};
 							SetupQueueTarget origin2 = new SetupQueueTarget
 							{
