@@ -194,6 +194,34 @@ namespace MapExtPDX
                     "★ 建议值：\n" +
                     " - 全地形全局通用：200000"
                 },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.FindSchoolElementaryMaxCost)), "找小学最高寻路成本" },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.FindSchoolElementaryMaxCost)),
+                    "控制小学生寻找学校愿意走的最远路线开销。较小的值能强迫小学生只能就近入学。\n" +
+                    "★ 建议值：\n" +
+                    " - 全地形全局通用：10000"
+                },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.FindSchoolHighSchoolMaxCost)), "找高中最高寻路成本" },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.FindSchoolHighSchoolMaxCost)),
+                    "控制中学生寻找高中能够跨越的最大路线开销。\n" +
+                    "★ 建议值：\n" +
+                    " - 全地形全局通用：17000"
+                },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.FindSchoolCollegeMaxCost)), "找学院最高寻路成本" },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.FindSchoolCollegeMaxCost)),
+                    "控制寻找学院(大专)级别的最大范围。\n" +
+                    "★ 建议值：\n" +
+                    " - 全地形全局通用：50000"
+                },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.FindSchoolUniversityMaxCost)), "找大学最高寻路成本" },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.FindSchoolUniversityMaxCost)),
+                    "控制寻找大学的最大范围。如果是全图唯一的大学城城邦，建议拉满以覆盖全图每个角落。\n" +
+                    "★ 建议值：\n" +
+                    " - 全地形全局通用：100000 ~ 200000"
+                },
 
                 { m_Setting.GetOptionTabLocaleID(ModSettings.kDebugTab), "▍开发者选项" },
                 { m_Setting.GetOptionGroupLocaleID(ModSettings.kDebugGroup), "▍开发者选项" },

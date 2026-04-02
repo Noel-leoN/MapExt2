@@ -1,4 +1,4 @@
-﻿using Game;
+using Game;
 using Game.Simulation;
 using Colossal.Entities;
 using Game.Agents;
@@ -150,6 +150,8 @@ namespace MapExtPDX.ModeA
 				m_RenterBufs = SystemAPI.GetBufferLookup<Renter>(isReadOnly: true),
 				m_ConsumptionDatas = SystemAPI.GetComponentLookup<ConsumptionData>(isReadOnly: true),
 				m_EconomyParameters = m_EconomyParameterQuery.GetSingleton<EconomyParameterData>(),
+				// [MapExt2-MaxCost] Bind the dynamic slider setting from mod config
+				m_DynamicLeisureMaxCost = Mod.Instance.Settings.LeisureMaxCost,
 				m_SimulationFrame = m_SimulationSystem.frameIndex,
 				m_TimeOfDay = m_TimeSystem.normalizedTime,
 				m_UpdateFrameIndex = updateFrameWithInterval,
@@ -335,6 +337,8 @@ namespace MapExtPDX.ModeA
 			[ReadOnly] public NativeList<ArchetypeChunk> m_HumanChunks;
 			[ReadOnly] public PersonalCarSelectData m_PersonalCarSelectData;
 			public EconomyParameterData m_EconomyParameters;
+			// [MapExt2-MaxCost] Storage for dynamic slider
+			public float m_DynamicLeisureMaxCost;
 			public EntityCommandBuffer.ParallelWriter m_CommandBuffer;
 			public NativeQueue<SetupQueueItem>.ParallelWriter m_PathfindQueue;
 			public NativeQueue<LeisureEvent>.ParallelWriter m_LeisureQueue;
@@ -690,7 +694,7 @@ namespace MapExtPDX.ModeA
 					m_Methods = (PathMethod.Pedestrian | PathMethod.Taxi |
 					             RouteUtils.GetPublicTransportMethods(m_TimeOfDay)),
 					m_TaxiIgnoredRules = VehicleUtils.GetIgnoredPathfindRulesTaxiDefaults(),
-					m_MaxCost = CitizenBehaviorSystem.kMaxPathfindCost
+					m_MaxCost = math.max(CitizenBehaviorSystem.kMaxPathfindCost, m_DynamicLeisureMaxCost)
 				};
 				SetupQueueTarget origin = new SetupQueueTarget
 				{

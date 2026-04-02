@@ -283,14 +283,23 @@ namespace MapExtPDX.ModeA
 			[ReadOnly] public BufferTypeHandle<GroupCreature> m_GroupCreatureType;
 			public ComponentTypeHandle<Game.Creatures.Resident> m_ResidentType;
 			public ComponentTypeHandle<Creature> m_CreatureType;
-			[NativeDisableContainerSafetyRestriction] public ComponentTypeHandle<Human> m_HumanType;
+
+			[NativeDisableContainerSafetyRestriction]
+			public ComponentTypeHandle<Human> m_HumanType;
+
 			public ComponentTypeHandle<HumanCurrentLane> m_CurrentLaneType;
-			[NativeDisableContainerSafetyRestriction] public ComponentTypeHandle<Target> m_TargetType;
+
+			[NativeDisableContainerSafetyRestriction]
+			public ComponentTypeHandle<Target> m_TargetType;
+
 			public ComponentTypeHandle<Divert> m_DivertType;
 			[ReadOnly] public EntityStorageInfoLookup m_EntityLookup;
 			[ReadOnly] public ComponentLookup<Game.Objects.Transform> m_TransformData;
 			[ReadOnly] public ComponentLookup<Owner> m_OwnerData;
-			[NativeDisableContainerSafetyRestriction] [ReadOnly] public ComponentLookup<Target> m_TargetData;
+
+			[NativeDisableContainerSafetyRestriction] [ReadOnly]
+			public ComponentLookup<Target> m_TargetData;
+
 			[ReadOnly] public ComponentLookup<PseudoRandomSeed> m_PseudoRandomSeedData;
 			[ReadOnly] public ComponentLookup<CurrentVehicle> m_CurrentVehicleData;
 			[ReadOnly] public ComponentLookup<Destroyed> m_DestroyedData;
@@ -371,7 +380,10 @@ namespace MapExtPDX.ModeA
 			[ReadOnly] public BufferLookup<Game.Economy.Resources> m_Resources;
 			[ReadOnly] public BufferLookup<ServiceDispatch> m_ServiceDispatches;
 			[ReadOnly] public BufferLookup<ActivityLocationElement> m_PrefabActivityLocationElements;
-			[NativeDisableContainerSafetyRestriction] public ComponentLookup<Human> m_HumanData;
+
+			[NativeDisableContainerSafetyRestriction]
+			public ComponentLookup<Human> m_HumanData;
+
 			[NativeDisableParallelForRestriction] public ComponentLookup<PathOwner> m_PathOwnerData;
 			[NativeDisableParallelForRestriction] public BufferLookup<PathElement> m_PathElements;
 			[ReadOnly] public float m_TimeOfDay;
@@ -1649,7 +1661,8 @@ namespace MapExtPDX.ModeA
 
 							PrefabRef prefabRef = m_PrefabRefData[renter];
 							if (m_PrefabIndustrialProcessData.HasComponent(prefabRef.m_Prefab) &&
-							    m_PrefabIndustrialProcessData[prefabRef.m_Prefab].m_Output.m_Resource == householdNeed.m_Resource)
+							    m_PrefabIndustrialProcessData[prefabRef.m_Prefab].m_Output.m_Resource ==
+							    householdNeed.m_Resource)
 							{
 								ServiceAvailable serviceAvailable = m_ServiceAvailableData[renter];
 								DynamicBuffer<Game.Economy.Resources> resources = m_Resources[renter];

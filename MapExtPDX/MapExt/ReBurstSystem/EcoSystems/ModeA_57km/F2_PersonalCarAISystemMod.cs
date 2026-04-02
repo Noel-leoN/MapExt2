@@ -732,7 +732,13 @@ namespace MapExtPDX.ModeA
 							case Purpose.EmergencyShelter:
 								parameters.m_Weights = new PathfindWeights(1f, 0.2f, 0f, 0.1f);
 								break;
+							case Purpose.GoingHome:
+							case Purpose.GoingToWork:
+							case Purpose.GoingToSchool:
+							case Purpose.Shopping:
+							case Purpose.Leisure:
 							case Purpose.MovingAway:
+								// [MapExt2-MaxCost] Allow massive distance rides unconditionally
 								parameters.m_MaxCost = CitizenBehaviorSystem.kMaxMovingAwayCost;
 								break;
 							}

@@ -1217,10 +1217,6 @@ namespace MapExtPDX.ModeA
 				return false;
 			}
 
-			void IJobChunk.Execute(in ArchetypeChunk chunk, int unfilteredChunkIndex, bool useEnabledMask, in v128 chunkEnabledMask)
-			{
-				Execute(in chunk, unfilteredChunkIndex, useEnabledMask, in chunkEnabledMask);
-			}
 		}
 
 		[BurstCompile]
