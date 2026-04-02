@@ -213,6 +213,9 @@ namespace MapExtPDX.MapExt.Core
                     // Job通用替换修补ResidentialDemand/IndustrialDemand/RentAdjust
                     JobPatchHelper.Apply(globalPatcher, JobPatchDefinitions.GetEcoSystemTargets(PatchModeSetting.ModeA));
                 }
+
+                // --- NoDogs 2.0 性能工具系统 ---
+                updateSystem.UpdateAt<ModeA.P1_NoDogsPatchSystem>(SystemUpdatePhase.GameSimulation);
             }
 
             // 28km ModeB

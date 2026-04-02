@@ -145,10 +145,25 @@ namespace MapExtPDX
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.NoThroughTraffic)),
                     "Disable Through-Traffic to reduce pathfinding calculation and traffic congestion. It'll take effect after the game has been running for a while."
                 },
-                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.NoDogs)), "× No Dogs" },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.NoDogs)), "× NoDogs 2.0" },
                 {
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.NoDogs)),
-                    "It'll take effect after the game has been running for a while, so just wait for the dogs to come home or go on a trip to another city."
+                    "NoDogs 2.0 — A multi-level pet population control tool to boost simulation performance.\n\n" +
+                    "1. Vanilla: Normal pet spawning (default game behavior).\n" +
+                    "2. Disable OnStreet: Prevents pets from appearing on streets (disables rendering/pathfinding). Logical pet entities still exist in memory.\n" +
+                    "3. Prevent Gen: Blocks new household pet generation. Existing pets remain but no new ones will be created.\n" +
+                    "4. Purge All: Blocks generation AND removes all existing pet entities from the save. Maximum performance gain.\n\n" +
+                    "⚠️ WARNING: After purging, existing households will NOT re-acquire pets. Only newly moved-in households will bring dogs if you switch back to Vanilla."
+                },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.DislayPetCount)), "• Logical Pets Count" },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.DislayPetCount)),
+                    "Displays the current number of logical pet entities in the simulation. Click 'Refresh' below to update."
+                },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.RefreshPetCount)), "↻ Refresh Pet Count" },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.RefreshPetCount)),
+                    "Click to query and refresh the current logical pet entity count from the ECS world."
                 },
 
                 { m_Setting.GetOptionTabLocaleID(ModSettings.kMiscTab), "▍EconomyTweak (Beta)" },
