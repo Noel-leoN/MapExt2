@@ -128,30 +128,29 @@ namespace MapExtPDX
                     m_Setting.GetOptionLabelLocaleID(ModSettings.kPerformanceToolTab),
                     "※ 一些性能工具，可能稍微降低一点CPU/显卡压力. (需要运行一段时间生效)"
                 },
-                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.NoThroughTraffic)), "× 禁止过境交通" },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.NoThroughTraffic)), "禁止过境交通" },
                 {
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.NoThroughTraffic)),
                     "禁止所有过境交通工具出现，降低寻路计算量和交通拥堵. (可能需要运行一段时间生效)"
                 },
-                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.NoDogs)), "× NoDogs 2.0" },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.NoDogsOnStreet)), "NoDogs: 禁止外出" },
                 {
-                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.NoDogs)),
-                    "NoDogs 2.0 — 多级宠物数量控制工具，可有效提升模拟性能。\n\n" +
-                    "1. Vanilla：原版行为，宠物正常生成并上街遛弯。\n" +
-                    "2. Disable OnStreet：禁止宠物外出上街（关闭渲染与寻路），但逻辑宠物实体仍存在于内存中。\n" +
-                    "3. Prevent Gen：阻止新家庭生成宠物。已有宠物保留，不再产生新的。\n" +
-                    "4. Purge All：阻止生成并清除所有已有宠物实体，性能提升最大。\n\n" +
-                    "⚠️ 警告：清除存量后，已有家庭不会再买狗。只有新搬入的家庭在切回 Vanilla 模式后才会自带宠物。"
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.NoDogsOnStreet)),
+                    "禁止宠物外出上街（关闭生成、渲染与寻路）。逻辑宠物实体仍存在于内存中。"
                 },
-                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.DislayPetCount)), "• 当前逻辑宠物数量" },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.NoDogsGeneration)), "NoDogs: 阻止新生成" },
                 {
-                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.DislayPetCount)),
-                    "显示当前模拟中的逻辑宠物实体总数。点击下方「刷新」按钮更新数据。"
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.NoDogsGeneration)),
+                    "将新家庭的宠物生成概率归零，阻止新移民携带宠物。已有宠物保留不变。"
                 },
-                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.RefreshPetCount)), "↻ 刷新宠物数量" },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.NoDogsPurge)), "⚠ NoDogs: 清除所有存量" },
                 {
-                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.RefreshPetCount)),
-                    "点击以从 ECS 世界中查询并刷新当前逻辑宠物实体数量。"
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.NoDogsPurge)),
+                    "⚠ 警告：移除存档中所有已有宠物实体，最大化性能提升。清除后已有家庭不会再获得宠物，只有新搬入的家庭才会自带（若未阻止生成）。"
+                },
+                {
+                    m_Setting.GetOptionWarningLocaleID(nameof(ModSettings.NoDogsPurge)),
+                    "⚠ 这将永久移除存档中所有现有宠物！已有家庭不会再获得新宠物。确定继续吗？"
                 },
 
                 { m_Setting.GetOptionTabLocaleID(ModSettings.kMiscTab), "▍经济补丁设置 (Beta)" },

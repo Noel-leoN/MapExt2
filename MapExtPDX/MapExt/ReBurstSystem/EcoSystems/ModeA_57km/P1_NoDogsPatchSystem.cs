@@ -37,8 +37,9 @@ namespace MapExtPDX.ModeA
             // 在游戏加载后第一次进入 Update 并发现 Prefab 已就绪时，执行一次初始数据覆写
             if (!m_HasInitializedPrefabs && !m_HouseholdDataQuery.IsEmptyIgnoreFilter)
             {
-                var mode = MapExtPDX.Mod.Instance?.CurrentSettings?.NoDogs ?? NoDogsMode.Vanilla;
-                ApplyPrefabChanges(mode);
+                var settings = Mod.Instance?.CurrentSettings;
+                bool preventGen = settings?.NoDogsGeneration ?? false;
+                ApplyPrefabChanges(preventGen);
                 m_HasInitializedPrefabs = true;
                 
                 // 禁用本系统的循环更新，采用纯事件（UI操作）驱动模式，避免性能浪费
@@ -59,22 +60,22 @@ namespace MapExtPDX.ModeA
         }
 
         /// <summary>
-        /// 被外部或UI设置更改时调用
+        /// 被外部 ModSettings UI 勾选更改时调用
         /// </summary>
-        public void ModeChanged(NoDogsMode mode)
+        public void ApplySettings(bool preventGeneration, bool purgeExisting)
         {
-            ApplyPrefabChanges(mode);
+            ApplyPrefabChanges(preventGeneration);
 
-            if (mode == NoDogsMode.PurgeExisting)
+            if (purgeExisting)
             {
                 PurgeAllPets();
             }
         }
 
-        private void ApplyPrefabChanges(NoDogsMode mode)
+        private void ApplyPrefabChanges(bool preventGeneration)
         {
-            int targetFirst = (mode == NoDogsMode.PreventGeneration || mode == NoDogsMode.PurgeExisting) ? 0 : 20;
-            int targetNext = (mode == NoDogsMode.PreventGeneration || mode == NoDogsMode.PurgeExisting) ? 0 : 10;
+            int targetFirst = preventGeneration ? 0 : 20;
+            int targetNext = preventGeneration ? 0 : 10;
 
             if (m_HouseholdDataQuery.IsEmptyIgnoreFilter)
             {
@@ -100,7 +101,7 @@ namespace MapExtPDX.ModeA
                     }
                 }
             }
-            Mod.Info($"P1_NoDogsPatchSystem: Successfully updated {count} HouseholdData prefabs. FirstPet={targetFirst}%, NextPet={targetNext}%");
+            Mod.Info($"P1_NoDogsPatchSystem: Updated {count} HouseholdData prefabs. FirstPet={targetFirst}%, NextPet={targetNext}%");
         }
 
         private void PurgeAllPets()

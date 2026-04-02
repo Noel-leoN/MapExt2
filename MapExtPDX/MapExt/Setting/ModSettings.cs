@@ -27,14 +27,6 @@ namespace MapExtPDX
         None // Vanilla = 1
     }
 
-    public enum NoDogsMode
-    {
-        Vanilla,
-        DisableOnStreet,
-        PreventGeneration,
-        PurgeExisting
-    }
-
     //[FileLocation(nameof(MapExtPDX))]
     [FileLocation("ModsSettings/" + Mod.ModName + "/" + Mod.ModName)]
     [SettingsUITabOrder(kMapSizeModeTab, kMiscTab, kPerformanceToolTab, kDebugTab)]
@@ -264,22 +256,52 @@ namespace MapExtPDX
         // 选项可用性
         public bool IsPatchUnAvailable => true;
 
+        // === NoDogs 2.0 ===
         // 设置字段初始化器默认值
-        private NoDogsMode m_NoDogsSystem = NoDogsMode.Vanilla;
+        private bool m_NoDogsOnStreet = false;
+        private bool m_NoDogsGeneration = false;
+        private bool m_NoDogsPurge = false;
         private bool m_NoThroughTrafficSystem = false;
         // private bool m_LandValueRemakeSystem = false;
 
         [SettingsUISection(kPerformanceToolTab, kPerformanceToolGroup)]
-        [SettingsUIDropdown(typeof(ModSettings), nameof(GetNoDogsModeDropdownItems))]
-
-        public NoDogsMode NoDogs
+        public bool NoDogsOnStreet
         {
-            get => m_NoDogsSystem;
+            get => m_NoDogsOnStreet;
             set
             {
-                if (m_NoDogsSystem != value)
+                if (m_NoDogsOnStreet != value)
                 {
-                    m_NoDogsSystem = value;
+                    m_NoDogsOnStreet = value;
+                    UpdateNoDogsSystemStates();
+                }
+            }
+        }
+
+        [SettingsUISection(kPerformanceToolTab, kPerformanceToolGroup)]
+        public bool NoDogsGeneration
+        {
+            get => m_NoDogsGeneration;
+            set
+            {
+                if (m_NoDogsGeneration != value)
+                {
+                    m_NoDogsGeneration = value;
+                    UpdateNoDogsSystemStates();
+                }
+            }
+        }
+
+        [SettingsUISection(kPerformanceToolTab, kPerformanceToolGroup)]
+        [SettingsUIConfirmation]
+        public bool NoDogsPurge
+        {
+            get => m_NoDogsPurge;
+            set
+            {
+                if (m_NoDogsPurge != value)
+                {
+                    m_NoDogsPurge = value;
                     UpdateNoDogsSystemStates();
                 }
             }
@@ -287,45 +309,20 @@ namespace MapExtPDX
 
         public void UpdateNoDogsSystemStates()
         {
-            Mod.Info($"Setting NoDogs is now: {m_NoDogsSystem}. Updating system enabled state.");
+            Mod.Info($"NoDogs 2.0: OnStreet={m_NoDogsOnStreet}, Generation={m_NoDogsGeneration}, Purge={m_NoDogsPurge}");
 
+            // 禁止外出：关闭 HouseholdPetSpawnSystem
             World.DefaultGameObjectInjectionWorld.GetOrCreateSystemManaged<Game.Simulation.HouseholdPetSpawnSystem>()
-                .Enabled = (m_NoDogsSystem == NoDogsMode.Vanilla);
+                .Enabled = !m_NoDogsOnStreet;
 
-            // Trigger ECS system to perform necessary generation blocking or purging
+            // 阻止生成 / 清除存量：通知 ECS 系统
             var patchSystem = World.DefaultGameObjectInjectionWorld.GetExistingSystemManaged<MapExtPDX.ModeA.P1_NoDogsPatchSystem>();
             if (patchSystem != null)
             {
-                patchSystem.ModeChanged(m_NoDogsSystem);
+                patchSystem.ApplySettings(m_NoDogsGeneration, m_NoDogsPurge);
             }
 
-            Mod.Info($"NoDogs补丁已应用.(全局并行) Mode: {m_NoDogsSystem}");
-        }
-
-        public DropdownItem<int>[] GetNoDogsModeDropdownItems()
-        {
-            var items = new List<DropdownItem<int>>();
-            foreach (NoDogsMode mode in System.Enum.GetValues(typeof(NoDogsMode)))
-            {
-                items.Add(new DropdownItem<int>
-                {
-                    value = (int)mode,
-                    displayName = GetNoDogsModeDisplayName(mode)
-                });
-            }
-            return items.ToArray();
-        }
-
-        private string GetNoDogsModeDisplayName(NoDogsMode mode)
-        {
-            switch (mode)
-            {
-                case NoDogsMode.Vanilla: return "1. Vanilla (原版生生不息)";
-                case NoDogsMode.DisableOnStreet: return "2. Disable OnStreet (禁止外出)";
-                case NoDogsMode.PreventGeneration: return "3. Prevent Gen (阻止新生成)";
-                case NoDogsMode.PurgeExisting: return "4. Purge All (阻止生成并清除存量 !!! 警告由于游戏机制：存量清除后，家庭不会再买狗。若想有新狗只有新搬入的家庭自带。)";
-                default: return mode.ToString();
-            }
+            Mod.Info($"NoDogs 2.0 补丁已应用.(全局并行)");
         }
 
         public int CurrentPetCount { get; set; } = 0;
