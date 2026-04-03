@@ -240,8 +240,8 @@ namespace MapExtPDX.ModeA
             happinessFactor = GetFactorValue(happinessFactor * kHappinessWeight, m_ResidentialDemandWeightsSelector);
             homelessPenalty =
                 GetFactorValue(homelessPenalty * kHomelessPenaltyWeight, m_ResidentialDemandWeightsSelector);
-            homelessBonus = this.GetFactorValue(homelessBonus * kHomelessBonusWeight,
-                this.m_ResidentialDemandWeightsSelector);
+            homelessBonus = GetFactorValue(homelessBonus * kHomelessBonusWeight,
+                m_ResidentialDemandWeightsSelector);
             taxFactor = GetFactorValue(taxFactor * kTaxWeight, m_ResidentialDemandWeightsSelector);
             simpleJobFactor = GetFactorValue(simpleJobFactor * ksimJobWeight, m_ResidentialDemandWeightsSelector);
             complexJobFactor = GetFactorValue(complexJobFactor * kcomJobWeight, m_ResidentialDemandWeightsSelector);
