@@ -236,6 +236,26 @@ namespace MapExtPDX
                     "★ 建议值：\n" +
                     " - 全地形全局通用：100000 ~ 200000"
                 },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.JobSeekerCap)), "找工作系统：求职吞吐量" },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.JobSeekerCap)),
+                    "每次系统更新最多创建的求职者数量。城市人口越大可适当提高。\n" +
+                    "较高的值加快就业匹配速度，但增加 CPU 负担。可于游戏中实时调节。\n" +
+                    "★ 建议值：\n" +
+                    " - 50万以下人口：200 ~ 500\n" +
+                    " - 200万人口：500 ~ 1000\n" +
+                    " - 500万以上人口：1000 ~ 3000"
+                },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.PathfindRequestCap)), "找工作系统：寻路吞吐量" },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.PathfindRequestCap)),
+                    "每次寻路更新最多处理的求职寻路请求数量。通常为求职吞吐量的 2~4 倍。\n" +
+                    "较高的值加快岗位匹配，但增加寻路系统的 CPU 负担。可于游戏中实时调节。\n" +
+                    "★ 建议值：\n" +
+                    " - 50万以下人口：1000 ~ 2000\n" +
+                    " - 200万人口：2000 ~ 4000\n" +
+                    " - 500万以上人口：4000 ~ 8000"
+                },
 
                 { m_Setting.GetOptionTabLocaleID(ModSettings.kDebugTab), "▍开发者选项" },
                 { m_Setting.GetOptionGroupLocaleID(ModSettings.kDebugGroup), "▍开发者选项" },

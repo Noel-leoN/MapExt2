@@ -43,9 +43,7 @@ namespace MapExtPDX.ModeA
         private const int UPDATE_INTERVAL = 16; // 系统更新频率（每16帧一次）
         public override int GetUpdateInterval(SystemUpdatePhase phase) => UPDATE_INTERVAL;
 
-        // [优化] 每帧最大处理寻路请求数，防止PathfindQueue溢出
-        private const int MAX_PATHFIND_REQUESTS_PER_UPDATE = 2000;
-        // [优化] 请求计数器/限流计数
+        // [优化] 请求计数器/限流计数（阈值从 ModSettings.PathfindRequestCap 读取）
         private NativeArray<int> m_RequestCount;
 
 #if DEBUG
@@ -258,9 +256,9 @@ namespace MapExtPDX.ModeA
                 m_RandomSeed = RandomSeed.Next(),
                 m_DynamicFindJobMaxCost = Mod.Instance.Settings.FindJobMaxCost,
 
-                // [优化] 传入计数器进行限流
+                // [优化] 传入计数器进行限流（从 ModSettings 读取）
                 m_RequestCount = m_RequestCount,
-                m_MaxRequests = MAX_PATHFIND_REQUESTS_PER_UPDATE,
+                m_MaxRequests = Mod.Instance.Settings.PathfindRequestCap,
 #if DEBUG
                 m_DebugStats = m_DebugStats
 #endif
@@ -797,7 +795,8 @@ namespace MapExtPDX.ModeA
 
                             {
                                 Entity workplacePrefab = this.m_Prefabs[workplaceEntity].m_Prefab;
-                                if (m_WorkplaceDatas.HasComponent(workplacePrefab) && m_FreeWorkplaces.HasComponent(workplaceEntity))
+                                if (m_WorkplaceDatas.HasComponent(workplacePrefab) && m_FreeWorkplaces.HasComponent(workplaceEntity)
+                                    && m_FreeWorkplaces[workplaceEntity].Count > 0) // 恢复原版 Count>0 预检查
                                 {
                                     FreeWorkplaces freeWorkplaces = m_FreeWorkplaces[workplaceEntity];
 

@@ -149,6 +149,8 @@ namespace MapExtPDX
             FindSchoolHighSchoolMaxCost = 17000f;
             FindSchoolCollegeMaxCost = 50000f;
             FindSchoolUniversityMaxCost = 100000f;
+            JobSeekerCap = 1000;
+            PathfindRequestCap = 4000;
             
             isEnableEconomyFix = true;
             EnableDemandEcoSystem = true;
@@ -445,6 +447,23 @@ namespace MapExtPDX
         [SettingsUISection(kMiscTab, kEconomyTweakGroup)]
         [SettingsUISlider(min = 1000f, max = 200000f, step = 1000f, scalarMultiplier = 1f, unit = Game.UI.Unit.kFloatSingleFraction)]
         public float FindSchoolUniversityMaxCost { get; set; } = 100000f;
+
+        // ==========================================
+        // 找工作系统吐量参数
+        // ==========================================
+        /// <summary>
+        /// 每次 B1 系统更新最多创建的求职者实体数量
+        /// </summary>
+        [SettingsUISection(kMiscTab, kEconomyTweakGroup)]
+        [SettingsUISlider(min = 200, max = 5000, step = 100, scalarMultiplier = 1, unit = Game.UI.Unit.kInteger)]
+        public int JobSeekerCap { get; set; } = 1000;
+
+        /// <summary>
+        /// 每次 B2 系统更新最多处理的寻路请求数量
+        /// </summary>
+        [SettingsUISection(kMiscTab, kEconomyTweakGroup)]
+        [SettingsUISlider(min = 500, max = 10000, step = 500, scalarMultiplier = 1, unit = Game.UI.Unit.kInteger)]
+        public int PathfindRequestCap { get; set; } = 4000;
 
         // private bool m_LoadGameValidatorPatch;
         // 开关LoadGame验证系统

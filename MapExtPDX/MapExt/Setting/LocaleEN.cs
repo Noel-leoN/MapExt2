@@ -264,6 +264,30 @@ namespace MapExtPDX
                     "★ Recommended:\n" +
                     " - All Map Sizes: 100000 ~ 200000"
                 },
+                {
+                    m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.JobSeekerCap)), "Job Search: Seeker Throughput"
+                },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.JobSeekerCap)),
+                    "Maximum job seeker entities created per system update. Increase for larger populations.\n" +
+                    "Higher values speed up employment matching but increase CPU load. Can be adjusted in-game.\n" +
+                    "★ Recommended:\n" +
+                    " - Under 500k pop: 200 ~ 500\n" +
+                    " - 2M pop: 500 ~ 1000\n" +
+                    " - Over 5M pop: 1000 ~ 3000"
+                },
+                {
+                    m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.PathfindRequestCap)), "Job Search: Pathfind Throughput"
+                },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.PathfindRequestCap)),
+                    "Maximum pathfinding requests processed per update. Typically 2~4x the Seeker Throughput.\n" +
+                    "Higher values speed up job matching but increase pathfinding CPU load. Can be adjusted in-game.\n" +
+                    "★ Recommended:\n" +
+                    " - Under 500k pop: 1000 ~ 2000\n" +
+                    " - 2M pop: 2000 ~ 4000\n" +
+                    " - Over 5M pop: 4000 ~ 8000"
+                },
 
                 { m_Setting.GetOptionTabLocaleID(ModSettings.kDebugTab), "▍Developer Options" },
                 { m_Setting.GetOptionGroupLocaleID(ModSettings.kDebugGroup), "▍Developer Options" },
