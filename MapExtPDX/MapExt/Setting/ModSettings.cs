@@ -171,6 +171,10 @@ namespace MapExtPDX
             FindSchoolUniversityMaxCost = 100000f;
             JobSeekerCap = 1000;
             PathfindRequestCap = 4000;
+            ShoppingTrafficReduction = 0.0004f;
+            HouseholdResourceDemandMultiplier = 3.5f;
+            HomeSeekerCap = 128;
+            HomelessSeekerCap = 1280;
             
             isEnableEconomyFix = true;
             EnableDemandEcoSystem = true;
@@ -380,7 +384,7 @@ namespace MapExtPDX
                 patchSystem.ApplySettings(m_NoDogsGeneration, m_NoDogsPurge);
             }
 
-            Mod.Info($"NoDogs 2.0 补丁已应用.(全局并行)");
+            Mod.Info("NoDogs 2.0 补丁已应用.(全局并行)");
         }
 
         public int CurrentPetCount { get; set; } = 0;
@@ -520,6 +524,46 @@ namespace MapExtPDX
         [SettingsUISection(kMiscTab, kEconomyTweakGroup)]
         [SettingsUISlider(min = 500, max = 10000, step = 500, scalarMultiplier = 1, unit = Game.UI.Unit.kInteger)]
         public int PathfindRequestCap { get; set; } = 4000;
+
+        // ==========================================
+        // 家庭行为系统参数
+        // ==========================================
+        /// <summary>
+        /// 购物概率人口压制系数。值越大，人口越多时购物概率衰减越快。
+        /// 原版硬编码 0.0004f。
+        /// </summary>
+        [SettingsUISection(kMiscTab, kEconomyTweakGroup)]
+        [SettingsUISlider(min = 0.0001f, max = 0.002f, step = 0.0001f, scalarMultiplier = 1f,
+            unit = Game.UI.Unit.kFloatSingleFraction)]
+        public float ShoppingTrafficReduction { get; set; } = 0.0004f;
+
+        /// <summary>
+        /// 家庭购物资源需求倍率。频率降低后需提高单次购买量来补偿。
+        /// 原版默认 1.0，Mod 默认 3.5。
+        /// </summary>
+        [SettingsUISection(kMiscTab, kEconomyTweakGroup)]
+        [SettingsUISlider(min = 1.0f, max = 8.0f, step = 0.5f, scalarMultiplier = 1f,
+            unit = Game.UI.Unit.kFloatSingleFraction)]
+        public float HouseholdResourceDemandMultiplier { get; set; } = 3.5f;
+
+        // ==========================================
+        // 找房系统吞吐量参数
+        // ==========================================
+        /// <summary>
+        /// 每帧处理的常规搬家家庭数上限（已有住房但想搬家的家庭）。
+        /// 原版硬编码 128。
+        /// </summary>
+        [SettingsUISection(kMiscTab, kEconomyTweakGroup)]
+        [SettingsUISlider(min = 32, max = 512, step = 16, scalarMultiplier = 1, unit = Game.UI.Unit.kInteger)]
+        public int HomeSeekerCap { get; set; } = 128;
+
+        /// <summary>
+        /// 每帧处理的流浪家庭找房数上限（无家可归家庭）。
+        /// 原版硬编码 1280。
+        /// </summary>
+        [SettingsUISection(kMiscTab, kEconomyTweakGroup)]
+        [SettingsUISlider(min = 128, max = 5120, step = 128, scalarMultiplier = 1, unit = Game.UI.Unit.kInteger)]
+        public int HomelessSeekerCap { get; set; } = 1280;
 
         // private bool m_LoadGameValidatorPatch;
         // 开关LoadGame验证系统

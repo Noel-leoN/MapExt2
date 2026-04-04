@@ -279,6 +279,68 @@ namespace MapExtPDX
                     " - 500万以上人口：4000 ~ 8000"
                 },
 
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.ShoppingTrafficReduction)), "购物概率人口压制系数" },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.ShoppingTrafficReduction)),
+                    "控制城市人口对家庭购物概率的衰减影响。公式：shopChance = 200 / sqrt(系数 × 人口)。" +
+                    "数值越大，高人口时购物概率越低，商业区交易量越少。\n\n" +
+                    "★ 不同人口规模的效果对照：（以默认值 0.0004 为例）\n" +
+                    " - 1万人口：shopChance ≈ 100% → 几乎每户都购物\n" +
+                    " - 10万人口：shopChance ≈ 32% → 三分之一家庭购物\n" +
+                    " - 100万人口：shopChance ≈ 10% → 十分之一家庭购物\n" +
+                    " - 500万人口：shopChance ≈ 4% → 极少数家庭购物\n\n" +
+                    "★ 按人口规模调节建议：\n" +
+                    " - 10万以下小城市：0.0004（默认，与原版一致）\n" +
+                    " - 10万~50万中型城市：0.0003 ~ 0.0004\n" +
+                    " - 50万~200万大型城市：0.0002 ~ 0.0003\n" +
+                    " - 200万以上超大城市：0.0001 ~ 0.0002\n\n" +
+                    "可于游戏中实时调节。降低此值可鼓励消费、提升商业区收入。"
+                },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.HouseholdResourceDemandMultiplier)), "家庭购物需求倍率" },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.HouseholdResourceDemandMultiplier)),
+                    "每次家庭购物时的资源购买量倍率。由于大地图优化降低了购物频率（tick频率为原版1/2），" +
+                    "需要增大单次购买量来补偿，保持经济系统总消费量平衡。\n\n" +
+                    "★ 倍率与实际效果：\n" +
+                    " - 1.0：与原版购买量一致（但频率降低，总消费量不足）\n" +
+                    " - 3.5：补偿后约为原版总消费量的 70%~88%（默认值）\n" +
+                    " - 5.0：接近完全补偿原版消费水平\n" +
+                    " - 8.0：超额补偿，适合极大地图 + 极低购物概率\n\n" +
+                    "★ 按地图/人口规模调节建议：\n" +
+                    " - 14km原版地图：1.0 ~ 2.0\n" +
+                    " - 28km (ModeB)：2.0 ~ 3.5\n" +
+                    " - 57km (ModeA)：3.5 ~ 5.0（默认3.5）\n" +
+                    " - 114km (ModeC)：5.0 ~ 8.0\n\n" +
+                    "★ 观察指标：如果商业区大量空置/倒闭，请提高此值。" +
+                    "如果商品供不应求（工业产品被秒光），请降低此值。\n" +
+                    "可于游戏中实时调节。"
+                },
+
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.HomeSeekerCap)), "找房系统：搬家吞吐量" },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.HomeSeekerCap)),
+                    "每帧最多处理的【已有住房但想搬家】的家庭数量。此参数控制系统每次更新(16帧/次)中评估搬家请求的速率。" +
+                    "数值越大，搬家匹配越快，但单帧CPU开销越高（FindPropertyJob 为单线程）。\n\n" +
+                    "★ 调节建议：\n" +
+                    " - 50万以下人口：64 ~ 128（默认）\n" +
+                    " - 200万人口：128 ~ 256\n" +
+                    " - 500万以上人口：256 ~ 512\n\n" +
+                    "★ 如何判断：若城市中大量家庭不主动搬迁（明明有更好住房），说明吞吐量不足，请提高此值。" +
+                    "若游戏出现顿卡，请降低此值。可于游戏中实时调节。"
+                },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.HomelessSeekerCap)), "找房系统：流浪安置吞吐量" },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.HomelessSeekerCap)),
+                    "每帧最多处理的【无家可归】家庭找房数量。流浪家庭的找房优先级高于搬家家庭。" +
+                    "此参数决定无家可归者被安置的速度。\n\n" +
+                    "★ 调节建议：\n" +
+                    " - 50万以下人口：640 ~ 1280（默认）\n" +
+                    " - 200万人口：1280 ~ 2560\n" +
+                    " - 500万以上人口：2560 ~ 5120\n\n" +
+                    "★ 如何判断：若城市中大量流浪汉长期无法入住空置住宅，请提高此值。" +
+                    "若大量流浪同时涌入导致帧率骤降，请降低此值。可于游戏中实时调节。"
+                },
+
                 { m_Setting.GetOptionTabLocaleID(ModSettings.kDebugTab), "▍开发者选项" },
                 { m_Setting.GetOptionGroupLocaleID(ModSettings.kDebugGroup), "▍开发者选项" },
                 { m_Setting.GetOptionLabelLocaleID(ModSettings.kDebugTab), "▍开发者选项" },

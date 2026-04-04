@@ -1,4 +1,4 @@
-// Copyright (c) 2024 Noel2(Noel-leoN)
+﻿// Copyright (c) 2024 Noel2(Noel-leoN)
 // Licensed under the MIT License.
 // See LICENSE in the project root for full license information.
 // When using this part of the code, please clearly credit [Project Name] and the author.
@@ -68,15 +68,11 @@ namespace MapExtPDX.ModeC
         public static readonly int KMinimumShoppingAmount = 50; // 资源剩余多少时触发购物检查
         public static readonly int kMinimumShoppingMoney = 1000; // 最低可支配资金 // 注意也被ResourceBuyerSystem引用，谨慎修改
 
-        // 每个市民的资源需求倍率(mod默认值)
-        // 实际值由 OnGameLoaded 从 ModeSettingData 读取，fallback 到此默认值
-        private static readonly float kDefaultResourceDemandPerCitizenMultiplier = 3.5f;
+        // 运行时生效的需求倍率（可被 ModeSettingData 或 ModSettings 覆盖）
+        private float m_ResourceDemandPerCitizenMultiplier;
 
-        // 运行时生效的需求倍率（可被游戏模式覆盖）
-        private float m_ResourceDemandPerCitizenMultiplier = kDefaultResourceDemandPerCitizenMultiplier;
-
-        public static readonly float
-            kTrafficReduction = 0.0004f; // EconomyPrefab预制：交通拥堵对购物欲望的负面影响系数 // 同时被其他多个系统引用，行为无关，可单独设置
+        // 运行时购物概率人口压制系数（可被 ModSettings 覆盖）
+        private float m_TrafficReduction;
 
         #endregion
 
@@ -149,9 +145,17 @@ namespace MapExtPDX.ModeC
 
 
         // P3: 恢复 ModeSettingData 读取，与原版一致
+        // 运行时倍率优先级: ModeSettingData > ModSettings > 默认值(3.5)
         protected override void OnGameLoaded(Colossal.Serialization.Entities.Context serializationContext)
         {
             base.OnGameLoaded(serializationContext);
+
+            // --- 从 ModSettings 读取基础参数 ---
+            var modSettings = Mod.Instance?.Settings;
+            float defaultMultiplier = modSettings?.HouseholdResourceDemandMultiplier ?? 3.5f;
+            m_TrafficReduction = modSettings?.ShoppingTrafficReduction ?? 0.0004f;
+
+            // --- ModeSettingData 优先 ---
             if (!m_GameModeSettingQuery.IsEmptyIgnoreFilter)
             {
                 var setting = m_GameModeSettingQuery.GetSingleton<ModeSettingData>();
@@ -161,8 +165,8 @@ namespace MapExtPDX.ModeC
                     return;
                 }
             }
-            // 没有游戏模式配置时使用 mod 默认值
-            m_ResourceDemandPerCitizenMultiplier = kDefaultResourceDemandPerCitizenMultiplier;
+            // 没有游戏模式配置时使用 ModSettings 值
+            m_ResourceDemandPerCitizenMultiplier = defaultMultiplier;
         }
 
         protected override void OnUpdate()
@@ -226,7 +230,7 @@ namespace MapExtPDX.ModeC
             };
 
             // 调度任务并行执行
-            Dependency = JobChunkExtensions.ScheduleParallel(householdTickJob, m_HouseholdGroup, Dependency);
+            Dependency = householdTickJob.ScheduleParallel(m_HouseholdGroup, Dependency);
 
             // 将依赖关系添加到帧结束屏障，确保命令缓冲区在正确时机执行
             m_EndFrameBarrier.AddJobHandleForProducer(Dependency);
@@ -335,7 +339,9 @@ namespace MapExtPDX.ModeC
                 public int4 AgeCounts; // x:Child, y:Teen, z:Adult, w:Elderly
                 public float AvgHappiness; // 平均幸福度
                 public int LastDayIncome; // 昨日收入
-                public int FamilySize; // 家庭人数
+                public int FamilySize; // 家庭人数(含死亡成员)
+                public bool HasAdultOrElderly; // 是否有成年人(含死亡成员，与原版一致)
+                public int AliveCount; // 存活成员数(用于幸福度分母)
             }
 
             // 统一计算家庭成员年龄结构/幸福度/收入
@@ -356,7 +362,9 @@ namespace MapExtPDX.ModeC
                     // --- 车辆统计 ---
                     CarCount = m_OwnedVehicles.HasBuffer(householdEntity) ? m_OwnedVehicles[householdEntity].Length : 0,
                     // 初始化后续将被累加的年龄组合值
-                    AgeCounts = int4.zero
+                    AgeCounts = int4.zero,
+                    HasAdultOrElderly = false,
+                    AliveCount = 0
                 };
 
                 // --- 成员遍历统计 (整合收入、年龄、幸福度) ---
@@ -367,12 +375,21 @@ namespace MapExtPDX.ModeC
                 {
                     Entity citizenEntity = citizens[i].m_Citizen;
 
-                    // 跳过不存在或去世成员
+                    // 跳过不存在的成员
                     if (!m_CitizenDatas.HasComponent(citizenEntity)) continue;
-                    if (CitizenUtils.IsDead(citizenEntity, ref m_HealthProblems)) continue;
 
                     Citizen citizenData = m_CitizenDatas[citizenEntity];
                     CitizenAge age = citizenData.GetAge();
+
+                    // [Bug#1 修复] 成年人判定放在 IsDead 之前(与原版一致)
+                    // 原版不过滤死亡成员就做年龄检查，防止唯一成年人死亡窗口期触发迁出
+                    if (age >= CitizenAge.Adult)
+                        basecache.HasAdultOrElderly = true;
+
+                    // 跳过去世成员(仅影响收入、购物权重、幸福度)
+                    if (CitizenUtils.IsDead(citizenEntity, ref m_HealthProblems)) continue;
+
+                    basecache.AliveCount++;
 
                     // P1修复: 收入计算 — 先检查工作，与原版 EconomyUtils.GetHouseholdIncome 一致
                     // 任何年龄有工作的市民(包括有工作的 Elderly)都按工资计算
@@ -410,7 +427,7 @@ namespace MapExtPDX.ModeC
                         }
                     }
 
-                    // 年龄统计（始终执行，不受工作状态影响）
+                    // 年龄统计（用于购物权重计算，仅统计存活成员）
                     switch (age)
                     {
                         case CitizenAge.Child: basecache.AgeCounts.x++; break;
@@ -424,7 +441,8 @@ namespace MapExtPDX.ModeC
                 }
 
                 basecache.LastDayIncome = householdIncome;
-                basecache.AvgHappiness = basecache.FamilySize > 0 ? totalHappiness / basecache.FamilySize : 0;
+                // [Bug#2 修复] 使用 AliveCount 作为分母，避免死亡成员压低平均幸福度
+                basecache.AvgHappiness = basecache.AliveCount > 0 ? totalHappiness / (float)basecache.AliveCount : 0;
                 return basecache;
             }
 
@@ -504,7 +522,7 @@ namespace MapExtPDX.ModeC
                 //// 1. 基础购物概率 (随人口指数衰减)
                 //
                 // 计算基于人口的概率因子 (人口越多，单次判定通过率越低)
-                float popFactor = math.max(1f, math.sqrt(kTrafficReduction * cityPopulation));
+                float popFactor = math.max(1f, math.sqrt(m_TrafficReduction * cityPopulation));
                 int baseshopChance = (int)math.round(200f / popFactor);
 
                 // 低人口时遵循原版，百万人口后单次通过率限制在 1% - 5% 之间
@@ -585,7 +603,7 @@ namespace MapExtPDX.ModeC
                     // --- 5. 迁出逻辑判定 ---
                     // =========================================================
 
-                    bool hasNoAdults = (basecache.AgeCounts.z + basecache.AgeCounts.w) == 0;
+                    bool hasNoAdults = !basecache.HasAdultOrElderly;
                     bool isBankrupt = (basecache.TotalWealth + basecache.LastDayIncome < -1000);
 
                     // 决定迁出原因：没有成年人 -> 不开心 -> 破产 -> 不迁出
@@ -752,7 +770,7 @@ namespace MapExtPDX.ModeC
                 // 3. P0修复：安全阀仅在「库存彻底耗尽 + 当天还没买过」时激活
                 //    修复前: 低库存时无条件 max(25) 覆盖了 ÷20 的衰减，导致已购物家庭仍 25% 概率重复购物
                 //    修复后: 已购物家庭遵循 ÷20 衰减(~2%)，未购物且零库存家庭保留高概率保底
-                if (household.m_Resources == 0 && household.m_ShoppedValuePerDay == 0)
+                if (household is { m_Resources: 0, m_ShoppedValuePerDay: 0 })
                 {
                     finalShopChance = math.max(finalShopChance, 30); // 零库存+首次购物: 至少30%
                 }
@@ -777,74 +795,63 @@ namespace MapExtPDX.ModeC
                 }
 
                 // =========================================================
-                // 阶段 C: 购买资源选择
+                // 阶段 C: 购买资源选择 (Reservoir Sampling 单遍优化)
                 // =========================================================
-                // --- 资源权重计算 (利用预计算数据) ---
-                int currentTotalWeight = 0; // 当前累计权重
+                // 使用 Reservoir Sampling 将原版双遍历合并为单次遍历
+                // 第一遍求权重总和 + 第二遍随机选择 → 合并为边累加边采样
+                Resource selectedResource = Resource.NoResource;
+                ResourceData selectedResData = default;
+                int totalWeight = 0;
                 ResourceIterator iterator = ResourceIterator.GetIterator();
 
-                // 第一次遍历：求和 (纯数学计算，极快)
                 while (iterator.Next())
                 {
                     ResourceData resData = m_ResourceDatas[m_ResourcePrefabs[iterator.resource]];
-                    if (!resData.m_IsLeisure) // 仅计算非娱乐资源
-                        currentTotalWeight += GetWeightOptimized(spendableMoney, resData, cache);
-                }
-
-                if (currentTotalWeight <= 0) return;
-
-                // 随机选择
-                int randomWeight = random.NextInt(currentTotalWeight);
-                iterator = ResourceIterator.GetIterator();
-
-                // 第二次遍历：选择
-                while (iterator.Next())
-                {
-                    ResourceData resData = m_ResourceDatas[m_ResourcePrefabs[iterator.resource]];
-                    if (resData.m_IsLeisure) continue; // 跳过非娱乐资源，与前面保持一致
+                    if (resData.m_IsLeisure) continue; // 仅计算非娱乐资源
 
                     int weight = GetWeightOptimized(spendableMoney, resData, cache);
-                    randomWeight -= weight;
+                    if (weight <= 0) continue;
 
-                    if (weight > 0 && randomWeight < 0)
+                    totalWeight += weight;
+                    // Reservoir Sampling: 以 weight/totalWeight 概率替换当前选中资源
+                    if (random.NextInt(totalWeight) < weight)
                     {
-                        // 选中了 iterator.resource
+                        selectedResource = iterator.resource;
+                        selectedResData = resData;
+                    }
+                }
 
-                        // 特殊检查：购车逻辑
-                        if (iterator.resource == Resource.Vehicles)
-                        {
-                            // 此时才计算是否需要买车
-                            bool needsCar = NeedsCar(spendableMoney, cache.AgeCounts, cache.CarCount, ref random);
-                            if (needsCar)
-                            {
-                                currentNeed.m_Resource = Resource.Vehicles;
-                                currentNeed.m_Amount = kCarAmount;
-                                householdNeeds[index] = currentNeed;
-                            }
+                // 没有任何资源被选中
+                if (selectedResource == Resource.NoResource) return;
 
-                            break;
-                        }
+                // --- 处理选中的资源 ---
+                // 特殊检查：购车逻辑
+                if (selectedResource == Resource.Vehicles)
+                {
+                    if (NeedsCar(spendableMoney, cache.AgeCounts, cache.CarCount, ref random))
+                    {
+                        currentNeed.m_Resource = Resource.Vehicles;
+                        currentNeed.m_Amount = kCarAmount;
+                        householdNeeds[index] = currentNeed;
+                    }
+                    // 不需要车时不购买（与之前行为一致）
+                }
+                // 普通资源购买
+                else
+                {
+                    float marketPrice = EconomyUtils.GetMarketPrice(selectedResData);
 
-                        // 普通资源购买
-                        else
-                        {
-                            float marketPrice = EconomyUtils.GetMarketPrice(resData);
+                    // 计算购买量：尽可能买满，实现"低频大额"
+                    int affordAmount = math.clamp((int)(spendableMoney / marketPrice), 0,
+                        kMaxHouseholdNeedAmount);
+                    int finalAmount = (int)(affordAmount * m_ResourceDemandPerCitizenMultiplier);
 
-                            // 计算购买量：尽可能买满，实现"低频大额"
-                            int affordAmount = math.clamp((int)(spendableMoney / marketPrice), 0,
-                                kMaxHouseholdNeedAmount);
-                            int finalAmount = (int)(affordAmount * m_ResourceDemandPerCitizenMultiplier);
-
-                            // 最小购买量限制：防止只买1个单位
-                            if (finalAmount > 5) // 至少能买5个才加入需求清单
-                            {
-                                currentNeed.m_Resource = iterator.resource;
-                                currentNeed.m_Amount = math.max(0, finalAmount);
-                                householdNeeds[index] = currentNeed;
-                            }
-
-                            break; // 选中后退出
-                        }
+                    // 最小购买量限制：防止只买1个单位
+                    if (finalAmount > 5) // 至少能买5个才加入需求清单
+                    {
+                        currentNeed.m_Resource = selectedResource;
+                        currentNeed.m_Amount = math.max(0, finalAmount);
+                        householdNeeds[index] = currentNeed;
                     }
                 }
             }
@@ -858,6 +865,7 @@ namespace MapExtPDX.ModeC
         } // job
     } // class
 } // namespace
+
 
 
 

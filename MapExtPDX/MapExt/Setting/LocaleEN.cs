@@ -311,6 +311,70 @@ namespace MapExtPDX
                     " - Over 5M pop: 4000 ~ 8000"
                 },
 
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.ShoppingTrafficReduction)), "Shopping Traffic Reduction Factor" },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.ShoppingTrafficReduction)),
+                    "Controls how much city population suppresses per-household shopping probability. " +
+                    "Formula: shopChance = 200 / sqrt(factor × population).\n" +
+                    "Higher values mean faster probability decay as population grows, reducing commercial trade volume.\n\n" +
+                    "★ Effect at different population scales (at default 0.0004):\n" +
+                    " - 10k pop: shopChance ≈ 100% → almost every household shops\n" +
+                    " - 100k pop: shopChance ≈ 32% → one-third of households shop\n" +
+                    " - 1M pop: shopChance ≈ 10% → one-tenth of households shop\n" +
+                    " - 5M pop: shopChance ≈ 4% → very few households shop\n\n" +
+                    "★ Recommended by population scale:\n" +
+                    " - Under 100k (small city): 0.0004 (default, same as vanilla)\n" +
+                    " - 100k~500k (medium): 0.0003 ~ 0.0004\n" +
+                    " - 500k~2M (large): 0.0002 ~ 0.0003\n" +
+                    " - Over 2M (mega city): 0.0001 ~ 0.0002\n\n" +
+                    "Can be adjusted in-game. Lower values encourage consumption and boost commercial revenue."
+                },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.HouseholdResourceDemandMultiplier)), "Household Resource Demand Multiplier" },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.HouseholdResourceDemandMultiplier)),
+                    "Multiplier for resource purchase amount per shopping trip. Since the mod reduces shopping frequency " +
+                    "(tick rate is 1/2 of vanilla), single-trip amounts must be increased to maintain economic equilibrium.\n\n" +
+                    "★ Multiplier effects:\n" +
+                    " - 1.0: Same per-trip amount as vanilla (but lower frequency = insufficient total consumption)\n" +
+                    " - 3.5: Compensates to ~70-88% of vanilla total consumption (default)\n" +
+                    " - 5.0: Nearly full compensation of vanilla consumption levels\n" +
+                    " - 8.0: Over-compensation, for extreme maps + very low shopping probability\n\n" +
+                    "★ Recommended by map/population scale:\n" +
+                    " - 14km Vanilla: 1.0 ~ 2.0\n" +
+                    " - 28km (ModeB): 2.0 ~ 3.5\n" +
+                    " - 57km (ModeA): 3.5 ~ 5.0 (default: 3.5)\n" +
+                    " - 114km (ModeC): 5.0 ~ 8.0\n\n" +
+                    "★ Indicators: If commercial zones show vacant/bankrupt buildings, increase this value. " +
+                    "If goods are instantly depleted (industrial products sold out), decrease it.\n" +
+                    "Can be adjusted in-game."
+                },
+
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.HomeSeekerCap)), "Home Search: Move Throughput" },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.HomeSeekerCap)),
+                    "Maximum households with existing homes processed per frame for relocation evaluation. " +
+                    "Controls how fast the system processes move requests (updated every 16 frames).\n" +
+                    "Higher values speed up relocation matching but increase single-frame CPU cost (FindPropertyJob is single-threaded).\n\n" +
+                    "★ Recommended:\n" +
+                    " - Under 500k pop: 64 ~ 128 (default)\n" +
+                    " - 2M pop: 128 ~ 256\n" +
+                    " - Over 5M pop: 256 ~ 512\n\n" +
+                    "★ Indicators: If many households refuse to relocate despite better housing available, increase this value. " +
+                    "If the game stutters, decrease it. Can be adjusted in-game."
+                },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.HomelessSeekerCap)), "Home Search: Homeless Throughput" },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.HomelessSeekerCap)),
+                    "Maximum homeless households processed per frame for housing placement. " +
+                    "Homeless families are prioritized over relocation requests.\n\n" +
+                    "★ Recommended:\n" +
+                    " - Under 500k pop: 640 ~ 1280 (default)\n" +
+                    " - 2M pop: 1280 ~ 2560\n" +
+                    " - Over 5M pop: 2560 ~ 5120\n\n" +
+                    "★ Indicators: If large numbers of homeless remain despite vacant housing, increase this value. " +
+                    "If mass homeless influx causes frame drops, decrease it. Can be adjusted in-game."
+                },
+
                 { m_Setting.GetOptionTabLocaleID(ModSettings.kDebugTab), "▍Developer Options" },
                 { m_Setting.GetOptionGroupLocaleID(ModSettings.kDebugGroup), "▍Developer Options" },
                 { m_Setting.GetOptionLabelLocaleID(ModSettings.kDebugTab), "▍Developer Options" },

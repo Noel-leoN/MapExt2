@@ -38,8 +38,6 @@ namespace MapExtPDX.ModeA
         #region Constants
 
         private const int UPDATE_INTERVAL = 16;
-        public static readonly int kMaxProcessNormalHouseholdPerUpdate = 128;
-        public static readonly int kMaxProcessHomelessHouseholdPerUpdate = 1280;
         public static readonly int kFindPropertyCoolDown = 5000;
         public override int GetUpdateInterval(SystemUpdatePhase phase) => UPDATE_INTERVAL;
 
@@ -193,7 +191,7 @@ namespace MapExtPDX.ModeA
             PreparePropertyJob preparePropertyJobData = new PreparePropertyJob
             {
                 m_EntityType = SystemAPI.GetEntityTypeHandle(),
-                m_BuildingProperties = SystemAPI.GetComponentLookup<BuildingPropertyData>(isReadOnly: false),
+                m_BuildingProperties = SystemAPI.GetComponentLookup<BuildingPropertyData>(isReadOnly: true),
                 m_Prefabs = SystemAPI.GetComponentLookup<PrefabRef>(isReadOnly: true),
                 m_BuildingDatas = SystemAPI.GetComponentLookup<BuildingData>(isReadOnly: true),
                 m_ParkDatas = SystemAPI.GetComponentLookup<ParkData>(isReadOnly: true),
@@ -292,7 +290,9 @@ namespace MapExtPDX.ModeA
                 m_City = m_CitySystem.City,
                 m_PathfindQueue = m_PathfindSetupSystem.GetQueue(this, 80, 16).AsParallelWriter(),
                 m_CommandBuffer = m_EndFrameBarrier.CreateCommandBuffer(),
-                m_DynamicFindHomeMaxCost = Mod.Instance.Settings.FindHomeMaxCost
+                m_DynamicFindHomeMaxCost = Mod.Instance.Settings.FindHomeMaxCost,
+                m_MaxProcessHomelessPerUpdate = Mod.Instance.Settings.HomelessSeekerCap,
+                m_MaxProcessNormalPerUpdate = Mod.Instance.Settings.HomeSeekerCap
             };
             JobHandle prepareJobHandle = preparePropertyJobData.ScheduleParallel(m_FreePropertyQuery,
                 JobUtils.CombineDependencies(Dependency, groundPollutionDependencies, noisePollutionDependencies,
@@ -521,6 +521,8 @@ namespace MapExtPDX.ModeA
             public NativeQueue<SetupQueueItem>.ParallelWriter m_PathfindQueue;
             public NativeQueue<RentAction>.ParallelWriter m_RentActionQueue;
             public float m_DynamicFindHomeMaxCost;
+            public int m_MaxProcessHomelessPerUpdate;
+            public int m_MaxProcessNormalPerUpdate;
 
             /// <summary>
             /// 🧳 构造寻找新家的参数（起点、方法、权重及目标分）并发出寻路请求。
@@ -548,6 +550,8 @@ namespace MapExtPDX.ModeA
                     for (int i = 0; i < householdCitizens.Length; i++)
                     {
                         // [BUGFIX] 反编译原有 bug 修改：使用 m_Citizens[householdCitizens[i].m_Citizen] 而不是使用未被赋值的跳出作用域的 citizenData 属性
+                        // [BUGFIX-3] 防御性检查：防止已销毁但未清理的 citizen entity 导致 IndexOutOfRange
+                        if (!m_Citizens.HasComponent(householdCitizens[i].m_Citizen)) continue;
                         Citizen citizenDataObj = m_Citizens[householdCitizens[i].m_Citizen];
                         weights.m_Value += CitizenUtils
                             .GetPathfindWeights(citizenDataObj, householdData, householdCitizens.Length)
@@ -684,7 +688,7 @@ namespace MapExtPDX.ModeA
                         count++;
                     }
 
-                    if (count >= kMaxProcessHomelessHouseholdPerUpdate)
+                    if (count >= m_MaxProcessHomelessPerUpdate)
                     {
                         break;
                     }
@@ -699,7 +703,7 @@ namespace MapExtPDX.ModeA
                         count++;
                     }
 
-                    if (count >= kMaxProcessNormalHouseholdPerUpdate)
+                    if (count >= m_MaxProcessNormalPerUpdate)
                     {
                         break;
                     }
@@ -1241,6 +1245,8 @@ namespace MapExtPDX.ModeA
                 null);
         }
 
+        // --- 静态缓存字段 ---
+        private static bool _initialized = false;
         private static EntityQuery _findHomeQuery;
         private static EntityQuery _healthcareParamQuery;
         private static EntityQuery _parkParamQuery;
@@ -1251,12 +1257,19 @@ namespace MapExtPDX.ModeA
         private static EntityQuery _policeParamQuery;
         private static EntityQuery _serviceFeeParamQuery;
         private static EntityQuery _citizenHappinessParamQuery;
-
         private static Func<SystemBase, JobHandle> _getDependencyAccessor;
+
+        // [OPT-4] 缓存系统引用，避免每帧 GetOrCreateSystemManaged 字典查找
+        private static TaxSystem _taxSystem;
+        private static GroundPollutionSystem _groundPollutionSystem;
+        private static AirPollutionSystem _airPollutionSystem;
+        private static NoisePollutionSystem _noisePollutionSystem;
+        private static TelecomCoverageSystem _telecomCoverageSystem;
+        private static CitySystem _citySystem;
 
         private static void EnsureInitialized(PathfindSetupSystem system)
         {
-            // 1.  ( Dependency )
+            // 1. Dependency accessor（只需初始化一次）
             if (_getDependencyAccessor == null)
             {
                 MethodInfo dependencyGetter = AccessTools.PropertyGetter(typeof(SystemBase), "Dependency");
@@ -1265,10 +1278,13 @@ namespace MapExtPDX.ModeA
                         dependencyGetter);
             }
 
-            // 2.  Queries ( CS1503 )
-            if (_findHomeQuery != default) return;
+            // 2. [BUGFIX-2] 使用 bool 标记替代 EntityQuery struct 的 default 比较
+            if (_initialized) return;
+            _initialized = true;
 
+            var world = system.World;
 
+            // 缓存 EntityQuery
             var desc1 = new EntityQueryDesc
             {
                 All = new[] { ComponentType.ReadOnly<Building>() },
@@ -1309,6 +1325,14 @@ namespace MapExtPDX.ModeA
             _policeParamQuery = system.GetSetupQuery(ComponentType.ReadOnly<PoliceConfigurationData>());
             _serviceFeeParamQuery = system.GetSetupQuery(ComponentType.ReadOnly<ServiceFeeParameterData>());
             _citizenHappinessParamQuery = system.GetSetupQuery(ComponentType.ReadOnly<CitizenHappinessParameterData>());
+
+            // [OPT-4] 缓存系统引用
+            _taxSystem = world.GetOrCreateSystemManaged<TaxSystem>();
+            _groundPollutionSystem = world.GetOrCreateSystemManaged<GroundPollutionSystem>();
+            _airPollutionSystem = world.GetOrCreateSystemManaged<AirPollutionSystem>();
+            _noisePollutionSystem = world.GetOrCreateSystemManaged<NoisePollutionSystem>();
+            _telecomCoverageSystem = world.GetOrCreateSystemManaged<TelecomCoverageSystem>();
+            _citySystem = world.GetOrCreateSystemManaged<CitySystem>();
         }
 
         public static bool Prefix(
@@ -1332,14 +1356,6 @@ namespace MapExtPDX.ModeA
 #endif
 
             EnsureInitialized(__instance);
-
-            var world = __instance.World;
-            var taxSystem = world.GetOrCreateSystemManaged<TaxSystem>();
-            var groundPollutionSystem = world.GetOrCreateSystemManaged<GroundPollutionSystem>();
-            var airPollutionSystem = world.GetOrCreateSystemManaged<AirPollutionSystem>();
-            var noisePollutionSystem = world.GetOrCreateSystemManaged<NoisePollutionSystem>();
-            var telecomCoverageSystem = world.GetOrCreateSystemManaged<TelecomCoverageSystem>();
-            var citySystem = world.GetOrCreateSystemManaged<CitySystem>();
 
             // HarmonySystemAPI__instance
             var jobData = new CustomSetupFindHomeJob
@@ -1379,11 +1395,11 @@ namespace MapExtPDX.ModeA
                 m_ZonePropertiesDatas = __instance.GetComponentLookup<ZonePropertiesData>(true),
                 m_Companies = __instance.GetComponentLookup<CompanyData>(true),
 
-                m_TaxRates = taxSystem.GetTaxRates(),
-                m_PollutionMap = groundPollutionSystem.GetMap(true, out var dep1),
-                m_AirPollutionMap = airPollutionSystem.GetMap(true, out var dep2),
-                m_NoiseMap = noisePollutionSystem.GetMap(true, out var dep3),
-                m_TelecomCoverages = telecomCoverageSystem.GetData(true, out var dep4),
+                m_TaxRates = _taxSystem.GetTaxRates(),
+                m_PollutionMap = _groundPollutionSystem.GetMap(true, out var dep1),
+                m_AirPollutionMap = _airPollutionSystem.GetMap(true, out var dep2),
+                m_NoiseMap = _noisePollutionSystem.GetMap(true, out var dep3),
+                m_TelecomCoverages = _telecomCoverageSystem.GetData(true, out var dep4),
 
                 m_HealthcareParameters = _healthcareParamQuery.GetSingleton<HealthcareParameterData>(),
                 m_ParkParameters = _parkParamQuery.GetSingleton<ParkParameterData>(),
@@ -1396,7 +1412,7 @@ namespace MapExtPDX.ModeA
                 m_CitizenHappinessParameterData =
                     _citizenHappinessParamQuery.GetSingleton<CitizenHappinessParameterData>(),
 
-                m_City = citySystem.City,
+                m_City = _citySystem.City,
                 m_SetupData = setupData
             };
 
@@ -1406,11 +1422,11 @@ namespace MapExtPDX.ModeA
 
             JobHandle jobHandle = jobData.ScheduleParallel(_findHomeQuery, combinedDeps);
 
-            groundPollutionSystem.AddReader(jobHandle);
-            airPollutionSystem.AddReader(jobHandle);
-            noisePollutionSystem.AddReader(jobHandle);
-            telecomCoverageSystem.AddReader(jobHandle);
-            taxSystem.AddReader(jobHandle);
+            _groundPollutionSystem.AddReader(jobHandle);
+            _airPollutionSystem.AddReader(jobHandle);
+            _noisePollutionSystem.AddReader(jobHandle);
+            _telecomCoverageSystem.AddReader(jobHandle);
+            _taxSystem.AddReader(jobHandle);
 
             __result = jobHandle;
             return false;
