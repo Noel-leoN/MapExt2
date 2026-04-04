@@ -27,6 +27,22 @@ namespace MapExtPDX
         None // Vanilla = 1
     }
 
+    /// <summary>地形分辨率选项</summary>
+    public enum TerrainResolutionSetting
+    {
+        Vanilla_4096,   // 原版 4096×4096
+        High_8192,      // 高清 8192×8192 (默认)
+    }
+
+    /// <summary>水纹理分辨率选项</summary>
+    public enum WaterResolutionSetting
+    {
+        Vanilla_2048,   // 原版 2048×2048
+        Medium_1024,    // 中等 1024×1024
+        Low_512,        // 低 512×512 (推荐)
+        Ultra_256,      // 极低 256×256 (最高性能)
+    }
+
     //[FileLocation(nameof(MapExtPDX))]
     [FileLocation("ModsSettings/" + Mod.ModName + "/" + Mod.ModName)]
     [SettingsUITabOrder(kMapSizeModeTab, kMiscTab, kPerformanceToolTab, kDebugTab)]
@@ -139,6 +155,10 @@ namespace MapExtPDX
         {
             // 设置默认的补丁模式
             PatchModeChoice = PatchModeSetting.ModeA;
+            // 分辨率设置
+            TerrainResolution = TerrainResolutionSetting.High_8192;
+            WaterResolution = WaterResolutionSetting.Low_512;
+
             ShoppingMaxCost = 8000f;
             CompanyShoppingMaxCost = 200000f;
             LeisureMaxCost = 12000f;
@@ -257,6 +277,42 @@ namespace MapExtPDX
         /// 
         // 选项可用性
         public bool IsPatchUnAvailable => true;
+
+        // ==========================================
+        // 分辨率设置
+        // ==========================================
+        [SettingsUISection(kPerformanceToolTab, kPerformanceToolGroup)]
+        [SettingsUIDropdown(typeof(ModSettings), nameof(GetTerrainResolutionItems))]
+        [SettingsUIHideByCondition(typeof(ModSettings), nameof(IsNotInMainMenu))]
+        public TerrainResolutionSetting TerrainResolution { get; set; }
+
+        [SettingsUISection(kPerformanceToolTab, kPerformanceToolGroup)]
+        [SettingsUIDropdown(typeof(ModSettings), nameof(GetWaterResolutionItems))]
+        [SettingsUIHideByCondition(typeof(ModSettings), nameof(IsNotInMainMenu))]
+        public WaterResolutionSetting WaterResolution { get; set; }
+
+        [SettingsUISection(kPerformanceToolTab, kPerformanceToolGroup)]
+        public string VRAMEstimate => $"Est. VRAM: {MapExt.Core.ResolutionManager.GetVRAMEstimate()}";
+
+        public DropdownItem<int>[] GetTerrainResolutionItems()
+        {
+            return new DropdownItem<int>[]
+            {
+                new DropdownItem<int> { value = (int)TerrainResolutionSetting.Vanilla_4096, displayName = "4096×4096 (Vanilla)" },
+                new DropdownItem<int> { value = (int)TerrainResolutionSetting.High_8192, displayName = "8192×8192 (Recommended)" },
+            };
+        }
+
+        public DropdownItem<int>[] GetWaterResolutionItems()
+        {
+            return new DropdownItem<int>[]
+            {
+                new DropdownItem<int> { value = (int)WaterResolutionSetting.Vanilla_2048, displayName = "2048×2048 (Vanilla)" },
+                new DropdownItem<int> { value = (int)WaterResolutionSetting.Medium_1024, displayName = "1024×1024" },
+                new DropdownItem<int> { value = (int)WaterResolutionSetting.Low_512, displayName = "512×512 (Recommended)" },
+                new DropdownItem<int> { value = (int)WaterResolutionSetting.Ultra_256, displayName = "256×256 (Ultra Performance)" },
+            };
+        }
 
         // === NoDogs 2.0 ===
         // 设置字段初始化器默认值

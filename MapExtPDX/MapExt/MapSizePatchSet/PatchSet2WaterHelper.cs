@@ -1,4 +1,4 @@
-﻿﻿// Copyright (c) 2024 Noel2(Noel-leoN)
+// Copyright (c) 2024 Noel2(Noel-leoN)
 // Licensed under the MIT License.
 // See LICENSE in the project root for full license information.
 // When using this part of the code, please clearly credit [Project Name] and the author.
@@ -42,23 +42,22 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
             // CoreValue
             int MapScaleMultiplier = PatchManager.CurrentCoreValue;
 
-            // --- ԭʼWater kMapSize ---
+            // --- 原始Water kMapSize ---
             int OriginalKMapSize = PatchManager.OriginalMapSize;
 
-            // --- ԭʼWater CellSize ---
-            float OriginalKCellSize = 7f;
 
-            // --- ater kMapSize ---
-            // ԭʼʽ
+            // --- 新 Water kMapSize ---
+            // 原始计算
             int NewKMapSizeI = MapScaleMultiplier * OriginalKMapSize;
             float NewKMapSizeF = MapScaleMultiplier * OriginalKMapSize;
 
-            // --- ater CellSize ---
-            float NewKCellSize = OriginalKCellSize * MapScaleMultiplier;
-            // Calculate new map size based on the new cell size and assumed original texture width
-            // assume m_TexSize remains 2048x2048 as initialized in the original code
-            // ѭ MapSize = TexSize * CellSize
-            // public static float NewKMapSizeF => 2048f * NewKCellSize;
+            // --- 新 Water CellSize ---
+            // 新公式: CellSize = kMapSize_scaled / WaterTextureSize
+            // 确保 kMapSize = kCellSize * m_TexSize 恒等式成立
+            // 例: ModeA(57km) + Water512:  57344 / 512  = 112
+            // 例: ModeA(57km) + Water1024: 57344 / 1024 = 56
+            // 例: ModeA(57km) + Water2048: 57344 / 2048 = 28 (原版行为)
+            float NewKCellSize = ResolutionManager.GetWaterCellSize(NewKMapSizeI);
 
             var codes = new List<CodeInstruction>(instructions);
             bool patched = false;

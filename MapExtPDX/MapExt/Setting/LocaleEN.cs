@@ -165,6 +165,28 @@ namespace MapExtPDX
                     "⚠ This will permanently remove all existing pets from your save! Existing households will NOT get new pets. Are you sure?"
                 },
 
+                // === Resolution Settings ===
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.TerrainResolution)), "Terrain Resolution" },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.TerrainResolution)),
+                    "Terrain heightmap resolution for new maps. 8192 provides sharper terrain editing and rendering (especially noticeable with terrain brushes). " +
+                    "Existing saves will keep their original resolution.\n" +
+                    "⚠️ Restart required after change."
+                },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.WaterResolution)), "Water Simulation Resolution" },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.WaterResolution)),
+                    "Water simulation texture size. Lower values greatly reduce GPU/VRAM usage with minimal visual impact. " +
+                    "512 or 256 recommended for large maps.\n" +
+                    "⚠️ Changing this will reset water surfaces when loading old saves (rivers/lakes refill from sources).\n" +
+                    "⚠️ Restart required after change."
+                },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.VRAMEstimate)), "Estimated Terrain/Water VRAM" },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.VRAMEstimate)),
+                    "Approximate GPU memory usage for terrain cascade and water simulation textures at the selected resolutions."
+                },
+
                 { m_Setting.GetOptionTabLocaleID(ModSettings.kMiscTab), "▍EconomyTweak (Beta)" },
                 { m_Setting.GetOptionGroupLocaleID(ModSettings.kMiscGroup), "▍EconomyTweak (Beta)" },
                 { m_Setting.GetOptionLabelLocaleID(ModSettings.kMiscTab), "• Economy Detail Tweak (Beta)" },

@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2024 Noel2(Noel-leoN)
+// Copyright (c) 2024 Noel2(Noel-leoN)
 // Licensed under the MIT License.
 // See LICENSE in the project root for full license information.
 // When using this part of the code, please clearly credit [Project Name] and the author.
@@ -85,6 +85,9 @@ namespace MapExtPDX.MapExt.Core
                 // v2.1.1新增: WaterSystem.InitTextures()重置
                 { "WaterSystemInitFix", (_) => WaterSystemReinitializer.Execute() },
 
+                // v2.x.x新增: 地形→水降采样适配层
+                { "TerrainWaterAdapterInit", (_) => TerrainWaterAdapter.Initialize() },
+
                 // v2.2.0改动
                 // PatchSet3:CellMapSystem<T>托管代码部分
                 { "CellMapSystemValuesPatch", (h) => CellMapSystemPatchManager.ApplyPatches(h) },
@@ -120,6 +123,7 @@ namespace MapExtPDX.MapExt.Core
                         "WaterLevelChangeSystemMethodPatches_Static",
                         "WaterSystem_BaseDataReader_Patch",
                         "WaterSystemInitFix",
+                        "TerrainWaterAdapterInit",
                         "CellMapSystemValuesPatch",
                         "AirwaySystemPatch",
                         "ReBurstSystemsPatches",
@@ -136,6 +140,7 @@ namespace MapExtPDX.MapExt.Core
                         "WaterLevelChangeSystemMethodPatches_Static",
                         "WaterSystem_BaseDataReader_Patch",
                         "WaterSystemInitFix",
+                        "TerrainWaterAdapterInit",
                         "CellMapSystemValuesPatch",
                         "AirwaySystemPatch",
                         "ReBurstSystemsPatches",
@@ -152,6 +157,7 @@ namespace MapExtPDX.MapExt.Core
                         "WaterLevelChangeSystemMethodPatches_Static",
                         "WaterSystem_BaseDataReader_Patch",
                         "WaterSystemInitFix",
+                        "TerrainWaterAdapterInit",
                         "CellMapSystemValuesPatch",
                         "AirwaySystemPatch",
                         "ReBurstSystemsPatches",
@@ -175,8 +181,21 @@ namespace MapExtPDX.MapExt.Core
             // 进入游戏后Mod初始化加载，不需要进行UnpatchAll or CleanUpAllContexts
             _currentMode = initialModeFromSettings;
             CurrentCoreValue = GetCoreValueForMode(_currentMode);
+
+            // === 初始化分辨率管理器 (必须在任何 PatchSet 应用之前) ===
+            var settings = Mod.Instance?.Settings;
+            if (settings != null)
+            {
+                ResolutionManager.Initialize(settings.TerrainResolution, settings.WaterResolution);
+            }
+            else
+            {
+                Warn("ModSettings not available, using default resolution values.");
+            }
+
             Info(
-                $"PatchManager Initialized. Effective initial mode from settings: {_currentMode}, CoreValue: {CurrentCoreValue}. Applying initial patches.");
+                $"PatchManager Initialized. Effective initial mode from settings: {_currentMode}, CoreValue: {CurrentCoreValue}. " +
+                $"TerrainRes={ResolutionManager.TerrainResolution}, WaterTex={ResolutionManager.WaterTextureSize}. Applying initial patches.");
 
             // 核心方法：执行模式加载
             ApplyPatchesForMode(_currentMode);

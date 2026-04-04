@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2024 Noel2(Noel-leoN)
+// Copyright (c) 2024 Noel2(Noel-leoN)
 // Licensed under the MIT License.
 // See LICENSE in the project root for full license information.
 // When using this part of the code, please clearly credit [Project Name] and the author.
@@ -17,6 +17,7 @@ using Unity.Collections;
 
 namespace MapExtPDX.MapExt.MapSizePatchSet
 {
+    using MapExtPDX.MapExt.Core;
     /// <summary>
     /// 地图编辑器导入地形高位图自适应分辨率
     /// 仅在创建地图时一次调用，无需Transpiler提高性能
@@ -30,16 +31,16 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
         private static void Error(string message) => Mod.Error($" {(Mod.ModName)}.{patchTypename}:{message}");
         private static void Error(Exception e, string message) => Mod.Error(e, $" {Mod.ModName}.{patchTypename}:{message}");
 
-        private const int TARGET_WIDTH = 4096; // vanilla = 4096;
-        private const int TARGET_HEIGHT = 4096; // vanilla = 4096;
+        // 从 ResolutionManager 动态读取，支持 4096/8192 可配置
+        private static int TARGET_WIDTH => ResolutionManager.TerrainResolution;
+        private static int TARGET_HEIGHT => ResolutionManager.TerrainResolution;
 
         [HarmonyPatch(typeof(TerrainSystem), "IsValidHeightmapFormat")]
         [HarmonyPrefix]
         public static bool IsValidHeightmapFormat(ref bool __result, Texture2D tex)
         {
-            // max texture resolution;
-            // 地形分辨率高于原版地图大小将造成渲染系统错误(raycast)，尚不知何原因
-            __result = tex.width <= 14336;
+            // 地形分辨率上限跟随 ResolutionManager
+            __result = tex.width <= ResolutionManager.TerrainResolution;
             // __result = true;
             return false;
         }
@@ -51,9 +52,9 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
             AppBindings appBindings = GameManager.instance.userInterface.appBindings;
             LocalizedString? localizedString = LocalizedString.Id("Editor.INCORRECT_HEIGHTMAP_TITLE");
             Dictionary<string, ILocElement> dictionary = new Dictionary<string, ILocElement>();
-            int kDefaultHeightmapWidth = 14336; // vanilla仅支持导入分辨率不高于14336x14336贴图，原因未知
+            int kDefaultHeightmapWidth = ResolutionManager.TerrainResolution; // 动态分辨率上限
             dictionary.Add("WIDTH", LocalizedString.Value(kDefaultHeightmapWidth.ToString()));
-            kDefaultHeightmapWidth = 14336;
+            kDefaultHeightmapWidth = ResolutionManager.TerrainResolution;
             dictionary.Add("HEIGHT", LocalizedString.Value(kDefaultHeightmapWidth.ToString()));
             appBindings.ShowMessageDialog(new MessageDialog(localizedString, new LocalizedString("Editor.INCORRECT_HEIGHTMAP_MESSAGE", null, dictionary), LocalizedString.Id("Common.ERROR_DIALOG_CONTINUE")), null);
             return false;

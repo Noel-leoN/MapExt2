@@ -153,6 +153,28 @@ namespace MapExtPDX
                     "⚠ 这将永久移除存档中所有现有宠物！已有家庭不会再获得新宠物。确定继续吗？"
                 },
 
+                // === 分辨率设置 ===
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.TerrainResolution)), "地形分辨率" },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.TerrainResolution)),
+                    "新建地图的地形高度图分辨率。8192 提供更精细的地形编辑和渲染（使用地形笔刷时尤为明显）。" +
+                    "已有存档将保持其原始分辨率。\n" +
+                    "⚠️ 修改后需重启游戏。"
+                },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.WaterResolution)), "水体模拟分辨率" },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.WaterResolution)),
+                    "水体模拟纹理大小。较低的值可大幅降低GPU/显存占用，视觉影响极小。" +
+                    "大地图建议使用 512 或 256。\n" +
+                    "⚠️ 修改后加载旧存档时水面将重置（河流和湖泊会从水源重新注水）。\n" +
+                    "⚠️ 修改后需重启游戏。"
+                },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.VRAMEstimate)), "地形/水体预估显存占用" },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.VRAMEstimate)),
+                    "当前分辨率设置下地形级联纹理和水体模拟纹理的大致GPU显存占用量。"
+                },
+
                 { m_Setting.GetOptionTabLocaleID(ModSettings.kMiscTab), "▍经济补丁设置 (Beta)" },
                 { m_Setting.GetOptionGroupLocaleID(ModSettings.kMiscGroup), "▍经济补丁设置 (Beta)" },
                 { m_Setting.GetOptionLabelLocaleID(ModSettings.kMiscTab), "• 经济补丁设置 (Beta)" },

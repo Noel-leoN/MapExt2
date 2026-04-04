@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2024 Noel2(Noel-leoN)
+// Copyright (c) 2024 Noel2(Noel-leoN)
 // Licensed under the MIT License.
 // See LICENSE in the project root for full license information.
 // When using this part of the code, please clearly credit [Project Name] and the author.
@@ -70,6 +70,27 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
 #endif
                 traverse.Method("InitTextures").GetValue();
                 Info("SUCCESS: WaterSystem re-initialized. New MapSize should be effective.");
+
+                // === 验证纹理尺寸与 ResolutionManager 一致 ===
+                try
+                {
+                    var texSizeField = traverse.Field("m_TexSize");
+                    if (texSizeField.FieldExists())
+                    {
+                        var texSize = texSizeField.GetValue<Unity.Mathematics.int2>();
+                        Info($"Post-reinit verification: m_TexSize = {texSize}, expected = {Core.ResolutionManager.WaterTextureSize}");
+                        if (texSize.x != Core.ResolutionManager.WaterTextureSize)
+                        {
+                            Warn($"Water texture size mismatch! Got {texSize.x}x{texSize.y}, " +
+                                 $"expected {Core.ResolutionManager.WaterTextureSize}x{Core.ResolutionManager.WaterTextureSize}. " +
+                                 "InitTextures Transpiler may not have been applied correctly.");
+                        }
+                    }
+                }
+                catch (Exception verifyEx)
+                {
+                    Warn($"Post-reinit verification failed (non-fatal): {verifyEx.Message}");
+                }
             }
             catch (Exception e)
             {
