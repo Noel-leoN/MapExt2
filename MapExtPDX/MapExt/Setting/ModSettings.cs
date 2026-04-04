@@ -156,7 +156,9 @@ namespace MapExtPDX
             // 设置默认的补丁模式
             PatchModeChoice = PatchModeSetting.ModeA;
             // 分辨率设置
-            TerrainResolution = TerrainResolutionSetting.High_8192;
+            // 注意: 地形分辨率 >4096 会导致水体着色器UV错位, 暂用 4096 保护水体模拟
+            // 待 TerrainWaterAdapter 完善后可切换为 High_8192
+            TerrainResolution = TerrainResolutionSetting.Vanilla_4096;
             WaterResolution = WaterResolutionSetting.Low_512;
 
             ShoppingMaxCost = 8000f;

@@ -35,19 +35,25 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
         private static int TARGET_WIDTH => ResolutionManager.TerrainResolution;
         private static int TARGET_HEIGHT => ResolutionManager.TerrainResolution;
 
+        // 导入允许的最大分辨率 (独立于 TARGET_WIDTH)
+        // 导入后由 ToR16_Postfix 重采样 (上/下采样) 到 TARGET_WIDTH
+        private const int MAX_IMPORT_RESOLUTION = 8192;
+
         [HarmonyPatch(typeof(TerrainSystem), "IsValidHeightmapFormat")]
         [HarmonyPrefix]
         public static bool IsValidHeightmapFormat(ref bool __result, Texture2D tex)
         {
             // 原版逻辑: 精确匹配 kDefaultHeightmapWidth(4096) 且格式为 R16 或 RGBA64
-            // Mod 逻辑: 接受 <= TARGET_WIDTH 的纹理（ToR16_Postfix 会上采样到 TARGET_WIDTH）
+            // Mod 逻辑: 接受 <= MAX_IMPORT_RESOLUTION 的纹理
+            //           ToR16_Postfix 会重采样到 TARGET_WIDTH (上采样或下采样)
             //           格式仍需为 R16_UNorm 或 R16G16B16A16_UNorm
-            bool sizeValid = tex.width <= TARGET_WIDTH && tex.height <= TARGET_HEIGHT && tex.width > 0 && tex.height > 0;
+            bool sizeValid = tex.width <= MAX_IMPORT_RESOLUTION && tex.height <= MAX_IMPORT_RESOLUTION
+                             && tex.width > 0 && tex.height > 0;
             bool formatValid = tex.graphicsFormat == UnityEngine.Experimental.Rendering.GraphicsFormat.R16_UNorm ||
                                tex.graphicsFormat == UnityEngine.Experimental.Rendering.GraphicsFormat.R16G16B16A16_UNorm;
             __result = sizeValid && formatValid;
             Info($"IsValidHeightmapFormat: tex={tex.width}x{tex.height} fmt={tex.graphicsFormat}, " +
-                 $"TARGET={TARGET_WIDTH}x{TARGET_HEIGHT}, sizeOK={sizeValid}, fmtOK={formatValid}, result={__result}");
+                 $"maxImport={MAX_IMPORT_RESOLUTION}, TARGET={TARGET_WIDTH}, sizeOK={sizeValid}, fmtOK={formatValid}, result={__result}");
             return false;
         }
 
@@ -58,10 +64,9 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
             AppBindings appBindings = GameManager.instance.userInterface.appBindings;
             LocalizedString? localizedString = LocalizedString.Id("Editor.INCORRECT_HEIGHTMAP_TITLE");
             Dictionary<string, ILocElement> dictionary = new Dictionary<string, ILocElement>();
-            int kDefaultHeightmapWidth = ResolutionManager.TerrainResolution; // 动态分辨率上限
-            dictionary.Add("WIDTH", LocalizedString.Value(kDefaultHeightmapWidth.ToString()));
-            kDefaultHeightmapWidth = ResolutionManager.TerrainResolution;
-            dictionary.Add("HEIGHT", LocalizedString.Value(kDefaultHeightmapWidth.ToString()));
+            int displayedMax = MAX_IMPORT_RESOLUTION; // 显示最大支持导入分辨率
+            dictionary.Add("WIDTH", LocalizedString.Value(displayedMax.ToString()));
+            dictionary.Add("HEIGHT", LocalizedString.Value(displayedMax.ToString()));
             appBindings.ShowMessageDialog(new MessageDialog(localizedString, new LocalizedString("Editor.INCORRECT_HEIGHTMAP_MESSAGE", null, dictionary), LocalizedString.Id("Common.ERROR_DIALOG_CONTINUE")), null);
             return false;
         }

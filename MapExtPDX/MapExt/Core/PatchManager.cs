@@ -65,7 +65,7 @@ namespace MapExtPDX.MapExt.Core
 
                 // PatchSet1:TerrainSystem
                 { "TerrainSystemPatch", (h) => h.CreateClassProcessor(typeof(TerrainSystemPatches)).Patch() },
-                { "TerrainToR16Patch", (h) => h.CreateClassProcessor(typeof(TerrainToR16Patch)).Patch() },
+                { "TerrainToR16Patch", (h) => PatchHelpers.PatchAllMethodsInType(h, typeof(TerrainToR16Patch)) },
 
                 // PatchSet2:WaterSystem
                 { "WaterSystemPatch_Static", (h) => h.CreateClassProcessor(typeof(WaterSystemMethodPatches)).Patch() },
@@ -311,6 +311,86 @@ namespace MapExtPDX.MapExt.Core
                 default:
                     return $"Unknown Mode (ID: {coreValue})";
             }
+        }
+    }
+
+    /// <summary>
+    /// Harmony 辅助工具：处理没有类级别 [HarmonyPatch] 属性、
+    /// 但方法级别各自指定了不同目标类的 Patch 类型
+    /// </summary>
+    internal static class PatchHelpers
+    {
+        private static void Info(string message) => Mod.Info($" {Mod.ModName}.PatchHelpers:{message}");
+        private static void Warn(string message) => Mod.Warn($" {Mod.ModName}.PatchHelpers:{message}");
+
+        /// <summary>
+        /// 扫描 patchType 中所有带有 [HarmonyPatch] 属性的方法，
+        /// 逐一创建 PatchProcessor 并应用。
+        /// 解决 CreateClassProcessor 要求类级别属性的限制。
+        /// </summary>
+        public static void PatchAllMethodsInType(HarmonyLib.Harmony harmony, System.Type patchType)
+        {
+            int patchedCount = 0;
+            foreach (var method in patchType.GetMethods(
+                System.Reflection.BindingFlags.Static |
+                System.Reflection.BindingFlags.Public |
+                System.Reflection.BindingFlags.NonPublic |
+                System.Reflection.BindingFlags.DeclaredOnly))
+            {
+                var patchAttrs = method.GetCustomAttributes(typeof(HarmonyLib.HarmonyPatch), false);
+                if (patchAttrs.Length == 0) continue;
+
+                try
+                {
+                    // 从属性中提取目标类和方法信息
+                    System.Type targetType = null;
+                    string targetMethodName = null;
+
+                    foreach (HarmonyLib.HarmonyPatch attr in patchAttrs)
+                    {
+                        if (attr.info.declaringType != null) targetType = attr.info.declaringType;
+                        if (attr.info.methodName != null) targetMethodName = attr.info.methodName;
+                    }
+
+                    if (targetType == null || targetMethodName == null)
+                    {
+                        Warn($"Skipping {method.Name}: missing target type or method name in [HarmonyPatch]");
+                        continue;
+                    }
+
+                    // 查找目标方法
+                    var targetMethod = HarmonyLib.AccessTools.Method(targetType, targetMethodName);
+                    if (targetMethod == null)
+                    {
+                        Warn($"Target method {targetType.Name}.{targetMethodName} not found! Skipping {method.Name}.");
+                        continue;
+                    }
+
+                    // 判断 patch 类型（Prefix/Postfix/Transpiler）
+                    var processor = harmony.CreateProcessor(targetMethod);
+                    if (method.GetCustomAttributes(typeof(HarmonyLib.HarmonyPrefix), false).Length > 0)
+                        processor.AddPrefix(new HarmonyLib.HarmonyMethod(method));
+                    else if (method.GetCustomAttributes(typeof(HarmonyLib.HarmonyPostfix), false).Length > 0)
+                        processor.AddPostfix(new HarmonyLib.HarmonyMethod(method));
+                    else if (method.GetCustomAttributes(typeof(HarmonyLib.HarmonyTranspiler), false).Length > 0)
+                        processor.AddTranspiler(new HarmonyLib.HarmonyMethod(method));
+                    else
+                    {
+                        Warn($"Skipping {method.Name}: no Prefix/Postfix/Transpiler attribute found.");
+                        continue;
+                    }
+
+                    processor.Patch();
+                    patchedCount++;
+                    Info($"Patched {targetType.Name}.{targetMethodName} via {method.Name}");
+                }
+                catch (System.Exception ex)
+                {
+                    Warn($"Failed to patch via {method.Name}: {ex.Message}");
+                }
+            }
+
+            Info($"PatchAllMethodsInType({patchType.Name}): Applied {patchedCount} patches.");
         }
     }
 }

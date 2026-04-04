@@ -94,18 +94,18 @@ namespace MapExtPDX.MapExt.Core
         }
 
         /// <summary>
-        /// 计算水 CellSize: 确保 kMapSize(缩放后) / CellSize = WaterTextureSize。
-        /// 例: ModeA(57km), Water512: CellSize = 57344/512 = 112
+        /// [安全版] 计算水 CellSize: 始终基于实际 m_TexSize(2048)。
+        /// 保证 kMapSize = kCellSize × m_TexSize 恒等式成立。
+        /// 当前阶段水分辨率降级功能尚未完成, 使用此方法确保稳定性。
         /// </summary>
-        /// <param name="scaledMapSize">缩放后的 kMapSize (= OriginalMapSize * CoreValue)</param>
         public static float GetWaterCellSize(int scaledMapSize)
         {
-            if (WaterTextureSize <= 0)
-            {
-                Warn($"WaterTextureSize is {WaterTextureSize}, falling back to vanilla CellSize.");
-                return VanillaWaterCellSize;
-            }
-            return (float)scaledMapSize / WaterTextureSize;
+            // 始终使用 2048 作为分母，因为 m_TexSize 的 Transpiler 替换可靠性无法保证
+            // 后续水分辨率功能完成后，可切换为 WaterTextureSize
+            const int actualTexSize = VanillaWaterTextureSize; // 2048
+            float cellSize = (float)scaledMapSize / actualTexSize;
+            Info($"GetWaterCellSize: mapSize={scaledMapSize}, texSize={actualTexSize}(actual), cellSize={cellSize}");
+            return cellSize;
         }
 
         /// <summary>
