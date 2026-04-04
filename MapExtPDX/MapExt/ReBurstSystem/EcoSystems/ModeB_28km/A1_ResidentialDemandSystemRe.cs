@@ -1,4 +1,4 @@
-// Game.Simulation.ResidentialDemandSystem
+﻿// Game.Simulation.ResidentialDemandSystem
 // 系统实例被多个外部系统调用，采用Job通用替换。
 
 using Colossal.Collections;
@@ -161,7 +161,7 @@ namespace MapExtPDX.ModeB
 
             // --- [新城市红利] ---
             // 人口越少，红利越高。超过20,000人口后该值为0。初始约20。
-            float populationBonusFactor = 20f - math.smoothstep(0f, 20f, (float)cityPopulation.m_Population / 20000f);
+            float populationBonusFactor = 20f - math.smoothstep(0f, 20f, cityPopulation.m_Population / 20000f);
 
             // --- [教育因子] ---
             // 计算教育容量 (累加1-4级所有学位)
@@ -173,7 +173,7 @@ namespace MapExtPDX.ModeB
                 totalStudentSlots += m_StudyPositions[j];
             }
 
-            float studentCoverage = (float)totalStudentSlots / (popCount * 0.2f); // 假设20%人口上学
+            float studentCoverage = totalStudentSlots / (popCount * 0.2f); // 假设20%人口上学
             float studentFactor = paramsData.m_StudentEffect * math.clamp(studentCoverage * 5f, 0f, 5f);
 
             // --- [幸福度因子] ---
@@ -181,7 +181,7 @@ namespace MapExtPDX.ModeB
             // 采用相对值，无需修改
             int effectiveHappiness = math.max(paramsData.m_MinimumHappiness, cityPopulation.m_AverageHappiness);
             float happinessFactor = paramsData.m_HappinessEffect *
-                                    (float)(effectiveHappiness - paramsData.m_NeutralHappiness);
+                                    (effectiveHappiness - paramsData.m_NeutralHappiness);
 
             // --- [税收因子] ---
             // 计算所有学历等级的平均税率与 10% 的差值
@@ -190,7 +190,7 @@ namespace MapExtPDX.ModeB
             float avgTaxDeviation = 0f;
             for (int k = 0; k < 5; k++)
             {
-                avgTaxDeviation += (float)(-(TaxSystem.GetResidentialTaxRate(k, m_TaxRates) - 10));
+                avgTaxDeviation += -(TaxSystem.GetResidentialTaxRate(k, m_TaxRates) - 10);
             }
 
             float taxFactor = paramsData.m_TaxEffect.x * (avgTaxDeviation / 5f);
@@ -201,11 +201,11 @@ namespace MapExtPDX.ModeB
             // 就业空缺率中位数
             float neutralJobRate = paramsData.m_NeutralAvailableWorkplacePercentage / 100f;
 
-            float totalSimpJobs = math.max(1f, (float)m_TotalWorkplaces.SimpleWorkplacesCount);
-            float totalCompJobs = math.max(1f, (float)m_TotalWorkplaces.ComplexWorkplacesCount);
+            float totalSimpJobs = math.max(1f, m_TotalWorkplaces.SimpleWorkplacesCount);
+            float totalCompJobs = math.max(1f, m_TotalWorkplaces.ComplexWorkplacesCount);
 
-            float simpJobRate = (float)m_FreeWorkplaces.SimpleWorkplacesCount / totalSimpJobs;
-            float compJobRate = (float)m_FreeWorkplaces.ComplexWorkplacesCount / totalCompJobs;
+            float simpJobRate = m_FreeWorkplaces.SimpleWorkplacesCount / totalSimpJobs;
+            float compJobRate = m_FreeWorkplaces.ComplexWorkplacesCount / totalCompJobs;
 
             // 放大倍数设为 100f，意味着每 1% 的额外空缺提供一定点数的吸引力
             float simpleJobFactor = paramsData.m_AvailableWorkplaceEffect * (simpJobRate - neutralJobRate) * 100f;
@@ -227,7 +227,7 @@ namespace MapExtPDX.ModeB
             //--- [流浪人口因子] ---
             // 修复：改为比例
             // 避免大城市因绝对数量高而受到不合理的惩罚            
-            float homelessRate = (float)m_HouseholdCountData.m_HomelessHouseholdCount / (float)popCount;
+            float homelessRate = m_HouseholdCountData.m_HomelessHouseholdCount / (float)popCount;
             // 归一化：如果流浪率是中性率的2倍，则系数为2。
             float homelessRatioNormalized = homelessRate / kNeutralHomelessRate;
             // HouseholdDemand 负面惩罚 (无家可归太多降低城市吸引力) 
@@ -240,8 +240,8 @@ namespace MapExtPDX.ModeB
             happinessFactor = GetFactorValue(happinessFactor * kHappinessWeight, m_ResidentialDemandWeightsSelector);
             homelessPenalty =
                 GetFactorValue(homelessPenalty * kHomelessPenaltyWeight, m_ResidentialDemandWeightsSelector);
-            homelessBonus = this.GetFactorValue(homelessBonus * kHomelessBonusWeight,
-                this.m_ResidentialDemandWeightsSelector);
+            homelessBonus = GetFactorValue(homelessBonus * kHomelessBonusWeight,
+                m_ResidentialDemandWeightsSelector);
             taxFactor = GetFactorValue(taxFactor * kTaxWeight, m_ResidentialDemandWeightsSelector);
             simpleJobFactor = GetFactorValue(simpleJobFactor * ksimJobWeight, m_ResidentialDemandWeightsSelector);
             complexJobFactor = GetFactorValue(complexJobFactor * kcomJobWeight, m_ResidentialDemandWeightsSelector);
@@ -381,14 +381,14 @@ namespace MapExtPDX.ModeB
             }
 
             // J. 触发器 (Trigger)
-            float totalPropCount = (float)(totalProperties.x + totalProperties.y + totalProperties.z);
+            float totalPropCount = totalProperties.x + totalProperties.y + totalProperties.z;
             float totalDemandSum =
-                (float)(m_BuildingDemand.value.x + m_BuildingDemand.value.y + m_BuildingDemand.value.z);
+                m_BuildingDemand.value.x + m_BuildingDemand.value.y + m_BuildingDemand.value.z;
 
             m_TriggerQueue.Enqueue(new TriggerAction(TriggerType.ResidentialDemand, Entity.Null,
                 (totalPropCount > 100) ? (totalDemandSum / 100f) : 0f));
 
-            float freePropCount = (float)(freeProperties.x + freeProperties.y + freeProperties.z);
+            float freePropCount = freeProperties.x + freeProperties.y + freeProperties.z;
             m_TriggerQueue.Enqueue(new TriggerAction(TriggerType.EmptyBuilding, Entity.Null,
                 (totalPropCount > 100) ? (freePropCount * 100f / totalPropCount) : 100f));
         }

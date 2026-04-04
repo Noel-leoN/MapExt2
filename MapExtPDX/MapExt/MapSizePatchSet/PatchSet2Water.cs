@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2024 Noel2(Noel-leoN)
+// Copyright (c) 2024 Noel2(Noel-leoN)
 // Licensed under the MIT License.
 // See LICENSE in the project root for full license information.
 // When using this part of the code, please clearly credit [Project Name] and the author.
@@ -24,12 +24,39 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
         // v2.1.1重新启用
         // Essential for initializing SurfaceDataReaders correctly
         // 配合使用反射强制重新调用一次
+        // v2.x.x: 额外替换 m_TexSize 硬编码的 2048 为 ResolutionManager.WaterTextureSize
         [HarmonyPatch("InitTextures")]
         [HarmonyTranspiler]
         static IEnumerable<CodeInstruction> InitTextures_Transpiler(IEnumerable<CodeInstruction> instructions)
         {
             Info($" Applying Transpiler to WaterSystem.InitTextures");
-            return WaterSystemPatcherHelper.PatchMethodInstructions(instructions, WaterSystemPatcherHelper.GetCurrentMethodName());
+
+            // 第一步：用通用 helper 替换 kMapSize / kCellSize
+            var patched = WaterSystemPatcherHelper.PatchMethodInstructions(instructions, WaterSystemPatcherHelper.GetCurrentMethodName());
+
+            // 第二步：替换 m_TexSize = new int2(2048, 2048) 中的硬编码 2048
+            // InitTextures() 中 m_TexSize 赋值编译为两个 ldc.i4 2048 指令
+            int waterTexSize = MapExtPDX.MapExt.Core.ResolutionManager.WaterTextureSize;
+            if (waterTexSize != 2048) // 仅在修改了分辨率时才替换
+            {
+                var codes = new System.Collections.Generic.List<CodeInstruction>(patched);
+                int replacedCount = 0;
+                for (int i = 0; i < codes.Count; i++)
+                {
+                    // 检查 ldc.i4 2048 指令
+                    if (codes[i].opcode == System.Reflection.Emit.OpCodes.Ldc_I4 &&
+                        codes[i].operand is int val && val == 2048)
+                    {
+                        codes[i].operand = waterTexSize;
+                        replacedCount++;
+                        Info($"  Patched ldc.i4 2048 → {waterTexSize} at index {i}");
+                    }
+                }
+                Info($"  InitTextures: replaced {replacedCount} occurrences of 2048 with {waterTexSize}");
+                return codes;
+            }
+
+            return patched;
         }
 
         // Properties are compiled to get_ / set_ methods

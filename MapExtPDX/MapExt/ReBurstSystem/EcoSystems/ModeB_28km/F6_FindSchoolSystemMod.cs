@@ -1,4 +1,4 @@
-using Game.Buildings;
+﻿using Game.Buildings;
 using Game.Citizens;
 using Game.Common;
 using Game.Companies;
@@ -59,6 +59,12 @@ namespace MapExtPDX.ModeB
 			{
 				FindSchoolJob jobData = new FindSchoolJob
 				{
+					// [MapExt2-MaxCost] Bind dynamic individual sliders
+					m_DynamicFindSchoolElementaryMaxCost = Mod.Instance.Settings.FindSchoolElementaryMaxCost,
+					m_DynamicFindSchoolHighSchoolMaxCost = Mod.Instance.Settings.FindSchoolHighSchoolMaxCost,
+					m_DynamicFindSchoolCollegeMaxCost = Mod.Instance.Settings.FindSchoolCollegeMaxCost,
+					m_DynamicFindSchoolUniversityMaxCost = Mod.Instance.Settings.FindSchoolUniversityMaxCost,
+					
 					m_EntityType = SystemAPI.GetEntityTypeHandle(),
 					m_SchoolSeekerType = SystemAPI.GetComponentTypeHandle<SchoolSeeker>(isReadOnly: true),
 					m_OwnerType = SystemAPI.GetComponentTypeHandle<Owner>(isReadOnly: true),
@@ -120,6 +126,11 @@ namespace MapExtPDX.ModeB
 			[ReadOnly] public ComponentLookup<Household> m_Households;
 			[ReadOnly] public BufferLookup<HouseholdCitizen> m_HouseholdCitizens;
 			[ReadOnly] public BufferLookup<OwnedVehicle> m_OwnedVehicles;
+			// [MapExt2-MaxCost] Inject settings variables
+			public float m_DynamicFindSchoolElementaryMaxCost;
+			public float m_DynamicFindSchoolHighSchoolMaxCost;
+			public float m_DynamicFindSchoolCollegeMaxCost;
+			public float m_DynamicFindSchoolUniversityMaxCost;
 			public NativeQueue<SetupQueueItem>.ParallelWriter m_PathfindQueue;
 			public EntityCommandBuffer.ParallelWriter m_CommandBuffer;
 
@@ -154,13 +165,24 @@ namespace MapExtPDX.ModeB
 						});
 						Household householdData = m_Households[household];
 						DynamicBuffer<HouseholdCitizen> householdCitizens = m_HouseholdCitizens[household];
+
+						// [MapExt2-MaxCost] Independent dynamic pathfinding limits from mod config
+						float dynamicMaxCost = level switch
+						{
+							1 => m_DynamicFindSchoolElementaryMaxCost,
+							2 => m_DynamicFindSchoolHighSchoolMaxCost,
+							3 => m_DynamicFindSchoolCollegeMaxCost,
+							4 => m_DynamicFindSchoolUniversityMaxCost,
+							_ => CitizenBehaviorSystem.kMaxPathfindCost
+						};
+
 						PathfindParameters parameters = new PathfindParameters
 						{
 							m_MaxSpeed = 111.111115f,
 							m_WalkSpeed = 1.6666667f,
 							m_Weights = CitizenUtils.GetPathfindWeights(citizen, householdData, householdCitizens.Length),
 							m_Methods = PathMethod.Pedestrian | PathMethod.PublicTransportDay,
-							m_MaxCost = CitizenBehaviorSystem.kMaxPathfindCost,
+							m_MaxCost = dynamicMaxCost,
 							m_PathfindFlags = PathfindFlags.Simplified | PathfindFlags.IgnorePath
 						};
 						SetupQueueTarget origin = new SetupQueueTarget
@@ -208,9 +230,8 @@ namespace MapExtPDX.ModeB
 
 			public void Execute()
 			{
-				for (int i = 0; i < m_Chunks.Length; i++)
+				foreach (var chunk in m_Chunks)
 				{
-					ArchetypeChunk chunk = m_Chunks[i];
 					NativeArray<Owner> owners = chunk.GetNativeArray(ref m_OwnerType);
 					NativeArray<PathInformation> pathInfos = chunk.GetNativeArray(ref m_PathInfoType);
 					NativeArray<Entity> entities = chunk.GetNativeArray(m_EntityType);
@@ -281,6 +302,7 @@ namespace MapExtPDX.ModeB
 						m_CommandBuffer.RemoveComponent<HasSchoolSeeker>(owner);
 						m_CommandBuffer.AddComponent(seekerEntity, default(Deleted));
 					}
+
 				}
 			}
 		}

@@ -150,6 +150,8 @@ namespace MapExtPDX.ModeB
 				m_RenterBufs = SystemAPI.GetBufferLookup<Renter>(isReadOnly: true),
 				m_ConsumptionDatas = SystemAPI.GetComponentLookup<ConsumptionData>(isReadOnly: true),
 				m_EconomyParameters = m_EconomyParameterQuery.GetSingleton<EconomyParameterData>(),
+				// [MapExt2-MaxCost] Bind the dynamic slider setting from mod config
+				m_DynamicLeisureMaxCost = Mod.Instance.Settings.LeisureMaxCost,
 				m_SimulationFrame = m_SimulationSystem.frameIndex,
 				m_TimeOfDay = m_TimeSystem.normalizedTime,
 				m_UpdateFrameIndex = updateFrameWithInterval,
@@ -335,6 +337,8 @@ namespace MapExtPDX.ModeB
 			[ReadOnly] public NativeList<ArchetypeChunk> m_HumanChunks;
 			[ReadOnly] public PersonalCarSelectData m_PersonalCarSelectData;
 			public EconomyParameterData m_EconomyParameters;
+			// [MapExt2-MaxCost] Storage for dynamic slider
+			public float m_DynamicLeisureMaxCost;
 			public EntityCommandBuffer.ParallelWriter m_CommandBuffer;
 			public NativeQueue<SetupQueueItem>.ParallelWriter m_PathfindQueue;
 			public NativeQueue<LeisureEvent>.ParallelWriter m_LeisureQueue;
@@ -351,13 +355,9 @@ namespace MapExtPDX.ModeB
 				Entity providerEntity, LeisureProviderData provider)
 			{
 				bool isInactiveOrDepleted = m_BuildingData.HasComponent(providerEntity) &&
-				                            BuildingUtils.CheckOption(m_BuildingData[providerEntity],
-					                            BuildingOption.Inactive);
-				if (m_ServiceAvailables.HasComponent(providerEntity) &&
-				    m_ServiceAvailables[providerEntity].m_ServiceAvailable <= 0)
-				{
-					isInactiveOrDepleted = true;
-				}
+					BuildingUtils.CheckOption(m_BuildingData[providerEntity],
+						BuildingOption.Inactive) || m_ServiceAvailables.HasComponent(providerEntity) &&
+					m_ServiceAvailables[providerEntity].m_ServiceAvailable <= 0;
 
 				Entity prefab = m_PrefabRefs[providerEntity].m_Prefab;
 				if (!isInactiveOrDepleted && m_IndustrialProcesses.HasComponent(prefab))
@@ -694,7 +694,7 @@ namespace MapExtPDX.ModeB
 					m_Methods = (PathMethod.Pedestrian | PathMethod.Taxi |
 					             RouteUtils.GetPublicTransportMethods(m_TimeOfDay)),
 					m_TaxiIgnoredRules = VehicleUtils.GetIgnoredPathfindRulesTaxiDefaults(),
-					m_MaxCost = CitizenBehaviorSystem.kMaxPathfindCost
+					m_MaxCost = math.max(CitizenBehaviorSystem.kMaxPathfindCost, m_DynamicLeisureMaxCost)
 				};
 				SetupQueueTarget origin = new SetupQueueTarget
 				{
@@ -719,14 +719,7 @@ namespace MapExtPDX.ModeB
 				if (m_Workers.HasComponent(citizen))
 				{
 					Worker worker = m_Workers[citizen];
-					if (m_PropertyRenters.HasComponent(worker.m_Workplace))
-					{
-						parameters.m_Authorization2 = m_PropertyRenters[worker.m_Workplace].m_Property;
-					}
-					else
-					{
-						parameters.m_Authorization2 = worker.m_Workplace;
-					}
+					parameters.m_Authorization2 = m_PropertyRenters.HasComponent(worker.m_Workplace) ? m_PropertyRenters[worker.m_Workplace].m_Property : worker.m_Workplace;
 				}
 
 				bool isBicycleProbable = random.NextFloat(100f) < 20f;
@@ -826,4 +819,3 @@ namespace MapExtPDX.ModeB
 		#endregion
 	}
 }
-

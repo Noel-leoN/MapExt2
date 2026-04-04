@@ -216,6 +216,9 @@ namespace MapExtPDX.ModeB
                 // 设置资源需求倍数（运行时值，可能被 ModeSettingData 覆盖）
                 m_ResourceDemandPerCitizenMultiplier = m_ResourceDemandPerCitizenMultiplier,
 
+                // 设置购物概率人口压制系数（运行时值，从 ModSettings 读取）
+                m_TrafficReduction = m_TrafficReduction,
+
                 // 创建命令缓冲区用于延迟执行实体操作
                 m_CommandBuffer = m_EndFrameBarrier.CreateCommandBuffer().AsParallelWriter(),
 
@@ -316,6 +319,9 @@ namespace MapExtPDX.ModeB
 
             // 每个市民的资源需求乘数
             public float m_ResourceDemandPerCitizenMultiplier;
+
+            // 购物概率人口压制系数
+            public float m_TrafficReduction;
 
             // 经济参数
             public EconomyParameterData m_EconomyParameters;
@@ -865,7 +871,6 @@ namespace MapExtPDX.ModeB
         } // job
     } // class
 } // namespace
-
 
 
 

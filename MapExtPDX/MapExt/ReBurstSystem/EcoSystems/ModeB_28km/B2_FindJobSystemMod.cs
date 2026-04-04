@@ -1,4 +1,4 @@
-// Game.Simulation.FindJobSystem
+﻿// Game.Simulation.FindJobSystem
 // v1.4.2无变化
 
 using Colossal.Collections;
@@ -43,9 +43,7 @@ namespace MapExtPDX.ModeB
         private const int UPDATE_INTERVAL = 16; // 系统更新频率（每16帧一次）
         public override int GetUpdateInterval(SystemUpdatePhase phase) => UPDATE_INTERVAL;
 
-        // [优化] 每帧最大处理寻路请求数，防止PathfindQueue溢出
-        private const int MAX_PATHFIND_REQUESTS_PER_UPDATE = 2000;
-        // [优化] 请求计数器/限流计数
+        // [优化] 请求计数器/限流计数（阈值从 ModSettings.PathfindRequestCap 读取）
         private NativeArray<int> m_RequestCount;
 
 #if DEBUG
@@ -68,7 +66,7 @@ namespace MapExtPDX.ModeB
         private const int DEBUG_ARRAY_SIZE = 12;
         // 用于在 Job 和主线程间传递统计数据
         private NativeArray<int> m_DebugStats;       // Debug统计数组
-        private bool m_EnableDebug = false; // 开发时设为 true，发布设为 false
+        private readonly bool m_EnableDebug = false; // 开发时设为 true，发布设为 false
 #endif
 
         #endregion
@@ -183,7 +181,7 @@ namespace MapExtPDX.ModeB
         {
             // --- Debug 输出逻辑 ---
 #if DEBUG
-            if (m_EnableDebug == true)
+            if (m_EnableDebug)
             {
                 PrintDebugLog();
             }
@@ -232,8 +230,8 @@ namespace MapExtPDX.ModeB
             {
                 // Entity 和组件类型句柄
                 m_EntityType = SystemAPI.GetEntityTypeHandle(),
-                m_JobSeekerType = SystemAPI.GetComponentTypeHandle<JobSeeker>(false),
-                m_OwnerType = SystemAPI.GetComponentTypeHandle<Owner>(false),
+                m_JobSeekerType = SystemAPI.GetComponentTypeHandle<JobSeeker>(),
+                m_OwnerType = SystemAPI.GetComponentTypeHandle<Owner>(),
                 m_CurrentBuildingType = SystemAPI.GetComponentTypeHandle<CurrentBuilding>(true),
 
                 // 组件查找
@@ -258,9 +256,9 @@ namespace MapExtPDX.ModeB
                 m_RandomSeed = RandomSeed.Next(),
                 m_DynamicFindJobMaxCost = Mod.Instance.Settings.FindJobMaxCost,
 
-                // [优化] 传入计数器进行限流
+                // [优化] 传入计数器进行限流（从 ModSettings 读取）
                 m_RequestCount = m_RequestCount,
-                m_MaxRequests = MAX_PATHFIND_REQUESTS_PER_UPDATE,
+                m_MaxRequests = Mod.Instance.Settings.PathfindRequestCap,
 #if DEBUG
                 m_DebugStats = m_DebugStats
 #endif
@@ -295,8 +293,8 @@ namespace MapExtPDX.ModeB
                 // 组件查找
                 m_Citizens = SystemAPI.GetComponentLookup<Citizen>(true),
                 m_Prefabs = SystemAPI.GetComponentLookup<PrefabRef>(true),
-                m_EmployeeBuffers = SystemAPI.GetBufferLookup<Employee>(false),
-                m_FreeWorkplaces = SystemAPI.GetComponentLookup<FreeWorkplaces>(false),
+                m_EmployeeBuffers = SystemAPI.GetBufferLookup<Employee>(),
+                m_FreeWorkplaces = SystemAPI.GetComponentLookup<FreeWorkplaces>(),
                 m_WorkplaceDatas = SystemAPI.GetComponentLookup<WorkplaceData>(true),
                 m_Deleteds = SystemAPI.GetComponentLookup<Deleted>(true),
                 m_Workers = SystemAPI.GetComponentLookup<Worker>(true),
@@ -405,14 +403,20 @@ namespace MapExtPDX.ModeB
                 // 本地缓存减少原子操作次数
                 int c0 = 0, c1 = 0, c2 = 0, c3 = 0, c4 = 0;
 
-                for (int i = 0; i < freeWorkplaces.Length; i++)
+                foreach (var fw in freeWorkplaces)
+
                 {
-                    FreeWorkplaces fw = freeWorkplaces[i];
+
                     c0 += fw.m_Uneducated;
+
                     c1 += fw.m_PoorlyEducated;
+
                     c2 += fw.m_Educated;
+
                     c3 += fw.m_WellEducated;
+
                     c4 += fw.m_HighlyEducated;
+
                 }
 
                 unsafe
@@ -482,13 +486,13 @@ namespace MapExtPDX.ModeB
                 if (m_RequestCount[0] >= m_MaxRequests) return; 
 #endif
 
-                NativeArray<Entity> jobSeekerEntities = chunk.GetNativeArray(this.m_EntityType);
-                NativeArray<Owner> owners = chunk.GetNativeArray(ref this.m_OwnerType);
-                NativeArray<JobSeeker> jobSeekers = chunk.GetNativeArray(ref this.m_JobSeekerType);
-                NativeArray<CurrentBuilding> currentBuildings = chunk.GetNativeArray(ref this.m_CurrentBuildingType);
+                NativeArray<Entity> jobSeekerEntities = chunk.GetNativeArray(m_EntityType);
+                NativeArray<Owner> owners = chunk.GetNativeArray(ref m_OwnerType);
+                NativeArray<JobSeeker> jobSeekers = chunk.GetNativeArray(ref m_JobSeekerType);
+                NativeArray<CurrentBuilding> currentBuildings = chunk.GetNativeArray(ref m_CurrentBuildingType);
 
                 // 获取当前Chunk的随机数生成器
-                Unity.Mathematics.Random random = this.m_RandomSeed.GetRandom(unfilteredChunkIndex);
+                Unity.Mathematics.Random random = m_RandomSeed.GetRandom(unfilteredChunkIndex);
 
 #if DEBUG
                 // 安全指针获取用于统计
@@ -516,23 +520,23 @@ namespace MapExtPDX.ModeB
                     }
 
                     // 1. 基础校验：如果市民已被删除或数据丢失，则标记当前求职实体为删除并跳过
-                    if (this.m_Deleteds.HasComponent(citizenEntity) || !this.m_CitizenDatas.HasComponent(citizenEntity))
+                    if (m_Deleteds.HasComponent(citizenEntity) || !m_CitizenDatas.HasComponent(citizenEntity))
                     {
-                        this.m_CommandBuffer.AddComponent(unfilteredChunkIndex, jobSeekerEntities[i], default(Deleted));
+                        m_CommandBuffer.AddComponent(unfilteredChunkIndex, jobSeekerEntities[i], default(Deleted));
                         continue;
                     }
 
-                    Entity householdEntity = this.m_HouseholdMembers[citizenEntity].m_Household;
-                    Citizen citizenData = this.m_CitizenDatas[citizenEntity];
+                    Entity householdEntity = m_HouseholdMembers[citizenEntity].m_Household;
+                    Citizen citizenData = m_CitizenDatas[citizenEntity];
 
                     // 2. 确定市民当前的出发位置（作为寻路的起点）
                     Entity currentLocationEntity = Entity.Null;
-                    if (this.m_PropertyRenters.HasComponent(householdEntity))
+                    if (m_PropertyRenters.HasComponent(householdEntity))
                     {
                         // 如果租房，起点是租住的房产
-                        currentLocationEntity = this.m_PropertyRenters[householdEntity].m_Property;
+                        currentLocationEntity = m_PropertyRenters[householdEntity].m_Property;
                     }
-                    else if (chunk.Has(ref this.m_CurrentBuildingType))
+                    else if (chunk.Has(ref m_CurrentBuildingType))
                     {
                         // 如果是通勤者（Commuter），起点是当前所在建筑
                         if ((citizenData.m_State & CitizenFlags.Commuter) != CitizenFlags.None)
@@ -540,10 +544,10 @@ namespace MapExtPDX.ModeB
                             currentLocationEntity = currentBuildings[i].m_CurrentBuilding;
                         }
                     }
-                    else if (this.m_HomelessHouseholds.HasComponent(householdEntity))
+                    else if (m_HomelessHouseholds.HasComponent(householdEntity))
                     {
                         // 如果无家可归，起点是临时避难所/所在地
-                        currentLocationEntity = this.m_HomelessHouseholds[householdEntity].m_TempHome;
+                        currentLocationEntity = m_HomelessHouseholds[householdEntity].m_TempHome;
                     }
 
                     // Entity jobSeekerEntity = jobSeekerEntities[i];
@@ -557,12 +561,12 @@ namespace MapExtPDX.ModeB
                         bool isSwitcher = false;
 
                         // 检查是否在外部连接工作（例如住在城里但在城外工作）
-                        bool worksOutside = this.m_Workers.HasComponent(citizenEntity) && this.m_OutsideConnections.HasComponent(this.m_Workers[citizenEntity].m_Workplace);
+                        bool worksOutside = m_Workers.HasComponent(citizenEntity) && m_OutsideConnections.HasComponent(m_Workers[citizenEntity].m_Workplace);
 
                         // 获取当前工作等级（如果不是外部工作）
-                        if (this.m_Workers.HasComponent(citizenEntity) && !worksOutside)
+                        if (m_Workers.HasComponent(citizenEntity) && !worksOutside)
                         {
-                            currentJobLevel = this.m_Workers[citizenEntity].m_Level;
+                            currentJobLevel = m_Workers[citizenEntity].m_Level;
                             isSwitcher = true;
                         }
 
@@ -578,7 +582,7 @@ namespace MapExtPDX.ModeB
 
                         // 5. 降级搜索：
                         // 如果期望等级的职位没有空缺（FreeCache <= 0），则降低期望等级，直到找到有空缺的等级或比当前工作还差为止。
-                        while (targetJobLevel > currentJobLevel && this.m_FreeCache[targetJobLevel] <= 0)
+                        while (targetJobLevel > currentJobLevel && m_FreeCache[targetJobLevel] <= 0)
                         {
                             targetJobLevel--;
                         }
@@ -596,9 +600,9 @@ namespace MapExtPDX.ModeB
                         }
 
                         // 6. 概率放弃（模拟市场竞争或换工作意愿）：
-                        float freeJobsCount = this.m_FreeCache[targetJobLevel];
+                        float freeJobsCount = m_FreeCache[targetJobLevel];
                         // 计算竞争比：该学历的总待业人数 / 该等级的空缺职位数
-                        float competitionRatio = (float)this.m_EmployableByEducation[targetJobLevel] / freeJobsCount;
+                        float competitionRatio = m_EmployableByEducation[targetJobLevel] / freeJobsCount;
 
                         // 如果已有工作，且竞争激烈（ratio > 2），有一定概率放弃跳槽
                         if (isSwitcher && random.NextFloat(competitionRatio) > 2f)
@@ -628,13 +632,13 @@ namespace MapExtPDX.ModeB
 
                         // 7. 准备寻路：找到合适的目标等级后，发起寻路请求
                         // 给求职实体添加路径信息组件，状态设为 Pending
-                        this.m_CommandBuffer.AddComponent(unfilteredChunkIndex, jobSeekerEntity, new PathInformation
+                        m_CommandBuffer.AddComponent(unfilteredChunkIndex, jobSeekerEntity, new PathInformation
                         {
                             m_State = PathFlags.Pending
                         });
 
-                        Household householdData = this.m_Households[householdEntity];
-                        DynamicBuffer<HouseholdCitizen> householdCitizens = this.m_HouseholdCitizens[householdEntity];
+                        Household householdData = m_Households[householdEntity];
+                        DynamicBuffer<HouseholdCitizen> householdCitizens = m_HouseholdCitizens[householdEntity];
 
                         // 配置寻路参数
                         PathfindParameters parameters = new PathfindParameters
@@ -676,11 +680,11 @@ namespace MapExtPDX.ModeB
                         }
 
                         // 如果有车，更新寻路方法
-                        PathUtils.UpdateOwnedVehicleMethods(householdEntity, ref this.m_OwnedVehicles, ref parameters, ref origin, ref destination);
+                        PathUtils.UpdateOwnedVehicleMethods(householdEntity, ref m_OwnedVehicles, ref parameters, ref origin, ref destination);
 
                         // 将寻路请求加入队列
                         SetupQueueItem queueItem = new SetupQueueItem(jobSeekerEntity, parameters, origin, destination);
-                        this.m_PathfindQueue.Enqueue(queueItem);
+                        m_PathfindQueue.Enqueue(queueItem);
 #if DEBUG
                         unsafe
                         {
@@ -770,7 +774,7 @@ namespace MapExtPDX.ModeB
                     bool isPathFail = (pathInfos[j].m_Destination == Entity.Null);
 
                     // 2. 确认市民有效
-                    if (this.m_Citizens.HasComponent(citizenEntity) && !this.m_Deleteds.HasComponent(citizenEntity))
+                    if (m_Citizens.HasComponent(citizenEntity) && !m_Deleteds.HasComponent(citizenEntity))
                     {
                         // 获取寻路找到的目的地（工作地点）
                         Entity workplaceEntity = pathInfos[j].m_Destination;
@@ -778,8 +782,8 @@ namespace MapExtPDX.ModeB
                         // 3. 验证工作地点是否有效（包含Prefab且有员工缓冲区）
                         if (!isPathFail && m_Prefabs.HasComponent(workplaceEntity) && m_EmployeeBuffers.HasBuffer(workplaceEntity))
                         {
-                            DynamicBuffer<Employee> employees = this.m_EmployeeBuffers[workplaceEntity];
-                            WorkProvider workProvider = this.m_WorkProviders[workplaceEntity];
+                            DynamicBuffer<Employee> employees = m_EmployeeBuffers[workplaceEntity];
+                            WorkProvider workProvider = m_WorkProviders[workplaceEntity];
 
                             // 处理租户情况：如果工作地点是被租赁的房产，需指向实际物业
                             Entity propertyEntity = m_PropertyRenters.HasComponent(workplaceEntity) ? m_PropertyRenters[workplaceEntity].m_Property : workplaceEntity;
@@ -790,8 +794,9 @@ namespace MapExtPDX.ModeB
                             if (!m_Workers.HasComponent(citizenEntity) || m_Workers[citizenEntity].m_Workplace != workplaceEntity)
 
                             {
-                                Entity workplacePrefab = this.m_Prefabs[workplaceEntity].m_Prefab;
-                                if (m_WorkplaceDatas.HasComponent(workplacePrefab) && m_FreeWorkplaces.HasComponent(workplaceEntity))
+                                Entity workplacePrefab = m_Prefabs[workplaceEntity].m_Prefab;
+                                if (m_WorkplaceDatas.HasComponent(workplacePrefab) && m_FreeWorkplaces.HasComponent(workplaceEntity)
+                                    && m_FreeWorkplaces[workplaceEntity].Count > 0) // 恢复原版 Count>0 预检查
                                 {
                                     FreeWorkplaces freeWorkplaces = m_FreeWorkplaces[workplaceEntity];
 
@@ -867,10 +872,10 @@ namespace MapExtPDX.ModeB
                         }
 #endif
                         // 完成求职流程，移除HasJobSeeker标记:无论成功与否，关闭求职状态
-                        this.m_CommandBuffer.SetComponentEnabled<HasJobSeeker>(citizenEntity, value: false);
+                        m_CommandBuffer.SetComponentEnabled<HasJobSeeker>(citizenEntity, value: false);
                     }
                     // 删除临时的JobSeeker实体
-                    this.m_CommandBuffer.AddComponent(jobSeekerEntity, default(Deleted));
+                    m_CommandBuffer.AddComponent(jobSeekerEntity, default(Deleted));
                 }
 
             } // Execute
@@ -879,6 +884,5 @@ namespace MapExtPDX.ModeB
     } // class
 
 }
-
 
 

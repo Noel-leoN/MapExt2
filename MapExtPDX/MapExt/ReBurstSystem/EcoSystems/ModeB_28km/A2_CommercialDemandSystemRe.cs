@@ -1,4 +1,4 @@
-using Colossal.Collections;
+﻿using Colossal.Collections;
 using Game.Buildings;
 using Game.City;
 using Game.Companies;
@@ -69,9 +69,9 @@ namespace MapExtPDX.ModeB
             // ----------------------------------------------------------------
             // 检查城市是否已经解锁了商业区（如果没有解锁，需求应锁死为0）
             bool isCommercialZoneUnlocked = false;
-            for (int i = 0; i < this.m_UnlockedZoneDatas.Length; i++)
+            for (int i = 0; i < m_UnlockedZoneDatas.Length; i++)
             {
-                if (this.m_UnlockedZoneDatas[i].m_AreaType == AreaType.Commercial)
+                if (m_UnlockedZoneDatas[i].m_AreaType == AreaType.Commercial)
                 {
                     isCommercialZoneUnlocked = true;
                     break;
@@ -86,14 +86,14 @@ namespace MapExtPDX.ModeB
             while (resourceIter.Next())
             {
                 int resIndex = EconomyUtils.GetResourceIndex(resourceIter.resource);
-                this.m_FreeProperties[resIndex] = 0;
-                this.m_BuildingDemands[resIndex] = 0;
-                this.m_ResourceDemands[resIndex] = 0;
+                m_FreeProperties[resIndex] = 0;
+                m_BuildingDemands[resIndex] = 0;
+                m_ResourceDemands[resIndex] = 0;
             }
             // 重置UI显示用的需求因子（如“税收过高”、“没有顾客”等提示）
-            for (int j = 0; j < this.m_DemandFactors.Length; j++)
+            for (int j = 0; j < m_DemandFactors.Length; j++)
             {
-                this.m_DemandFactors[j] = 0;
+                m_DemandFactors[j] = 0;
             }
 
             // ----------------------------------------------------------------
@@ -101,24 +101,23 @@ namespace MapExtPDX.ModeB
             // 遍历所有商业建筑，检查是否有租户（Renter），如果没有则计为空置
             // ----------------------------------------------------------------
             // 遍历所有商业建筑的数据块（Chunks）
-            for (int k = 0; k < this.m_CommercialPropertyChunks.Length; k++)
+            foreach (var archetypeChunk in m_CommercialPropertyChunks)
             {
-                ArchetypeChunk archetypeChunk = this.m_CommercialPropertyChunks[k];
                 // 只有正在市场上待租的建筑才算
-                if (!archetypeChunk.Has(ref this.m_PropertyOnMarketType))
+                if (!archetypeChunk.Has(ref m_PropertyOnMarketType))
                 {
                     continue;
                 }
 
-                NativeArray<PrefabRef> prefabs = archetypeChunk.GetNativeArray(ref this.m_PrefabType);
-                BufferAccessor<Renter> renterAccessors = archetypeChunk.GetBufferAccessor(ref this.m_RenterType);
+                NativeArray<PrefabRef> prefabs = archetypeChunk.GetNativeArray(ref m_PrefabType);
+                BufferAccessor<Renter> renterAccessors = archetypeChunk.GetBufferAccessor(ref m_RenterType);
 
                 for (int l = 0; l < prefabs.Length; l++)
                 {
                     // 获取商业建筑预制体实体
                     Entity prefabEntity = prefabs[l].m_Prefab;
                     // 如果该建筑没有该预制体，跳过
-                    if (!this.m_BuildingPropertyDatas.HasComponent(prefabEntity))
+                    if (!m_BuildingPropertyDatas.HasComponent(prefabEntity))
                     {
                         continue;
                     }
@@ -128,7 +127,7 @@ namespace MapExtPDX.ModeB
                     DynamicBuffer<Renter> renters = renterAccessors[l];
                     for (int m = 0; m < renters.Length; m++)
                     {
-                        if (this.m_CommercialCompanies.HasComponent(renters[m].m_Renter))
+                        if (m_CommercialCompanies.HasComponent(renters[m].m_Renter))
                         {
                             hasCommercialRenter = true;
                             break;
@@ -142,25 +141,26 @@ namespace MapExtPDX.ModeB
                     }
 
                     // 如果是空置的，根据该建筑允许销售的资源类型，增加对应的FreeProperties计数
-                    BuildingPropertyData buildingData = this.m_BuildingPropertyDatas[prefabEntity];
+                    BuildingPropertyData buildingData = m_BuildingPropertyDatas[prefabEntity];
                     ResourceIterator validResourceIter = ResourceIterator.GetIterator();
                     while (validResourceIter.Next())
                     {
                         if (((long)buildingData.m_AllowedSold & (long)validResourceIter.resource) != 0L)
                         {
-                            this.m_FreeProperties[EconomyUtils.GetResourceIndex(validResourceIter.resource)]++;
+                            m_FreeProperties[EconomyUtils.GetResourceIndex(validResourceIter.resource)]++;
                         }
                     }
                 }
+
             }
 
             // ----------------------------------------------------------------
             // Phase 4: 计算核心商业需求 (Main Demand Logic)
             // 基于税率、人口规模、现有供应量来计算
             // ----------------------------------------------------------------
-            this.m_CompanyDemand.value = 0; // 公司入驻需求（租房子）
-            this.m_BuildingDemand.value = 0; // 建设新楼需求（建房子）
-            int currentPopulation = this.m_Populations[this.m_City].m_Population;
+            m_CompanyDemand.value = 0; // 公司入驻需求（租房子）
+            m_BuildingDemand.value = 0; // 建设新楼需求（建房子）
+            int currentPopulation = m_Populations[m_City].m_Population;
 
             // [改进点 1] 动态 Demand Buffer 计算
             // 人口 < 2000: buffer 0 (严格)
@@ -183,17 +183,17 @@ namespace MapExtPDX.ModeB
                 int resIndex = EconomyUtils.GetResourceIndex(resourceIter.resource);
 
                 // 过滤掉非商业资源或无效资源
-                if (!EconomyUtils.IsCommercialResource(resourceIter.resource) || !this.m_ResourceDatas.HasComponent(this.m_ResourcePrefabs[resourceIter.resource]))
+                if (!EconomyUtils.IsCommercialResource(resourceIter.resource) || !m_ResourceDatas.HasComponent(m_ResourcePrefabs[resourceIter.resource]))
                 {
                     continue;
                 }
 
                 // --- A. 计算税收影响 ---
                 //// 税率基准是10%，每高1%会降低需求
-                float taxRate = (float)TaxSystem.GetCommercialTaxRate(resource, this.m_TaxRates);
+                float taxRate = TaxSystem.GetCommercialTaxRate(resource, m_TaxRates);
                 // 保持原逻辑，但确保数值稳定
-                float taxModifier = -0.05f * (taxRate - 10f) * this.m_DemandParameters.m_TaxEffect.y;
-                taxModifier += this.m_CommercialTaxEffectDemandOffset;
+                float taxModifier = -0.05f * (taxRate - 10f) * m_DemandParameters.m_TaxEffect.y;
+                taxModifier += m_CommercialTaxEffectDemandOffset;
 
                 // --- B. 计算资源的基础需求 (BUG 核心区域) ---
                 if (resourceIter.resource != Resource.Lodging) // 非旅馆类（普通商品）
@@ -221,7 +221,7 @@ namespace MapExtPDX.ModeB
 
                     // === [改进点 2] 抑制加油站 (Petrochemicals) ===
                     // 如果是石油制品，人为提高其“虚拟库存量”或者降低其需求敏感度
-                    int currentAvailable = this.m_CurrentAvailables[resIndex];
+                    int currentAvailable = m_CurrentAvailables[resIndex];
                     // Divisor 调整：为了避免需求过于“粘滞”，建议设个上限
                     // 例如：divisor最大不超过 500，这样即使在大城市，需求反应也足够灵敏
                     int rawDivisor = math.max(100, dynamicThreshold / 100);
@@ -250,13 +250,13 @@ namespace MapExtPDX.ModeB
                     // =================================================
 
                     // 应用动态缓冲，钳制需求为0-100
-                    this.m_ResourceDemands[resIndex] = math.clamp(rawDemand, 0, 100);
+                    m_ResourceDemands[resIndex] = math.clamp(rawDemand, 0, 100);
                 }
                 else // 旅馆类 (Lodging) - 逻辑相对正常
                 {
                     // 检查游客需求是否满足
-                    int requiredLodging = (int)((float)this.m_Tourisms[this.m_City].m_CurrentTourists * this.m_DemandParameters.m_HotelRoomPercentRequirement);
-                    int currentLodging = this.m_Tourisms[this.m_City].m_Lodging.y;
+                    int requiredLodging = (int)(m_Tourisms[m_City].m_CurrentTourists * m_DemandParameters.m_HotelRoomPercentRequirement);
+                    int currentLodging = m_Tourisms[m_City].m_Lodging.y;
 
                     // === [改进点 3] 拯救旅馆 (平滑需求曲线) ===
                     // 不要用硬性的 > 0 判断
@@ -265,39 +265,39 @@ namespace MapExtPDX.ModeB
                     // 如果占用率达到 100%，需求达到 100
                     if (currentLodging == 0 && requiredLodging > 0)
                     {
-                        this.m_ResourceDemands[resIndex] = 100; // 没旅馆且有游客，必须建
+                        m_ResourceDemands[resIndex] = 100; // 没旅馆且有游客，必须建
                     }
                     else if (currentLodging > 0)
                     {
-                        float occupancy = (float)requiredLodging / (float)currentLodging;
+                        float occupancy = requiredLodging / (float)currentLodging;
                         // 阈值 0.7 (70%)，斜率因子 333 (让 0.7->1.0 映射到 0->100)
                         float lodgingDemandFloat = (occupancy - 0.7f) * 333f;
-                        this.m_ResourceDemands[resIndex] = math.clamp((int)lodgingDemandFloat, 0, 100);
+                        m_ResourceDemands[resIndex] = math.clamp((int)lodgingDemandFloat, 0, 100);
                     }
                     // 既没有游客也没有旅馆，需求给予一个低值，避免潜在锁定为0
                     else
                     {
-                        this.m_ResourceDemands[resIndex] = 5;
+                        m_ResourceDemands[resIndex] = 5;
                     }
                     // === End of 改进点 3 ===
                 }
 
                 // --- C. 应用税收修正 ---
-                this.m_ResourceDemands[resIndex] = (int)math.round((1f + taxModifier) * (float)this.m_ResourceDemands[resIndex]); // 改为math
+                m_ResourceDemands[resIndex] = (int)math.round((1f + taxModifier) * m_ResourceDemands[resIndex]); // 改为math
 
                 // 再次 Clamp 保证安全
-                this.m_ResourceDemands[resIndex] = math.clamp(this.m_ResourceDemands[resIndex], 0, 100);
+                m_ResourceDemands[resIndex] = math.clamp(m_ResourceDemands[resIndex], 0, 100);
 
                 // 记录UI显示的税收因子
                 int uiTaxImpact = (int)math.round(100f * taxModifier);
-                this.m_DemandFactors[11] += uiTaxImpact; // 改为math
+                m_DemandFactors[11] += uiTaxImpact; // 改为math
 
                 // --- D. 汇总最终需求 ---
                 // --- 修复点 3：建筑需求逻辑优化 ---
-                if (this.m_ResourceDemands[resIndex] > 0)
+                if (m_ResourceDemands[resIndex] > 0)
                 {
                     // 叠加整体公司入驻需求
-                    this.m_CompanyDemand.value += this.m_ResourceDemands[resIndex];
+                    m_CompanyDemand.value += m_ResourceDemands[resIndex];
 
                     //// 如果没有空置物业了，才产生“建设新建筑”的需求
                     //// Propertyless 代表无物业的公司，FreeProperties 代表空物业。
@@ -307,34 +307,34 @@ namespace MapExtPDX.ModeB
 
                     // === [应用改进点 1] 使用 dynamicBuffer ===
                     // 逻辑：空置物业 - 正在寻找物业的公司 <= 允许的缓冲值
-                    int freeVsWaiting = this.m_FreeProperties[resIndex] - this.m_Propertyless[resIndex];
+                    int freeVsWaiting = m_FreeProperties[resIndex] - m_Propertyless[resIndex];
 
                     // 只有当商品需求比较强烈（例如 > 10）时，才考虑建设新楼
                     // 否则只增加公司入驻需求（填满现有建筑）
-                    this.m_BuildingDemands[resIndex] = ((freeVsWaiting <= dynamicBuffer && this.m_ResourceDemands[resIndex] > 10) ? this.m_ResourceDemands[resIndex] : 0);
+                    m_BuildingDemands[resIndex] = ((freeVsWaiting <= dynamicBuffer && m_ResourceDemands[resIndex] > 10) ? m_ResourceDemands[resIndex] : 0);
                     // === End of 改进点 1 ===
 
                     // 叠加整体建筑建设需求
-                    if (this.m_BuildingDemands[resIndex] > 0)
+                    if (m_BuildingDemands[resIndex] > 0)
                     {
-                        this.m_BuildingDemand.value += this.m_BuildingDemands[resIndex];
+                        m_BuildingDemand.value += m_BuildingDemands[resIndex];
                     }
 
                     // --- E. 更新UI因子 (Factors) ---
-                    int buildingDemandContribution = ((this.m_BuildingDemands[resIndex] > 0) ? this.m_ResourceDemands[resIndex] : 0);
-                    int baseDemandVal = this.m_ResourceDemands[resIndex];
+                    int buildingDemandContribution = ((m_BuildingDemands[resIndex] > 0) ? m_ResourceDemands[resIndex] : 0);
+                    int baseDemandVal = m_ResourceDemands[resIndex];
                     int demandBeforeTax = baseDemandVal + uiTaxImpact; // 反推回税前需求
 
                     if (resource == Resource.Lodging)
-                        this.m_DemandFactors[9] += baseDemandVal; // 旅馆需求
+                        m_DemandFactors[9] += baseDemandVal; // 旅馆需求
                     else if (resource == Resource.Petrochemicals)
-                        this.m_DemandFactors[16] += baseDemandVal; // 石油需求
+                        m_DemandFactors[16] += baseDemandVal; // 石油需求
                     else
-                        this.m_DemandFactors[4] += baseDemandVal; // 居民购物需求
+                        m_DemandFactors[4] += baseDemandVal; // 居民购物需求
 
                     // 这里的逻辑有点绕：Factors[13] 是 "Empty Buildings" (空置建筑负面因子)
                     // 如果需要新建(num5) 但 实际需求高(num7)，这里用来计算空置建筑对需求的压制
-                    this.m_DemandFactors[13] += math.min(0, buildingDemandContribution - demandBeforeTax);
+                    m_DemandFactors[13] += math.min(0, buildingDemandContribution - demandBeforeTax);
 
                     validCommercialResourceCount++;
                 }
@@ -342,31 +342,31 @@ namespace MapExtPDX.ModeB
 
             // 5. 归一化处理
             // 防止除以0，处理UI因子显示方向
-            this.m_DemandFactors[4] = ((this.m_DemandFactors[4] == 0) ? (-1) : this.m_DemandFactors[4]);
+            m_DemandFactors[4] = ((m_DemandFactors[4] == 0) ? (-1) : m_DemandFactors[4]);
 
             // 极端情况处理：无人城市
             if (currentPopulation <= 0)
             {
-                this.m_DemandFactors[4] = 0;
-                this.m_DemandFactors[18] = this.m_BuildingDemand.value; // 显示为基础需求
-                this.m_DemandFactors[16] = 0;
+                m_DemandFactors[4] = 0;
+                m_DemandFactors[18] = m_BuildingDemand.value; // 显示为基础需求
+                m_DemandFactors[16] = 0;
             }
 
             // 如果地图上甚至没有任何商业地块，清除空置建筑因子
-            if (this.m_CommercialPropertyChunks.Length == 0)
+            if (m_CommercialPropertyChunks.Length == 0)
             {
-                this.m_DemandFactors[13] = 0;
+                m_DemandFactors[13] = 0;
             }
 
             // 取平均值作为最终的全市商业需求条 (0-100)
-            this.m_CompanyDemand.value = ((validCommercialResourceCount != 0) ? math.clamp(this.m_CompanyDemand.value / validCommercialResourceCount, 0, 100) : 0);
-            this.m_BuildingDemand.value = ((validCommercialResourceCount != 0 && isCommercialZoneUnlocked) ? math.clamp(this.m_BuildingDemand.value / validCommercialResourceCount, 0, 100) : 0);
+            m_CompanyDemand.value = ((validCommercialResourceCount != 0) ? math.clamp(m_CompanyDemand.value / validCommercialResourceCount, 0, 100) : 0);
+            m_BuildingDemand.value = ((validCommercialResourceCount != 0 && isCommercialZoneUnlocked) ? math.clamp(m_BuildingDemand.value / validCommercialResourceCount, 0, 100) : 0);
 
             // 开发者作弊模式
-            if (this.m_UnlimitedDemand)
+            if (m_UnlimitedDemand)
             {
-                this.m_BuildingDemand.value = 100;
-                this.m_CompanyDemand.value = 100;
+                m_BuildingDemand.value = 100;
+                m_CompanyDemand.value = 100;
             }
         }
     }

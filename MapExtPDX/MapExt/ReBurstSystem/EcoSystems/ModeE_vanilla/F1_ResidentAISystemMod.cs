@@ -1,3 +1,4 @@
+﻿using System;
 using Game;
 using Game.Simulation;
 using System.Threading;
@@ -37,8 +38,6 @@ namespace MapExtPDX.ModeE
 {
 	public partial class ResidentAISystemMod : GameSystemBase
 	{
-
-
 		#region Fields
 
 		private EndFrameBarrier m_EndFrameBarrier;
@@ -88,7 +87,7 @@ namespace MapExtPDX.ModeE
 				ComponentType.ReadWrite<ResetTrip>());
 			m_ParkedToMovingCarRemoveTypes = new ComponentTypeSet(ComponentType.ReadWrite<ParkedCar>(),
 				ComponentType.ReadWrite<Stopped>());
-			m_ParkedToMovingCarAddTypes = new ComponentTypeSet(new ComponentType[12]
+			m_ParkedToMovingCarAddTypes = new ComponentTypeSet(new[]
 			{
 				ComponentType.ReadWrite<Moving>(),
 				ComponentType.ReadWrite<TransformFrame>(),
@@ -103,7 +102,7 @@ namespace MapExtPDX.ModeE
 				ComponentType.ReadWrite<Swaying>(),
 				ComponentType.ReadWrite<Updated>()
 			});
-			m_ParkedToMovingTrailerAddTypes = new ComponentTypeSet(new ComponentType[6]
+			m_ParkedToMovingTrailerAddTypes = new ComponentTypeSet(new[]
 			{
 				ComponentType.ReadWrite<Moving>(),
 				ComponentType.ReadWrite<TransformFrame>(),
@@ -248,15 +247,15 @@ namespace MapExtPDX.ModeE
 				m_ActionQueue = m_Actions.m_ActionQueue.AsParallelWriter(),
 				m_CommandBuffer = m_EndFrameBarrier.CreateCommandBuffer().AsParallelWriter()
 			};
-			JobHandle dependsOn = JobChunkExtensions.ScheduleParallel(jobData, m_CreatureQuery,
-				JobHandle.CombineDependencies(base.Dependency, jobHandle));
+			JobHandle dependsOn = jobData.ScheduleParallel(m_CreatureQuery,
+				JobHandle.CombineDependencies(Dependency, jobHandle));
 			jobData.m_GroupMember = true;
-			JobHandle jobHandle2 = JobChunkExtensions.ScheduleParallel(jobData, m_GroupCreatureQuery, dependsOn);
+			JobHandle jobHandle2 = jobData.ScheduleParallel(m_GroupCreatureQuery, dependsOn);
 			m_PersonalCarSelectData.PostUpdate(jobHandle2);
 			m_PathfindSetupSystem.AddQueueWriter(jobHandle2);
 			m_EndFrameBarrier.AddJobHandleForProducer(jobHandle2);
 			m_Actions.m_Dependency = jobHandle2;
-			base.Dependency = jobHandle2;
+			Dependency = jobHandle2;
 		}
 
 		#endregion
@@ -278,16 +277,12 @@ namespace MapExtPDX.ModeE
 
 			[ReadOnly] public EntityTypeHandle m_EntityType;
 			[ReadOnly] public ComponentTypeHandle<CurrentVehicle> m_CurrentVehicleType;
-
 			[ReadOnly] public ComponentTypeHandle<GroupMember> m_GroupMemberType;
 			[ReadOnly] public ComponentTypeHandle<Unspawned> m_UnspawnedType;
-
 			[ReadOnly] public ComponentTypeHandle<HumanNavigation> m_HumanNavigationType;
 			[ReadOnly] public ComponentTypeHandle<PrefabRef> m_PrefabRefType;
-
 			[ReadOnly] public BufferTypeHandle<GroupCreature> m_GroupCreatureType;
 			public ComponentTypeHandle<Game.Creatures.Resident> m_ResidentType;
-
 			public ComponentTypeHandle<Creature> m_CreatureType;
 
 			[NativeDisableContainerSafetyRestriction]
@@ -299,134 +294,92 @@ namespace MapExtPDX.ModeE
 			public ComponentTypeHandle<Target> m_TargetType;
 
 			public ComponentTypeHandle<Divert> m_DivertType;
-
 			[ReadOnly] public EntityStorageInfoLookup m_EntityLookup;
 			[ReadOnly] public ComponentLookup<Game.Objects.Transform> m_TransformData;
-
 			[ReadOnly] public ComponentLookup<Owner> m_OwnerData;
 
 			[NativeDisableContainerSafetyRestriction] [ReadOnly]
 			public ComponentLookup<Target> m_TargetData;
 
 			[ReadOnly] public ComponentLookup<PseudoRandomSeed> m_PseudoRandomSeedData;
-
 			[ReadOnly] public ComponentLookup<CurrentVehicle> m_CurrentVehicleData;
 			[ReadOnly] public ComponentLookup<Destroyed> m_DestroyedData;
-
 			[ReadOnly] public ComponentLookup<Deleted> m_DeletedData;
 			[ReadOnly] public ComponentLookup<Unspawned> m_UnspawnedData;
-
 			[ReadOnly] public ComponentLookup<RideNeeder> m_RideNeederData;
 			[ReadOnly] public ComponentLookup<Dispatched> m_Dispatched;
-
 			[ReadOnly] public ComponentLookup<ServiceRequest> m_ServiceRequestData;
 			[ReadOnly] public ComponentLookup<Moving> m_MovingData;
-
 			[ReadOnly] public ComponentLookup<Game.Objects.SpawnLocation> m_SpawnLocation;
 			[ReadOnly] public ComponentLookup<Animal> m_AnimalData;
-
 			[ReadOnly] public ComponentLookup<OnFire> m_OnFireData;
 			[ReadOnly] public ComponentLookup<Game.Net.Edge> m_EdgeData;
-
 			[ReadOnly] public ComponentLookup<Curve> m_CurveData;
 			[ReadOnly] public ComponentLookup<Lane> m_LaneData;
-
 			[ReadOnly] public ComponentLookup<EdgeLane> m_EdgeLaneData;
 			[ReadOnly] public ComponentLookup<Game.Net.ParkingLane> m_ParkingLaneData;
-
 			[ReadOnly] public ComponentLookup<GarageLane> m_GarageLaneData;
 			[ReadOnly] public ComponentLookup<Game.Net.PedestrianLane> m_PedestrianLaneData;
-
 			[ReadOnly] public ComponentLookup<Game.Net.ConnectionLane> m_ConnectionLaneData;
 			[ReadOnly] public ComponentLookup<LaneSignal> m_LaneSignalData;
-
 			[ReadOnly] public ComponentLookup<HangaroundLocation> m_HangaroundLocationData;
 			[ReadOnly] public ComponentLookup<Citizen> m_CitizenData;
-
 			[ReadOnly] public ComponentLookup<HouseholdMember> m_HouseholdMembers;
 			[ReadOnly] public ComponentLookup<Household> m_HouseholdData;
-
 			[ReadOnly] public ComponentLookup<CurrentBuilding> m_CurrentBuildingData;
 			[ReadOnly] public ComponentLookup<CurrentTransport> m_CurrentTransportData;
-
 			[ReadOnly] public ComponentLookup<Worker> m_WorkerData;
 			[ReadOnly] public ComponentLookup<CarKeeper> m_CarKeeperData;
-
 			[ReadOnly] public ComponentLookup<BicycleOwner> m_BicycleOwnerData;
 			[ReadOnly] public ComponentLookup<HealthProblem> m_HealthProblemData;
-
 			[ReadOnly] public ComponentLookup<TravelPurpose> m_TravelPurposeData;
 			[ReadOnly] public ComponentLookup<TouristHousehold> m_TouristHouseholds;
-
 			[ReadOnly] public ComponentLookup<HomelessHousehold> m_HomelessHouseholdData;
 			[ReadOnly] public ComponentLookup<HouseholdNeed> m_HouseholdNeedData;
-
 			[ReadOnly] public ComponentLookup<AttendingMeeting> m_AttendingMeetingData;
 			[ReadOnly] public ComponentLookup<CoordinatedMeeting> m_CoordinatedMeetingData;
-
 			[ReadOnly] public ComponentLookup<MovingAway> m_MovingAwayData;
 			[ReadOnly] public ComponentLookup<ServiceAvailable> m_ServiceAvailableData;
-
 			[ReadOnly] public ComponentLookup<ParkedCar> m_ParkedCarData;
 			[ReadOnly] public ComponentLookup<Game.Vehicles.PersonalCar> m_PersonalCarData;
-
 			[ReadOnly] public ComponentLookup<Game.Vehicles.Taxi> m_TaxiData;
 			[ReadOnly] public ComponentLookup<Game.Vehicles.PublicTransport> m_PublicTransportData;
-
 			[ReadOnly] public ComponentLookup<Game.Vehicles.PoliceCar> m_PoliceCarData;
 			[ReadOnly] public ComponentLookup<Game.Vehicles.Ambulance> m_AmbulanceData;
-
 			[ReadOnly] public ComponentLookup<Game.Vehicles.Hearse> m_HearseData;
 			[ReadOnly] public ComponentLookup<Controller> m_ControllerData;
-
 			[ReadOnly] public ComponentLookup<Vehicle> m_VehicleData;
 			[ReadOnly] public ComponentLookup<Train> m_TrainData;
-
 			[ReadOnly] public ComponentLookup<PropertyRenter> m_PropertyRenters;
 			[ReadOnly] public ComponentLookup<AttractivenessProvider> m_AttractivenessProviderData;
-
 			[ReadOnly] public ComponentLookup<Connected> m_RouteConnectedData;
 			[ReadOnly] public ComponentLookup<BoardingVehicle> m_BoardingVehicleData;
-
 			[ReadOnly] public ComponentLookup<CurrentRoute> m_CurrentRouteData;
 			[ReadOnly] public ComponentLookup<TransportLine> m_TransportLineData;
-
 			[ReadOnly] public ComponentLookup<AccessLane> m_AccessLaneLaneData;
 			[ReadOnly] public ComponentLookup<PrefabRef> m_PrefabRefData;
-
 			[ReadOnly] public ComponentLookup<CreatureData> m_PrefabCreatureData;
 			[ReadOnly] public ComponentLookup<HumanData> m_PrefabHumanData;
-
 			[ReadOnly] public ComponentLookup<ObjectGeometryData> m_PrefabObjectGeometryData;
 			[ReadOnly] public ComponentLookup<CarData> m_PrefabCarData;
-
 			[ReadOnly] public ComponentLookup<IndustrialProcessData> m_PrefabIndustrialProcessData;
 			[ReadOnly] public ComponentLookup<TransportStopData> m_PrefabTransportStopData;
-
 			[ReadOnly] public ComponentLookup<SpawnLocationData> m_PrefabSpawnLocationData;
 			[ReadOnly] public BufferLookup<HouseholdAnimal> m_HouseholdAnimals;
-
 			[ReadOnly] public BufferLookup<HouseholdCitizen> m_HouseholdCitizens;
 			[ReadOnly] public BufferLookup<ConnectedRoute> m_ConnectedRoutes;
-
 			[ReadOnly] public BufferLookup<RouteWaypoint> m_RouteWaypoints;
 			[ReadOnly] public BufferLookup<LayoutElement> m_VehicleLayouts;
-
 			[ReadOnly] public BufferLookup<CarNavigationLane> m_CarNavigationLanes;
 			[ReadOnly] public BufferLookup<ConnectedEdge> m_ConnectedEdges;
-
 			[ReadOnly] public BufferLookup<Game.Net.SubLane> m_SubLanes;
 			[ReadOnly] public BufferLookup<Game.Areas.Node> m_AreaNodes;
-
 			[ReadOnly] public BufferLookup<Triangle> m_AreaTriangles;
 			[ReadOnly] public BufferLookup<ConnectedBuilding> m_ConnectedBuildings;
-
 			[ReadOnly] public BufferLookup<Renter> m_Renters;
 			[ReadOnly] public BufferLookup<SpawnLocationElement> m_SpawnLocationElements;
-
 			[ReadOnly] public BufferLookup<Game.Economy.Resources> m_Resources;
 			[ReadOnly] public BufferLookup<ServiceDispatch> m_ServiceDispatches;
-
 			[ReadOnly] public BufferLookup<ActivityLocationElement> m_PrefabActivityLocationElements;
 
 			[NativeDisableContainerSafetyRestriction]
@@ -434,28 +387,20 @@ namespace MapExtPDX.ModeE
 
 			[NativeDisableParallelForRestriction] public ComponentLookup<PathOwner> m_PathOwnerData;
 			[NativeDisableParallelForRestriction] public BufferLookup<PathElement> m_PathElements;
-
 			[ReadOnly] public float m_TimeOfDay;
 			[ReadOnly] public RandomSeed m_RandomSeed;
-
 			[ReadOnly] public uint m_SimulationFrameIndex;
 			[ReadOnly] public bool m_LefthandTraffic;
-
 			[ReadOnly] public bool m_GroupMember;
 			[ReadOnly] public PersonalCarSelectData m_PersonalCarSelectData;
-
 			[ReadOnly] public EntityArchetype m_ResetTripArchetype;
 			[ReadOnly] public ComponentTypeSet m_ParkedToMovingCarRemoveTypes;
-
 			[ReadOnly] public ComponentTypeSet m_ParkedToMovingCarAddTypes;
 			[ReadOnly] public ComponentTypeSet m_ParkedToMovingTrailerAddTypes;
-
 			[ReadOnly] public NativeArray<int> m_DeletedResidents;
 			public NativeQueue<SetupQueueItem>.ParallelWriter m_PathfindQueue;
-
 			public NativeQueue<Boarding>.ParallelWriter m_BoardingQueue;
 			public NativeQueue<ResidentAction>.ParallelWriter m_ActionQueue;
-
 			public EntityCommandBuffer.ParallelWriter m_CommandBuffer;
 
 			public void Execute(in ArchetypeChunk chunk, int unfilteredChunkIndex, bool useEnabledMask,
@@ -1084,7 +1029,7 @@ namespace MapExtPDX.ModeE
 					if (divert.m_Purpose != Purpose.None)
 					{
 						SetDivert(jobIndex, entity, ref resident, ref currentLane, ref divert, ref pathOwner,
-							Purpose.None, Entity.Null, 0, Resource.NoResource);
+							Purpose.None, Entity.Null);
 					}
 					else if (ReturnHome(jobIndex, entity, ref random, ref resident, ref currentLane, ref target,
 						         ref divert, ref pathOwner))
@@ -1717,7 +1662,8 @@ namespace MapExtPDX.ModeE
 
 							PrefabRef prefabRef = m_PrefabRefData[renter];
 							if (m_PrefabIndustrialProcessData.HasComponent(prefabRef.m_Prefab) &&
-							    m_PrefabIndustrialProcessData[prefabRef.m_Prefab].m_Output.m_Resource == householdNeed.m_Resource)
+							    m_PrefabIndustrialProcessData[prefabRef.m_Prefab].m_Output.m_Resource ==
+							    householdNeed.m_Resource)
 							{
 								ServiceAvailable serviceAvailable = m_ServiceAvailableData[renter];
 								DynamicBuffer<Game.Economy.Resources> resources = m_Resources[renter];
@@ -1757,7 +1703,7 @@ namespace MapExtPDX.ModeE
 				float num = float.MaxValue;
 				float t = 0f;
 				int num2 = -2;
-				if (currentLane.m_CurvePosition.y != currentLane.m_CurvePosition.x &&
+				if (Math.Abs(currentLane.m_CurvePosition.y - currentLane.m_CurvePosition.x) > 0.001f &&
 				    m_PedestrianLaneData.HasComponent(currentLane.m_Lane))
 				{
 					num = MathUtils.Distance(m_CurveData[currentLane.m_Lane].m_Bezier, position,
@@ -1770,7 +1716,7 @@ namespace MapExtPDX.ModeE
 				for (int i = pathOwner.m_ElementIndex; i < num3; i++)
 				{
 					PathElement pathElement = dynamicBuffer[i];
-					if (pathElement.m_TargetDelta.y != pathElement.m_TargetDelta.x &&
+					if (Math.Abs(pathElement.m_TargetDelta.y - pathElement.m_TargetDelta.x) > 0.001f &&
 					    m_PedestrianLaneData.HasComponent(pathElement.m_Target))
 					{
 						float t2;
@@ -1836,7 +1782,7 @@ namespace MapExtPDX.ModeE
 				switch (purpose)
 				{
 					case Purpose.Shopping:
-						if (purpose == Purpose.Shopping && divert.m_Data != 0 &&
+						if (divert.m_Data != 0 &&
 						    m_HouseholdMembers.HasComponent(resident.m_Citizen))
 						{
 							m_ActionQueue.Enqueue(new ResidentAction
@@ -1870,7 +1816,7 @@ namespace MapExtPDX.ModeE
 					case Purpose.Disappear:
 						if (divert.m_Target == Entity.Null && path.Length >= 1)
 						{
-							divert.m_Target = path[path.Length - 1].m_Target;
+							divert.m_Target = path[^1].m_Target;
 							path.RemoveAt(path.Length - 1);
 						}
 
@@ -2140,7 +2086,7 @@ namespace MapExtPDX.ModeE
 				if (m_OnFireData.HasComponent(entity) || m_DestroyedData.HasComponent(entity))
 				{
 					SetDivert(jobIndex, creatureEntity, ref resident, ref currentLane, ref divert, ref pathOwner,
-						Purpose.Safety, Entity.Null, 0, Resource.NoResource);
+						Purpose.Safety, Entity.Null);
 					return false;
 				}
 
@@ -2498,7 +2444,7 @@ namespace MapExtPDX.ModeE
 					m_Target = currentLane.m_Lane
 				});
 				SetDivert(jobIndex, entity, ref resident, ref currentLane, ref divert, ref pathOwner, Purpose.None,
-					Entity.Null, 0, Resource.NoResource);
+					Entity.Null);
 				return false;
 			}
 
@@ -2529,12 +2475,12 @@ namespace MapExtPDX.ModeE
 					{
 						target.m_Target = Entity.Null;
 						SetDivert(jobIndex, entity, ref resident, ref currentLane, ref divert, ref pathOwner,
-							Purpose.Disappear, Entity.Null, 0, Resource.NoResource);
+							Purpose.Disappear, Entity.Null);
 						return false;
 					}
 
 					SetDivert(jobIndex, entity, ref resident, ref currentLane, ref divert, ref pathOwner,
-						Purpose.WaitingHome, Entity.Null, 0, Resource.NoResource);
+						Purpose.WaitingHome, Entity.Null);
 					return false;
 				}
 
@@ -2559,13 +2505,12 @@ namespace MapExtPDX.ModeE
 			private bool ReachEscape(int jobIndex, Entity entity, ref Game.Creatures.Resident resident,
 				ref HumanCurrentLane currentLane, ref Target target, ref Divert divert, ref PathOwner pathOwner)
 			{
-				bool movingAway;
-				Entity homeBuilding = GetHomeBuilding(ref resident, out movingAway);
+				Entity homeBuilding = GetHomeBuilding(ref resident, out bool _);
 				if (homeBuilding == Entity.Null || m_OnFireData.HasComponent(homeBuilding) ||
 				    m_DestroyedData.HasComponent(homeBuilding))
 				{
 					SetDivert(jobIndex, entity, ref resident, ref currentLane, ref divert, ref pathOwner,
-						Purpose.Disappear, Entity.Null, 0, Resource.NoResource);
+						Purpose.Disappear, Entity.Null);
 					return false;
 				}
 
@@ -2585,7 +2530,7 @@ namespace MapExtPDX.ModeE
 					if (movingAway)
 					{
 						SetDivert(jobIndex, entity, ref resident, ref currentLane, ref divert, ref pathOwner,
-							Purpose.Disappear, Entity.Null, 0, Resource.NoResource);
+							Purpose.Disappear, Entity.Null);
 						return false;
 					}
 
@@ -2642,7 +2587,7 @@ namespace MapExtPDX.ModeE
 				}
 
 				SetDivert(jobIndex, entity, ref resident, ref currentLane, ref divert, ref pathOwner, Purpose.None,
-					Entity.Null, 0, Resource.NoResource);
+					Entity.Null);
 				return false;
 			}
 
@@ -2684,7 +2629,7 @@ namespace MapExtPDX.ModeE
 					}
 
 					SetDivert(jobIndex, entity, ref resident, ref currentLane, ref divert, ref pathOwner,
-						Purpose.WaitingHome, Entity.Null, 0, Resource.NoResource);
+						Purpose.WaitingHome, Entity.Null);
 					return false;
 				}
 
@@ -2728,13 +2673,12 @@ namespace MapExtPDX.ModeE
 					// 替换 Allocator.Temp 为结构体容量固定的 FixedList128Bytes<Entity>
 					// 完全消除了在大地图中由于大量寻路连续失败，引发严重的 Temp 内存分配溢出和线程崩溃死机问题！
 					// ----------------------------------------------------------------------------------
-					FixedList128Bytes<Entity> ignoreLanes = new FixedList128Bytes<Entity>();
-					ignoreLanes.Add(currentLane.m_Lane);
+					FixedList128Bytes<Entity> ignoreLanes = new FixedList128Bytes<Entity> { currentLane.m_Lane };
 					Entity lane = currentLane.m_Lane;
 					float2 yy = currentLane.m_CurvePosition.yy;
 					if (yy.y >= 0.5f)
 					{
-						if (yy.y != 1f)
+						if (Math.Abs(yy.y - 1f) > 0.001f)
 						{
 							yy.y = 1f;
 							dynamicBuffer.Add(new PathElement(currentLane.m_Lane, yy));
@@ -2834,7 +2778,7 @@ namespace MapExtPDX.ModeE
 				Lane lane2 = m_LaneData[lane];
 				PathNode other = ((curveDelta == 0f)
 					? lane2.m_StartNode
-					: ((curveDelta != 1f) ? lane2.m_MiddleNode : lane2.m_EndNode));
+					: ((Math.Abs(curveDelta - 1f) > 0.001f) ? lane2.m_MiddleNode : lane2.m_EndNode));
 				for (int i = 0; i < dynamicBuffer.Length; i++)
 				{
 					Entity subLane = dynamicBuffer[i].m_SubLane;
@@ -2959,9 +2903,9 @@ namespace MapExtPDX.ModeE
 									if (dynamicBuffer2.Length > 0 && dynamicBuffer.Length > pathOwner.m_ElementIndex)
 									{
 										PathElement value = dynamicBuffer[pathOwner.m_ElementIndex];
-										CarNavigationLane carNavigationLane = dynamicBuffer2[dynamicBuffer2.Length - 1];
+										CarNavigationLane carNavigationLane = dynamicBuffer2[^1];
 										if (carNavigationLane.m_Lane == value.m_Target &&
-										    carNavigationLane.m_CurvePosition.y != value.m_TargetDelta.y &&
+										    Math.Abs(carNavigationLane.m_CurvePosition.y - value.m_TargetDelta.y) > 0.001f &&
 										    m_CurveData.HasComponent(currentLane.m_Lane) &&
 										    m_CurveData.HasComponent(value.m_Target))
 										{
@@ -2971,7 +2915,7 @@ namespace MapExtPDX.ModeE
 												value.m_TargetDelta.y);
 											MathUtils.Distance(m_CurveData[currentLane.m_Lane].m_Bezier, position,
 												out var t);
-											if (t != currentLane.m_CurvePosition.y)
+											if (Math.Abs(t - currentLane.m_CurvePosition.y) > 0.001f)
 											{
 												currentLane.m_CurvePosition.y = t;
 												currentLane.m_Flags &= ~CreatureLaneFlags.EndReached;
@@ -3290,14 +3234,7 @@ namespace MapExtPDX.ModeE
 				if (m_WorkerData.HasComponent(resident.m_Citizen))
 				{
 					Worker worker = m_WorkerData[resident.m_Citizen];
-					if (m_PropertyRenters.HasComponent(worker.m_Workplace))
-					{
-						parameters.m_Authorization2 = m_PropertyRenters[worker.m_Workplace].m_Property;
-					}
-					else
-					{
-						parameters.m_Authorization2 = worker.m_Workplace;
-					}
+					parameters.m_Authorization2 = m_PropertyRenters.HasComponent(worker.m_Workplace) ? m_PropertyRenters[worker.m_Workplace].m_Property : worker.m_Workplace;
 				}
 
 				bool flag = random.NextFloat(100f) < 20f;
@@ -3375,11 +3312,11 @@ namespace MapExtPDX.ModeE
 							        (componentData13.m_Flags & HealthProblemFlags.RequireTransport) != 0;
 							break;
 						}
-						case Purpose.MovingAway:
 						// [MOD] 刚需出行：回家/上班/上学需全图可达，与 TripNeededSystem 分支A对齐
 						case Purpose.GoingHome:
 						case Purpose.GoingToWork:
 						case Purpose.GoingToSchool:
+						case Purpose.MovingAway:
 							parameters.m_MaxCost = CitizenBehaviorSystem.kMaxMovingAwayCost;
 							break;
 					}
@@ -3534,7 +3471,7 @@ namespace MapExtPDX.ModeE
 					}
 				}
 
-				if (dynamicBuffer.IsCreated && dynamicBuffer.Length > 1)
+				if (dynamicBuffer is { IsCreated: true, Length: > 1 })
 				{
 					return;
 				}
@@ -4038,7 +3975,7 @@ namespace MapExtPDX.ModeE
 				if ((flags & CreatureVehicleFlags.Leader) != 0 && m_WaitingPassengers.HasComponent(waypoint))
 				{
 					ref WaitingPassengers valueRW2 = ref m_WaitingPassengers.GetRefRW(waypoint).ValueRW;
-					int num2 = (int)((float)(valueRW.m_Timer * num) * (2f / 15f));
+					int num2 = (int)(valueRW.m_Timer * num * (2f / 15f));
 					valueRW2.m_ConcludedAccumulation += num2;
 					valueRW2.m_SuccessAccumulation = (ushort)math.min(65535, valueRW2.m_SuccessAccumulation + num);
 				}
@@ -4250,7 +4187,7 @@ namespace MapExtPDX.ModeE
 				{
 					int num = 1 + GetPendingGroupMemberCount(passenger);
 					ref WaitingPassengers valueRW = ref m_WaitingPassengers.GetRefRW(waypoint).ValueRW;
-					int num2 = (int)((float)(5000 * num) * (2f / 15f));
+					int num2 = (int)(5000 * num * (2f / 15f));
 					valueRW.m_ConcludedAccumulation += num2;
 				}
 			}
@@ -4375,13 +4312,13 @@ namespace MapExtPDX.ModeE
 			protected override void OnCreate()
 			{
 				base.OnCreate();
-				m_EndFrameBarrier = base.World.GetOrCreateSystemManaged<EndFrameBarrier>();
-				m_ObjectSearchSystem = base.World.GetOrCreateSystemManaged<Game.Objects.SearchSystem>();
-				m_CityStatisticsSystem = base.World.GetOrCreateSystemManaged<CityStatisticsSystem>();
-				m_TransportUsageTrackSystem = base.World.GetOrCreateSystemManaged<TransportUsageTrackSystem>();
-				m_CitySystem = base.World.GetOrCreateSystemManaged<CitySystem>();
-				m_ServiceFeeSystem = base.World.GetOrCreateSystemManaged<ServiceFeeSystem>();
-				m_CurrentLaneTypes = new ComponentTypeSet(new ComponentType[6]
+				m_EndFrameBarrier = World.GetOrCreateSystemManaged<EndFrameBarrier>();
+				m_ObjectSearchSystem = World.GetOrCreateSystemManaged<Game.Objects.SearchSystem>();
+				m_CityStatisticsSystem = World.GetOrCreateSystemManaged<CityStatisticsSystem>();
+				m_TransportUsageTrackSystem = World.GetOrCreateSystemManaged<TransportUsageTrackSystem>();
+				m_CitySystem = World.GetOrCreateSystemManaged<CitySystem>();
+				m_ServiceFeeSystem = World.GetOrCreateSystemManaged<ServiceFeeSystem>();
+				m_CurrentLaneTypes = new ComponentTypeSet(new[]
 				{
 					ComponentType.ReadWrite<Moving>(),
 					ComponentType.ReadWrite<TransformFrame>(),
@@ -4390,7 +4327,7 @@ namespace MapExtPDX.ModeE
 					ComponentType.ReadWrite<HumanCurrentLane>(),
 					ComponentType.ReadWrite<Blocker>()
 				});
-				m_CurrentLaneTypesRelative = new ComponentTypeSet(new ComponentType[5]
+				m_CurrentLaneTypesRelative = new ComponentTypeSet(new[]
 				{
 					ComponentType.ReadWrite<Moving>(),
 					ComponentType.ReadWrite<TransformFrame>(),
@@ -4402,7 +4339,7 @@ namespace MapExtPDX.ModeE
 
 			protected override void OnUpdate()
 			{
-				JobHandle jobHandle = JobHandle.CombineDependencies(base.Dependency, m_Dependency);
+				JobHandle jobHandle = JobHandle.CombineDependencies(Dependency, m_Dependency);
 				JobHandle dependencies;
 				JobHandle deps;
 				JobHandle deps2;
@@ -4460,9 +4397,8 @@ namespace MapExtPDX.ModeE
 					m_ActionQueue = m_ActionQueue,
 					m_CommandBuffer = m_EndFrameBarrier.CreateCommandBuffer()
 				};
-				JobHandle jobHandle2 = IJobExtensions.Schedule(jobData,
-					JobUtils.CombineDependencies(jobHandle, dependencies, deps, deps3, deps2));
-				JobHandle jobHandle3 = IJobExtensions.Schedule(jobData2, jobHandle);
+				JobHandle jobHandle2 = jobData.Schedule(JobUtils.CombineDependencies(jobHandle, dependencies, deps, deps3, deps2));
+				JobHandle jobHandle3 = jobData2.Schedule(jobHandle);
 				m_BoardingQueue.Dispose(jobHandle2);
 				m_ActionQueue.Dispose(jobHandle3);
 				m_CityStatisticsSystem.AddWriter(jobHandle2);
@@ -4471,7 +4407,7 @@ namespace MapExtPDX.ModeE
 				m_EndFrameBarrier.AddJobHandleForProducer(jobHandle2);
 				m_ServiceFeeSystem.AddQueueWriter(jobHandle2);
 				m_EndFrameBarrier.AddJobHandleForProducer(jobHandle3);
-				base.Dependency = JobHandle.CombineDependencies(jobHandle2, jobHandle3);
+				Dependency = JobHandle.CombineDependencies(jobHandle2, jobHandle3);
 			}
 		}
 
@@ -4636,7 +4572,7 @@ namespace MapExtPDX.ModeE
 			NoPath_AlreadyMovingAway,
 			InvalidVehicleTarget,
 			Dead,
-			Count
+			// Count
 		}
 
 		#endregion

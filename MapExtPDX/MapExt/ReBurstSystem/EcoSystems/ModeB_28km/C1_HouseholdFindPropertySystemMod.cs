@@ -1,4 +1,4 @@
-// Game.Simulation.HouseholdFindPropertySystem
+﻿// Game.Simulation.HouseholdFindPropertySystem
 
 // Game.Simulation.CitizenPathFindSetup + SetupFindHomeJob
 
@@ -33,19 +33,11 @@ using Unity.Mathematics;
 
 namespace MapExtPDX.ModeB
 {
-    // =========================================================================================
-    using ModSystem = HouseholdFindPropertySystemMod;
-    using TargetSystem = HouseholdFindPropertySystem;
-
-    // =========================================================================================
-
     public partial class HouseholdFindPropertySystemMod : GameSystemBase
     {
         #region Constants
 
         private const int UPDATE_INTERVAL = 16;
-        public static readonly int kMaxProcessNormalHouseholdPerUpdate = 128;
-        public static readonly int kMaxProcessHomelessHouseholdPerUpdate = 1280;
         public static readonly int kFindPropertyCoolDown = 5000;
         public override int GetUpdateInterval(SystemUpdatePhase phase) => UPDATE_INTERVAL;
 
@@ -92,39 +84,39 @@ namespace MapExtPDX.ModeB
         protected override void OnCreate()
         {
             base.OnCreate();
-            this.m_EndFrameBarrier = World.GetOrCreateSystemManaged<EndFrameBarrier>();
-            this.m_PathfindSetupSystem = World.GetOrCreateSystemManaged<PathfindSetupSystem>();
-            this.m_GroundPollutionSystem = World.GetOrCreateSystemManaged<GroundPollutionSystem>();
-            this.m_AirPollutionSystem = World.GetOrCreateSystemManaged<AirPollutionSystem>();
-            this.m_NoisePollutionSystem = World.GetOrCreateSystemManaged<NoisePollutionSystem>();
-            this.m_TelecomCoverageSystem = World.GetOrCreateSystemManaged<TelecomCoverageSystem>();
-            this.m_CitySystem = World.GetOrCreateSystemManaged<CitySystem>();
-            this.m_CityStatisticsSystem = World.GetOrCreateSystemManaged<CityStatisticsSystem>();
-            this.m_TaxSystem = World.GetOrCreateSystemManaged<TaxSystem>();
-            this.m_TriggerSystem = World.GetOrCreateSystemManaged<TriggerSystem>();
-            this.m_SimulationSystem = World.GetOrCreateSystemManaged<SimulationSystem>();
-            this.m_PropertyProcessingSystem = World.GetOrCreateSystemManaged<PropertyProcessingSystem>();
-            this.m_CountResidentialPropertySystem = World.GetOrCreateSystemManaged<CountResidentialPropertySystem>();
-            this.m_HomelessHouseholdQuery = GetEntityQuery(ComponentType.ReadWrite<HomelessHousehold>(),
+            m_EndFrameBarrier = World.GetOrCreateSystemManaged<EndFrameBarrier>();
+            m_PathfindSetupSystem = World.GetOrCreateSystemManaged<PathfindSetupSystem>();
+            m_GroundPollutionSystem = World.GetOrCreateSystemManaged<GroundPollutionSystem>();
+            m_AirPollutionSystem = World.GetOrCreateSystemManaged<AirPollutionSystem>();
+            m_NoisePollutionSystem = World.GetOrCreateSystemManaged<NoisePollutionSystem>();
+            m_TelecomCoverageSystem = World.GetOrCreateSystemManaged<TelecomCoverageSystem>();
+            m_CitySystem = World.GetOrCreateSystemManaged<CitySystem>();
+            m_CityStatisticsSystem = World.GetOrCreateSystemManaged<CityStatisticsSystem>();
+            m_TaxSystem = World.GetOrCreateSystemManaged<TaxSystem>();
+            m_TriggerSystem = World.GetOrCreateSystemManaged<TriggerSystem>();
+            m_SimulationSystem = World.GetOrCreateSystemManaged<SimulationSystem>();
+            m_PropertyProcessingSystem = World.GetOrCreateSystemManaged<PropertyProcessingSystem>();
+            m_CountResidentialPropertySystem = World.GetOrCreateSystemManaged<CountResidentialPropertySystem>();
+            m_HomelessHouseholdQuery = GetEntityQuery(ComponentType.ReadWrite<HomelessHousehold>(),
                 ComponentType.ReadWrite<PropertySeeker>(), ComponentType.ReadOnly<HouseholdCitizen>(),
                 ComponentType.Exclude<MovingAway>(), ComponentType.Exclude<TouristHousehold>(),
                 ComponentType.Exclude<CommuterHousehold>(), ComponentType.Exclude<CurrentBuilding>(),
                 ComponentType.Exclude<Deleted>(), ComponentType.Exclude<Temp>());
-            this.m_HouseholdQuery = GetEntityQuery(ComponentType.ReadWrite<Household>(),
+            m_HouseholdQuery = GetEntityQuery(ComponentType.ReadWrite<Household>(),
                 ComponentType.ReadWrite<PropertySeeker>(), ComponentType.ReadOnly<HouseholdCitizen>(),
                 ComponentType.Exclude<HomelessHousehold>(), ComponentType.Exclude<MovingAway>(),
                 ComponentType.Exclude<TouristHousehold>(), ComponentType.Exclude<CommuterHousehold>(),
                 ComponentType.Exclude<CurrentBuilding>(), ComponentType.Exclude<Deleted>(),
                 ComponentType.Exclude<Temp>());
-            this.m_EconomyParameterQuery = GetEntityQuery(ComponentType.ReadOnly<EconomyParameterData>());
-            this.m_DemandParameterQuery = GetEntityQuery(ComponentType.ReadOnly<DemandParameterData>());
-            this.m_HealthcareParameterQuery = GetEntityQuery(ComponentType.ReadOnly<HealthcareParameterData>());
-            this.m_ParkParameterQuery = GetEntityQuery(ComponentType.ReadOnly<ParkParameterData>());
-            this.m_EducationParameterQuery = GetEntityQuery(ComponentType.ReadOnly<EducationParameterData>());
-            this.m_TelecomParameterQuery = GetEntityQuery(ComponentType.ReadOnly<TelecomParameterData>());
-            this.m_GarbageParameterQuery = GetEntityQuery(ComponentType.ReadOnly<GarbageParameterData>());
-            this.m_PoliceParameterQuery = GetEntityQuery(ComponentType.ReadOnly<PoliceConfigurationData>());
-            this.m_CitizenHappinessParameterQuery =
+            m_EconomyParameterQuery = GetEntityQuery(ComponentType.ReadOnly<EconomyParameterData>());
+            m_DemandParameterQuery = GetEntityQuery(ComponentType.ReadOnly<DemandParameterData>());
+            m_HealthcareParameterQuery = GetEntityQuery(ComponentType.ReadOnly<HealthcareParameterData>());
+            m_ParkParameterQuery = GetEntityQuery(ComponentType.ReadOnly<ParkParameterData>());
+            m_EducationParameterQuery = GetEntityQuery(ComponentType.ReadOnly<EducationParameterData>());
+            m_TelecomParameterQuery = GetEntityQuery(ComponentType.ReadOnly<TelecomParameterData>());
+            m_GarbageParameterQuery = GetEntityQuery(ComponentType.ReadOnly<GarbageParameterData>());
+            m_PoliceParameterQuery = GetEntityQuery(ComponentType.ReadOnly<PoliceConfigurationData>());
+            m_CitizenHappinessParameterQuery =
                 GetEntityQuery(ComponentType.ReadOnly<CitizenHappinessParameterData>());
             EntityQueryDesc entityQueryDesc = new EntityQueryDesc
             {
@@ -158,28 +150,28 @@ namespace MapExtPDX.ModeB
                     ComponentType.ReadOnly<Condemned>()
                 }
             };
-            this.m_FreePropertyQuery = GetEntityQuery(entityQueryDesc, entityQueryDesc2);
-            RequireForUpdate(this.m_EconomyParameterQuery);
-            RequireForUpdate(this.m_HealthcareParameterQuery);
-            RequireForUpdate(this.m_ParkParameterQuery);
-            RequireForUpdate(this.m_EducationParameterQuery);
-            RequireForUpdate(this.m_TelecomParameterQuery);
-            RequireForUpdate(this.m_HouseholdQuery);
-            RequireForUpdate(this.m_DemandParameterQuery);
-            this.m_DefaultDistribution = new DebugWatchDistribution(persistent: true, relative: true);
-            this.m_EvaluateDistributionLow = new DebugWatchDistribution(persistent: true, relative: true);
-            this.m_EvaluateDistributionMedium = new DebugWatchDistribution(persistent: true, relative: true);
-            this.m_EvaluateDistributionHigh = new DebugWatchDistribution(persistent: true, relative: true);
-            this.m_EvaluateDistributionLowrent = new DebugWatchDistribution(persistent: true, relative: true);
+            m_FreePropertyQuery = GetEntityQuery(entityQueryDesc, entityQueryDesc2);
+            RequireForUpdate(m_EconomyParameterQuery);
+            RequireForUpdate(m_HealthcareParameterQuery);
+            RequireForUpdate(m_ParkParameterQuery);
+            RequireForUpdate(m_EducationParameterQuery);
+            RequireForUpdate(m_TelecomParameterQuery);
+            RequireForUpdate(m_HouseholdQuery);
+            RequireForUpdate(m_DemandParameterQuery);
+            m_DefaultDistribution = new DebugWatchDistribution(persistent: true, relative: true);
+            m_EvaluateDistributionLow = new DebugWatchDistribution(persistent: true, relative: true);
+            m_EvaluateDistributionMedium = new DebugWatchDistribution(persistent: true, relative: true);
+            m_EvaluateDistributionHigh = new DebugWatchDistribution(persistent: true, relative: true);
+            m_EvaluateDistributionLowrent = new DebugWatchDistribution(persistent: true, relative: true);
         }
 
         protected override void OnDestroy()
         {
-            this.m_DefaultDistribution.Dispose();
-            this.m_EvaluateDistributionLow.Dispose();
-            this.m_EvaluateDistributionMedium.Dispose();
-            this.m_EvaluateDistributionHigh.Dispose();
-            this.m_EvaluateDistributionLowrent.Dispose();
+            m_DefaultDistribution.Dispose();
+            m_EvaluateDistributionLow.Dispose();
+            m_EvaluateDistributionMedium.Dispose();
+            m_EvaluateDistributionHigh.Dispose();
+            m_EvaluateDistributionLowrent.Dispose();
             base.OnDestroy();
         }
 
@@ -187,19 +179,19 @@ namespace MapExtPDX.ModeB
         {
             NativeParallelHashMap<Entity, CachedPropertyInformation> cachedPropertyInfo =
                 new NativeParallelHashMap<Entity, CachedPropertyInformation>(
-                    this.m_FreePropertyQuery.CalculateEntityCount(), Allocator.TempJob);
+                    m_FreePropertyQuery.CalculateEntityCount(), Allocator.TempJob);
             NativeArray<GroundPollution> groundPollutionMap =
-                this.m_GroundPollutionSystem.GetMap(readOnly: true, out var groundPollutionDependencies);
+                m_GroundPollutionSystem.GetMap(readOnly: true, out var groundPollutionDependencies);
             NativeArray<AirPollution> airPollutionMap =
-                this.m_AirPollutionSystem.GetMap(readOnly: true, out var airPollutionDependencies);
+                m_AirPollutionSystem.GetMap(readOnly: true, out var airPollutionDependencies);
             NativeArray<NoisePollution> noisePollutionMap =
-                this.m_NoisePollutionSystem.GetMap(readOnly: true, out var noisePollutionDependencies);
+                m_NoisePollutionSystem.GetMap(readOnly: true, out var noisePollutionDependencies);
             CellMapData<TelecomCoverage> telecomCoverageData =
-                this.m_TelecomCoverageSystem.GetData(readOnly: true, out var telecomDependencies);
+                m_TelecomCoverageSystem.GetData(readOnly: true, out var telecomDependencies);
             PreparePropertyJob preparePropertyJobData = new PreparePropertyJob
             {
                 m_EntityType = SystemAPI.GetEntityTypeHandle(),
-                m_BuildingProperties = SystemAPI.GetComponentLookup<BuildingPropertyData>(isReadOnly: false),
+                m_BuildingProperties = SystemAPI.GetComponentLookup<BuildingPropertyData>(isReadOnly: true),
                 m_Prefabs = SystemAPI.GetComponentLookup<PrefabRef>(isReadOnly: true),
                 m_BuildingDatas = SystemAPI.GetComponentLookup<BuildingData>(isReadOnly: true),
                 m_ParkDatas = SystemAPI.GetComponentLookup<ParkData>(isReadOnly: true),
@@ -298,7 +290,9 @@ namespace MapExtPDX.ModeB
                 m_City = m_CitySystem.City,
                 m_PathfindQueue = m_PathfindSetupSystem.GetQueue(this, 80, 16).AsParallelWriter(),
                 m_CommandBuffer = m_EndFrameBarrier.CreateCommandBuffer(),
-                m_DynamicFindHomeMaxCost = Mod.Instance.Settings.FindHomeMaxCost
+                m_DynamicFindHomeMaxCost = Mod.Instance.Settings.FindHomeMaxCost,
+                m_MaxProcessHomelessPerUpdate = Mod.Instance.Settings.HomelessSeekerCap,
+                m_MaxProcessNormalPerUpdate = Mod.Instance.Settings.HomeSeekerCap
             };
             JobHandle prepareJobHandle = preparePropertyJobData.ScheduleParallel(m_FreePropertyQuery,
                 JobUtils.CombineDependencies(Dependency, groundPollutionDependencies, noisePollutionDependencies,
@@ -374,32 +368,32 @@ namespace MapExtPDX.ModeB
             /// </summary>
             private int CalculateFree(Entity propertyEntity)
             {
-                Entity propertyPrefab = this.m_Prefabs[propertyEntity].m_Prefab;
+                Entity propertyPrefab = m_Prefabs[propertyEntity].m_Prefab;
                 int freeCapacity = 0;
 
                 // ⛺ 如果是废弃建筑或允许流浪汉居住的公园，则按收容所计算空位
-                if (this.m_BuildingDatas.HasComponent(propertyPrefab) &&
-                    (this.m_Abandoneds.HasComponent(propertyEntity) ||
-                     (this.m_Parks.HasComponent(propertyEntity) &&
-                      this.m_ParkDatas[propertyPrefab].m_AllowHomeless)))
+                if (m_BuildingDatas.HasComponent(propertyPrefab) &&
+                    (m_Abandoneds.HasComponent(propertyEntity) ||
+                     (m_Parks.HasComponent(propertyEntity) &&
+                      m_ParkDatas[propertyPrefab].m_AllowHomeless)))
                 {
                     // 将剩余容量正确赋值给 freeCapacity
                     freeCapacity =
-                        BuildingUtils.GetShelterHomelessCapacity(propertyPrefab, ref this.m_BuildingDatas,
-                            ref this.m_BuildingPropertyData) - this.m_Renters[propertyEntity].Length;
+                        BuildingUtils.GetShelterHomelessCapacity(propertyPrefab, ref m_BuildingDatas,
+                            ref m_BuildingPropertyData) - m_Renters[propertyEntity].Length;
                 }
                 // 🏘️ 如果是普通住宅，按户数计算空位
-                else if (this.m_BuildingProperties.HasComponent(propertyPrefab))
+                else if (m_BuildingProperties.HasComponent(propertyPrefab))
                 {
-                    BuildingPropertyData buildingPropertyData = this.m_BuildingProperties[propertyPrefab];
-                    DynamicBuffer<Renter> rentersBuffer = this.m_Renters[propertyEntity];
+                    BuildingPropertyData buildingPropertyData = m_BuildingProperties[propertyPrefab];
+                    DynamicBuffer<Renter> rentersBuffer = m_Renters[propertyEntity];
                     freeCapacity = buildingPropertyData.CountProperties(AreaType.Residential);
 
                     for (int i = 0; i < rentersBuffer.Length; i++)
                     {
                         Entity renterEntity = rentersBuffer[i].m_Renter;
                         // 这里判断是否为家庭Household，主要是排除商业等其他类型的租户（如果是混合建筑）
-                        if (this.m_Households.HasComponent(renterEntity))
+                        if (m_Households.HasComponent(renterEntity))
                         {
                             freeCapacity--;
                         }
@@ -415,40 +409,40 @@ namespace MapExtPDX.ModeB
             public void Execute(in ArchetypeChunk chunk, int unfilteredChunkIndex, bool useEnabledMask,
                 in v128 chunkEnabledMask)
             {
-                NativeArray<Entity> chunkEntities = chunk.GetNativeArray(this.m_EntityType);
+                NativeArray<Entity> chunkEntities = chunk.GetNativeArray(m_EntityType);
                 for (int i = 0; i < chunkEntities.Length; i++)
                 {
                     Entity propertyEntity = chunkEntities[i];
-                    int freeCapacity = this.CalculateFree(propertyEntity);
+                    int freeCapacity = CalculateFree(propertyEntity);
 
                     // 🌟 只有有空位的房子才值得缓存其物理质量
                     if (freeCapacity > 0)
                     {
-                        Entity propertyPrefab = this.m_Prefabs[propertyEntity].m_Prefab;
-                        Building buildingData = this.m_Buildings[propertyEntity];
+                        Entity propertyPrefab = m_Prefabs[propertyEntity].m_Prefab;
+                        Building buildingData = m_Buildings[propertyEntity];
 
-                        Entity healthcareServicePrefab = this.m_HealthcareParameters.m_HealthcareServicePrefab;
-                        Entity parkServicePrefab = this.m_ParkParameters.m_ParkServicePrefab;
-                        Entity educationServicePrefab = this.m_EducationParameters.m_EducationServicePrefab;
-                        Entity telecomServicePrefab = this.m_TelecomParameters.m_TelecomServicePrefab;
-                        Entity garbageServicePrefab = this.m_GarbageParameters.m_GarbageServicePrefab;
-                        Entity policeServicePrefab = this.m_PoliceParameters.m_PoliceServicePrefab;
-                        DynamicBuffer<CityModifier> cityModifiers = this.m_CityModifiers[this.m_City];
+                        Entity healthcareServicePrefab = m_HealthcareParameters.m_HealthcareServicePrefab;
+                        Entity parkServicePrefab = m_ParkParameters.m_ParkServicePrefab;
+                        Entity educationServicePrefab = m_EducationParameters.m_EducationServicePrefab;
+                        Entity telecomServicePrefab = m_TelecomParameters.m_TelecomServicePrefab;
+                        Entity garbageServicePrefab = m_GarbageParameters.m_GarbageServicePrefab;
+                        Entity policeServicePrefab = m_PoliceParameters.m_PoliceServicePrefab;
+                        DynamicBuffer<CityModifier> cityModifiers = m_CityModifiers[m_City];
 
                         // 📊 计算该套公寓的客观通用指标 (GenericApartmentQuality)
                         XCellMapSystemRe.GenericApartmentQuality apartmentQuality =
                             XCellMapSystemRe.GetGenericApartmentQuality(propertyEntity, propertyPrefab,
-                                ref buildingData, ref this.m_BuildingProperties, ref this.m_BuildingDatas,
-                                ref this.m_SpawnableDatas, ref this.m_Crimes, ref this.m_ServiceCoverages,
-                                ref this.m_Locked, ref this.m_ElectricityConsumers, ref this.m_WaterConsumers,
-                                ref this.m_GarbageProducers, ref this.m_MailProducers, ref this.m_Transforms,
-                                ref this.m_Abandoneds, this.m_PollutionMap, this.m_AirPollutionMap, this.m_NoiseMap,
-                                this.m_TelecomCoverages, cityModifiers, healthcareServicePrefab, parkServicePrefab,
+                                ref buildingData, ref m_BuildingProperties, ref m_BuildingDatas,
+                                ref m_SpawnableDatas, ref m_Crimes, ref m_ServiceCoverages,
+                                ref m_Locked, ref m_ElectricityConsumers, ref m_WaterConsumers,
+                                ref m_GarbageProducers, ref m_MailProducers, ref m_Transforms,
+                                ref m_Abandoneds, m_PollutionMap, m_AirPollutionMap, m_NoiseMap,
+                                m_TelecomCoverages, cityModifiers, healthcareServicePrefab, parkServicePrefab,
                                 educationServicePrefab, telecomServicePrefab, garbageServicePrefab, policeServicePrefab,
-                                this.m_CitizenHappinessParameterData, this.m_GarbageParameters);
+                                m_CitizenHappinessParameterData, m_GarbageParameters);
 
                         // 💾 提交到缓存供后续的单人找房线程高速调用
-                        this.m_PropertyData.TryAdd(propertyEntity, new CachedPropertyInformation
+                        m_PropertyData.TryAdd(propertyEntity, new CachedPropertyInformation
                         {
                             free = freeCapacity,
                             quality = apartmentQuality
@@ -527,6 +521,8 @@ namespace MapExtPDX.ModeB
             public NativeQueue<SetupQueueItem>.ParallelWriter m_PathfindQueue;
             public NativeQueue<RentAction>.ParallelWriter m_RentActionQueue;
             public float m_DynamicFindHomeMaxCost;
+            public int m_MaxProcessHomelessPerUpdate;
+            public int m_MaxProcessNormalPerUpdate;
 
             /// <summary>
             /// 🧳 构造寻找新家的参数（起点、方法、权重及目标分）并发出寻路请求。
@@ -535,15 +531,15 @@ namespace MapExtPDX.ModeB
                 Entity oldHome, float minimumScore, bool targetIsOrigin,
                 DynamicBuffer<HouseholdCitizen> householdCitizens)
             {
-                this.m_CommandBuffer.AddComponent(householdEntity, new PathInformation
+                m_CommandBuffer.AddComponent(householdEntity, new PathInformation
                 {
                     m_State = PathFlags.Pending
                 });
-                Household householdData = this.m_Households[householdEntity];
+                Household householdData = m_Households[householdEntity];
                 PathfindWeights weights = default(PathfindWeights);
 
                 // 🚶‍♂️ 如果有指定的通勤者（比如第一份工作的成年人或上学的孩子）
-                if (this.m_Citizens.TryGetComponent(commuteCitizen, out var commuteCitizenData))
+                if (m_Citizens.TryGetComponent(commuteCitizen, out var commuteCitizenData))
                 {
                     weights = CitizenUtils.GetPathfindWeights(commuteCitizenData, householdData,
                         householdCitizens.Length);
@@ -554,7 +550,9 @@ namespace MapExtPDX.ModeB
                     for (int i = 0; i < householdCitizens.Length; i++)
                     {
                         // [BUGFIX] 反编译原有 bug 修改：使用 m_Citizens[householdCitizens[i].m_Citizen] 而不是使用未被赋值的跳出作用域的 citizenData 属性
-                        Citizen citizenDataObj = this.m_Citizens[householdCitizens[i].m_Citizen];
+                        // [BUGFIX-3] 防御性检查：防止已销毁但未清理的 citizen entity 导致 IndexOutOfRange
+                        if (!m_Citizens.HasComponent(householdCitizens[i].m_Citizen)) continue;
+                        Citizen citizenDataObj = m_Citizens[householdCitizens[i].m_Citizen];
                         weights.m_Value += CitizenUtils
                             .GetPathfindWeights(citizenDataObj, householdData, householdCitizens.Length)
                             .m_Value;
@@ -592,7 +590,7 @@ namespace MapExtPDX.ModeB
                 };
 
                 // 🚗 如果家庭拥有车辆，允许通过道路通行
-                if (this.m_OwnedVehicles.TryGetBuffer(householdEntity, out var ownedVehiclesBuffer) &&
+                if (m_OwnedVehicles.TryGetBuffer(householdEntity, out var ownedVehiclesBuffer) &&
                     ownedVehiclesBuffer.Length != 0)
                 {
                     parameters.m_Methods |= (PathMethod)(targetIsOrigin ? 8194 : 8198);
@@ -618,13 +616,13 @@ namespace MapExtPDX.ModeB
 
                 parameters.m_MaxResultCount = 10;
                 parameters.m_PathfindFlags |= (PathfindFlags)(targetIsOrigin ? 256 : 128);
-                this.m_CommandBuffer.AddBuffer<PathInformations>(householdEntity).Add(new PathInformations
+                m_CommandBuffer.AddBuffer<PathInformations>(householdEntity).Add(new PathInformations
                 {
                     m_State = PathFlags.Pending
                 });
                 SetupQueueItem queueItem =
                     new SetupQueueItem(householdEntity, parameters, targetLocationTarget, findHomeTarget);
-                this.m_PathfindQueue.Enqueue(queueItem);
+                m_PathfindQueue.Enqueue(queueItem);
             }
 
             /// <summary>
@@ -637,14 +635,14 @@ namespace MapExtPDX.ModeB
                 for (int i = 0; i < householdCitizens.Length; i++)
                 {
                     commuteCitizen = householdCitizens[i].m_Citizen;
-                    if (this.m_Workers.HasComponent(commuteCitizen))
+                    if (m_Workers.HasComponent(commuteCitizen))
                     {
-                        return this.m_Workers[commuteCitizen].m_Workplace;
+                        return m_Workers[commuteCitizen].m_Workplace;
                     }
 
-                    if (this.m_Students.HasComponent(commuteCitizen))
+                    if (m_Students.HasComponent(commuteCitizen))
                     {
-                        return this.m_Students[commuteCitizen].m_School;
+                        return m_Students[commuteCitizen].m_School;
                     }
                 }
 
@@ -658,13 +656,13 @@ namespace MapExtPDX.ModeB
             {
                 for (int i = 0; i < householdCitizens.Length; i++)
                 {
-                    if (this.m_CurrentBuildings.TryGetComponent(householdCitizens[i].m_Citizen,
+                    if (m_CurrentBuildings.TryGetComponent(householdCitizens[i].m_Citizen,
                             out var currentBuildingData))
                     {
                         return currentBuildingData.m_CurrentBuilding;
                     }
 
-                    if (this.m_CurrentTransports.TryGetComponent(householdCitizens[i].m_Citizen,
+                    if (m_CurrentTransports.TryGetComponent(householdCitizens[i].m_Citizen,
                             out var currentTransportData))
                     {
                         return currentTransportData.m_CurrentTransport;
@@ -682,30 +680,30 @@ namespace MapExtPDX.ModeB
             public void Execute()
             {
                 int count = 0;
-                for (int i = 0; i < this.m_HomelessHouseholdEntities.Length; i++)
+                for (int i = 0; i < m_HomelessHouseholdEntities.Length; i++)
                 {
-                    Entity householdEntity = this.m_HomelessHouseholdEntities[i];
-                    if (this.ProcessFindHome(householdEntity))
+                    Entity householdEntity = m_HomelessHouseholdEntities[i];
+                    if (ProcessFindHome(householdEntity))
                     {
                         count++;
                     }
 
-                    if (count >= kMaxProcessHomelessHouseholdPerUpdate)
+                    if (count >= m_MaxProcessHomelessPerUpdate)
                     {
                         break;
                     }
                 }
 
                 count = 0;
-                for (int j = 0; j < this.m_MovedInHouseholdEntities.Length; j++)
+                for (int j = 0; j < m_MovedInHouseholdEntities.Length; j++)
                 {
-                    Entity householdEntity2 = this.m_MovedInHouseholdEntities[j];
-                    if (this.ProcessFindHome(householdEntity2))
+                    Entity householdEntity2 = m_MovedInHouseholdEntities[j];
+                    if (ProcessFindHome(householdEntity2))
                     {
                         count++;
                     }
 
-                    if (count >= kMaxProcessNormalHouseholdPerUpdate)
+                    if (count >= m_MaxProcessNormalPerUpdate)
                     {
                         break;
                     }
@@ -717,56 +715,56 @@ namespace MapExtPDX.ModeB
             /// </summary>
             private bool ProcessFindHome(Entity householdEntity)
             {
-                DynamicBuffer<HouseholdCitizen> householdCitizens = this.m_CitizenBuffers[householdEntity];
+                DynamicBuffer<HouseholdCitizen> householdCitizens = m_CitizenBuffers[householdEntity];
                 if (householdCitizens.Length == 0)
                 {
                     return false;
                 }
 
-                PropertySeeker propertySeeker = this.m_PropertySeekers[householdEntity];
-                int householdIncome = EconomyUtils.GetHouseholdIncome(householdCitizens, ref this.m_Workers,
-                    ref this.m_Citizens,
-                    ref this.m_HealthProblems, ref this.m_EconomyParameters, this.m_TaxRates);
+                PropertySeeker propertySeeker = m_PropertySeekers[householdEntity];
+                int householdIncome = EconomyUtils.GetHouseholdIncome(householdCitizens, ref m_Workers,
+                    ref m_Citizens,
+                    ref m_HealthProblems, ref m_EconomyParameters, m_TaxRates);
 
                 // 1. 📬 如果已经申请寻路且寻路引擎有返回结果，则前往处理
-                if (this.m_PathInformationBuffers.TryGetBuffer(householdEntity, out var pathInformations))
+                if (m_PathInformationBuffers.TryGetBuffer(householdEntity, out var pathInformations))
                 {
-                    this.ProcessPathInformations(householdEntity, pathInformations, propertySeeker, householdCitizens,
+                    ProcessPathInformations(householdEntity, pathInformations, propertySeeker, householdCitizens,
                         householdIncome);
                     return false;
                 }
 
                 Entity householdHomeBuilding = BuildingUtils.GetHouseholdHomeBuilding(householdEntity,
-                    ref this.m_PropertyRenters, ref this.m_HomelessHouseholds);
+                    ref m_PropertyRenters, ref m_HomelessHouseholds);
 
                 // --- 📉 2. 预估当前住房分数 ---
                 // 使用复杂的 GetPropertyScore 判断现在的居住条件的各项指标基线。
                 float bestPropertyScore = ((householdHomeBuilding != Entity.Null)
                     ? XCellMapSystemRe.GetPropertyScore(householdHomeBuilding, householdEntity,
-                        householdCitizens, ref this.m_PrefabRefs, ref this.m_BuildingProperties, ref this.m_Buildings,
-                        ref this.m_BuildingDatas, ref this.m_Households, ref this.m_Citizens, ref this.m_Students,
-                        ref this.m_Workers, ref this.m_SpawnableDatas, ref this.m_Crimes, ref this.m_ServiceCoverages,
-                        ref this.m_Lockeds, ref this.m_ElectricityConsumers, ref this.m_WaterConsumers,
-                        ref this.m_GarbageProducers, ref this.m_MailProducers, ref this.m_Transforms,
-                        ref this.m_Abandoneds, ref this.m_Parks, ref this.m_Availabilities, this.m_TaxRates,
-                        this.m_PollutionMap, this.m_AirPollutionMap, this.m_NoiseMap, this.m_TelecomCoverages,
-                        this.m_CityModifiers[this.m_City], this.m_HealthcareParameters.m_HealthcareServicePrefab,
-                        this.m_ParkParameters.m_ParkServicePrefab, this.m_EducationParameters.m_EducationServicePrefab,
-                        this.m_TelecomParameters.m_TelecomServicePrefab,
-                        this.m_GarbageParameters.m_GarbageServicePrefab, this.m_PoliceParameters.m_PoliceServicePrefab,
-                        this.m_CitizenHappinessParameterData, this.m_GarbageParameters)
+                        householdCitizens, ref m_PrefabRefs, ref m_BuildingProperties, ref m_Buildings,
+                        ref m_BuildingDatas, ref m_Households, ref m_Citizens, ref m_Students,
+                        ref m_Workers, ref m_SpawnableDatas, ref m_Crimes, ref m_ServiceCoverages,
+                        ref m_Lockeds, ref m_ElectricityConsumers, ref m_WaterConsumers,
+                        ref m_GarbageProducers, ref m_MailProducers, ref m_Transforms,
+                        ref m_Abandoneds, ref m_Parks, ref m_Availabilities, m_TaxRates,
+                        m_PollutionMap, m_AirPollutionMap, m_NoiseMap, m_TelecomCoverages,
+                        m_CityModifiers[m_City], m_HealthcareParameters.m_HealthcareServicePrefab,
+                        m_ParkParameters.m_ParkServicePrefab, m_EducationParameters.m_EducationServicePrefab,
+                        m_TelecomParameters.m_TelecomServicePrefab,
+                        m_GarbageParameters.m_GarbageServicePrefab, m_PoliceParameters.m_PoliceServicePrefab,
+                        m_CitizenHappinessParameterData, m_GarbageParameters)
                     : float.NegativeInfinity);
 
                 // 😿 3. 流浪汉大逃亡逻辑：
                 if (householdHomeBuilding == Entity.Null &&
                     propertySeeker.m_LastPropertySeekFrame +
-                    kFindPropertyCoolDown > this.m_SimulationFrame)
+                    kFindPropertyCoolDown > m_SimulationFrame)
                 {
                     // 若彻底找不到家且冷却结束，同时如果城市中几乎没有可用空房子 (<10)，此人直接搬离城市
-                    if (this.m_PathInformations[householdEntity].m_State != PathFlags.Pending &&
-                        math.csum(this.m_ResidentialPropertyData.m_FreeProperties) < 10)
+                    if (m_PathInformations[householdEntity].m_State != PathFlags.Pending &&
+                        math.csum(m_ResidentialPropertyData.m_FreeProperties) < 10)
                     {
-                        CitizenUtils.HouseholdMoveAway(this.m_CommandBuffer, householdEntity);
+                        CitizenUtils.HouseholdMoveAway(m_CommandBuffer, householdEntity);
                     }
 
                     return false;
@@ -774,15 +772,15 @@ namespace MapExtPDX.ModeB
 
                 // 🗺️ 4. 寻找起点：用于测算去新家的通勤距离
                 Entity commuteCitizen = Entity.Null;
-                Entity firstWorkplaceOrSchool = this.GetFirstWorkplaceOrSchool(householdCitizens, ref commuteCitizen);
+                Entity firstWorkplaceOrSchool = GetFirstWorkplaceOrSchool(householdCitizens, ref commuteCitizen);
                 bool isWorkplaceNull = firstWorkplaceOrSchool == Entity.Null;
 
                 // 如果没有工作，就从当前物理站点的地点开始寻找计算
                 Entity targetLocation =
-                    (isWorkplaceNull ? this.GetCurrentLocation(householdCitizens) : firstWorkplaceOrSchool);
+                    (isWorkplaceNull ? GetCurrentLocation(householdCitizens) : firstWorkplaceOrSchool);
                 if (householdHomeBuilding == Entity.Null && targetLocation == Entity.Null)
                 {
-                    CitizenUtils.HouseholdMoveAway(this.m_CommandBuffer, householdEntity);
+                    CitizenUtils.HouseholdMoveAway(m_CommandBuffer, householdEntity);
                     return false;
                 }
 
@@ -790,9 +788,9 @@ namespace MapExtPDX.ModeB
                 propertySeeker.m_TargetProperty = firstWorkplaceOrSchool;
                 propertySeeker.m_BestProperty = householdHomeBuilding;
                 propertySeeker.m_BestPropertyScore = bestPropertyScore;
-                propertySeeker.m_LastPropertySeekFrame = this.m_SimulationFrame;
-                this.m_PropertySeekers[householdEntity] = propertySeeker;
-                this.StartHomeFinding(householdEntity, commuteCitizen, targetLocation, householdHomeBuilding,
+                propertySeeker.m_LastPropertySeekFrame = m_SimulationFrame;
+                m_PropertySeekers[householdEntity] = propertySeeker;
+                StartHomeFinding(householdEntity, commuteCitizen, targetLocation, householdHomeBuilding,
                     propertySeeker.m_BestPropertyScore, isWorkplaceNull, householdCitizens);
                 return true;
             }
@@ -812,7 +810,7 @@ namespace MapExtPDX.ModeB
                     return; // ⏳ 正在寻找中，直接跳过等这一帧结束
                 }
 
-                this.m_CommandBuffer.RemoveComponent<PathInformations>(householdEntity);
+                m_CommandBuffer.RemoveComponent<PathInformations>(householdEntity);
                 bool hasTargetProperty = propertySeeker.m_TargetProperty != Entity.Null;
                 Entity candidateProperty = (hasTargetProperty ? pathInfo.m_Origin : pathInfo.m_Destination);
                 bool noFreeProperty = false;
@@ -820,8 +818,8 @@ namespace MapExtPDX.ModeB
                 // 🔍 阶段1：验证寻路结果是否有效
                 // A* 返回的结果是从 CustomSetupFindHomeJob 中挑选的最多10个距离最优解
                 // 需要再次查验这套房子现在究竟是否仍旧真的还有空位，因为可能就在这几帧间被别人捷足先登了
-                while (!this.m_CachedPropertyInfo.ContainsKey(candidateProperty) ||
-                       this.m_CachedPropertyInfo[candidateProperty].free <= 0)
+                while (!m_CachedPropertyInfo.ContainsKey(candidateProperty) ||
+                       m_CachedPropertyInfo[candidateProperty].free <= 0)
                 {
                     pathIndex++;
                     if (pathInformations.Length > pathIndex)
@@ -846,22 +844,22 @@ namespace MapExtPDX.ModeB
                 // 在这里也会调用到我们在 PrepareJob 中缓存过的 GenericApartmentQuality 数据
                 // 以综合计算是否值得真正下发搬入这套房子。
                 float targetPropertyScore = float.NegativeInfinity;
-                if (candidateProperty != Entity.Null && this.m_CachedPropertyInfo.ContainsKey(candidateProperty) &&
-                    this.m_CachedPropertyInfo[candidateProperty].free > 0)
+                if (candidateProperty != Entity.Null && m_CachedPropertyInfo.ContainsKey(candidateProperty) &&
+                    m_CachedPropertyInfo[candidateProperty].free > 0)
                 {
                     targetPropertyScore = XCellMapSystemRe.GetPropertyScore(candidateProperty, householdEntity,
-                        householdCitizens, ref this.m_PrefabRefs, ref this.m_BuildingProperties, ref this.m_Buildings,
-                        ref this.m_BuildingDatas, ref this.m_Households, ref this.m_Citizens, ref this.m_Students,
-                        ref this.m_Workers, ref this.m_SpawnableDatas, ref this.m_Crimes, ref this.m_ServiceCoverages,
-                        ref this.m_Lockeds, ref this.m_ElectricityConsumers, ref this.m_WaterConsumers,
-                        ref this.m_GarbageProducers, ref this.m_MailProducers, ref this.m_Transforms,
-                        ref this.m_Abandoneds, ref this.m_Parks, ref this.m_Availabilities, this.m_TaxRates,
-                        this.m_PollutionMap, this.m_AirPollutionMap, this.m_NoiseMap, this.m_TelecomCoverages,
-                        this.m_CityModifiers[this.m_City], this.m_HealthcareParameters.m_HealthcareServicePrefab,
-                        this.m_ParkParameters.m_ParkServicePrefab, this.m_EducationParameters.m_EducationServicePrefab,
-                        this.m_TelecomParameters.m_TelecomServicePrefab,
-                        this.m_GarbageParameters.m_GarbageServicePrefab, this.m_PoliceParameters.m_PoliceServicePrefab,
-                        this.m_CitizenHappinessParameterData, this.m_GarbageParameters);
+                        householdCitizens, ref m_PrefabRefs, ref m_BuildingProperties, ref m_Buildings,
+                        ref m_BuildingDatas, ref m_Households, ref m_Citizens, ref m_Students,
+                        ref m_Workers, ref m_SpawnableDatas, ref m_Crimes, ref m_ServiceCoverages,
+                        ref m_Lockeds, ref m_ElectricityConsumers, ref m_WaterConsumers,
+                        ref m_GarbageProducers, ref m_MailProducers, ref m_Transforms,
+                        ref m_Abandoneds, ref m_Parks, ref m_Availabilities, m_TaxRates,
+                        m_PollutionMap, m_AirPollutionMap, m_NoiseMap, m_TelecomCoverages,
+                        m_CityModifiers[m_City], m_HealthcareParameters.m_HealthcareServicePrefab,
+                        m_ParkParameters.m_ParkServicePrefab, m_EducationParameters.m_EducationServicePrefab,
+                        m_TelecomParameters.m_TelecomServicePrefab,
+                        m_GarbageParameters.m_GarbageServicePrefab, m_PoliceParameters.m_PoliceServicePrefab,
+                        m_CitizenHappinessParameterData, m_GarbageParameters);
                 }
 
                 // ❌ 阶段3：权衡比对阶段
@@ -871,19 +869,19 @@ namespace MapExtPDX.ModeB
                     candidateProperty = propertySeeker.m_BestProperty;
                 }
 
-                bool isMovedIn = (this.m_Households[householdEntity].m_Flags & HouseholdFlags.MovedIn) != 0;
+                bool isMovedIn = (m_Households[householdEntity].m_Flags & HouseholdFlags.MovedIn) != 0;
                 bool isHomelessShelter = candidateProperty != Entity.Null &&
-                                         BuildingUtils.IsHomelessShelterBuilding(candidateProperty, ref this.m_Parks,
-                                             ref this.m_Abandoneds);
+                                         BuildingUtils.IsHomelessShelterBuilding(candidateProperty, ref m_Parks,
+                                             ref m_Abandoneds);
                 bool needSupport =
-                    CitizenUtils.IsHouseholdNeedSupport(householdCitizens, ref this.m_Citizens, ref this.m_Students);
-                bool isAffordableProperty = this.m_PropertiesOnMarket.HasComponent(candidateProperty) &&
-                                            (needSupport || this.m_PropertiesOnMarket[candidateProperty].m_AskingRent <
+                    CitizenUtils.IsHouseholdNeedSupport(householdCitizens, ref m_Citizens, ref m_Students);
+                bool isAffordableProperty = m_PropertiesOnMarket.HasComponent(candidateProperty) &&
+                                            (needSupport || m_PropertiesOnMarket[candidateProperty].m_AskingRent <
                                                 income);
-                bool isNotCurrentHome = !this.m_PropertyRenters.HasComponent(householdEntity) ||
-                                        !this.m_PropertyRenters[householdEntity].m_Property.Equals(candidateProperty);
+                bool isNotCurrentHome = !m_PropertyRenters.HasComponent(householdEntity) ||
+                                        !m_PropertyRenters[householdEntity].m_Property.Equals(candidateProperty);
                 Entity currentHomeBuilding = BuildingUtils.GetHouseholdHomeBuilding(householdEntity,
-                    ref this.m_PropertyRenters, ref this.m_HomelessHouseholds);
+                    ref m_PropertyRenters, ref m_HomelessHouseholds);
 
                 // --- 4. 判决执行阶段 ---
 
@@ -891,50 +889,50 @@ namespace MapExtPDX.ModeB
                 if (currentHomeBuilding != Entity.Null && currentHomeBuilding == candidateProperty)
                 {
                     // 若彻底破产无法支付自己现在的房子租金，滚出城市
-                    if (!this.m_HomelessHouseholds.HasComponent(householdEntity) && !needSupport &&
-                        income < this.m_PropertyRenters[householdEntity].m_Rent)
+                    if (!m_HomelessHouseholds.HasComponent(householdEntity) && !needSupport &&
+                        income < m_PropertyRenters[householdEntity].m_Rent)
                     {
-                        CitizenUtils.HouseholdMoveAway(this.m_CommandBuffer, householdEntity, MoveAwayReason.NoMoney);
+                        CitizenUtils.HouseholdMoveAway(m_CommandBuffer, householdEntity, MoveAwayReason.NoMoney);
                     }
                     else
                     {
                         // 移除找房组件，消停一会不要再一直找了（进入冷却周期）
-                        this.m_CommandBuffer.SetComponentEnabled<PropertySeeker>(householdEntity, value: false);
+                        m_CommandBuffer.SetComponentEnabled<PropertySeeker>(householdEntity, value: false);
                     }
                 }
                 // 情况 2：找到了一套租得起的新房 且 不是同一套老房子，或者被收容所接纳了：喜气洋洋乔迁新居！
                 else if ((isAffordableProperty && isNotCurrentHome) || (isMovedIn && isHomelessShelter))
                 {
-                    this.m_RentActionQueue.Enqueue(new RentAction
+                    m_RentActionQueue.Enqueue(new RentAction
                     {
                         m_Property = candidateProperty,
                         m_Renter = householdEntity
                     });
 
                     // 扣除掉缓存容量里的空位，防止下一个人以为还能住进来
-                    if (this.m_CachedPropertyInfo.ContainsKey(candidateProperty))
+                    if (m_CachedPropertyInfo.ContainsKey(candidateProperty))
                     {
-                        CachedPropertyInformation cachedInfo = this.m_CachedPropertyInfo[candidateProperty];
+                        CachedPropertyInformation cachedInfo = m_CachedPropertyInfo[candidateProperty];
                         cachedInfo.free--;
-                        this.m_CachedPropertyInfo[candidateProperty] = cachedInfo;
+                        m_CachedPropertyInfo[candidateProperty] = cachedInfo;
                     }
 
-                    this.m_CommandBuffer.SetComponentEnabled<PropertySeeker>(householdEntity, value: false);
+                    m_CommandBuffer.SetComponentEnabled<PropertySeeker>(householdEntity, value: false);
                 }
                 // 情况 3：依然无家可归，并且在收容所里也没有哪怕一个临时安身之所 -> 离开城市
                 else if (candidateProperty == Entity.Null &&
-                         (!this.m_HomelessHouseholds.HasComponent(householdEntity) ||
-                          this.m_HomelessHouseholds[householdEntity].m_TempHome ==
+                         (!m_HomelessHouseholds.HasComponent(householdEntity) ||
+                          m_HomelessHouseholds[householdEntity].m_TempHome ==
                           Entity.Null))
                 {
-                    CitizenUtils.HouseholdMoveAway(this.m_CommandBuffer, householdEntity);
+                    CitizenUtils.HouseholdMoveAway(m_CommandBuffer, householdEntity);
                 }
                 // 情况 4：没有通过验证，什么也没发生成为过眼烟云。刷新 PropertySeeker 不断重试。
                 else
                 {
                     propertySeeker.m_BestProperty = default(Entity);
                     propertySeeker.m_BestPropertyScore = float.NegativeInfinity;
-                    this.m_PropertySeekers[householdEntity] = propertySeeker;
+                    m_PropertySeekers[householdEntity] = propertySeeker;
 
                     // [MOD FIX: 斩断原版的无限重试死循环]
                     // 如果不是无家可归者（说明在试图搬家改善环境），并且本次寻路失败（由于满员、太贵或确实比现在差），
@@ -942,7 +940,7 @@ namespace MapExtPDX.ModeB
                     // 否则这个家庭会在下一帧无视一切 Cooldown 瞬间发起下一轮全城最高级 A* 暴搜。
                     if (currentHomeBuilding != Entity.Null)
                     {
-                        this.m_CommandBuffer.SetComponentEnabled<PropertySeeker>(householdEntity, value: false);
+                        m_CommandBuffer.SetComponentEnabled<PropertySeeker>(householdEntity, value: false);
                     }
                 }
             }
@@ -1111,8 +1109,8 @@ namespace MapExtPDX.ModeB
                             if (bufferAccessor[j].Length < shelterHomelessCapacity)
                             {
                                 targetSeeker.FindTargets(candidateProperty,
-                                    100f * serviceCoverage + 1000f * (float)bufferAccessor[j].Length /
-                                    (float)shelterHomelessCapacity + 10000f);
+                                    100f * serviceCoverage + 1000f * bufferAccessor[j].Length /
+                                    shelterHomelessCapacity + 10000f);
 
                                 // === 🏁 [Early Exit Optimization] ===
                                 // ➕ 找到一个合格收容所，计入候选
@@ -1182,8 +1180,8 @@ namespace MapExtPDX.ModeB
                                 _ => 1f,
                             };
                         // 🩺 只有在家庭确实急需救助 (isHouseholdNeedSupport) 或者 能够承担该公寓地段租金 的情况下
-                        if (isHouseholdNeedSupport || !((float)(askingRent + garbageFeePerProperty) >
-                                                        (float)householdIncome * zoneDensityMultiplier))
+                        if (isHouseholdNeedSupport || !(askingRent + garbageFeePerProperty >
+                                                        householdIncome * zoneDensityMultiplier))
                         {
                             // === 💀 🚨 全系统最大的算力黑洞：极其昂贵的一对一定向打分 ===
                             // ⚠️ 注意：这里没有引入到目标住宅的空间距离 (Distance)，只要买得起，南极的雪屋也会在北极打工人的考虑之中！
@@ -1204,9 +1202,9 @@ namespace MapExtPDX.ModeB
                             // 🧮 转化分数为 Cost（因为 A* Pathfinding 是最小堆，Cost 越小越好）。
                             // 📉 综合分数取负后，再叠加拥挤度惩罚因子和随机抖动因子，发往寻路队列。
                             targetSeeker.FindTargets(candidateProperty,
-                                0f - propertyScore + 1000f * (float)bufferAccessor[j].Length /
-                                (float)maxPropertiesInBuilding +
-                                (float)random.NextInt(500));
+                                0f - propertyScore + 1000f * bufferAccessor[j].Length /
+                                maxPropertiesInBuilding +
+                                random.NextInt(500));
 
                             // === 🏁 [Early Exit Optimization] ===
                             // 找到一套付得起且已完成计分的备选房，计入候选
@@ -1243,10 +1241,12 @@ namespace MapExtPDX.ModeB
             return typeof(PathfindSetupSystem).GetMethod("FindTargets",
                 BindingFlags.NonPublic | BindingFlags.Instance,
                 null,
-                new Type[] { typeof(SetupTargetType), typeof(PathfindSetupSystem.SetupData).MakeByRefType() },
+                new[] { typeof(SetupTargetType), typeof(PathfindSetupSystem.SetupData).MakeByRefType() },
                 null);
         }
 
+        // --- 静态缓存字段 ---
+        private static bool _initialized = false;
         private static EntityQuery _findHomeQuery;
         private static EntityQuery _healthcareParamQuery;
         private static EntityQuery _parkParamQuery;
@@ -1257,12 +1257,19 @@ namespace MapExtPDX.ModeB
         private static EntityQuery _policeParamQuery;
         private static EntityQuery _serviceFeeParamQuery;
         private static EntityQuery _citizenHappinessParamQuery;
-
         private static Func<SystemBase, JobHandle> _getDependencyAccessor;
+
+        // [OPT-4] 缓存系统引用，避免每帧 GetOrCreateSystemManaged 字典查找
+        private static TaxSystem _taxSystem;
+        private static GroundPollutionSystem _groundPollutionSystem;
+        private static AirPollutionSystem _airPollutionSystem;
+        private static NoisePollutionSystem _noisePollutionSystem;
+        private static TelecomCoverageSystem _telecomCoverageSystem;
+        private static CitySystem _citySystem;
 
         private static void EnsureInitialized(PathfindSetupSystem system)
         {
-            // 1.  ( Dependency )
+            // 1. Dependency accessor（只需初始化一次）
             if (_getDependencyAccessor == null)
             {
                 MethodInfo dependencyGetter = AccessTools.PropertyGetter(typeof(SystemBase), "Dependency");
@@ -1271,19 +1278,22 @@ namespace MapExtPDX.ModeB
                         dependencyGetter);
             }
 
-            // 2.  Queries ( CS1503 )
-            if (_findHomeQuery != default) return;
+            // 2. [BUGFIX-2] 使用 bool 标记替代 EntityQuery struct 的 default 比较
+            if (_initialized) return;
+            _initialized = true;
 
+            var world = system.World;
 
+            // 缓存 EntityQuery
             var desc1 = new EntityQueryDesc
             {
-                All = new ComponentType[] { ComponentType.ReadOnly<Building>() },
-                Any = new ComponentType[]
+                All = new[] { ComponentType.ReadOnly<Building>() },
+                Any = new[]
                 {
                     ComponentType.ReadOnly<Abandoned>(),
                     ComponentType.ReadOnly<Game.Buildings.Park>()
                 },
-                None = new ComponentType[]
+                None = new[]
                 {
                     ComponentType.ReadOnly<Deleted>(),
                     ComponentType.ReadOnly<Destroyed>(),
@@ -1292,12 +1302,12 @@ namespace MapExtPDX.ModeB
             };
             var desc2 = new EntityQueryDesc
             {
-                All = new ComponentType[]
+                All = new[]
                 {
                     ComponentType.ReadOnly<PropertyOnMarket>(), ComponentType.ReadOnly<ResidentialProperty>(),
                     ComponentType.ReadOnly<Building>()
                 },
-                None = new ComponentType[]
+                None = new[]
                 {
                     ComponentType.ReadOnly<Abandoned>(), ComponentType.ReadOnly<Deleted>(),
                     ComponentType.ReadOnly<Destroyed>(), ComponentType.ReadOnly<Temp>(),
@@ -1315,6 +1325,14 @@ namespace MapExtPDX.ModeB
             _policeParamQuery = system.GetSetupQuery(ComponentType.ReadOnly<PoliceConfigurationData>());
             _serviceFeeParamQuery = system.GetSetupQuery(ComponentType.ReadOnly<ServiceFeeParameterData>());
             _citizenHappinessParamQuery = system.GetSetupQuery(ComponentType.ReadOnly<CitizenHappinessParameterData>());
+
+            // [OPT-4] 缓存系统引用
+            _taxSystem = world.GetOrCreateSystemManaged<TaxSystem>();
+            _groundPollutionSystem = world.GetOrCreateSystemManaged<GroundPollutionSystem>();
+            _airPollutionSystem = world.GetOrCreateSystemManaged<AirPollutionSystem>();
+            _noisePollutionSystem = world.GetOrCreateSystemManaged<NoisePollutionSystem>();
+            _telecomCoverageSystem = world.GetOrCreateSystemManaged<TelecomCoverageSystem>();
+            _citySystem = world.GetOrCreateSystemManaged<CitySystem>();
         }
 
         public static bool Prefix(
@@ -1338,14 +1356,6 @@ namespace MapExtPDX.ModeB
 #endif
 
             EnsureInitialized(__instance);
-
-            var world = __instance.World;
-            var taxSystem = world.GetOrCreateSystemManaged<TaxSystem>();
-            var groundPollutionSystem = world.GetOrCreateSystemManaged<GroundPollutionSystem>();
-            var airPollutionSystem = world.GetOrCreateSystemManaged<AirPollutionSystem>();
-            var noisePollutionSystem = world.GetOrCreateSystemManaged<NoisePollutionSystem>();
-            var telecomCoverageSystem = world.GetOrCreateSystemManaged<TelecomCoverageSystem>();
-            var citySystem = world.GetOrCreateSystemManaged<CitySystem>();
 
             // HarmonySystemAPI__instance
             var jobData = new CustomSetupFindHomeJob
@@ -1385,11 +1395,11 @@ namespace MapExtPDX.ModeB
                 m_ZonePropertiesDatas = __instance.GetComponentLookup<ZonePropertiesData>(true),
                 m_Companies = __instance.GetComponentLookup<CompanyData>(true),
 
-                m_TaxRates = taxSystem.GetTaxRates(),
-                m_PollutionMap = groundPollutionSystem.GetMap(true, out var dep1),
-                m_AirPollutionMap = airPollutionSystem.GetMap(true, out var dep2),
-                m_NoiseMap = noisePollutionSystem.GetMap(true, out var dep3),
-                m_TelecomCoverages = telecomCoverageSystem.GetData(true, out var dep4),
+                m_TaxRates = _taxSystem.GetTaxRates(),
+                m_PollutionMap = _groundPollutionSystem.GetMap(true, out var dep1),
+                m_AirPollutionMap = _airPollutionSystem.GetMap(true, out var dep2),
+                m_NoiseMap = _noisePollutionSystem.GetMap(true, out var dep3),
+                m_TelecomCoverages = _telecomCoverageSystem.GetData(true, out var dep4),
 
                 m_HealthcareParameters = _healthcareParamQuery.GetSingleton<HealthcareParameterData>(),
                 m_ParkParameters = _parkParamQuery.GetSingleton<ParkParameterData>(),
@@ -1402,7 +1412,7 @@ namespace MapExtPDX.ModeB
                 m_CitizenHappinessParameterData =
                     _citizenHappinessParamQuery.GetSingleton<CitizenHappinessParameterData>(),
 
-                m_City = citySystem.City,
+                m_City = _citySystem.City,
                 m_SetupData = setupData
             };
 
@@ -1412,11 +1422,11 @@ namespace MapExtPDX.ModeB
 
             JobHandle jobHandle = jobData.ScheduleParallel(_findHomeQuery, combinedDeps);
 
-            groundPollutionSystem.AddReader(jobHandle);
-            airPollutionSystem.AddReader(jobHandle);
-            noisePollutionSystem.AddReader(jobHandle);
-            telecomCoverageSystem.AddReader(jobHandle);
-            taxSystem.AddReader(jobHandle);
+            _groundPollutionSystem.AddReader(jobHandle);
+            _airPollutionSystem.AddReader(jobHandle);
+            _noisePollutionSystem.AddReader(jobHandle);
+            _telecomCoverageSystem.AddReader(jobHandle);
+            _taxSystem.AddReader(jobHandle);
 
             __result = jobHandle;
             return false;

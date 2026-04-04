@@ -39,9 +39,15 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
         [HarmonyPrefix]
         public static bool IsValidHeightmapFormat(ref bool __result, Texture2D tex)
         {
-            // 地形分辨率上限跟随 ResolutionManager
-            __result = tex.width <= ResolutionManager.TerrainResolution;
-            // __result = true;
+            // 原版逻辑: 精确匹配 kDefaultHeightmapWidth(4096) 且格式为 R16 或 RGBA64
+            // Mod 逻辑: 接受 <= TARGET_WIDTH 的纹理（ToR16_Postfix 会上采样到 TARGET_WIDTH）
+            //           格式仍需为 R16_UNorm 或 R16G16B16A16_UNorm
+            bool sizeValid = tex.width <= TARGET_WIDTH && tex.height <= TARGET_HEIGHT && tex.width > 0 && tex.height > 0;
+            bool formatValid = tex.graphicsFormat == UnityEngine.Experimental.Rendering.GraphicsFormat.R16_UNorm ||
+                               tex.graphicsFormat == UnityEngine.Experimental.Rendering.GraphicsFormat.R16G16B16A16_UNorm;
+            __result = sizeValid && formatValid;
+            Info($"IsValidHeightmapFormat: tex={tex.width}x{tex.height} fmt={tex.graphicsFormat}, " +
+                 $"TARGET={TARGET_WIDTH}x{TARGET_HEIGHT}, sizeOK={sizeValid}, fmtOK={formatValid}, result={__result}");
             return false;
         }
 
@@ -226,7 +232,7 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
             }
             else
             {
-                Info($"ToR16_Postfix: Result texture ({__result.width}x{__result.height}) is already target size. No action needed.");
+                Info($"ToR16_Postfix: Result texture ({__result.width}x{__result.height}) is already target size ({TARGET_WIDTH}x{TARGET_HEIGHT}). No resampling needed.");
             }
         }
     }

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Runtime.CompilerServices;
 using Game;
 using Game.Simulation;
@@ -73,25 +73,25 @@ namespace MapExtPDX.ModeE
 		protected override void OnCreate()
 		{
 			base.OnCreate();
-			m_EndFrameBarrier = base.World.GetOrCreateSystemManaged<EndFrameBarrier>();
-			m_PathfindSetupSystem = base.World.GetOrCreateSystemManaged<PathfindSetupSystem>();
-			m_ResourceSystem = base.World.GetOrCreateSystemManaged<ResourceSystem>();
-			m_TaxSystem = base.World.GetOrCreateSystemManaged<TaxSystem>();
-			m_TimeSystem = base.World.GetOrCreateSystemManaged<TimeSystem>();
-			m_CityConfigurationSystem = base.World.GetOrCreateSystemManaged<CityConfigurationSystem>();
+			m_EndFrameBarrier = World.GetOrCreateSystemManaged<EndFrameBarrier>();
+			m_PathfindSetupSystem = World.GetOrCreateSystemManaged<PathfindSetupSystem>();
+			m_ResourceSystem = World.GetOrCreateSystemManaged<ResourceSystem>();
+			m_TaxSystem = World.GetOrCreateSystemManaged<TaxSystem>();
+			m_TimeSystem = World.GetOrCreateSystemManaged<TimeSystem>();
+			m_CityConfigurationSystem = World.GetOrCreateSystemManaged<CityConfigurationSystem>();
 			m_PersonalCarSelectData = new PersonalCarSelectData(this);
-			m_CitySystem = base.World.GetOrCreateSystemManaged<CitySystem>();
-			m_CityProductionStatisticSystem = base.World.GetOrCreateSystemManaged<CityProductionStatisticSystem>();
-			m_SimulationSystem = base.World.GetOrCreateSystemManaged<SimulationSystem>();
+			m_CitySystem = World.GetOrCreateSystemManaged<CitySystem>();
+			m_CityProductionStatisticSystem = World.GetOrCreateSystemManaged<CityProductionStatisticSystem>();
+			m_SimulationSystem = World.GetOrCreateSystemManaged<SimulationSystem>();
 			m_SalesQueue = new NativeQueue<SalesEvent>(Allocator.Persistent);
 			m_BuyerQuery = GetEntityQuery(new EntityQueryDesc
 			{
-				All = new ComponentType[2]
+				All = new[]
 				{
 					ComponentType.ReadWrite<ResourceBuyer>(),
 					ComponentType.ReadWrite<TripNeeded>()
 				},
-				None = new ComponentType[3]
+				None = new[]
 				{
 					ComponentType.ReadOnly<TravelPurpose>(),
 					ComponentType.ReadOnly<Deleted>(),
@@ -99,8 +99,8 @@ namespace MapExtPDX.ModeE
 				}
 			}, new EntityQueryDesc
 			{
-				All = new ComponentType[1] { ComponentType.ReadOnly<ResourceBought>() },
-				None = new ComponentType[2]
+				All = new[] { ComponentType.ReadOnly<ResourceBought>() },
+				None = new[]
 				{
 					ComponentType.ReadOnly<Deleted>(),
 					ComponentType.ReadOnly<Temp>()
@@ -123,11 +123,6 @@ namespace MapExtPDX.ModeE
 		{
 			m_SalesQueue.Dispose();
 			base.OnDestroy();
-		}
-
-		protected override void OnStopRunning()
-		{
-			base.OnStopRunning();
 		}
 
 		protected override void OnUpdate()
@@ -186,7 +181,7 @@ namespace MapExtPDX.ModeE
 					m_RandomSeed = RandomSeed.Next(),
 					m_PathfindTypes = m_PathfindTypes,
 					m_HumanChunks =
-						m_ResidentPrefabQuery.ToArchetypeChunkListAsync(base.World.UpdateAllocator.ToAllocator,
+						m_ResidentPrefabQuery.ToArchetypeChunkListAsync(World.UpdateAllocator.ToAllocator,
 							out outJobHandle),
 					m_PersonalCarSelectData = m_PersonalCarSelectData,
 					m_PathfindQueue = m_PathfindSetupSystem.GetQueue(this, 80, 16).AsParallelWriter(),
@@ -198,11 +193,11 @@ namespace MapExtPDX.ModeE
 					m_DynamicShoppingMaxCost = Mod.Instance.Settings.ShoppingMaxCost,
 					m_CompanyShoppingMaxCost = Mod.Instance.Settings.CompanyShoppingMaxCost
 				};
-				base.Dependency = JobChunkExtensions.ScheduleParallel(jobData, m_BuyerQuery,
-					JobHandle.CombineDependencies(base.Dependency, outJobHandle, jobHandle));
-				m_ResourceSystem.AddPrefabsReader(base.Dependency);
-				m_EndFrameBarrier.AddJobHandleForProducer(base.Dependency);
-				m_PathfindSetupSystem.AddQueueWriter(base.Dependency);
+				Dependency = jobData.ScheduleParallel(m_BuyerQuery,
+					JobHandle.CombineDependencies(Dependency, outJobHandle, jobHandle));
+				m_ResourceSystem.AddPrefabsReader(Dependency);
+				m_EndFrameBarrier.AddJobHandleForProducer(Dependency);
+				m_PathfindSetupSystem.AddQueueWriter(Dependency);
 				JobHandle deps;
 				BuyJob jobData2 = new BuyJob
 				{
@@ -235,14 +230,14 @@ namespace MapExtPDX.ModeE
 							CityProductionStatisticSystem.CityResourceUsage.Consumer.Citizens, out deps),
 					m_CommandBuffer = m_EndFrameBarrier.CreateCommandBuffer()
 				};
-				base.Dependency =
-					IJobExtensions.Schedule(jobData2, JobHandle.CombineDependencies(base.Dependency, deps));
-				m_PersonalCarSelectData.PostUpdate(base.Dependency);
-				m_ResourceSystem.AddPrefabsReader(base.Dependency);
-				m_TaxSystem.AddReader(base.Dependency);
+				Dependency =
+					jobData2.Schedule(JobHandle.CombineDependencies(Dependency, deps));
+				m_PersonalCarSelectData.PostUpdate(Dependency);
+				m_ResourceSystem.AddPrefabsReader(Dependency);
+				m_TaxSystem.AddReader(Dependency);
 				m_CityProductionStatisticSystem.AddCityUsageAccumulatorWriter(
-					CityProductionStatisticSystem.CityResourceUsage.Consumer.Citizens, base.Dependency);
-				m_EndFrameBarrier.AddJobHandleForProducer(base.Dependency);
+					CityProductionStatisticSystem.CityResourceUsage.Consumer.Citizens, Dependency);
+				m_EndFrameBarrier.AddJobHandleForProducer(Dependency);
 			}
 		}
 
@@ -310,17 +305,17 @@ namespace MapExtPDX.ModeE
 						(isCommercial
 							? EconomyUtils.GetMarketPrice(item.m_Resource, m_ResourcePrefabs, ref m_ResourceDatas)
 							: EconomyUtils.GetIndustrialPrice(item.m_Resource, m_ResourcePrefabs,
-								ref m_ResourceDatas)) * (float)item.m_Amount;
+								ref m_ResourceDatas)) * item.m_Amount;
 					if (m_TradeCosts.HasBuffer(item.m_Seller))
 					{
 						DynamicBuffer<TradeCost> costs = m_TradeCosts[item.m_Seller];
 						TradeCost tradeCost = EconomyUtils.GetTradeCost(item.m_Resource, costs);
-						transactionPrice += (float)item.m_Amount * tradeCost.m_BuyCost;
+						transactionPrice += item.m_Amount * tradeCost.m_BuyCost;
 						float weight = EconomyUtils.GetWeight(item.m_Resource, m_ResourcePrefabs, ref m_ResourceDatas);
 						Assert.IsTrue(item.m_Amount != -1);
 						float unitTransportCost =
-							(float)EconomyUtils.GetTransportCost(item.m_Distance, item.m_Resource, item.m_Amount,
-								weight) / (1f + (float)item.m_Amount);
+							EconomyUtils.GetTransportCost(item.m_Distance, item.m_Resource, item.m_Amount,
+								weight) / (1f + item.m_Amount);
 						TradeCost newcost = default(TradeCost);
 						if (m_TradeCosts.HasBuffer(item.m_Buyer))
 						{
@@ -371,12 +366,12 @@ namespace MapExtPDX.ModeE
 						{
 							value.m_MeanPriority = math.min(1f,
 								math.lerp(value.m_MeanPriority,
-									(float)value.m_ServiceAvailable / (float)serviceCompanyData.m_MaxService, 0.1f));
+									(float)value.m_ServiceAvailable / serviceCompanyData.m_MaxService, 0.1f));
 						}
 						else
 						{
 							value.m_MeanPriority = math.min(1f,
-								(float)value.m_ServiceAvailable / (float)serviceCompanyData.m_MaxService);
+								(float)value.m_ServiceAvailable / serviceCompanyData.m_MaxService);
 						}
 
 						m_Services[item.m_Seller] = value;
@@ -395,7 +390,7 @@ namespace MapExtPDX.ModeE
 					if (m_Households.HasComponent(item.m_Buyer))
 					{
 						Household value2 = m_Households[item.m_Buyer];
-						value2.m_Resources = (int)math.clamp((long)((float)value2.m_Resources + transactionPrice),
+						value2.m_Resources = (int)math.clamp((long)(value2.m_Resources + transactionPrice),
 							-2147483648L, 2147483647L);
 						value2.m_ShoppedValuePerDay += (uint)transactionPrice;
 						m_Households[item.m_Buyer] = value2;
@@ -677,7 +672,7 @@ namespace MapExtPDX.ModeE
 								float marketPrice = EconomyUtils.GetMarketPrice(resourceBuyer.m_ResourceNeeded,
 									m_ResourcePrefabs, ref m_ResourceDatas);
 								float num4 = 1.4f;
-								int y = (((float)num3 > 0f) ? ((int)((float)num3 / (marketPrice * num4))) : 0);
+								int y = ((num3 > 0) ? ((int)(num3 / (marketPrice * num4))) : 0);
 								resourceBuyer.m_AmountNeeded = math.min(resourceBuyer.m_AmountNeeded, y);
 							}
 
@@ -701,7 +696,7 @@ namespace MapExtPDX.ModeE
 							int population = m_Populations[m_City].m_Population;
 							bool flag5 = citizens.Length > 0 && random.NextInt(100) <
 								100 - Mathf.RoundToInt(100f / math.max(1f,
-									math.sqrt(m_EconomyParameterData.m_TrafficReduction * (float)population * 0.1f)));
+									math.sqrt(m_EconomyParameterData.m_TrafficReduction * population * 0.1f)));
 							if (!flag && !flag5 && flag4)
 							{
 								m_CommandBuffer.AddBuffer<CurrentTrading>(unfilteredChunkIndex, entity).Add(
@@ -778,16 +773,16 @@ namespace MapExtPDX.ModeE
 						{
 							continue;
 						}
+
 						// 企业采购节流：每 2 tick 处理一次 (2 × 16帧 = 32帧周期)
 						if (citizens.Length == 0 && ((entity.Index + (int)(m_FrameIndex / 16)) % 2 != 0))
 						{
 							continue;
 						}
 
-						Citizen citizen = default(Citizen);
 						if (citizens.Length > 0)
 						{
-							citizen = citizens[i];
+							Citizen citizen = citizens[i];
 							Entity household = m_HouseholdMembers[entity].m_Household;
 							Household householdData = m_Households[household];
 							DynamicBuffer<HouseholdCitizen> dynamicBuffer2 = m_HouseholdCitizens[household];
@@ -814,9 +809,8 @@ namespace MapExtPDX.ModeE
 					m_State = PathFlags.Pending
 				});
 				CreatureData creatureData;
-				PseudoRandomSeed randomSeed;
 				Entity entity = ObjectEmergeSystem.SelectResidentPrefab(citizenData, m_HumanChunks, m_EntityType,
-					ref m_CreatureDataType, ref m_ResidentDataType, out creatureData, out randomSeed);
+					ref m_CreatureDataType, ref m_ResidentDataType, out creatureData, out _);
 				HumanData humanData = default(HumanData);
 				if (entity != Entity.Null)
 				{
@@ -868,14 +862,7 @@ namespace MapExtPDX.ModeE
 				if (m_Workers.HasComponent(buyer))
 				{
 					Worker worker = m_Workers[buyer];
-					if (m_Properties.HasComponent(worker.m_Workplace))
-					{
-						parameters.m_Authorization2 = m_Properties[worker.m_Workplace].m_Property;
-					}
-					else
-					{
-						parameters.m_Authorization2 = worker.m_Workplace;
-					}
+					parameters.m_Authorization2 = m_Properties.HasComponent(worker.m_Workplace) ? m_Properties[worker.m_Workplace].m_Property : worker.m_Workplace;
 				}
 
 				bool flag = random.NextFloat(100f) < 20f;
@@ -960,7 +947,8 @@ namespace MapExtPDX.ModeE
 					m_Weights = new PathfindWeights(1f, 1f, transportCost, 1f),
 					m_Methods = (PathMethod.Road | PathMethod.CargoLoading),
 					m_IgnoredRules = (RuleFlags.ForbidSlowTraffic | RuleFlags.AvoidBicycles),
-					m_MaxCost = m_CompanyShoppingMaxCost // [MOD EXT] Give company trucks their own custom configurable max cost
+					m_MaxCost =
+						m_CompanyShoppingMaxCost // [MOD EXT] Give company trucks their own custom configurable max cost
 				};
 				SetupQueueTarget origin = new SetupQueueTarget
 				{
@@ -984,12 +972,6 @@ namespace MapExtPDX.ModeE
 
 				SetupQueueItem value = new SetupQueueItem(buyer, parameters, origin, destination);
 				m_PathfindQueue.Enqueue(value);
-			}
-
-			void IJobChunk.Execute(in ArchetypeChunk chunk, int unfilteredChunkIndex, bool useEnabledMask,
-				in v128 chunkEnabledMask)
-			{
-				Execute(in chunk, unfilteredChunkIndex, useEnabledMask, in chunkEnabledMask);
 			}
 		}
 

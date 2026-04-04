@@ -126,69 +126,69 @@ namespace MapExtPDX.ModeE
 		protected override void OnUpdate()
 		{
 			uint updateFrame = SimulationUtils.GetUpdateFrame(m_SimulationSystem.frameIndex,
-				RentAdjustSystemMod.kUpdatesPerDay, 16);
+				kUpdatesPerDay, 16);
 			JobHandle groundPollutionDependencies;
 			JobHandle airPollutionDependencies;
 			JobHandle noisePollutionDependencies;
-			JobHandle rentAdjustJobHandle = JobChunkExtensions.ScheduleParallel(new AdjustRentJob
-				{
-					m_EntityType = SystemAPI.GetEntityTypeHandle(),
-					m_RenterType = SystemAPI.GetBufferTypeHandle<Renter>(isReadOnly: false),
-					m_UpdateFrameType = GetSharedComponentTypeHandle<UpdateFrame>(),
-					m_PropertyRenters = SystemAPI.GetComponentLookup<PropertyRenter>(isReadOnly: false),
-					m_OnMarkets = SystemAPI.GetComponentLookup<PropertyOnMarket>(isReadOnly: false),
-					m_Buildings = SystemAPI.GetComponentLookup<Building>(isReadOnly: false),
-					m_Prefabs = SystemAPI.GetComponentLookup<PrefabRef>(isReadOnly: true),
-					m_BuildingProperties = SystemAPI.GetComponentLookup<BuildingPropertyData>(isReadOnly: true),
-					m_BuildingDatas = SystemAPI.GetComponentLookup<BuildingData>(isReadOnly: true),
-					m_WorkProviders = SystemAPI.GetComponentLookup<WorkProvider>(isReadOnly: true),
-					m_CompanyNotifications = SystemAPI.GetComponentLookup<CompanyNotifications>(isReadOnly: true),
-					m_Attached = SystemAPI.GetComponentLookup<Attached>(isReadOnly: true),
-					m_Lots = SystemAPI.GetComponentLookup<Game.Areas.Lot>(isReadOnly: true),
-					m_Geometries = SystemAPI.GetComponentLookup<Geometry>(isReadOnly: true),
-					m_LandValues = SystemAPI.GetComponentLookup<LandValue>(isReadOnly: true),
-					m_WorkplaceDatas = SystemAPI.GetComponentLookup<WorkplaceData>(isReadOnly: true),
-					m_HouseholdCitizenBufs = SystemAPI.GetBufferLookup<HouseholdCitizen>(isReadOnly: true),
-					m_SubAreas = SystemAPI.GetBufferLookup<Game.Areas.SubArea>(isReadOnly: true),
-					m_InstalledUpgrades = SystemAPI.GetBufferLookup<InstalledUpgrade>(isReadOnly: true),
-					m_Abandoned = SystemAPI.GetComponentLookup<Abandoned>(isReadOnly: true),
-					m_Destroyed = SystemAPI.GetComponentLookup<Destroyed>(isReadOnly: true),
-					m_Transforms = SystemAPI.GetComponentLookup<Game.Objects.Transform>(isReadOnly: true),
-					m_CityModifiers = SystemAPI.GetBufferLookup<CityModifier>(isReadOnly: true),
-					m_HealthProblems = SystemAPI.GetComponentLookup<HealthProblem>(isReadOnly: true),
-					m_SpawnableBuildingData = SystemAPI.GetComponentLookup<SpawnableBuildingData>(isReadOnly: true),
-					m_ZoneData = SystemAPI.GetComponentLookup<ZoneData>(isReadOnly: true),
-					m_BuildingNotifications = SystemAPI.GetComponentLookup<BuildingNotifications>(isReadOnly: false),
-					m_ExtractorProperties = SystemAPI.GetComponentLookup<ExtractorProperty>(isReadOnly: true),
-					m_ResourcesBuf = SystemAPI.GetBufferLookup<Game.Economy.Resources>(isReadOnly: true),
-					m_OwnedVehicles = SystemAPI.GetBufferLookup<OwnedVehicle>(isReadOnly: true),
-					m_LayoutElements = SystemAPI.GetBufferLookup<LayoutElement>(isReadOnly: true),
-					m_Workers = SystemAPI.GetComponentLookup<Worker>(isReadOnly: true),
-					m_Citizens = SystemAPI.GetComponentLookup<Citizen>(isReadOnly: true),
-					m_ProcessDatas = SystemAPI.GetComponentLookup<IndustrialProcessData>(isReadOnly: true),
-					m_ResourcePrefabs = m_ResourceSystem.GetPrefabs(),
-					m_ResourceDatas = SystemAPI.GetComponentLookup<ResourceData>(isReadOnly: true),
-					m_TaxRates = m_TaxSystem.GetTaxRates(),
-					m_PollutionMap =
-						m_GroundPollutionSystem.GetMap(readOnly: true, out groundPollutionDependencies),
-					m_AirPollutionMap = m_AirPollutionSystem.GetMap(readOnly: true, out airPollutionDependencies),
-					m_NoiseMap = m_NoisePollutionSystem.GetMap(readOnly: true, out noisePollutionDependencies),
-					m_CitizenHappinessParameterData =
-						m_CitizenHappinessParameterQuery.GetSingleton<CitizenHappinessParameterData>(),
-					m_BuildingConfigurationData =
-						m_BuildingParameterQuery.GetSingleton<BuildingConfigurationData>(),
-					m_PollutionParameters = m_PollutionParameterQuery.GetSingleton<PollutionParameterData>(),
-					m_FeeParameters = m_FeeParameterQuery.GetSingleton<ServiceFeeParameterData>(),
-					m_DeliveryTrucks = SystemAPI.GetComponentLookup<Game.Vehicles.DeliveryTruck>(isReadOnly: true),
-					m_ZonePropertiesDatas = SystemAPI.GetComponentLookup<ZonePropertiesData>(isReadOnly: true),
-					m_ServiceAvailables = SystemAPI.GetComponentLookup<ServiceAvailable>(isReadOnly: true),
-					m_UnderConstructions = SystemAPI.GetComponentLookup<UnderConstruction>(isReadOnly: true),
-					m_EconomyParameterData = m_EconomyParameterQuery.GetSingleton<EconomyParameterData>(),
-					m_City = m_CitySystem.City,
-					m_UpdateFrameIndex = updateFrame,
-					m_CommandBuffer = m_EndFrameBarrier.CreateCommandBuffer().AsParallelWriter(),
-					m_IconCommandBuffer = m_IconCommandSystem.CreateCommandBuffer()
-				}, m_BuildingQuery,
+			JobHandle rentAdjustJobHandle = new AdjustRentJob
+			{
+				m_EntityType = SystemAPI.GetEntityTypeHandle(),
+				m_RenterType = SystemAPI.GetBufferTypeHandle<Renter>(isReadOnly: false),
+				m_UpdateFrameType = GetSharedComponentTypeHandle<UpdateFrame>(),
+				m_PropertyRenters = SystemAPI.GetComponentLookup<PropertyRenter>(isReadOnly: false),
+				m_OnMarkets = SystemAPI.GetComponentLookup<PropertyOnMarket>(isReadOnly: false),
+				m_Buildings = SystemAPI.GetComponentLookup<Building>(isReadOnly: false),
+				m_Prefabs = SystemAPI.GetComponentLookup<PrefabRef>(isReadOnly: true),
+				m_BuildingProperties = SystemAPI.GetComponentLookup<BuildingPropertyData>(isReadOnly: true),
+				m_BuildingDatas = SystemAPI.GetComponentLookup<BuildingData>(isReadOnly: true),
+				m_WorkProviders = SystemAPI.GetComponentLookup<WorkProvider>(isReadOnly: true),
+				m_CompanyNotifications = SystemAPI.GetComponentLookup<CompanyNotifications>(isReadOnly: true),
+				m_Attached = SystemAPI.GetComponentLookup<Attached>(isReadOnly: true),
+				m_Lots = SystemAPI.GetComponentLookup<Game.Areas.Lot>(isReadOnly: true),
+				m_Geometries = SystemAPI.GetComponentLookup<Geometry>(isReadOnly: true),
+				m_LandValues = SystemAPI.GetComponentLookup<LandValue>(isReadOnly: true),
+				m_WorkplaceDatas = SystemAPI.GetComponentLookup<WorkplaceData>(isReadOnly: true),
+				m_HouseholdCitizenBufs = SystemAPI.GetBufferLookup<HouseholdCitizen>(isReadOnly: true),
+				m_SubAreas = SystemAPI.GetBufferLookup<Game.Areas.SubArea>(isReadOnly: true),
+				m_InstalledUpgrades = SystemAPI.GetBufferLookup<InstalledUpgrade>(isReadOnly: true),
+				m_Abandoned = SystemAPI.GetComponentLookup<Abandoned>(isReadOnly: true),
+				m_Destroyed = SystemAPI.GetComponentLookup<Destroyed>(isReadOnly: true),
+				m_Transforms = SystemAPI.GetComponentLookup<Game.Objects.Transform>(isReadOnly: true),
+				m_CityModifiers = SystemAPI.GetBufferLookup<CityModifier>(isReadOnly: true),
+				m_HealthProblems = SystemAPI.GetComponentLookup<HealthProblem>(isReadOnly: true),
+				m_SpawnableBuildingData = SystemAPI.GetComponentLookup<SpawnableBuildingData>(isReadOnly: true),
+				m_ZoneData = SystemAPI.GetComponentLookup<ZoneData>(isReadOnly: true),
+				m_BuildingNotifications = SystemAPI.GetComponentLookup<BuildingNotifications>(isReadOnly: false),
+				m_ExtractorProperties = SystemAPI.GetComponentLookup<ExtractorProperty>(isReadOnly: true),
+				m_ResourcesBuf = SystemAPI.GetBufferLookup<Game.Economy.Resources>(isReadOnly: true),
+				m_OwnedVehicles = SystemAPI.GetBufferLookup<OwnedVehicle>(isReadOnly: true),
+				m_LayoutElements = SystemAPI.GetBufferLookup<LayoutElement>(isReadOnly: true),
+				m_Workers = SystemAPI.GetComponentLookup<Worker>(isReadOnly: true),
+				m_Citizens = SystemAPI.GetComponentLookup<Citizen>(isReadOnly: true),
+				m_ProcessDatas = SystemAPI.GetComponentLookup<IndustrialProcessData>(isReadOnly: true),
+				m_ResourcePrefabs = m_ResourceSystem.GetPrefabs(),
+				m_ResourceDatas = SystemAPI.GetComponentLookup<ResourceData>(isReadOnly: true),
+				m_TaxRates = m_TaxSystem.GetTaxRates(),
+				m_PollutionMap =
+					m_GroundPollutionSystem.GetMap(readOnly: true, out groundPollutionDependencies),
+				m_AirPollutionMap = m_AirPollutionSystem.GetMap(readOnly: true, out airPollutionDependencies),
+				m_NoiseMap = m_NoisePollutionSystem.GetMap(readOnly: true, out noisePollutionDependencies),
+				m_CitizenHappinessParameterData =
+					m_CitizenHappinessParameterQuery.GetSingleton<CitizenHappinessParameterData>(),
+				m_BuildingConfigurationData =
+					m_BuildingParameterQuery.GetSingleton<BuildingConfigurationData>(),
+				m_PollutionParameters = m_PollutionParameterQuery.GetSingleton<PollutionParameterData>(),
+				m_FeeParameters = m_FeeParameterQuery.GetSingleton<ServiceFeeParameterData>(),
+				m_DeliveryTrucks = SystemAPI.GetComponentLookup<Game.Vehicles.DeliveryTruck>(isReadOnly: true),
+				m_ZonePropertiesDatas = SystemAPI.GetComponentLookup<ZonePropertiesData>(isReadOnly: true),
+				m_ServiceAvailables = SystemAPI.GetComponentLookup<ServiceAvailable>(isReadOnly: true),
+				m_UnderConstructions = SystemAPI.GetComponentLookup<UnderConstruction>(isReadOnly: true),
+				m_EconomyParameterData = m_EconomyParameterQuery.GetSingleton<EconomyParameterData>(),
+				m_City = m_CitySystem.City,
+				m_UpdateFrameIndex = updateFrame,
+				m_CommandBuffer = m_EndFrameBarrier.CreateCommandBuffer().AsParallelWriter(),
+				m_IconCommandBuffer = m_IconCommandSystem.CreateCommandBuffer()
+			}.ScheduleParallel(m_BuildingQuery,
 				JobUtils.CombineDependencies(groundPollutionDependencies, airPollutionDependencies,
 					noisePollutionDependencies, Dependency));
 			m_EndFrameBarrier.AddJobHandleForProducer(rentAdjustJobHandle);
@@ -199,7 +199,7 @@ namespace MapExtPDX.ModeE
 			m_TelecomCoverageSystem.AddReader(rentAdjustJobHandle);
 			m_TaxSystem.AddReader(rentAdjustJobHandle);
 			m_IconCommandSystem.AddCommandBufferWriter(rentAdjustJobHandle);
-			base.Dependency = rentAdjustJobHandle;
+			Dependency = rentAdjustJobHandle;
 		}
 
 		#endregion
@@ -660,4 +660,3 @@ namespace MapExtPDX.ModeE
 
 	#endregion
 }
-
