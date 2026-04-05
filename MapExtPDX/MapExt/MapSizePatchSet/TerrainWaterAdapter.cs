@@ -23,11 +23,11 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
     /// </summary>
     public static class TerrainWaterAdapter
     {
-        // --- 日志封装 ---
-        private static readonly string typeName = nameof(TerrainWaterAdapter);
-        private static void Info(string message) => Mod.Info($"[{Mod.ModName}.{typeName}] {message}");
-        private static void Warn(string message) => Mod.Warn($"[{Mod.ModName}.{typeName}] ⚠️ {message}");
-        private static void Error(string message) => Mod.Error($"[{Mod.ModName}.{typeName}] ❌ {message}");
+        private const string Tag = "WaterAdapter";
+
+        // TODO [Phase 2]: 接入 TerrainSystem 生命周期
+        // 需要 Harmony Postfix Hook 到 TerrainSystem.FinalizeTerrainData
+        // 以驱动 UpdateDownsample() 实际执行降采样
 
         #region Fields
 
@@ -53,7 +53,7 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
         {
             if (!ResolutionManager.NeedsDownsampleForWater)
             {
-                Info("TerrainResolution <= WaterTerrainResolution, adapter not needed.");
+                ModLog.Info(Tag, "TerrainResolution <= WaterTerrainResolution, adapter not needed.");
                 s_Initialized = false;
                 return;
             }
@@ -102,11 +102,11 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
                 s_TempSliceRT.Create();
 
                 s_Initialized = true;
-                Info($"Initialized: {sourceRes}² → {targetRes}² downsampling adapter created.");
+                ModLog.Ok(Tag, $"Initialized: {sourceRes}² → {targetRes}² downsampling adapter created.");
             }
             catch (Exception e)
             {
-                Error($"Failed to create downsampling textures: {e.Message}");
+                ModLog.Error(Tag, $"Failed to create downsampling textures: {e.Message}");
                 Dispose();
             }
         }
@@ -125,7 +125,7 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
 
             if (sourceCascade == null)
             {
-                Warn("sourceCascade is null, skipping downsample.");
+                ModLog.Warn(Tag, "sourceCascade is null, skipping downsample.");
                 return;
             }
 
@@ -178,7 +178,7 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
             }
             catch (Exception e)
             {
-                Error($"Downsample failed: {e.Message}");
+                ModLog.Error(Tag, $"Downsample failed: {e.Message}");
             }
         }
 

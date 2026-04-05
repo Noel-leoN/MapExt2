@@ -38,6 +38,10 @@ namespace MapExtPDX.MapExt.Core
         // 地图尺寸原始值；用于某些补丁set调用计算
         public const int OriginalMapSize = 14336;
 
+        // 当前缩放后的地图尺寸 = CV × OriginalMapSize
+        // 供 BaseDataReader.GetReadbackBounds 等需要实际世界尺寸的场景使用
+        public static int CurrentMapSize => CurrentCoreValue * OriginalMapSize;
+
         // CellMapSystem<T>当前kTextureSize倍率
         public static int CurrentCoreValueTex { get; private set; }
 

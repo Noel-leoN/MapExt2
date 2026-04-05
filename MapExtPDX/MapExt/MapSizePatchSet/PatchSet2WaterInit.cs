@@ -9,6 +9,7 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
     using System;
     using Game.Simulation;
     using HarmonyLib; // 使用Traverse而未采用System反射
+    using MapExtPDX.MapExt.Core;
     using Unity.Entities;
 
     /// <summary>
@@ -22,12 +23,7 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
     /// </summary>
     public static class WaterSystemReinitializer
     {
-        // --- 日志封装 ---
-        private static readonly string patchTypename = nameof(WaterSystemReinitializer);
-        private static void Info(string message) => Mod.Info($" {(Mod.ModName)}.{patchTypename}:{message}");
-        private static void Warn(string message) => Mod.Warn($" {(Mod.ModName)}.{patchTypename}:{message}");
-        private static void Error(string message) => Mod.Error($" {(Mod.ModName)}.{patchTypename}:{message}");
-        private static void Error(Exception e, string message) => Mod.Error(e, $" {(Mod.ModName)}.{patchTypename}:{message}");
+        private const string Tag = "WaterInit";
 
         // ========================================================================
         // 核心重置逻辑
@@ -39,11 +35,11 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
 
             if (waterSystem == null)
             {
-                Info("Error: WaterSystem managed instance not found! Initialization aborted.");
+                ModLog.Error(Tag, "WaterSystem managed instance not found! Initialization aborted.");
                 return;
             }
 
-            Info("WaterSystem instance found. Starting safe re-initialization sequence...");
+            ModLog.Patch(Tag, "WaterSystem instance found. Starting safe re-initialization...");
 
             // 获取 Traverse 对象以便访问私有成员
             var traverse = Traverse.Create(waterSystem);
@@ -53,12 +49,12 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
 
             // 2. 清理 Helpers (Native Arrays & ComputeBuffers)
 #if DEBUG
-            Info("Processing 'm_waterSimActiveTilesHelper'...");
+            ModLog.Debug(Tag, "Processing 'm_waterSimActiveTilesHelper'...");
 #endif
             DisposeHelper(traverse.Field("m_waterSimActiveTilesHelper").GetValue());
 
 #if DEBUG
-            Info("Processing 'm_waterBackdropSimActiveTilesHelper'...");
+            ModLog.Debug(Tag, "Processing 'm_waterBackdropSimActiveTilesHelper'...");
 #endif
             DisposeHelper(traverse.Field("m_waterBackdropSimActiveTilesHelper").GetValue());
 
@@ -66,10 +62,10 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
             try
             {
 #if DEBUG
-                Info("Invoking WaterSystem.InitTextures() to apply new settings...");
+                ModLog.Debug(Tag, "Invoking WaterSystem.InitTextures() to apply new settings...");
 #endif
                 traverse.Method("InitTextures").GetValue();
-                Info("SUCCESS: WaterSystem re-initialized. New MapSize should be effective.");
+                ModLog.Ok(Tag, "WaterSystem re-initialized. New MapSize should be effective.");
 
                 // === 验证纹理尺寸与 ResolutionManager 一致 ===
                 try
@@ -77,24 +73,26 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
                     var texSizeField = traverse.Field("m_TexSize");
                     if (texSizeField.FieldExists())
                     {
+                        // 当前阶段 m_TexSize 固定为 2048，与 VanillaWaterTextureSize 对比
                         var texSize = texSizeField.GetValue<Unity.Mathematics.int2>();
-                        Info($"Post-reinit verification: m_TexSize = {texSize}, expected = {Core.ResolutionManager.WaterTextureSize}");
-                        if (texSize.x != Core.ResolutionManager.WaterTextureSize)
+                        int expectedTexSize = Core.ResolutionManager.VanillaWaterTextureSize;
+                        ModLog.Info(Tag, $"Post-reinit: m_TexSize={texSize}, expected={expectedTexSize}");
+                        if (texSize.x != expectedTexSize)
                         {
-                            Warn($"Water texture size mismatch! Got {texSize.x}x{texSize.y}, " +
-                                 $"expected {Core.ResolutionManager.WaterTextureSize}x{Core.ResolutionManager.WaterTextureSize}. " +
+                            ModLog.Warn(Tag, $"Water texture size mismatch! Got {texSize.x}x{texSize.y}, " +
+                                 $"expected {expectedTexSize}x{expectedTexSize}. " +
                                  "InitTextures Transpiler may not have been applied correctly.");
                         }
                     }
                 }
                 catch (Exception verifyEx)
                 {
-                    Warn($"Post-reinit verification failed (non-fatal): {verifyEx.Message}");
+                    ModLog.Warn(Tag, $"Post-reinit verification failed (non-fatal): {verifyEx.Message}");
                 }
             }
             catch (Exception e)
             {
-                Error($"CRITICAL ERROR: Failed to invoke InitTextures. Exception: {e}");
+                ModLog.Error(Tag, $"CRITICAL: Failed to invoke InitTextures. Exception: {e}");
             }
         }
 
@@ -109,7 +107,7 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
                 var field = systemTraverse.Field("m_Water");
                 if (!field.FieldExists())
                 {
-                    Warn("Warning: Field 'm_Water' not found.");
+                    ModLog.Warn(Tag, "Field 'm_Water' not found.");
                     return;
                 }
 
@@ -121,13 +119,13 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
                 {
                     Traverse.Create(bufferInstance).Method("Dispose").GetValue();
 #if DEBUG
-                    Info("Disposed old 'm_Water' (RenderTextures).");
+                    ModLog.Debug(Tag, "Disposed old 'm_Water' (RenderTextures).");
 #endif
                 }
             }
             catch (Exception e)
             {
-                Error($"Warning: Failed to dispose m_Water. {e.Message}");
+                ModLog.Warn(Tag, $"Failed to dispose m_Water. {e.Message}");
             }
         }
 
@@ -135,7 +133,7 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
         {
             if (helperInstance == null)
             {
-                Warn("  -> Helper instance is null, skipping.");
+                ModLog.Warn(Tag, "Helper instance is null, skipping.");
                 return;
             }
 
@@ -143,7 +141,7 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
             if (helperInstance is IDisposable disposable)
             {
 #if DEBUG
-                Info($"  -> Helper ({helperInstance.GetType().Name}) implements IDisposable. Disposing...");
+                ModLog.Debug(Tag, $"Helper ({helperInstance.GetType().Name}) implements IDisposable. Disposing...");
 #endif
                 disposable.Dispose();
                 return;
@@ -151,7 +149,7 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
 
             // 2. 如果没有，手动清理内部字段
 #if DEBUG
-            Info($"  -> Helper ({helperInstance.GetType().Name}) requires manual reflection dispose.");
+            ModLog.Debug(Tag, $"Helper ({helperInstance.GetType().Name}) requires manual reflection dispose.");
 #endif
             var t = Traverse.Create(helperInstance);
 
@@ -179,7 +177,7 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
                 {
                     disposable.Dispose();
 #if DEBUG
-                    Info($"    -> Disposed {fieldName} ({typeDesc}) via IDisposable.");
+                    ModLog.Debug(Tag, $"Disposed {fieldName} ({typeDesc}) via IDisposable.");
 #endif
                 }
                 // 方案 B (备选): 如果方案 A 不起作用，使用反射精确查找无参方法
@@ -191,12 +189,12 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
                     {
                         method.Invoke(val, null);
 #if DEBUG
-                        Info($"    -> Disposed {fieldName} ({typeDesc}) via Reflection.");
+                        ModLog.Debug(Tag, $"Disposed {fieldName} ({typeDesc}) via Reflection.");
 #endif
                     }
                     else
                     {
-                        Warn($"    -> Warning: Could not find Dispose() on {fieldName}.");
+                        ModLog.Warn(Tag, $"Could not find Dispose() on {fieldName}.");
                     }
                 }
 
@@ -204,7 +202,7 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
             }
             catch (Exception e)
             {
-                Error($"    -> Failed to dispose {fieldName}: {e.Message}");
+                ModLog.Error(Tag, $"Failed to dispose {fieldName}: {e.Message}");
             }
         }
 

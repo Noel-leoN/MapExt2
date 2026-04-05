@@ -1,9 +1,7 @@
-﻿// Copyright (c) 2024 Noel2(Noel-leoN)
+// Copyright (c) 2024 Noel2(Noel-leoN)
 // Licensed under the MIT License.
 // See LICENSE in the project root for full license information.
 // When using this part of the code, please clearly credit [Project Name] and the author.
-
-// using UnityEngine; // For Debug.Log
 
 using System;
 using System.Collections.Concurrent;
@@ -19,26 +17,23 @@ using Game.Simulation;
 using HarmonyLib;
 using MapExtPDX.MapExt.Core;
 
-/// <summary>
-/// 此class修补所有直接调用下列字段的托管代码方法：
-/// CellMapSystem<T>.kMapSize/cellmapClosedType.kTextureSize
-/// </summary>
 
-// 技术方案：v2.2.0改为自动搜索修补对象
 
 namespace MapExtPDX.MapExt.MapSizePatchSet
-{
+{   
+    /// <summary>
+    /// 此class修补所有直接调用下列字段的托管代码方法：
+    /// CellMapSystem.kMapSize / cellmapClosedType.kTextureSize
+    /// </summary>
+    /// <remarks>
+    /// 技术方案：v2.2.0 改为自动搜索修补对象
+    /// v2.3.x 日志迁移至 ModLog 统一格式
+    /// </remarks>
+    
     public static class CellMapSystemPatchManager
     {
-        // --- 日志封装 ---
-        private static readonly string modName = Mod.ModName;
-        private static readonly string patchTypename = nameof(CellMapSystemPatchManager);
-        public static void Info(string message) => Mod.Info($" {modName}.{patchTypename}:{message}");
-        public static void Warn(string message) => Mod.Warn($" {Mod.ModName}.{patchTypename}:{message}");
-        public static void Error(string message) => Mod.Error($" {(Mod.ModName)}.{patchTypename}:{message}");
-
-        public static void Error(Exception e, string message) =>
-            Mod.Error(e, $" {Mod.ModName}.{patchTypename}:{message}");
+        // === 日志 Tag ===
+        private const string Tag = "CellMapPatch";
 
         // 日志输出：方法名 -> 修改记录列表
         private static readonly ConcurrentDictionary<string, List<string>> _patchLog =
@@ -54,21 +49,21 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
         // 缓存基类定义
         private static readonly Type BaseGenericType = typeof(CellMapSystem<>);
 
+        #region System Loop
+
         /// <summary>
         /// 读取设置，注册列表，并应用补丁
         /// </summary>
         public static void ApplyPatches(Harmony harmony)
         {
-            Info(" 开始执行修补 CellMapSystem<T> kMapSize/kTextureSize...");
+            ModLog.Patch(Tag, "开始修补 CellMapSystem<T> kMapSize/kTextureSize");
 
             int mapMult = PatchManager.CurrentCoreValue;
             // Texture multiplier uses 1 for ultra large map (114km / mapMult >= 8) to avoid Unity texture limit crash
             int texMult = mapMult >= 8 ? 1 : mapMult;
 
-            // ---在此处配置你的清单---
-
+            // --- 在此处配置清单 ---
             // 格式: Register<系统类>(Map倍率, Texture倍率);
-
             // 继承CellMapSystem<T>基类的共15个系统/14个派生类型
             // kMapSize修改14个，kTextureSize修改11个
             // TelecomPreviewSystem与TelecomCoverageSystem 封闭类型相同，kTextureSize内部硬编码不作修改
@@ -89,11 +84,15 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
             Register<TelecomCoverageSystem>(mapMult, 1);
             Register<WindSystem>(mapMult, 1);
 
-            Info(" Registered CellMap systems configuration.");
+            ModLog.Ok(Tag, $"已注册 {_replacementMap.Count} 个字段映射 (mapMult={mapMult}, texMult={texMult})");
 
-            // --- 执行修补 ---            
+            // --- 执行修补 ---
             ApplyAllPatches(harmony);
         }
+
+        #endregion
+
+        #region Config
 
         // --- 限定搜索范围：配置允许扫描的命名空间前缀 ---
         private static readonly string[] AllowedNamespaces =
@@ -103,8 +102,12 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
             "Game.UI.Tooltip",
             "Game.Tools",
             // 根据实际需求增删
-            // "Game.Rendering"  // WindTextureSystem暂未修改
+            // "Game.Rendering"  // WindTextureSystem 暂未修改（WindSystem kTextureSize=×1）
         };
+
+        #endregion
+
+        #region Registration
 
         /// <summary>
         /// 注册目标系统
@@ -152,12 +155,7 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
             foreach (var method in methods)
             {
                 if (method.IsAbstract || method.ContainsGenericParameters) continue;
-
-                // 检查该方法是否引用了被注册的字段
-                //if (IsClientMethod(method))
-                //{
                 _manualMethodsToPatch.Add(method);
-                //}
             }
         }
 
@@ -179,18 +177,21 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
                     if (!_replacementMap.ContainsKey(field))
                     {
                         _replacementMap[field] = newValue;
-                        // 日志
-                        Info(
-                            $" Registered {field.DeclaringType.Name}.{field.Name}: {originalValue} -> {newValue} (x{multiplier})");
+                        ModLog.Swap(Tag,
+                            $"{field.DeclaringType.Name}.{field.Name}: {originalValue} → {newValue} (×{multiplier})");
                     }
                 }
             }
             catch (Exception ex)
             {
-                Info(
-                    $" Failed to read initial value for {field.DeclaringType.Name}.{field.Name}. Skipped. Error: {ex.Message}");
+                ModLog.Warn(Tag,
+                    $"无法读取 {field.DeclaringType.Name}.{field.Name} 初始值，已跳过: {ex.Message}");
             }
         }
+
+        #endregion
+
+        #region Patch Engine
 
         public static void ApplyAllPatches(Harmony harmony)
         {
@@ -203,8 +204,7 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
             int totalTypesScanned = 0;
             int totalMethodsScanned = 0;
 
-
-            // 使用 Set 去重 (防止手动注册的方法和自动扫描的方法重复，虽然几率很小)
+            // 使用 Set 去重 (防止手动注册的方法和自动扫描的方法重复)
             HashSet<MethodBase> distinctMethodsToPatch = new(new MethodComparer());
 
             // --- 1. 准备扫描程序集 ---
@@ -214,7 +214,7 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
 
             // 自动扫描程序集
             Assembly gameAssembly = typeof(GameSystemBase).Assembly;
-            Info($" Scanning assembly {gameAssembly.GetName().Name}...");
+            ModLog.Scan(Tag, $"扫描程序集 {gameAssembly.GetName().Name}...");
 
             // --- 2. 第一层过滤：仅保留白名单内的类型，排除接口、泛型以及带有 BurstCompile 的结构 ---
             var filteredTypes = gameAssembly.GetTypes()
@@ -272,40 +272,46 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
                 }
                 catch
                 {
+                    // 某些动态方法可能无法 patch，静默跳过
                 }
             }
 
             sw.Stop();
 
-            // 5. 输出详细日志
+            // 5. 输出结构化报告
             PrintSummary(totalTypesScanned, totalMethodsScanned, distinctMethodsToPatch.Count, scanTime,
                 sw.ElapsedMilliseconds);
         }
 
-        // 日志辅助
+        #endregion
+
+        #region Helpers
+
+        /// <summary>
+        /// 结构化报告输出
+        /// Release: 仅输出统计摘要
+        /// Debug: 输出完整修补列表（缩短名称）
+        /// </summary>
         private static void PrintSummary(int types, int methods, int patched, long scanTime, long patchTime)
         {
-            System.Text.StringBuilder sb = new System.Text.StringBuilder();
-            sb.AppendLine(" ");
-            sb.AppendLine("========== CellMap Fields 修补报告 ==========");
-            sb.AppendLine($"[Stats] Namespaces Filtered: {string.Join(", ", AllowedNamespaces)}");
-            sb.AppendLine($"[Stats] Scanned: {types} Types, {methods} Methods in {scanTime}ms");
-            sb.AppendLine($"[Stats] Patched: {patched} Methods in {patchTime}ms");
-            sb.AppendLine("-----------------------------------------------------------------");
-
-            // 排序输出
-            foreach (var entry in _patchLog.OrderBy(e => e.Key))
+            ModLog.Report(Tag, "CellMap Fields 修补报告", rb =>
             {
-                sb.AppendLine($"[MODIFIED] {entry.Key}");
-                foreach (var detail in entry.Value)
+                rb.Stat("Namespaces", string.Join(", ", AllowedNamespaces));
+                rb.Stat("Scanned", $"{types} Types, {methods} Methods in {scanTime}ms");
+                rb.Stat("Patched", $"{patched} Methods in {patchTime}ms");
+                rb.Stat("Fields", $"{_replacementMap.Count} registered");
+#if DEBUG
+                // Debug 模式: 输出完整修补详情（名称已缩短）
+                foreach (var entry in _patchLog.OrderBy(e => e.Key))
                 {
-                    sb.AppendLine($"    => {detail}");
+                    rb.Add($"[MODIFIED] {entry.Key}");
+                    foreach (var detail in entry.Value)
+                    {
+                        rb.Item(detail);
+                    }
                 }
-            }
-
-            sb.AppendLine("=================================================================");
-
-            Info(sb.ToString());
+#endif
+            });
         }
 
         private static bool IsClientMethod(MethodBase method)
@@ -345,11 +351,16 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
             return false;
         }
 
+        #endregion
+
+        #region Transpiler
+
         public static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions,
             MethodBase original)
         {
-            string typeName = original.DeclaringType?.FullName ?? "Unknown";
-            string methodName = original.Name;
+            // 使用缩短的类型名，避免反射泛型全限定名过长
+            string shortKey = ModLog.ShortenTypeName(
+                (original.DeclaringType?.FullName ?? "Unknown") + "::" + original.Name);
 
             foreach (var instr in instructions)
             {
@@ -357,9 +368,9 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
                 {
                     if (_replacementMap.TryGetValue(field, out int newValue))
                     {
-                        // 记录日志
-                        string logEntry = $"{field.DeclaringType.Name}.{field.Name} -> {newValue}";
-                        var list = _patchLog.GetOrAdd(typeName + "::" + methodName, new List<string>());
+                        // 记录日志（仅 Debug 构建会在报告中展示）
+                        string logEntry = $"{field.DeclaringType.Name}.{field.Name} → {newValue}";
+                        var list = _patchLog.GetOrAdd(shortKey, new List<string>());
                         if (!list.Contains(logEntry)) list.Add(logEntry);
 
                         // *** 关键修复 ***
@@ -378,6 +389,10 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
                 yield return instr;
             }
         }
+
+        #endregion
+
+        #region Comparers
 
         private class FieldInfoEqualityComparer : IEqualityComparer<FieldInfo>
         {
@@ -412,5 +427,7 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
             public int GetHashCode(MethodBase obj) =>
                 obj.MetadataToken.GetHashCode() ^ (obj.DeclaringType?.GetHashCode() ?? 0);
         }
+
+        #endregion
     }
 }

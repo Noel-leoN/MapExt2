@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2024 Noel2(Noel-leoN)
+// Copyright (c) 2024 Noel2(Noel-leoN)
 // Licensed under the MIT License.
 // See LICENSE in the project root for full license information.
 // When using this part of the code, please clearly credit [Project Name] and the author.
@@ -19,20 +19,14 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
     /// </summary>
     public static class WaterSystem_BaseDataReader_Patch
     {
-        // --- 日志封装 ---
-        private static readonly string modName = Mod.ModName;
-        private static readonly string patchTypename = nameof(WaterSystem_BaseDataReader_Patch);
-        private static void Info(string message) => Mod.Info($" {(modName)}.{patchTypename}:{message}");
-        private static void Warn(string message) => Mod.Warn($" {(modName)}.{patchTypename}:{message}");
-        private static void Error(string message) => Mod.Error($" {(modName)}.{patchTypename}:{message}");
-        private static void Error(Exception e, string message) => Mod.Error(e, $" {(Mod.ModName)}.{patchTypename}:{message}");
+        private const string Tag = "WaterReader";
 
         // --- 应用补丁 ---
         public static void Apply(Harmony harmony)
         {
             try
             {
-                Info($"Starting to patch BaseDataReader.GetReadbackBounds...");
+                ModLog.Patch(Tag, "Starting to patch BaseDataReader.GetReadbackBounds...");
 
                 // 1. 使用字符串名称反射获取 Internal 类型
                 // 注意：字符串必须包含完整的命名空间
@@ -41,12 +35,12 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
 
                 if (surfaceType == null)
                 {
-                    Error("Failed to find type: Game.Simulation.SurfaceDataReader. It might be renamed or moved.");
+                    ModLog.Error(Tag, "Failed to find type: Game.Simulation.SurfaceDataReader. It might be renamed or moved.");
                     return;
                 }
                 if (heightType == null)
                 {
-                    Error("Failed to find type: Game.Simulation.HeightDataReader. It might be renamed or moved.");
+                    ModLog.Error(Tag, "Failed to find type: Game.Simulation.HeightDataReader. It might be renamed or moved.");
                     return;
                 }
 
@@ -56,11 +50,11 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
 
                 if (surfaceBaseType == null || heightBaseType == null)
                 {
-                    Error("Failed to resolve BaseDataReader generic types from subclasses.");
+                    ModLog.Error(Tag, "Failed to resolve BaseDataReader generic types from subclasses.");
                     return;
                 }
 
-                Info($"Resolved types. SurfaceBase: {surfaceBaseType.Name}, HeightBase: {heightBaseType.Name}");
+                ModLog.Scan(Tag, $"Resolved types. SurfaceBase: {surfaceBaseType.Name}, HeightBase: {heightBaseType.Name}");
 
                 // 3. 定义目标方法的参数签名: (out int2 pos, out int2 size)
                 // 注意：Unity.Mathematics.int2 是 struct，所以需要 MakeByRefType
@@ -77,26 +71,26 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
                 if (targetSurfaceMethod != null)
                 {
                     harmony.Patch(targetSurfaceMethod, transpiler: transpiler);
-                    Info($"Patched {surfaceBaseType.Name}.GetReadbackBounds successfully.");
+                    ModLog.Ok(Tag, $"Patched {surfaceBaseType.Name}.GetReadbackBounds successfully.");
                 }
                 else
                 {
-                    Error($"Could not find GetReadbackBounds in {surfaceBaseType.Name}.");
+                    ModLog.Error(Tag, $"Could not find GetReadbackBounds in {surfaceBaseType.Name}.");
                 }
 
                 if (targetHeightMethod != null)
                 {
                     harmony.Patch(targetHeightMethod, transpiler: transpiler);
-                    Info($"Patched {heightBaseType.Name}.GetReadbackBounds successfully.");
+                    ModLog.Ok(Tag, $"Patched {heightBaseType.Name}.GetReadbackBounds successfully.");
                 }
                 else
                 {
-                    Error($"Could not find GetReadbackBounds in {heightBaseType.Name}.");
+                    ModLog.Error(Tag, $"Could not find GetReadbackBounds in {heightBaseType.Name}.");
                 }
             }
             catch (Exception e)
             {
-                Error(e, "Critical error while applying WaterSystem patches.");
+                ModLog.Error(Tag, e, "Critical error while applying WaterSystem patches.");
             }
         }
 
@@ -104,23 +98,24 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
         private static IEnumerable<CodeInstruction> TargetTranspiler(IEnumerable<CodeInstruction> instructions, MethodBase original)
         {
             // 目标：将 WaterSystem.kMapSize (field) 替换为 PatchManager.CurrentMapSize (property getter)
+            // CurrentMapSize = CurrentCoreValue × OriginalMapSize，返回缩放后的世界空间尺寸
 
             // 获取 WaterSystem.kMapSize 字段
             var originalField = AccessTools.Field(typeof(WaterSystem), nameof(WaterSystem.kMapSize));
 
-            // 获取 PatchManager.CurrentMapSize 的 Getter
-            var replacementMethod = AccessTools.PropertyGetter(typeof(PatchManager), nameof(PatchManager.CurrentCoreValue));
+            // 获取 PatchManager.CurrentMapSize 的 Getter（返回缩放后的 MapSize，如 57344）
+            var replacementMethod = AccessTools.PropertyGetter(typeof(PatchManager), nameof(PatchManager.CurrentMapSize));
 
             if (originalField == null)
             {
-                Error($"Could not find field WaterSystem.kMapSize. Patch aborted for {original.DeclaringType?.Name}.");
+                ModLog.Error(Tag, $"Could not find field WaterSystem.kMapSize. Patch aborted for {original.DeclaringType?.Name}.");
                 foreach (var instruction in instructions) yield return instruction;
                 yield break;
             }
 
             if (replacementMethod == null)
             {
-                Error($"Could not find property getter PatchManager.CurrentMapSize. Patch aborted for {original.DeclaringType?.Name}.");
+                ModLog.Error(Tag, $"Could not find PatchManager.CurrentMapSize getter. Patch aborted for {original.DeclaringType?.Name}.");
                 foreach (var instruction in instructions) yield return instruction;
                 yield break;
             }
@@ -144,11 +139,11 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
 
             if (replaceCount > 0)
             {
-                Info($"Successfully replaced {replaceCount} occurrences of kMapSize in {original.DeclaringType?.Name}.");
+                ModLog.Swap(Tag, $"Replaced {replaceCount}× kMapSize → CurrentMapSize in {original.DeclaringType?.Name}");
             }
             else
             {
-                Warn($"No occurrences of kMapSize found to replace in {original.DeclaringType?.Name}. This might indicate the game code has changed.");
+                ModLog.Warn(Tag, $"No kMapSize found in {original.DeclaringType?.Name}. Game code may have changed.");
             }
         }
     }

@@ -159,7 +159,7 @@ namespace MapExtPDX
             // 地形分辨率 8192 提升画质和笔刷精度
             // 水体模拟由 TerrainWaterAdapter "欺骗" 降采样处理 (Phase 2)
             TerrainResolution = TerrainResolutionSetting.High_8192;
-            WaterResolution = WaterResolutionSetting.Low_512;
+            WaterResolution = WaterResolutionSetting.Vanilla_2048;
 
             ShoppingMaxCost = 8000f;
             CompanyShoppingMaxCost = 200000f;

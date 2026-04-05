@@ -3,7 +3,6 @@
 // See LICENSE in the project root for full license information.
 // When using this part of the code, please clearly credit [Project Name] and the author.
 
-using System;
 
 namespace MapExtPDX.MapExt.Core
 {
@@ -14,10 +13,7 @@ namespace MapExtPDX.MapExt.Core
     /// </summary>
     public static class ResolutionManager
     {
-        // --- 日志封装 ---
-        private static readonly string typeName = nameof(ResolutionManager);
-        private static void Info(string message) => Mod.Info($"[{Mod.ModName}.{typeName}] {message}");
-        private static void Warn(string message) => Mod.Warn($"[{Mod.ModName}.{typeName}] ⚠️ {message}");
+        private const string Tag = "Resolution";
 
         #region Constants & Fields
 
@@ -86,10 +82,10 @@ namespace MapExtPDX.MapExt.Core
                 WaterResolutionSetting.Medium_1024 => 1024,
                 WaterResolutionSetting.Low_512 => 512,
                 WaterResolutionSetting.Ultra_256 => 256,
-                _ => 512
+                _ => VanillaWaterTextureSize
             };
 
-            Info($"Initialized: TerrainResolution={TerrainResolution}, WaterTextureSize={WaterTextureSize}, " +
+            ModLog.Ok(Tag, $"Initialized: Terrain={TerrainResolution}, Water={WaterTextureSize}, " +
                  $"NeedsDownsample={NeedsDownsampleForWater}");
         }
 
@@ -100,11 +96,11 @@ namespace MapExtPDX.MapExt.Core
         /// </summary>
         public static float GetWaterCellSize(int scaledMapSize)
         {
-            // 始终使用 2048 作为分母，因为 m_TexSize 的 Transpiler 替换可靠性无法保证
-            // 后续水分辨率功能完成后，可切换为 WaterTextureSize
-            const int actualTexSize = VanillaWaterTextureSize; // 2048
+            // 当前阶段: m_TexSize 固定为 2048，不随 WaterTextureSize 变化
+            // Phase 2 完成后: 切换为 WaterTextureSize 作为分母
+            int actualTexSize = VanillaWaterTextureSize; // 2048
             float cellSize = (float)scaledMapSize / actualTexSize;
-            Info($"GetWaterCellSize: mapSize={scaledMapSize}, texSize={actualTexSize}(actual), cellSize={cellSize}");
+            ModLog.Debug(Tag, $"GetWaterCellSize: mapSize={scaledMapSize}, texSize={actualTexSize}, cellSize={cellSize}");
             return cellSize;
         }
 
