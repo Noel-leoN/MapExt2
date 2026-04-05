@@ -206,22 +206,8 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
                         __result = resampledTexture;
                         Info($"ToR16_Postfix: Successfully replaced result with resampled texture ({__result.width}x{__result.height}).");
 
-                        // IMPORTANT: Destroy the texture returned by the original ToR16 method
-                        // UNLESS it was the same object as the input 'tex' AND no format conversion actually happened.
-                        // However, it's safer to assume ToR16 might create a copy even for format conversion,
-                        // and ResampleTexture2DToR16 *always* creates a new texture.
-                        // Therefore, destroying originalResult should usually be correct.
-                        // Need to avoid destroying the *input* 'tex' if ToR16 just returned it unchanged.
-                        if (originalResult != textureRGBA64) // Only destroy if ToR16 actually created a new texture object
-                        {
-                            Warn($"ToR16_Postfix: Destroying original result texture '{originalResult.name}' (different from input).");
-                            DestroyObject(originalResult);
-                        }
-                        else
-                        {
-                            Warn($"ToR16_Postfix: Original result was same as input ('{textureRGBA64.name}'), not destroying original result.");
-                            // In this case, the caller (ReplaceHeightmap) is responsible for destroying 'tex' if needed.
-                        }
+                        // 不主动销毁中间纹理: 游戏引擎可能在当前帧仍持有引用
+                        // 导入是一次性操作，让 GC 自然回收即可
                     }
                     else
                     {
