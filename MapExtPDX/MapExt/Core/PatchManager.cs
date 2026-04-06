@@ -89,9 +89,14 @@ namespace MapExtPDX.MapExt.Core
                 // v2.1.1新增: WaterSystem.InitTextures()重置
                 { "WaterSystemInitFix", (_) => WaterSystemReinitializer.Execute() },
 
-                // v2.x.x新增: Layer 2 地形欺骗 (WaterSystem.OnUpdate Prefix/Postfix 交换级联纹理)
-                // 注: TerrainWaterAdapter.Initialize() 由 WaterSystemReinitializer.Execute() 内部调用
-                { "WaterAdapterOnUpdatePatch", (h) => h.CreateClassProcessor(typeof(WaterSystem_OnUpdate_AdapterPatch)).Patch() },
+                // v2.x.x新增: Layer 2 地形欺骗 (方法拦截模式)
+                // OnSimulateGPU Prefix/Postfix 控制拦截窗口（GPU水模拟在此方法中执行，不在OnUpdate中）
+                // GetCascadeTexture/GetObjectsLayerTexture Prefix 在窗口内返回降采样纹理
+                { "WaterAdapterOnUpdatePatch", (h) => {
+                    h.CreateClassProcessor(typeof(WaterSystem_OnSimulateGPU_AdapterPatch)).Patch();
+                    h.CreateClassProcessor(typeof(TerrainSystem_GetCascadeTexture_Patch)).Patch();
+                    h.CreateClassProcessor(typeof(TerrainSystem_GetObjectsLayerTexture_Patch)).Patch();
+                }},
 
                 // v2.2.0改动
                 // PatchSet3:CellMapSystem<T>托管代码部分
