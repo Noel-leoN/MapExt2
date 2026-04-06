@@ -81,8 +81,8 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
                 ModLog.Error(Tag, $"CRITICAL: Failed to invoke InitTextures. Exception: {e}");
             }
 
-            // === Layer 2: 地形欺骗适配器（延迟初始化，首次 OnUpdate 时读取实际级联尺寸）===
-            TerrainWaterAdapter.RequestInitialize();
+            // Layer 2 (级联纹理降采样) 现在由 FinalizeTerrainData Postfix 自动处理,
+            // 不再需要手动初始化。
         }
 
         // ========================================================================

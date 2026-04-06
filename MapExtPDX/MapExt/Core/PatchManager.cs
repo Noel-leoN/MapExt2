@@ -89,13 +89,11 @@ namespace MapExtPDX.MapExt.Core
                 // v2.1.1新增: WaterSystem.InitTextures()重置
                 { "WaterSystemInitFix", (_) => WaterSystemReinitializer.Execute() },
 
-                // v2.x.x新增: Layer 2 地形欺骗 (方法拦截模式)
-                // OnSimulateGPU Prefix/Postfix 控制拦截窗口（GPU水模拟在此方法中执行，不在OnUpdate中）
-                // GetCascadeTexture/GetObjectsLayerTexture Prefix 在窗口内返回降采样纹理
+                // v2.x.x新增: Layer 2 级联纹理降采样 (Postfix 架构)
+                // FinalizeTerrainData 执行后，如果级联 > 4096 则直接降采样
+                // 所有系统（水模拟、渲染、CPU查询）原生看到 4096 级联
                 { "WaterAdapterOnUpdatePatch", (h) => {
-                    h.CreateClassProcessor(typeof(WaterSystem_OnSimulateGPU_AdapterPatch)).Patch();
-                    h.CreateClassProcessor(typeof(TerrainSystem_GetCascadeTexture_Patch)).Patch();
-                    h.CreateClassProcessor(typeof(TerrainSystem_GetObjectsLayerTexture_Patch)).Patch();
+                    h.CreateClassProcessor(typeof(TerrainCascadeDownsamplePatch)).Patch();
                 }},
 
                 // v2.2.0改动
