@@ -89,8 +89,9 @@ namespace MapExtPDX.MapExt.Core
                 // v2.1.1新增: WaterSystem.InitTextures()重置
                 { "WaterSystemInitFix", (_) => WaterSystemReinitializer.Execute() },
 
-                // v2.x.x新增: 地形→水降采样适配层
-                { "TerrainWaterAdapterInit", (_) => TerrainWaterAdapter.Initialize() },
+                // v2.x.x新增: Layer 2 地形欺骗 (WaterSystem.OnUpdate Prefix/Postfix 交换级联纹理)
+                // 注: TerrainWaterAdapter.Initialize() 由 WaterSystemReinitializer.Execute() 内部调用
+                { "WaterAdapterOnUpdatePatch", (h) => h.CreateClassProcessor(typeof(WaterSystem_OnUpdate_AdapterPatch)).Patch() },
 
                 // v2.2.0改动
                 // PatchSet3:CellMapSystem<T>托管代码部分
@@ -127,7 +128,7 @@ namespace MapExtPDX.MapExt.Core
                         "WaterLevelChangeSystemMethodPatches_Static",
                         "WaterSystem_BaseDataReader_Patch",
                         "WaterSystemInitFix",
-                        "TerrainWaterAdapterInit",
+                        "WaterAdapterOnUpdatePatch",
                         "CellMapSystemValuesPatch",
                         "AirwaySystemPatch",
                         "ReBurstSystemsPatches",
@@ -144,7 +145,7 @@ namespace MapExtPDX.MapExt.Core
                         "WaterLevelChangeSystemMethodPatches_Static",
                         "WaterSystem_BaseDataReader_Patch",
                         "WaterSystemInitFix",
-                        "TerrainWaterAdapterInit",
+                        "WaterAdapterOnUpdatePatch",
                         "CellMapSystemValuesPatch",
                         "AirwaySystemPatch",
                         "ReBurstSystemsPatches",
@@ -161,7 +162,7 @@ namespace MapExtPDX.MapExt.Core
                         "WaterLevelChangeSystemMethodPatches_Static",
                         "WaterSystem_BaseDataReader_Patch",
                         "WaterSystemInitFix",
-                        "TerrainWaterAdapterInit",
+                        "WaterAdapterOnUpdatePatch",
                         "CellMapSystemValuesPatch",
                         "AirwaySystemPatch",
                         "ReBurstSystemsPatches",

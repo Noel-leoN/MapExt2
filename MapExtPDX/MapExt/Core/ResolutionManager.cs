@@ -86,21 +86,22 @@ namespace MapExtPDX.MapExt.Core
             };
 
             ModLog.Ok(Tag, $"Initialized: Terrain={TerrainResolution}, Water={WaterTextureSize}, " +
-                 $"NeedsDownsample={NeedsDownsampleForWater}");
+                           $"NeedsDownsample={NeedsDownsampleForWater}");
         }
 
         /// <summary>
-        /// [安全版] 计算水 CellSize: 始终基于实际 m_TexSize(2048)。
+        /// 计算水 CellSize: 基于用户配置的 WaterTextureSize。
         /// 保证 kMapSize = kCellSize × m_TexSize 恒等式成立。
-        /// 当前阶段水分辨率降级功能尚未完成, 使用此方法确保稳定性。
+        /// 例: 57344 = 28 × 2048 (原版) → 57344 = 112 × 512 (降级)
         /// </summary>
         public static float GetWaterCellSize(int scaledMapSize)
         {
-            // 当前阶段: m_TexSize 固定为 2048，不随 WaterTextureSize 变化
-            // Phase 2 完成后: 切换为 WaterTextureSize 作为分母
-            int actualTexSize = VanillaWaterTextureSize; // 2048
+            int actualTexSize = WaterTextureSize;
             float cellSize = (float)scaledMapSize / actualTexSize;
-            ModLog.Debug(Tag, $"GetWaterCellSize: mapSize={scaledMapSize}, texSize={actualTexSize}, cellSize={cellSize}");
+#if DEBUG
+            ModLog.Debug(Tag,
+                $"GetWaterCellSize: mapSize={scaledMapSize}, texSize={actualTexSize}, cellSize={cellSize}");
+#endif
             return cellSize;
         }
 
@@ -119,7 +120,8 @@ namespace MapExtPDX.MapExt.Core
             long objectsLayerBytes = (long)TerrainResolution * TerrainResolution * 4;
             // 降采样副本 (如果需要)
             long adapterBytes = NeedsDownsampleForWater
-                ? (long)WaterTerrainResolution * WaterTerrainResolution * 2 * 4 + WaterTerrainResolution * WaterTerrainResolution * 4
+                ? (long)WaterTerrainResolution * WaterTerrainResolution * 2 * 4 +
+                  WaterTerrainResolution * WaterTerrainResolution * 4
                 : 0;
 
             long totalBytes = cascadeBytes + waterBytes + objectsLayerBytes + adapterBytes;
