@@ -89,11 +89,11 @@ namespace MapExtPDX.MapExt.Core
                 // v2.1.1新增: WaterSystem.InitTextures()重置
                 { "WaterSystemInitFix", (_) => WaterSystemReinitializer.Execute() },
 
-                // v2.x.x新增: Layer 2 级联纹理降采样 (Postfix 架构)
-                // FinalizeTerrainData 执行后，如果级联 > 4096 则直接降采样
-                // 所有系统（水模拟、渲染、CPU查询）原生看到 4096 级联
+                // v2.x.x新增: Layer 2 水模拟地形欺骗 (全局变量交换)
+                // 水 ComputeShader 通过 colossal_TerrainTextureArray 全局变量读取地形
+                // 在 OnSimulateGPU 期间临时替换为 4096 降采样版本
                 { "WaterAdapterOnUpdatePatch", (h) => {
-                    h.CreateClassProcessor(typeof(TerrainCascadeDownsamplePatch)).Patch();
+                    h.CreateClassProcessor(typeof(WaterSimGPU_TerrainSwapPatch)).Patch();
                 }},
 
                 // v2.2.0改动

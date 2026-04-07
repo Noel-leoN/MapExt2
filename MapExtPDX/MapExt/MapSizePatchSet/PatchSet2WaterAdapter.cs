@@ -6,145 +6,163 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
     using Game.Simulation;
     using HarmonyLib;
     using MapExtPDX.MapExt.Core;
-    using Unity.Collections;
-    using Unity.Collections.LowLevel.Unsafe;
     using UnityEngine;
     using UnityEngine.Experimental.Rendering;
     using UnityEngine.Rendering;
 
     /// <summary>
-    /// Layer 2: 级联纹理降采样 (v6 - Postfix 架构)。
-    /// 在 FinalizeTerrainData 完成后，如果级联 > WaterTerrainResolution(4096)，
-    /// 直接将 m_HeightmapCascade 和 m_CPUHeights 降采样到 4096。
-    /// 所有系统（水模拟、渲染、CPU查询）都原生看到 4096 级联。
-    /// 无需运行时交换、无需 Getter 拦截、无需全局变量替换。
+    /// Layer 2: 水模拟地形欺骗 (v8 - 全局变量交换)。
     ///
-    /// m_Heightmap (8192) 保持不变，用于：
-    ///   - colossal_TerrainTexture 高精度地形渲染
-    ///   - m_HeightmapDepth 也保持 8192
+    /// 设计发现：WaterSystem/WaterSimulation 不直接引用 TerrainSystem，
+    /// 水 compute shader 通过全局变量 colossal_TerrainTextureArray 读取地形数据。
+    ///
+    /// 方案：在 WaterSystem.OnSimulateGPU 前后交换全局变量：
+    ///   Prefix:  colossal_TerrainTextureArray → 降采样 4096 版本
+    ///            colossal_TerrainCascadeLimit  → 基于 4096 的值
+    ///   Postfix: 恢复原始值
+    ///
+    /// 不修改 TerrainSystem 的任何字段或内部状态。
     /// </summary>
-    [HarmonyPatch(typeof(TerrainSystem), "FinalizeTerrainData")]
-    internal static class TerrainCascadeDownsamplePatch
+    [HarmonyPatch(typeof(WaterSystem), "OnSimulateGPU")]
+    internal static class WaterSimGPU_TerrainSwapPatch
     {
-        private const string Tag = "CascadeCap";
+        private const string Tag = "WaterTerrainSwap";
 
-        [HarmonyPostfix]
-        static void Postfix(TerrainSystem __instance)
+        #region Fields
+
+        private static RenderTexture s_DownsampledCascade;
+        private static RenderTexture s_TempSrc;
+        private static RenderTexture s_TempDst;
+
+        private static Texture s_SavedGlobalTex;
+        private static Vector4 s_SavedGlobalLimit;
+
+        private static readonly int s_ID_Array = Shader.PropertyToID("colossal_TerrainTextureArray");
+        private static readonly int s_ID_Limit = Shader.PropertyToID("colossal_TerrainCascadeLimit");
+
+        private static int s_TargetSize;
+        private static bool s_Active;
+        private static int s_LogCount;
+
+        #endregion
+
+        #region Prefix / Postfix
+
+        [HarmonyPrefix]
+        static void Prefix()
         {
-            int maxCascade = ResolutionManager.WaterTerrainResolution; // 4096
+            if (!ResolutionManager.NeedsDownsampleForWater)
+                return;
 
-            var traverse = Traverse.Create(__instance);
-            var cascadeField = traverse.Field("m_HeightmapCascade");
-            var objLayerField = traverse.Field("m_HeightmapObjectsLayer");
-            var cpuHeightsField = traverse.Field("m_CPUHeights");
+            s_TargetSize = ResolutionManager.WaterTerrainResolution; // 4096
 
-            var cascade = cascadeField.GetValue<RenderTexture>();
-            if (cascade == null || cascade.width <= maxCascade)
+            // 获取当前全局纹理（即 m_HeightmapCascade）
+            var globalTex = Shader.GetGlobalTexture(s_ID_Array);
+            if (globalTex == null || !(globalTex is RenderTexture srcCascade))
+            {
+                if (s_LogCount++ % 300 == 0)
+                    ModLog.Warn(Tag, "Global cascade texture not available yet");
+                return;
+            }
+
+            if (srcCascade.width <= s_TargetSize)
                 return; // 无需降采样
 
-            int srcSize = cascade.width;
-            ModLog.Patch(Tag, $"Downsampling cascade: {srcSize} → {maxCascade}");
-
-            // === 1. 创建新的 4096 级联 ===
-            var newCascade = new RenderTexture(maxCascade, maxCascade, 0, GraphicsFormat.R16_UNorm)
+            // 延迟创建降采样 RT
+            if (s_DownsampledCascade == null || !s_DownsampledCascade.IsCreated())
             {
-                hideFlags = HideFlags.HideAndDontSave,
-                enableRandomWrite = false,
-                name = "TerrainHeightsCascade",
-                filterMode = FilterMode.Bilinear,
-                wrapMode = TextureWrapMode.Clamp,
-                dimension = TextureDimension.Tex2DArray,
-                volumeDepth = 4
-            };
-            newCascade.Create();
+                CreateDownsampleResources(srcCascade);
+                ModLog.Ok(Tag, $"Created downsample resources: {srcCascade.width} → {s_TargetSize}");
+            }
 
-            // === 2. 逐 slice 降采样 ===
-            var tempSrc = RenderTexture.GetTemporary(srcSize, srcSize, 0, RenderTextureFormat.R16);
-            var tempDst = RenderTexture.GetTemporary(maxCascade, maxCascade, 0, RenderTextureFormat.R16);
-
+            // 降采样: 逐 slice Blit (8192 Tex2DArray → 4096 Tex2DArray)
             for (int slice = 0; slice < 4; slice++)
             {
-                Graphics.CopyTexture(cascade, slice, 0, tempSrc, 0, 0);
-                Graphics.Blit(tempSrc, tempDst);
-                Graphics.CopyTexture(tempDst, 0, 0, newCascade, slice, 0);
+                Graphics.CopyTexture(srcCascade, slice, 0, s_TempSrc, 0, 0);
+                Graphics.Blit(s_TempSrc, s_TempDst);
+                Graphics.CopyTexture(s_TempDst, 0, 0, s_DownsampledCascade, slice, 0);
             }
 
-            RenderTexture.ReleaseTemporary(tempSrc);
-            RenderTexture.ReleaseTemporary(tempDst);
+            // 保存并替换全局变量
+            s_SavedGlobalTex = globalTex;
+            s_SavedGlobalLimit = Shader.GetGlobalVector(s_ID_Limit);
 
-            // === 3. 替换级联字段 ===
-            cascade.Release();
-            Object.DestroyImmediate(cascade);
-            cascadeField.SetValue(newCascade);
+            Shader.SetGlobalTexture(s_ID_Array, s_DownsampledCascade);
+            Shader.SetGlobalVector(s_ID_Limit,
+                new Vector4(0.5f / s_TargetSize, 0.5f / s_TargetSize, 0f, 0f));
 
-            // === 4. 降采样 ObjectsLayer ===
-            var objLayer = objLayerField.GetValue<RenderTexture>();
-            if (objLayer != null && objLayer.width > maxCascade)
-            {
-                var newObjLayer = new RenderTexture(maxCascade, maxCascade, 0, objLayer.graphicsFormat)
-                {
-                    hideFlags = HideFlags.HideAndDontSave,
-                    enableRandomWrite = false,
-                    name = "TerrainHeightsObjectsLayer",
-                    filterMode = FilterMode.Bilinear,
-                    wrapMode = TextureWrapMode.Clamp,
-                    dimension = TextureDimension.Tex2D
-                };
-                newObjLayer.Create();
-                Graphics.Blit(objLayer, newObjLayer);
-                objLayer.Release();
-                Object.DestroyImmediate(objLayer);
-                objLayerField.SetValue(newObjLayer);
-            }
-
-            // === 4b. 重建 HeightmapDepth 以匹配级联尺寸 ===
-            // TerrainSystem.OnUpdate 使用 SetRenderTarget(cascade, slice, depth, 0)
-            // color 和 depth 尺寸必须一致，否则每帧产生错误
-            var depthField = traverse.Field("m_HeightmapDepth");
-            var depth = depthField.GetValue<RenderTexture>();
-            if (depth != null && depth.width > maxCascade)
-            {
-                var newDepth = new RenderTexture(maxCascade, maxCascade, 16,
-                    RenderTextureFormat.Depth, RenderTextureReadWrite.Linear)
-                {
-                    name = "HeightmapDepth"
-                };
-                newDepth.Create();
-                depth.Release();
-                Object.DestroyImmediate(depth);
-                depthField.SetValue(newDepth);
-                ModLog.Ok(Tag, $"HeightmapDepth resized: {srcSize} → {maxCascade}");
-            }
-
-            // === 5. 降采样 CPUHeights 以匹配新级联尺寸 ===
-            // GetHeightData 验证: m_CPUHeights.Length == cascade.width * cascade.height
-            var cpuHeights = cpuHeightsField.GetValue<NativeArray<ushort>>();
-            if (cpuHeights.IsCreated && cpuHeights.Length == srcSize * srcSize)
-            {
-                int newLen = maxCascade * maxCascade;
-                var newCpuHeights = new NativeArray<ushort>(newLen, Allocator.Persistent);
-                int ratio = srcSize / maxCascade; // 2
-
-                // 点采样降采样 (简单、快速、无精度损失)
-                for (int y = 0; y < maxCascade; y++)
-                {
-                    for (int x = 0; x < maxCascade; x++)
-                    {
-                        newCpuHeights[y * maxCascade + x] = cpuHeights[(y * ratio) * srcSize + (x * ratio)];
-                    }
-                }
-
-                cpuHeights.Dispose();
-                cpuHeightsField.SetValue(newCpuHeights);
-                ModLog.Ok(Tag, $"CPUHeights downsampled: {srcSize}² → {maxCascade}² (ratio={ratio})");
-            }
-
-            // === 6. 更新全局着色器变量 ===
-            Shader.SetGlobalTexture("colossal_TerrainTextureArray", newCascade);
-            Shader.SetGlobalVector("colossal_TerrainCascadeLimit",
-                new Vector4(0.5f / maxCascade, 0.5f / maxCascade, 0f, 0f));
-
-            ModLog.Ok(Tag, $"Cascade capped: {srcSize} → {maxCascade}, all references updated");
+            s_Active = true;
         }
+
+        [HarmonyPostfix]
+        static void Postfix()
+        {
+            if (!s_Active)
+                return;
+
+            // 恢复原始全局变量
+            if (s_SavedGlobalTex != null)
+                Shader.SetGlobalTexture(s_ID_Array, s_SavedGlobalTex);
+            Shader.SetGlobalVector(s_ID_Limit, s_SavedGlobalLimit);
+
+            s_SavedGlobalTex = null;
+            s_Active = false;
+        }
+
+        #endregion
+
+        #region Helpers
+
+        private static void CreateDownsampleResources(RenderTexture srcCascade)
+        {
+            int srcSize = srcCascade.width;
+
+            s_DownsampledCascade = new RenderTexture(s_TargetSize, s_TargetSize, 0, GraphicsFormat.R16_UNorm)
+            {
+                dimension = TextureDimension.Tex2DArray,
+                volumeDepth = 4,
+                filterMode = FilterMode.Bilinear,
+                wrapMode = TextureWrapMode.Clamp,
+                enableRandomWrite = false,
+                hideFlags = HideFlags.HideAndDontSave,
+                name = "WaterTerrainDownsampled"
+            };
+            s_DownsampledCascade.Create();
+
+            s_TempSrc = new RenderTexture(srcSize, srcSize, 0, GraphicsFormat.R16_UNorm)
+            {
+                hideFlags = HideFlags.HideAndDontSave,
+                name = "WaterTerrainTempSrc"
+            };
+            s_TempSrc.Create();
+
+            s_TempDst = new RenderTexture(s_TargetSize, s_TargetSize, 0, GraphicsFormat.R16_UNorm)
+            {
+                hideFlags = HideFlags.HideAndDontSave,
+                name = "WaterTerrainTempDst"
+            };
+            s_TempDst.Create();
+        }
+
+        // 供外部调用的清理方法
+        public static void Dispose()
+        {
+            SafeDestroy(ref s_DownsampledCascade);
+            SafeDestroy(ref s_TempSrc);
+            SafeDestroy(ref s_TempDst);
+            s_Active = false;
+        }
+
+        private static void SafeDestroy(ref RenderTexture rt)
+        {
+            if (rt != null)
+            {
+                if (rt.IsCreated()) rt.Release();
+                Object.DestroyImmediate(rt);
+                rt = null;
+            }
+        }
+
+        #endregion
     }
 }
