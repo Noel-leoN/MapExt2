@@ -70,18 +70,19 @@ namespace MapExtPDX.MapExt.Core
         /// </summary>
         public static void Initialize(TerrainResolutionSetting terrain, WaterResolutionSetting water)
         {
+            // 8192 暂时禁用 (水模拟不兼容)，即使旧存档持久化了该值也强制降级
             TerrainResolution = terrain switch
             {
-                TerrainResolutionSetting.High_8192 => 8192,
+                // TerrainResolutionSetting.High_8192 => 8192, // 待水模拟修复后恢复
                 _ => VanillaTerrainResolution
             };
 
+            // 水纹理分辨率暂时锁定为原版 (非原版分辨率需要额外验证)
             WaterTextureSize = water switch
             {
-                WaterResolutionSetting.Vanilla_2048 => 2048,
-                WaterResolutionSetting.Medium_1024 => 1024,
-                WaterResolutionSetting.Low_512 => 512,
-                WaterResolutionSetting.Ultra_256 => 256,
+                // WaterResolutionSetting.Medium_1024 => 1024, // 待验证后恢复
+                // WaterResolutionSetting.Low_512 => 512,
+                // WaterResolutionSetting.Ultra_256 => 256,
                 _ => VanillaWaterTextureSize
             };
 

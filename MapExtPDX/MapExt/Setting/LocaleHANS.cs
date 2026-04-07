@@ -27,6 +27,7 @@ namespace MapExtPDX
                 { m_Setting.GetSettingsLocaleID(), "#大地图" }, // Main mod title
                 { m_Setting.GetOptionTabLocaleID(ModSettings.kMapSizeModeTab), "地图尺寸" },
                 { m_Setting.GetOptionGroupLocaleID(ModSettings.kMainModeGroup), "地图尺寸模式" },
+                { m_Setting.GetOptionGroupLocaleID(ModSettings.kResolutionGroup), "分辨率设置" },
 
                 { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.PatchModeChoice)), "► 选择地图尺寸模式" },
                 {

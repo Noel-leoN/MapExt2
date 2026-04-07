@@ -46,9 +46,9 @@ namespace MapExtPDX
     //[FileLocation(nameof(MapExtPDX))]
     [FileLocation("ModsSettings/" + Mod.ModName + "/" + Mod.ModName)]
     [SettingsUITabOrder(kMapSizeModeTab, kMiscTab, kPerformanceToolTab, kDebugTab)]
-    [SettingsUIGroupOrder(kMainModeGroup, kResetGroup, kInfoGroup, kEcoGroup, kNoteGroup, 
+    [SettingsUIGroupOrder(kMainModeGroup, kResolutionGroup, kResetGroup, kInfoGroup, kEcoGroup, kNoteGroup, 
         kMiscGroup, kEconomyTweakGroup, kPerformanceToolGroup, kDebugGroup)]
-    [SettingsUIShowGroupName(kMainModeGroup, kResetGroup, kEcoGroup, 
+    [SettingsUIShowGroupName(kMainModeGroup, kResolutionGroup, kResetGroup, kEcoGroup, 
         kMiscGroup, kEconomyTweakGroup, kPerformanceToolGroup, kDebugGroup)]
     public class ModSettings : ModSetting
     {
@@ -58,6 +58,7 @@ namespace MapExtPDX
         public const string kDebugTab = "▍Debug";
         public const string kMainModeGroup = "▍MainMode";
         public const string kApplyModeGroup = "▍ApplyMode";
+        public const string kResolutionGroup = "▍Resolution";
         public const string kInfoGroup = "▍GameInfo";
         public const string kEcoGroup = "▍Economy Logic & Perf.";
         public const string kNoteGroup = "▍Warning!";
@@ -222,27 +223,28 @@ namespace MapExtPDX
 
         public bool IsEconomyFixDisabled => !isEnableEconomyFix;
 
-        [SettingsUISection(kMapSizeModeTab, kEcoGroup)]
+        // 经济子系统开关 → 移至 Misc/EconomyTweak 分页
+        [SettingsUISection(kMiscTab, kEconomyTweakGroup)]
         [SettingsUIDisableByCondition(typeof(ModSettings), nameof(IsEconomyFixDisabled))]
         [SettingsUIHideByCondition(typeof(ModSettings), nameof(IsNotInMainMenu))]
         public bool EnableDemandEcoSystem { get; set; } = true;
 
-        [SettingsUISection(kMapSizeModeTab, kEcoGroup)]
+        [SettingsUISection(kMiscTab, kEconomyTweakGroup)]
         [SettingsUIDisableByCondition(typeof(ModSettings), nameof(IsEconomyFixDisabled))]
         [SettingsUIHideByCondition(typeof(ModSettings), nameof(IsNotInMainMenu))]
         public bool EnableJobSearchEcoSystem { get; set; } = true;
 
-        [SettingsUISection(kMapSizeModeTab, kEcoGroup)]
+        [SettingsUISection(kMiscTab, kEconomyTweakGroup)]
         [SettingsUIDisableByCondition(typeof(ModSettings), nameof(IsEconomyFixDisabled))]
         [SettingsUIHideByCondition(typeof(ModSettings), nameof(IsNotInMainMenu))]
         public bool EnableHouseholdPropertyEcoSystem { get; set; } = true;
 
-        [SettingsUISection(kMapSizeModeTab, kEcoGroup)]
+        [SettingsUISection(kMiscTab, kEconomyTweakGroup)]
         [SettingsUIDisableByCondition(typeof(ModSettings), nameof(IsEconomyFixDisabled))]
         [SettingsUIHideByCondition(typeof(ModSettings), nameof(IsNotInMainMenu))]
         public bool EnableResourceBuyerEcoSystem { get; set; } = true;
 
-        [SettingsUISection(kMapSizeModeTab, kEcoGroup)]
+        [SettingsUISection(kMiscTab, kEconomyTweakGroup)]
         [SettingsUIDisableByCondition(typeof(ModSettings), nameof(IsEconomyFixDisabled))]
         [SettingsUIHideByCondition(typeof(ModSettings), nameof(IsNotInMainMenu))]
         public bool EnableResidentAIEcoSystem { get; set; } = true;
@@ -286,17 +288,17 @@ namespace MapExtPDX
         // ==========================================
         // 分辨率设置
         // ==========================================
-        [SettingsUISection(kPerformanceToolTab, kPerformanceToolGroup)]
+        [SettingsUISection(kMapSizeModeTab, kResolutionGroup)]
         [SettingsUIDropdown(typeof(ModSettings), nameof(GetTerrainResolutionItems))]
         [SettingsUIHideByCondition(typeof(ModSettings), nameof(IsNotInMainMenu))]
         public TerrainResolutionSetting TerrainResolution { get; set; }
 
-        [SettingsUISection(kPerformanceToolTab, kPerformanceToolGroup)]
+        [SettingsUISection(kMapSizeModeTab, kResolutionGroup)]
         [SettingsUIDropdown(typeof(ModSettings), nameof(GetWaterResolutionItems))]
         [SettingsUIHideByCondition(typeof(ModSettings), nameof(IsNotInMainMenu))]
         public WaterResolutionSetting WaterResolution { get; set; }
 
-        [SettingsUISection(kPerformanceToolTab, kPerformanceToolGroup)]
+        [SettingsUISection(kMapSizeModeTab, kResolutionGroup)]
         public string VRAMEstimate => $"Est. VRAM: {MapExt.Core.ResolutionManager.GetVRAMEstimate()}";
 
         public DropdownItem<int>[] GetTerrainResolutionItems()
@@ -314,9 +316,10 @@ namespace MapExtPDX
             return new DropdownItem<int>[]
             {
                 new DropdownItem<int> { value = (int)WaterResolutionSetting.Vanilla_2048, displayName = "2048×2048 (Vanilla)" },
-                new DropdownItem<int> { value = (int)WaterResolutionSetting.Medium_1024, displayName = "1024×1024" },
-                new DropdownItem<int> { value = (int)WaterResolutionSetting.Low_512, displayName = "512×512 (Recommended)" },
-                new DropdownItem<int> { value = (int)WaterResolutionSetting.Ultra_256, displayName = "256×256 (Ultra Performance)" },
+                // 非原版分辨率暂时禁用，待验证后恢复
+                // new DropdownItem<int> { value = (int)WaterResolutionSetting.Medium_1024, displayName = "1024×1024" },
+                // new DropdownItem<int> { value = (int)WaterResolutionSetting.Low_512, displayName = "512×512 (Recommended)" },
+                // new DropdownItem<int> { value = (int)WaterResolutionSetting.Ultra_256, displayName = "256×256 (Ultra Performance)" },
             };
         }
 

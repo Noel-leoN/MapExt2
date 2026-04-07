@@ -27,6 +27,7 @@ namespace MapExtPDX
                 { m_Setting.GetSettingsLocaleID(), "#MapExt" }, // Main mod title
                 { m_Setting.GetOptionTabLocaleID(ModSettings.kMapSizeModeTab), "MapSize Mode" },
                 { m_Setting.GetOptionGroupLocaleID(ModSettings.kMainModeGroup), "Main MapSize Mode" },
+                { m_Setting.GetOptionGroupLocaleID(ModSettings.kResolutionGroup), "Resolution Settings" },
 
                 { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.PatchModeChoice)), "► Select MapSize Mode" },
                 {
