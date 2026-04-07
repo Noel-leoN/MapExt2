@@ -89,11 +89,16 @@ namespace MapExtPDX.MapExt.Core
                 // v2.1.1新增: WaterSystem.InitTextures()重置
                 { "WaterSystemInitFix", (_) => WaterSystemReinitializer.Execute() },
 
-                // v2.x.x新增: Layer 2 水模拟地形欺骗 (全局变量交换)
-                // 水 ComputeShader 通过 colossal_TerrainTextureArray 全局变量读取地形
-                // 在 OnSimulateGPU 期间临时替换为 4096 降采样版本
+                // v2.x.x新增: Layer 2 水模拟地形欺骗 (方法拦截 + 全局变量双通道)
+                // 仅当地形分辨率 > 4096 时才注册 Harmony Patch，避免每帧 detour 开销
                 { "WaterAdapterOnUpdatePatch", (h) => {
-                    h.CreateClassProcessor(typeof(WaterSimGPU_TerrainSwapPatch)).Patch();
+                    if (!ResolutionManager.NeedsDownsampleForWater)
+                    {
+                        ModLog.Info("PatchManager", "Terrain ≤ 4096, skipping water adapter patches");
+                        return;
+                    }
+                    h.CreateClassProcessor(typeof(WaterSystem_OnSimulateGPU_Patch)).Patch();
+                    h.CreateClassProcessor(typeof(TerrainSystem_GetCascadeTexture_Patch)).Patch();
                 }},
 
                 // v2.2.0改动

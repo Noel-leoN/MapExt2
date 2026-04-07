@@ -156,9 +156,8 @@ namespace MapExtPDX
             // 设置默认的补丁模式
             PatchModeChoice = PatchModeSetting.ModeA;
             // 分辨率设置
-            // 地形分辨率 8192 提升画质和笔刷精度
-            // 水体模拟由 TerrainWaterAdapter "欺骗" 降采样处理 (Phase 2)
-            TerrainResolution = TerrainResolutionSetting.High_8192;
+            // 地形 8192 暂时禁用 — 水模拟与 8192 级联不兼容 (见 docs/TerrainSystem/Water_Terrain_Decoupling_Research.md)
+            TerrainResolution = TerrainResolutionSetting.Vanilla_4096;
             WaterResolution = WaterResolutionSetting.Vanilla_2048;
 
             ShoppingMaxCost = 8000f;
@@ -305,7 +304,8 @@ namespace MapExtPDX
             return new DropdownItem<int>[]
             {
                 new DropdownItem<int> { value = (int)TerrainResolutionSetting.Vanilla_4096, displayName = "4096×4096 (Vanilla)" },
-                new DropdownItem<int> { value = (int)TerrainResolutionSetting.High_8192, displayName = "8192×8192 (Recommended)" },
+                // 8192 暂时禁用 — 水模拟级联纹理不兼容，待后续修复
+                // new DropdownItem<int> { value = (int)TerrainResolutionSetting.High_8192, displayName = "8192×8192 (High)" },
             };
         }
 
