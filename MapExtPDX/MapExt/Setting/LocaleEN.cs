@@ -203,8 +203,7 @@ namespace MapExtPDX
                     "★ Tip: Applies instantly, no restart required."
                 },
                 { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.WaterTextureFormat)), "Water Texture Precision (VRAM Opt)" },
-                {
-                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.WaterTextureFormat)),
+                { m_Setting.GetOptionDescLocaleID(nameof(ModSettings.WaterTextureFormat)),
                     "Forces the 32-bit float simulation textures to 16-bit, saving up to 43% of VRAM and theoretically halving the bandwidth overhead.\n\n" +
                     " - High (32-bit HDR): Lossless precision, consumes ~180MB VRAM.\n" +
                     " - Low (16-bit): Lossy precision, consumes ~105MB VRAM. Minor rippling artifacts might appear when depth exceeds 100 meters due to floating point truncation.\n\n" +

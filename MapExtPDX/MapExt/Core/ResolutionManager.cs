@@ -49,7 +49,7 @@ namespace MapExtPDX.MapExt.Core
         /// </summary>
         public static int WaterTextureSize { get; private set; } = VanillaWaterTextureSize;
 
-        public static WaterSimQualitySetting WaterSimQuality { get; private set; } = WaterSimQualitySetting.Vanilla_EveryFrame;
+        public static WaterSimQualitySetting WaterSimQuality { get; set; } = WaterSimQualitySetting.Vanilla_EveryFrame;
 
         public static WaterTextureFormatSetting WaterTextureFormat { get; private set; } = WaterTextureFormatSetting.High_RGBA32F;
 
@@ -101,6 +101,12 @@ namespace MapExtPDX.MapExt.Core
 
             ModLog.Ok(Tag, $"Initialized: Terrain={TerrainResolution}, Water={WaterTextureSize}, " +
                            $"Format={WaterTextureFormat}, SimQuality={WaterSimQuality}");
+        }
+
+        public static void UpdateWaterSimQuality(WaterSimQualitySetting quality)
+        {
+            WaterSimQuality = quality;
+            ModLog.Ok(Tag, $"WaterSimQuality updated in real-time to {quality}");
         }
 
         /// <summary>

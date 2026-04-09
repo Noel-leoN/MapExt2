@@ -191,8 +191,7 @@ namespace MapExtPDX
                     "★ 提示：该选项即时生效无须重启。"
                 },
                 { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.WaterTextureFormat)), "水模拟贴图精度 (VRAM 优化)" },
-                {
-                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.WaterTextureFormat)),
+                { m_Setting.GetOptionDescLocaleID(nameof(ModSettings.WaterTextureFormat)),
                     "将原本 32 浮点的模拟通道数据强制压缩到 16 浮点，省去高达 43% 的显存占用并将理论上的宽带开销减半，极大提升 GPU 模拟性能限制。\n\n" +
                     " - 原版 HDR (32-bit)：精度高无损，消耗约 180MB 显存。 \n" +
                     " - 性能模式 (16-bit)：精度有损，消耗约 105MB 显存。在水深大于 100 米时边缘可能会因截断出现计算波纹（通常很少见）。\n\n" +

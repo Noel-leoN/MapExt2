@@ -318,9 +318,22 @@ namespace MapExtPDX
         [SettingsUIHideByCondition(typeof(ModSettings), nameof(IsNotInMainMenu))]
         public WaterResolutionSetting WaterResolution { get; set; }
 
+        private WaterSimQualitySetting m_waterSimQuality = WaterSimQualitySetting.Vanilla_EveryFrame;
+
         [SettingsUISection(kMapSizeModeTab, kResolutionGroup)]
         [SettingsUIDropdown(typeof(ModSettings), nameof(GetWaterSimQualityItems))]
-        public WaterSimQualitySetting WaterSimQuality { get; set; }
+        public WaterSimQualitySetting WaterSimQuality
+        {
+            get => m_waterSimQuality;
+            set
+            {
+                if (m_waterSimQuality != value)
+                {
+                    m_waterSimQuality = value;
+                    MapExt.Core.ResolutionManager.UpdateWaterSimQuality(value);
+                }
+            }
+        }
 
         // 16-bit 格式已被禁用，因为损失精度会导致流水无法蔓延
         [SettingsUIHidden]

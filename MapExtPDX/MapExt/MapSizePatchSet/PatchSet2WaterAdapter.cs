@@ -147,9 +147,22 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
 
         #region Helpers
 
-        private static void CreateResources(int srcSize)
+        private static void CreateResources(int srcWidth)
         {
-            s_DownsampledCascade = new RenderTexture(s_TargetSize, s_TargetSize, 0, GraphicsFormat.R16_UNorm)
+            if (s_TempSrc != null) s_TempSrc.Release();
+            if (s_TempDst != null) s_TempDst.Release();
+            if (s_DownsampledCascade != null) s_DownsampledCascade.Release();
+
+            // 极度关键修复：必须使用 R32_SFloat 才能维持微地形精度，否则 R16 会导致水滞留！
+            s_TempSrc = new RenderTexture(srcWidth, srcWidth, 0, GraphicsFormat.R32_SFloat);
+            s_TempSrc.hideFlags = HideFlags.DontSave;
+            s_TempSrc.Create();
+
+            s_TempDst = new RenderTexture(s_TargetSize, s_TargetSize, 0, GraphicsFormat.R32_SFloat);
+            s_TempDst.hideFlags = HideFlags.DontSave;
+            s_TempDst.Create();
+
+            s_DownsampledCascade = new RenderTexture(s_TargetSize, s_TargetSize, 0, GraphicsFormat.R32_SFloat)
             {
                 dimension = TextureDimension.Tex2DArray,
                 volumeDepth = 4,
@@ -160,20 +173,6 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
                 name = "WaterTerrainDownsampled"
             };
             s_DownsampledCascade.Create();
-
-            s_TempSrc = new RenderTexture(srcSize, srcSize, 0, GraphicsFormat.R16_UNorm)
-            {
-                hideFlags = HideFlags.HideAndDontSave,
-                name = "WaterTerrainTempSrc"
-            };
-            s_TempSrc.Create();
-
-            s_TempDst = new RenderTexture(s_TargetSize, s_TargetSize, 0, GraphicsFormat.R16_UNorm)
-            {
-                hideFlags = HideFlags.HideAndDontSave,
-                name = "WaterTerrainTempDst"
-            };
-            s_TempDst.Create();
         }
 
         public static void Dispose()
