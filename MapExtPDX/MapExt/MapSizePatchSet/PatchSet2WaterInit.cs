@@ -75,8 +75,6 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
                     // 原版分辨率和精度，仅验证
                     VerifyTexSize(traverse, ResolutionManager.VanillaWaterTextureSize);
                 }
-                // === Layer 4: Tune Physics Parameters ===
-                TuneWaterSimulationPhysics(traverse);
             }
             catch (Exception e)
             {
@@ -91,32 +89,7 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
         // Layer 3: 水分辨率降级
         // ========================================================================
 
-        private static void TuneWaterSimulationPhysics(Traverse traverse)
-        {
-            try
-            {
-                var sim = traverse.Field("m_waterSim").GetValue();
-                if (sim != null)
-                {
-                    float scale = ResolutionManager.GetWaterCellSize(PatchManager.CurrentMapSize) / ResolutionManager.VanillaWaterCellSize;
-                    if (scale > 1.05f)
-                    {
-                        var tSim = Traverse.Create(sim);
-                        // Scale parameters to maintain physical propagation speed across newly enlarged cells
-                        tSim.Property("MaxVelocity").SetValue(12f * scale);
-                        tSim.Property("Fluidness").SetValue(0.15f * scale);
-                        tSim.Property("Evaporation").SetValue(0.001f / scale);
-                        tSim.Property("Damping").SetValue(1f - ((1f - 0.995f) / scale));
-                        
-                        ModLog.Ok(Tag, $"Tuned WaterSim physics for scale={scale}: Fluidness={0.15f*scale}, Evap={0.001f/scale}, MaxVel={12f*scale}");
-                    }
-                }
-            }
-            catch (Exception e)
-            {
-                ModLog.Warn(Tag, $"Failed to tune WaterSimulation physics: {e.Message}");
-            }
-        }
+
 
 
         /// <summary>
