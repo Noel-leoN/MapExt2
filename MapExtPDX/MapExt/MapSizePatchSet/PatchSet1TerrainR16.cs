@@ -96,7 +96,7 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
             Texture2D result = new Texture2D(TARGET_WIDTH, TARGET_HEIGHT, GraphicsFormat.R16_UNorm, TextureCreationFlags.None);
             result.filterMode = FilterMode.Bilinear;
             result.wrapMode = TextureWrapMode.Clamp;
-            result.name = $"{source.name}_Resampled_4k_R16";
+            result.name = $"{source.name}_Resampled_{TARGET_WIDTH}_R16";
 
             // 4. Read back from RT to Texture2D
             RenderTexture previousActive = RenderTexture.active;
@@ -123,6 +123,8 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
 
         // --- Harmony Patch ---
 
+        // 注意: 此 Prefix 返回 false 跳过原方法，但 Harmony 保证 Postfix 始终执行。
+        // ToR16_Postfix 依赖此行为对结果进行重采样，两者不可分离。
         [HarmonyPatch(typeof(TerrainSystem), "ToR16")]
         [HarmonyPrefix]
         public static bool ToR16_Prefix(Texture2D textureRGBA64, ref Texture2D __result)

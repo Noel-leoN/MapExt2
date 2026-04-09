@@ -15,15 +15,7 @@ namespace MapExtPDX.MapExt.Core
     /// </summary>
     public static class PatchManager
     {
-        // --- 日志封装 ---
-        private static readonly string ModName = Mod.ModName;
-        private static readonly string patchTypeName = nameof(PatchManager);
-        public static void Info(string message) => Mod.Info($"[{ModName}.{patchTypeName}] {message}");
-        public static void Warn(string message) => Mod.Warn($"[{ModName}.{patchTypeName}] ⚠️ {message}");
-        public static void Error(string message) => Mod.Error($"[{ModName}.{patchTypeName}] ❌ {message}");
-
-        public static void Error(Exception e, string message) =>
-            Mod.Error(e, $"[{ModName}.{patchTypeName}] ❌ {message}");
+        private const string Tag = "PatchManager";
 
         // 定义PatchManager的Harmony实例引用字段
         private static Harmony _modePatcher;
@@ -60,7 +52,7 @@ namespace MapExtPDX.MapExt.Core
         // 静态构造函数，用于初始化注册表
         static PatchManager()
         {
-            Info("Initializing MapSize Mode PatchSet Registry...");
+            ModLog.Info(Tag, "Initializing MapSize Mode PatchSet Registry...");
 
             s_AllPatchSets = new Dictionary<string, Action<Harmony>>
             {
@@ -119,7 +111,7 @@ namespace MapExtPDX.MapExt.Core
                         ReBurstSystem.Core.JobPatchDefinitions.GetCellSystemTargets(CurrentMode))
                 },
             };
-            Info($"Registry initialized with {s_AllPatchSets.Count} patch sets.");
+            ModLog.Ok(Tag, $"Registry initialized with {s_AllPatchSets.Count} patch sets.");
         }
 
         // 定义每个模式的“配方”
@@ -211,17 +203,17 @@ namespace MapExtPDX.MapExt.Core
             }
             else
             {
-                Warn("ModSettings not available, using default resolution values.");
+                ModLog.Warn(Tag, "ModSettings not available, using default resolution values.");
             }
 
-            Info(
-                $"PatchManager Initialized. Effective initial mode from settings: {_currentMode}, CoreValue: {CurrentCoreValue}. " +
-                $"TerrainRes={ResolutionManager.TerrainResolution}, WaterTex={ResolutionManager.WaterTextureSize}. Applying initial patches.");
+            ModLog.Info(Tag,
+                $"Initialized. Mode={_currentMode}, CV={CurrentCoreValue}, " +
+                $"TerrainRes={ResolutionManager.TerrainResolution}, WaterTex={ResolutionManager.WaterTextureSize}. Applying patches...");
 
             // 核心方法：执行模式加载
             ApplyPatchesForMode(_currentMode);
 
-            Info("PatchManager初始化完成应用！(所有MapSize Modes Transpiler补丁完成执行；所有Pre/Postfix将在方法调用时执行.)");
+            ModLog.Ok(Tag, "初始化完成! (Transpiler已烘焙; Pre/Postfix将在方法调用时执行)");
         }
 
         // 核心功能方法
@@ -231,27 +223,27 @@ namespace MapExtPDX.MapExt.Core
             // 安全验证，是否已正确创建harmony实例
             if (_modePatcher == null)
             {
-                Error("Harmony instance is null in SetPatchMode. Aborting.");
+                ModLog.Error(Tag, "Harmony instance is null in SetPatchMode. Aborting.");
                 return;
             }
 
             // 避免点击Apply后重复修补；LoadedSaveCoreValue字段当前方案中无效，备用；
             if (_currentMode == newMode && LoadedSaveCoreValue == null)
             {
-                Info($"Patch mode {newMode} is already active. No changes applied.");
+                ModLog.Info(Tag, $"Patch mode {newMode} is already active. No changes applied.");
                 return;
             }
 
-            Info($"Switching patch mode from {_currentMode} (CV: {CurrentCoreValue}) to {newMode}");
+            ModLog.Swap(Tag, $"Switching patch mode from {_currentMode} (CV: {CurrentCoreValue}) to {newMode}");
 
             // 1. 移除所有旧补丁，确保干净的状态
-            Info("Unpatching all previous MapSize patchsets...");
+            ModLog.Info(Tag, "Unpatching all previous MapSize patchsets...");
             _modePatcher.UnpatchAll(Mod.HarmonyIdModes);
 
             // 2. 根据新模式设置CV
             _currentMode = newMode; // Set new mode first
             CurrentCoreValue = GetCoreValueForMode(_currentMode); // Then update CV based on it
-            Info($"CV set to: {CurrentCoreValue} for mode {_currentMode}");
+            ModLog.Info(Tag, $"CV set to: {CurrentCoreValue} for mode {_currentMode}");
 
             // 3. 根据新模式应用所需的补丁集
             //if (_currentMode != PatchModeSetting.None)
@@ -259,7 +251,7 @@ namespace MapExtPDX.MapExt.Core
             ApplyPatchesForMode(_currentMode);
             //}
 
-            Info($"Successfully switched to patch mode: {_currentMode}");
+            ModLog.Ok(Tag, $"Successfully switched to patch mode: {_currentMode}");
             LoadedSaveCoreValue = null; // Reset after applying changes prompted by save load // 当前方案并未启用该字段
         }
 
@@ -287,7 +279,7 @@ namespace MapExtPDX.MapExt.Core
         {
             // 获取当前模式的“配方”
             var recipe = GetRecipeForMode(mode);
-            Info($"Applying patchset recipe for {mode}: [{string.Join(", ", recipe)}]");
+            ModLog.Info(Tag, $"Applying patchset recipe for {mode}: [{string.Join(", ", recipe)}]");
 
             foreach (var setName in recipe)
             {
@@ -297,16 +289,16 @@ namespace MapExtPDX.MapExt.Core
                     {
                         // 执行注册表中对应的Action来应用补丁
                         applyAction(_modePatcher);
-                        Info($"-> Successfully applied patchset: {setName}");
+                        ModLog.Ok(Tag, $"Applied patchset: {setName}");
                     }
                     catch (Exception e)
                     {
-                        Error(e, $"Failed to apply patchset '{setName}'.");
+                        ModLog.Error(Tag, e, $"Failed to apply patchset '{setName}'.");
                     }
                 }
                 else
                 {
-                    Warn($"Patchset '{setName}' not found in registry.");
+                    ModLog.Warn(Tag, $"Patchset '{setName}' not found in registry.");
                 }
             }
         }
@@ -341,8 +333,7 @@ namespace MapExtPDX.MapExt.Core
     /// </summary>
     internal static class PatchHelpers
     {
-        private static void Info(string message) => Mod.Info($" {Mod.ModName}.PatchHelpers:{message}");
-        private static void Warn(string message) => Mod.Warn($" {Mod.ModName}.PatchHelpers:{message}");
+        private const string Tag = "PatchHelpers";
 
         /// <summary>
         /// 扫描 patchType 中所有带有 [HarmonyPatch] 属性的方法，
@@ -375,7 +366,7 @@ namespace MapExtPDX.MapExt.Core
 
                     if (targetType == null || targetMethodName == null)
                     {
-                        Warn($"Skipping {method.Name}: missing target type or method name in [HarmonyPatch]");
+                        ModLog.Warn(Tag, $"Skipping {method.Name}: missing target type or method name in [HarmonyPatch]");
                         continue;
                     }
 
@@ -383,7 +374,7 @@ namespace MapExtPDX.MapExt.Core
                     var targetMethod = HarmonyLib.AccessTools.Method(targetType, targetMethodName);
                     if (targetMethod == null)
                     {
-                        Warn($"Target method {targetType.Name}.{targetMethodName} not found! Skipping {method.Name}.");
+                        ModLog.Warn(Tag, $"Target method {targetType.Name}.{targetMethodName} not found! Skipping {method.Name}.");
                         continue;
                     }
 
@@ -397,21 +388,21 @@ namespace MapExtPDX.MapExt.Core
                         processor.AddTranspiler(new HarmonyLib.HarmonyMethod(method));
                     else
                     {
-                        Warn($"Skipping {method.Name}: no Prefix/Postfix/Transpiler attribute found.");
+                        ModLog.Warn(Tag, $"Skipping {method.Name}: no Prefix/Postfix/Transpiler attribute found.");
                         continue;
                     }
 
                     processor.Patch();
                     patchedCount++;
-                    Info($"Patched {targetType.Name}.{targetMethodName} via {method.Name}");
+                    ModLog.Ok(Tag, $"Patched {targetType.Name}.{targetMethodName} via {method.Name}");
                 }
                 catch (System.Exception ex)
                 {
-                    Warn($"Failed to patch via {method.Name}: {ex.Message}");
+                    ModLog.Warn(Tag, $"Failed to patch via {method.Name}: {ex.Message}");
                 }
             }
 
-            Info($"PatchAllMethodsInType({patchType.Name}): Applied {patchedCount} patches.");
+            ModLog.Ok(Tag, $"PatchAllMethodsInType({patchType.Name}): Applied {patchedCount} patches.");
         }
     }
 }
