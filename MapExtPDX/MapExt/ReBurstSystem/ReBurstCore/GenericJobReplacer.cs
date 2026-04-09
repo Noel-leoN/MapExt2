@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -6,6 +6,7 @@ using System.Reflection.Emit;
 using System.Runtime.InteropServices;
 using System.Text;
 using HarmonyLib;
+using MapExtPDX.MapExt.Core;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Mathematics;
 
@@ -13,15 +14,8 @@ namespace MapExtPDX.MapExt.ReBurstSystem.Core
 {
     public static class GenericJobReplacePatch
     {
-        // --- 日志封装 ---
-        private static readonly string ModName = Mod.ModName;
-        private static readonly string patchTypeName = nameof(GenericJobReplacePatch);
-        public static void Info(string message) => Mod.Info($"[{ModName}.{patchTypeName}] {message}");
-        public static void Warn(string message) => Mod.Warn($"[{ModName}.{patchTypeName}] ⚠️ {message}");
-        public static void Error(string message) => Mod.Error($"[{ModName}.{patchTypeName}] ❌ {message}");
+        private const string Tag = "ReBurst";
 
-        public static void Error(Exception e, string message) =>
-            Mod.Error(e, $"[{ModName}.{patchTypeName}] ❌ {message}");
 
         // --- 上下文管理 ---
         private class MethodPatchContext
@@ -46,17 +40,17 @@ namespace MapExtPDX.MapExt.ReBurstSystem.Core
             var validation = JobFieldValidator.ValidateJobReplacement(originalJobType, replacementJobType);
             if (!validation.IsValid)
             {
-                Error(
+                ModLog.Error(Tag,
                     $"注册失败 | Job 结构不兼容 {originalJobType.Name} -> {replacementJobType.Name}\n{validation.GetReport()}");
                 if (validation.Errors.Count > 0) return;
             }
             else if (validation.Warnings.Count > 0)
             {
-                Warn($"注册警告 | {originalJobType.Name} -> {replacementJobType.Name}\n{validation.GetReport()}");
+                ModLog.Warn(Tag, $"注册警告 | {originalJobType.Name} -> {replacementJobType.Name}\n{validation.GetReport()}");
             }
             else if (validation.Infos.Count > 0)
             {
-                Info($"注册信息 | {originalJobType.Name} -> {replacementJobType.Name}\n{validation.GetReport()}");
+                ModLog.Info(Tag, $"注册信息 | {originalJobType.Name} -> {replacementJobType.Name}\n{validation.GetReport()}");
             }
 
             lock (_contextLock)
@@ -78,9 +72,7 @@ namespace MapExtPDX.MapExt.ReBurstSystem.Core
                     }
                 }
 
-#if DEBUG
-                Info($"✅ 注册映射 | 方法: {method.Name}\n    └─ Job: {originalJobType.Name} -> {replacementJobType.Name}");
-#endif
+                ModLog.Debug(Tag, $"注册映射 | 方法: {method.Name} └─ Job: {originalJobType.Name} -> {replacementJobType.Name}");
 
                 // 注册字段映射
                 void RegisterFields(Type oldType, Type newType)
@@ -94,7 +86,7 @@ namespace MapExtPDX.MapExt.ReBurstSystem.Core
                         }
                         else
                         {
-                            Warn($"字段缺失警告 | 在新Job/结构 {newType.Name} 中未找到字段: {oldField.Name}，可能导致 Patch 失败.");
+                            ModLog.Warn(Tag, $"字段缺失 | 在新Job/结构 {newType.Name} 中未找到字段: {oldField.Name}，可能导致 Patch 失败");
                         }
                     }
                 }
@@ -117,7 +109,7 @@ namespace MapExtPDX.MapExt.ReBurstSystem.Core
             lock (_contextLock)
             {
                 activePatchContexts.Clear();
-                Info("♻️ 已清理所有 Patch 上下文缓存");
+                ModLog.Info(Tag, "已清理所有 Patch 上下文缓存");
             }
         }
 
@@ -164,8 +156,7 @@ namespace MapExtPDX.MapExt.ReBurstSystem.Core
             }
 
 #if DEBUG
-            Info($"==============================================================");
-            Info($"🔧 开始处理方法: {originalMethod.DeclaringType?.Name}.{originalMethod.Name}");
+            ModLog.Patch(Tag, $"开始处理方法: {originalMethod.DeclaringType?.Name}.{originalMethod.Name}");
 #endif
 
             var list = instructions.ToList();
@@ -176,7 +167,7 @@ namespace MapExtPDX.MapExt.ReBurstSystem.Core
             // PHASE 1: 预扫描 (Pre-Scan)
             // ==========================================================================================
 #if DEBUG
-            Info($"  [阶段 1] 预扫描局部变量...");
+            ModLog.Debug(Tag, $"  [阶段 1] 预扫描局部变量...");
 #endif
             var methodBody = originalMethod.GetMethodBody();
             if (methodBody != null)
@@ -188,22 +179,22 @@ namespace MapExtPDX.MapExt.ReBurstSystem.Core
                         if (context.JobReplacements.TryGetValue(localVar.LocalType, out var newType))
                         {
                             localRedirects[localVar.LocalIndex] = il.DeclareLocal(newType);
-                            Info(
-                                $"    🔎 发现待替换变量 [{localVar.LocalIndex}] | {localVar.LocalType.Name} -> {newType.Name}");
+                            ModLog.Debug(Tag,
+                                $"  发现待替换变量 [{localVar.LocalIndex}] | {localVar.LocalType.Name} -> {newType.Name}");
                         }
                     }
                 }
             }
             else
             {
-                Warn($"    ⚠️ 无法获取方法体局部变量信息: {originalMethod.Name}");
+                ModLog.Warn(Tag, $"无法获取方法体局部变量信息: {originalMethod.Name}");
             }
 
             // ==========================================================================================
             // PHASE 2: 指令重写 (Execution)
             // ==========================================================================================
 #if DEBUG
-            Info($"  [阶段 2] 执行指令替换...");
+            ModLog.Debug(Tag, $"  [阶段 2] 执行指令替换...");
 #endif
             for (int i = 0; i < list.Count; i++)
             {
@@ -219,7 +210,7 @@ namespace MapExtPDX.MapExt.ReBurstSystem.Core
                     yield return newInst;
                     replacementCount++; // Initobj
 #if DEBUG
-                    Info($"    ✨ [Initobj] {initType.Name} -> {newInitType.Name}");
+                    ModLog.Debug(Tag, $"    [Initobj] {initType.Name} -> {newInitType.Name}");
 #endif
                     continue;
                 }
@@ -248,8 +239,8 @@ namespace MapExtPDX.MapExt.ReBurstSystem.Core
                             // 无论是否全局映射，由于托管类型签名不一致，原栈顶对象类型无法安全满足 stfld 校验
                             // 我们必须插入一次显式的安全强转 (Bitcast)
 #if DEBUG
-                            Info(
-                                $"    🧬 [Stfld] 安全位投影 (Bitcast) {oldFieldInfo.FieldType.Name} -> {newFieldInfo.FieldType.Name}");
+                            ModLog.Debug(Tag,
+                                $"    [Stfld] 安全位投影 (Bitcast) {oldFieldInfo.FieldType.Name} -> {newFieldInfo.FieldType.Name}");
 #endif
                             MethodInfo bitcastDef = typeof(GenericJobReplacePatch).GetMethod("Bitcast",
                                 BindingFlags.Public | BindingFlags.Static);
@@ -286,8 +277,8 @@ namespace MapExtPDX.MapExt.ReBurstSystem.Core
                         {
                             if (instruction.opcode == OpCodes.Ldflda)
                             {
-                                Warn(
-                                    $"    ⚠️ [Ldflda] 字段类型不匹配: {fieldOp.Name} ({fieldOp.FieldType.Name}) -> {newField.Name} ({newField.FieldType.Name})。依赖运行时结构体内存大小一致保证安全。");
+                                ModLog.Warn(Tag,
+                                    $"[Ldflda] 字段类型不匹配: {fieldOp.Name} ({fieldOp.FieldType.Name}) -> {newField.Name} ({newField.FieldType.Name})。依赖运行时结构体内存大小一致保证安全");
                                 var newInst = instruction;
                                 newInst.operand = newField;
                                 yield return newInst;
@@ -297,8 +288,8 @@ namespace MapExtPDX.MapExt.ReBurstSystem.Core
                             {
                                 // 反向位投影 (Ldfld)
 #if DEBUG
-                                Info(
-                                    $"    🧬 [Ldfld] 安全位投影 (Bitcast) {newField.FieldType.Name} -> {fieldOp.FieldType.Name}");
+                                ModLog.Debug(Tag,
+                                    $"    [Ldfld] 安全位投影 (Bitcast) {newField.FieldType.Name} -> {fieldOp.FieldType.Name}");
 #endif
                                 var newInstLdfld2 = new CodeInstruction(instruction.opcode, newField)
                                 {
@@ -333,7 +324,7 @@ namespace MapExtPDX.MapExt.ReBurstSystem.Core
                         finalInst = new CodeInstruction(instruction.opcode, repType);
                         replacementCount++;
 #if DEBUG
-                        Info($"    🔄 [TypeRef] {opType.Name} -> {repType.Name}");
+                        ModLog.Debug(Tag, $"    [TypeRef] {opType.Name} -> {repType.Name}");
 #endif
                     }
                     else if ((instruction.opcode == OpCodes.Call || instruction.opcode == OpCodes.Callvirt) &&
@@ -350,11 +341,11 @@ namespace MapExtPDX.MapExt.ReBurstSystem.Core
                                 var newM = method.GetGenericMethodDefinition().MakeGenericMethod(newArgs);
                                 finalInst = new CodeInstruction(instruction.opcode, newM);
                                 replacementCount++;
-                                Info($"    🔗 [GenericCall] 更新泛型参数: {method.Name}");
+                                ModLog.Debug(Tag, $"    [GenericCall] 更新泛型参数: {method.Name}");
                             }
                             catch (Exception e)
                             {
-                                Error($"    ❌ 构造泛型方法失败: {method.Name}. 错误: {e.Message}");
+                                ModLog.Error(Tag, $"构造泛型方法失败: {method.Name}. 错误: {e.Message}");
                             }
                         }
                     }
@@ -371,8 +362,9 @@ namespace MapExtPDX.MapExt.ReBurstSystem.Core
                 yield return instruction;
             }
 
-            Info($"✅ 方法处理完成 | 发生 {replacementCount} 处关键替换");
-            Info($"==============================================================");
+#if DEBUG
+            ModLog.Ok(Tag, $"方法处理完成 | 发生 {replacementCount} 处关键替换");
+#endif
         }
 
         // --- 辅助函数 ---

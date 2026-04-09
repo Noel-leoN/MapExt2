@@ -1,4 +1,4 @@
-﻿﻿// Copyright (c) 2024 Noel2(Noel-leoN)
+// Copyright (c) 2024 Noel2(Noel-leoN)
 // Licensed under the MIT License.
 // See LICENSE in the project root for full license information.
 // When using this part of the code, please clearly credit [Project Name] and the author.
@@ -24,47 +24,32 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
     [HarmonyPatch(typeof(AirwaySystem))]
     public static class AirwaySystem_OnUpdate_Patch
     {
-        // A "session lock" to ensure logic runs only once per game load/new game.
+        private const string Tag = "AirwayPatch";
+
+        // 会话锁：确保每次加载/新建游戏仅执行一次
         private static bool s_HasRunThisSession = false;
 
-        // --- Reflection Fields - Meticulously defined to match the source code ---
+        #region Reflection Fields
 
-        // Fields for AirwaySystem
+        // AirwaySystem 实例字段
         private static readonly FieldInfo m_AirwayDataField = AccessTools.Field(typeof(AirwaySystem), "m_AirwayData");
-
-        private static readonly FieldInfo m_LoadGameSystemField =
-            AccessTools.Field(typeof(AirwaySystem), "m_LoadGameSystem");
-
-        private static readonly FieldInfo m_TerrainSystemField =
-            AccessTools.Field(typeof(AirwaySystem), "m_TerrainSystem");
-
+        private static readonly FieldInfo m_LoadGameSystemField = AccessTools.Field(typeof(AirwaySystem), "m_LoadGameSystem");
+        private static readonly FieldInfo m_TerrainSystemField = AccessTools.Field(typeof(AirwaySystem), "m_TerrainSystem");
         private static readonly FieldInfo m_WaterSystemField = AccessTools.Field(typeof(AirwaySystem), "m_WaterSystem");
 
-        // Properties for AirwayHelpers.AirwayData
-        private static readonly PropertyInfo m_HelicopterMapProperty =
-            AccessTools.Property(typeof(AirwayHelpers.AirwayData), "helicopterMap");
+        // AirwayData 属性（helicopterMap/airplaneMap 均为 { get; private set; }）
+        private static readonly PropertyInfo m_HelicopterMapProperty = AccessTools.Property(typeof(AirwayHelpers.AirwayData), "helicopterMap");
+        private static readonly PropertyInfo m_AirplaneMapProperty = AccessTools.Property(typeof(AirwayHelpers.AirwayData), "airplaneMap");
 
-        private static readonly PropertyInfo m_AirplaneMapProperty =
-            AccessTools.Property(typeof(AirwayHelpers.AirwayData), "airplaneMap");
+        // AirwayMap 唯一需要修改的字段
+        private static readonly FieldInfo m_CellSizeField = AccessTools.Field(typeof(AirwayHelpers.AirwayMap), "m_CellSize");
 
-        // Fields for AirwayHelpers.AirwayMap
-        private static readonly FieldInfo m_GridSizeField =
-            AccessTools.Field(typeof(AirwayHelpers.AirwayMap), "m_GridSize");
+        // SystemBase.Dependency 属性
+        private static readonly PropertyInfo DependencyProperty = AccessTools.Property(typeof(SystemBase), "Dependency");
 
-        private static readonly FieldInfo m_CellSizeField =
-            AccessTools.Field(typeof(AirwayHelpers.AirwayMap), "m_CellSize");
+        #endregion
 
-        private static readonly FieldInfo m_PathHeightField =
-            AccessTools.Field(typeof(AirwayHelpers.AirwayMap), "m_PathHeight");
-
-        private static readonly FieldInfo m_EntitiesField =
-            AccessTools.Field(typeof(AirwayHelpers.AirwayMap), "m_Entities");
-
-        private static readonly PropertyInfo
-            DependencyProperty = AccessTools.Property(typeof(SystemBase), "Dependency");
-
-
-        // This runs BEFORE the original OnUpdate. Its only job is to manage the session lock.
+        // === Prefix: 管理会话锁 ===
         [HarmonyPatch(typeof(AirwaySystem), "OnUpdate")]
         [HarmonyPrefix]
         public static void Prefix(AirwaySystem __instance)
@@ -73,158 +58,98 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
             {
                 var loadGameSystem = (LoadGameSystem)m_LoadGameSystemField.GetValue(__instance);
 
-                // When exiting to main menu, the game runs a "Cleanup" cycle. use this to reset session lock.
-                if (loadGameSystem.context.purpose == Purpose.Cleanup)
+                // 退出主菜单时游戏运行 Cleanup 周期，重置会话锁
+                if (loadGameSystem.context.purpose == Purpose.Cleanup && s_HasRunThisSession)
                 {
-                    if (s_HasRunThisSession)
-                    {
-                        Mod.Info("[Airway Patch] Game session is ending (Cleanup). Resetting session lock.");
-                        s_HasRunThisSession = false;
-                    }
+                    ModLog.Info(Tag, "Game session ending (Cleanup). Resetting session lock.");
+                    s_HasRunThisSession = false;
                 }
             }
             catch (Exception e)
             {
-                Mod.Error(e, "Error in AirwaySystem OnUpdate Prefix!");
+                ModLog.Error(Tag, e, "Error in AirwaySystem OnUpdate Prefix!");
             }
         }
 
-        // This runs AFTER the original OnUpdate. Ҫ
+        // === Postfix: 检测并原地修正 CellSize，重算 Curve ===
         [HarmonyPatch(typeof(AirwaySystem), "OnUpdate")]
         [HarmonyPostfix]
         public static void Postfix(AirwaySystem __instance)
         {
-            // --- Guard Clause: If already run this session, do nothing ---
-            if (s_HasRunThisSession)
-            {
-                return;
-            }
+            if (s_HasRunThisSession) return;
 
             try
             {
-                Mod.Info("=================================================");
-                Mod.Info("[Airway Patch Postfix] Starting airway check...");
-
-                // --- Get necessary systems and data using reflection ---
                 var loadGameSystem = (LoadGameSystem)m_LoadGameSystemField.GetValue(__instance);
-                var terrainSystem = (TerrainSystem)m_TerrainSystemField.GetValue(__instance);
-                var waterSystem = (WaterSystem)m_WaterSystemField.GetValue(__instance);
-
                 var purpose = loadGameSystem.context.purpose;
-                Mod.Info($"[Airway Patch Postfix] Current game purpose: {purpose}");
 
-                // only care about modifying airways in a real game or map editor session.
-                if (purpose != Purpose.NewGame && purpose != Purpose.LoadGame && purpose != Purpose.NewMap &&
-                    purpose != Purpose.LoadMap)
-                {
-                    Mod.Info($"[Airway Patch Postfix] Purpose is not relevant. Skipping.");
+                // 仅在实际游戏/地图编辑器会话中修改航路
+                if (purpose != Purpose.NewGame && purpose != Purpose.LoadGame &&
+                    purpose != Purpose.NewMap && purpose != Purpose.LoadMap)
                     return;
-                }
 
-                // Get the AirwayData struct from the system instance
-                object airwayDataObject = m_AirwayDataField.GetValue(__instance);
+                // --- 读取当前 CellSize ---
+                object airwayDataBox = m_AirwayDataField.GetValue(__instance);
+                object heliMapBox = m_HelicopterMapProperty.GetValue(airwayDataBox);
+                float currentCellSize = (float)m_CellSizeField.GetValue(heliMapBox);
 
-                // Get the helicopterMap struct (as a boxed object) to check its size
-                object heliMapObject = m_HelicopterMapProperty.GetValue(airwayDataObject);
-                float currentCellSize = (float)m_CellSizeField.GetValue(heliMapObject);
+                // --- 计算目标 CellSize ---
+                float targetHeliCellSize = 14336f * PatchManager.CurrentCoreValue / 29f;
 
-                // --- Define custom target size ---
-                float mapSize = 14336f * PatchManager.CurrentCoreValue;
-                float targetHeliCellSize = mapSize / 29f;
-
-                Mod.Info(
-                    $"[Airway Patch Postfix] Current CellSize: {currentCellSize}, Target CellSize: {targetHeliCellSize}");
-
-                // --- The Core Logic: Check if modification is needed ---
                 if (Mathf.Approximately(currentCellSize, targetHeliCellSize))
                 {
-                    Mod.Info("[Airway Patch Postfix] Sizes already match. No action needed. Engaging session lock.");
+                    ModLog.Ok(Tag, $"CellSize already matches ({currentCellSize:F2}). Session lock engaged.");
                     s_HasRunThisSession = true;
                     return;
                 }
 
-                Mod.Info(
-                    "[Airway Patch Postfix] Size mismatch detected. Rebuilding airway data in memory and scheduling update job...");
-
-                // --- Rebuild AirwayData in memory with new sizes but OLD entities ---
-                // not creating or destroying anything, just creating new C# structs.
-
-                // 1. Get all data from the OLD helicopter map
-                object oldHeliMapObject = m_HelicopterMapProperty.GetValue(airwayDataObject);
-                int2 oldHeliGridSize = (int2)m_GridSizeField.GetValue(oldHeliMapObject);
-                float oldHeliPathHeight = (float)m_PathHeightField.GetValue(oldHeliMapObject);
-                var oldHeliEntities = (NativeArray<Entity>)m_EntitiesField.GetValue(oldHeliMapObject);
-
-                // 2. Get all data from the OLD airplane map
-                object oldAirplaneMapObject = m_AirplaneMapProperty.GetValue(airwayDataObject);
-                int2 oldAirplaneGridSize = (int2)m_GridSizeField.GetValue(oldAirplaneMapObject);
-                float oldAirplanePathHeight = (float)m_PathHeightField.GetValue(oldAirplaneMapObject);
-                var oldAirplaneEntities = (NativeArray<Entity>)m_EntitiesField.GetValue(oldAirplaneMapObject);
+                // === 原地修改 CellSize（零分配） ===
+                // AirwayMap 是 struct，通过 boxed object 修改后写回
                 float targetAirplaneCellSize = targetHeliCellSize * 2f;
 
-                // 3. Create NEW map structs with the new sizes
-                // pass Allocator.None because NOT allocating new arrays. The constructor will just store our references.
-                // CORRECTION: The constructor *always* allocates. So it must dispose the old and create new with proper allocator.
-                // re-read AirwayMap constructor. It takes an allocator. So it must provide one.
-                var newHeliMap = new AirwayHelpers.AirwayMap(oldHeliGridSize, targetHeliCellSize, oldHeliPathHeight,
-                    Allocator.Persistent);
-                newHeliMap.entities.CopyFrom(oldHeliEntities); // Copy entity references
+                // 1. 修改直升机 map 的 CellSize
+                m_CellSizeField.SetValue(heliMapBox, targetHeliCellSize);
+                m_HelicopterMapProperty.SetValue(airwayDataBox, heliMapBox);
 
-                var newAirplaneMap = new AirwayHelpers.AirwayMap(oldAirplaneGridSize, targetAirplaneCellSize,
-                    oldAirplanePathHeight, Allocator.Persistent);
-                newAirplaneMap.entities.CopyFrom(oldAirplaneEntities); // Copy entity references
+                // 2. 修改飞机 map 的 CellSize
+                object airplaneMapBox = m_AirplaneMapProperty.GetValue(airwayDataBox);
+                m_CellSizeField.SetValue(airplaneMapBox, targetAirplaneCellSize);
+                m_AirplaneMapProperty.SetValue(airwayDataBox, airplaneMapBox);
 
-                // 4. Create a new top-level data struct
-                var newAirwayData = new AirwayHelpers.AirwayData(newHeliMap, newAirplaneMap);
+                // 3. 将修改后的 AirwayData 写回系统
+                m_AirwayDataField.SetValue(__instance, airwayDataBox);
 
-                // 5. Replace the system's data struct with new one using reflection
-                m_AirwayDataField.SetValue(__instance, newAirwayData);
+                // === 调度 Job 重算所有航路的 Curve 位置 ===
+                var terrainSystem = (TerrainSystem)m_TerrainSystemField.GetValue(__instance);
+                var waterSystem = (WaterSystem)m_WaterSystemField.GetValue(__instance);
 
-                Mod.Info("[Airway Patch Postfix] AirwayData in memory replaced successfully.");
+                // unbox 获取修改后的 map struct（NativeArray 引用共享同一块内存）
+                var modifiedHeliMap = (AirwayHelpers.AirwayMap)heliMapBox;
+                var modifiedAirplaneMap = (AirwayHelpers.AirwayMap)airplaneMapBox;
 
-                // --- Schedule the job to update the curve positions of existing entities ---
                 var updateCurvesJob = new UpdateAirwayCurvesJob
                 {
-                    m_HelicopterMap = newHeliMap,
-                    m_AirplaneMap = newAirplaneMap,
+                    m_HelicopterMap = modifiedHeliMap,
+                    m_AirplaneMap = modifiedAirplaneMap,
                     m_TerrainHeightData = terrainSystem.GetHeightData(true),
                     m_WaterSurfaceData = waterSystem.GetSurfaceData(out var waterDep),
-                    m_CurveData = __instance.GetComponentLookup<Curve>(false) // isReadOnly = false
+                    m_CurveData = __instance.GetComponentLookup<Curve>(false)
                 };
 
-                // 1. GET the current dependency using reflection.
-                JobHandle currentDependency = (JobHandle)DependencyProperty.GetValue(__instance);
+                // 组合依赖 → 调度 → 注册 reader → 设置系统 Dependency
+                JobHandle currentDep = (JobHandle)DependencyProperty.GetValue(__instance);
+                JobHandle jobHandle = updateCurvesJob.Schedule(JobHandle.CombineDependencies(currentDep, waterDep));
 
-                // 2. Combine it with the dependencies for our job.
-                JobHandle combinedDeps = JobHandle.CombineDependencies(currentDependency, waterDep);
+                terrainSystem.AddCPUHeightReader(jobHandle);
+                waterSystem.AddSurfaceReader(jobHandle);
+                DependencyProperty.SetValue(__instance, jobHandle);
 
-                // 3. Schedule our job.
-                JobHandle updateJobHandle = updateCurvesJob.Schedule(combinedDeps);
-
-                // --- NEW FIX: 释放旧的 NativeArray 防止内存泄漏 ---
-                JobHandle disposeHeliHandle = oldHeliEntities.Dispose(updateJobHandle);
-                JobHandle disposeAirplaneHandle = oldAirplaneEntities.Dispose(updateJobHandle);
-
-                // 4. 将 Dispose 的 JobHandle 结合起来，作为最终传递给系统 Dependency 的 Handle
-                JobHandle finalDeps = JobHandle.CombineDependencies(disposeHeliHandle, disposeAirplaneHandle);
-
-                // These calls are the same
-                terrainSystem.AddCPUHeightReader(updateJobHandle);
-                waterSystem.AddSurfaceReader(updateJobHandle);
-
-                // 5. SET the system's dependency to new job's handle using reflection.
-                DependencyProperty.SetValue(__instance, finalDeps);
-
-                Mod.Info("[Airway Patch Postfix] Update job scheduled. Engaging session lock.");
+                ModLog.Swap(Tag, $"CellSize patched in-place: Heli={targetHeliCellSize:F2}, Airplane={targetAirplaneCellSize:F2}. Curves job scheduled.");
                 s_HasRunThisSession = true;
             }
             catch (Exception e)
             {
-                Mod.Error(e, "A critical error occurred in AirwaySystem OnUpdate Postfix!");
-            }
-            finally
-            {
-                Mod.Info("=================================================\n");
+                ModLog.Error(Tag, e, "Critical error in AirwaySystem OnUpdate Postfix!");
             }
         }
 

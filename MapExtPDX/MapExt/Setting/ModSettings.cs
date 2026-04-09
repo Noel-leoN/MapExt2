@@ -68,6 +68,8 @@ namespace MapExtPDX
         kMiscGroup, kEconomyTweakGroup, kPerformanceToolGroup, kDebugGroup)]
     public class ModSettings : ModSetting
     {
+        private const string Tag = "Settings";
+
         public const string kMapSizeModeTab = "▍MapSize Mode";
         public const string kPerformanceToolTab = "▍PerformanceTool";
         public const string kMiscTab = "▍Misc";
@@ -144,10 +146,10 @@ namespace MapExtPDX
                 //Mod.Instance?.OnPatchModeChanged(PatchManager.PatchModeChoice);
                 //Mod.Info($"Settings changes applied via button.");
 
-                Mod.Info($"ApplyPatchChanges button clicked. New selected mode from UI: {PatchModeChoice}");
+                ModLog.Info(Tag, $"ApplyPatchChanges 点击, 新选择的模式: {PatchModeChoice}");
                 // 传递用户在UI中选择的 PatchModeChoice
                 Mod.Instance?.OnPatchModeChanged(PatchModeChoice);
-                Mod.Info($"Settings changes applied via button for mode: {PatchModeChoice}");
+                ModLog.Ok(Tag, $"已通过按钮应用模式: {PatchModeChoice}");
             }
         }
 
@@ -437,7 +439,7 @@ namespace MapExtPDX
 
         public void UpdateNoDogsSystemStates()
         {
-            Mod.Info($"NoDogs 2.0: OnStreet={m_NoDogsOnStreet}, Generation={m_NoDogsGeneration}, Purge={m_NoDogsPurge}");
+            ModLog.Info(Tag, $"NoDogs 2.0: OnStreet={m_NoDogsOnStreet}, Generation={m_NoDogsGeneration}, Purge={m_NoDogsPurge}");
 
             // 禁止外出：关闭 HouseholdPetSpawnSystem
             World.DefaultGameObjectInjectionWorld.GetOrCreateSystemManaged<Game.Simulation.HouseholdPetSpawnSystem>()
@@ -450,7 +452,7 @@ namespace MapExtPDX
                 patchSystem.ApplySettings(m_NoDogsGeneration, m_NoDogsPurge);
             }
 
-            Mod.Info("NoDogs 2.0 补丁已应用.(全局并行)");
+            ModLog.Patch(Tag, "NoDogs 2.0 补丁已应用 (全局并行)");
         }
 
         public int CurrentPetCount { get; set; } = 0;
@@ -491,12 +493,12 @@ namespace MapExtPDX
 
         public void UpdateNoThroughTrafficSystemStates()
         {
-            Mod.Info(
-                $"Setting 'TrafficSpawnerAISystem' is now: {nameof(Game.Simulation.TrafficSpawnerAISystem)}. Updating system enabled state.");
+            ModLog.Info(Tag,
+                $"TrafficSpawnerAISystem Enabled={!m_NoThroughTrafficSystem}");
             World.DefaultGameObjectInjectionWorld.GetOrCreateSystemManaged<Game.Simulation.TrafficSpawnerAISystem>()
                 .Enabled = !m_NoThroughTrafficSystem;
 
-            Mod.Info($"NoThroughTraffic补丁已应用.(全局并行)");
+            ModLog.Patch(Tag, "NoThroughTraffic 补丁已应用 (全局并行)");
         }
 
         //[SettingsUISection(kPerformanceToolTab, kPerformanceToolGroup)]

@@ -1,4 +1,4 @@
-﻿﻿// Copyright (c) 2024 Noel2(Noel-leoN)
+﻿// Copyright (c) 2024 Noel2(Noel-leoN)
 // Licensed under the MIT License.
 // See LICENSE in the project root for full license information.
 // When using this part of the code, please clearly credit [Project Name] and the author.
@@ -11,7 +11,9 @@ namespace MapExtPDX.SaveLoadSystem
 {
     public static class ModLocalization
     {
-        // ModʱϷעfallback)
+        private const string Tag = "SaveLoad";
+
+        // Mod 加载时注册 fallback 本地化
         public static void Initialize(LocalizationManager localizationManager)
         {
             var fallback = new Dictionary<string, string>
@@ -34,7 +36,7 @@ namespace MapExtPDX.SaveLoadSystem
             };
 
             localizationManager.AddSource("en-US", new MemorySource(fallback));
-            Mod.Info("Custom localization source for MapExt2 has been added.");
+            MapExtPDX.MapExt.Core.ModLog.Ok(Tag, "存档验证本地化文本已注册");
         }
     }
 }

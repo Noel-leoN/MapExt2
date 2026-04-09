@@ -17,6 +17,7 @@ namespace MapExtPDX
 {
     public class Mod : IMod
     {
+        private const string Tag = "Mod";
         public const string ModName = "MapExtPDX"; // 保持与BepInEx版本一致
         // public const string ModFileName = "MapExtPDX2";
         public const string ModNameZH = "大地图mod";
@@ -64,15 +65,15 @@ namespace MapExtPDX
         public void OnLoad(UpdateSystem updateSystem)
         {
             // === 0. 加载模组执行asset ===
-            Info($"{nameof(OnLoad)}, version:{ModVersion}");
+            ModLog.Info(Tag, $"OnLoad, version:{ModVersion}");
             if (GameManager.instance.modManager.TryGetExecutableAsset(this, out var asset))
-                Info($"{asset.name} v{asset.version} mod asset at {asset.path}");
+                ModLog.Info(Tag, $"{asset.name} v{asset.version} mod asset at {asset.path}");
 
             // === 初始化双Harmony实例 ===
             _globalPatcher = new Harmony(HarmonyIdGlobal);
-            Info("HarmonyGlobal instance created");
+            ModLog.Patch(Tag, "HarmonyGlobal 实例已创建");
             _modePatcher = new Harmony(HarmonyIdModes);
-            Info("HarmonyModes instance created");
+            ModLog.Patch(Tag, "HarmonyModes 实例已创建");
 
             // === B. 获取设置setting ===
             // 将当前实例赋值给静态属性(use for Setting)
@@ -86,34 +87,34 @@ namespace MapExtPDX
             GameManager.instance.localizationManager.AddSource("zh-HANS", new LocaleHANS(m_Setting));
             // 读取已保存设置
             Colossal.IO.AssetDatabase.AssetDatabase.global.LoadSettings(ModName, m_Setting, new ModSettings(this));
-            Info("Settings initialized");
+            ModLog.Ok(Tag, "Settings 已初始化");
 
             // === C. 初始化MapSize PatchManager ===
             // 应用启动时默认的补丁模式
             // m_Setting.PatchModeChoice 从配置文件中加载上次保存的模式
             // 从设置加载初始模式
             PatchModeSetting initialMode = m_Setting.PatchModeChoice;
-            Info($"正在初始化 PatchManager 使用设置模式: {m_Setting.PatchModeChoice}");
+            ModLog.Info(Tag, $"正在初始化 PatchManager 使用设置模式: {m_Setting.PatchModeChoice}");
             // 执行MapSize关联主要系统补丁
             PatchManager.Initialize(_modePatcher, initialMode);
 
 
 
             // === D. 存档验证系统 === 
-            Info("全局并行方式补丁正在逐条执行...");
+            ModLog.Info(Tag, "全局并行方式补丁正在逐条执行...");
             // 4.1 加载SaveLoadSystem的2个class补丁
             if (m_Setting.DisableLoadGameValidation == false)
             {
                 _globalPatcher.CreateClassProcessor(typeof(MetaDataExtenderPatch)).Patch();
-                Info($"存档验证补丁(全局并行) {nameof(MetaDataExtenderPatch)}已应用.");
+                ModLog.Patch(Tag, $"{nameof(MetaDataExtenderPatch)} 已应用");
                 _globalPatcher.CreateClassProcessor(typeof(LoadGameValidatorPatch)).Patch();
-                Info($"存档验证补丁(全局并行) {nameof(LoadGameValidatorPatch)}已应用.");
+                ModLog.Patch(Tag, $"{nameof(LoadGameValidatorPatch)} 已应用");
             }
             // 其他并行的选项补丁，也在这里添加
             // _globalPatcher.CreateClassProcessor(typeof(ParallelOptionPatch)).Patch();
             // 加载SaveLoadSystem的弹窗本地化语言库
             ModLocalization.Initialize(GameManager.instance.localizationManager);
-            Info($"加载OptionUI本地化文本 {nameof(ModLocalization)}已应用.");
+            ModLog.Ok(Tag, $"{nameof(ModLocalization)} 本地化文本已加载");
 
             // === E. 性能工具 ===
             // 其他并行的选项补丁
@@ -145,7 +146,7 @@ namespace MapExtPDX
         {
             if (m_Setting == null) return;
             // 通知PatchManager使用设置中当前选定的新模式
-            Info($"Mod.OnPatchModeChanged: MapSize Mode在设置UI中改变为: {newModeFromSettings}");
+            ModLog.Swap(Tag, $"MapSize Mode 在设置UI中改变为: {newModeFromSettings}");
             // 关键方法，切换应用补丁模式集
             PatchManager.SetPatchMode(newModeFromSettings);
             //m_Setting?.RefreshModSettingInfo(); // Update status display
@@ -154,12 +155,12 @@ namespace MapExtPDX
         public void ApplyPatchChangesFromSettings(PatchModeSetting modeToApply)
         {
             PatchManager.SetPatchMode(modeToApply);
-            Info($"Mod.ApplyPatchChangesFromSettings: 已应用MapSize Mode: {modeToApply}");
+            ModLog.Ok(Tag, $"已应用 MapSize Mode: {modeToApply}");
         }
 
         public void OnDispose()
         {
-            Info(nameof(OnDispose));
+            ModLog.Info(Tag, nameof(OnDispose));
 
             IsUnloading = true;
 
@@ -168,7 +169,7 @@ namespace MapExtPDX
             _modePatcher?.UnpatchAll();
             _globalPatcher = null;
             _modePatcher = null;
-            Info("All Harmony patches removed on dispose.");
+            ModLog.Ok(Tag, "所有 Harmony 补丁已移除");
 
             // 卸载Settings
             if (m_Setting != null)
@@ -185,7 +186,7 @@ namespace MapExtPDX
         public GameMode GetCurrentGameMode()
         {
             var gameMode = GameManager.instance.gameMode;
-            Info($"当前游戏模式为 {gameMode}");
+            ModLog.Info(Tag, $"当前游戏模式为 {gameMode}");
             return gameMode;
         }
 

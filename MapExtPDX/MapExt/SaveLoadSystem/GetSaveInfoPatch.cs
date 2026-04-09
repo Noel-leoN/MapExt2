@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2024 Noel2(Noel-leoN)
+// Copyright (c) 2024 Noel2(Noel-leoN)
 // Licensed under the MIT License.
 // See LICENSE in the project root for full license information.
 // When using this part of the code, please clearly credit [Project Name] and the author.
@@ -15,6 +15,8 @@ namespace MapExtPDX.SaveLoadSystem
     [HarmonyPatch(typeof(MenuUISystem), nameof(MenuUISystem.GetSaveInfo))]
     public static class MetaDataExtenderPatch
     {
+        private const string Tag = "SaveLoad";
+
         // CV在SaveInfo中的前缀
         public const string CoreValueKeyPrefix = "MapEXT_CoreValue=";
 
@@ -43,7 +45,7 @@ namespace MapExtPDX.SaveLoadSystem
             // 将修改后的列表转换回数组并更新到 SaveInfo 对象中
             __result.modsEnabled = mods.ToArray();
 
-            Mod.Info($"[SaveLoadSystem] Injected CoreValue ({coreValueEntry}) into SaveInfo's modsEnabled list.");
+            ModLog.Patch(Tag, $"已注入 CoreValue ({coreValueEntry}) 到 SaveInfo.modsEnabled");
         }
     }
 }
