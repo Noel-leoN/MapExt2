@@ -165,6 +165,10 @@ namespace MapExtPDX
                     m_Setting.GetOptionWarningLocaleID(nameof(ModSettings.NoDogsPurge)),
                     "⚠ This will permanently remove all existing pets from your save! Existing households will NOT get new pets. Are you sure?"
                 },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.DislayPetCount)), "Logical Pets Count" },
+                { m_Setting.GetOptionDescLocaleID(nameof(ModSettings.DislayPetCount)), "Count of logical pet entities currently existing on the map." },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.RefreshPetCount)), "Refresh Pet Count" },
+                { m_Setting.GetOptionDescLocaleID(nameof(ModSettings.RefreshPetCount)), "Click to recalculate the count of active pet entities. This is just for statistics and does not affect the game state." },
 
                 // === Resolution Settings ===
                 { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.TerrainResolution)), "Terrain Resolution" },
@@ -186,6 +190,25 @@ namespace MapExtPDX
                 {
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.VRAMEstimate)),
                     "Approximate GPU memory usage for terrain cascade and water simulation textures at the selected resolutions."
+                },
+
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.WaterSimQuality)), "Water Simulation Optimization (Beta)" },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.WaterSimQuality)),
+                    "Controls the CPU/GPU update frequency of the water system to improve frame rates on large maps.\n\n" +
+                    " - Vanilla (Every Frame): Simulates every frame, highest quality but maximum performance cost.\n" +
+                    " - Reduced (No Backdrop): Simulates every frame, but disables flow calculation in the distant backdrop.\n" +
+                    " - Minimal (Every 4 Frames): Skips simulation for 3 out of 4 frames and disables visual blur. Massively reduces GPU requests, with only slightly noticeable water stuttering.\n" +
+                    " - Paused (No Flow): Completely freezes water flow calculations (water will remain static).\n\n" +
+                    "★ Tip: Applies instantly, no restart required."
+                },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.WaterTextureFormat)), "Water Texture Precision (VRAM Opt)" },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.WaterTextureFormat)),
+                    "Forces the 32-bit float simulation textures to 16-bit, saving up to 43% of VRAM and theoretically halving the bandwidth overhead.\n\n" +
+                    " - High (32-bit HDR): Lossless precision, consumes ~180MB VRAM.\n" +
+                    " - Low (16-bit): Lossy precision, consumes ~105MB VRAM. Minor rippling artifacts might appear when depth exceeds 100 meters due to floating point truncation.\n\n" +
+                    "⚠️ Restart Required."
                 },
 
                 { m_Setting.GetOptionTabLocaleID(ModSettings.kMiscTab), "▍EconomyTweak (Beta)" },

@@ -49,6 +49,10 @@ namespace MapExtPDX.MapExt.Core
         /// </summary>
         public static int WaterTextureSize { get; private set; } = VanillaWaterTextureSize;
 
+        public static WaterSimQualitySetting WaterSimQuality { get; private set; } = WaterSimQualitySetting.Vanilla_EveryFrame;
+
+        public static WaterTextureFormatSetting WaterTextureFormat { get; private set; } = WaterTextureFormatSetting.High_RGBA32F;
+
         /// <summary>
         /// 是否需要为水系统降采样地形级联纹理。
         /// 当地形分辨率 > WaterTerrainResolution(4096) 时为 true。
@@ -60,6 +64,11 @@ namespace MapExtPDX.MapExt.Core
         /// </summary>
         public static bool IsWaterResolutionModified => WaterTextureSize != VanillaWaterTextureSize;
 
+        /// <summary>
+        /// 是否修改了水纹理格式精度（与原版 32-bit 不同）。
+        /// </summary>
+        public static bool IsWaterTextureFormatModified => WaterTextureFormat != WaterTextureFormatSetting.High_RGBA32F;
+
         #endregion
 
         #region Methods
@@ -68,7 +77,8 @@ namespace MapExtPDX.MapExt.Core
         /// 从 ModSettings 的枚举值初始化分辨率参数。
         /// 必须在 PatchManager.Initialize() 中、任何 PatchSet 应用之前调用。
         /// </summary>
-        public static void Initialize(TerrainResolutionSetting terrain, WaterResolutionSetting water)
+        public static void Initialize(TerrainResolutionSetting terrain, WaterResolutionSetting water, 
+            WaterSimQualitySetting simQuality, WaterTextureFormatSetting textureFormat)
         {
             // 8192 暂时禁用 (水模拟不兼容)，即使旧存档持久化了该值也强制降级
             TerrainResolution = terrain switch
@@ -86,8 +96,11 @@ namespace MapExtPDX.MapExt.Core
                 _ => VanillaWaterTextureSize
             };
 
+            WaterSimQuality = simQuality;
+            WaterTextureFormat = textureFormat;
+
             ModLog.Ok(Tag, $"Initialized: Terrain={TerrainResolution}, Water={WaterTextureSize}, " +
-                           $"NeedsDownsample={NeedsDownsampleForWater}");
+                           $"Format={WaterTextureFormat}, SimQuality={WaterSimQuality}");
         }
 
         /// <summary>

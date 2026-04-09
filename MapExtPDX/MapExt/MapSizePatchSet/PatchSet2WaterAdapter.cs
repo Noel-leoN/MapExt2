@@ -45,6 +45,8 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
         private static readonly int s_ID_Array = Shader.PropertyToID("colossal_TerrainTextureArray");
         private static readonly int s_ID_Limit = Shader.PropertyToID("colossal_TerrainCascadeLimit");
 
+        private static uint s_LastCascadeUpdateCount = uint.MaxValue;
+
         // 拦截开关
         private static bool s_InterceptActive;
         private static TerrainSystem s_TerrainSystem;
@@ -98,12 +100,17 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
                     "(GetCascadeTexture intercept + global swap)");
             }
 
-            // 逐 slice 降采样
-            for (int slice = 0; slice < 4; slice++)
+            // 仅在地形实际更新时才执行极其耗时的异步阻塞 Blit
+            if (srcCascade.updateCount != s_LastCascadeUpdateCount)
             {
-                Graphics.CopyTexture(srcCascade, slice, 0, s_TempSrc, 0, 0);
-                Graphics.Blit(s_TempSrc, s_TempDst);
-                Graphics.CopyTexture(s_TempDst, 0, 0, s_DownsampledCascade, slice, 0);
+                // 逐 slice 降采样
+                for (int slice = 0; slice < 4; slice++)
+                {
+                    Graphics.CopyTexture(srcCascade, slice, 0, s_TempSrc, 0, 0);
+                    Graphics.Blit(s_TempSrc, s_TempDst);
+                    Graphics.CopyTexture(s_TempDst, 0, 0, s_DownsampledCascade, slice, 0);
+                }
+                s_LastCascadeUpdateCount = srcCascade.updateCount;
             }
 
             // 保存原始全局变量

@@ -100,6 +100,9 @@ namespace MapExtPDX.MapExt.Core
                     h.CreateClassProcessor(typeof(WaterSystem_OnSimulateGPU_Patch)).Patch();
                     h.CreateClassProcessor(typeof(TerrainSystem_GetCascadeTexture_Patch)).Patch();
                 }},
+                
+                // 水模拟运行时频率优化补丁
+                { "WaterSystemOptRuntimePatch", (h) => h.CreateClassProcessor(typeof(WaterSystemOptRuntimePatch)).Patch() },
 
                 // v2.2.0改动
                 // PatchSet3:CellMapSystem<T>托管代码部分
@@ -137,6 +140,7 @@ namespace MapExtPDX.MapExt.Core
                         "WaterSystem_BaseDataReader_Patch",
                         "WaterSystemInitFix",
                         "WaterAdapterOnUpdatePatch",
+                        "WaterSystemOptRuntimePatch",
                         "CellMapSystemValuesPatch",
                         "AirwaySystemPatch",
                         "ReBurstSystemsPatches",
@@ -154,6 +158,7 @@ namespace MapExtPDX.MapExt.Core
                         "WaterSystem_BaseDataReader_Patch",
                         "WaterSystemInitFix",
                         "WaterAdapterOnUpdatePatch",
+                        "WaterSystemOptRuntimePatch",
                         "CellMapSystemValuesPatch",
                         "AirwaySystemPatch",
                         "ReBurstSystemsPatches",
@@ -171,6 +176,7 @@ namespace MapExtPDX.MapExt.Core
                         "WaterSystem_BaseDataReader_Patch",
                         "WaterSystemInitFix",
                         "WaterAdapterOnUpdatePatch",
+                        "WaterSystemOptRuntimePatch",
                         "CellMapSystemValuesPatch",
                         "AirwaySystemPatch",
                         "ReBurstSystemsPatches",
@@ -180,6 +186,7 @@ namespace MapExtPDX.MapExt.Core
                     return new List<string>
                     {
                         "TerrainToR16Patch",
+                        "WaterSystemOptRuntimePatch"
                     };
             }
         }
@@ -199,7 +206,8 @@ namespace MapExtPDX.MapExt.Core
             var settings = Mod.Instance?.Settings;
             if (settings != null)
             {
-                ResolutionManager.Initialize(settings.TerrainResolution, settings.WaterResolution);
+                ResolutionManager.Initialize(settings.TerrainResolution, settings.WaterResolution, 
+                    settings.WaterSimQuality, settings.WaterTextureFormat);
             }
             else
             {

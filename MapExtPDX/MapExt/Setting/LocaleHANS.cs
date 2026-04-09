@@ -153,6 +153,10 @@ namespace MapExtPDX
                     m_Setting.GetOptionWarningLocaleID(nameof(ModSettings.NoDogsPurge)),
                     "⚠ 这将永久移除存档中所有现有宠物！已有家庭不会再获得新宠物。确定继续吗？"
                 },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.DislayPetCount)), "当前逻辑宠物数" },
+                { m_Setting.GetOptionDescLocaleID(nameof(ModSettings.DislayPetCount)), "地图上当前的逻辑宠物实体数量统计。" },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.RefreshPetCount)), "刷新宠物统计" },
+                { m_Setting.GetOptionDescLocaleID(nameof(ModSettings.RefreshPetCount)), "点击以重新计算地图上的活动宠物实体数量。这只是一个统计，对游戏状态无任何影响。" },
 
                 // === 分辨率设置 ===
                 { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.TerrainResolution)), "地形分辨率" },
@@ -174,6 +178,25 @@ namespace MapExtPDX
                 {
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.VRAMEstimate)),
                     "当前分辨率设置下地形级联纹理和水体模拟纹理的大致GPU显存占用量。"
+                },
+                
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.WaterSimQuality)), "水体模拟优化 (Beta)" },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.WaterSimQuality)),
+                    "控制水系统 CPU 和 GPU 计算的更新频率，以提升大地图的帧率和游戏速度。\n\n" +
+                    " - Vanilla: 原版高精度：每帧调度计算，效果最好，消耗最大。\n" +
+                    " - Reduced: 降低消耗：每帧计算并传播水体，但关闭背景大地图边缘的水流计算。\n" +
+                    " - Minimal: 极简性能：每四帧跳过计算并显式关闭水面模糊和后处理效果，将大幅度降低 GPU 请求频率，可能会有极不明显的水流卡顿。\n" +
+                    " - Paused: 暂停流体：完全冻结水体流动计算（水面将静止但水位不会出现大变化）。\n\n" +
+                    "★ 提示：该选项即时生效无须重启。"
+                },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.WaterTextureFormat)), "水模拟贴图精度 (VRAM 优化)" },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.WaterTextureFormat)),
+                    "将原本 32 浮点的模拟通道数据强制压缩到 16 浮点，省去高达 43% 的显存占用并将理论上的宽带开销减半，极大提升 GPU 模拟性能限制。\n\n" +
+                    " - 原版 HDR (32-bit)：精度高无损，消耗约 180MB 显存。 \n" +
+                    " - 性能模式 (16-bit)：精度有损，消耗约 105MB 显存。在水深大于 100 米时边缘可能会因截断出现计算波纹（通常很少见）。\n\n" +
+                    "⚠️ 修改后需【重启游戏】或重新读取存档生效。"
                 },
 
                 { m_Setting.GetOptionTabLocaleID(ModSettings.kMiscTab), "▍经济补丁设置 (Beta)" },

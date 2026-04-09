@@ -43,6 +43,22 @@ namespace MapExtPDX
         Ultra_256,      // 极低 256×256 (最高性能)
     }
 
+    /// <summary>水模拟质量选项</summary>
+    public enum WaterSimQualitySetting
+    {
+        Vanilla_EveryFrame,     // 原版：每帧模拟，开启背景水
+        Reduced_NoBackdrop,     // 降低：每帧模拟，关闭背景水
+        Minimal_Every4Frames,   // 极简：每四帧模拟，关闭背景水、模糊和后处理
+        Paused_NoFlow,          // 暂停：停止水流模拟
+    }
+
+    /// <summary>水纹理格式精度</summary>
+    public enum WaterTextureFormatSetting
+    {
+        High_RGBA32F,   // 原版高精度 32-bit
+        Low_RGBA16F,    // 降级低精度 16-bit (省一半显存)
+    }
+
     //[FileLocation(nameof(MapExtPDX))]
     [FileLocation("ModsSettings/" + Mod.ModName + "/" + Mod.ModName)]
     [SettingsUITabOrder(kMapSizeModeTab, kMiscTab, kPerformanceToolTab, kDebugTab)]
@@ -104,6 +120,10 @@ namespace MapExtPDX
         [SettingsUIHideByCondition(typeof(ModSettings), nameof(IsNotInMainMenu))]
         public PatchModeSetting PatchModeChoice { get; set; } // = PatchModeSetting.ModeA; // Default to ModeA
 
+        // 在游戏内显示状态信息 (已读取存档的地图大小值)
+        [SettingsUISection(kMapSizeModeTab, kMainModeGroup)]
+        public string ModSettingCoreValue => (PatchManager.CurrentCoreValue * 14336).ToString();
+
         /// <summary>
         /// 核心关键功能，ModSetting实例中调用执行
         /// </summary>
@@ -131,10 +151,8 @@ namespace MapExtPDX
             }
         }
 
-        // 在游戏内显示状态信息
-        // 已读取存档的地图大小值
-        [SettingsUISection(kMapSizeModeTab, kInfoGroup)]
-        public string ModSettingCoreValue => (PatchManager.CurrentCoreValue * 14336).ToString();
+        // [SettingsUISection(kMapSizeModeTab, kInfoGroup)]
+        // public string ModSettingCoreValue => (PatchManager.CurrentCoreValue * 14336).ToString();
 
         // 显示备份警告
         //[SettingsUISection(kMapSizeModeTab, kInfoGroup)]
@@ -160,6 +178,8 @@ namespace MapExtPDX
             // 地形 8192 暂时禁用 — 水模拟与 8192 级联不兼容 (见 docs/TerrainSystem/Water_Terrain_Decoupling_Research.md)
             TerrainResolution = TerrainResolutionSetting.Vanilla_4096;
             WaterResolution = WaterResolutionSetting.Vanilla_2048;
+            WaterSimQuality = WaterSimQualitySetting.Vanilla_EveryFrame;
+            WaterTextureFormat = WaterTextureFormatSetting.High_RGBA32F;
 
             ShoppingMaxCost = 8000f;
             CompanyShoppingMaxCost = 200000f;
@@ -299,6 +319,14 @@ namespace MapExtPDX
         public WaterResolutionSetting WaterResolution { get; set; }
 
         [SettingsUISection(kMapSizeModeTab, kResolutionGroup)]
+        [SettingsUIDropdown(typeof(ModSettings), nameof(GetWaterSimQualityItems))]
+        public WaterSimQualitySetting WaterSimQuality { get; set; }
+
+        // 16-bit 格式已被禁用，因为损失精度会导致流水无法蔓延
+        [SettingsUIHidden]
+        public WaterTextureFormatSetting WaterTextureFormat { get; set; }
+
+        [SettingsUISection(kMapSizeModeTab, kResolutionGroup)]
         public string VRAMEstimate => $"Est. VRAM: {MapExt.Core.ResolutionManager.GetVRAMEstimate()}";
 
         public DropdownItem<int>[] GetTerrainResolutionItems()
@@ -320,6 +348,26 @@ namespace MapExtPDX
                 // new DropdownItem<int> { value = (int)WaterResolutionSetting.Medium_1024, displayName = "1024×1024" },
                 // new DropdownItem<int> { value = (int)WaterResolutionSetting.Low_512, displayName = "512×512 (Recommended)" },
                 // new DropdownItem<int> { value = (int)WaterResolutionSetting.Ultra_256, displayName = "256×256 (Ultra Performance)" },
+            };
+        }
+
+        public DropdownItem<int>[] GetWaterSimQualityItems()
+        {
+            return new DropdownItem<int>[]
+            {
+                new DropdownItem<int> { value = (int)WaterSimQualitySetting.Vanilla_EveryFrame, displayName = "Vanilla (Every Frame)" },
+                new DropdownItem<int> { value = (int)WaterSimQualitySetting.Reduced_NoBackdrop, displayName = "Reduced (No Backdrop)" },
+                new DropdownItem<int> { value = (int)WaterSimQualitySetting.Minimal_Every4Frames, displayName = "Minimal (Every 4 Frames)" },
+                new DropdownItem<int> { value = (int)WaterSimQualitySetting.Paused_NoFlow, displayName = "Paused (No Flow)" },
+            };
+        }
+
+        public DropdownItem<int>[] GetWaterTextureFormatItems()
+        {
+            return new DropdownItem<int>[]
+            {
+                new DropdownItem<int> { value = (int)WaterTextureFormatSetting.High_RGBA32F, displayName = "High - 32-bit HDR (Vanilla)" },
+                new DropdownItem<int> { value = (int)WaterTextureFormatSetting.Low_RGBA16F, displayName = "Low - 16-bit Float (-43% VRAM)" },
             };
         }
 

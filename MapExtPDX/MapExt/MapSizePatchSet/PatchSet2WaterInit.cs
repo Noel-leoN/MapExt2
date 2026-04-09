@@ -65,14 +65,14 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
                 traverse.Method("InitTextures").GetValue();
                 ModLog.Ok(Tag, "WaterSystem re-initialized with Transpiler-patched values.");
 
-                // === Layer 3: 水分辨率降级后处理 ===
-                if (ResolutionManager.IsWaterResolutionModified)
+                // === Layer 3: 水分辨率降低 & 16-bit 显存压缩 ===
+                if (ResolutionManager.IsWaterResolutionModified || ResolutionManager.IsWaterTextureFormatModified)
                 {
                     ApplyWaterResolutionDowngrade(traverse, waterSystem);
                 }
                 else
                 {
-                    // 原版分辨率，仅验证
+                    // 原版分辨率和精度，仅验证
                     VerifyTexSize(traverse, ResolutionManager.VanillaWaterTextureSize);
                 }
             }
@@ -107,16 +107,16 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
                 traverse.Field("m_TexSize").SetValue(new int2(targetTexSize, targetTexSize));
 
                 // --- 3c. 以新尺寸重建 QuadWaterBuffer ---
-                var newWater = default(WaterSystem.QuadWaterBuffer);
-                newWater.Init(new int2(targetTexSize, targetTexSize));
+                bool use16Bit = ResolutionManager.WaterTextureFormat == MapExtPDX.WaterTextureFormatSetting.Low_RGBA16F;
+                var newWater = InitQuadWaterBuffer(new int2(targetTexSize, targetTexSize), use16Bit);
                 traverse.Field("m_Water").SetValue(newWater);
-                ModLog.Ok(Tag, $"Rebuilt m_Water at {targetTexSize}x{targetTexSize}");
+                ModLog.Ok(Tag, $"Rebuilt m_Water at {targetTexSize}x{targetTexSize} (16-bit: {use16Bit})");
 
                 // --- 3d. Dispose + 重建 ActiveWaterTilesHelper (internal class) ---
                 RebuildActiveWaterTilesHelpers(traverse, targetTexSize);
 
                 // --- 3e. Dispose + 重建 SurfaceDataReader / HeightDataReader (internal class) ---
-                RebuildDataReaders(traverse, waterSystem, targetTexSize);
+                RebuildDataReaders(traverse, waterSystem, targetTexSize, use16Bit);
 
                 // --- 3f. 验证 ---
                 VerifyTexSize(traverse, targetTexSize);
@@ -206,9 +206,11 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
         /// InitTextures 创建的 reader 引用旧的 2048 纹理，需要用新纹理重建。
         /// 构造器签名: BaseDataReader(RenderTexture source, int mapSize, GraphicsFormat format)
         /// </summary>
-        private static void RebuildDataReaders(Traverse traverse, WaterSystem waterSystem, int targetTexSize)
+        private static void RebuildDataReaders(Traverse traverse, WaterSystem waterSystem, int targetTexSize, bool use16Bit)
         {
             int mapSize = PatchManager.CurrentMapSize;
+            // Force 32-bit format because 16-bit lacks precision and breaks water propagation 
+            GraphicsFormat targetFormat = GraphicsFormat.R32G32B32A32_SFloat;
 
             // === m_depthsReader (SurfaceDataReader) ===
             var oldDepths = traverse.Field("m_depthsReader").GetValue();
@@ -219,9 +221,9 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
             {
                 // 需要新的 WaterTexture (已重建为 targetTexSize)
                 var newDepths = Activator.CreateInstance(surfaceReaderType,
-                    waterSystem.WaterTexture, mapSize, GraphicsFormat.R32G32B32A32_SFloat);
+                    waterSystem.WaterTexture, mapSize, targetFormat);
                 traverse.Field("m_depthsReader").SetValue(newDepths);
-                ModLog.Ok(Tag, $"Rebuilt m_depthsReader: tex={targetTexSize}, mapSize={mapSize}");
+                ModLog.Ok(Tag, $"Rebuilt m_depthsReader: tex={targetTexSize}, mapSize={mapSize}, format={targetFormat}");
             }
             else
             {
@@ -234,7 +236,6 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
 
             if (surfaceReaderType != null)
             {
-                // FlowDownScaled(0) 的尺寸 = targetTexSize / 2
                 var newVelocities = Activator.CreateInstance(surfaceReaderType,
                     waterSystem.FlowDownScaled(0), mapSize, GraphicsFormat.R32G32B32A32_SFloat);
                 traverse.Field("m_velocitiesReader").SetValue(newVelocities);
@@ -327,6 +328,58 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
             {
                 ModLog.Warn(Tag, $"Failed to dispose m_Water. {e.Message}");
             }
+        }
+
+        private static WaterSystem.QuadWaterBuffer InitQuadWaterBuffer(int2 size, bool use16Bit)
+        {
+            // Force 32-bit formats because 16-bit precision truncates flow propagation
+            GraphicsFormat targetFormat = GraphicsFormat.R32G32B32A32_SFloat;
+            GraphicsFormat targetDepthFormat = GraphicsFormat.R32_SFloat;
+            
+            var buffer = new WaterSystem.QuadWaterBuffer();
+            
+            buffer.waterTextures = new UnityEngine.RenderTexture[2];
+            buffer.waterTextures[0] = CreateRenderTexture("WaterRT0", size, targetFormat);
+            buffer.waterTextures[1] = CreateRenderTexture("WaterRT1", size, targetFormat);
+            buffer.seaPropagationTexture = CreateRenderTexture("SeaPropagationTexture", size, targetDepthFormat);
+            
+            buffer.waterBackdropTextures = new UnityEngine.RenderTexture[2];
+            buffer.waterBackdropTextures[0] = CreateRenderTexture("WaterBackdropRT0", size / 2, targetFormat);
+            buffer.waterBackdropTextures[1] = CreateRenderTexture("WaterBackdropRT1", size / 2, targetFormat);
+            
+            buffer.downdScaledBackdropFlowTextures = new UnityEngine.RenderTexture[3];
+            int2 size2 = new int2(buffer.waterBackdropTextures[0].width / 2, buffer.waterBackdropTextures[0].height / 2); 
+            for (int i = 0; i < 3; i++)
+            {
+                buffer.downdScaledBackdropFlowTextures[i] = CreateRenderTexture($"BackdropFlowTextureDownScaled{i}", size2, GraphicsFormat.R16G16_SFloat);
+            }
+            buffer.maxHeightDownscaled = CreateRenderTexture("MaxHeightDownscaled", size / 2, GraphicsFormat.R16_SFloat);
+            buffer.seaPropagationDownscaled = CreateRenderTexture("SeaPropagationDownscaled", size / 4, GraphicsFormat.R16G16B16A16_SFloat);
+            
+            buffer.downdScaledFlowTextures = new UnityEngine.RenderTexture[4];
+            int2 flowSize = size;
+            for (int j = 0; j < 4; j++)
+            {
+                flowSize /= 2;
+                buffer.downdScaledFlowTextures[j] = CreateRenderTexture($"FlowTextureDownScaled{j}", flowSize, GraphicsFormat.R16G16B16A16_SFloat);
+                if (j == 2)
+                {
+                    buffer.downdScaledFlowTextures[++j] = CreateRenderTexture($"FlowTextureDownScaled{j}", flowSize, GraphicsFormat.R16G16B16A16_SFloat);
+                }
+            }
+            return buffer;
+        }
+
+        private static UnityEngine.RenderTexture CreateRenderTexture(string name, int2 size, GraphicsFormat format)
+        {
+            var renderTexture = new UnityEngine.RenderTexture(size.x, size.y, 0, format);
+            renderTexture.name = name;
+            renderTexture.hideFlags = UnityEngine.HideFlags.DontSave;
+            renderTexture.enableRandomWrite = true;
+            renderTexture.wrapMode = UnityEngine.TextureWrapMode.Clamp;
+            renderTexture.filterMode = UnityEngine.FilterMode.Bilinear;
+            renderTexture.Create();
+            return renderTexture;
         }
 
         private static void DisposeHelper(object helperInstance)
