@@ -23,6 +23,10 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
         [HarmonyPrefix]
         static bool Prefix(WaterSystem __instance, CommandBuffer cmd)
         {
+            // 反射失败时不干预原版逻辑 (防止游戏更新后字段重命名导致 NullRef)
+            if (s_SimulateBackdropField == null)
+                return true;
+
             var quality = ResolutionManager.WaterSimQuality;
             bool targetSimulateBackdrop = true;
             bool targetBlurFlowMap = true;

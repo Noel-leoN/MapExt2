@@ -24,12 +24,7 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
     /// </summary>
     public static class TerrainToR16Patch
     {
-        // --- 日志封装 ---
-        private static readonly string patchTypename = nameof(TerrainToR16Patch);
-        private static void Info(string message) => Mod.Info($" {Mod.ModName}.{patchTypename}:{message}");
-        private static void Warn(string message) => Mod.Warn($" {Mod.ModName}.{patchTypename}:{message}");
-        private static void Error(string message) => Mod.Error($" {(Mod.ModName)}.{patchTypename}:{message}");
-        private static void Error(Exception e, string message) => Mod.Error(e, $" {Mod.ModName}.{patchTypename}:{message}");
+        private const string Tag = "TerrainR16";
 
         // 从 ResolutionManager 动态读取，支持 4096/8192 可配置
         private static int TARGET_WIDTH => ResolutionManager.TerrainResolution;
@@ -52,7 +47,7 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
             bool formatValid = tex.graphicsFormat == UnityEngine.Experimental.Rendering.GraphicsFormat.R16_UNorm ||
                                tex.graphicsFormat == UnityEngine.Experimental.Rendering.GraphicsFormat.R16G16B16A16_UNorm;
             __result = sizeValid && formatValid;
-            Info($"IsValidHeightmapFormat: tex={tex.width}x{tex.height} fmt={tex.graphicsFormat}, " +
+            ModLog.Info(Tag, $"IsValidHeightmapFormat: tex={tex.width}x{tex.height} fmt={tex.graphicsFormat}, " +
                  $"maxImport={MAX_IMPORT_RESOLUTION}, TARGET={TARGET_WIDTH}, sizeOK={sizeValid}, fmtOK={formatValid}, result={__result}");
             return false;
         }
@@ -85,7 +80,7 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
         private static Texture2D ResampleTexture2DToR16(Texture2D source)
         {
             if (source == null) return null;
-            Info($"Resampling Texture2D {source.width}x{source.height} to {TARGET_WIDTH}x{TARGET_HEIGHT} R16_UNorm");
+            ModLog.Info(Tag, $"Resampling Texture2D {source.width}x{source.height} to {TARGET_WIDTH}x{TARGET_HEIGHT} R16_UNorm");
 
             // 1. Create intermediate RT (Force R16 format here)
             RenderTexture tempRT = RenderTexture.GetTemporary(TARGET_WIDTH, TARGET_HEIGHT, 0, RenderTextureFormat.R16); // Explicitly R16
@@ -113,7 +108,7 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
             // 5. Release RT
             RenderTexture.ReleaseTemporary(tempRT);
 
-            Info($"Resampling complete. New Texture2D: {result.width}x{result.height}, Format: {result.graphicsFormat}");
+            ModLog.Ok(Tag, $"Resampling complete. New Texture2D: {result.width}x{result.height}, Format: {result.graphicsFormat}");
             return result; // Caller must handle destruction later if needed
         }
 
@@ -121,7 +116,7 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
         {
             if (obj != null)
             {
-                Info($"Destroying object: {obj.name}");
+                ModLog.Info(Tag, $"Destroying object: {obj.name}");
                 UnityEngine.Object.Destroy(obj);
             }
         }
@@ -166,7 +161,7 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
                 }
                 catch (Exception ex)
                 {
-                    Error($"ToR16_Prefix Failed: {ex}");
+                    ModLog.Error(Tag, $"ToR16_Prefix Failed: {ex}");
                     // Fallback to original result (likely null or wrong format)
                     __result = textureRGBA64;
                 }
@@ -184,14 +179,14 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
             // If the original method returned null, do nothing
             if (__result == null)
             {
-                Warn("ToR16_Postfix: Original result is null, skipping.");
+                ModLog.Warn(Tag, "ToR16_Postfix: Original result is null, skipping.");
                 return;
             }
 
             // Check if resampling is needed
             if (__result.width != TARGET_WIDTH || __result.height != TARGET_HEIGHT)
             {
-                Info($"ToR16_Postfix: Result texture ({__result.width}x{__result.height}, Format: {__result.graphicsFormat}) needs resampling to {TARGET_WIDTH}x{TARGET_HEIGHT}.");
+                ModLog.Info(Tag, $"ToR16_Postfix: Result texture ({__result.width}x{__result.height}, Format: {__result.graphicsFormat}) needs resampling to {TARGET_WIDTH}x{TARGET_HEIGHT}.");
 
                 Texture2D originalResult = __result; // Keep a reference to the original result
 
@@ -204,26 +199,26 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
                     {
                         // Update the return value to the new, resampled texture
                         __result = resampledTexture;
-                        Info($"ToR16_Postfix: Successfully replaced result with resampled texture ({__result.width}x{__result.height}).");
+                        ModLog.Ok(Tag, $"ToR16_Postfix: Successfully replaced result with resampled texture ({__result.width}x{__result.height}).");
 
                         // 不主动销毁中间纹理: 游戏引擎可能在当前帧仍持有引用
                         // 导入是一次性操作，让 GC 自然回收即可
                     }
                     else
                     {
-                        Error("ToR16_Postfix: Resampling failed. Original result is kept.");
+                        ModLog.Error(Tag, "ToR16_Postfix: Resampling failed. Original result is kept.");
                         // Keep the original __result
                     }
                 }
                 catch (Exception ex)
                 {
-                    Error($"ToR16_Postfix: Exception during resampling: {ex}");
+                    ModLog.Error(Tag, $"ToR16_Postfix: Exception during resampling: {ex}");
                     // Keep the original __result on error
                 }
             }
             else
             {
-                Info($"ToR16_Postfix: Result texture ({__result.width}x{__result.height}) is already target size ({TARGET_WIDTH}x{TARGET_HEIGHT}). No resampling needed.");
+                ModLog.Info(Tag, $"ToR16_Postfix: Result texture ({__result.width}x{__result.height}) is already target size ({TARGET_WIDTH}x{TARGET_HEIGHT}). No resampling needed.");
             }
         }
     }

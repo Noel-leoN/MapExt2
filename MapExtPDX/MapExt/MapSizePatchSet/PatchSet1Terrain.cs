@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2024 Noel2(Noel-leoN)
+// Copyright (c) 2024 Noel2(Noel-leoN)
 // Licensed under the MIT License.
 // See LICENSE in the project root for full license information.
 // When using this part of the code, please clearly credit [Project Name] and the author.
@@ -10,23 +10,16 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
     using Game.Simulation;
     using HarmonyLib;
     using MapExtPDX.MapExt.Core;
-    using System;
     using System.Collections.Generic;
     using System.Reflection.Emit;
     using Unity.Mathematics;
-    using static MapExtPDX.Mod;
 
     // Target TerrainSystem class
     // 修补FinalizeTerrainData/GetTerrainBounds/GetHeightData等三个方法
     [HarmonyPatch(typeof(TerrainSystem))]
     public static class TerrainSystemPatches
     {
-        // --- 日志封装 ---
-        private static readonly string patchTypename = nameof(TerrainSystemPatches);
-        private static void Info(string message) => Mod.Info($" {ModName}.{patchTypename}:{message}");
-        private static void Warn(string message) => Mod.Warn($" {ModName}.{patchTypename}:{message}");
-        private static void Error(string message) => Mod.Error($" {(ModName)}.{patchTypename}:{message}");
-        private static void Error(Exception e, string message) => Mod.Error(e, $" {ModName}.{patchTypename}:{message}");
+        private const string Tag = "TerrainPatch";
 
         // FinalizeTerrainData (改变引入默认值，仅修改此处即可，不需要同时修补其他方法)
         // 该方法调用仅在加载存档后执行一次，使用Prefix简化维护 
@@ -54,7 +47,7 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
             if (patches != 0)
             {
                 // #if DEBUG
-                Info(
+                ModLog.Patch(Tag,
                     $"FinalizeTerrainData Prefix applied {patches} patch(es). (Expected value: {inMapSize} , {inMapCorner} , {inWorldSize} , {inWorldCorner})");
                 // #endif
             }
@@ -89,13 +82,13 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
 
             if (patches == 0)
             {
-                Warn(
-                    $"警告！GetTerrainBounds_Transpiler did not find any instructions to patch! (Expected value: {newSize})");
+                ModLog.Warn(Tag,
+                    $"GetTerrainBounds_Transpiler did not find any instructions to patch! (Expected value: {newSize})");
             }
             else
             {
 #if DEBUG
-                Info($"GetTerrainBounds_Transpiler applied {patches} patch(es).(Expected value: {newSize})");
+                ModLog.Debug(Tag, $"GetTerrainBounds_Transpiler applied {patches} patch(es).(Expected value: {newSize})");
 #endif
             }
 
@@ -125,7 +118,7 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
                 if (codes[i].opcode == OpCodes.Ldc_R4 && (float)codes[i].operand == baseSize)
                 {
 #if DEBUG
-                    Info($"Patching instruction {i} in GetHeightData: Replacing {baseSize} with {newSize}");
+                    ModLog.Debug(Tag, $"Patching instruction {i} in GetHeightData: Replacing {baseSize} with {newSize}");
 #endif
                     // Replace the operand (the constant value) with our new dimension
                     codes[i].operand = newSize;
@@ -137,13 +130,13 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
 
             if (patches == 0)
             {
-                Warn(
-                    $"警告！GetHeightData_Transpiler did not find any instructions to patch! (Expected value: {newSize})");
+                ModLog.Warn(Tag,
+                    $"GetHeightData_Transpiler did not find any instructions to patch! (Expected value: {newSize})");
             }
             else
             {
 #if DEBUG
-                Info($"GetHeightData_Transpiler applied {patches} patch(es).(Expected value: {newSize})");
+                ModLog.Debug(Tag, $"GetHeightData_Transpiler applied {patches} patch(es).(Expected value: {newSize})");
 #endif
             }
 

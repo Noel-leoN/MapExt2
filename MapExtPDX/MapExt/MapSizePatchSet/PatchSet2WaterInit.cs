@@ -110,16 +110,15 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
                 traverse.Field("m_TexSize").SetValue(new int2(targetTexSize, targetTexSize));
 
                 // --- 3c. 以新尺寸重建 QuadWaterBuffer ---
-                bool use16Bit = ResolutionManager.WaterTextureFormat == MapExtPDX.WaterTextureFormatSetting.Low_RGBA16F;
-                var newWater = InitQuadWaterBuffer(new int2(targetTexSize, targetTexSize), use16Bit);
+                var newWater = InitQuadWaterBuffer(new int2(targetTexSize, targetTexSize));
                 traverse.Field("m_Water").SetValue(newWater);
-                ModLog.Ok(Tag, $"Rebuilt m_Water at {targetTexSize}x{targetTexSize} (16-bit: {use16Bit})");
+                ModLog.Ok(Tag, $"Rebuilt m_Water at {targetTexSize}x{targetTexSize}");
 
                 // --- 3d. Dispose + 重建 ActiveWaterTilesHelper (internal class) ---
                 RebuildActiveWaterTilesHelpers(traverse, targetTexSize);
 
                 // --- 3e. Dispose + 重建 SurfaceDataReader / HeightDataReader (internal class) ---
-                RebuildDataReaders(traverse, waterSystem, targetTexSize, use16Bit);
+                RebuildDataReaders(traverse, waterSystem, targetTexSize);
 
                 // --- 3f. 验证 ---
                 VerifyTexSize(traverse, targetTexSize);
@@ -209,7 +208,7 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
         /// InitTextures 创建的 reader 引用旧的 2048 纹理，需要用新纹理重建。
         /// 构造器签名: BaseDataReader(RenderTexture source, int mapSize, GraphicsFormat format)
         /// </summary>
-        private static void RebuildDataReaders(Traverse traverse, WaterSystem waterSystem, int targetTexSize, bool use16Bit)
+        private static void RebuildDataReaders(Traverse traverse, WaterSystem waterSystem, int targetTexSize)
         {
             int mapSize = PatchManager.CurrentMapSize;
             // Force 32-bit format because 16-bit lacks precision and breaks water propagation 
@@ -333,9 +332,10 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
             }
         }
 
-        private static WaterSystem.QuadWaterBuffer InitQuadWaterBuffer(int2 size, bool use16Bit)
+        private static WaterSystem.QuadWaterBuffer InitQuadWaterBuffer(int2 size)
         {
-            // Force 32-bit formats because 16-bit precision truncates flow propagation
+            // 16-bit 精度实测导致水流传播截断，固定使用 32-bit
+            // 如需恢复 16-bit 选项，需先解决迭代精度累积问题 (见 Water_System_Analysis.md §12)
             GraphicsFormat targetFormat = GraphicsFormat.R32G32B32A32_SFloat;
             GraphicsFormat targetDepthFormat = GraphicsFormat.R32_SFloat;
             
@@ -361,6 +361,8 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
             
             buffer.downdScaledFlowTextures = new UnityEngine.RenderTexture[4];
             int2 flowSize = size;
+            // 原版行为: downdScaledFlowTextures[2] 和 [3] 共享相同尺寸
+            // 匹配 QuadWaterBuffer.Init() 的原始逻辑
             for (int j = 0; j < 4; j++)
             {
                 flowSize /= 2;
