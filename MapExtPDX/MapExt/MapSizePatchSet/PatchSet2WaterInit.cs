@@ -120,11 +120,28 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
                 // --- 3e. Dispose + 重建 SurfaceDataReader / HeightDataReader (internal class) ---
                 RebuildDataReaders(traverse, waterSystem, targetTexSize);
 
-                // --- 3f. 验证 ---
+                // --- 3f. 重新绑定全局着色器变量 ---
+                // BindTextures() 在 SetDefaults/Deserialize 中被原版调用，用于设置
+                // colossal_WaterTexture / colossal_WaterRenderTexture 等全局变量。
+                // 重建纹理后必须重新绑定，否则渲染着色器指向已 Dispose 的旧纹理。
+                try
+                {
+                    traverse.Method("BindTextures").GetValue();
+                    ModLog.Ok(Tag, $"Re-bound global shader textures after resolution downgrade");
+                }
+                catch (Exception bindEx)
+                {
+                    ModLog.Warn(Tag, $"BindTextures() failed (non-fatal, will be called later): {bindEx.Message}");
+                }
+
+                // --- 3g. 验证 ---
                 VerifyTexSize(traverse, targetTexSize);
 
-                ModLog.Ok(Tag, $"Layer 3 complete: water resolution = {targetTexSize}x{targetTexSize}, " +
-                    $"cellSize = {ResolutionManager.GetWaterCellSize(PatchManager.CurrentMapSize)}");
+                float actualCellSize = ResolutionManager.GetWaterCellSize(PatchManager.CurrentMapSize);
+                float computedMapSize = actualCellSize * targetTexSize;
+                ModLog.Ok(Tag, $"Layer 3 complete: water={targetTexSize}x{targetTexSize}, " +
+                    $"cellSize={actualCellSize:F1}, cellSize×texSize={computedMapSize:F0}, " +
+                    $"expectedMapSize={PatchManager.CurrentMapSize}");
             }
             catch (Exception e)
             {
@@ -337,14 +354,15 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
             // 16-bit 精度实测导致水流传播截断，固定使用 32-bit
             // 如需恢复 16-bit 选项，需先解决迭代精度累积问题 (见 Water_System_Analysis.md §12)
             GraphicsFormat targetFormat = GraphicsFormat.R32G32B32A32_SFloat;
-            GraphicsFormat targetDepthFormat = GraphicsFormat.R32_SFloat;
             
             var buffer = new WaterSystem.QuadWaterBuffer();
             
             buffer.waterTextures = new UnityEngine.RenderTexture[2];
             buffer.waterTextures[0] = CreateRenderTexture("WaterRT0", size, targetFormat);
             buffer.waterTextures[1] = CreateRenderTexture("WaterRT1", size, targetFormat);
-            buffer.seaPropagationTexture = CreateRenderTexture("SeaPropagationTexture", size, targetDepthFormat);
+            // seaPropagationTexture 必须使用 R16_SFloat (原版格式)
+            // 使用 R32_SFloat 会导致着色器按错误的数据布局采样，破坏海平面传播
+            buffer.seaPropagationTexture = CreateRenderTexture("SeaPropagationTexture", size, GraphicsFormat.R16_SFloat);
             
             buffer.waterBackdropTextures = new UnityEngine.RenderTexture[2];
             buffer.waterBackdropTextures[0] = CreateRenderTexture("WaterBackdropRT0", size / 2, targetFormat);

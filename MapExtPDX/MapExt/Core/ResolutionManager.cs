@@ -87,12 +87,13 @@ namespace MapExtPDX.MapExt.Core
                 _ => VanillaTerrainResolution
             };
 
-            // 水纹理分辨率暂时锁定为原版 (非原版分辨率需要额外验证)
+            // 水纹理分辨率: 降低水贴图分辨率以优化 GPU 性能
+            // 地形级联保持 4096 不变，着色器通过动态参数自适应
             WaterTextureSize = water switch
             {
-                // WaterResolutionSetting.Medium_1024 => 1024, // 待验证后恢复
-                // WaterResolutionSetting.Low_512 => 512,
-                // WaterResolutionSetting.Ultra_256 => 256,
+                WaterResolutionSetting.Medium_1024 => 1024,
+                WaterResolutionSetting.Low_512 => 512,
+                // WaterResolutionSetting.Ultra_256 => 256,  // 禁用: ActiveTiles 网格 1×1，裁剪退化
                 _ => VanillaWaterTextureSize
             };
 

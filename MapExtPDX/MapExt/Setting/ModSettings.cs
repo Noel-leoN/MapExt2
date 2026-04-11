@@ -359,9 +359,9 @@ namespace MapExtPDX
             return new DropdownItem<int>[]
             {
                 new DropdownItem<int> { value = (int)WaterResolutionSetting.Vanilla_2048, displayName = "2048×2048 (Vanilla)" },
-                // 非原版分辨率暂时禁用，待验证后恢复
-                // new DropdownItem<int> { value = (int)WaterResolutionSetting.Medium_1024, displayName = "1024×1024" },
-                // new DropdownItem<int> { value = (int)WaterResolutionSetting.Low_512, displayName = "512×512 (Recommended)" },
+                new DropdownItem<int> { value = (int)WaterResolutionSetting.Medium_1024, displayName = "1024×1024 (GPU -75%)" },
+                new DropdownItem<int> { value = (int)WaterResolutionSetting.Low_512, displayName = "512×512 (GPU -93%)" },
+                // 256 禁用: ActiveTiles 网格仅 1×1，裁剪无效甚至退化
                 // new DropdownItem<int> { value = (int)WaterResolutionSetting.Ultra_256, displayName = "256×256 (Ultra Performance)" },
             };
         }
