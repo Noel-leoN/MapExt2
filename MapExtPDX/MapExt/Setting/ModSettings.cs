@@ -62,39 +62,43 @@ namespace MapExtPDX
     //[FileLocation(nameof(MapExtPDX))]
     [FileLocation("ModsSettings/" + Mod.ModName + "/" + Mod.ModName)]
     [SettingsUITabOrder(kMapSizeModeTab, kMiscTab, kPerformanceToolTab, kDebugTab)]
-    [SettingsUIGroupOrder(kMainModeGroup, kResolutionGroup, kResetGroup, kInfoGroup, kEcoGroup, kNoteGroup, 
-        kMiscGroup, kEconomyTweakGroup, kPerformanceToolGroup, kDebugGroup)]
-    [SettingsUIShowGroupName(kMainModeGroup, kResolutionGroup, kResetGroup, kEcoGroup, 
-        kMiscGroup, kEconomyTweakGroup, kPerformanceToolGroup, kDebugGroup)]
+    [SettingsUIGroupOrder(kMainModeGroup, kTerrainWaterOptGroup, kResetGroup, kInfoGroup, kEcoGroup, kNoteGroup,
+        kEcoSystemEnableGroup, kPathfindingGroup, kEcoBehaviorGroup,
+        kNoDogsGroup, kNoTrafficGroup, kDebugGroup)]
+    [SettingsUIShowGroupName(kMainModeGroup, kTerrainWaterOptGroup, kResetGroup, kEcoGroup,
+        kEcoSystemEnableGroup, kPathfindingGroup, kEcoBehaviorGroup,
+        kNoDogsGroup, kNoTrafficGroup, kDebugGroup)]
     public class ModSettings : ModSetting
     {
         private const string Tag = "Settings";
 
-        public const string kMapSizeModeTab = "▍MapSize Mode";
-        public const string kPerformanceToolTab = "▍PerformanceTool";
-        public const string kMiscTab = "▍Misc";
-        public const string kDebugTab = "▍Debug";
-        public const string kMainModeGroup = "▍MainMode";
-        public const string kApplyModeGroup = "▍ApplyMode";
-        public const string kResolutionGroup = "▍Resolution";
-        public const string kInfoGroup = "▍GameInfo";
-        public const string kEcoGroup = "▍Economy Logic & Perf.";
-        public const string kNoteGroup = "▍Warning!";
-        public const string kResetGroup = "▍Reset";
-        public const string kPerformanceToolGroup = "▍PerformanceTool";
-        public const string kMiscGroup = "▍Misc";
-        public const string kEconomyTweakGroup = "▍EconomyTweak";
+        // === Tab 常量 ===
+        public const string kMapSizeModeTab = "MapSize Mode";
+        public const string kPerformanceToolTab = "PerformanceTool";
+        public const string kMiscTab = "EconomyEX";
+        public const string kDebugTab = "Debug";
 
-        public const string kDebugGroup = "▍Debug";
-        //public const string kAirwayGroup = "AirwayRegenerate";
-        //public const string kPatchSettingsGroup = "PatchSettings"; // New group for our patch controls
+        // === Group 常量 ===
+        // -- 首页 Tab --
+        public const string kMainModeGroup = "MainMode";
+        public const string kApplyModeGroup = "ApplyMode";
+        public const string kTerrainWaterOptGroup = "TerrainWaterOpt";
+        public const string kInfoGroup = "GameInfo";
+        public const string kEcoGroup = "EconomyOverhaul";
+        public const string kNoteGroup = "Warning";
+        public const string kResetGroup = "Reset";
 
-        // Original group constants (can be removed if not used)
-        // public const string kButtonGroup = "Button";
-        // public const string kToggleGroup = "Toggle";
-        // public const string kSliderGroup = "Slider";
-        // public const string kDropdownGroup = "Dropdown";
-        // public const string kKeybindingGroup = "KeyBinding";
+        // -- EconomyEX Tab --
+        public const string kEcoSystemEnableGroup = "EcoSystemEnable";
+        public const string kPathfindingGroup = "Pathfinding";
+        public const string kEcoBehaviorGroup = "EcoBehavior";
+
+        // -- Perf. Tools Tab --
+        public const string kNoDogsGroup = "NoDogs";
+        public const string kNoTrafficGroup = "NoTraffic";
+
+        // -- Developer Tab --
+        public const string kDebugGroup = "Debug";
 
         public string DisplayedMapSize { get; set; } = "N/A"; // 用于显示 playableArea
         public string DisplayedTerrainSystemValue { get; set; } = "N/A"; // 用于显示 TargetSystemA 的值
@@ -115,7 +119,9 @@ namespace MapExtPDX
 
         public bool IsInMainMenu => GameManager.instance.gameMode == GameMode.MainMenu;
 
-        // --- PATCH SETTINGS ---
+        // === 地图尺寸模式 ===
+        #region MapSize Mode
+
         [SettingsUISection(kMapSizeModeTab, kMainModeGroup)]
         [SettingsUIDropdown(typeof(ModSettings),
             nameof(GetPatchModeDropdownItems))] // Use this for enums if want custom display names
@@ -137,15 +143,6 @@ namespace MapExtPDX
         {
             set
             {
-                //Mod.Info($"ApplyPatchChanges button clicked. Selected mode: {PatchModeChoice}");
-                // Tell the Mod to re-apply patches based on the current PatchModeChoice
-                // The PatchModeChoice property is already updated by the UI at this point.
-                // 使用静态实例来调用方法
-                // 这样是类型安全的，编译器知道 Mod.Instance 的类型是 Mod
-                // ?. 是空值条件运算符，确保如果Instance为null时不会出错
-                //Mod.Instance?.OnPatchModeChanged(PatchManager.PatchModeChoice);
-                //Mod.Info($"Settings changes applied via button.");
-
                 ModLog.Info(Tag, $"ApplyPatchChanges 点击, 新选择的模式: {PatchModeChoice}");
                 // 传递用户在UI中选择的 PatchModeChoice
                 Mod.Instance?.OnPatchModeChanged(PatchModeChoice);
@@ -153,181 +150,41 @@ namespace MapExtPDX
             }
         }
 
-        // [SettingsUISection(kMapSizeModeTab, kInfoGroup)]
-        // public string ModSettingCoreValue => (PatchManager.CurrentCoreValue * 14336).ToString();
+        #endregion
 
-        // 显示备份警告
-        //[SettingsUISection(kMapSizeModeTab, kInfoGroup)]
-        //public string WarningInfo => "Caution";
-
-        // [SettingsUISection(kMapSizeModeTab, kInfoGroup)]
-        // public string LoadedSaveCoreValue =>
-        // PatchManager.LoadedSaveCoreValue.HasValue
-        // ? $"Loaded Save MapSize: {PatchManager.LoadedSaveCoreValue.Value * 14336}m"
-        // : "No game loaded.";
-
-
-        // [SettingsUISection(kMapSizeModeTab, kInfoGroup)]
-        // [SettingsUIHideByCondition(typeof(ModSettings), nameof(IsInMainMenu))]
-        // public string IsModSettingCoreValueMatch => PatchManager.CurrentCoreValue == PatchManager.LoadedSaveCoreValue
-        //  ? $"Loaded Save and MapSize Mode Setting match up" : "Loaded Save and Mode Setting is conflicting!";
-
-        public override void SetDefaults()
-        {
-            // 设置默认的补丁模式
-            PatchModeChoice = PatchModeSetting.ModeA;
-            // 分辨率设置
-            // 地形 8192 暂时禁用 — 水模拟与 8192 级联不兼容 (见 docs/TerrainSystem/Water_Terrain_Decoupling_Research.md)
-            TerrainResolution = TerrainResolutionSetting.Vanilla_4096;
-            WaterResolution = WaterResolutionSetting.Vanilla_2048;
-            WaterSimQuality = WaterSimQualitySetting.Vanilla_EveryFrame;
-            WaterTextureFormat = WaterTextureFormatSetting.High_RGBA32F;
-
-            ShoppingMaxCost = 8000f;
-            CompanyShoppingMaxCost = 200000f;
-            LeisureMaxCost = 12000f;
-            EmergencyMaxCost = 6000f;
-            FindJobMaxCost = 200000f;
-            FindHomeMaxCost = 200000f;
-            FindSchoolElementaryMaxCost = 10000f;
-            FindSchoolHighSchoolMaxCost = 17000f;
-            FindSchoolCollegeMaxCost = 50000f;
-            FindSchoolUniversityMaxCost = 100000f;
-            JobSeekerCap = 1000;
-            PathfindRequestCap = 4000;
-            ShoppingTrafficReduction = 0.0004f;
-            HouseholdResourceDemandMultiplier = 3.5f;
-            HomeSeekerCap = 128;
-            HomelessSeekerCap = 1280;
-            
-            isEnableEconomyFix = true;
-            EnableDemandEcoSystem = true;
-            EnableJobSearchEcoSystem = true;
-            EnableHouseholdPropertyEcoSystem = true;
-            EnableResourceBuyerEcoSystem = true;
-            EnableResidentAIEcoSystem = true;
-        }
-
-        // Helper for the dropdown (optional, direct enum use is fine too but this gives more control)
-        public DropdownItem<int>[] GetPatchModeDropdownItems()
-        {
-            var items = new List<DropdownItem<int>>();
-            foreach (PatchModeSetting mode in System.Enum.GetValues(typeof(PatchModeSetting)))
-            {
-                items.Add(new DropdownItem<int>
-                {
-                    value = (int)mode,
-                    displayName = GetPatchModeDisplayName(mode)
-                });
-            }
-
-            return items.ToArray();
-        }
-
-        // Example for custom display names, can be replaced by localization
-        private string GetPatchModeDisplayName(PatchModeSetting mode)
-        {
-            switch (mode)
-            {
-                case PatchModeSetting.ModeA: return "• ModeA 57km (4x4)";
-                case PatchModeSetting.ModeB: return "• ModeB 28km (2x2)";
-                case PatchModeSetting.ModeC: return "• ModeC 114km (8x8) (Not Recommended)";
-                // case PatchModeSetting.ModeD: return "🟣 ModeD 229km (16x16) (Test Only!)";
-                case PatchModeSetting.None: return "• None 14km (Vanilla)";
-                default: return mode.ToString();
-            }
-        }
-
-        // === 经济系统补丁 ===
-        [SettingsUISection(kMapSizeModeTab, kEcoGroup)]
-        [SettingsUIHideByCondition(typeof(ModSettings), nameof(IsNotInMainMenu))]
-        public bool isEnableEconomyFix { get; set; } = true;
-
-        public bool IsEconomyFixDisabled => !isEnableEconomyFix;
-
-        // 经济子系统开关 → 移至 Misc/EconomyTweak 分页
-        [SettingsUISection(kMiscTab, kEconomyTweakGroup)]
-        [SettingsUIDisableByCondition(typeof(ModSettings), nameof(IsEconomyFixDisabled))]
-        [SettingsUIHideByCondition(typeof(ModSettings), nameof(IsNotInMainMenu))]
-        public bool EnableDemandEcoSystem { get; set; } = true;
-
-        [SettingsUISection(kMiscTab, kEconomyTweakGroup)]
-        [SettingsUIDisableByCondition(typeof(ModSettings), nameof(IsEconomyFixDisabled))]
-        [SettingsUIHideByCondition(typeof(ModSettings), nameof(IsNotInMainMenu))]
-        public bool EnableJobSearchEcoSystem { get; set; } = true;
-
-        [SettingsUISection(kMiscTab, kEconomyTweakGroup)]
-        [SettingsUIDisableByCondition(typeof(ModSettings), nameof(IsEconomyFixDisabled))]
-        [SettingsUIHideByCondition(typeof(ModSettings), nameof(IsNotInMainMenu))]
-        public bool EnableHouseholdPropertyEcoSystem { get; set; } = true;
-
-        [SettingsUISection(kMiscTab, kEconomyTweakGroup)]
-        [SettingsUIDisableByCondition(typeof(ModSettings), nameof(IsEconomyFixDisabled))]
-        [SettingsUIHideByCondition(typeof(ModSettings), nameof(IsNotInMainMenu))]
-        public bool EnableResourceBuyerEcoSystem { get; set; } = true;
-
-        [SettingsUISection(kMiscTab, kEconomyTweakGroup)]
-        [SettingsUIDisableByCondition(typeof(ModSettings), nameof(IsEconomyFixDisabled))]
-        [SettingsUIHideByCondition(typeof(ModSettings), nameof(IsNotInMainMenu))]
-        public bool EnableResidentAIEcoSystem { get; set; } = true;
-
-        //[SettingsUISection(kMapSizeModeTab, kEcoGroup)]
-        //[SettingsUIButton]
-        //[SettingsUIConfirmation]
-        //[SettingsUIHideByCondition(typeof(ModSettings), nameof(IsNotInMainMenu))]
-        //public bool ApplyEcoPatchChanges
-        //{
-        //    set
-        //    {
-        //        //Mod.Info($"ApplyPatchChanges button clicked. Selected mode: {PatchModeChoice}");
-        //        // Tell the Mod to re-apply patches based on the current PatchModeChoice
-        //        // The PatchModeChoice property is already updated by the UI at this point.
-        //        // 使用静态实例来调用方法
-        //        // 这样是类型安全的，编译器知道 Mod.Instance 的类型是 Mod
-        //        // ?. 是空值条件运算符，确保如果Instance为null时不会出错
-        //        //Mod.Instance?.OnPatchModeChanged(PatchManager.PatchModeChoice);
-        //        //Mod.Info($"Settings changes applied via button.");
-
-        //        Mod.Info($"ApplyEcoPatchChanges button clicked from UI: {isEnableEconomyFix}");
-        //        // 传递用户在UI中选择的 EcoPatchMode
-        //        Mod.Instance?.OnEcoPatchChanged(isEnableEconomyFix);
-        //        Mod.Info($"Eco Settings changes applied via button for mode: {isEnableEconomyFix}");
-
-        //    }
-        //}
-
-        [SettingsUISection(kMapSizeModeTab, kNoteGroup)]
-        [SettingsUIHideByCondition(typeof(ModSettings), nameof(IsNotInMainMenu))]
-        public string ModeChangeWarningMessage => "";
+        // === 地形-水体优化 (Beta) ===
+        #region Terrain-Water Optimization
 
         /// <summary>
-        /// 全局并行选项
+        /// 地形 StructuredBuffer 首帧预扩容。
+        /// 根据地图倍率预分配更大的 GPU Buffer，避免运行时动态扩容卡顿。
         /// </summary>
-        /// 
-        // 选项可用性
-        public bool IsPatchUnAvailable => true;
+        [SettingsUISection(kMapSizeModeTab, kTerrainWaterOptGroup)]
+        public bool TerrainBufferPrealloc { get; set; } = true;
+
+        /// <summary>
+        /// 远距级联降频更新。
+        /// 远距地形级联每 4 帧更新一次，降低 GPU 开销。
+        /// ⚠ 可能导致镜头移动时远景地形短暂错位。
+        /// </summary>
+        [SettingsUISection(kMapSizeModeTab, kTerrainWaterOptGroup)]
+        public bool TerrainCascadeThrottle { get; set; } = false;
 
         // ==========================================
-        // 分辨率设置
+        // 分辨率设置 (部分已隐藏)
         // ==========================================
         // 地形分辨率: 8192 与水模拟级联不兼容，当前仅 4096 可用
         // 水纹理分辨率: Compute Shader 存在纹理尺寸隐式依赖，当前仅 2048 可用
         // 待自定义 Compute Shader (Phase 3) 实现后恢复 UI
-        // [SettingsUISection(kMapSizeModeTab, kResolutionGroup)]
-        // [SettingsUIDropdown(typeof(ModSettings), nameof(GetTerrainResolutionItems))]
-        // [SettingsUIHideByCondition(typeof(ModSettings), nameof(IsNotInMainMenu))]
         [SettingsUIHidden]
         public TerrainResolutionSetting TerrainResolution { get; set; }
 
-        // [SettingsUISection(kMapSizeModeTab, kResolutionGroup)]
-        // [SettingsUIDropdown(typeof(ModSettings), nameof(GetWaterResolutionItems))]
-        // [SettingsUIHideByCondition(typeof(ModSettings), nameof(IsNotInMainMenu))]
         [SettingsUIHidden]
         public WaterResolutionSetting WaterResolution { get; set; }
 
         private WaterSimQualitySetting m_waterSimQuality = WaterSimQualitySetting.Vanilla_EveryFrame;
 
-        [SettingsUISection(kMapSizeModeTab, kResolutionGroup)]
+        [SettingsUISection(kMapSizeModeTab, kTerrainWaterOptGroup)]
         [SettingsUIDropdown(typeof(ModSettings), nameof(GetWaterSimQualityItems))]
         public WaterSimQualitySetting WaterSimQuality
         {
@@ -347,62 +204,174 @@ namespace MapExtPDX
         public WaterTextureFormatSetting WaterTextureFormat { get; set; }
 
         // 分辨率选项隐藏后，VRAM 估算也无需显示
-        // [SettingsUISection(kMapSizeModeTab, kResolutionGroup)]
         [SettingsUIHidden]
         public string VRAMEstimate => $"Est. VRAM: {MapExt.Core.ResolutionManager.GetVRAMEstimate()}";
 
-        public DropdownItem<int>[] GetTerrainResolutionItems()
-        {
-            return new DropdownItem<int>[]
-            {
-                new DropdownItem<int> { value = (int)TerrainResolutionSetting.Vanilla_4096, displayName = "4096×4096 (Vanilla)" },
-                // 8192 暂时禁用 — 水模拟级联纹理不兼容，待后续修复
-                // new DropdownItem<int> { value = (int)TerrainResolutionSetting.High_8192, displayName = "8192×8192 (High)" },
-            };
-        }
+        #endregion
 
-        public DropdownItem<int>[] GetWaterResolutionItems()
-        {
-            return new DropdownItem<int>[]
-            {
-                new DropdownItem<int> { value = (int)WaterResolutionSetting.Vanilla_2048, displayName = "2048×2048 (Vanilla)" },
-                // 计算着色器内部存在纹理尺寸硬编码依赖，降低水分辨率导致水体偏移/放大
-                // 需要自定义计算着色器 (Phase 3) 才能实现
-                // new DropdownItem<int> { value = (int)WaterResolutionSetting.Medium_1024, displayName = "1024×1024 (GPU -75%)" },
-                // new DropdownItem<int> { value = (int)WaterResolutionSetting.Low_512, displayName = "512×512 (GPU -93%)" },
-                // new DropdownItem<int> { value = (int)WaterResolutionSetting.Ultra_256, displayName = "256×256 (Ultra Performance)" },
-            };
-        }
+        // === 经济系统总开关 ===
+        #region Economy Overhaul
 
-        public DropdownItem<int>[] GetWaterSimQualityItems()
-        {
-            return new DropdownItem<int>[]
-            {
-                new DropdownItem<int> { value = (int)WaterSimQualitySetting.Vanilla_EveryFrame, displayName = "Vanilla (Every Frame)" },
-                new DropdownItem<int> { value = (int)WaterSimQualitySetting.Reduced_NoBackdrop, displayName = "Reduced (No Backdrop)" },
-                new DropdownItem<int> { value = (int)WaterSimQualitySetting.Minimal_Every4Frames, displayName = "Minimal (Every 4 Frames)" },
-                new DropdownItem<int> { value = (int)WaterSimQualitySetting.Paused_NoFlow, displayName = "Paused (No Flow)" },
-            };
-        }
+        [SettingsUISection(kMapSizeModeTab, kEcoGroup)]
+        [SettingsUIHideByCondition(typeof(ModSettings), nameof(IsNotInMainMenu))]
+        public bool isEnableEconomyFix { get; set; } = true;
 
-        public DropdownItem<int>[] GetWaterTextureFormatItems()
-        {
-            return new DropdownItem<int>[]
-            {
-                new DropdownItem<int> { value = (int)WaterTextureFormatSetting.High_RGBA32F, displayName = "High - 32-bit HDR (Vanilla)" },
-                new DropdownItem<int> { value = (int)WaterTextureFormatSetting.Low_RGBA16F, displayName = "Low - 16-bit Float (-43% VRAM)" },
-            };
-        }
+        public bool IsEconomyFixDisabled => !isEnableEconomyFix;
+
+        [SettingsUISection(kMapSizeModeTab, kNoteGroup)]
+        [SettingsUIHideByCondition(typeof(ModSettings), nameof(IsNotInMainMenu))]
+        public string ModeChangeWarningMessage => "";
+
+        #endregion
+
+        /// <summary>
+        /// 全局并行选项
+        /// </summary>
+        // 选项可用性
+        public bool IsPatchUnAvailable => true;
+
+        // === EconomyEX Tab - 经济子系统启用开关 ===
+        #region Economy System Toggles
+
+        [SettingsUISection(kMiscTab, kEcoSystemEnableGroup)]
+        [SettingsUIDisableByCondition(typeof(ModSettings), nameof(IsEconomyFixDisabled))]
+        [SettingsUIHideByCondition(typeof(ModSettings), nameof(IsNotInMainMenu))]
+        public bool EnableDemandEcoSystem { get; set; } = true;
+
+        [SettingsUISection(kMiscTab, kEcoSystemEnableGroup)]
+        [SettingsUIDisableByCondition(typeof(ModSettings), nameof(IsEconomyFixDisabled))]
+        [SettingsUIHideByCondition(typeof(ModSettings), nameof(IsNotInMainMenu))]
+        public bool EnableJobSearchEcoSystem { get; set; } = true;
+
+        [SettingsUISection(kMiscTab, kEcoSystemEnableGroup)]
+        [SettingsUIDisableByCondition(typeof(ModSettings), nameof(IsEconomyFixDisabled))]
+        [SettingsUIHideByCondition(typeof(ModSettings), nameof(IsNotInMainMenu))]
+        public bool EnableHouseholdPropertyEcoSystem { get; set; } = true;
+
+        [SettingsUISection(kMiscTab, kEcoSystemEnableGroup)]
+        [SettingsUIDisableByCondition(typeof(ModSettings), nameof(IsEconomyFixDisabled))]
+        [SettingsUIHideByCondition(typeof(ModSettings), nameof(IsNotInMainMenu))]
+        public bool EnableResourceBuyerEcoSystem { get; set; } = true;
+
+        [SettingsUISection(kMiscTab, kEcoSystemEnableGroup)]
+        [SettingsUIDisableByCondition(typeof(ModSettings), nameof(IsEconomyFixDisabled))]
+        [SettingsUIHideByCondition(typeof(ModSettings), nameof(IsNotInMainMenu))]
+        public bool EnableResidentAIEcoSystem { get; set; } = true;
+
+        #endregion
+
+        // === EconomyEX Tab - 寻路优化参数 ===
+        #region Pathfinding Parameters
+
+        [SettingsUISection(kMiscTab, kPathfindingGroup)]
+        [SettingsUISlider(min = 1000f, max = 200000f, step = 1000f, scalarMultiplier = 1f,
+            unit = Game.UI.Unit.kFloatSingleFraction)]
+        public float ShoppingMaxCost { get; set; } = 8000f;
+
+        [SettingsUISection(kMiscTab, kPathfindingGroup)]
+        [SettingsUISlider(min = 1000f, max = 200000f, step = 1000f, scalarMultiplier = 1f,
+            unit = Game.UI.Unit.kFloatSingleFraction)]
+        public float CompanyShoppingMaxCost { get; set; } = 200000f;
+
+        [SettingsUISection(kMiscTab, kPathfindingGroup)]
+        [SettingsUISlider(min = 1000f, max = 200000f, step = 1000f, scalarMultiplier = 1f,
+            unit = Game.UI.Unit.kFloatSingleFraction)]
+        public float LeisureMaxCost { get; set; } = 12000f;
+
+        [SettingsUISection(kMiscTab, kPathfindingGroup)]
+        [SettingsUISlider(min = 1000f, max = 17000f, step = 500f, scalarMultiplier = 1f,
+            unit = Game.UI.Unit.kFloatSingleFraction)]
+        public float EmergencyMaxCost { get; set; } = 6000f;
+
+        [SettingsUISection(kMiscTab, kPathfindingGroup)]
+        [SettingsUISlider(min = 17000f, max = 200000f, step = 1000f, scalarMultiplier = 1f,
+            unit = Game.UI.Unit.kFloatSingleFraction)]
+        public float FindJobMaxCost { get; set; } = 200000f;
+
+        [SettingsUISection(kMiscTab, kPathfindingGroup)]
+        [SettingsUISlider(min = 17000f, max = 200000f, step = 1000f, scalarMultiplier = 1f,
+            unit = Game.UI.Unit.kFloatSingleFraction)]
+        public float FindHomeMaxCost { get; set; } = 200000f;
+
+        [SettingsUISection(kMiscTab, kPathfindingGroup)]
+        [SettingsUISlider(min = 1000f, max = 200000f, step = 1000f, scalarMultiplier = 1f, unit = Game.UI.Unit.kFloatSingleFraction)]
+        public float FindSchoolElementaryMaxCost { get; set; } = 10000f;
+
+        [SettingsUISection(kMiscTab, kPathfindingGroup)]
+        [SettingsUISlider(min = 1000f, max = 200000f, step = 1000f, scalarMultiplier = 1f, unit = Game.UI.Unit.kFloatSingleFraction)]
+        public float FindSchoolHighSchoolMaxCost { get; set; } = 17000f;
+
+        [SettingsUISection(kMiscTab, kPathfindingGroup)]
+        [SettingsUISlider(min = 1000f, max = 200000f, step = 1000f, scalarMultiplier = 1f, unit = Game.UI.Unit.kFloatSingleFraction)]
+        public float FindSchoolCollegeMaxCost { get; set; } = 50000f;
+
+        [SettingsUISection(kMiscTab, kPathfindingGroup)]
+        [SettingsUISlider(min = 1000f, max = 200000f, step = 1000f, scalarMultiplier = 1f, unit = Game.UI.Unit.kFloatSingleFraction)]
+        public float FindSchoolUniversityMaxCost { get; set; } = 100000f;
+
+        #endregion
+
+        // === EconomyEX Tab - 经济行为与吞吐量参数 ===
+        #region Economy Behavior & Throughput
+
+        /// <summary>
+        /// 每次 B1 系统更新最多创建的求职者实体数量
+        /// </summary>
+        [SettingsUISection(kMiscTab, kEcoBehaviorGroup)]
+        [SettingsUISlider(min = 200, max = 5000, step = 100, scalarMultiplier = 1, unit = Game.UI.Unit.kInteger)]
+        public int JobSeekerCap { get; set; } = 1000;
+
+        /// <summary>
+        /// 每次 B2 系统更新最多处理的寻路请求数量
+        /// </summary>
+        [SettingsUISection(kMiscTab, kEcoBehaviorGroup)]
+        [SettingsUISlider(min = 500, max = 10000, step = 500, scalarMultiplier = 1, unit = Game.UI.Unit.kInteger)]
+        public int PathfindRequestCap { get; set; } = 4000;
+
+        /// <summary>
+        /// 购物概率人口压制系数。值越大，人口越多时购物概率衰减越快。
+        /// 原版硬编码 0.0004f。
+        /// </summary>
+        [SettingsUISection(kMiscTab, kEcoBehaviorGroup)]
+        [SettingsUISlider(min = 0.0001f, max = 0.002f, step = 0.0001f, scalarMultiplier = 1f,
+            unit = Game.UI.Unit.kFloatSingleFraction)]
+        public float ShoppingTrafficReduction { get; set; } = 0.0004f;
+
+        /// <summary>
+        /// 家庭购物资源需求倍率。频率降低后需提高单次购买量来补偿。
+        /// 原版默认 1.0，Mod 默认 3.5。
+        /// </summary>
+        [SettingsUISection(kMiscTab, kEcoBehaviorGroup)]
+        [SettingsUISlider(min = 1.0f, max = 8.0f, step = 0.5f, scalarMultiplier = 1f,
+            unit = Game.UI.Unit.kFloatSingleFraction)]
+        public float HouseholdResourceDemandMultiplier { get; set; } = 3.5f;
+
+        /// <summary>
+        /// 每帧处理的常规搬家家庭数上限（已有住房但想搬家的家庭）。
+        /// 原版硬编码 128。
+        /// </summary>
+        [SettingsUISection(kMiscTab, kEcoBehaviorGroup)]
+        [SettingsUISlider(min = 32, max = 512, step = 16, scalarMultiplier = 1, unit = Game.UI.Unit.kInteger)]
+        public int HomeSeekerCap { get; set; } = 128;
+
+        /// <summary>
+        /// 每帧处理的流浪家庭找房数上限（无家可归家庭）。
+        /// 原版硬编码 1280。
+        /// </summary>
+        [SettingsUISection(kMiscTab, kEcoBehaviorGroup)]
+        [SettingsUISlider(min = 128, max = 5120, step = 128, scalarMultiplier = 1, unit = Game.UI.Unit.kInteger)]
+        public int HomelessSeekerCap { get; set; } = 1280;
+
+        #endregion
 
         // === NoDogs 2.0 ===
-        // 设置字段初始化器默认值
+        #region NoDogs
+
         private bool m_NoDogsOnStreet = false;
         private bool m_NoDogsGeneration = false;
         private bool m_NoDogsPurge = false;
-        private bool m_NoThroughTrafficSystem = false;
-        // private bool m_LandValueRemakeSystem = false;
 
-        [SettingsUISection(kPerformanceToolTab, kPerformanceToolGroup)]
+        [SettingsUISection(kPerformanceToolTab, kNoDogsGroup)]
         public bool NoDogsOnStreet
         {
             get => m_NoDogsOnStreet;
@@ -416,7 +385,7 @@ namespace MapExtPDX
             }
         }
 
-        [SettingsUISection(kPerformanceToolTab, kPerformanceToolGroup)]
+        [SettingsUISection(kPerformanceToolTab, kNoDogsGroup)]
         public bool NoDogsGeneration
         {
             get => m_NoDogsGeneration;
@@ -430,7 +399,7 @@ namespace MapExtPDX
             }
         }
 
-        [SettingsUISection(kPerformanceToolTab, kPerformanceToolGroup)]
+        [SettingsUISection(kPerformanceToolTab, kNoDogsGroup)]
         [SettingsUIConfirmation]
         public bool NoDogsPurge
         {
@@ -465,10 +434,10 @@ namespace MapExtPDX
 
         public int CurrentPetCount { get; set; } = 0;
 
-        [SettingsUISection(kPerformanceToolTab, kPerformanceToolGroup)]
+        [SettingsUISection(kPerformanceToolTab, kNoDogsGroup)]
         public string DislayPetCount => $"Logical Pets Count: {CurrentPetCount}";
 
-        [SettingsUISection(kPerformanceToolTab, kPerformanceToolGroup)]
+        [SettingsUISection(kPerformanceToolTab, kNoDogsGroup)]
         [SettingsUIButton]
         public bool RefreshPetCount
         {
@@ -482,9 +451,14 @@ namespace MapExtPDX
             }
         }
 
+        #endregion
 
-        [SettingsUISection(kPerformanceToolTab, kPerformanceToolGroup)]
-        //[SettingsUIDisableByConditionAttribute(typeof(ModSettings), nameof(IsPatchUnAvailable))]
+        // === No Through-Traffic ===
+        #region NoThroughTraffic
+
+        private bool m_NoThroughTrafficSystem = false;
+
+        [SettingsUISection(kPerformanceToolTab, kNoTrafficGroup)]
         public bool NoThroughTraffic
         {
             get => m_NoThroughTrafficSystem;
@@ -509,141 +483,124 @@ namespace MapExtPDX
             ModLog.Patch(Tag, "NoThroughTraffic 补丁已应用 (全局并行)");
         }
 
-        //[SettingsUISection(kPerformanceToolTab, kPerformanceToolGroup)]
-        //[SettingsUIDisableByConditionAttribute(typeof(ModSettings), nameof(IsPatchUnAvailable))]
-        //public bool NoRandomTraffic { get; set; }
-
-        //[SettingsUISection(kMiscTab, kMiscGroup)]
-        //[SettingsUIDisableByCondition(typeof(ModSettings), nameof(IsPatchUnAvailable))] // 暂时禁用
-        //public bool LandValueRemake
-        //{
-        //    get => m_LandValueRemakeSystem;
-        //    set
-        //    {
-        //        if (m_LandValueRemakeSystem != value)
-        //        {
-        //            m_LandValueRemakeSystem = value;
-
-        //            UpdateLandValueRemakeSystemStates();
-        //        }
-        //    }
-        //}
+        #endregion
 
         public void UpdateLandValueRemakeSystemStates()
         {
-            //Mod.Info($"Setting 'LandValueRemakeSystem' is now: {nameof(Game.Simulation.LandValueSystem)}. Updating system enabled state.");
-            //World.DefaultGameObjectInjectionWorld.GetOrCreateSystemManaged<Game.Simulation.LandValueSystem>().Enabled = !m_LandValueRemakeSystem;
         }
 
-        // ==========================================
-        // 寻路优化参数
-        // ==========================================
-        [SettingsUISection(kMiscTab, kEconomyTweakGroup)]
-        [SettingsUISlider(min = 1000f, max = 200000f, step = 1000f, scalarMultiplier = 1f,
-            unit = Game.UI.Unit.kFloatSingleFraction)]
-        public float ShoppingMaxCost { get; set; } = 8000f;
-
-        [SettingsUISection(kMiscTab, kEconomyTweakGroup)]
-        [SettingsUISlider(min = 1000f, max = 200000f, step = 1000f, scalarMultiplier = 1f,
-            unit = Game.UI.Unit.kFloatSingleFraction)]
-        public float CompanyShoppingMaxCost { get; set; } = 200000f;
-
-        [SettingsUISection(kMiscTab, kEconomyTweakGroup)]
-        [SettingsUISlider(min = 1000f, max = 200000f, step = 1000f, scalarMultiplier = 1f,
-            unit = Game.UI.Unit.kFloatSingleFraction)]
-        public float LeisureMaxCost { get; set; } = 12000f;
-
-        [SettingsUISection(kMiscTab, kEconomyTweakGroup)]
-        [SettingsUISlider(min = 1000f, max = 17000f, step = 500f, scalarMultiplier = 1f,
-            unit = Game.UI.Unit.kFloatSingleFraction)]
-        public float EmergencyMaxCost { get; set; } = 6000f;
-
-        [SettingsUISection(kMiscTab, kEconomyTweakGroup)]
-        [SettingsUISlider(min = 17000f, max = 200000f, step = 1000f, scalarMultiplier = 1f,
-            unit = Game.UI.Unit.kFloatSingleFraction)]
-        public float FindJobMaxCost { get; set; } = 200000f;
-
-        [SettingsUISection(kMiscTab, kEconomyTweakGroup)]
-        [SettingsUISlider(min = 17000f, max = 200000f, step = 1000f, scalarMultiplier = 1f,
-            unit = Game.UI.Unit.kFloatSingleFraction)]
-        public float FindHomeMaxCost { get; set; } = 200000f;
-
-        [SettingsUISection(kMiscTab, kEconomyTweakGroup)]
-        [SettingsUISlider(min = 1000f, max = 200000f, step = 1000f, scalarMultiplier = 1f, unit = Game.UI.Unit.kFloatSingleFraction)]
-        public float FindSchoolElementaryMaxCost { get; set; } = 10000f;
-
-        [SettingsUISection(kMiscTab, kEconomyTweakGroup)]
-        [SettingsUISlider(min = 1000f, max = 200000f, step = 1000f, scalarMultiplier = 1f, unit = Game.UI.Unit.kFloatSingleFraction)]
-        public float FindSchoolHighSchoolMaxCost { get; set; } = 17000f;
-
-        [SettingsUISection(kMiscTab, kEconomyTweakGroup)]
-        [SettingsUISlider(min = 1000f, max = 200000f, step = 1000f, scalarMultiplier = 1f, unit = Game.UI.Unit.kFloatSingleFraction)]
-        public float FindSchoolCollegeMaxCost { get; set; } = 50000f;
-
-        [SettingsUISection(kMiscTab, kEconomyTweakGroup)]
-        [SettingsUISlider(min = 1000f, max = 200000f, step = 1000f, scalarMultiplier = 1f, unit = Game.UI.Unit.kFloatSingleFraction)]
-        public float FindSchoolUniversityMaxCost { get; set; } = 100000f;
-
-        // ==========================================
-        // 找工作系统吐量参数
-        // ==========================================
-        /// <summary>
-        /// 每次 B1 系统更新最多创建的求职者实体数量
-        /// </summary>
-        [SettingsUISection(kMiscTab, kEconomyTweakGroup)]
-        [SettingsUISlider(min = 200, max = 5000, step = 100, scalarMultiplier = 1, unit = Game.UI.Unit.kInteger)]
-        public int JobSeekerCap { get; set; } = 1000;
-
-        /// <summary>
-        /// 每次 B2 系统更新最多处理的寻路请求数量
-        /// </summary>
-        [SettingsUISection(kMiscTab, kEconomyTweakGroup)]
-        [SettingsUISlider(min = 500, max = 10000, step = 500, scalarMultiplier = 1, unit = Game.UI.Unit.kInteger)]
-        public int PathfindRequestCap { get; set; } = 4000;
-
-        // ==========================================
-        // 家庭行为系统参数
-        // ==========================================
-        /// <summary>
-        /// 购物概率人口压制系数。值越大，人口越多时购物概率衰减越快。
-        /// 原版硬编码 0.0004f。
-        /// </summary>
-        [SettingsUISection(kMiscTab, kEconomyTweakGroup)]
-        [SettingsUISlider(min = 0.0001f, max = 0.002f, step = 0.0001f, scalarMultiplier = 1f,
-            unit = Game.UI.Unit.kFloatSingleFraction)]
-        public float ShoppingTrafficReduction { get; set; } = 0.0004f;
-
-        /// <summary>
-        /// 家庭购物资源需求倍率。频率降低后需提高单次购买量来补偿。
-        /// 原版默认 1.0，Mod 默认 3.5。
-        /// </summary>
-        [SettingsUISection(kMiscTab, kEconomyTweakGroup)]
-        [SettingsUISlider(min = 1.0f, max = 8.0f, step = 0.5f, scalarMultiplier = 1f,
-            unit = Game.UI.Unit.kFloatSingleFraction)]
-        public float HouseholdResourceDemandMultiplier { get; set; } = 3.5f;
-
-        // ==========================================
-        // 找房系统吞吐量参数
-        // ==========================================
-        /// <summary>
-        /// 每帧处理的常规搬家家庭数上限（已有住房但想搬家的家庭）。
-        /// 原版硬编码 128。
-        /// </summary>
-        [SettingsUISection(kMiscTab, kEconomyTweakGroup)]
-        [SettingsUISlider(min = 32, max = 512, step = 16, scalarMultiplier = 1, unit = Game.UI.Unit.kInteger)]
-        public int HomeSeekerCap { get; set; } = 128;
-
-        /// <summary>
-        /// 每帧处理的流浪家庭找房数上限（无家可归家庭）。
-        /// 原版硬编码 1280。
-        /// </summary>
-        [SettingsUISection(kMiscTab, kEconomyTweakGroup)]
-        [SettingsUISlider(min = 128, max = 5120, step = 128, scalarMultiplier = 1, unit = Game.UI.Unit.kInteger)]
-        public int HomelessSeekerCap { get; set; } = 1280;
-
-        // private bool m_LoadGameValidatorPatch;
+        // === Debug ===
         // 开关LoadGame验证系统
         [SettingsUISection(kDebugTab, kDebugGroup)]
         public bool DisableLoadGameValidation { get; set; } = false;
+
+        // === Defaults ===
+        public override void SetDefaults()
+        {
+            // 设置默认的补丁模式
+            PatchModeChoice = PatchModeSetting.ModeA;
+            // 分辨率设置
+            // 地形 8192 暂时禁用 — 水模拟与 8192 级联不兼容 (见 docs/TerrainSystem/Water_Terrain_Decoupling_Research.md)
+            TerrainResolution = TerrainResolutionSetting.Vanilla_4096;
+            WaterResolution = WaterResolutionSetting.Vanilla_2048;
+            WaterSimQuality = WaterSimQualitySetting.Vanilla_EveryFrame;
+            WaterTextureFormat = WaterTextureFormatSetting.High_RGBA32F;
+
+            ShoppingMaxCost = 8000f;
+            CompanyShoppingMaxCost = 200000f;
+            LeisureMaxCost = 12000f;
+            EmergencyMaxCost = 6000f;
+            FindJobMaxCost = 200000f;
+            FindHomeMaxCost = 200000f;
+            FindSchoolElementaryMaxCost = 10000f;
+            FindSchoolHighSchoolMaxCost = 17000f;
+            FindSchoolCollegeMaxCost = 50000f;
+            FindSchoolUniversityMaxCost = 100000f;
+            JobSeekerCap = 1000;
+            PathfindRequestCap = 4000;
+            ShoppingTrafficReduction = 0.0004f;
+            HouseholdResourceDemandMultiplier = 3.5f;
+            HomeSeekerCap = 128;
+            HomelessSeekerCap = 1280;
+            
+            isEnableEconomyFix = true;
+            EnableDemandEcoSystem = true;
+            EnableJobSearchEcoSystem = true;
+            EnableHouseholdPropertyEcoSystem = true;
+            EnableResourceBuyerEcoSystem = true;
+            EnableResidentAIEcoSystem = true;
+
+            // 地形优化
+            TerrainBufferPrealloc = true;
+            TerrainCascadeThrottle = false;  // 默认关闭：会导致远景级联与视口不同步→地形错位
+        }
+
+        // === Dropdown Helpers ===
+        #region Dropdown Helpers
+
+        public DropdownItem<int>[] GetPatchModeDropdownItems()
+        {
+            var items = new List<DropdownItem<int>>();
+            foreach (PatchModeSetting mode in System.Enum.GetValues(typeof(PatchModeSetting)))
+            {
+                items.Add(new DropdownItem<int>
+                {
+                    value = (int)mode,
+                    displayName = GetPatchModeDisplayName(mode)
+                });
+            }
+
+            return items.ToArray();
+        }
+
+        private string GetPatchModeDisplayName(PatchModeSetting mode)
+        {
+            switch (mode)
+            {
+                case PatchModeSetting.ModeA: return "• ModeA 57km (4x4)";
+                case PatchModeSetting.ModeB: return "• ModeB 28km (2x2)";
+                case PatchModeSetting.ModeC: return "• ModeC 114km (8x8) (Not Recommended)";
+                case PatchModeSetting.None: return "• None 14km (Vanilla)";
+                default: return mode.ToString();
+            }
+        }
+
+        public DropdownItem<int>[] GetTerrainResolutionItems()
+        {
+            return new DropdownItem<int>[]
+            {
+                new DropdownItem<int> { value = (int)TerrainResolutionSetting.Vanilla_4096, displayName = "4096×4096 (Vanilla)" },
+            };
+        }
+
+        public DropdownItem<int>[] GetWaterResolutionItems()
+        {
+            return new DropdownItem<int>[]
+            {
+                new DropdownItem<int> { value = (int)WaterResolutionSetting.Vanilla_2048, displayName = "2048×2048 (Vanilla)" },
+            };
+        }
+
+        public DropdownItem<int>[] GetWaterSimQualityItems()
+        {
+            return new DropdownItem<int>[]
+            {
+                new DropdownItem<int> { value = (int)WaterSimQualitySetting.Vanilla_EveryFrame, displayName = "Vanilla (Every Frame)" },
+                new DropdownItem<int> { value = (int)WaterSimQualitySetting.Reduced_NoBackdrop, displayName = "Reduced (No Backdrop)" },
+                new DropdownItem<int> { value = (int)WaterSimQualitySetting.Minimal_Every4Frames, displayName = "Minimal (Every 4 Frames)" },
+                new DropdownItem<int> { value = (int)WaterSimQualitySetting.Paused_NoFlow, displayName = "Paused (No Flow)" },
+            };
+        }
+
+        public DropdownItem<int>[] GetWaterTextureFormatItems()
+        {
+            return new DropdownItem<int>[]
+            {
+                new DropdownItem<int> { value = (int)WaterTextureFormatSetting.High_RGBA32F, displayName = "High - 32-bit HDR (Vanilla)" },
+                new DropdownItem<int> { value = (int)WaterTextureFormatSetting.Low_RGBA16F, displayName = "Low - 16-bit Float (-43% VRAM)" },
+            };
+        }
+
+        #endregion
     }
 }

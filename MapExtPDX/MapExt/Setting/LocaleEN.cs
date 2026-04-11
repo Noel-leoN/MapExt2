@@ -24,17 +24,33 @@ namespace MapExtPDX
         {
             var entries = new Dictionary<string, string>
             {
-                { m_Setting.GetSettingsLocaleID(), "#MapExt" }, // Main mod title
-                { m_Setting.GetOptionTabLocaleID(ModSettings.kMapSizeModeTab), "MapSize Mode" },
-                { m_Setting.GetOptionGroupLocaleID(ModSettings.kMainModeGroup), "Main MapSize Mode" },
-                { m_Setting.GetOptionGroupLocaleID(ModSettings.kResolutionGroup), "Resolution Settings" },
+                // ============================================================
+                // Mod Title
+                // ============================================================
+                { m_Setting.GetSettingsLocaleID(), "#MapExt" },
 
-                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.PatchModeChoice)), "► Select MapSize Mode" },
+                // ============================================================
+                // Tab 1: MapSize
+                // ============================================================
+                { m_Setting.GetOptionTabLocaleID(ModSettings.kMapSizeModeTab), "MapSize" },
+
+                // --- Group: Main MapSize Mode ---
+                { m_Setting.GetOptionGroupLocaleID(ModSettings.kMainModeGroup), "Main MapSize Mode" },
+                {
+                    m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.PatchModeChoice)), "► Select MapSize Mode"
+                },
                 {
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.PatchModeChoice)),
                     "⚠️ Changes require clicking the 'Apply Changes' button to take effect!\n\nMode List:\n - ModeA: 57km (4x4)  DEM:14m\n - ModeB: 28km (2x2)  DEM:7m\n - ModeC: 114km (8x8)  DEM:28m\n - Vanilla: 14km Vanilla(1x1) DEM:3.5m\n\nNotice:\n1. Larger MapSizes suffer from lower DEM resolution, resulting in rougher graphics for mountains, ramps, and waterfronts. If you have high requirements for terrain smoothness, it is recommended to build a flatter map or use landscaping tools to mask areas.\n2. The larger the MapSize, the greater the floating-point calculation deviation of the economic simulation data at the edges (causing false visuals). This is an unfixable engine limitation, especially noticeable in 114km mode. It is recommended to build active zones (Res/Com/Ind) in the center of the map.\n\n! [CRITICAL]: You MUST RESTART THE GAME after changing the map size mode before loading a save. Failure to do so will cause logic conflicts and may corrupt your save data!"
                 },
-
+                {
+                    m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.ModSettingCoreValue)),
+                    "• Current Applied MapSize"
+                },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.ModSettingCoreValue)),
+                    "The currently selected and successfully applied map size. This size refers to the edge length of the map. Unit is in meters.\n⚠️ Warning: Although MapExt has loadgame validation to prevent loading wrong size game saves, Please BACKUP ALL of your GameSaves (Strongly recommand SKYVE) before Loading them with this mod!!! Otherwise, there is a risk that the save may be corrupted due to game crashes or other special reasons."
+                },
                 { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.ApplyPatchChanges)), "► Apply Changes" },
                 {
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.ApplyPatchChanges)),
@@ -45,132 +61,38 @@ namespace MapExtPDX
                     "Applying MapSize Mode, please be patient until completion.\n\n⚠️ Please completely RESTART THE GAME after completion. Do not load any save immediately!"
                 },
 
-                // Display names for enum values in the dropdown (if not using GetPatchModeDisplayName directly)
-                // This uses the default enum value localization mechanism.
-
-                //{ m_Setting.GetEnumValueLocaleID(PatchModeSetting.ModeA), "Mode 57km (4x4) DEM:14m" },
-                //{ m_Setting.GetEnumValueLocaleID(PatchModeSetting.ModeB), "Mode 28km (2x2) DEM:7m" },
-                //{ m_Setting.GetEnumValueLocaleID(PatchModeSetting.ModeC), "Mode 114km (8x8) DEM:28m" },
-                //{ m_Setting.GetEnumValueLocaleID(PatchModeSetting.ModeD), "Mode 229km (16x16) DEM:56m" },
-                //{ m_Setting.GetEnumValueLocaleID(PatchModeSetting.None), "None (No Patches)" },
-
-                // Add back your original localization entries for other settings
-                // { m_Setting.GetOptionGroupLocaleID(Setting.kButtonGroup), "Buttons" },
-                // ...
-                { m_Setting.GetOptionGroupLocaleID(ModSettings.kInfoGroup), "▍MapSize Info" },
-                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.kInfoGroup)), "▍MapSize Info" },
-
-                //{ m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.LoadedSaveCoreValue)), "Loaded Save's MapSize" },
-                //{ m_Setting.GetOptionDescLocaleID(nameof(ModSettings.LoadedSaveCoreValue)), "Loaded Save's Map Size" },
-
+                // --- Group: Terrain-Water Optimization (Beta) ---
+                { m_Setting.GetOptionGroupLocaleID(ModSettings.kTerrainWaterOptGroup), "Terrain-Water Performance Optimization (Beta)" },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.TerrainBufferPrealloc)), "Terrain Buffer Pre-allocation" },
                 {
-                    m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.ModSettingCoreValue)),
-                    "• Current Applied MapSize"
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.TerrainBufferPrealloc)),
+                    "Pre-allocates larger GPU StructuredBuffers on the first frame based on map scale multiplier, " +
+                    "preventing runtime buffer reallocation stutter when many buildings/roads are visible.\n\n" +
+                    "★ Recommended: ON for all large maps. No visual side effects."
+                },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.TerrainCascadeThrottle)), "⚠ Terrain Cascade Throttle (Experimental)" },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.TerrainCascadeThrottle)),
+                    "Reduces GPU load by updating distant terrain cascade layers every 4 frames instead of every frame.\n\n" +
+                    "⚠ WARNING: May cause visible terrain offset/misalignment when moving the camera, " +
+                    "because cascade viewport ranges update every frame but rendering is throttled.\n\n" +
+                    "★ Recommended: OFF unless you experience severe GPU bottleneck on very large maps."
                 },
                 {
-                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.ModSettingCoreValue)),
-                    "The currently selected and successfully applied map size. This size refers to the edge length of the map. Unit is in meters.\n⚠️ Warning: Although MapExt has loadgame validation to prevent loading wrong size game saves, Please BACKUP ALL of your GameSaves (Strongly recommand SKYVE) before Loading them with this mod!!! Otherwise, there is a risk that the save may be corrupted due to game crashes or other special reasons."
-                },
-
-                { m_Setting.GetOptionGroupLocaleID(ModSettings.kEcoGroup), "▍Economy Overhaul (Beta)" },
-                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.kEcoGroup)), "• Logic & Perf. Optimization (Beta)" },
-                {
-                    m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.isEnableEconomyFix)),
-                    "• Economy Logic & Perf. Optimization (Beta Master Switch)"
+                    m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.WaterSimQuality)),
+                    "► Water Simulation Quality"
                 },
                 {
-                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.isEnableEconomyFix)),
-                    "(This patch is currently in the testing phase (Beta))\nFixes and optimizes the following systems to adapt to cities with populations in the millions:\n - Residential/Commercial/Industrial demand systems\n - Household home-search system\n - Household behavior system (consumer behavior adjustment)\n - Citizen job-search system\n - Rent calculation system\n - Resource procurement & service coverage pathfinding systems\n - Resident AI pathfinding optimization patch\n\n⚠️ [CRITICAL]: Changing this option requires a GAME RESTART to take effect safely. Otherwise, severe logical bugs will occur!"
-                },
-                {
-                    m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.EnableDemandEcoSystem)),
-                    "  ├─ RCI Demand Systems"
-                },
-                {
-                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.EnableDemandEcoSystem)),
-                    "Optimizes Residential, Commercial, and Industrial demand calculation models for a smoother experience.\n\n⚠️ Restart Required."
-                },
-                {
-                    m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.EnableJobSearchEcoSystem)),
-                    "  ├─ Job Search Systems"
-                },
-                {
-                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.EnableJobSearchEcoSystem)),
-                    "Optimizes citizen job-search behavior and matching algorithms to improve efficiency.\n\n⚠️ Incompatible with Realistic JobSearch and similar mods!\n⚠️ Restart Required."
-                },
-                {
-                    m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.EnableHouseholdPropertyEcoSystem)),
-                    "  ├─ Household, Property & Rent Systems"
-                },
-                {
-                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.EnableHouseholdPropertyEcoSystem)),
-                    "Optimizes household home-searching pathfinding; includes a realistic Land Value remake to make location values more reasonable; and heavily refactors the expensive rent adjustment mechanism.\n\n⚠️ Restart Required."
-                },
-                {
-                    m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.EnableResourceBuyerEcoSystem)),
-                    "  ├─ Consumer & Service Pathing Systems"
-                },
-                {
-                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.EnableResourceBuyerEcoSystem)),
-                    "Optimizes resource matching for citizen shopping and company restocking, greatly reducing performance overhead from extreme-distance pathfinding.\n\n⚠️ Incompatible with Realistic PathFinding and similar mods!\n⚠️ Restart Required."
-                },
-                {
-                    m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.EnableResidentAIEcoSystem)),
-                    "  └─ Resident AI Pathing System"
-                },
-                {
-                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.EnableResidentAIEcoSystem)),
-                    "Fixes citizen pathfinding AI wait time logic flaws and mitigates critical memory overflows caused by large map path calculations.\n\n⚠️ Incompatible with Realistic PathFinding and similar mods!\n⚠️ Restart Required."
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.WaterSimQuality)),
+                    "Controls the CPU/GPU update frequency of the water system to improve frame rates on large maps.\n\n" +
+                    " - Vanilla (Every Frame): Simulates every frame, highest quality but maximum performance cost.\n" +
+                    " - Reduced (No Backdrop): Simulates every frame, but disables flow calculation in the distant backdrop.\n" +
+                    " - Minimal (Every 4 Frames): Skips simulation for 3 out of 4 frames and disables visual blur. Massively reduces GPU requests, with only slightly noticeable water stuttering.\n" +
+                    " - Paused (No Flow): Completely freezes water flow calculations (water will remain static).\n\n" +
+                    "★ Tip: Applies instantly, no restart required."
                 },
 
-                { m_Setting.GetOptionGroupLocaleID(ModSettings.kNoteGroup), "▍Caution!" },
-                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.kNoteGroup)), "▍Caution!" },
-                {
-                    m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.ModeChangeWarningMessage)),
-                    "⚠️ Please completely RESTART THE GAME after applying ANY of the above settings!"
-                },
-
-                //{ m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.WarningInfo)), "Warning: Please BACKUP ALL of your GameSaves (Strongly recommand SKYVE) before Loading them with this mod!!! Otherwise, there is a risk that the save may be corrupted due to game crashes or other special reasons" },
-
-                // { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.IsModSettingCoreValueMatch)), "Loaded Save MapSize Match with ModSetting" },
-                //{ m_Setting.GetOptionDescLocaleID(nameof(ModSettings.IsModSettingCoreValueMatch)), "Loaded Save MapSize Match with ModSetting" },
-
-                { m_Setting.GetOptionTabLocaleID(ModSettings.kPerformanceToolTab), "▍Perf. Tools" },
-                { m_Setting.GetOptionGroupLocaleID(ModSettings.kPerformanceToolGroup), "▍Performance Tools" },
-                {
-                    m_Setting.GetOptionLabelLocaleID(ModSettings.kPerformanceToolTab),
-                    "※ Some Performance Tools to slightly reduce CPU/GPU pressure. (It'll be a while before this starts working.)"
-                },
-                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.NoThroughTraffic)), "No Through-Traffic" },
-                {
-                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.NoThroughTraffic)),
-                    "Disable Through-Traffic to reduce pathfinding calculation and traffic congestion. It'll take effect after the game has been running for a while."
-                },
-                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.NoDogsOnStreet)), "NoDogs: Disable OnStreet" },
-                {
-                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.NoDogsOnStreet)),
-                    "Prevents pets from appearing on streets (disables spawning, rendering and pathfinding). Logical pet entities still exist in memory."
-                },
-                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.NoDogsGeneration)), "NoDogs: Prevent New Generation" },
-                {
-                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.NoDogsGeneration)),
-                    "Blocks new household pet generation by zeroing spawn probability. Existing pets remain, but no new ones will be created for newly moved-in households."
-                },
-                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.NoDogsPurge)), "⚠ NoDogs: Purge All Existing" },
-                {
-                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.NoDogsPurge)),
-                    "⚠ WARNING: Removes ALL existing pet entities from the save for maximum performance gain. After purging, existing households will NOT re-acquire pets. Only newly moved-in households will bring dogs (if generation is not blocked)."
-                },
-                {
-                    m_Setting.GetOptionWarningLocaleID(nameof(ModSettings.NoDogsPurge)),
-                    "⚠ This will permanently remove all existing pets from your save! Existing households will NOT get new pets. Are you sure?"
-                },
-                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.DislayPetCount)), "Logical Pets Count" },
-                { m_Setting.GetOptionDescLocaleID(nameof(ModSettings.DislayPetCount)), "Count of logical pet entities currently existing on the map." },
-                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.RefreshPetCount)), "Refresh Pet Count" },
-                { m_Setting.GetOptionDescLocaleID(nameof(ModSettings.RefreshPetCount)), "Click to recalculate the count of active pet entities. This is just for statistics and does not affect the game state." },
-
-                // === Resolution Settings ===
+                // (hidden items - kept for serialization)
                 { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.TerrainResolution)), "Terrain Resolution" },
                 {
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.TerrainResolution)),
@@ -191,32 +113,86 @@ namespace MapExtPDX
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.VRAMEstimate)),
                     "Approximate GPU memory usage for terrain cascade and water simulation textures at the selected resolutions."
                 },
-
-                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.WaterSimQuality)), "Water Simulation Optimization (Beta)" },
                 {
-                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.WaterSimQuality)),
-                    "Controls the CPU/GPU update frequency of the water system to improve frame rates on large maps.\n\n" +
-                    " - Vanilla (Every Frame): Simulates every frame, highest quality but maximum performance cost.\n" +
-                    " - Reduced (No Backdrop): Simulates every frame, but disables flow calculation in the distant backdrop.\n" +
-                    " - Minimal (Every 4 Frames): Skips simulation for 3 out of 4 frames and disables visual blur. Massively reduces GPU requests, with only slightly noticeable water stuttering.\n" +
-                    " - Paused (No Flow): Completely freezes water flow calculations (water will remain static).\n\n" +
-                    "★ Tip: Applies instantly, no restart required."
+                    m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.WaterTextureFormat)),
+                    "Water Texture Precision (VRAM Opt)"
                 },
-                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.WaterTextureFormat)), "Water Texture Precision (VRAM Opt)" },
-                { m_Setting.GetOptionDescLocaleID(nameof(ModSettings.WaterTextureFormat)),
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.WaterTextureFormat)),
                     "Forces the 32-bit float simulation textures to 16-bit, saving up to 43% of VRAM and theoretically halving the bandwidth overhead.\n\n" +
                     " - High (32-bit HDR): Lossless precision, consumes ~180MB VRAM.\n" +
                     " - Low (16-bit): Lossy precision, consumes ~105MB VRAM. Minor rippling artifacts might appear when depth exceeds 100 meters due to floating point truncation.\n\n" +
                     "⚠️ Restart Required."
                 },
 
-                { m_Setting.GetOptionTabLocaleID(ModSettings.kMiscTab), "▍EconomyTweak (Beta)" },
-                { m_Setting.GetOptionGroupLocaleID(ModSettings.kMiscGroup), "▍EconomyTweak (Beta)" },
-                { m_Setting.GetOptionLabelLocaleID(ModSettings.kMiscTab), "• Economy Detail Tweak (Beta)" },
+                // --- Group: Economy Overhaul ---
+                { m_Setting.GetOptionGroupLocaleID(ModSettings.kEcoGroup), "Economy Overhaul" },
                 {
-                    m_Setting.GetOptionGroupLocaleID(ModSettings.kEconomyTweakGroup),
-                    "▍Pathfinding Optimization(Can be Adjusted In Game)"
+                    m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.isEnableEconomyFix)),
+                    "• Economy Logic and Perf. Optimization (Beta Master Switch)"
                 },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.isEnableEconomyFix)),
+                    "(This patch is currently in the testing phase (Beta))\nFixes and optimizes the following systems to adapt to cities with populations in the millions:\n - Residential/Commercial/Industrial demand systems\n - Household home-search system\n - Household behavior system (consumer behavior adjustment)\n - Citizen job-search system\n - Rent calculation system\n - Resource procurement and service coverage pathfinding systems\n - Resident AI pathfinding optimization patch\n\n⚠️ [CRITICAL]: Changing this option requires a GAME RESTART to take effect safely. Otherwise, severe logical bugs will occur!"
+                },
+
+                // --- Group: Caution ---
+                { m_Setting.GetOptionGroupLocaleID(ModSettings.kNoteGroup), "Caution!" },
+                {
+                    m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.ModeChangeWarningMessage)),
+                    "⚠️ Please completely RESTART THE GAME after applying ANY of the above settings!"
+                },
+
+                // ============================================================
+                // Tab 2: EconomyEX
+                // ============================================================
+                { m_Setting.GetOptionTabLocaleID(ModSettings.kMiscTab), "EconomyEX" },
+
+                // --- Group: Economy System Toggles ---
+                { m_Setting.GetOptionGroupLocaleID(ModSettings.kEcoSystemEnableGroup), "Economy System Toggles" },
+                {
+                    m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.EnableDemandEcoSystem)),
+                    "├─ RCI Demand Systems"
+                },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.EnableDemandEcoSystem)),
+                    "Optimizes Residential, Commercial, and Industrial demand calculation models for a smoother experience.\n\n⚠️ Restart Required."
+                },
+                {
+                    m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.EnableJobSearchEcoSystem)),
+                    "├─ Job Search Systems"
+                },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.EnableJobSearchEcoSystem)),
+                    "Optimizes citizen job-search behavior and matching algorithms to improve efficiency.\n\n⚠️ Incompatible with Realistic JobSearch and similar mods!\n⚠️ Restart Required."
+                },
+                {
+                    m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.EnableHouseholdPropertyEcoSystem)),
+                    "├─ Household, Property and Rent Systems"
+                },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.EnableHouseholdPropertyEcoSystem)),
+                    "Optimizes household home-searching pathfinding; includes a realistic Land Value remake to make location values more reasonable; and heavily refactors the expensive rent adjustment mechanism.\n\n⚠️ Restart Required."
+                },
+                {
+                    m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.EnableResourceBuyerEcoSystem)),
+                    "├─ Consumer and Service Pathing Systems"
+                },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.EnableResourceBuyerEcoSystem)),
+                    "Optimizes resource matching for citizen shopping and company restocking, greatly reducing performance overhead from extreme-distance pathfinding.\n\n⚠️ Incompatible with Realistic PathFinding and similar mods!\n⚠️ Restart Required."
+                },
+                {
+                    m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.EnableResidentAIEcoSystem)),
+                    "└─ Resident AI Pathing System"
+                },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.EnableResidentAIEcoSystem)),
+                    "Fixes citizen pathfinding AI wait time logic flaws and mitigates critical memory overflows caused by large map path calculations.\n\n⚠️ Incompatible with Realistic PathFinding and similar mods!\n⚠️ Restart Required."
+                },
+
+                // --- Group: Pathfinding Cost Limits ---
+                { m_Setting.GetOptionGroupLocaleID(ModSettings.kPathfindingGroup), "Pathfinding Cost Limits (Adjustable In-Game)" },
                 { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.ShoppingMaxCost)), "Max Shopping Pathfind Cost" },
                 {
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.ShoppingMaxCost)),
@@ -274,7 +250,8 @@ namespace MapExtPDX
                     " - All Map Sizes: 200000"
                 },
                 {
-                    m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.FindSchoolElementaryMaxCost)), "Max Elementary School Pathfind Cost"
+                    m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.FindSchoolElementaryMaxCost)),
+                    "Max Elementary School Pathfind Cost"
                 },
                 {
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.FindSchoolElementaryMaxCost)),
@@ -283,7 +260,8 @@ namespace MapExtPDX
                     " - All Map Sizes: 10000"
                 },
                 {
-                    m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.FindSchoolHighSchoolMaxCost)), "Max High School Pathfind Cost"
+                    m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.FindSchoolHighSchoolMaxCost)),
+                    "Max High School Pathfind Cost"
                 },
                 {
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.FindSchoolHighSchoolMaxCost)),
@@ -292,7 +270,8 @@ namespace MapExtPDX
                     " - All Map Sizes: 17000"
                 },
                 {
-                    m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.FindSchoolCollegeMaxCost)), "Max College Pathfind Cost"
+                    m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.FindSchoolCollegeMaxCost)),
+                    "Max College Pathfind Cost"
                 },
                 {
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.FindSchoolCollegeMaxCost)),
@@ -301,7 +280,8 @@ namespace MapExtPDX
                     " - All Map Sizes: 50000"
                 },
                 {
-                    m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.FindSchoolUniversityMaxCost)), "Max University Pathfind Cost"
+                    m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.FindSchoolUniversityMaxCost)),
+                    "Max University Pathfind Cost"
                 },
                 {
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.FindSchoolUniversityMaxCost)),
@@ -309,6 +289,9 @@ namespace MapExtPDX
                     "★ Recommended:\n" +
                     " - All Map Sizes: 100000 ~ 200000"
                 },
+
+                // --- Group: Economy Behavior and Throughput ---
+                { m_Setting.GetOptionGroupLocaleID(ModSettings.kEcoBehaviorGroup), "Economy Behavior and Throughput (Adjustable In-Game)" },
                 {
                     m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.JobSeekerCap)), "Job Search: Seeker Throughput"
                 },
@@ -322,7 +305,8 @@ namespace MapExtPDX
                     " - Over 5M pop: 1000 ~ 3000"
                 },
                 {
-                    m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.PathfindRequestCap)), "Job Search: Pathfind Throughput"
+                    m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.PathfindRequestCap)),
+                    "Job Search: Pathfind Throughput"
                 },
                 {
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.PathfindRequestCap)),
@@ -333,8 +317,10 @@ namespace MapExtPDX
                     " - 2M pop: 2000 ~ 4000\n" +
                     " - Over 5M pop: 4000 ~ 8000"
                 },
-
-                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.ShoppingTrafficReduction)), "Shopping Traffic Reduction Factor" },
+                {
+                    m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.ShoppingTrafficReduction)),
+                    "Shopping Traffic Reduction Factor"
+                },
                 {
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.ShoppingTrafficReduction)),
                     "Controls how much city population suppresses per-household shopping probability. " +
@@ -352,7 +338,10 @@ namespace MapExtPDX
                     " - Over 2M (mega city): 0.0001 ~ 0.0002\n\n" +
                     "Can be adjusted in-game. Lower values encourage consumption and boost commercial revenue."
                 },
-                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.HouseholdResourceDemandMultiplier)), "Household Resource Demand Multiplier" },
+                {
+                    m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.HouseholdResourceDemandMultiplier)),
+                    "Household Resource Demand Multiplier"
+                },
                 {
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.HouseholdResourceDemandMultiplier)),
                     "Multiplier for resource purchase amount per shopping trip. Since the mod reduces shopping frequency " +
@@ -371,7 +360,6 @@ namespace MapExtPDX
                     "If goods are instantly depleted (industrial products sold out), decrease it.\n" +
                     "Can be adjusted in-game."
                 },
-
                 { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.HomeSeekerCap)), "Home Search: Move Throughput" },
                 {
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.HomeSeekerCap)),
@@ -385,7 +373,10 @@ namespace MapExtPDX
                     "★ Indicators: If many households refuse to relocate despite better housing available, increase this value. " +
                     "If the game stutters, decrease it. Can be adjusted in-game."
                 },
-                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.HomelessSeekerCap)), "Home Search: Homeless Throughput" },
+                {
+                    m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.HomelessSeekerCap)),
+                    "Home Search: Homeless Throughput"
+                },
                 {
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.HomelessSeekerCap)),
                     "Maximum homeless households processed per frame for housing placement. " +
@@ -398,10 +389,63 @@ namespace MapExtPDX
                     "If mass homeless influx causes frame drops, decrease it. Can be adjusted in-game."
                 },
 
-                { m_Setting.GetOptionTabLocaleID(ModSettings.kDebugTab), "▍Developer Options" },
-                { m_Setting.GetOptionGroupLocaleID(ModSettings.kDebugGroup), "▍Developer Options" },
-                { m_Setting.GetOptionLabelLocaleID(ModSettings.kDebugTab), "▍Developer Options" },
-                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.DisableLoadGameValidation)), "× Disable LoadGame Validation" },
+                // ============================================================
+                // Tab 3: Perf. Tools
+                // ============================================================
+                { m_Setting.GetOptionTabLocaleID(ModSettings.kPerformanceToolTab), "Perf. Tools" },
+
+                // --- Group: NoDogs ---
+                { m_Setting.GetOptionGroupLocaleID(ModSettings.kNoDogsGroup), "NoDogs Control" },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.NoDogsOnStreet)), "NoDogs: Disable OnStreet" },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.NoDogsOnStreet)),
+                    "Prevents pets from appearing on streets (disables spawning, rendering and pathfinding). Logical pet entities still exist in memory."
+                },
+                {
+                    m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.NoDogsGeneration)),
+                    "NoDogs: Prevent New Generation"
+                },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.NoDogsGeneration)),
+                    "Blocks new household pet generation by zeroing spawn probability. Existing pets remain, but no new ones will be created for newly moved-in households."
+                },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.NoDogsPurge)), "⚠ NoDogs: Purge All Existing" },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.NoDogsPurge)),
+                    "⚠ WARNING: Removes ALL existing pet entities from the save for maximum performance gain. After purging, existing households will NOT re-acquire pets. Only newly moved-in households will bring dogs (if generation is not blocked)."
+                },
+                {
+                    m_Setting.GetOptionWarningLocaleID(nameof(ModSettings.NoDogsPurge)),
+                    "⚠ This will permanently remove all existing pets from your save! Existing households will NOT get new pets. Are you sure?"
+                },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.DislayPetCount)), "Logical Pets Count" },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.DislayPetCount)),
+                    "Count of logical pet entities currently existing on the map."
+                },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.RefreshPetCount)), "Refresh Pet Count" },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.RefreshPetCount)),
+                    "Click to recalculate the count of active pet entities. This is just for statistics and does not affect the game state."
+                },
+
+                // --- Group: No Through-Traffic ---
+                { m_Setting.GetOptionGroupLocaleID(ModSettings.kNoTrafficGroup), "Traffic Control" },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.NoThroughTraffic)), "No Through-Traffic" },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.NoThroughTraffic)),
+                    "Disable Through-Traffic to reduce pathfinding calculation and traffic congestion. It'll take effect after the game has been running for a while."
+                },
+
+                // ============================================================
+                // Tab 4: Developer Options
+                // ============================================================
+                { m_Setting.GetOptionTabLocaleID(ModSettings.kDebugTab), "Developer Options" },
+                { m_Setting.GetOptionGroupLocaleID(ModSettings.kDebugGroup), "Developer Options" },
+                {
+                    m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.DisableLoadGameValidation)),
+                    "× Disable LoadGame Validation"
+                },
                 {
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.DisableLoadGameValidation)),
                     "⚠️ WARNING! Enabled by default (unchecked). LoadGame validation prevents loading saves with incorrect map size modes, which corrupts saves!\n" +

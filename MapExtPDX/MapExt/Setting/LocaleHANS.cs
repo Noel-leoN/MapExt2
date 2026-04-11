@@ -24,17 +24,31 @@ namespace MapExtPDX
         {
             var entries = new Dictionary<string, string>
             {
-                { m_Setting.GetSettingsLocaleID(), "#大地图" }, // Main mod title
-                { m_Setting.GetOptionTabLocaleID(ModSettings.kMapSizeModeTab), "地图尺寸" },
-                { m_Setting.GetOptionGroupLocaleID(ModSettings.kMainModeGroup), "地图尺寸模式" },
-                { m_Setting.GetOptionGroupLocaleID(ModSettings.kResolutionGroup), "分辨率设置" },
+                // ============================================================
+                // Mod 标题
+                // ============================================================
+                { m_Setting.GetSettingsLocaleID(), "#大地图" },
 
+                // ============================================================
+                // Tab 1: 地图尺寸
+                // ============================================================
+                { m_Setting.GetOptionTabLocaleID(ModSettings.kMapSizeModeTab), "地图尺寸" },
+
+                // --- Group: 地图尺寸模式 ---
+                { m_Setting.GetOptionGroupLocaleID(ModSettings.kMainModeGroup), "地图尺寸模式" },
                 { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.PatchModeChoice)), "► 选择地图尺寸模式" },
                 {
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.PatchModeChoice)),
                     "⚠️ 改变模式后必须点击「应用设置」按钮生效！\n\n模式详情:\n - ModeA: 57km (4x4) DEM:14m\n - ModeB: 28km (2x2) DEM:7m\n - ModeC: 114km (8x8) DEM:28m\n - 纯净模式: 14km 原版(1x1) DEM:3.5m\n\n注意:\n1. 随着地图尺寸的增加，DEM地形分辨率会相应降低，导致部分山地、水岸与坡道显得粗糙。如果对地形平滑度要求较高，建议使用较为平坦的地图或使用模组工具进行修饰。\n2. 由于游戏底层的浮点精度限制，在地图边缘区域可能会出现模拟数据计算偏差（产生虚假的视觉效果），使用 114km 模式时尤为明显。建议将城市活动中心（住/商/工）尽量建设在地图中心区域。\n\n⚠️ 【重要警告】：在更改地图尺寸模式后，【必须重启游戏】才能安全加载存档，否则可能导致坏档！"
                 },
-
+                {
+                    m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.ModSettingCoreValue)),
+                    "• 当前已应用地图尺寸"
+                },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.ModSettingCoreValue)),
+                    "当前已选择并成功应用的地图尺寸。该尺寸指地图边长。单位为米。\n⚠️ 注意: 虽然本mod具有存档验证以防错误加载不同尺寸地图存档，但仍然强烈建议在使用本Mod加载游戏存档前，请备份好您的所有游戏存档(推荐Skyve)，以防游戏崩溃或各种奇特问题坏档！大地图制作不易，且行且珍惜。"
+                },
                 { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.ApplyPatchChanges)), "► 应用设置" },
                 {
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.ApplyPatchChanges)),
@@ -45,120 +59,38 @@ namespace MapExtPDX
                     "正在应用地图尺寸模式，请耐心等待完成。\n\n⚠️ 完成后，请务必【重启游戏】以确保设置完全生效，切勿直接读取存档！"
                 },
 
-                //{ m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.WarningInfo)), "警告: 强烈建议在使用本Mod加载游戏存档前，请备份好您的所有游戏存档(推荐Skyve)，以防游戏崩溃或各种奇特问题坏档！大地图制作不易，且行且珍惜。" },
-
-                // Display names for enum values in the dropdown (if not using GetPatchModeDisplayName directly)
-                // This uses the default enum value localization mechanism.
-
-                //{ m_Setting.GetEnumValueLocaleID(PatchModeSetting.ModeA), "Mode 57km (4x4) DEM:14m" },
-                //{ m_Setting.GetEnumValueLocaleID(PatchModeSetting.ModeB), "Mode 28km (2x2) DEM:7m" },
-                //{ m_Setting.GetEnumValueLocaleID(PatchModeSetting.ModeC), "Mode 114km (8x8) DEM:28m" },
-                //{ m_Setting.GetEnumValueLocaleID(PatchModeSetting.ModeD), "Mode 229km (16x16) DEM:56m" },
-                //{ m_Setting.GetEnumValueLocaleID(PatchModeSetting.None), "None (No Patches)" },
-
-                // Add back your original localization entries for other settings
-                // { m_Setting.GetOptionGroupLocaleID(Setting.kButtonGroup), "Buttons" },
-                // ...
-                { m_Setting.GetOptionGroupLocaleID(ModSettings.kInfoGroup), "▍地图尺寸信息" },
-                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.kInfoGroup)), "▍地图尺寸信息" },
-
-                { m_Setting.GetOptionGroupLocaleID(ModSettings.kEcoGroup), "▍经济系统修复 (Beta)" },
-                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.kEcoGroup)), "• 经济系统修复 & 性能优化 (Beta)" },
+                // --- Group: 地形-水体优化 (Beta) ---
+                { m_Setting.GetOptionGroupLocaleID(ModSettings.kTerrainWaterOptGroup), "地形-水体性能优化 (Beta)" },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.TerrainBufferPrealloc)), "地形缓冲预分配" },
                 {
-                    m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.isEnableEconomyFix)),
-                    "• 经济系统修复 & 性能优化 (Beta 总开关)"
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.TerrainBufferPrealloc)),
+                    "根据地图倍率在首帧预分配更大的 GPU StructuredBuffer，" +
+                    "避免大量建筑/道路可见时运行时动态扩容卡顿。\n\n" +
+                    "★ 建议：大地图全部开启，无视觉副作用。"
+                },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.TerrainCascadeThrottle)), "⚠ 地形级联降频 (实验性)" },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.TerrainCascadeThrottle)),
+                    "通过将远距地形级联层每4帧更新一次（而非每帧）来降低 GPU 负载。\n\n" +
+                    "⚠ 警告：移动相机时可能出现地形偏移/错位，" +
+                    "因为级联视口范围每帧更新但渲染被降频。\n\n" +
+                    "★ 建议：除非在超大地图上遇到严重 GPU 瓶颈，否则保持关闭。"
                 },
                 {
-                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.isEnableEconomyFix)),
-                    "【此补丁目前处于测试阶段 (Beta)】\n优化并修复以下系统，以适配百万人口规模的巨型城市：\n - 住宅/商业/工业需求系统\n - 家庭找房系统\n - 家庭行为系统 (消费行为修正)\n - 市民寻找工作系统\n - 租金计算系统\n - 资源采购与服务覆盖寻路系统\n - 居民AI寻路优化补丁\n\n⚠️ 【重要】：更改此项设置后，【必须重启游戏】，否则不会生效并且会引发不可预知的 Bug！"
-                },
-                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.EnableDemandEcoSystem)), "  ├─ RCI需求调节系统组" },
-                {
-                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.EnableDemandEcoSystem)),
-                    "优化居住、商业、工业需求计算模型，使之更平滑合理，并匹配百万人口规模的巨型城市。\n\n⚠️ 修改后需重启游戏生效。"
-                },
-                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.EnableJobSearchEcoSystem)), "  ├─ 找工作系统组" },
-                {
-                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.EnableJobSearchEcoSystem)),
-                    "优化市民找工作行为与匹配算法，提升就业匹配效率。\n\n⚠️ 与 Realistic JobSearch 等 Mod 不兼容！\n⚠️ 修改后需重启游戏生效。"
+                    m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.WaterSimQuality)),
+                    "► 水体模拟质量"
                 },
                 {
-                    m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.EnableHouseholdPropertyEcoSystem)),
-                    "  ├─ 找房与租金系统组"
-                },
-                {
-                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.EnableHouseholdPropertyEcoSystem)),
-                    "优化家庭找房寻路计算；包含真实地价和租金计算（Land Value）重构，使之更加合理。\n\n⚠️ 修改后需重启游戏生效。"
-                },
-                {
-                    m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.EnableResourceBuyerEcoSystem)),
-                    "  ├─ 消费采购与服务覆盖寻路系统组"
-                },
-                {
-                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.EnableResourceBuyerEcoSystem)),
-                    "优化市民购物与企业采购的资源匹配，并优化服务覆盖寻路，大幅降低超远路程规划产生的性能开销。\n\n⚠️ 与 Realistic PathFinding 等寻路 Mod 不兼容！\n⚠️ 修改后需重启游戏生效。"
-                },
-                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.EnableResidentAIEcoSystem)), "  └─ 居民AI寻路优化补丁" },
-                {
-                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.EnableResidentAIEcoSystem)),
-                    "修复市民寻路AI等待时间的逻辑缺陷，缓解大地图底层寻路内存溢出的问题。\n\n⚠️ 与 Realistic PathFinding 等寻路 Mod 不兼容！\n⚠️ 修改后需重启游戏生效。"
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.WaterSimQuality)),
+                    "控制水系统 CPU 和 GPU 计算的更新频率，以提升大地图的帧率和游戏速度。\n\n" +
+                    " - Vanilla: 原版高精度：每帧调度计算，效果最好，消耗最大。\n" +
+                    " - Reduced: 降低消耗：每帧计算并传播水体，但关闭背景大地图边缘的水流计算。\n" +
+                    " - Minimal: 极简性能：每四帧跳过计算并显式关闭水面模糊和后处理效果，将大幅度降低 GPU 请求频率，可能会有极不明显的水流卡顿。\n" +
+                    " - Paused: 暂停流体：完全冻结水体流动计算（水面将静止但水位不会出现大变化）。\n\n" +
+                    "★ 提示：该选项即时生效无须重启。"
                 },
 
-                { m_Setting.GetOptionGroupLocaleID(ModSettings.kNoteGroup), "▍警告" },
-                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.kNoteGroup)), "▍警告" },
-                {
-                    m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.ModeChangeWarningMessage)),
-                    "⚠️ 更改上述【任一】选项后，请务必【重启游戏】再读取存档！"
-                },
-
-                //{ m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.LoadedSaveCoreValue)), "Loaded Save's MapSize" },
-                //{ m_Setting.GetOptionDescLocaleID(nameof(ModSettings.LoadedSaveCoreValue)), "Loaded Save's Map Size" },
-
-                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.ModSettingCoreValue)), "• 当前已应用地图尺寸" },
-                {
-                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.ModSettingCoreValue)),
-                    "当前已选择并成功应用的地图尺寸。该尺寸指地图边长。单位为米。\r\n  ⚠️ 注意: 虽然本mod具有存档验证以防错误加载不同尺寸地图存档，但仍然强烈建议在使用本Mod加载游戏存档前，请备份好您的所有游戏存档(推荐Skyve)，以防游戏崩溃或各种奇特问题坏档！大地图制作不易，且行且珍惜。"
-                },
-
-                // { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.IsModSettingCoreValueMatch)), "Loaded Save MapSize Match with ModSetting" },
-                //{ m_Setting.GetOptionDescLocaleID(nameof(ModSettings.IsModSettingCoreValueMatch)), "Loaded Save MapSize Match with ModSetting" },
-
-                { m_Setting.GetOptionTabLocaleID(ModSettings.kPerformanceToolTab), "▍性能小工具" },
-                { m_Setting.GetOptionGroupLocaleID(ModSettings.kPerformanceToolGroup), "▍性能小工具" },
-                {
-                    m_Setting.GetOptionLabelLocaleID(ModSettings.kPerformanceToolTab),
-                    "※ 一些性能工具，可能稍微降低一点CPU/显卡压力. (需要运行一段时间生效)"
-                },
-                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.NoThroughTraffic)), "禁止过境交通" },
-                {
-                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.NoThroughTraffic)),
-                    "禁止所有过境交通工具出现，降低寻路计算量和交通拥堵. (可能需要运行一段时间生效)"
-                },
-                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.NoDogsOnStreet)), "NoDogs: 禁止外出" },
-                {
-                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.NoDogsOnStreet)),
-                    "禁止宠物外出上街（关闭生成、渲染与寻路）。逻辑宠物实体仍存在于内存中。"
-                },
-                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.NoDogsGeneration)), "NoDogs: 阻止新生成" },
-                {
-                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.NoDogsGeneration)),
-                    "将新家庭的宠物生成概率归零，阻止新移民携带宠物。已有宠物保留不变。"
-                },
-                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.NoDogsPurge)), "⚠ NoDogs: 清除所有存量" },
-                {
-                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.NoDogsPurge)),
-                    "⚠ 警告：移除存档中所有已有宠物实体，最大化性能提升。清除后已有家庭不会再获得宠物，只有新搬入的家庭才会自带（若未阻止生成）。"
-                },
-                {
-                    m_Setting.GetOptionWarningLocaleID(nameof(ModSettings.NoDogsPurge)),
-                    "⚠ 这将永久移除存档中所有现有宠物！已有家庭不会再获得新宠物。确定继续吗？"
-                },
-                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.DislayPetCount)), "当前逻辑宠物数" },
-                { m_Setting.GetOptionDescLocaleID(nameof(ModSettings.DislayPetCount)), "地图上当前的逻辑宠物实体数量统计。" },
-                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.RefreshPetCount)), "刷新宠物统计" },
-                { m_Setting.GetOptionDescLocaleID(nameof(ModSettings.RefreshPetCount)), "点击以重新计算地图上的活动宠物实体数量。这只是一个统计，对游戏状态无任何影响。" },
-
-                // === 分辨率设置 ===
+                // (隐藏项 - 保留用于序列化)
                 { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.TerrainResolution)), "地形分辨率" },
                 {
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.TerrainResolution)),
@@ -179,35 +111,74 @@ namespace MapExtPDX
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.VRAMEstimate)),
                     "当前分辨率设置下地形级联纹理和水体模拟纹理的大致GPU显存占用量。"
                 },
-                
-                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.WaterSimQuality)), "水体模拟优化 (Beta)" },
-                {
-                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.WaterSimQuality)),
-                    "控制水系统 CPU 和 GPU 计算的更新频率，以提升大地图的帧率和游戏速度。\n\n" +
-                    " - Vanilla: 原版高精度：每帧调度计算，效果最好，消耗最大。\n" +
-                    " - Reduced: 降低消耗：每帧计算并传播水体，但关闭背景大地图边缘的水流计算。\n" +
-                    " - Minimal: 极简性能：每四帧跳过计算并显式关闭水面模糊和后处理效果，将大幅度降低 GPU 请求频率，可能会有极不明显的水流卡顿。\n" +
-                    " - Paused: 暂停流体：完全冻结水体流动计算（水面将静止但水位不会出现大变化）。\n\n" +
-                    "★ 提示：该选项即时生效无须重启。"
-                },
                 { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.WaterTextureFormat)), "水模拟贴图精度 (VRAM 优化)" },
-                { m_Setting.GetOptionDescLocaleID(nameof(ModSettings.WaterTextureFormat)),
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.WaterTextureFormat)),
                     "将原本 32 浮点的模拟通道数据强制压缩到 16 浮点，省去高达 43% 的显存占用并将理论上的宽带开销减半，极大提升 GPU 模拟性能限制。\n\n" +
                     " - 原版 HDR (32-bit)：精度高无损，消耗约 180MB 显存。 \n" +
                     " - 性能模式 (16-bit)：精度有损，消耗约 105MB 显存。在水深大于 100 米时边缘可能会因截断出现计算波纹（通常很少见）。\n\n" +
                     "⚠️ 修改后需【重启游戏】或重新读取存档生效。"
                 },
 
-                { m_Setting.GetOptionTabLocaleID(ModSettings.kMiscTab), "▍经济补丁设置 (Beta)" },
-                { m_Setting.GetOptionGroupLocaleID(ModSettings.kMiscGroup), "▍经济补丁设置 (Beta)" },
-                { m_Setting.GetOptionLabelLocaleID(ModSettings.kMiscTab), "• 经济补丁设置 (Beta)" },
-                /*{ m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.LandValueRemake)), "• 现实地价重制版 (当前尚不可用)" },
+                // --- Group: 经济系统修复 ---
+                { m_Setting.GetOptionGroupLocaleID(ModSettings.kEcoGroup), "经济系统修复" },
                 {
-                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.LandValueRemake)),
-                    "重新制作地价系统，恢复到较早版本的深度模拟，修复原始地价数值过高错误，并参考现实经济模型，实现住工商/高中低密度/人口/地段/学区/景观/财富差异化地价因子。"
-                },*/
+                    m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.isEnableEconomyFix)),
+                    "• 经济系统修复与性能优化 (Beta 总开关)"
+                },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.isEnableEconomyFix)),
+                    "【此补丁目前处于测试阶段 (Beta)】\n优化并修复以下系统，以适配百万人口规模的巨型城市：\n - 住宅/商业/工业需求系统\n - 家庭找房系统\n - 家庭行为系统 (消费行为修正)\n - 市民寻找工作系统\n - 租金计算系统\n - 资源采购与服务覆盖寻路系统\n - 居民AI寻路优化补丁\n\n⚠️ 【重要】：更改此项设置后，【必须重启游戏】，否则不会生效并且会引发不可预知的 Bug！"
+                },
 
-                { m_Setting.GetOptionGroupLocaleID(ModSettings.kEconomyTweakGroup), "▍大地图寻路优化(可于游戏中实时调节)" },
+                // --- Group: 警告 ---
+                { m_Setting.GetOptionGroupLocaleID(ModSettings.kNoteGroup), "警告" },
+                {
+                    m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.ModeChangeWarningMessage)),
+                    "⚠️ 更改上述【任一】选项后，请务必【重启游戏】再读取存档！"
+                },
+
+                // ============================================================
+                // Tab 2: EconomyEX
+                // ============================================================
+                { m_Setting.GetOptionTabLocaleID(ModSettings.kMiscTab), "EconomyEX" },
+
+                // --- Group: 经济子系统开关 ---
+                { m_Setting.GetOptionGroupLocaleID(ModSettings.kEcoSystemEnableGroup), "经济子系统开关" },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.EnableDemandEcoSystem)), "├─ RCI需求调节系统组" },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.EnableDemandEcoSystem)),
+                    "优化居住、商业、工业需求计算模型，使之更平滑合理，并匹配百万人口规模的巨型城市。\n\n⚠️ 修改后需重启游戏生效。"
+                },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.EnableJobSearchEcoSystem)), "├─ 找工作系统组" },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.EnableJobSearchEcoSystem)),
+                    "优化市民找工作行为与匹配算法，提升就业匹配效率。\n\n⚠️ 与 Realistic JobSearch 等 Mod 不兼容！\n⚠️ 修改后需重启游戏生效。"
+                },
+                {
+                    m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.EnableHouseholdPropertyEcoSystem)),
+                    "├─ 找房与租金系统组"
+                },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.EnableHouseholdPropertyEcoSystem)),
+                    "优化家庭找房寻路计算；包含真实地价和租金计算（Land Value）重构，使之更加合理。\n\n⚠️ 修改后需重启游戏生效。"
+                },
+                {
+                    m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.EnableResourceBuyerEcoSystem)),
+                    "├─ 消费采购与服务覆盖寻路系统组"
+                },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.EnableResourceBuyerEcoSystem)),
+                    "优化市民购物与企业采购的资源匹配，并优化服务覆盖寻路，大幅降低超远路程规划产生的性能开销。\n\n⚠️ 与 Realistic PathFinding 等寻路 Mod 不兼容！\n⚠️ 修改后需重启游戏生效。"
+                },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.EnableResidentAIEcoSystem)), "└─ 居民AI寻路优化补丁" },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.EnableResidentAIEcoSystem)),
+                    "修复市民寻路AI等待时间的逻辑缺陷，缓解大地图底层寻路内存溢出的问题。\n\n⚠️ 与 Realistic PathFinding 等寻路 Mod 不兼容！\n⚠️ 修改后需重启游戏生效。"
+                },
+
+                // --- Group: 寻路成本上限 ---
+                { m_Setting.GetOptionGroupLocaleID(ModSettings.kPathfindingGroup), "寻路成本上限 (可于游戏中实时调节)" },
                 { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.ShoppingMaxCost)), "购物最高寻路成本" },
                 {
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.ShoppingMaxCost)),
@@ -221,7 +192,7 @@ namespace MapExtPDX
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.CompanyShoppingMaxCost)),
                     "控制公司（工厂/商店）寻找材料并呼叫货车送货的最大搜索范围。由于公司补货通常不局限于本地，极高数值（最大20万）可允许公司在全图范围内寻找资源，防止在大地图中出现材料荒。\n" +
                     "★ 建议值：\n" +
-                    " - 全地形全局通用：200000"
+                    " - 全地图通用：200000"
                 },
                 { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.LeisureMaxCost)), "休闲观光最高寻路成本" },
                 {
@@ -244,43 +215,46 @@ namespace MapExtPDX
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.FindJobMaxCost)),
                     "控制市民为了寻求工作岗位，最多愿意跨越多大规模的地图。数值越高（最大20万），大地图远郊孤岛小镇越容易招到工人。该行为频率极低，建议直接拉满（对性能影响不明显）。\n" +
                     "★ 建议值：\n" +
-                    " - 全地形全局通用：200000"
+                    " - 全地图通用：200000"
                 },
                 { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.FindHomeMaxCost)), "找房搬家最高寻路成本" },
                 {
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.FindHomeMaxCost)),
                     "控制市民搬家找房时的最大搜索范围上限。提升此数值可让市民跨越整张特大地图寻找新住宅，避免偏远新城无人入住。该行为频率较低，建议直接拉满。\n" +
                     "★ 建议值：\n" +
-                    " - 全地形全局通用：200000"
+                    " - 全地图通用：200000"
                 },
                 { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.FindSchoolElementaryMaxCost)), "找小学最高寻路成本" },
                 {
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.FindSchoolElementaryMaxCost)),
                     "控制小学生寻找学校愿意走的最远路线开销。较小的值能强迫小学生只能就近入学。\n" +
                     "★ 建议值：\n" +
-                    " - 全地形全局通用：10000"
+                    " - 全地图通用：10000"
                 },
                 { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.FindSchoolHighSchoolMaxCost)), "找高中最高寻路成本" },
                 {
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.FindSchoolHighSchoolMaxCost)),
                     "控制中学生寻找高中能够跨越的最大路线开销。\n" +
                     "★ 建议值：\n" +
-                    " - 全地形全局通用：17000"
+                    " - 全地图通用：17000"
                 },
                 { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.FindSchoolCollegeMaxCost)), "找学院最高寻路成本" },
                 {
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.FindSchoolCollegeMaxCost)),
                     "控制寻找学院(大专)级别的最大范围。\n" +
                     "★ 建议值：\n" +
-                    " - 全地形全局通用：50000"
+                    " - 全地图通用：50000"
                 },
                 { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.FindSchoolUniversityMaxCost)), "找大学最高寻路成本" },
                 {
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.FindSchoolUniversityMaxCost)),
                     "控制寻找大学的最大范围。如果是全图唯一的大学城城邦，建议拉满以覆盖全图每个角落。\n" +
                     "★ 建议值：\n" +
-                    " - 全地形全局通用：100000 ~ 200000"
+                    " - 全地图通用：100000 ~ 200000"
                 },
+
+                // --- Group: 经济行为与吞吐量 ---
+                { m_Setting.GetOptionGroupLocaleID(ModSettings.kEcoBehaviorGroup), "经济行为与吞吐量 (可于游戏中实时调节)" },
                 { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.JobSeekerCap)), "找工作系统：求职吞吐量" },
                 {
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.JobSeekerCap)),
@@ -301,7 +275,6 @@ namespace MapExtPDX
                     " - 200万人口：2000 ~ 4000\n" +
                     " - 500万以上人口：4000 ~ 8000"
                 },
-
                 { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.ShoppingTrafficReduction)), "购物概率人口压制系数" },
                 {
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.ShoppingTrafficReduction)),
@@ -338,7 +311,6 @@ namespace MapExtPDX
                     "如果商品供不应求（工业产品被秒光），请降低此值。\n" +
                     "可于游戏中实时调节。"
                 },
-
                 { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.HomeSeekerCap)), "找房系统：搬家吞吐量" },
                 {
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.HomeSeekerCap)),
@@ -364,19 +336,55 @@ namespace MapExtPDX
                     "若大量流浪同时涌入导致帧率骤降，请降低此值。可于游戏中实时调节。"
                 },
 
-                { m_Setting.GetOptionTabLocaleID(ModSettings.kDebugTab), "▍开发者选项" },
-                { m_Setting.GetOptionGroupLocaleID(ModSettings.kDebugGroup), "▍开发者选项" },
-                { m_Setting.GetOptionLabelLocaleID(ModSettings.kDebugTab), "▍开发者选项" },
+                // ============================================================
+                // Tab 3: 性能工具
+                // ============================================================
+                { m_Setting.GetOptionTabLocaleID(ModSettings.kPerformanceToolTab), "性能工具" },
+
+                // --- Group: NoDogs ---
+                { m_Setting.GetOptionGroupLocaleID(ModSettings.kNoDogsGroup), "宠物控制 (NoDogs)" },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.NoDogsOnStreet)), "NoDogs: 禁止外出" },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.NoDogsOnStreet)),
+                    "禁止宠物外出上街（关闭生成、渲染与寻路）。逻辑宠物实体仍存在于内存中。"
+                },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.NoDogsGeneration)), "NoDogs: 阻止新生成" },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.NoDogsGeneration)),
+                    "将新家庭的宠物生成概率归零，阻止新移民携带宠物。已有宠物保留不变。"
+                },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.NoDogsPurge)), "⚠ NoDogs: 清除所有存量" },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.NoDogsPurge)),
+                    "⚠ 警告：移除存档中所有已有宠物实体，最大化性能提升。清除后已有家庭不会再获得宠物，只有新搬入的家庭才会自带（若未阻止生成）。"
+                },
+                {
+                    m_Setting.GetOptionWarningLocaleID(nameof(ModSettings.NoDogsPurge)),
+                    "⚠ 这将永久移除存档中所有现有宠物！已有家庭不会再获得新宠物。确定继续吗？"
+                },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.DislayPetCount)), "当前逻辑宠物数" },
+                { m_Setting.GetOptionDescLocaleID(nameof(ModSettings.DislayPetCount)), "地图上当前的逻辑宠物实体数量统计。" },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.RefreshPetCount)), "刷新宠物统计" },
+                { m_Setting.GetOptionDescLocaleID(nameof(ModSettings.RefreshPetCount)), "点击以重新计算地图上的活动宠物实体数量。这只是一个统计，对游戏状态无任何影响。" },
+
+                // --- Group: 过境交通控制 ---
+                { m_Setting.GetOptionGroupLocaleID(ModSettings.kNoTrafficGroup), "过境交通控制" },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.NoThroughTraffic)), "禁止过境交通" },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.NoThroughTraffic)),
+                    "禁止所有过境交通工具出现，降低寻路计算量和交通拥堵. (可能需要运行一段时间生效)"
+                },
+
+                // ============================================================
+                // Tab 4: 开发者选项
+                // ============================================================
+                { m_Setting.GetOptionTabLocaleID(ModSettings.kDebugTab), "开发者选项" },
+                { m_Setting.GetOptionGroupLocaleID(ModSettings.kDebugGroup), "开发者选项" },
                 { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.DisableLoadGameValidation)), "× 禁止游戏读取存档验证" },
                 {
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.DisableLoadGameValidation)),
-                    "⚠️ 警告！默认(不勾选)为启用游戏读取存档验证，以防止错误设置地图尺寸模式而读取不同尺寸的存档造成坏档！\r\n  该选项勾选后将取消验证，仅用于使用旧版MapExt mod特殊尺寸模式而无法正确识别的情况。使用旧版存档请务必确认'地图尺寸模式'是否设置正确，否则可能坏档！ \r\n 务必在使用该功能前备份您的存档"
+                    "⚠️ 警告！默认(不勾选)为启用游戏读取存档验证，以防止错误设置地图尺寸模式而读取不同尺寸的存档造成坏档！\n该选项勾选后将取消验证，仅用于使用旧版MapExt mod特殊尺寸模式而无法正确识别的情况。使用旧版存档请务必确认'地图尺寸模式'是否设置正确，否则可能坏档！\n务必在使用该功能前备份您的存档"
                 },
-
-                //{ m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.ApplyAirwayRegenerate)), "应用飞行航道重建" },
-                //{ m_Setting.GetOptionGroupLocaleID(ModSettings.kAirwayGroup), "飞行航道重建工具" },
-                //{ m_Setting.GetOptionDescLocaleID(nameof(ModSettings.ApplyAirwayRegenerate)), "可以在添加飞行航道外部连接点后，点击此处使之生效." },
-                //{ m_Setting.GetOptionWarningLocaleID(nameof(ModSettings.ApplyAirwayRegenerate)), "所有飞行航道将立即重建。" },
             };
             return entries;
         }

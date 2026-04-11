@@ -62,6 +62,8 @@ namespace MapExtPDX.MapExt.Core
                 // PatchSet1:TerrainSystem
                 { "TerrainSystemPatch", (h) => h.CreateClassProcessor(typeof(TerrainSystemPatches)).Patch() },
                 { "TerrainToR16Patch", (h) => PatchHelpers.PatchAllMethodsInType(h, typeof(TerrainToR16Patch)) },
+                // v2.x.x新增: 远距级联降频优化 (Phase 2.1)
+                { "TerrainCascadeThrottle", (h) => h.CreateClassProcessor(typeof(TerrainSystem_RenderCascades_Patch)).Patch() },
 
                 // PatchSet2:WaterSystem
                 { "WaterSystemPatch_Static", (h) => h.CreateClassProcessor(typeof(WaterSystemMethodPatches)).Patch() },
@@ -125,6 +127,7 @@ namespace MapExtPDX.MapExt.Core
                     {
                         "TerrainSystemPatch",
                         "TerrainToR16Patch",
+                        "TerrainCascadeThrottle",
                         "WaterSystemPatch_Static",
                         "WaterSimulationPatch_Static",
                         "WaterSimulationLegacyPatch_Static",
@@ -143,6 +146,7 @@ namespace MapExtPDX.MapExt.Core
                     {
                         "TerrainSystemPatch",
                         "TerrainToR16Patch",
+                        "TerrainCascadeThrottle",
                         "WaterSystemPatch_Static",
                         "WaterSimulationPatch_Static",
                         "WaterSimulationLegacyPatch_Static",
@@ -161,6 +165,7 @@ namespace MapExtPDX.MapExt.Core
                     {
                         "TerrainSystemPatch",
                         "TerrainToR16Patch",
+                        "TerrainCascadeThrottle",
                         "WaterSystemPatch_Static",
                         "WaterSimulationPatch_Static",
                         "WaterSimulationLegacyPatch_Static",
