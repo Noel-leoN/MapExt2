@@ -310,14 +310,19 @@ namespace MapExtPDX
         // ==========================================
         // 分辨率设置
         // ==========================================
-        [SettingsUISection(kMapSizeModeTab, kResolutionGroup)]
-        [SettingsUIDropdown(typeof(ModSettings), nameof(GetTerrainResolutionItems))]
-        [SettingsUIHideByCondition(typeof(ModSettings), nameof(IsNotInMainMenu))]
+        // 地形分辨率: 8192 与水模拟级联不兼容，当前仅 4096 可用
+        // 水纹理分辨率: Compute Shader 存在纹理尺寸隐式依赖，当前仅 2048 可用
+        // 待自定义 Compute Shader (Phase 3) 实现后恢复 UI
+        // [SettingsUISection(kMapSizeModeTab, kResolutionGroup)]
+        // [SettingsUIDropdown(typeof(ModSettings), nameof(GetTerrainResolutionItems))]
+        // [SettingsUIHideByCondition(typeof(ModSettings), nameof(IsNotInMainMenu))]
+        [SettingsUIHidden]
         public TerrainResolutionSetting TerrainResolution { get; set; }
 
-        [SettingsUISection(kMapSizeModeTab, kResolutionGroup)]
-        [SettingsUIDropdown(typeof(ModSettings), nameof(GetWaterResolutionItems))]
-        [SettingsUIHideByCondition(typeof(ModSettings), nameof(IsNotInMainMenu))]
+        // [SettingsUISection(kMapSizeModeTab, kResolutionGroup)]
+        // [SettingsUIDropdown(typeof(ModSettings), nameof(GetWaterResolutionItems))]
+        // [SettingsUIHideByCondition(typeof(ModSettings), nameof(IsNotInMainMenu))]
+        [SettingsUIHidden]
         public WaterResolutionSetting WaterResolution { get; set; }
 
         private WaterSimQualitySetting m_waterSimQuality = WaterSimQualitySetting.Vanilla_EveryFrame;
@@ -341,7 +346,9 @@ namespace MapExtPDX
         [SettingsUIHidden]
         public WaterTextureFormatSetting WaterTextureFormat { get; set; }
 
-        [SettingsUISection(kMapSizeModeTab, kResolutionGroup)]
+        // 分辨率选项隐藏后，VRAM 估算也无需显示
+        // [SettingsUISection(kMapSizeModeTab, kResolutionGroup)]
+        [SettingsUIHidden]
         public string VRAMEstimate => $"Est. VRAM: {MapExt.Core.ResolutionManager.GetVRAMEstimate()}";
 
         public DropdownItem<int>[] GetTerrainResolutionItems()
@@ -359,9 +366,10 @@ namespace MapExtPDX
             return new DropdownItem<int>[]
             {
                 new DropdownItem<int> { value = (int)WaterResolutionSetting.Vanilla_2048, displayName = "2048×2048 (Vanilla)" },
-                new DropdownItem<int> { value = (int)WaterResolutionSetting.Medium_1024, displayName = "1024×1024 (GPU -75%)" },
-                new DropdownItem<int> { value = (int)WaterResolutionSetting.Low_512, displayName = "512×512 (GPU -93%)" },
-                // 256 禁用: ActiveTiles 网格仅 1×1，裁剪无效甚至退化
+                // 计算着色器内部存在纹理尺寸硬编码依赖，降低水分辨率导致水体偏移/放大
+                // 需要自定义计算着色器 (Phase 3) 才能实现
+                // new DropdownItem<int> { value = (int)WaterResolutionSetting.Medium_1024, displayName = "1024×1024 (GPU -75%)" },
+                // new DropdownItem<int> { value = (int)WaterResolutionSetting.Low_512, displayName = "512×512 (GPU -93%)" },
                 // new DropdownItem<int> { value = (int)WaterResolutionSetting.Ultra_256, displayName = "256×256 (Ultra Performance)" },
             };
         }
