@@ -10,7 +10,7 @@ namespace MapExt2
     public class ModAssemblyInfo
     {
         public const string Name        = "MapExt2";
-        public const string Version     = "3.0.0";
+        public const string Version     = "2.5.0";
         public const string Title       = "MapExt: Big Map, Economy and Performance";
         public const string Description = "MapSize Extend 28/57/114km";
     }

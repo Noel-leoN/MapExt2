@@ -89,7 +89,8 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
             else
             {
 #if DEBUG
-                ModLog.Debug(Tag, $"GetTerrainBounds_Transpiler applied {patches} patch(es).(Expected value: {newSize})");
+                ModLog.Debug(Tag,
+                    $"GetTerrainBounds_Transpiler applied {patches} patch(es).(Expected value: {newSize})");
 #endif
             }
 
@@ -119,7 +120,8 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
                 if (codes[i].opcode == OpCodes.Ldc_R4 && (float)codes[i].operand == baseSize)
                 {
 #if DEBUG
-                    ModLog.Debug(Tag, $"Patching instruction {i} in GetHeightData: Replacing {baseSize} with {newSize}");
+                    ModLog.Debug(Tag,
+                        $"Patching instruction {i} in GetHeightData: Replacing {baseSize} with {newSize}");
 #endif
                     // Replace the operand (the constant value) with our new dimension
                     codes[i].operand = newSize;
@@ -175,11 +177,11 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
                 var bufferTargets = new (string fieldName, int newCapacity)[]
                 {
                     ("m_BuildingInstanceData", 10000 * cv),
-                    ("m_LaneInstanceData",     10000 * cv),
+                    ("m_LaneInstanceData", 10000 * cv),
                     ("m_LaneRaisedInstanceData", 10000 * cv),
-                    ("m_TriangleInstanceData",  1000 * cv),
-                    ("m_EdgeInstanceData",      1000 * cv),
-                    ("m_ClipMapBuffer",         10000 * cv),
+                    ("m_TriangleInstanceData", 1000 * cv),
+                    ("m_EdgeInstanceData", 1000 * cv),
+                    ("m_ClipMapBuffer", 10000 * cv),
                 };
 
                 int expanded = 0;
@@ -264,7 +266,6 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
 #endif
             }
         }
-
     }
 
 
@@ -329,7 +330,7 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
                 }
             }
 
-            if (s_CascadeRangesField == null) return;
+            if (s_CascadeRangesField == null || s_ShaderCascadeRangesField == null) return;
 
             int baseLod = TerrainSystem.baseLod;
             var ranges = (float4[])s_CascadeRangesField.GetValue(__instance);
@@ -341,8 +342,6 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
 
             for (int lod = baseLod + 2; lod < 4; lod++)
             {
-                if (lod < 0 || lod >= 4) continue;
-
                 // 恢复上次成功渲染时的范围
                 ranges[lod] = s_LastRenderedRanges[lod];
 
@@ -384,6 +383,7 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
             {
                 s_LastRenderedRanges[lod] = ranges[lod];
             }
+
             s_HasSavedRanges = true;
         }
     }
