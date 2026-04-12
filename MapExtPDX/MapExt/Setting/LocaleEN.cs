@@ -414,9 +414,14 @@ namespace MapExtPDX
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.NoDogsPurge)),
                     "⚠ WARNING: Removes ALL existing pet entities from the save for maximum performance gain. After purging, existing households will NOT re-acquire pets. Only newly moved-in households will bring dogs (if generation is not blocked)."
                 },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.ApplyNoDogs)), "► Apply NoDogs Settings" },
                 {
-                    m_Setting.GetOptionWarningLocaleID(nameof(ModSettings.NoDogsPurge)),
-                    "⚠ This will permanently remove all existing pets from your save! Existing households will NOT get new pets. Are you sure?"
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.ApplyNoDogs)),
+                    "Click to apply the above NoDogs checkbox selections. Changes will NOT take effect until this button is pressed."
+                },
+                {
+                    m_Setting.GetOptionWarningLocaleID(nameof(ModSettings.ApplyNoDogs)),
+                    "Apply NoDogs settings now? If 'Purge All Existing' is checked, all pets will be permanently removed from your save!"
                 },
                 { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.DislayPetCount)), "Logical Pets Count" },
                 {
@@ -438,10 +443,10 @@ namespace MapExtPDX
                 },
 
                 // ============================================================
-                // Tab 4: Developer Options
+                // Tab 4: Debug
                 // ============================================================
-                { m_Setting.GetOptionTabLocaleID(ModSettings.kDebugTab), "Developer Options" },
-                { m_Setting.GetOptionGroupLocaleID(ModSettings.kDebugGroup), "Developer Options" },
+                { m_Setting.GetOptionTabLocaleID(ModSettings.kDebugTab), "Debug" },
+                { m_Setting.GetOptionGroupLocaleID(ModSettings.kDebugGroup), "Debug" },
                 {
                     m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.DisableLoadGameValidation)),
                     "× Disable LoadGame Validation"

@@ -375,42 +375,31 @@ namespace MapExtPDX
         public bool NoDogsOnStreet
         {
             get => m_NoDogsOnStreet;
-            set
-            {
-                if (m_NoDogsOnStreet != value)
-                {
-                    m_NoDogsOnStreet = value;
-                    UpdateNoDogsSystemStates();
-                }
-            }
+            set => m_NoDogsOnStreet = value;
         }
 
         [SettingsUISection(kPerformanceToolTab, kNoDogsGroup)]
         public bool NoDogsGeneration
         {
             get => m_NoDogsGeneration;
-            set
-            {
-                if (m_NoDogsGeneration != value)
-                {
-                    m_NoDogsGeneration = value;
-                    UpdateNoDogsSystemStates();
-                }
-            }
+            set => m_NoDogsGeneration = value;
         }
 
         [SettingsUISection(kPerformanceToolTab, kNoDogsGroup)]
-        [SettingsUIConfirmation]
         public bool NoDogsPurge
         {
             get => m_NoDogsPurge;
+            set => m_NoDogsPurge = value;
+        }
+
+        [SettingsUISection(kPerformanceToolTab, kNoDogsGroup)]
+        [SettingsUIButton]
+        [SettingsUIConfirmation]
+        public bool ApplyNoDogs
+        {
             set
             {
-                if (m_NoDogsPurge != value)
-                {
-                    m_NoDogsPurge = value;
-                    UpdateNoDogsSystemStates();
-                }
+                UpdateNoDogsSystemStates();
             }
         }
 
@@ -427,6 +416,12 @@ namespace MapExtPDX
             if (patchSystem != null)
             {
                 patchSystem.ApplySettings(m_NoDogsGeneration, m_NoDogsPurge);
+            }
+
+            // Purge 是一次性操作，执行后自动取消勾选
+            if (m_NoDogsPurge)
+            {
+                m_NoDogsPurge = false;
             }
 
             ModLog.Patch(Tag, "NoDogs 2.0 补丁已应用 (全局并行)");

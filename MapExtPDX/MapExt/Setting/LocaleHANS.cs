@@ -358,9 +358,14 @@ namespace MapExtPDX
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.NoDogsPurge)),
                     "⚠ 警告：移除存档中所有已有宠物实体，最大化性能提升。清除后已有家庭不会再获得宠物，只有新搬入的家庭才会自带（若未阻止生成）。"
                 },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.ApplyNoDogs)), "► 应用 NoDogs 设置" },
                 {
-                    m_Setting.GetOptionWarningLocaleID(nameof(ModSettings.NoDogsPurge)),
-                    "⚠ 这将永久移除存档中所有现有宠物！已有家庭不会再获得新宠物。确定继续吗？"
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.ApplyNoDogs)),
+                    "点击后上方勾选才会生效。未点击此按钮前，勾选不会对游戏产生任何影响。"
+                },
+                {
+                    m_Setting.GetOptionWarningLocaleID(nameof(ModSettings.ApplyNoDogs)),
+                    "确认应用 NoDogs 设置？若勾选了「清除所有存量」，所有宠物将被永久移除！"
                 },
                 { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.DislayPetCount)), "当前逻辑宠物数" },
                 { m_Setting.GetOptionDescLocaleID(nameof(ModSettings.DislayPetCount)), "地图上当前的逻辑宠物实体数量统计。" },
