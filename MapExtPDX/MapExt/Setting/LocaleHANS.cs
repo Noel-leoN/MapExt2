@@ -378,7 +378,10 @@ namespace MapExtPDX
                 { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.DislayPetCount)), "当前逻辑宠物数" },
                 { m_Setting.GetOptionDescLocaleID(nameof(ModSettings.DislayPetCount)), "地图上当前的逻辑宠物实体数量统计。" },
                 { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.RefreshPetCount)), "刷新宠物统计" },
-                { m_Setting.GetOptionDescLocaleID(nameof(ModSettings.RefreshPetCount)), "点击以重新计算地图上的活动宠物实体数量。这只是一个统计，对游戏状态无任何影响。" },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.RefreshPetCount)),
+                    "点击以重新计算地图上的活动宠物实体数量。这只是一个统计，对游戏状态无任何影响。"
+                },
 
                 // --- Group: 过境交通控制 ---
                 { m_Setting.GetOptionGroupLocaleID(ModSettings.kNoTrafficGroup), "过境交通控制" },
