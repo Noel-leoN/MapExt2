@@ -76,6 +76,14 @@ namespace MapExtPDX
                     "因为级联视口范围每帧更新但渲染被降频。\n\n" +
                     "★ 建议：除非在超大地图上遇到严重 GPU 瓶颈，否则保持关闭。"
                 },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.TerrainCullThrottle)), "建筑裁剪降频" },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.TerrainCullThrottle)),
+                    "相机平移时，若建筑和地形均无实际变化，跳过 CullBuildingLotsJob 全量裁剪，" +
+                    "复用上一帧的缓存列表。\n\n" +
+                    "大地图下该 Job 遍历所有建筑实体，开销随建筑数量线性增长。该优化可显著降低平移相机时的 CPU 占用。\n\n" +
+                    "★ 建议：大地图全部开启，无视觉副作用。"
+                },
                 {
                     m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.WaterSimQuality)),
                     "► 水体模拟质量"

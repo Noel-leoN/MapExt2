@@ -78,6 +78,15 @@ namespace MapExtPDX
                     "because cascade viewport ranges update every frame but rendering is throttled.\n\n" +
                     "★ Recommended: OFF unless you experience severe GPU bottleneck on very large maps."
                 },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.TerrainCullThrottle)), "Terrain Building Cull Throttle" },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.TerrainCullThrottle)),
+                    "Skips redundant building re-culling during camera panning when no buildings or terrain have actually changed: " +
+                    "the cached building list from the previous frame is reused instead.\\n\\n" +
+                    "This eliminates unnecessary CPU work from CullBuildingLotsJob, which iterates over all building entities every frame " +
+                    "on large maps even if nothing has changed.\\n\\n" +
+                    "★ Recommended: ON for all large maps. No visual side effects."
+                },
                 {
                     m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.WaterSimQuality)),
                     "► Water Simulation Quality"

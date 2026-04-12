@@ -170,6 +170,14 @@ namespace MapExtPDX
         [SettingsUISection(kMapSizeModeTab, kTerrainWaterOptGroup)]
         public bool TerrainCascadeThrottle { get; set; } = false;
 
+        /// <summary>
+        /// 建筑裁剪降频。
+        /// 相机平移时若无建筑/地形变化，跳过 CullBuildingLotsJob 全量裁剪，
+        /// 复用上一帧缓存列表。
+        /// </summary>
+        [SettingsUISection(kMapSizeModeTab, kTerrainWaterOptGroup)]
+        public bool TerrainCullThrottle { get; set; } = true;
+
         // ==========================================
         // 分辨率设置 (部分已隐藏)
         // ==========================================
@@ -528,6 +536,7 @@ namespace MapExtPDX
             // 地形优化
             TerrainBufferPrealloc = true;
             TerrainCascadeThrottle = false;  // 默认关闭：会导致远景级联与视口不同步→地形错位
+            TerrainCullThrottle = true;       // 默认开启：跳过无变化帧的建筑裁剪Job
         }
 
         // === Dropdown Helpers ===

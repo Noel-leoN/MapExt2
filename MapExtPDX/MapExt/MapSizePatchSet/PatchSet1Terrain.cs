@@ -14,6 +14,7 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
     using System.Collections.Generic;
     using System.Reflection;
     using System.Reflection.Emit;
+    using Unity.Entities;
     using Unity.Mathematics;
 
     // Target TerrainSystem class
@@ -384,6 +385,108 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
                 s_LastRenderedRanges[lod] = ranges[lod];
             }
             s_HasSavedRanges = true;
+        }
+    }
+
+
+    // === 优化 3.A: CullForCascades 建筑裁剪降频 ===
+    // 当建筑实体未变化且无地形修改时，跳过 CullBuildingLotsJob 的全量裁剪
+    // 复用上一帧缓存的 m_BuildingCullList，减少大地图下平移相机的 CPU 开销
+    //
+    // 原理: CullBuildingLotsJob 遍历全部建筑 Entity Chunk (大地图下数量 ×4)
+    //       裁剪区域 = m_CascadeRanges[baseLod] (整个可玩区域)，不受相机位置影响
+    //       当仅相机移动触发 heightMapRenderRequired 时，列表内容不变
+    //       下游 CullBuildingsCascadeJob 按 per-LOD 区域做二次过滤，自适应新位置
+
+    /// <summary>
+    /// 辅助 Patch: 在 UpdateCascades 执行前捕获 m_UpdateArea 和 isLoaded 状态
+    /// 这些状态在 UpdateCascades 内部会被消费/清零，必须在方法入口时读取
+    /// </summary>
+    [HarmonyPatch(typeof(TerrainSystem), "UpdateCascades")]
+    internal static class TerrainSystem_UpdateCascades_TrackState
+    {
+        private const string Tag = "TerrainCullOpt";
+
+        // 状态传递给 CullForCascades Prefix
+        internal static bool s_NeedFullBuildingCull = true;
+
+        // --- 缓存字段 ---
+        private static FieldInfo s_UpdateAreaField;
+        private static FieldInfo s_BuildingsChangedField;
+        private static bool s_FieldsResolved = false;
+
+        internal static FieldInfo BuildingsChangedField => s_BuildingsChangedField;
+
+        [HarmonyPrefix]
+        public static void Prefix(TerrainSystem __instance, bool isLoaded)
+        {
+            // 非大地图或用户关闭时默认需要完整裁剪
+            s_NeedFullBuildingCull = true;
+
+            if (PatchManager.CurrentCoreValue <= 1) return;
+            if (Mod.Instance?.Settings?.TerrainCullThrottle != true) return;
+
+            // --- 一次性解析反射字段 ---
+            if (!s_FieldsResolved)
+            {
+                s_FieldsResolved = true;
+                s_UpdateAreaField = AccessTools.Field(typeof(TerrainSystem), "m_UpdateArea");
+                s_BuildingsChangedField = AccessTools.Field(typeof(TerrainSystem), "m_BuildingsChanged");
+
+                if (s_UpdateAreaField == null || s_BuildingsChangedField == null)
+                {
+                    ModLog.Warn(Tag, "无法解析 m_UpdateArea 或 m_BuildingsChanged 字段");
+                }
+            }
+
+            if (s_UpdateAreaField == null) return;
+
+            // 检查是否有地形修改 (brush 操作等)
+            bool hasUpdateArea = false;
+            var updateAreaObj = s_UpdateAreaField.GetValue(__instance);
+            if (updateAreaObj is float4 updateArea)
+            {
+                hasUpdateArea = math.lengthsq(updateArea) > 0f;
+            }
+
+            // 仅当：非加载帧 且 无地形修改 时，才可能跳过建筑裁剪
+            s_NeedFullBuildingCull = isLoaded || hasUpdateArea;
+        }
+    }
+
+
+    /// <summary>
+    /// 主 Patch: 在 CullForCascades 入口拦截 heightMapRenderRequired 参数
+    /// 当确认建筑实体未变化时，将其设 false → 跳过 CullBuildingLotsJob
+    /// 注意: heightMapRenderRequired 是 CullForCascades 的值参数，修改不影响调用方
+    ///       UpdateCascades 的局部变量（控制 CullCascade）不受影响
+    /// </summary>
+    [HarmonyPatch(typeof(TerrainSystem), "CullForCascades")]
+    internal static class TerrainSystem_CullForCascades_Throttle
+    {
+        [HarmonyPrefix]
+        public static void Prefix(TerrainSystem __instance, ref bool heightMapRenderRequired)
+        {
+            // 功能未启用或非大地图
+            if (PatchManager.CurrentCoreValue <= 1) return;
+            if (Mod.Instance?.Settings?.TerrainCullThrottle != true) return;
+
+            // 有地形修改或加载帧 → 必须完整裁剪
+            if (TerrainSystem_UpdateCascades_TrackState.s_NeedFullBuildingCull) return;
+
+            // 检查建筑实体是否真的变化了
+            var buildingsField = TerrainSystem_UpdateCascades_TrackState.BuildingsChangedField;
+            if (buildingsField == null) return;
+
+            var queryObj = buildingsField.GetValue(__instance);
+            if (queryObj is EntityQuery entityQuery)
+            {
+                // 有建筑增删/修改 → 不跳过
+                if (!entityQuery.IsEmptyIgnoreFilter) return;
+            }
+
+            // 无任何实体/地形变化，仅相机移动触发 → 跳过 CullBuildingLotsJob
+            heightMapRenderRequired = false;
         }
     }
 }
