@@ -1,4 +1,4 @@
-using Game;
+﻿using Game;
 using Game.Simulation;
 using Colossal.Entities;
 using Game.Buildings;
@@ -21,7 +21,7 @@ using Unity.Jobs;
 using Unity.Mathematics;
 using UnityEngine;
 
-namespace MapExtPDX.ModeA
+namespace EconomyEX.Systems
 {
 	public partial class TaxiAISystemMod : GameSystemBase
 	{

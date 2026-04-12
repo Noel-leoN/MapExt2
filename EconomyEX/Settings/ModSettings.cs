@@ -87,6 +87,66 @@ namespace EconomyEX.Settings
             unit = Game.UI.Unit.kFloatSingleFraction)]
         public float FindHomeMaxCost { get; set; } = 200000f;
 
+        [SettingsUISection(kSectionGeneral, kSectionPathfinding)]
+        [SettingsUIDisableByCondition(typeof(ModSettings), nameof(IsEconomyFixDisabled))]
+        [SettingsUISlider(min = 1000f, max = 200000f, step = 1000f, scalarMultiplier = 1f, unit = Game.UI.Unit.kFloatSingleFraction)]
+        public float FindSchoolElementaryMaxCost { get; set; } = 10000f;
+
+        [SettingsUISection(kSectionGeneral, kSectionPathfinding)]
+        [SettingsUIDisableByCondition(typeof(ModSettings), nameof(IsEconomyFixDisabled))]
+        [SettingsUISlider(min = 1000f, max = 200000f, step = 1000f, scalarMultiplier = 1f, unit = Game.UI.Unit.kFloatSingleFraction)]
+        public float FindSchoolHighSchoolMaxCost { get; set; } = 17000f;
+
+        [SettingsUISection(kSectionGeneral, kSectionPathfinding)]
+        [SettingsUIDisableByCondition(typeof(ModSettings), nameof(IsEconomyFixDisabled))]
+        [SettingsUISlider(min = 1000f, max = 200000f, step = 1000f, scalarMultiplier = 1f, unit = Game.UI.Unit.kFloatSingleFraction)]
+        public float FindSchoolCollegeMaxCost { get; set; } = 50000f;
+
+        [SettingsUISection(kSectionGeneral, kSectionPathfinding)]
+        [SettingsUIDisableByCondition(typeof(ModSettings), nameof(IsEconomyFixDisabled))]
+        [SettingsUISlider(min = 1000f, max = 200000f, step = 1000f, scalarMultiplier = 1f, unit = Game.UI.Unit.kFloatSingleFraction)]
+        public float FindSchoolUniversityMaxCost { get; set; } = 100000f;
+
+        // ==========================================
+        // 经济行为参数
+        // ==========================================
+        public const string kSectionBehavior = "Behavior";
+
+        [SettingsUISection(kSectionGeneral, kSectionBehavior)]
+        [SettingsUISlider(min = 200, max = 5000, step = 100, scalarMultiplier = 1, unit = Game.UI.Unit.kInteger)]
+        public int JobSeekerCap { get; set; } = 1000;
+
+        [SettingsUISection(kSectionGeneral, kSectionBehavior)]
+        [SettingsUISlider(min = 500, max = 10000, step = 500, scalarMultiplier = 1, unit = Game.UI.Unit.kInteger)]
+        public int PathfindRequestCap { get; set; } = 4000;
+
+        [SettingsUISection(kSectionGeneral, kSectionBehavior)]
+        [SettingsUISlider(min = 0.0001f, max = 0.002f, step = 0.0001f, scalarMultiplier = 1f, unit = Game.UI.Unit.kFloatSingleFraction)]
+        public float ShoppingTrafficReduction { get; set; } = 0.0004f;
+
+        [SettingsUISection(kSectionGeneral, kSectionBehavior)]
+        [SettingsUISlider(min = 1.0f, max = 8.0f, step = 0.5f, scalarMultiplier = 1f, unit = Game.UI.Unit.kFloatSingleFraction)]
+        public float HouseholdResourceDemandMultiplier { get; set; } = 3.5f;
+
+        [SettingsUISection(kSectionGeneral, kSectionBehavior)]
+        [SettingsUISlider(min = 32, max = 512, step = 16, scalarMultiplier = 1, unit = Game.UI.Unit.kInteger)]
+        public int HomeSeekerCap { get; set; } = 128;
+
+        [SettingsUISection(kSectionGeneral, kSectionBehavior)]
+        [SettingsUISlider(min = 128, max = 5120, step = 128, scalarMultiplier = 1, unit = Game.UI.Unit.kInteger)]
+        public int HomelessSeekerCap { get; set; } = 1280;
+
+        // ==========================================
+        // NoDogs (backing fields, no UI in EconomyEX)
+        // ==========================================
+        [SettingsUIHidden]
+        public bool NoDogsOnStreet { get; set; } = false;
+        [SettingsUIHidden]
+        public bool NoDogsGeneration { get; set; } = false;
+        [SettingsUIHidden]
+        public bool NoDogsPurge { get; set; } = false;
+
+
         public void UpdateStatus()
         {
             if (Mod.IsMapExtPresent)
@@ -121,6 +181,16 @@ namespace EconomyEX.Settings
             EmergencyMaxCost = 6000f;
             FindJobMaxCost = 200000f;
             FindHomeMaxCost = 200000f;
+            FindSchoolElementaryMaxCost = 10000f;
+            FindSchoolHighSchoolMaxCost = 17000f;
+            FindSchoolCollegeMaxCost = 50000f;
+            FindSchoolUniversityMaxCost = 100000f;
+            JobSeekerCap = 1000;
+            PathfindRequestCap = 4000;
+            ShoppingTrafficReduction = 0.0004f;
+            HouseholdResourceDemandMultiplier = 3.5f;
+            HomeSeekerCap = 128;
+            HomelessSeekerCap = 1280;
         }
     }
 }

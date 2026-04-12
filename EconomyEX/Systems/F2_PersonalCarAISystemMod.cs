@@ -22,7 +22,7 @@ using Unity.Entities;
 using Unity.Jobs;
 using Unity.Mathematics;
 
-namespace MapExtPDX.ModeB
+namespace EconomyEX.Systems
 {
 	public partial class PersonalCarAISystemMod : GameSystemBase
 	{

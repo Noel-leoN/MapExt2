@@ -77,7 +77,7 @@ namespace MapExtPDX.MapExt.Core
                         updateSystem.World.GetOrCreateSystemManaged<Game.Simulation.ResourceBuyerSystem>().Enabled = false;
 
                         // Harmony修补：拦截 Game.Tools 等外部系统对 SetupPathfindMethods 的调用
-                        globalPatcher.CreateClassProcessor(typeof(ModeA.ServiceCoverageSystem_SetupPathfindMethods_Patch)).Patch();
+                        // Harmony修补已移至 EcoShared 通用段
                     }
 
                     if (setting.isEnableEconomyFix && setting.EnableResidentAIEcoSystem)
@@ -162,9 +162,9 @@ namespace MapExtPDX.MapExt.Core
                 // updateSystem.UpdateAt<LandValueConfigSyncSystem>(SystemUpdatePhase.GameSimulation);
                 // ======================================================
 
-                // ======================
-                // --- 经济系统 ECS替换 ---
-                // ======================
+                // ============================================
+                // --- Mode-specific 经济系统 (C1/D1) ---
+                // ============================================
 
                 if (setting.isEnableEconomyFix)
                 {
@@ -173,33 +173,12 @@ namespace MapExtPDX.MapExt.Core
                         // HarmonyPrefix修补CitizenPathfindSetup.SetupFindHomeJob(HouseholdFindPropertySystem关联)
                         globalPatcher.CreateClassProcessor(typeof(ModeA.PathfindSetupSystem_FindTargets_Patch)).Patch();
                         updateSystem.UpdateAt<ModeA.HouseholdFindPropertySystemMod>(SystemUpdatePhase.GameSimulation);
-                        updateSystem.UpdateAt<ModeA.HouseholdBehaviorSystemMod>(SystemUpdatePhase.GameSimulation);
                         updateSystem.UpdateAt<ModeA.RentAdjustSystemMod>(SystemUpdatePhase.GameSimulation);
                     }
                     else
                     {
                         updateSystem.UpdateAt<ModeA.HouseholdFindPropertySystemMod_CellOnly>(SystemUpdatePhase.GameSimulation);
                         updateSystem.UpdateAt<ModeA.RentAdjustSystemMod_CellOnly>(SystemUpdatePhase.GameSimulation);
-                    }
-
-                    if (setting.EnableJobSearchEcoSystem)
-                    {
-                        updateSystem.UpdateAt<ModeA.CitizenFindJobSystemMod>(SystemUpdatePhase.GameSimulation);
-                        updateSystem.UpdateAt<ModeA.FindJobSystemMod>(SystemUpdatePhase.GameSimulation);
-                    }
-
-                    if (setting.EnableResourceBuyerEcoSystem)
-                    {
-                        // 寻路优化系统
-                        updateSystem.UpdateAt<ModeA.TripNeededSystemMod>(SystemUpdatePhase.GameSimulation);
-                        updateSystem.UpdateAt<ModeA.ServiceCoverageSystemMod>(SystemUpdatePhase.GameSimulation);
-                        updateSystem.UpdateAt<ModeA.ResourceBuyerSystemMod>(SystemUpdatePhase.GameSimulation);
-                    }
-
-                    if (setting.EnableResidentAIEcoSystem)
-                    {
-                        updateSystem.UpdateAt<ModeA.ResidentAISystemMod>(SystemUpdatePhase.GameSimulation);
-                        updateSystem.UpdateAfter<ModeA.ResidentAISystemMod.Actions, ModeA.ResidentAISystemMod>(SystemUpdatePhase.GameSimulation);
                     }
                 }
                 else
@@ -213,9 +192,6 @@ namespace MapExtPDX.MapExt.Core
                     // Job通用替换修补ResidentialDemand/IndustrialDemand/RentAdjust
                     JobPatchHelper.Apply(globalPatcher, JobPatchDefinitions.GetEcoSystemTargets(PatchModeSetting.ModeA));
                 }
-
-                // --- NoDogs 2.0 性能工具系统 ---
-                updateSystem.UpdateAt<ModeA.P1_NoDogsPatchSystem>(SystemUpdatePhase.GameSimulation);
             }
 
             // 28km ModeB
@@ -292,9 +268,9 @@ namespace MapExtPDX.MapExt.Core
                 // updateSystem.UpdateAt<LandValueConfigSyncSystem>(SystemUpdatePhase.GameSimulation);
                 // ======================================================
 
-                // ======================
-                // --- 经济系统 ECS替换 ---
-                // ======================
+                // ============================================
+                // --- Mode-specific 经济系统 (C1/D1) ---
+                // ============================================
 
                 if (setting.isEnableEconomyFix)
                 {
@@ -303,33 +279,12 @@ namespace MapExtPDX.MapExt.Core
                         // HarmonyPrefix修补CitizenPathfindSetup.SetupFindHomeJob(HouseholdFindPropertySystem关联)
                         globalPatcher.CreateClassProcessor(typeof(ModeB.PathfindSetupSystem_FindTargets_Patch)).Patch();
                         updateSystem.UpdateAt<ModeB.HouseholdFindPropertySystemMod>(SystemUpdatePhase.GameSimulation);
-                        updateSystem.UpdateAt<ModeB.HouseholdBehaviorSystemMod>(SystemUpdatePhase.GameSimulation);
                         updateSystem.UpdateAt<ModeB.RentAdjustSystemMod>(SystemUpdatePhase.GameSimulation);
                     }
                     else
                     {
                         updateSystem.UpdateAt<ModeB.HouseholdFindPropertySystemMod_CellOnly>(SystemUpdatePhase.GameSimulation);
                         updateSystem.UpdateAt<ModeB.RentAdjustSystemMod_CellOnly>(SystemUpdatePhase.GameSimulation);
-                    }
-
-                    if (setting.EnableJobSearchEcoSystem)
-                    {
-                        updateSystem.UpdateAt<ModeB.CitizenFindJobSystemMod>(SystemUpdatePhase.GameSimulation);
-                        updateSystem.UpdateAt<ModeB.FindJobSystemMod>(SystemUpdatePhase.GameSimulation);
-                    }
-
-                    if (setting.EnableResourceBuyerEcoSystem)
-                    {
-                        // 寻路优化系统
-                        updateSystem.UpdateAt<ModeB.TripNeededSystemMod>(SystemUpdatePhase.GameSimulation);
-                        updateSystem.UpdateAt<ModeB.ServiceCoverageSystemMod>(SystemUpdatePhase.GameSimulation);
-                        updateSystem.UpdateAt<ModeB.ResourceBuyerSystemMod>(SystemUpdatePhase.GameSimulation);
-                    }
-
-                    if (setting.EnableResidentAIEcoSystem)
-                    {
-                        updateSystem.UpdateAt<ModeB.ResidentAISystemMod>(SystemUpdatePhase.GameSimulation);
-                        updateSystem.UpdateAfter<ModeB.ResidentAISystemMod.Actions, ModeB.ResidentAISystemMod>(SystemUpdatePhase.GameSimulation);
                     }
                 }
                 else
@@ -420,9 +375,9 @@ namespace MapExtPDX.MapExt.Core
                 // ======================================================
 
 
-                // ======================
-                // --- 经济系统 ECS替换 ---
-                // ======================
+                // ============================================
+                // --- Mode-specific 经济系统 (C1/D1) ---
+                // ============================================
 
                 if (setting.isEnableEconomyFix)
                 {
@@ -431,33 +386,12 @@ namespace MapExtPDX.MapExt.Core
                         // HarmonyPrefix修补CitizenPathfindSetup.SetupFindHomeJob(HouseholdFindPropertySystem关联)
                         globalPatcher.CreateClassProcessor(typeof(ModeC.PathfindSetupSystem_FindTargets_Patch)).Patch();
                         updateSystem.UpdateAt<ModeC.HouseholdFindPropertySystemMod>(SystemUpdatePhase.GameSimulation);
-                        updateSystem.UpdateAt<ModeC.HouseholdBehaviorSystemMod>(SystemUpdatePhase.GameSimulation);
                         updateSystem.UpdateAt<ModeC.RentAdjustSystemMod>(SystemUpdatePhase.GameSimulation);
                     }
                     else
                     {
                         updateSystem.UpdateAt<ModeC.HouseholdFindPropertySystemMod_CellOnly>(SystemUpdatePhase.GameSimulation);
                         updateSystem.UpdateAt<ModeC.RentAdjustSystemMod_CellOnly>(SystemUpdatePhase.GameSimulation);
-                    }
-
-                    if (setting.EnableJobSearchEcoSystem)
-                    {
-                        updateSystem.UpdateAt<ModeC.CitizenFindJobSystemMod>(SystemUpdatePhase.GameSimulation);
-                        updateSystem.UpdateAt<ModeC.FindJobSystemMod>(SystemUpdatePhase.GameSimulation);
-                    }
-
-                    if (setting.EnableResourceBuyerEcoSystem)
-                    {
-                        // 寻路优化系统
-                        updateSystem.UpdateAt<ModeC.TripNeededSystemMod>(SystemUpdatePhase.GameSimulation);
-                        updateSystem.UpdateAt<ModeC.ServiceCoverageSystemMod>(SystemUpdatePhase.GameSimulation);
-                        updateSystem.UpdateAt<ModeC.ResourceBuyerSystemMod>(SystemUpdatePhase.GameSimulation);
-                    }
-
-                    if (setting.EnableResidentAIEcoSystem)
-                    {
-                        updateSystem.UpdateAt<ModeC.ResidentAISystemMod>(SystemUpdatePhase.GameSimulation);
-                        updateSystem.UpdateAfter<ModeC.ResidentAISystemMod.Actions, ModeC.ResidentAISystemMod>(SystemUpdatePhase.GameSimulation);
                     }
                 }
                 else
@@ -479,7 +413,7 @@ namespace MapExtPDX.MapExt.Core
                 // === 原系统禁用 ===
                 updateSystem.World.GetOrCreateSystemManaged<Game.Simulation.LandValueSystem>().Enabled = false;
 
-                // === 自定义系统启===
+                // === 自定义系统启用 ===
                 // --- LandValueSystemRemake + UI设置 ---
                 updateSystem.UpdateAt<ModeE.LandValueSystemMod>(SystemUpdatePhase
                     .GameSimulation);
@@ -488,6 +422,9 @@ namespace MapExtPDX.MapExt.Core
 
                 if (setting.isEnableEconomyFix)
                 {
+                    // ============================================
+                    // --- Mode-specific 经济系统 (C1/D1) ---
+                    // ============================================
                     if (setting.EnableHouseholdPropertyEcoSystem)
                     {
                         // === 原系统禁用 === (Economy)
@@ -499,40 +436,27 @@ namespace MapExtPDX.MapExt.Core
                         globalPatcher.CreateClassProcessor(typeof(ModeE.PathfindSetupSystem_FindTargets_Patch)).Patch();
 
                         updateSystem.UpdateAt<ModeE.HouseholdFindPropertySystemMod>(SystemUpdatePhase.GameSimulation);
-                        updateSystem.UpdateAt<ModeE.HouseholdBehaviorSystemMod>(SystemUpdatePhase.GameSimulation);
                         updateSystem.UpdateAt<ModeE.RentAdjustSystemMod>(SystemUpdatePhase.GameSimulation);
                     }
 
+                    // --- ModeE 原版系统禁用（通用系统部分） ---
                     if (setting.EnableJobSearchEcoSystem)
                     {
                         updateSystem.World.GetOrCreateSystemManaged<Game.Simulation.CitizenFindJobSystem>().Enabled = false;
                         updateSystem.World.GetOrCreateSystemManaged<Game.Simulation.FindJobSystem>().Enabled = false;
-
-                        updateSystem.UpdateAt<ModeE.CitizenFindJobSystemMod>(SystemUpdatePhase.GameSimulation);
-                        updateSystem.UpdateAt<ModeE.FindJobSystemMod>(SystemUpdatePhase.GameSimulation);
                     }
 
                     if (setting.EnableResourceBuyerEcoSystem)
                     {
-                        // 寻路优化系统
                         updateSystem.World.GetOrCreateSystemManaged<Game.Simulation.TripNeededSystem>().Enabled = false;
                         updateSystem.World.GetOrCreateSystemManaged<Game.Simulation.ServiceCoverageSystem>().Enabled = false;
                         updateSystem.World.GetOrCreateSystemManaged<Game.Simulation.ResourceBuyerSystem>().Enabled = false;
-
-                        updateSystem.UpdateAt<ModeE.TripNeededSystemMod>(SystemUpdatePhase.GameSimulation);
-                        updateSystem.UpdateAt<ModeE.ServiceCoverageSystemMod>(SystemUpdatePhase.GameSimulation);
-                        updateSystem.UpdateAt<ModeE.ResourceBuyerSystemMod>(SystemUpdatePhase.GameSimulation);
-
-                        // Harmony修补：拦截 Game.Tools 等外部系统对 SetupPathfindMethods 的调用
-                        globalPatcher.CreateClassProcessor(typeof(ModeE.ServiceCoverageSystem_SetupPathfindMethods_Patch)).Patch();
                     }
 
                     if (setting.EnableResidentAIEcoSystem)
                     {
                         updateSystem.World.GetOrCreateSystemManaged<Game.Simulation.ResidentAISystem>().Enabled = false;
                         updateSystem.World.GetOrCreateSystemManaged<Game.Simulation.ResidentAISystem.Actions>().Enabled = false;
-                        updateSystem.UpdateAt<ModeE.ResidentAISystemMod>(SystemUpdatePhase.GameSimulation);
-                        updateSystem.UpdateAfter<ModeE.ResidentAISystemMod.Actions, ModeE.ResidentAISystemMod>(SystemUpdatePhase.GameSimulation);
                     }
                 }
 
@@ -542,9 +466,44 @@ namespace MapExtPDX.MapExt.Core
                     JobPatchHelper.Apply(globalPatcher, JobPatchDefinitions.GetEcoSystemTargets(PatchModeSetting.None));
                 }
             }
+
+            // ======================================================
+            // === 通用经济系统注册 (EcoShared) ===
+            // 以下系统与地图尺寸无关，所有 Mode 共用，仅注册一次
+            // ======================================================
+            if (setting.isEnableEconomyFix)
+            {
+                if (setting.EnableHouseholdPropertyEcoSystem)
+                {
+                    updateSystem.UpdateAt<EcoShared.HouseholdBehaviorSystemMod>(SystemUpdatePhase.GameSimulation);
+                }
+
+                if (setting.EnableJobSearchEcoSystem)
+                {
+                    updateSystem.UpdateAt<EcoShared.CitizenFindJobSystemMod>(SystemUpdatePhase.GameSimulation);
+                    updateSystem.UpdateAt<EcoShared.FindJobSystemMod>(SystemUpdatePhase.GameSimulation);
+                }
+
+                if (setting.EnableResourceBuyerEcoSystem)
+                {
+                    // 寻路优化系统
+                    updateSystem.UpdateAt<EcoShared.TripNeededSystemMod>(SystemUpdatePhase.GameSimulation);
+                    updateSystem.UpdateAt<EcoShared.ServiceCoverageSystemMod>(SystemUpdatePhase.GameSimulation);
+                    updateSystem.UpdateAt<EcoShared.ResourceBuyerSystemMod>(SystemUpdatePhase.GameSimulation);
+
+                    // Harmony修补：拦截 Game.Tools 等外部系统对 SetupPathfindMethods 的调用
+                    globalPatcher.CreateClassProcessor(typeof(EcoShared.ServiceCoverageSystem_SetupPathfindMethods_Patch)).Patch();
+                }
+
+                if (setting.EnableResidentAIEcoSystem)
+                {
+                    updateSystem.UpdateAt<EcoShared.ResidentAISystemMod>(SystemUpdatePhase.GameSimulation);
+                    updateSystem.UpdateAfter<EcoShared.ResidentAISystemMod.Actions, EcoShared.ResidentAISystemMod>(SystemUpdatePhase.GameSimulation);
+                }
+            }
+
+            // --- NoDogs 2.0 性能工具系统 ---
+            updateSystem.UpdateAt<EcoShared.P1_NoDogsPatchSystem>(SystemUpdatePhase.GameSimulation);
         }
     }
 }
-
-
-

@@ -22,7 +22,7 @@ using Unity.Collections.LowLevel.Unsafe;
 using Unity.Entities;
 using Unity.Jobs;
 
-namespace MapExtPDX.ModeE
+namespace MapExtPDX.EcoShared
 {
     // =========================================================================================
     // 1. Mod 自定义系统类型 (当前类)

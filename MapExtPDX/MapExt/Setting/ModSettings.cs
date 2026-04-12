@@ -420,7 +420,7 @@ namespace MapExtPDX
                 .Enabled = !m_NoDogsOnStreet;
 
             // 阻止生成 / 清除存量：通知 ECS 系统
-            var patchSystem = World.DefaultGameObjectInjectionWorld.GetExistingSystemManaged<MapExtPDX.ModeA.P1_NoDogsPatchSystem>();
+            var patchSystem = World.DefaultGameObjectInjectionWorld.GetExistingSystemManaged<MapExtPDX.EcoShared.P1_NoDogsPatchSystem>();
             if (patchSystem != null)
             {
                 patchSystem.ApplySettings(m_NoDogsGeneration, m_NoDogsPurge);
@@ -446,7 +446,7 @@ namespace MapExtPDX
         {
             set
             {
-                var patchSystem = World.DefaultGameObjectInjectionWorld.GetExistingSystemManaged<MapExtPDX.ModeA.P1_NoDogsPatchSystem>();
+                var patchSystem = World.DefaultGameObjectInjectionWorld.GetExistingSystemManaged<MapExtPDX.EcoShared.P1_NoDogsPatchSystem>();
                 if (patchSystem != null)
                 {
                     CurrentPetCount = patchSystem.CountPets();

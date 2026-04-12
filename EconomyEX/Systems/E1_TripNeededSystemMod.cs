@@ -1,4 +1,4 @@
-using Game;
+﻿using Game;
 using Game.Simulation;
 using Colossal.Collections;
 using Game.Agents;
@@ -117,7 +117,7 @@ namespace EconomyEX.Systems
 				ComponentType.ReadWrite<TripSource>(), ComponentType.ReadWrite<Unspawned>());
 			m_PathfindTypes = new ComponentTypeSet(ComponentType.ReadWrite<PathInformation>(),
 				ComponentType.ReadWrite<PathElement>());
-			m_CurrentLaneTypesRelative = new ComponentTypeSet(new ComponentType[5]
+			m_CurrentLaneTypesRelative = new ComponentTypeSet(new[]
 			{
 				ComponentType.ReadWrite<Moving>(),
 				ComponentType.ReadWrite<TransformFrame>(),
@@ -322,9 +322,9 @@ namespace EconomyEX.Systems
 					m_CitizenPresenceData = SystemAPI.GetComponentLookup<CitizenPresence>(isReadOnly: false),
 					m_LeaveQueue = leaveQueue
 				};
-				jobHandle2 = JobChunkExtensions.ScheduleParallel(jobData, m_CitizenGroup, jobHandle2);
-				JobHandle jobHandle4 = IJobExtensions.Schedule(jobData2, jobHandle2);
-				JobHandle jobHandle5 = IJobExtensions.Schedule(jobData3, jobHandle2);
+				jobHandle2 = jobData.ScheduleParallel(m_CitizenGroup, jobHandle2);
+				JobHandle jobHandle4 = jobData2.Schedule(jobHandle2);
+				JobHandle jobHandle5 = jobData3.Schedule(jobHandle2);
 				jobHandle3 = JobHandle.CombineDependencies(jobHandle4, jobHandle5);
 				animalQueue.Dispose(jobHandle4);
 				leaveQueue.Dispose(jobHandle5);
@@ -336,7 +336,7 @@ namespace EconomyEX.Systems
 			m_PersonalCarSelectData.PostUpdate(jobHandle2);
 			if (!m_CompanyGroup.IsEmptyIgnoreFilter)
 			{
-				jobHandle2 = JobChunkExtensions.ScheduleParallel(new CompanyJob
+				jobHandle2 = new CompanyJob
 				{
 					m_EntityType = SystemAPI.GetEntityTypeHandle(),
 					m_PropertyRenterType = SystemAPI.GetComponentTypeHandle<PropertyRenter>(isReadOnly: true),
@@ -367,7 +367,7 @@ namespace EconomyEX.Systems
 					m_CurrentLaneTypesRelative = m_CurrentLaneTypesRelative,
 					m_CommandBuffer = m_EndFrameBarrier.CreateCommandBuffer().AsParallelWriter(),
 					m_DebugDisableSpawning = debugDisableSpawning
-				}, m_CompanyGroup, jobHandle2);
+				}.ScheduleParallel(m_CompanyGroup, jobHandle2);
 				m_EndFrameBarrier.AddJobHandleForProducer(jobHandle2);
 				jobHandle3 = JobHandle.CombineDependencies(jobHandle3, jobHandle2);
 			}
@@ -634,11 +634,8 @@ namespace EconomyEX.Systems
 							}
 
 							citizenData.m_PseudoRandom = (ushort)(random.NextUInt() % 65536);
-							CreatureData creatureData;
-							PseudoRandomSeed randomSeed;
 							Entity entity = ObjectEmergeSystem.SelectResidentPrefab(citizenData, m_HumanChunks,
-								m_EntityType, ref m_CreatureDataType, ref m_ResidentDataType, out creatureData,
-								out randomSeed);
+								m_EntityType, ref m_CreatureDataType, ref m_ResidentDataType, out _, out PseudoRandomSeed randomSeed);
 							ObjectData objectData = m_PrefabObjectData[entity];
 							PrefabRef component2 = new PrefabRef
 							{
@@ -895,14 +892,7 @@ namespace EconomyEX.Systems
 					case Purpose.Escape:
 						target.m_Target = currentBuilding;
 						divertPurpose = purpose;
-						if (m_TravelPurposes.HasComponent(citizen))
-						{
-							purpose = m_TravelPurposes[citizen].m_Purpose;
-						}
-						else
-						{
-							purpose = Purpose.None;
-						}
+						purpose = m_TravelPurposes.HasComponent(citizen) ? m_TravelPurposes[citizen].m_Purpose : Purpose.None;
 
 						timer = 0u;
 						hasDivertPath = true;
@@ -931,10 +921,8 @@ namespace EconomyEX.Systems
 				Target target, ResidentFlags flags, Purpose divertPurpose, uint timer, bool hasDivertPath, bool isDead,
 				bool isCarried)
 			{
-				CreatureData creatureData;
-				PseudoRandomSeed randomSeed;
 				Entity entity = ObjectEmergeSystem.SelectResidentPrefab(citizenData, m_HumanChunks, m_EntityType,
-					ref m_CreatureDataType, ref m_ResidentDataType, out creatureData, out randomSeed);
+					ref m_CreatureDataType, ref m_ResidentDataType, out _, out PseudoRandomSeed randomSeed);
 				ObjectData objectData = m_ObjectDatas[entity];
 				PrefabRef component = new PrefabRef
 				{
@@ -1076,11 +1064,11 @@ namespace EconomyEX.Systems
 				}
 
 				Purpose purpose = trips[0].m_Purpose;
-				for (int passengerCount = trips.Length - 1; passengerCount >= 0; passengerCount--)
+				for (int i = trips.Length - 1; i >= 0; i--)
 				{
-					if (trips[passengerCount].m_Purpose == purpose)
+					if (trips[i].m_Purpose == purpose)
 					{
-						trips.RemoveAt(passengerCount);
+						trips.RemoveAt(i);
 					}
 				}
 			}
@@ -1136,18 +1124,18 @@ namespace EconomyEX.Systems
 						continue;
 					}
 
-					bool isMovingIn = trips[0].m_Purpose == Purpose.MovingAway;
-					bool hasTarget = trips[0].m_Purpose == Purpose.Safety || trips[0].m_Purpose == Purpose.Escape;
+					bool isMovingAway = trips[0].m_Purpose == Purpose.MovingAway;
+					bool isSafetyOrEscape = trips[0].m_Purpose == Purpose.Safety || trips[0].m_Purpose == Purpose.Escape;
 					bool isMailSender = chunk.IsComponentEnabled(ref m_MailSenderType, i);
 					bool isDead = false;
 					bool isCarried = false;
 					PathInformation componentData;
-					bool isHomeless = m_PathInfos.TryGetComponent(entity, out componentData);
+					bool hasPathInfo = m_PathInfos.TryGetComponent(entity, out componentData);
 					Criminal componentData2;
-					bool isDummyTraffic = m_CriminalData.TryGetComponent(entity, out componentData2) &&
+					bool isArrested = m_CriminalData.TryGetComponent(entity, out componentData2) &&
 					                      (componentData2.m_Flags & (CriminalFlags.Prisoner | CriminalFlags.Arrested |
 					                                                 CriminalFlags.Sentenced)) != 0;
-					if (nativeArray6.Length != 0 && !isDummyTraffic)
+					if (nativeArray6.Length != 0 && !isArrested)
 					{
 						HealthProblem healthProblem = nativeArray6[i];
 						if ((healthProblem.m_Flags & (HealthProblemFlags.Dead | HealthProblemFlags.RequireTransport |
@@ -1158,7 +1146,7 @@ namespace EconomyEX.Systems
 							isCarried = (healthProblem.m_Flags & HealthProblemFlags.RequireTransport) != 0;
 							if (!(isDead || isCarried))
 							{
-								if (isHomeless)
+								if (hasPathInfo)
 								{
 									m_CommandBuffer.RemoveComponent(unfilteredChunkIndex, entity, in m_PathfindTypes);
 								}
@@ -1174,7 +1162,7 @@ namespace EconomyEX.Systems
 
 							if (trips.Length == 0)
 							{
-								if (isHomeless)
+								if (hasPathInfo)
 								{
 									m_CommandBuffer.RemoveComponent(unfilteredChunkIndex, entity, in m_PathfindTypes);
 								}
@@ -1184,7 +1172,7 @@ namespace EconomyEX.Systems
 						}
 					}
 
-					if (!isMovingIn && nativeArray7.Length != 0 && !isDummyTraffic)
+					if (!isMovingAway && nativeArray7.Length != 0 && !isArrested)
 					{
 						Entity meeting = nativeArray7[i].m_Meeting;
 						if (m_PrefabRefData.HasComponent(meeting))
@@ -1207,7 +1195,7 @@ namespace EconomyEX.Systems
 
 									if (trips.Length == 0)
 									{
-										if (isHomeless)
+										if (hasPathInfo)
 										{
 											m_CommandBuffer.RemoveComponent(unfilteredChunkIndex, entity,
 												in m_PathfindTypes);
@@ -1222,7 +1210,7 @@ namespace EconomyEX.Systems
 
 					if ((nativeArray5[i].m_State & CitizenFlags.MovingAwayReachOC) != CitizenFlags.None)
 					{
-						if (isHomeless)
+						if (hasPathInfo)
 						{
 							m_CommandBuffer.RemoveComponent(unfilteredChunkIndex, entity, in m_PathfindTypes);
 						}
@@ -1230,7 +1218,7 @@ namespace EconomyEX.Systems
 						continue;
 					}
 
-					if (isHomeless)
+					if (hasPathInfo)
 					{
 						if ((componentData.m_State & PathFlags.Pending) != 0)
 						{
@@ -1239,7 +1227,7 @@ namespace EconomyEX.Systems
 
 						if ((((componentData.m_Origin != Entity.Null &&
 						       componentData.m_Origin == componentData.m_Destination) ||
-						      nativeArray3[i].m_CurrentBuilding == componentData.m_Destination) && !hasTarget) ||
+						      nativeArray3[i].m_CurrentBuilding == componentData.m_Destination) && !isSafetyOrEscape) ||
 						    !m_Targets.HasComponent(entity))
 						{
 							m_CommandBuffer.RemoveComponent(unfilteredChunkIndex, entity, in m_PathfindTypes);
@@ -1253,15 +1241,12 @@ namespace EconomyEX.Systems
 						continue;
 					}
 
-					PseudoRandomSeed randomSeed;
-					Entity trailerPrefab;
-					float offset;
 					if (m_Targets.HasComponent(entity))
 					{
 						Target target = m_Targets[entity];
 						if (target.m_Target == Entity.Null)
 						{
-							if (!isHomeless)
+							if (!hasPathInfo)
 							{
 								m_CommandBuffer.RemoveComponent<Target>(unfilteredChunkIndex, entity);
 								continue;
@@ -1285,7 +1270,7 @@ namespace EconomyEX.Systems
 							entity2 = componentData3.m_Property;
 						}
 
-						if (currentBuilding == entity2 && !hasTarget)
+						if (currentBuilding == entity2 && !isSafetyOrEscape)
 						{
 							m_CommandBuffer.SetComponentEnabled<Arrived>(unfilteredChunkIndex, entity, value: true);
 							m_CommandBuffer.AddComponent(unfilteredChunkIndex, entity, new TravelPurpose
@@ -1295,7 +1280,7 @@ namespace EconomyEX.Systems
 								m_Resource = trips[0].m_Resource
 							});
 							m_CommandBuffer.RemoveComponent<Target>(unfilteredChunkIndex, entity);
-							if (isHomeless)
+							if (hasPathInfo)
 							{
 								m_CommandBuffer.RemoveComponent(unfilteredChunkIndex, entity, in m_PathfindTypes);
 							}
@@ -1304,9 +1289,9 @@ namespace EconomyEX.Systems
 							continue;
 						}
 
-						isMailSender = (isDead && trips[0].m_Purpose == Purpose.Deathcare) ||
-						               (isCarried && trips[0].m_Purpose == Purpose.Hospital);
-						if (!isHomeless && !isMailSender)
+						bool needsTransport = (isDead && trips[0].m_Purpose == Purpose.Deathcare) ||
+						                      (isCarried && trips[0].m_Purpose == Purpose.Hospital);
+						if (!hasPathInfo && !needsTransport)
 						{
 							m_CommandBuffer.AddComponent(unfilteredChunkIndex, entity, in m_PathfindTypes);
 							m_CommandBuffer.SetComponent(unfilteredChunkIndex, entity, new PathInformation
@@ -1317,7 +1302,7 @@ namespace EconomyEX.Systems
 							CreatureData creatureData;
 							Entity entity3 = ObjectEmergeSystem.SelectResidentPrefab(citizen, m_HumanChunks,
 								m_EntityType, ref m_CreatureDataType, ref m_ResidentDataType, out creatureData,
-								out randomSeed);
+								out _);
 							HumanData humanData = default(HumanData);
 							if (entity3 != Entity.Null)
 							{
@@ -1330,7 +1315,7 @@ namespace EconomyEX.Systems
 							// [MOD EXT] 按出行目的分级设置最大寻路成本
 							TripNeeded tripInfo = trips[0];
 							float dynamicMaxCost;
-							if (isMovingIn)
+							if (isMovingAway)
 							{
 								// 搬家离城：使用超大范围确保能到达外部连接
 								dynamicMaxCost = CitizenBehaviorSystem.kMaxMovingAwayCost;
@@ -1394,14 +1379,7 @@ namespace EconomyEX.Systems
 							if (m_Workers.HasComponent(entity))
 							{
 								Worker worker = m_Workers[entity];
-								if (m_PropertyRenters.HasComponent(worker.m_Workplace))
-								{
-									parameters.m_Authorization2 = m_PropertyRenters[worker.m_Workplace].m_Property;
-								}
-								else
-								{
-									parameters.m_Authorization2 = worker.m_Workplace;
-								}
+								parameters.m_Authorization2 = m_PropertyRenters.HasComponent(worker.m_Workplace) ? m_PropertyRenters[worker.m_Workplace].m_Property : worker.m_Workplace;
 							}
 
 							bool useBicycle = random.NextFloat(100f) < 20f;
@@ -1437,7 +1415,7 @@ namespace EconomyEX.Systems
 										citizen.GetPseudoRandom(CitizenPseudoRandom.BicycleModel);
 									componentData6.m_Prefab = m_PersonalCarSelectData.SelectVehiclePrefab(ref random2,
 										1, 0, avoidTrailers: true, noSlowVehicles: false, bicycle: true,
-										out trailerPrefab);
+										out _);
 								}
 
 								if (m_PrefabCarData.TryGetComponent(componentData6.m_Prefab, out var componentData7) &&
@@ -1445,7 +1423,7 @@ namespace EconomyEX.Systems
 									    out var componentData8))
 								{
 									parameters.m_MaxSpeed.x = componentData7.m_MaxSpeed;
-									parameters.m_ParkingSize = VehicleUtils.GetParkingSize(componentData8, out offset);
+									parameters.m_ParkingSize = VehicleUtils.GetParkingSize(componentData8, out _);
 									parameters.m_Methods |= PathMethod.Bicycle | PathMethod.BicycleParking;
 									parameters.m_IgnoredRules = VehicleUtils.GetIgnoredPathfindRulesBicycleDefaults();
 									CurrentTransport value;
@@ -1481,20 +1459,20 @@ namespace EconomyEX.Systems
 						}
 
 						DynamicBuffer<PathElement> dynamicBuffer3 = default(DynamicBuffer<PathElement>);
-						if (!isMailSender)
+						if (!needsTransport)
 						{
 							dynamicBuffer3 = m_PathElements[entity];
 						}
 
 						TripNeeded tripNeeded = trips[0];
-						if ((!isMailSender && dynamicBuffer3.Length > 0) ||
+						if ((!needsTransport && dynamicBuffer3.Length > 0) ||
 						    m_PrefabRefData.HasComponent(tripNeeded.m_TargetAgent))
 						{
 							Entity currentBuilding2 = nativeArray3[i].m_CurrentBuilding;
 							Entity entity4 = Entity.Null;
 							PropertyRenter componentData11;
 							bool isRenter = m_PropertyRenters.TryGetComponent(household, out componentData11);
-							if (!isMailSender && isRenter && currentBuilding2.Equals(componentData11.m_Property))
+							if (!needsTransport && isRenter && currentBuilding2.Equals(componentData11.m_Property))
 							{
 								if (componentData.m_Destination != Entity.Null)
 								{
@@ -1655,7 +1633,7 @@ namespace EconomyEX.Systems
 
 							uint timer = 512u;
 							Purpose divertPurpose = Purpose.None;
-							bool pathFailed = !isMailSender && dynamicBuffer3.Length == 0;
+							bool pathFailed = !needsTransport && dynamicBuffer3.Length == 0;
 							bool hasDivertPath = false;
 							GetResidentFlags(entity, currentBuilding2, isMailSender, pathFailed, ref target,
 								ref tripNeeded.m_Purpose, ref divertPurpose, ref timer, ref hasDivertPath);
@@ -1674,7 +1652,7 @@ namespace EconomyEX.Systems
 							{
 								Citizen citizenData = nativeArray5[i];
 								entity5 = SpawnResident(unfilteredChunkIndex, entity, currentBuilding, citizenData,
-									target, residentFlags, divertPurpose, timer, hasDivertPath, isDead, isMailSender);
+									target, residentFlags, divertPurpose, timer, hasDivertPath, isDead, needsTransport);
 								m_CommandBuffer.AddComponent(unfilteredChunkIndex, entity,
 									new CurrentTransport(entity5));
 							}
@@ -1706,7 +1684,7 @@ namespace EconomyEX.Systems
 					}
 					else
 					{
-						if (isHomeless || m_HumanChunks.Length == 0)
+						if (hasPathInfo || m_HumanChunks.Length == 0)
 						{
 							continue;
 						}
@@ -1748,7 +1726,7 @@ namespace EconomyEX.Systems
 							CreatureData creatureData2;
 							Entity entity6 = ObjectEmergeSystem.SelectResidentPrefab(citizen2, m_HumanChunks,
 								m_EntityType, ref m_CreatureDataType, ref m_ResidentDataType, out creatureData2,
-								out randomSeed);
+								out _);
 							HumanData humanData2 = default(HumanData);
 							if (entity6 != Entity.Null)
 							{
@@ -1841,14 +1819,7 @@ namespace EconomyEX.Systems
 							if (m_Workers.HasComponent(entity))
 							{
 								Worker worker3 = m_Workers[entity];
-								if (m_PropertyRenters.HasComponent(worker3.m_Workplace))
-								{
-									parameters2.m_Authorization2 = m_PropertyRenters[worker3.m_Workplace].m_Property;
-								}
-								else
-								{
-									parameters2.m_Authorization2 = worker3.m_Workplace;
-								}
+								parameters2.m_Authorization2 = m_PropertyRenters.HasComponent(worker3.m_Workplace) ? m_PropertyRenters[worker3.m_Workplace].m_Property : worker3.m_Workplace;
 							}
 
 							bool useBicycle = random.NextFloat(100f) < 20f;
@@ -1884,7 +1855,7 @@ namespace EconomyEX.Systems
 										citizen2.GetPseudoRandom(CitizenPseudoRandom.BicycleModel);
 									componentData15.m_Prefab = m_PersonalCarSelectData.SelectVehiclePrefab(ref random3,
 										1, 0, avoidTrailers: true, noSlowVehicles: false, bicycle: true,
-										out trailerPrefab);
+										out _);
 								}
 
 								if (m_PrefabCarData.TryGetComponent(componentData15.m_Prefab,
@@ -1894,7 +1865,7 @@ namespace EconomyEX.Systems
 								{
 									parameters2.m_MaxSpeed.x = componentData16.m_MaxSpeed;
 									parameters2.m_ParkingSize =
-										VehicleUtils.GetParkingSize(componentData17, out offset);
+										VehicleUtils.GetParkingSize(componentData17, out _);
 									parameters2.m_Methods |= PathMethod.Bicycle | PathMethod.BicycleParking;
 									parameters2.m_IgnoredRules = VehicleUtils.GetIgnoredPathfindRulesBicycleDefaults();
 									CurrentTransport value6;

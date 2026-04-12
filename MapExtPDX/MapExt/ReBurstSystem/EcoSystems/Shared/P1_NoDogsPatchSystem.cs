@@ -6,7 +6,7 @@ using Game.Citizens;
 using Game.Common;
 using Game.Tools;
 
-namespace MapExtPDX.ModeE
+namespace MapExtPDX.EcoShared
 {
     public partial class P1_NoDogsPatchSystem : GameSystemBase
     {

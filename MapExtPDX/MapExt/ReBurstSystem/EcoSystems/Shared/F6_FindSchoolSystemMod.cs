@@ -15,7 +15,7 @@ using Unity.Jobs;
 using Game;
 using Game.Simulation;
 
-namespace MapExtPDX.ModeB
+namespace MapExtPDX.EcoShared
 {
 	public partial class FindSchoolSystemMod : GameSystemBase
 	{

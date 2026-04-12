@@ -21,7 +21,7 @@ using Unity.Jobs;
 using Unity.Mathematics;
 using UnityEngine;
 
-namespace MapExtPDX.ModeB
+namespace MapExtPDX.EcoShared
 {
 	public partial class TaxiAISystemMod : GameSystemBase
 	{

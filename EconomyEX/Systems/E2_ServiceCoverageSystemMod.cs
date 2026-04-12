@@ -48,9 +48,9 @@ namespace EconomyEX.Systems
 		protected override void OnCreate()
 		{
 			base.OnCreate();
-			m_SimulationSystem = base.World.GetOrCreateSystemManaged<SimulationSystem>();
-			m_PathfindQueueSystem = base.World.GetOrCreateSystemManaged<PathfindQueueSystem>();
-			m_AirwaySystem = base.World.GetOrCreateSystemManaged<AirwaySystem>();
+			m_SimulationSystem = World.GetOrCreateSystemManaged<SimulationSystem>();
+			m_PathfindQueueSystem = World.GetOrCreateSystemManaged<PathfindQueueSystem>();
+			m_AirwaySystem = World.GetOrCreateSystemManaged<AirwaySystem>();
 			m_EdgeQuery = GetEntityQuery(ComponentType.ReadOnly<Game.Net.Edge>(),
 				ComponentType.ReadWrite<Game.Net.ServiceCoverage>(), ComponentType.Exclude<Deleted>(),
 				ComponentType.Exclude<Temp>());
@@ -83,7 +83,7 @@ namespace EconomyEX.Systems
 			{
 				if (EnqueuePendingCoverages(out var outputDeps))
 				{
-					base.Dependency = outputDeps;
+					Dependency = outputDeps;
 				}
 
 				return;
@@ -162,12 +162,12 @@ namespace EconomyEX.Systems
 					m_BuildingData = nativeList,
 					m_Elements = elements
 				};
-				JobHandle jobHandle = IJobExtensions.Schedule(jobData, base.Dependency);
+				JobHandle jobHandle = jobData.Schedule(Dependency);
 				JobHandle dependsOn = IJobParallelForDeferExtensions.Schedule(
 					dependsOn: JobHandle.CombineDependencies(jobHandle,
-						JobChunkExtensions.ScheduleParallel(jobData2, m_EdgeQuery, base.Dependency)), jobData: jobData3,
+						jobData2.ScheduleParallel(m_EdgeQuery, Dependency)), jobData: jobData3,
 					list: nativeList, innerloopBatchCount: 1);
-				JobHandle jobHandle2 = IJobExtensions.Schedule(jobData4, dependsOn);
+				JobHandle jobHandle2 = jobData4.Schedule(dependsOn);
 				buildingChunks.Dispose(jobHandle);
 				nativeList.Dispose(jobHandle2);
 				elements.Dispose(jobHandle2);
@@ -179,7 +179,7 @@ namespace EconomyEX.Systems
 			}
 
 			m_LastCoverageService = frameService2;
-			base.Dependency = outputDeps2;
+			Dependency = outputDeps2;
 		}
 
 		private bool EnqueuePendingCoverages(out JobHandle outputDeps)
@@ -220,7 +220,7 @@ namespace EconomyEX.Systems
 				}
 
 				m_PendingCoverages.Dequeue();
-				if (base.EntityManager.TryGetSharedComponent<CoverageServiceType>(queueItem.m_Entity,
+				if (EntityManager.TryGetSharedComponent<CoverageServiceType>(queueItem.m_Entity,
 					    out var component))
 				{
 					SetupPathfindMethods(component.m_Service, ref pathfindParameters, ref setupQueueTarget);
@@ -230,7 +230,7 @@ namespace EconomyEX.Systems
 						pathfindParameters, setupQueueTarget, action.data.m_Sources.AsParallelWriter(),
 						RandomSeed.Next(), isStartTarget: true);
 					jobData.m_Action = action;
-					JobHandle jobHandle = IJobExtensions.Schedule(jobData, base.Dependency);
+					JobHandle jobHandle = jobData.Schedule(Dependency);
 					outputDeps = JobHandle.CombineDependencies(outputDeps, jobHandle);
 					m_PathfindQueueSystem.Enqueue(action, queueItem.m_Entity, jobHandle, queueItem.m_ResultFrame, this);
 				}
@@ -594,8 +594,9 @@ namespace EconomyEX.Systems
 
 			public int CompareTo(CoverageElement other)
 			{
+				const float TOLERANCE = 0.0001f;
 				return math.select(0, math.select(-1, 1, m_AverageCoverage < other.m_AverageCoverage),
-					m_AverageCoverage != other.m_AverageCoverage);
+					Math.Abs(m_AverageCoverage - other.m_AverageCoverage) > TOLERANCE);
 			}
 		}
 

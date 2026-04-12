@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Runtime.CompilerServices;
 using Game;
 using Game.Simulation;
@@ -24,7 +24,7 @@ using Unity.Jobs;
 using Unity.Mathematics;
 using UnityEngine;
 
-namespace MapExtPDX.ModeA
+namespace MapExtPDX.EcoShared
 {
 	public partial class ResourceBuyerSystemMod : GameSystemBase
 	{

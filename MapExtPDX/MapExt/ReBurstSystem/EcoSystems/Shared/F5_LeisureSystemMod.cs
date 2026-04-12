@@ -25,7 +25,7 @@ using Unity.Mathematics;
 using UnityEngine;
 // ReSharper disable InlineOutVariableDeclaration
 
-namespace MapExtPDX.ModeB
+namespace MapExtPDX.EcoShared
 {
 	public partial class LeisureSystemMod : GameSystemBase
 	{

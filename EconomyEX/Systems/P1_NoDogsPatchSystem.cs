@@ -1,4 +1,4 @@
-﻿using Unity.Entities;
+using Unity.Entities;
 using Unity.Collections;
 using Game;
 using Game.Prefabs;
@@ -6,7 +6,7 @@ using Game.Citizens;
 using Game.Common;
 using Game.Tools;
 
-namespace MapExtPDX.ModeB
+namespace EconomyEX.Systems
 {
     public partial class P1_NoDogsPatchSystem : GameSystemBase
     {
@@ -37,7 +37,7 @@ namespace MapExtPDX.ModeB
             // 在游戏加载后第一次进入 Update 并发现 Prefab 已就绪时，执行一次初始数据覆写
             if (!m_HasInitializedPrefabs && !m_HouseholdDataQuery.IsEmptyIgnoreFilter)
             {
-                var settings = Mod.Instance?.CurrentSettings;
+                var settings = Mod.Instance?.Settings;
                 bool preventGen = settings?.NoDogsGeneration ?? false;
                 ApplyPrefabChanges(preventGen);
                 m_HasInitializedPrefabs = true;

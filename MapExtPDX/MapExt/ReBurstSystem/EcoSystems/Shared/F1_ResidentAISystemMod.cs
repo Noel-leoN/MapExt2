@@ -34,7 +34,7 @@ using Unity.Jobs;
 using Unity.Mathematics;
 using UnityEngine;
 
-namespace MapExtPDX.ModeE
+namespace MapExtPDX.EcoShared
 {
 	public partial class ResidentAISystemMod : GameSystemBase
 	{
