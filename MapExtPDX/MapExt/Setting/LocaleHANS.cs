@@ -60,13 +60,14 @@ namespace MapExtPDX
                 },
 
                 // --- Group: 地形-水体优化 (Beta) ---
-                { m_Setting.GetOptionGroupLocaleID(ModSettings.kTerrainWaterOptGroup), "地形-水体性能优化 (Beta)" },
+                { m_Setting.GetOptionGroupLocaleID(ModSettings.kTerrainWaterOptGroup), "地形-水体性能优化 (可于游戏中实时调节)" },
                 { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.TerrainBufferPrealloc)), "地形缓冲预分配" },
                 {
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.TerrainBufferPrealloc)),
                     "根据地图倍率在首帧预分配更大的 GPU StructuredBuffer，" +
                     "避免大量建筑/道路可见时运行时动态扩容卡顿。\n\n" +
-                    "★ 建议：大地图全部开启，无视觉副作用。"
+                    "★ 建议：大地图全部开启，无视觉副作用。\n" +
+                    "★ 提示：该选项即时生效无须重启。"
                 },
                 { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.TerrainCascadeThrottle)), "⚠ 地形级联降频 (实验性)" },
                 {
@@ -74,7 +75,8 @@ namespace MapExtPDX
                     "通过将远距地形级联层每4帧更新一次（而非每帧）来降低 GPU 负载。\n\n" +
                     "⚠ 警告：移动相机时可能出现地形偏移/错位，" +
                     "因为级联视口范围每帧更新但渲染被降频。\n\n" +
-                    "★ 建议：除非在超大地图上遇到严重 GPU 瓶颈，否则保持关闭。"
+                    "★ 建议：除非在超大地图上遇到严重 GPU 瓶颈，否则保持关闭。\n" +
+                    "★ 提示：该选项即时生效无须重启。"
                 },
                 { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.TerrainCullThrottle)), "建筑裁剪降频" },
                 {
@@ -82,7 +84,8 @@ namespace MapExtPDX
                     "相机平移时，若建筑和地形均无实际变化，跳过 CullBuildingLotsJob 全量裁剪，" +
                     "复用上一帧的缓存列表。\n\n" +
                     "大地图下该 Job 遍历所有建筑实体，开销随建筑数量线性增长。该优化可显著降低平移相机时的 CPU 占用。\n\n" +
-                    "★ 建议：大地图全部开启，无视觉副作用。"
+                    "★ 建议：大地图全部开启，无视觉副作用。\n" +
+                    "★ 提示：该选项即时生效无须重启。"
                 },
                 {
                     m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.WaterSimQuality)),

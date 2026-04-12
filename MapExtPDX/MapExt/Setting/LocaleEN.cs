@@ -62,13 +62,14 @@ namespace MapExtPDX
                 },
 
                 // --- Group: Terrain-Water Optimization (Beta) ---
-                { m_Setting.GetOptionGroupLocaleID(ModSettings.kTerrainWaterOptGroup), "Terrain-Water Performance Optimization (Beta)" },
+                { m_Setting.GetOptionGroupLocaleID(ModSettings.kTerrainWaterOptGroup), "Terrain-Water Performance Optimization (Adjustable In-Game)" },
                 { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.TerrainBufferPrealloc)), "Terrain Buffer Pre-allocation" },
                 {
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.TerrainBufferPrealloc)),
                     "Pre-allocates larger GPU StructuredBuffers on the first frame based on map scale multiplier, " +
                     "preventing runtime buffer reallocation stutter when many buildings/roads are visible.\n\n" +
-                    "★ Recommended: ON for all large maps. No visual side effects."
+                    "★ Recommended: ON for all large maps. No visual side effects.\n" +
+                    "★ Tip: Applies instantly, no restart required."
                 },
                 { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.TerrainCascadeThrottle)), "⚠ Terrain Cascade Throttle (Experimental)" },
                 {
@@ -76,7 +77,8 @@ namespace MapExtPDX
                     "Reduces GPU load by updating distant terrain cascade layers every 4 frames instead of every frame.\n\n" +
                     "⚠ WARNING: May cause visible terrain offset/misalignment when moving the camera, " +
                     "because cascade viewport ranges update every frame but rendering is throttled.\n\n" +
-                    "★ Recommended: OFF unless you experience severe GPU bottleneck on very large maps."
+                    "★ Recommended: OFF unless you experience severe GPU bottleneck on very large maps.\n" +
+                    "★ Tip: Applies instantly, no restart required."
                 },
                 { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.TerrainCullThrottle)), "Terrain Building Cull Throttle" },
                 {
@@ -85,7 +87,8 @@ namespace MapExtPDX
                     "the cached building list from the previous frame is reused instead.\n\n" +
                     "This eliminates unnecessary CPU work from CullBuildingLotsJob, which iterates over all building entities every frame " +
                     "on large maps even if nothing has changed.\n\n" +
-                    "★ Recommended: ON for all large maps. No visual side effects."
+                    "★ Recommended: ON for all large maps. No visual side effects.\n" +
+                    "★ Tip: Applies instantly, no restart required."
                 },
                 {
                     m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.WaterSimQuality)),

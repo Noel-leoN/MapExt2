@@ -1,4 +1,4 @@
-## v2.4.0 - Performance Optimization and Economy Expansion
+﻿## v2.5.0 - Performance Optimization and Economy Expansion
 
 * **Terrain and Water Optimization:** Added terrain rendering performance options and water simulation quality presets. All options can be adjusted in real-time via OptionUI during gameplay.
 * **Terrain Stability:** Fixed a rare crash related to terrain rendering on large maps.
