@@ -69,15 +69,6 @@ namespace MapExtPDX
                     "★ 建议：大地图全部开启，无视觉副作用。\n" +
                     "★ 提示：该选项即时生效无须重启。"
                 },
-                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.TerrainCascadeThrottle)), "⚠ 地形级联降频 (实验性)" },
-                {
-                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.TerrainCascadeThrottle)),
-                    "通过将远距地形级联层每4帧更新一次（而非每帧）来降低 GPU 负载。\n\n" +
-                    "⚠ 警告：移动相机时可能出现地形偏移/错位，" +
-                    "因为级联视口范围每帧更新但渲染被降频。\n\n" +
-                    "★ 建议：除非在超大地图上遇到严重 GPU 瓶颈，否则保持关闭。\n" +
-                    "★ 提示：该选项即时生效无须重启。"
-                },
                 { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.TerrainCullThrottle)), "建筑裁剪降频" },
                 {
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.TerrainCullThrottle)),
@@ -85,6 +76,15 @@ namespace MapExtPDX
                     "复用上一帧的缓存列表。\n\n" +
                     "大地图下该 Job 遍历所有建筑实体，开销随建筑数量线性增长。该优化可显著降低平移相机时的 CPU 占用。\n\n" +
                     "★ 建议：大地图全部开启，无视觉副作用。\n" +
+                    "★ 提示：该选项即时生效无须重启。"
+                },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.TerrainCascadeThrottle)), "⚠ 地形级联降频 (实验性)" },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.TerrainCascadeThrottle)),
+                    "通过将远距地形级联层每4帧更新一次（而非每帧）来降低 GPU 负载。\n\n" +
+                    "⚠ 警告：移动相机时可能出现地形偏移/错位，" +
+                    "因为级联视口范围每帧更新但渲染被降频。\n\n" +
+                    "★ 建议：除非在超大地图上遇到严重 GPU 瓶颈，否则保持关闭。\n" +
                     "★ 提示：该选项即时生效无须重启。"
                 },
                 {
@@ -314,7 +314,7 @@ namespace MapExtPDX
                     " - 200万人口：2000 ~ 4000\n" +
                     " - 500万以上人口：4000 ~ 8000"
                 },
-                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.ShoppingTrafficReduction)), "购物概率人口压制系数 (×10⁻⁴)" },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.ShoppingTrafficReduction)), "购物概率人口压制系数 (x0.0001)" },
                 {
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.ShoppingTrafficReduction)),
                     "控制城市人口对家庭购物概率的衰减影响。公式：shopChance = 200 / sqrt(系数 × 人口)。" +

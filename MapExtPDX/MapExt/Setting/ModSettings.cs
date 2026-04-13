@@ -163,20 +163,20 @@ namespace MapExtPDX
         public bool TerrainBufferPrealloc { get; set; } = true;
 
         /// <summary>
-        /// 远距级联降频更新。
-        /// 远距地形级联每 4 帧更新一次，降低 GPU 开销。
-        /// ⚠ 可能导致镜头移动时远景地形短暂错位。
-        /// </summary>
-        [SettingsUISection(kMapSizeModeTab, kTerrainWaterOptGroup)]
-        public bool TerrainCascadeThrottle { get; set; } = false;
-
-        /// <summary>
         /// 建筑裁剪降频。
         /// 相机平移时若无建筑/地形变化，跳过 CullBuildingLotsJob 全量裁剪，
         /// 复用上一帧缓存列表。
         /// </summary>
         [SettingsUISection(kMapSizeModeTab, kTerrainWaterOptGroup)]
         public bool TerrainCullThrottle { get; set; } = true;
+
+        /// <summary>
+        /// 远距级联降频更新。
+        /// 远距地形级联每 4 帧更新一次，降低 GPU 开销。
+        /// ⚠ 可能导致镜头移动时远景地形短暂错位。
+        /// </summary>
+        [SettingsUISection(kMapSizeModeTab, kTerrainWaterOptGroup)]
+        public bool TerrainCascadeThrottle { get; set; } = false;
 
         // ==========================================
         // 分辨率设置 (部分已隐藏)

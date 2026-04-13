@@ -104,7 +104,7 @@ namespace EconomyEX.Settings
                 { m_Setting.GetOptionDescLocaleID(nameof(ModSettings.JobSeekerCap)), "Maximum job seeker entities created per system update. Increase for larger populations." },
                 { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.PathfindRequestCap)), "Job Search: Pathfind Throughput" },
                 { m_Setting.GetOptionDescLocaleID(nameof(ModSettings.PathfindRequestCap)), "Maximum pathfinding requests processed per update. Typically 2~4x the Seeker Throughput." },
-                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.ShoppingTrafficReduction)), "Shopping Traffic Reduction Factor (×10⁻⁴)" },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.ShoppingTrafficReduction)), "Shopping Traffic Reduction Factor (x0.0001)" },
                 { m_Setting.GetOptionDescLocaleID(nameof(ModSettings.ShoppingTrafficReduction)), "Controls how much city population suppresses per-household shopping probability. Higher values = faster decay. Default: 4 (= 0.0004)." },
                 { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.HouseholdResourceDemandMultiplier)), "Household Resource Demand Multiplier" },
                 { m_Setting.GetOptionDescLocaleID(nameof(ModSettings.HouseholdResourceDemandMultiplier)), "Multiplier for resource purchase amount per shopping trip. Default: 3.5." },

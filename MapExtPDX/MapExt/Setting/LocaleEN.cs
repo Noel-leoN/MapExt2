@@ -71,15 +71,6 @@ namespace MapExtPDX
                     "★ Recommended: ON for all large maps. No visual side effects.\n" +
                     "★ Tip: Applies instantly, no restart required."
                 },
-                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.TerrainCascadeThrottle)), "⚠ Terrain Cascade Throttle (Experimental)" },
-                {
-                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.TerrainCascadeThrottle)),
-                    "Reduces GPU load by updating distant terrain cascade layers every 4 frames instead of every frame.\n\n" +
-                    "⚠ WARNING: May cause visible terrain offset/misalignment when moving the camera, " +
-                    "because cascade viewport ranges update every frame but rendering is throttled.\n\n" +
-                    "★ Recommended: OFF unless you experience severe GPU bottleneck on very large maps.\n" +
-                    "★ Tip: Applies instantly, no restart required."
-                },
                 { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.TerrainCullThrottle)), "Terrain Building Cull Throttle" },
                 {
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.TerrainCullThrottle)),
@@ -88,6 +79,15 @@ namespace MapExtPDX
                     "This eliminates unnecessary CPU work from CullBuildingLotsJob, which iterates over all building entities every frame " +
                     "on large maps even if nothing has changed.\n\n" +
                     "★ Recommended: ON for all large maps. No visual side effects.\n" +
+                    "★ Tip: Applies instantly, no restart required."
+                },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.TerrainCascadeThrottle)), "⚠ Terrain Cascade Throttle (Experimental)" },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.TerrainCascadeThrottle)),
+                    "Reduces GPU load by updating distant terrain cascade layers every 4 frames instead of every frame.\n\n" +
+                    "⚠ WARNING: May cause visible terrain offset/misalignment when moving the camera, " +
+                    "because cascade viewport ranges update every frame but rendering is throttled.\n\n" +
+                    "★ Recommended: OFF unless you experience severe GPU bottleneck on very large maps.\n" +
                     "★ Tip: Applies instantly, no restart required."
                 },
                 {
@@ -359,7 +359,7 @@ namespace MapExtPDX
                 },
                 {
                     m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.ShoppingTrafficReduction)),
-                    "Shopping Traffic Reduction Factor (×10⁻⁴)"
+                    "Shopping Traffic Reduction Factor (x0.0001)"
                 },
                 {
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.ShoppingTrafficReduction)),

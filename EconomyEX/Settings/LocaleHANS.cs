@@ -104,7 +104,7 @@ namespace EconomyEX.Settings
                 { m_Setting.GetOptionDescLocaleID(nameof(ModSettings.JobSeekerCap)), "每次系统更新最多创建的求职者数量。城市人口越大可适当提高。" },
                 { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.PathfindRequestCap)), "找工作系统：寻路吞吐量" },
                 { m_Setting.GetOptionDescLocaleID(nameof(ModSettings.PathfindRequestCap)), "每次寻路更新最多处理的求职寻路请求数量。通常为求职吞吐量的 2~4 倍。" },
-                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.ShoppingTrafficReduction)), "购物概率人口压制系数 (×10⁻⁴)" },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.ShoppingTrafficReduction)), "购物概率人口压制系数 (x0.0001)" },
                 { m_Setting.GetOptionDescLocaleID(nameof(ModSettings.ShoppingTrafficReduction)), "控制城市人口对家庭购物概率的衰减影响。数值越大，高人口时购物概率越低。默认：4（=0.0004）。" },
                 { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.HouseholdResourceDemandMultiplier)), "家庭购物需求倍率" },
                 { m_Setting.GetOptionDescLocaleID(nameof(ModSettings.HouseholdResourceDemandMultiplier)), "每次家庭购物时的资源购买量倍率。默认3.5。" },

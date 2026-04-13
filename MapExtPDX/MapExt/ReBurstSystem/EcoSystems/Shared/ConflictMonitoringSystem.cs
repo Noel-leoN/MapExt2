@@ -1,9 +1,9 @@
 // Copyright (c) 2024 Noel2(Noel-leoN)
 // Licensed under the MIT License.
 
-using System;
 using System.Collections.Generic;
 using Game;
+using Game.SceneFlow;
 using Game.Simulation;
 using Unity.Entities;
 using MapExtPDX.MapExt.Core;
@@ -13,18 +13,29 @@ namespace MapExtPDX.EcoShared
     /// <summary>
     /// 全系统冲突监控：定期检查 MapExtPDX 经济系统替换对的运行状态。
     /// 如果检测到原版系统被其他 Mod 重新启用，则报告冲突并自动 disable 对应系统组。
-    /// 仅在 isEnableEconomyFix=true 时有效。
+    /// 仅在已加载存档 (GameMode.Game) 且 isEnableEconomyFix=true 时有效。
     /// </summary>
     public partial class ConflictMonitoringSystem : SystemBase
     {
         private const string Tag = "ConflictMonitor";
         private int _ticker = 0;
         private const int CheckInterval = 300; // 约每5秒检查一次 (60fps)
+        private int _startupDelay = 600; // 启动后等待约10秒再开始检测，避免误报
 
         protected override void OnUpdate()
         {
+            // 仅在游戏内运行（排除主菜单、编辑器等场景）
+            if (GameManager.instance.gameMode != GameMode.Game) return;
+
             var settings = Mod.Instance?.CurrentSettings;
             if (settings == null || !settings.isEnableEconomyFix) return;
+
+            // 启动延迟：等待所有系统完成初始化
+            if (_startupDelay > 0)
+            {
+                _startupDelay--;
+                return;
+            }
 
             _ticker++;
             if (_ticker < CheckInterval) return;
@@ -41,7 +52,7 @@ namespace MapExtPDX.EcoShared
             var settings = Mod.Instance?.CurrentSettings;
             if (settings == null) return;
 
-            // === 逐个检测原版系统（应为 Disabled） ===
+            // === 逐组检测原版系统（应为 Disabled） ===
             var conflicts = new List<string>();
             int okCount = 0;
             int totalChecked = 0;
@@ -96,7 +107,7 @@ namespace MapExtPDX.EcoShared
             else
             {
                 SetWarning(settings, "None");
-                SetStatusReport(settings, "All subsystems disabled");
+                SetStatusReport(settings, "All eco-subsystems disabled by user");
             }
         }
 
@@ -108,8 +119,17 @@ namespace MapExtPDX.EcoShared
             HashSet<string> conflictGroups) where T : GameSystemBase
         {
             totalChecked++;
-            var system = world.GetOrCreateSystemManaged<T>();
-            if (system != null && system.Enabled)
+            // 使用 GetExistingSystemManaged 而非 GetOrCreateSystemManaged
+            // 避免意外创建未注册的系统实例
+            var system = world.GetExistingSystemManaged<T>();
+            if (system == null)
+            {
+                // 系统不存在 = 不是冲突（可能是原版系统被完全移除了）
+                okCount++;
+                return;
+            }
+
+            if (system.Enabled)
             {
                 conflicts.Add(typeof(T).Name);
                 conflictGroups.Add(group);

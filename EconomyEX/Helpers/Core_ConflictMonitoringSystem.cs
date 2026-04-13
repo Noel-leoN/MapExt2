@@ -10,18 +10,27 @@ using Unity.Entities;
 namespace EconomyEX.Helpers
 {
     /// <summary>
-    /// 全系统冲突监控：定期检查所有被 EconomyEX 替换的 10 对系统对的运行状态。
+    /// 全系统冲突监控：定期检查所有被 EconomyEX 替换的系统对的运行状态。
     /// 如果检测到原版系统被其他 Mod 重新启用或 Mod 系统被禁用，则报告冲突并自动 disable 对应系统组。
+    /// 仅在 Mod.IsActive=true（已检测到原版地图并激活系统）时运行。
     /// </summary>
     public partial class ConflictMonitoringSystem : SystemBase
     {
         private const string Tag = "ConflictMonitor";
         private int _ticker = 0;
         private const int CheckInterval = 300; // 约每5秒检查一次 (60fps)
+        private int _startupDelay = 600; // 启动后等待约10秒再开始检测，避免误报
 
         protected override void OnUpdate()
         {
             if (!Mod.IsActive) return;
+
+            // 启动延迟：等待所有系统完成初始化
+            if (_startupDelay > 0)
+            {
+                _startupDelay--;
+                return;
+            }
 
             _ticker++;
             if (_ticker < CheckInterval) return;
@@ -95,7 +104,7 @@ namespace EconomyEX.Helpers
             else
             {
                 SetWarning("None");
-                SetStatusReport("All subsystems disabled");
+                SetStatusReport("All eco-subsystems disabled by user");
             }
         }
 
@@ -112,7 +121,7 @@ namespace EconomyEX.Helpers
             bool hasConflict = false;
 
             // 原版系统应该被禁用
-            var vanillaSystem = world.GetOrCreateSystemManaged<TVanilla>();
+            var vanillaSystem = world.GetExistingSystemManaged<TVanilla>();
             if (vanillaSystem != null && vanillaSystem.Enabled)
             {
                 conflicts.Add($"{typeof(TVanilla).Name} re-enabled");
@@ -120,7 +129,7 @@ namespace EconomyEX.Helpers
             }
 
             // Mod 系统应该处于启用状态
-            var modSystem = world.GetOrCreateSystemManaged<TMod>();
+            var modSystem = world.GetExistingSystemManaged<TMod>();
             if (modSystem != null && !modSystem.Enabled)
             {
                 conflicts.Add($"{typeof(TMod).Name} disabled");
