@@ -40,11 +40,26 @@ namespace EconomyEX.Settings
 
         [SettingsUISection(kSectionGeneral, kSectionGeneral)]
         [SettingsUIDisableByCondition(typeof(ModSettings), nameof(IsEconomyFixDisabled))]
-        public bool EnableResourceBuyerEcoSystem { get; set; } = true;
+        public bool EnableResourceBuyerEcoSystem { get; set; } = false;
 
         [SettingsUISection(kSectionGeneral, kSectionGeneral)]
         [SettingsUIDisableByCondition(typeof(ModSettings), nameof(IsEconomyFixDisabled))]
-        public bool EnableResidentAIEcoSystem { get; set; } = true;
+        public bool EnableResidentAIEcoSystem { get; set; } = false;
+
+        [SettingsUISection(kSectionGeneral, kSectionGeneral)]
+        [SettingsUIButton]
+        [SettingsUIConfirmation]
+        public bool ResetEcoSystemToggles
+        {
+            set
+            {
+                EnableDemandEcoSystem = true;
+                EnableJobSearchEcoSystem = true;
+                EnableHouseholdPropertyEcoSystem = true;
+                EnableResourceBuyerEcoSystem = false;
+                EnableResidentAIEcoSystem = false;
+            }
+        }
 
         public const string kSectionPathfinding = "Pathfinding";
 
@@ -107,6 +122,26 @@ namespace EconomyEX.Settings
         [SettingsUISlider(min = 1000f, max = 200000f, step = 1000f, scalarMultiplier = 1f, unit = Game.UI.Unit.kFloatSingleFraction)]
         public float FindSchoolUniversityMaxCost { get; set; } = 100000f;
 
+        [SettingsUISection(kSectionGeneral, kSectionPathfinding)]
+        [SettingsUIButton]
+        [SettingsUIConfirmation]
+        public bool ResetPathfinding
+        {
+            set
+            {
+                ShoppingMaxCost = 8000f;
+                CompanyShoppingMaxCost = 200000f;
+                LeisureMaxCost = 12000f;
+                EmergencyMaxCost = 6000f;
+                FindJobMaxCost = 200000f;
+                FindHomeMaxCost = 200000f;
+                FindSchoolElementaryMaxCost = 10000f;
+                FindSchoolHighSchoolMaxCost = 17000f;
+                FindSchoolCollegeMaxCost = 50000f;
+                FindSchoolUniversityMaxCost = 100000f;
+            }
+        }
+
         // ==========================================
         // 经济行为参数
         // ==========================================
@@ -121,7 +156,7 @@ namespace EconomyEX.Settings
         public int PathfindRequestCap { get; set; } = 4000;
 
         [SettingsUISection(kSectionGeneral, kSectionBehavior)]
-        [SettingsUISlider(min = 0.0001f, max = 0.002f, step = 0.0001f, scalarMultiplier = 1f, unit = Game.UI.Unit.kFloatSingleFraction)]
+        [SettingsUISlider(min = 1, max = 20, step = 1, scalarMultiplier = 10000, unit = Game.UI.Unit.kInteger)]
         public float ShoppingTrafficReduction { get; set; } = 0.0004f;
 
         [SettingsUISection(kSectionGeneral, kSectionBehavior)]
@@ -135,6 +170,22 @@ namespace EconomyEX.Settings
         [SettingsUISection(kSectionGeneral, kSectionBehavior)]
         [SettingsUISlider(min = 128, max = 5120, step = 128, scalarMultiplier = 1, unit = Game.UI.Unit.kInteger)]
         public int HomelessSeekerCap { get; set; } = 1280;
+
+        [SettingsUISection(kSectionGeneral, kSectionBehavior)]
+        [SettingsUIButton]
+        [SettingsUIConfirmation]
+        public bool ResetEcoBehavior
+        {
+            set
+            {
+                JobSeekerCap = 1000;
+                PathfindRequestCap = 4000;
+                ShoppingTrafficReduction = 0.0004f;
+                HouseholdResourceDemandMultiplier = 3.5f;
+                HomeSeekerCap = 128;
+                HomelessSeekerCap = 1280;
+            }
+        }
 
         // ==========================================
         // NoDogs (backing fields, no UI in EconomyEX)
@@ -167,14 +218,18 @@ namespace EconomyEX.Settings
             }
         }
 
+        /// <summary>系统状态报告概要，由 ConflictMonitoringSystem 更新</summary>
+        [SettingsUISection(kSectionStatus, kSectionStatus)]
+        public string SystemStatusReport { get; set; } = "Waiting...";
+
         public override void SetDefaults()
         {
             EnableEconomyFix = true;
             EnableDemandEcoSystem = true;
             EnableJobSearchEcoSystem = true;
             EnableHouseholdPropertyEcoSystem = true;
-            EnableResourceBuyerEcoSystem = true;
-            EnableResidentAIEcoSystem = true;
+            EnableResourceBuyerEcoSystem = false;
+            EnableResidentAIEcoSystem = false;
             ShoppingMaxCost = 8000f;
             CompanyShoppingMaxCost = 200000f;
             LeisureMaxCost = 12000f;

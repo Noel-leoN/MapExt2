@@ -200,7 +200,26 @@ namespace MapExtPDX
                 },
                 {
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.EnableResidentAIEcoSystem)),
-                    "Fixes citizen pathfinding AI wait time logic flaws and mitigates critical memory overflows caused by large map path calculations.\n\n⚠️ Incompatible with Realistic PathFinding and similar mods!\n⚠️ Restart Required."
+                    "Fixes citizen pathfinding AI wait time logic flaws and mitigates critical memory overflows caused by large map path calculations.\n\n⚠️ Incompatible with Realistic PathFinding and similar mods!\n⚠️ Restart Required.\n\n⚠️ Default: OFF to avoid conflicts with popular pathfinding mods."
+                },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.ResetEcoSystemToggles)), "Reset" },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.ResetEcoSystemToggles)),
+                    "Reset all economy system toggles to their default values."
+                },
+                {
+                    m_Setting.GetOptionWarningLocaleID(nameof(ModSettings.ResetEcoSystemToggles)),
+                    "Are you sure you want to reset all economy system toggles to defaults?"
+                },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.ConflictWarning)), "Conflict Warning" },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.ConflictWarning)),
+                    "Detected conflicts with other mods that modify the same vanilla systems."
+                },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.SystemStatusReport)), "System Status" },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.SystemStatusReport)),
+                    "Real-time status of economy system replacement pairs."
                 },
 
                 // --- Group: Pathfinding Cost Limits ---
@@ -301,6 +320,15 @@ namespace MapExtPDX
                     "★ Recommended:\n" +
                     " - All Map Sizes: 100000 ~ 200000"
                 },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.ResetPathfinding)), "Reset" },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.ResetPathfinding)),
+                    "Reset all pathfinding cost limits to their default values."
+                },
+                {
+                    m_Setting.GetOptionWarningLocaleID(nameof(ModSettings.ResetPathfinding)),
+                    "Are you sure you want to reset all pathfinding parameters to defaults?"
+                },
 
                 // --- Group: Economy Behavior and Throughput ---
                 { m_Setting.GetOptionGroupLocaleID(ModSettings.kEcoBehaviorGroup), "Economy Behavior and Throughput (Adjustable In-Game)" },
@@ -331,7 +359,7 @@ namespace MapExtPDX
                 },
                 {
                     m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.ShoppingTrafficReduction)),
-                    "Shopping Traffic Reduction Factor"
+                    "Shopping Traffic Reduction Factor (×10⁻⁴)"
                 },
                 {
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.ShoppingTrafficReduction)),
@@ -399,6 +427,15 @@ namespace MapExtPDX
                     " - Over 5M pop: 2560 ~ 5120\n\n" +
                     "★ Indicators: If large numbers of homeless remain despite vacant housing, increase this value. " +
                     "If mass homeless influx causes frame drops, decrease it. Can be adjusted in-game."
+                },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.ResetEcoBehavior)), "Reset" },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.ResetEcoBehavior)),
+                    "Reset all economy behavior and throughput parameters to their default values."
+                },
+                {
+                    m_Setting.GetOptionWarningLocaleID(nameof(ModSettings.ResetEcoBehavior)),
+                    "Are you sure you want to reset all economy behavior parameters to defaults?"
                 },
 
                 // ============================================================

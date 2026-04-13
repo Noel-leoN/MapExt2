@@ -259,12 +259,27 @@ namespace MapExtPDX
         [SettingsUISection(kMiscTab, kEcoSystemEnableGroup)]
         [SettingsUIDisableByCondition(typeof(ModSettings), nameof(IsEconomyFixDisabled))]
         [SettingsUIHideByCondition(typeof(ModSettings), nameof(IsNotInMainMenu))]
-        public bool EnableResourceBuyerEcoSystem { get; set; } = true;
+        public bool EnableResourceBuyerEcoSystem { get; set; } = false;
 
         [SettingsUISection(kMiscTab, kEcoSystemEnableGroup)]
         [SettingsUIDisableByCondition(typeof(ModSettings), nameof(IsEconomyFixDisabled))]
         [SettingsUIHideByCondition(typeof(ModSettings), nameof(IsNotInMainMenu))]
-        public bool EnableResidentAIEcoSystem { get; set; } = true;
+        public bool EnableResidentAIEcoSystem { get; set; } = false;
+
+        [SettingsUISection(kMiscTab, kEcoSystemEnableGroup)]
+        [SettingsUIButton]
+        [SettingsUIConfirmation]
+        public bool ResetEcoSystemToggles
+        {
+            set
+            {
+                EnableDemandEcoSystem = true;
+                EnableJobSearchEcoSystem = true;
+                EnableHouseholdPropertyEcoSystem = true;
+                EnableResourceBuyerEcoSystem = false;
+                EnableResidentAIEcoSystem = false;
+            }
+        }
 
         #endregion
 
@@ -317,6 +332,26 @@ namespace MapExtPDX
         [SettingsUISlider(min = 1000f, max = 200000f, step = 1000f, scalarMultiplier = 1f, unit = Game.UI.Unit.kFloatSingleFraction)]
         public float FindSchoolUniversityMaxCost { get; set; } = 100000f;
 
+        [SettingsUISection(kMiscTab, kPathfindingGroup)]
+        [SettingsUIButton]
+        [SettingsUIConfirmation]
+        public bool ResetPathfinding
+        {
+            set
+            {
+                ShoppingMaxCost = 8000f;
+                CompanyShoppingMaxCost = 200000f;
+                LeisureMaxCost = 12000f;
+                EmergencyMaxCost = 6000f;
+                FindJobMaxCost = 200000f;
+                FindHomeMaxCost = 200000f;
+                FindSchoolElementaryMaxCost = 10000f;
+                FindSchoolHighSchoolMaxCost = 17000f;
+                FindSchoolCollegeMaxCost = 50000f;
+                FindSchoolUniversityMaxCost = 100000f;
+            }
+        }
+
         #endregion
 
         // === EconomyEX Tab - 经济行为与吞吐量参数 ===
@@ -341,8 +376,7 @@ namespace MapExtPDX
         /// 原版硬编码 0.0004f。
         /// </summary>
         [SettingsUISection(kMiscTab, kEcoBehaviorGroup)]
-        [SettingsUISlider(min = 0.0001f, max = 0.002f, step = 0.0001f, scalarMultiplier = 1f,
-            unit = Game.UI.Unit.kFloatSingleFraction)]
+        [SettingsUISlider(min = 1, max = 20, step = 1, scalarMultiplier = 10000, unit = Game.UI.Unit.kInteger)]
         public float ShoppingTrafficReduction { get; set; } = 0.0004f;
 
         /// <summary>
@@ -369,6 +403,22 @@ namespace MapExtPDX
         [SettingsUISection(kMiscTab, kEcoBehaviorGroup)]
         [SettingsUISlider(min = 128, max = 5120, step = 128, scalarMultiplier = 1, unit = Game.UI.Unit.kInteger)]
         public int HomelessSeekerCap { get; set; } = 1280;
+
+        [SettingsUISection(kMiscTab, kEcoBehaviorGroup)]
+        [SettingsUIButton]
+        [SettingsUIConfirmation]
+        public bool ResetEcoBehavior
+        {
+            set
+            {
+                JobSeekerCap = 1000;
+                PathfindRequestCap = 4000;
+                ShoppingTrafficReduction = 0.0004f;
+                HouseholdResourceDemandMultiplier = 3.5f;
+                HomeSeekerCap = 128;
+                HomelessSeekerCap = 1280;
+            }
+        }
 
         #endregion
 
@@ -492,6 +542,19 @@ namespace MapExtPDX
         {
         }
 
+        // === Conflict Monitoring ===
+        #region Conflict Monitoring
+
+        /// <summary>冲突警告信息，由 ConflictMonitoringSystem 更新</summary>
+        [SettingsUISection(kMiscTab, kEcoSystemEnableGroup)]
+        public string ConflictWarning { get; set; } = "None";
+
+        /// <summary>系统状态报告概要</summary>
+        [SettingsUISection(kMiscTab, kEcoSystemEnableGroup)]
+        public string SystemStatusReport { get; set; } = "Waiting...";
+
+        #endregion
+
         // === Debug ===
         // 开关LoadGame验证系统
         [SettingsUISection(kDebugTab, kDebugGroup)]
@@ -530,8 +593,8 @@ namespace MapExtPDX
             EnableDemandEcoSystem = true;
             EnableJobSearchEcoSystem = true;
             EnableHouseholdPropertyEcoSystem = true;
-            EnableResourceBuyerEcoSystem = true;
-            EnableResidentAIEcoSystem = true;
+            EnableResourceBuyerEcoSystem = false;
+            EnableResidentAIEcoSystem = false;
 
             // 地形优化
             TerrainBufferPrealloc = true;

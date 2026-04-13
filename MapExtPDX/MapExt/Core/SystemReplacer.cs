@@ -504,6 +504,12 @@ namespace MapExtPDX.MapExt.Core
 
             // --- NoDogs 2.0 性能工具系统 ---
             updateSystem.UpdateAt<EcoShared.P1_NoDogsPatchSystem>(SystemUpdatePhase.GameSimulation);
+
+            // --- 冲突监控系统 ---
+            if (setting.isEnableEconomyFix)
+            {
+                updateSystem.UpdateAt<EcoShared.ConflictMonitoringSystem>(SystemUpdatePhase.MainLoop);
+            }
         }
     }
 }

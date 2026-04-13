@@ -185,7 +185,26 @@ namespace MapExtPDX
                 { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.EnableResidentAIEcoSystem)), "└─ 居民AI寻路优化补丁" },
                 {
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.EnableResidentAIEcoSystem)),
-                    "修复市民寻路AI等待时间的逻辑缺陷，缓解大地图底层寻路内存溢出的问题。\n\n⚠️ 与 Realistic PathFinding 等寻路 Mod 不兼容！\n⚠️ 修改后需重启游戏生效。"
+                    "修复市民寻路AI等待时间的逻辑缺陷，缓解大地图底层寻路内存溢出的问题。\n\n⚠️ 与 Realistic PathFinding 等寻路 Mod 不兼容！\n⚠️ 修改后需重启游戏生效。\n\n⚠️ 默认关闭，以避免与流行寻路Mod冲突。"
+                },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.ResetEcoSystemToggles)), "重置" },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.ResetEcoSystemToggles)),
+                    "将所有经济子系统开关恢复为默认值。"
+                },
+                {
+                    m_Setting.GetOptionWarningLocaleID(nameof(ModSettings.ResetEcoSystemToggles)),
+                    "确认要将所有经济子系统开关重置为默认值吗？"
+                },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.ConflictWarning)), "冲突警告" },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.ConflictWarning)),
+                    "检测到的与其他Mod修改相同原版系统的冲突信息。"
+                },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.SystemStatusReport)), "系统状态" },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.SystemStatusReport)),
+                    "经济系统替换对的实时状态报告。"
                 },
 
                 // --- Group: 寻路成本上限 ---
@@ -263,6 +282,15 @@ namespace MapExtPDX
                     "★ 建议值：\n" +
                     " - 全地图通用：100000 ~ 200000"
                 },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.ResetPathfinding)), "重置" },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.ResetPathfinding)),
+                    "将所有寻路成本上限参数恢复为默认值。"
+                },
+                {
+                    m_Setting.GetOptionWarningLocaleID(nameof(ModSettings.ResetPathfinding)),
+                    "确认要将所有寻路参数重置为默认值吗？"
+                },
 
                 // --- Group: 经济行为与吞吐量 ---
                 { m_Setting.GetOptionGroupLocaleID(ModSettings.kEcoBehaviorGroup), "经济行为与吞吐量 (可于游戏中实时调节)" },
@@ -286,7 +314,7 @@ namespace MapExtPDX
                     " - 200万人口：2000 ~ 4000\n" +
                     " - 500万以上人口：4000 ~ 8000"
                 },
-                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.ShoppingTrafficReduction)), "购物概率人口压制系数" },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.ShoppingTrafficReduction)), "购物概率人口压制系数 (×10⁻⁴)" },
                 {
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.ShoppingTrafficReduction)),
                     "控制城市人口对家庭购物概率的衰减影响。公式：shopChance = 200 / sqrt(系数 × 人口)。" +
@@ -345,6 +373,15 @@ namespace MapExtPDX
                     " - 500万以上人口：2560 ~ 5120\n\n" +
                     "★ 如何判断：若城市中大量流浪汉长期无法入住空置住宅，请提高此值。" +
                     "若大量流浪同时涌入导致帧率骤降，请降低此值。可于游戏中实时调节。"
+                },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.ResetEcoBehavior)), "重置" },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.ResetEcoBehavior)),
+                    "将所有经济行为与吞吐量参数恢复为默认值。"
+                },
+                {
+                    m_Setting.GetOptionWarningLocaleID(nameof(ModSettings.ResetEcoBehavior)),
+                    "确认要将所有经济行为参数重置为默认值吗？"
                 },
 
                 // ============================================================

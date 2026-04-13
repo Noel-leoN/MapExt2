@@ -27,6 +27,9 @@ namespace EconomyEX.Settings
                 { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.ConflictWarning)), "• 冲突警告" },
                 { m_Setting.GetOptionDescLocaleID(nameof(ModSettings.ConflictWarning)), "检测到的可能导致错误的冲突信息。" },
 
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.SystemStatusReport)), "• 系统状态" },
+                { m_Setting.GetOptionDescLocaleID(nameof(ModSettings.SystemStatusReport)), "经济系统替换对的实时状态报告。" },
+
                 { m_Setting.GetOptionTabLocaleID(ModSettings.kSectionGeneral), "通用设置" },
                 { m_Setting.GetOptionGroupLocaleID(ModSettings.kSectionGeneral), "通用设置" },
                 
@@ -43,10 +46,14 @@ namespace EconomyEX.Settings
                 { m_Setting.GetOptionDescLocaleID(nameof(ModSettings.EnableHouseholdPropertyEcoSystem)), "优化家庭找房寻路计算；包含真实地价和租金计算（Land Value）重构，使之更加合理。\n\n⚠️ 修改后需重启游戏生效。" },
 
                 { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.EnableResourceBuyerEcoSystem)), "  ├─ 消费采购与服务覆盖寻路系统组" },
-                { m_Setting.GetOptionDescLocaleID(nameof(ModSettings.EnableResourceBuyerEcoSystem)), "优化市民购物与企业采购的资源匹配，并优化服务覆盖寻路，大幅降低超远路程规划产生的性能开销。\n\n⚠️ 与 Realistic PathFinding 等寻路 Mod 不兼容！\n⚠️ 修改后需重启游戏生效。" },
+                { m_Setting.GetOptionDescLocaleID(nameof(ModSettings.EnableResourceBuyerEcoSystem)), "优化市民购物与企业采购的资源匹配，并优化服务覆盖寻路，大幅降低超远路程规划产生的性能开销。\n\n⚠️ 与 Realistic PathFinding 等寻路 Mod 不兼容！\n⚠️ 修改后需重启游戏生效。\n\n⚠️ 默认关闭，以避免与流行寻路Mod冲突。" },
 
                 { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.EnableResidentAIEcoSystem)), "  └─ 居民AI寻路优化补丁" },
-                { m_Setting.GetOptionDescLocaleID(nameof(ModSettings.EnableResidentAIEcoSystem)), "修复市民寻路AI等待时间的逻辑缺陷，缓解寻路内存溢出的问题。\n\n⚠️ 与 Realistic PathFinding 等寻路 Mod 不兼容！\n⚠️ 修改后需重启游戏生效。" },
+                { m_Setting.GetOptionDescLocaleID(nameof(ModSettings.EnableResidentAIEcoSystem)), "修复市民寻路AI等待时间的逻辑缺陷，缓解寻路内存溢出的问题。\n\n⚠️ 与 Realistic PathFinding 等寻路 Mod 不兼容！\n⚠️ 修改后需重启游戏生效。\n\n⚠️ 默认关闭，以避免与流行寻路Mod冲突。" },
+
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.ResetEcoSystemToggles)), "重置" },
+                { m_Setting.GetOptionDescLocaleID(nameof(ModSettings.ResetEcoSystemToggles)), "将所有经济子系统开关恢复为默认值。" },
+                { m_Setting.GetOptionWarningLocaleID(nameof(ModSettings.ResetEcoSystemToggles)), "确认要将所有经济子系统开关重置为默认值吗？" },
 
                 { m_Setting.GetOptionGroupLocaleID(ModSettings.kSectionPathfinding), "▍寻路优化参数(可于游戏中实时调节)" },
                 { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.ShoppingMaxCost)), "购物最高寻路成本" },
@@ -86,6 +93,29 @@ namespace EconomyEX.Settings
                     "控制市民搬家找房时的最大搜索范围上限。该行为频率较低，建议直接拉满。\n" +
                     "★ 建议值：200000"
                 },
+
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.ResetPathfinding)), "重置" },
+                { m_Setting.GetOptionDescLocaleID(nameof(ModSettings.ResetPathfinding)), "将所有寻路成本上限参数恢复为默认值。" },
+                { m_Setting.GetOptionWarningLocaleID(nameof(ModSettings.ResetPathfinding)), "确认要将所有寻路参数重置为默认值吗？" },
+
+                // --- 经济行为参数 ---
+                { m_Setting.GetOptionGroupLocaleID(ModSettings.kSectionBehavior), "经济行为与吞吐量 (可于游戏中实时调节)" },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.JobSeekerCap)), "找工作系统：求职吞吐量" },
+                { m_Setting.GetOptionDescLocaleID(nameof(ModSettings.JobSeekerCap)), "每次系统更新最多创建的求职者数量。城市人口越大可适当提高。" },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.PathfindRequestCap)), "找工作系统：寻路吞吐量" },
+                { m_Setting.GetOptionDescLocaleID(nameof(ModSettings.PathfindRequestCap)), "每次寻路更新最多处理的求职寻路请求数量。通常为求职吞吐量的 2~4 倍。" },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.ShoppingTrafficReduction)), "购物概率人口压制系数 (×10⁻⁴)" },
+                { m_Setting.GetOptionDescLocaleID(nameof(ModSettings.ShoppingTrafficReduction)), "控制城市人口对家庭购物概率的衰减影响。数值越大，高人口时购物概率越低。默认：4（=0.0004）。" },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.HouseholdResourceDemandMultiplier)), "家庭购物需求倍率" },
+                { m_Setting.GetOptionDescLocaleID(nameof(ModSettings.HouseholdResourceDemandMultiplier)), "每次家庭购物时的资源购买量倍率。默认3.5。" },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.HomeSeekerCap)), "找房系统：搬家吞吐量" },
+                { m_Setting.GetOptionDescLocaleID(nameof(ModSettings.HomeSeekerCap)), "每帧最多处理的已有住房但想搬家的家庭数量。默认128。" },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.HomelessSeekerCap)), "找房系统：流浪安置吞吐量" },
+                { m_Setting.GetOptionDescLocaleID(nameof(ModSettings.HomelessSeekerCap)), "每帧最多处理的无家可归家庭找房数量。默认1280。" },
+
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.ResetEcoBehavior)), "重置" },
+                { m_Setting.GetOptionDescLocaleID(nameof(ModSettings.ResetEcoBehavior)), "将所有经济行为与吞吐量参数恢复为默认值。" },
+                { m_Setting.GetOptionWarningLocaleID(nameof(ModSettings.ResetEcoBehavior)), "确认要将所有经济行为参数重置为默认值吗？" },
             };
         }
 
