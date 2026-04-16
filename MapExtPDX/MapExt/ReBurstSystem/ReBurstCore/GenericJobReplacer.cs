@@ -50,7 +50,11 @@ namespace MapExtPDX.MapExt.ReBurstSystem.Core
             }
             else if (validation.Infos.Count > 0)
             {
+#if DEBUG
                 ModLog.Info(Tag, $"注册信息 | {originalJobType.Name} -> {replacementJobType.Name}\n{validation.GetReport()}");
+#else
+                ModLog.Info(Tag, $"注册映射 | {originalJobType.Name} -> {replacementJobType.Name} ({validation.Infos.Count} implicit type mappings)");
+#endif
             }
 
             lock (_contextLock)
