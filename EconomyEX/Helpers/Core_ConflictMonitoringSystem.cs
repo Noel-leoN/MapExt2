@@ -1,18 +1,21 @@
-// Copyright (c) 2024 Noel2(Noel-leoN)
+﻿// Copyright (c) 2024 Noel2(Noel-leoN)
 // Licensed under the MIT License.
 
 using System.Collections.Generic;
 using Game;
+using Game.SceneFlow;
 using Game.Simulation;
-using EconomyEX.Systems;
 using Unity.Entities;
+using EconomyEX.Settings;
 
 namespace EconomyEX.Helpers
 {
     /// <summary>
-    /// 全系统冲突监控：定期检查所有被 EconomyEX 替换的系统对的运行状态。
-    /// 如果检测到原版系统被其他 Mod 重新启用或 Mod 系统被禁用，则报告冲突并自动 disable 对应系统组。
-    /// 仅在 Mod.IsActive=true（已检测到原版地图并激活系统）时运行。
+    /// 全系统冲突监控：定期检查 MapExtPDX 经济系统替换对的运行状态。
+    /// 如果检测到原版系统被其他 Mod 重新启用，则报告冲突并自动 disable 对应系统组。
+    /// 仅在已加载存档 (GameMode.Game) 且 EnableEconomyFix=true 时有效。
+    /// 采用"二次确认"机制：首次检测到异常时尝试自行修复（重新禁用），
+    /// 仅在连续两次检测到同一系统被重新启用时才确认为真正冲突。
     /// </summary>
     public partial class ConflictMonitoringSystem : SystemBase
     {
@@ -20,10 +23,32 @@ namespace EconomyEX.Helpers
         private int _ticker = 0;
         private const int CheckInterval = 300; // 约每5秒检查一次 (60fps)
         private int _startupDelay = 600; // 启动后等待约10秒再开始检测，避免误报
+        private bool _wasInGame = false;
+
+        /// <summary>首次检测到异常的系统名称集合，用于二次确认</summary>
+        private readonly HashSet<string> _pendingVerification = new HashSet<string>();
 
         protected override void OnUpdate()
         {
-            if (!Mod.IsActive) return;
+            // 仅在游戏内运行（排除主菜单、编辑器等场景）
+            if (GameManager.instance.gameMode != GameMode.Game)
+            {
+                _wasInGame = false;
+                return;
+            }
+
+            var settings = EconomyEX.Mod.Instance?.Settings;
+            if (settings == null || !settings.EnableEconomyFix) return;
+
+            // 从非游戏模式进入游戏模式时，重置启动延迟和待验证状态
+            if (!_wasInGame)
+            {
+                _wasInGame = true;
+                _startupDelay = 600;
+                _ticker = 0;
+                _pendingVerification.Clear();
+                return;
+            }
 
             // 启动延迟：等待所有系统完成初始化
             if (_startupDelay > 0)
@@ -41,13 +66,14 @@ namespace EconomyEX.Helpers
 
         private void CheckForConflicts()
         {
-            var world = World.DefaultGameObjectInjectionWorld;
-            if (world == null) return;
+            // 使用 this.World 确保在同一 World 上下文中检查系统状态
+            var world = this.World;
+            if (world == null || !world.IsCreated) return;
 
-            var settings = Mod.Instance?.Settings;
+            var settings = EconomyEX.Mod.Instance?.Settings;
             if (settings == null) return;
 
-            // === 逐组检测 ===
+            // === 逐组检测原版系统（应为 Disabled） ===
             var conflicts = new List<string>();
             int okCount = 0;
             int totalChecked = 0;
@@ -56,94 +82,111 @@ namespace EconomyEX.Helpers
             // --- B 系列: 求职系统 ---
             if (settings.EnableJobSearchEcoSystem)
             {
-                CheckPair<CitizenFindJobSystem, CitizenFindJobSystemMod>(world, "JobSearch", conflicts, ref okCount, ref totalChecked, conflictGroups);
-                CheckPair<FindJobSystem, FindJobSystemMod>(world, "JobSearch", conflicts, ref okCount, ref totalChecked, conflictGroups);
+                CheckVanillaSystem<CitizenFindJobSystem>(world, "JobSearch", conflicts, ref okCount, ref totalChecked, conflictGroups);
+                CheckVanillaSystem<FindJobSystem>(world, "JobSearch", conflicts, ref okCount, ref totalChecked, conflictGroups);
             }
 
-            // --- C 系列: 家庭行为系统 ---
+            // --- C+D 系列: 家庭行为 + 租金系统 ---
             if (settings.EnableHouseholdPropertyEcoSystem)
             {
-                CheckPair<HouseholdFindPropertySystem, HouseholdFindPropertySystemMod>(world, "HouseholdProperty", conflicts, ref okCount, ref totalChecked, conflictGroups);
-                CheckPair<HouseholdBehaviorSystem, HouseholdBehaviorSystemMod>(world, "HouseholdProperty", conflicts, ref okCount, ref totalChecked, conflictGroups);
-                // D 系列：租金与地价
-                CheckPair<RentAdjustSystem, RentAdjustSystemMod>(world, "HouseholdProperty", conflicts, ref okCount, ref totalChecked, conflictGroups);
-                CheckPair<LandValueSystem, LandValueSystemMod>(world, "HouseholdProperty", conflicts, ref okCount, ref totalChecked, conflictGroups);
+                CheckVanillaSystem<HouseholdFindPropertySystem>(world, "HouseholdProperty", conflicts, ref okCount, ref totalChecked, conflictGroups);
+                CheckVanillaSystem<HouseholdBehaviorSystem>(world, "HouseholdProperty", conflicts, ref okCount, ref totalChecked, conflictGroups);
+                CheckVanillaSystem<RentAdjustSystem>(world, "HouseholdProperty", conflicts, ref okCount, ref totalChecked, conflictGroups);
             }
 
             // --- E 系列: 出行/服务覆盖/资源采购系统 ---
             if (settings.EnableResourceBuyerEcoSystem)
             {
-                CheckPair<TripNeededSystem, TripNeededSystemMod>(world, "ResourceBuyer", conflicts, ref okCount, ref totalChecked, conflictGroups);
-                CheckPair<ServiceCoverageSystem, ServiceCoverageSystemMod>(world, "ResourceBuyer", conflicts, ref okCount, ref totalChecked, conflictGroups);
-                CheckPair<ResourceBuyerSystem, ResourceBuyerSystemMod>(world, "ResourceBuyer", conflicts, ref okCount, ref totalChecked, conflictGroups);
+                CheckVanillaSystem<TripNeededSystem>(world, "ResourceBuyer", conflicts, ref okCount, ref totalChecked, conflictGroups);
+                CheckVanillaSystem<ServiceCoverageSystem>(world, "ResourceBuyer", conflicts, ref okCount, ref totalChecked, conflictGroups);
+                CheckVanillaSystem<ResourceBuyerSystem>(world, "ResourceBuyer", conflicts, ref okCount, ref totalChecked, conflictGroups);
             }
 
             // --- F 系列: 居民AI系统 ---
             if (settings.EnableResidentAIEcoSystem)
             {
-                CheckPair<ResidentAISystem, ResidentAISystemMod>(world, "ResidentAI", conflicts, ref okCount, ref totalChecked, conflictGroups);
+                CheckVanillaSystem<ResidentAISystem>(world, "ResidentAI", conflicts, ref okCount, ref totalChecked, conflictGroups);
             }
 
             // === 更新 UI 状态 ===
             if (conflicts.Count > 0)
             {
-                string warningMsg = $"⚠ {conflicts.Count} Conflicts: {string.Join(", ", conflicts)}";
-                SetWarning(warningMsg);
-                SetStatusReport($"⚠ {okCount}/{totalChecked} OK, {conflicts.Count} Conflicts");
+                string warningMsg = $"⚠ {conflicts.Count} Conflicts: {string.Join(", ", conflicts)} re-enabled";
+                SetWarning(settings, warningMsg);
+                SetStatusReport(settings, $"⚠ {okCount}/{totalChecked} OK, {conflicts.Count} conflicts");
 
                 // === 自动 disable 冲突的系统组 ===
                 AutoDisableConflictGroups(settings, conflictGroups);
 
-                Mod.Warn($"[{Tag}] {warningMsg}");
+                ModLog.Warn(Tag, warningMsg);
             }
             else if (totalChecked > 0)
             {
-                SetWarning("None");
-                SetStatusReport($"✅ {okCount}/{totalChecked} OK");
+                SetWarning(settings, "None");
+                SetStatusReport(settings, $"✅ {okCount}/{totalChecked} OK");
             }
             else
             {
-                SetWarning("None");
-                SetStatusReport("All eco-subsystems disabled by user");
+                SetWarning(settings, "None");
+                SetStatusReport(settings, "All eco-subsystems disabled by user");
             }
         }
 
         // === Helpers ===
 
-        /// <summary>检查一对系统（原版应禁用，Mod应启用）</summary>
-        private static void CheckPair<TVanilla, TMod>(World world, string group,
+        /// <summary>
+        /// 检查单个原版系统是否被意外重新启用。
+        /// 采用"二次确认"机制避免误报：
+        /// - 首次检测到异常：尝试自行修复（重新禁用），标记为待验证，不报告冲突
+        /// - 二次检测到异常：确认为真正冲突（另一个 Mod 在持续重新启用）
+        /// </summary>
+        private void CheckVanillaSystem<T>(World world, string group,
             List<string> conflicts, ref int okCount, ref int totalChecked,
-            HashSet<string> conflictGroups)
-            where TVanilla : GameSystemBase
-            where TMod : GameSystemBase
+            HashSet<string> conflictGroups) where T : GameSystemBase
         {
             totalChecked++;
-            bool hasConflict = false;
+            string systemName = typeof(T).Name;
 
-            // 原版系统应该被禁用
-            var vanillaSystem = world.GetExistingSystemManaged<TVanilla>();
-            if (vanillaSystem != null && vanillaSystem.Enabled)
+            // 使用 GetExistingSystemManaged 而非 GetOrCreateSystemManaged
+            // 避免意外创建未注册的系统实例
+            var system = world.GetExistingSystemManaged<T>();
+            if (system == null)
             {
-                conflicts.Add($"{typeof(TVanilla).Name} re-enabled");
-                hasConflict = true;
-            }
-
-            // Mod 系统应该处于启用状态
-            var modSystem = world.GetExistingSystemManaged<TMod>();
-            if (modSystem != null && !modSystem.Enabled)
-            {
-                conflicts.Add($"{typeof(TMod).Name} disabled");
-                hasConflict = true;
-            }
-
-            if (hasConflict)
-                conflictGroups.Add(group);
-            else
+                // 系统不存在 = 不是冲突（可能是原版系统被完全移除了）
+                _pendingVerification.Remove(systemName);
                 okCount++;
+                return;
+            }
+
+            if (system.Enabled)
+            {
+                // 尝试自行修复：重新禁用原版系统
+                system.Enabled = false;
+
+                if (_pendingVerification.Contains(systemName))
+                {
+                    // 上次已尝试修复但系统再次被启用 → 确认为真正冲突
+                    conflicts.Add(systemName);
+                    conflictGroups.Add(group);
+                    _pendingVerification.Remove(systemName);
+                }
+                else
+                {
+                    // 首次检测到启用状态，标记为待验证，暂不报告
+                    _pendingVerification.Add(systemName);
+                    okCount++;
+                }
+            }
+            else
+            {
+                // 已正确禁用，清除待验证状态
+                _pendingVerification.Remove(systemName);
+                okCount++;
+            }
         }
 
         /// <summary>检测到冲突时，自动关闭对应系统组的 Settings 开关</summary>
-        private static void AutoDisableConflictGroups(Settings.ModSettings settings, HashSet<string> groups)
+        private static void AutoDisableConflictGroups(ModSettings settings, HashSet<string> groups)
         {
             foreach (var group in groups)
             {
@@ -153,48 +196,45 @@ namespace EconomyEX.Helpers
                         if (settings.EnableJobSearchEcoSystem)
                         {
                             settings.EnableJobSearchEcoSystem = false;
-                            Mod.Warn($"[{Tag}] Auto-disabled JobSearch group due to conflict.");
+                            ModLog.Warn(Tag, "Auto-disabled JobSearch group due to conflict.");
                         }
                         break;
                     case "HouseholdProperty":
                         if (settings.EnableHouseholdPropertyEcoSystem)
                         {
                             settings.EnableHouseholdPropertyEcoSystem = false;
-                            Mod.Warn($"[{Tag}] Auto-disabled HouseholdProperty group due to conflict.");
+                            ModLog.Warn(Tag, "Auto-disabled HouseholdProperty group due to conflict.");
                         }
                         break;
                     case "ResourceBuyer":
                         if (settings.EnableResourceBuyerEcoSystem)
                         {
                             settings.EnableResourceBuyerEcoSystem = false;
-                            Mod.Warn($"[{Tag}] Auto-disabled ResourceBuyer group due to conflict.");
+                            ModLog.Warn(Tag, "Auto-disabled ResourceBuyer group due to conflict.");
                         }
                         break;
                     case "ResidentAI":
                         if (settings.EnableResidentAIEcoSystem)
                         {
                             settings.EnableResidentAIEcoSystem = false;
-                            Mod.Warn($"[{Tag}] Auto-disabled ResidentAI group due to conflict.");
+                            ModLog.Warn(Tag, "Auto-disabled ResidentAI group due to conflict.");
                         }
                         break;
                 }
             }
         }
 
-        private void SetWarning(string msg)
+        /// <summary>仅在值变化时赋值，避免频繁触发 UI 刷新</summary>
+        private static void SetWarning(ModSettings settings, string value)
         {
-            if (Mod.Instance?.Settings != null && Mod.Instance.Settings.ConflictWarning != msg)
-            {
-                Mod.Instance.Settings.ConflictWarning = msg;
-            }
+            if (settings.ConflictWarning != value)
+                settings.ConflictWarning = value;
         }
 
-        private void SetStatusReport(string msg)
+        private static void SetStatusReport(ModSettings settings, string value)
         {
-            if (Mod.Instance?.Settings != null && Mod.Instance.Settings.SystemStatusReport != msg)
-            {
-                Mod.Instance.Settings.SystemStatusReport = msg;
-            }
+            if (settings.SystemStatusReport != value)
+                settings.SystemStatusReport = value;
         }
     }
 }

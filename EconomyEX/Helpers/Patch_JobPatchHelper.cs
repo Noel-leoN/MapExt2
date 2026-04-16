@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2024 Noel2(Noel-leoN)
+// Copyright (c) 2024 Noel2(Noel-leoN)
 // Licensed under the MIT License.
 
 using System;
@@ -21,9 +21,9 @@ namespace EconomyEX.Helpers
         }
 
         // --- Log ---
-        private static void Info(string message) => GenericJobReplacePatch.Info(message);
-        private static void Warn(string message) => GenericJobReplacePatch.Warn(message);
-        private static void Error(string message) => GenericJobReplacePatch.Error(message);
+        private static void Info(string message) => ModLog.Info("JobPatch", message);
+        private static void Warn(string message) => ModLog.Warn("JobPatch", message);
+        private static void Error(string message) => ModLog.Error("JobPatch", message);
 
 
         /// <summary>

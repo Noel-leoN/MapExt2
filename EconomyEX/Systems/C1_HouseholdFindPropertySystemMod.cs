@@ -1,4 +1,4 @@
-﻿// Game.Simulation.HouseholdFindPropertySystem
+// Game.Simulation.HouseholdFindPropertySystem
 
 // Game.Simulation.CitizenPathFindSetup + SetupFindHomeJob
 
@@ -30,7 +30,6 @@ using Unity.Collections;
 using Unity.Entities;
 using Unity.Jobs;
 using Unity.Mathematics;
-
 using EconomyEX.Helpers;
 
 namespace EconomyEX.Systems
