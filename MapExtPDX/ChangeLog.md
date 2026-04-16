@@ -1,6 +1,7 @@
 ﻿## v2.5.0 - Performance Optimization and Economy Expansion
 
 * **Economy Patch Stability:** Fixed issues with the economy patch causing crashes and incorrect simulation behavior.
+* **Economy Patch Conflict Detection:** Added detection for other mods modifying the same system, automatically disabling related system groups if conflicts are found.
 * **Terrain and Water Optimization:** Added terrain rendering performance options and water simulation quality presets. All options can be adjusted in real-time via OptionUI during gameplay.
 * **Terrain Stability:** Fixed a rare crash related to terrain rendering on large maps.
 * **Economy - School and Leisure:** Added pathfinding range adjustments for school enrollment and leisure activities, adapted for large maps.
@@ -14,6 +15,7 @@
 ### 主要改动
 
 * **经济补丁稳定性：** 修复经济补丁相关的崩溃和模拟不正确问题。
+* **经济补丁冲突检测:** 增加探测功能,如果发现有其他Mod修改了同一系统，则会自动禁用相关系统组。
 * **地形与水体性能优化：** 新增地形渲染性能选项和水体模拟质量预设，所有选项均可在游戏内通过 OptionUI 实时调整。
 * **地形稳定性：** 修复大型地图上地形渲染相关的罕见崩溃问题。
 * **经济 - 学校与休闲：** 新增学校招生和休闲活动的寻路范围调整，适配大型地图。

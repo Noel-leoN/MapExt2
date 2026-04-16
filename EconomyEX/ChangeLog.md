@@ -1,5 +1,7 @@
 ## v1.2.0 - Economy Expansion
 
+* **Economy Patch Stability:** Fixed issues with the economy patch causing crashes and incorrect simulation behavior.
+* **Economy Patch Conflict Detection:** Added detection for other mods modifying the same system, automatically disabling related system groups if conflicts are found.
 * **Economy - School and Leisure:** Added pathfinding range adjustments for school enrollment and leisure activities.
 * **Economy - Vehicle AI:** Added pathfinding optimization for personal cars and taxis to reduce unnecessary routing.
 * **Economy - Housing:** Added configurable household search caps to control simulation throughput.
@@ -11,6 +13,8 @@
 
 ### 主要改动
 
+* **经济补丁稳定性：** 修复经济补丁相关的崩溃和模拟不正确问题。
+* **经济补丁冲突检测:** 增加探测功能,如果发现有其他Mod修改了同一系统，则会自动禁用相关系统组。
 * **经济 - 学校与休闲：** 新增学校招生和休闲活动的寻路范围调整。
 * **经济 - 车辆 AI：** 新增私家车和出租车的寻路优化，减少不必要的路线计算。
 * **经济 - 住房：** 新增可配置的家庭找房吞吐量上限，控制模拟流畅度。
