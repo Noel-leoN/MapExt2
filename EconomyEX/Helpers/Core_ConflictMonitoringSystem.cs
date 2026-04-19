@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2024 Noel2(Noel-leoN)
+// Copyright (c) 2024 Noel2(Noel-leoN)
 // Licensed under the MIT License.
 
 using System.Collections.Generic;
@@ -61,6 +61,17 @@ namespace EconomyEX.Helpers
             if (_ticker < CheckInterval) return;
             _ticker = 0;
 
+            CheckForConflicts();
+        }
+
+        /// <summary>
+        /// 供 UI 按钮调用的即时检查入口，跳过计时器和延迟直接执行冲突检测。
+        /// </summary>
+        public void ForceCheck()
+        {
+            if (GameManager.instance.gameMode != GameMode.Game) return;
+            var settings = EconomyEX.Mod.Instance?.Settings;
+            if (settings == null || !settings.EnableEconomyFix) return;
             CheckForConflicts();
         }
 

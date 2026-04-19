@@ -48,7 +48,7 @@ namespace EconomyEX.Helpers
             // 注意: A1-A3 需求系统仅通过 JobPatchHelper Transpiler 替换 Job，无需注册系统
 
             // Initial State: DISABLED (Waiting for Map Size Check)
-            DisableEconomySystems();
+            DisableEconomySystems(isInitialStandby: true);
         }
 
         /// <summary>
@@ -95,7 +95,8 @@ namespace EconomyEX.Helpers
         /// Disables EconomyEX systems and Restores Vanilla counterparts.
         /// Call this when Large Map is detected or Mod is unloading.
         /// </summary>
-        public static void DisableEconomySystems()
+        /// <param name="isInitialStandby">true=初始注册后的待机状态，false=运行时主动停用</param>
+        public static void DisableEconomySystems(bool isInitialStandby = false)
         {
             var world = World.DefaultGameObjectInjectionWorld;
             if (world == null) return;
@@ -126,7 +127,10 @@ namespace EconomyEX.Helpers
             SetSystemEnabled<ResidentAISystemMod>(world, false);
             SetSystemEnabled<ResidentAISystemMod.Actions>(world, false);
 
-            Mod.Info("EconomyEX Systems DISABLED. Framework restored to Vanilla.");
+            if (isInitialStandby)
+                Mod.Info("EconomyEX Systems registered (STANDBY). Awaiting map size verification...");
+            else
+                Mod.Info("EconomyEX Systems DISABLED. Framework restored to Vanilla.");
         }
 
         private static void SetSystemEnabled<T>(World world, bool enabled) where T : GameSystemBase

@@ -30,6 +30,9 @@ namespace EconomyEX.Settings
                 { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.SystemStatusReport)), "• 系统状态" },
                 { m_Setting.GetOptionDescLocaleID(nameof(ModSettings.SystemStatusReport)), "经济系统替换对的实时状态报告。" },
 
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.RefreshStatus)), "↻ 刷新状态" },
+                { m_Setting.GetOptionDescLocaleID(nameof(ModSettings.RefreshStatus)), "点击手动刷新冲突检测和系统状态显示。" },
+
                 { m_Setting.GetOptionTabLocaleID(ModSettings.kSectionGeneral), "通用设置" },
                 { m_Setting.GetOptionGroupLocaleID(ModSettings.kSectionGeneral), "通用设置" },
                 
@@ -92,6 +95,31 @@ namespace EconomyEX.Settings
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.FindHomeMaxCost)),
                     "控制市民搬家找房时的最大搜索范围上限。该行为频率较低，建议直接拉满。\n" +
                     "★ 建议值：200000"
+                },
+
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.FindSchoolElementaryMaxCost)), "找小学最高寻路成本" },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.FindSchoolElementaryMaxCost)),
+                    "控制小学生寻找学校愿意走的最远路线开销。较小的值能强迫小学生只能就近入学。\n" +
+                    "★ 建议值：10000"
+                },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.FindSchoolHighSchoolMaxCost)), "找高中最高寻路成本" },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.FindSchoolHighSchoolMaxCost)),
+                    "控制中学生寻找高中能够跨越的最大路线开销。\n" +
+                    "★ 建议值：17000"
+                },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.FindSchoolCollegeMaxCost)), "找学院最高寻路成本" },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.FindSchoolCollegeMaxCost)),
+                    "控制寻找学院(大专)级别的最大范围。\n" +
+                    "★ 建议值：50000"
+                },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.FindSchoolUniversityMaxCost)), "找大学最高寻路成本" },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.FindSchoolUniversityMaxCost)),
+                    "控制寻找大学的最大范围。如果是全图唯一的大学城城邦，建议拉满以覆盖全图每个角落。\n" +
+                    "★ 建议值：100000 ~ 200000"
                 },
 
                 { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.ResetPathfinding)), "重置" },

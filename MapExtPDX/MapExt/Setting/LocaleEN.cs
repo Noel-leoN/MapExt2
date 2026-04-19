@@ -221,6 +221,11 @@ namespace MapExtPDX
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.SystemStatusReport)),
                     "Real-time status of economy system replacement pairs."
                 },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.RefreshStatus)), "↻ Refresh Status" },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.RefreshStatus)),
+                    "Click to manually refresh conflict detection and system status display."
+                },
 
                 // --- Group: Pathfinding Cost Limits ---
                 { m_Setting.GetOptionGroupLocaleID(ModSettings.kPathfindingGroup), "Pathfinding Cost Limits (Adjustable In-Game)" },

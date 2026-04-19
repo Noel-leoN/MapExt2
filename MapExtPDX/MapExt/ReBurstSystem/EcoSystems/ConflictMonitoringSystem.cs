@@ -64,6 +64,17 @@ namespace MapExtPDX.EcoShared
             CheckForConflicts();
         }
 
+        /// <summary>
+        /// 供 UI 按钮调用的即时检查入口，跳过计时器和延迟直接执行冲突检测。
+        /// </summary>
+        public void ForceCheck()
+        {
+            if (GameManager.instance.gameMode != GameMode.Game) return;
+            var settings = Mod.Instance?.CurrentSettings;
+            if (settings == null || !settings.isEnableEconomyFix) return;
+            CheckForConflicts();
+        }
+
         private void CheckForConflicts()
         {
             // 使用 this.World 确保在同一 World 上下文中检查系统状态

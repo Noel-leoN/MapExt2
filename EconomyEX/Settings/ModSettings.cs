@@ -339,6 +339,24 @@ namespace EconomyEX.Settings
         [SettingsUISection(kSectionStatus, kSectionStatus)]
         public string SystemStatusReport { get; set; } = "Waiting...";
 
+        /// <summary>手动刷新状态按钮，触发 ConflictMonitoringSystem 即时检查</summary>
+        [SettingsUISection(kSectionStatus, kSectionStatus)]
+        [SettingsUIButton]
+        public bool RefreshStatus
+        {
+            set
+            {
+                UpdateStatus();
+                // 触发 ConflictMonitoringSystem 的即时检查
+                var world = Unity.Entities.World.DefaultGameObjectInjectionWorld;
+                var monitor = world?.GetExistingSystemManaged<EconomyEX.Helpers.ConflictMonitoringSystem>();
+                if (monitor != null)
+                {
+                    monitor.ForceCheck();
+                }
+            }
+        }
+
         public override void SetDefaults()
         {
             EnableEconomyFix = true;

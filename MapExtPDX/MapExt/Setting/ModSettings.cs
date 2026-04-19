@@ -553,6 +553,23 @@ namespace MapExtPDX
         [SettingsUISection(kMiscTab, kEcoSystemEnableGroup)]
         public string SystemStatusReport { get; set; } = "Waiting...";
 
+        /// <summary>手动刷新状态按钮，触发 ConflictMonitoringSystem 即时检查</summary>
+        [SettingsUISection(kMiscTab, kEcoSystemEnableGroup)]
+        [SettingsUIButton]
+        public bool RefreshStatus
+        {
+            set
+            {
+                // 触发 ConflictMonitoringSystem 的即时检查
+                var world = Unity.Entities.World.DefaultGameObjectInjectionWorld;
+                var monitor = world?.GetExistingSystemManaged<MapExtPDX.EcoShared.ConflictMonitoringSystem>();
+                if (monitor != null)
+                {
+                    monitor.ForceCheck();
+                }
+            }
+        }
+
         #endregion
 
         // === Debug ===

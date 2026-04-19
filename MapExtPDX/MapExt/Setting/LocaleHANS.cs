@@ -206,6 +206,11 @@ namespace MapExtPDX
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.SystemStatusReport)),
                     "经济系统替换对的实时状态报告。"
                 },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.RefreshStatus)), "↻ 刷新状态" },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.RefreshStatus)),
+                    "点击手动刷新冲突检测和系统状态显示。"
+                },
 
                 // --- Group: 寻路成本上限 ---
                 { m_Setting.GetOptionGroupLocaleID(ModSettings.kPathfindingGroup), "寻路成本上限 (可于游戏中实时调节)" },
