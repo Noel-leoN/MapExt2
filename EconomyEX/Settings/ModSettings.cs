@@ -1,15 +1,26 @@
 using Colossal.IO.AssetDatabase;
 using Game.Modding;
 using Game.Settings;
+using Unity.Entities;
 using EconomyEX.Helpers;
 
 namespace EconomyEX.Settings
 {
     [FileLocation("ModsSettings/" + Mod.ModName + "/" + Mod.ModName)]
+    [SettingsUITabOrder(kSectionStatus, kSectionGeneral, kSectionPerfTool)]
+    [SettingsUIGroupOrder(kSectionStatus, kSectionGeneral, kSectionPathfinding, kSectionBehavior,
+        kNoDogsGroup, kNoTrafficGroup)]
+    [SettingsUIShowGroupName(kSectionGeneral, kSectionPathfinding, kSectionBehavior,
+        kNoDogsGroup, kNoTrafficGroup)]
     public class ModSettings : ModSetting
     {
         public const string kSectionGeneral = "General";
         public const string kSectionStatus = "Status";
+
+        // -- Perf. Tools Tab --
+        public const string kSectionPerfTool = "PerformanceTool";
+        public const string kNoDogsGroup = "NoDogs";
+        public const string kNoTrafficGroup = "NoTraffic";
 
         public ModSettings(IMod mod) : base(mod)
         {
@@ -187,15 +198,121 @@ namespace EconomyEX.Settings
             }
         }
 
-        // ==========================================
-        // NoDogs (backing fields, no UI in EconomyEX)
-        // ==========================================
-        [SettingsUIHidden]
-        public bool NoDogsOnStreet { get; set; } = false;
-        [SettingsUIHidden]
-        public bool NoDogsGeneration { get; set; } = false;
-        [SettingsUIHidden]
-        public bool NoDogsPurge { get; set; } = false;
+        // === NoDogs 2.0 ===
+        #region NoDogs
+
+        private bool m_NoDogsOnStreet = false;
+        private bool m_NoDogsGeneration = false;
+        private bool m_NoDogsPurge = false;
+
+        [SettingsUISection(kSectionPerfTool, kNoDogsGroup)]
+        public bool NoDogsOnStreet
+        {
+            get => m_NoDogsOnStreet;
+            set => m_NoDogsOnStreet = value;
+        }
+
+        [SettingsUISection(kSectionPerfTool, kNoDogsGroup)]
+        public bool NoDogsGeneration
+        {
+            get => m_NoDogsGeneration;
+            set => m_NoDogsGeneration = value;
+        }
+
+        [SettingsUISection(kSectionPerfTool, kNoDogsGroup)]
+        public bool NoDogsPurge
+        {
+            get => m_NoDogsPurge;
+            set => m_NoDogsPurge = value;
+        }
+
+        [SettingsUISection(kSectionPerfTool, kNoDogsGroup)]
+        [SettingsUIButton]
+        [SettingsUIConfirmation]
+        public bool ApplyNoDogs
+        {
+            set
+            {
+                UpdateNoDogsSystemStates();
+            }
+        }
+
+        public void UpdateNoDogsSystemStates()
+        {
+            ModLog.Info("Settings", $"NoDogs 2.0: OnStreet={m_NoDogsOnStreet}, Generation={m_NoDogsGeneration}, Purge={m_NoDogsPurge}");
+
+            // 禁止外出：关闭 HouseholdPetSpawnSystem
+            World.DefaultGameObjectInjectionWorld.GetOrCreateSystemManaged<Game.Simulation.HouseholdPetSpawnSystem>()
+                .Enabled = !m_NoDogsOnStreet;
+
+            // 阻止生成 / 清除存量：通知 ECS 系统
+            var patchSystem = World.DefaultGameObjectInjectionWorld.GetExistingSystemManaged<EconomyEX.Systems.P1_NoDogsPatchSystem>();
+            if (patchSystem != null)
+            {
+                patchSystem.ApplySettings(m_NoDogsGeneration, m_NoDogsPurge);
+            }
+
+            // Purge 是一次性操作，执行后自动取消勾选
+            if (m_NoDogsPurge)
+            {
+                m_NoDogsPurge = false;
+            }
+
+            ModLog.Patch("Settings", "NoDogs 2.0 补丁已应用");
+        }
+
+        public int CurrentPetCount { get; set; } = 0;
+
+        [SettingsUISection(kSectionPerfTool, kNoDogsGroup)]
+        public string DislayPetCount => $"Logical Pets Count: {CurrentPetCount}";
+
+        [SettingsUISection(kSectionPerfTool, kNoDogsGroup)]
+        [SettingsUIButton]
+        public bool RefreshPetCount
+        {
+            set
+            {
+                var patchSystem = World.DefaultGameObjectInjectionWorld.GetExistingSystemManaged<EconomyEX.Systems.P1_NoDogsPatchSystem>();
+                if (patchSystem != null)
+                {
+                    CurrentPetCount = patchSystem.CountPets();
+                }
+            }
+        }
+
+        #endregion
+
+        // === No Through-Traffic ===
+        #region NoThroughTraffic
+
+        private bool m_NoThroughTrafficSystem = false;
+
+        [SettingsUISection(kSectionPerfTool, kNoTrafficGroup)]
+        public bool NoThroughTraffic
+        {
+            get => m_NoThroughTrafficSystem;
+            set
+            {
+                if (m_NoThroughTrafficSystem != value)
+                {
+                    m_NoThroughTrafficSystem = value;
+
+                    UpdateNoThroughTrafficSystemStates();
+                }
+            }
+        }
+
+        public void UpdateNoThroughTrafficSystemStates()
+        {
+            ModLog.Info("Settings",
+                $"TrafficSpawnerAISystem Enabled={!m_NoThroughTrafficSystem}");
+            World.DefaultGameObjectInjectionWorld.GetOrCreateSystemManaged<Game.Simulation.TrafficSpawnerAISystem>()
+                .Enabled = !m_NoThroughTrafficSystem;
+
+            ModLog.Patch("Settings", "NoThroughTraffic 补丁已应用");
+        }
+
+        #endregion
 
 
         public void UpdateStatus()

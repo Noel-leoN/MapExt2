@@ -121,6 +121,10 @@ namespace EconomyEX
             _harmony.CreateClassProcessor(typeof(LandValueSystemMod.Patches)).Patch();
             _harmony.CreateClassProcessor(typeof(ServiceCoverageSystem_SetupPathfindMethods_Patch)).Patch();
 
+            // Apply NoDogs and NoThroughTraffic saved settings
+            Settings.UpdateNoDogsSystemStates();
+            Settings.UpdateNoThroughTrafficSystemStates();
+
             Settings.UpdateStatus();
         }
 

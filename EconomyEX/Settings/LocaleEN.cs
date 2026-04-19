@@ -116,6 +116,59 @@ namespace EconomyEX.Settings
                 { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.ResetEcoBehavior)), "Reset" },
                 { m_Setting.GetOptionDescLocaleID(nameof(ModSettings.ResetEcoBehavior)), "Reset all economy behavior and throughput parameters to their default values." },
                 { m_Setting.GetOptionWarningLocaleID(nameof(ModSettings.ResetEcoBehavior)), "Are you sure you want to reset all economy behavior parameters to defaults?" },
+
+                // ============================================================
+                // Tab: Perf. Tools
+                // ============================================================
+                { m_Setting.GetOptionTabLocaleID(ModSettings.kSectionPerfTool), "Perf. Tools" },
+
+                // --- Group: NoDogs ---
+                { m_Setting.GetOptionGroupLocaleID(ModSettings.kNoDogsGroup), "NoDogs Control" },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.NoDogsOnStreet)), "NoDogs: Disable OnStreet" },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.NoDogsOnStreet)),
+                    "Prevents pets from appearing on streets (disables spawning, rendering and pathfinding). Logical pet entities still exist in memory."
+                },
+                {
+                    m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.NoDogsGeneration)),
+                    "NoDogs: Prevent New Generation"
+                },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.NoDogsGeneration)),
+                    "Blocks new household pet generation by zeroing spawn probability. Existing pets remain, but no new ones will be created for newly moved-in households."
+                },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.NoDogsPurge)), "⚠ NoDogs: Purge All Existing" },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.NoDogsPurge)),
+                    "⚠ WARNING: Removes ALL existing pet entities from the save for maximum performance gain. After purging, existing households will NOT re-acquire pets. Only newly moved-in households will bring dogs (if generation is not blocked)."
+                },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.ApplyNoDogs)), "► Apply NoDogs Settings" },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.ApplyNoDogs)),
+                    "Click to apply the above NoDogs checkbox selections. Changes will NOT take effect until this button is pressed."
+                },
+                {
+                    m_Setting.GetOptionWarningLocaleID(nameof(ModSettings.ApplyNoDogs)),
+                    "Apply NoDogs settings now? If 'Purge All Existing' is checked, all pets will be permanently removed from your save!"
+                },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.DislayPetCount)), "Logical Pets Count" },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.DislayPetCount)),
+                    "Count of logical pet entities currently existing on the map."
+                },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.RefreshPetCount)), "Refresh Pet Count" },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.RefreshPetCount)),
+                    "Click to recalculate the count of active pet entities. This is just for statistics and does not affect the game state."
+                },
+
+                // --- Group: No Through-Traffic ---
+                { m_Setting.GetOptionGroupLocaleID(ModSettings.kNoTrafficGroup), "Traffic Control" },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.NoThroughTraffic)), "No Through-Traffic" },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.NoThroughTraffic)),
+                    "Disable Through-Traffic to reduce pathfinding calculation and traffic congestion. It'll take effect after the game has been running for a while."
+                },
             };
         }
 

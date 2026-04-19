@@ -116,6 +116,53 @@ namespace EconomyEX.Settings
                 { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.ResetEcoBehavior)), "重置" },
                 { m_Setting.GetOptionDescLocaleID(nameof(ModSettings.ResetEcoBehavior)), "将所有经济行为与吞吐量参数恢复为默认值。" },
                 { m_Setting.GetOptionWarningLocaleID(nameof(ModSettings.ResetEcoBehavior)), "确认要将所有经济行为参数重置为默认值吗？" },
+
+                // ============================================================
+                // Tab: 性能工具
+                // ============================================================
+                { m_Setting.GetOptionTabLocaleID(ModSettings.kSectionPerfTool), "性能工具" },
+
+                // --- Group: NoDogs ---
+                { m_Setting.GetOptionGroupLocaleID(ModSettings.kNoDogsGroup), "宠物控制 (NoDogs)" },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.NoDogsOnStreet)), "NoDogs: 禁止外出" },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.NoDogsOnStreet)),
+                    "禁止宠物外出上街（关闭生成、渲染与寻路）。逻辑宠物实体仍存在于内存中。"
+                },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.NoDogsGeneration)), "NoDogs: 阻止新生成" },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.NoDogsGeneration)),
+                    "将新家庭的宠物生成概率归零，阻止新移民携带宠物。已有宠物保留不变。"
+                },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.NoDogsPurge)), "⚠ NoDogs: 清除所有存量" },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.NoDogsPurge)),
+                    "⚠ 警告：移除存档中所有已有宠物实体，最大化性能提升。清除后已有家庭不会再获得宠物，只有新搬入的家庭才会自带（若未阻止生成）。"
+                },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.ApplyNoDogs)), "► 应用 NoDogs 设置" },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.ApplyNoDogs)),
+                    "点击后上方勾选才会生效。未点击此按钮前，勾选不会对游戏产生任何影响。"
+                },
+                {
+                    m_Setting.GetOptionWarningLocaleID(nameof(ModSettings.ApplyNoDogs)),
+                    "确认应用 NoDogs 设置？若勾选了「清除所有存量」，所有宠物将被永久移除！"
+                },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.DislayPetCount)), "当前逻辑宠物数" },
+                { m_Setting.GetOptionDescLocaleID(nameof(ModSettings.DislayPetCount)), "地图上当前的逻辑宠物实体数量统计。" },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.RefreshPetCount)), "刷新宠物统计" },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.RefreshPetCount)),
+                    "点击以重新计算地图上的活动宠物实体数量。这只是一个统计，对游戏状态无任何影响。"
+                },
+
+                // --- Group: 过境交通控制 ---
+                { m_Setting.GetOptionGroupLocaleID(ModSettings.kNoTrafficGroup), "过境交通控制" },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.NoThroughTraffic)), "禁止过境交通" },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.NoThroughTraffic)),
+                    "禁止所有过境交通工具出现，降低寻路计算量和交通拥堵. (可能需要运行一段时间生效)"
+                },
             };
         }
 
