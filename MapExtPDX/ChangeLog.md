@@ -1,4 +1,4 @@
-## v2.5.1 - UI and Logging Improvements
+## v2.5.1 - UI Improvements
 
 * **[Settings/UI]:** Added a "Refresh Status" button in the mod settings to manually update the system conflict detection status.
 
