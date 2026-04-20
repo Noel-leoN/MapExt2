@@ -440,6 +440,27 @@ namespace MapExtPDX
                 // Tab 4: 开发者选项
                 // ============================================================
                 { m_Setting.GetOptionTabLocaleID(ModSettings.kDebugTab), "开发者选项" },
+
+                // --- Group: 人口诊断 ---
+                { m_Setting.GetOptionGroupLocaleID(ModSettings.kPopDiagGroup), "人口诊断" },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.PopDiagReport)), "诊断报告" },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.PopDiagReport)),
+                    "人口健康度实时快照：\n" +
+                    " - Households：常驻家庭总数与住房率\n" +
+                    " - MovingAway：正在离开城市的家庭（静默删除候选）\n" +
+                    " - Homeless：当前无家可归的家庭\n" +
+                    " - Seekers：正在找房的家庭（housed = 升级/被驱逐，homeless = 新到达）\n" +
+                    " - HighRent Buildings：高租金警告建筑数\n\n" +
+                    "点击「刷新」更新。此诊断仅读取数据，不影响游戏状态。"
+                },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.RefreshPopDiag)), "↻ 刷新诊断" },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.RefreshPopDiag)),
+                    "点击以查询当前 ECS 世界中的人口健康度指标。结果显示在上方。"
+                },
+
+                // --- Group: 开发者选项 ---
                 { m_Setting.GetOptionGroupLocaleID(ModSettings.kDebugGroup), "开发者选项" },
                 { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.DisableLoadGameValidation)), "× 禁止游戏读取存档验证" },
                 {

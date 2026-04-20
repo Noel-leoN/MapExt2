@@ -64,10 +64,10 @@ namespace MapExtPDX
     [SettingsUITabOrder(kMapSizeModeTab, kMiscTab, kPerformanceToolTab, kDebugTab)]
     [SettingsUIGroupOrder(kMainModeGroup, kTerrainWaterOptGroup, kResetGroup, kInfoGroup, kEcoGroup, kNoteGroup,
         kEcoSystemEnableGroup, kPathfindingGroup, kEcoBehaviorGroup,
-        kNoDogsGroup, kNoTrafficGroup, kDebugGroup)]
+        kNoDogsGroup, kNoTrafficGroup, kPopDiagGroup, kDebugGroup)]
     [SettingsUIShowGroupName(kMainModeGroup, kTerrainWaterOptGroup, kResetGroup, kEcoGroup,
         kEcoSystemEnableGroup, kPathfindingGroup, kEcoBehaviorGroup,
-        kNoDogsGroup, kNoTrafficGroup, kDebugGroup)]
+        kNoDogsGroup, kNoTrafficGroup, kPopDiagGroup, kDebugGroup)]
     public class ModSettings : ModSetting
     {
         private const string Tag = "Settings";
@@ -98,6 +98,7 @@ namespace MapExtPDX
         public const string kNoTrafficGroup = "NoTraffic";
 
         // -- Developer Tab --
+        public const string kPopDiagGroup = "PopDiag";
         public const string kDebugGroup = "Debug";
 
         public string DisplayedMapSize { get; set; } = "N/A"; // 用于显示 playableArea
@@ -566,6 +567,38 @@ namespace MapExtPDX
                 if (monitor != null)
                 {
                     monitor.ForceCheck();
+                }
+            }
+        }
+
+        #endregion
+
+        // === 人口诊断 ===
+        #region Population Diagnostics
+
+        /// <summary>诊断数据缓存，由 RefreshPopDiag 按钮更新</summary>
+        public string PopDiagData { get; set; } = "Click Refresh to run diagnostics.";
+
+        /// <summary>诊断报告显示（计算属性，UI 在按钮点击后自动重新求值）</summary>
+        [SettingsUISection(kDebugTab, kPopDiagGroup)]
+        public string PopDiagReport => PopDiagData;
+
+        /// <summary>刷新人口诊断数据</summary>
+        [SettingsUISection(kDebugTab, kPopDiagGroup)]
+        [SettingsUIButton]
+        public bool RefreshPopDiag
+        {
+            set
+            {
+                var system = Unity.Entities.World.DefaultGameObjectInjectionWorld
+                    ?.GetExistingSystemManaged<MapExtPDX.EcoShared.PopulationDiagnosticSystem>();
+                if (system != null)
+                {
+                    PopDiagData = system.RunDiagnostics();
+                }
+                else
+                {
+                    PopDiagData = "PopulationDiagnosticSystem not found.";
                 }
             }
         }

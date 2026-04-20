@@ -500,6 +500,27 @@ namespace MapExtPDX
                 // Tab 4: Debug
                 // ============================================================
                 { m_Setting.GetOptionTabLocaleID(ModSettings.kDebugTab), "Debug" },
+
+                // --- Group: Population Diagnostics ---
+                { m_Setting.GetOptionGroupLocaleID(ModSettings.kPopDiagGroup), "Population Diagnostics" },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.PopDiagReport)), "Diagnostic Report" },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.PopDiagReport)),
+                    "Real-time snapshot of population health metrics:\n" +
+                    " - Households: total resident households and housing rate\n" +
+                    " - MovingAway: households currently leaving the city (silent deletion candidates)\n" +
+                    " - Homeless: households without a home\n" +
+                    " - Seekers: households actively searching for property (housed = upgrading/evicted, homeless = newly arrived)\n" +
+                    " - HighRent Buildings: buildings with the high-rent warning flag\n\n" +
+                    "Click 'Refresh' to update. This is a read-only diagnostic and does not affect the game state."
+                },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.RefreshPopDiag)), "↻ Refresh Diagnostics" },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.RefreshPopDiag)),
+                    "Click to query the current ECS world for population health metrics. Results are displayed above."
+                },
+
+                // --- Group: Debug ---
                 { m_Setting.GetOptionGroupLocaleID(ModSettings.kDebugGroup), "Debug" },
                 {
                     m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.DisableLoadGameValidation)),
