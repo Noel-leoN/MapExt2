@@ -187,6 +187,11 @@ namespace MapExtPDX
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.EnableResidentAIEcoSystem)),
                     "修复市民寻路AI等待时间的逻辑缺陷，缓解大地图底层寻路内存溢出的问题。\n\n⚠️ 与 Realistic PathFinding 等寻路 Mod 不兼容！\n⚠️ 修改后需重启游戏生效。\n\n⚠️ 默认关闭，以避免与流行寻路Mod冲突。"
                 },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.EnableDownstreamAIEcoSystem)), "└─ 载具AI与寻路系统组 (Beta)" },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.EnableDownstreamAIEcoSystem)),
+                    "替换私家车AI、出租车AI、休闲系统和找学校系统为可配置版本，按出行目的分级设置寻路成本上限。防止车辆在大地图中因寻路成本超过原版硬编码上限而在途中消失。\n\n⚠️ 与修改相同载具AI系统的 Mod 不兼容！\n⚠️ 修改后需重启游戏生效。\n\n⚠️ 默认关闭 (Beta)。"
+                },
                 { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.ResetEcoSystemToggles)), "重置" },
                 {
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.ResetEcoSystemToggles)),

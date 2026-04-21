@@ -202,6 +202,14 @@ namespace MapExtPDX
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.EnableResidentAIEcoSystem)),
                     "Fixes citizen pathfinding AI wait time logic flaws and mitigates critical memory overflows caused by large map path calculations.\n\n⚠️ Incompatible with Realistic PathFinding and similar mods!\n⚠️ Restart Required.\n\n⚠️ Default: OFF to avoid conflicts with popular pathfinding mods."
                 },
+                {
+                    m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.EnableDownstreamAIEcoSystem)),
+                    "└─ Vehicle AI and Pathfind Systems (Beta)"
+                },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.EnableDownstreamAIEcoSystem)),
+                    "Replaces PersonalCarAI, TaxiAI, LeisureSystem, and FindSchoolSystem with modded versions that use configurable MaxCost limits per travel purpose. Prevents vehicles from disappearing mid-route on large maps due to pathfinding cost exceeding the hardcoded 17000 cap.\n\n⚠️ Incompatible with mods that modify the same vehicle AI systems!\n⚠️ Restart Required.\n\n⚠️ Default: OFF (Beta)."
+                },
                 { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.ResetEcoSystemToggles)), "Reset" },
                 {
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.ResetEcoSystemToggles)),

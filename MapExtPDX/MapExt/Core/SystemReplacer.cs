@@ -85,6 +85,19 @@ namespace MapExtPDX.MapExt.Core
                         updateSystem.World.GetOrCreateSystemManaged<Game.Simulation.ResidentAISystem>().Enabled = false;
                         updateSystem.World.GetOrCreateSystemManaged<Game.Simulation.ResidentAISystem.Actions>().Enabled = false;
                     }
+
+                    if (setting.isEnableEconomyFix && setting.EnableDownstreamAIEcoSystem)
+                    {
+                        // F2: PersonalCarAISystem
+                        updateSystem.World.GetOrCreateSystemManaged<Game.Simulation.PersonalCarAISystem>().Enabled = false;
+                        updateSystem.World.GetOrCreateSystemManaged<Game.Simulation.PersonalCarAISystem.Actions>().Enabled = false;
+                        // F3: TaxiAISystem
+                        updateSystem.World.GetOrCreateSystemManaged<Game.Simulation.TaxiAISystem>().Enabled = false;
+                        // F5: LeisureSystem
+                        updateSystem.World.GetOrCreateSystemManaged<Game.Simulation.LeisureSystem>().Enabled = false;
+                        // F6: FindSchoolSystem
+                        updateSystem.World.GetOrCreateSystemManaged<Game.Simulation.FindSchoolSystem>().Enabled = false;
+                    }
                 }
             }
 
@@ -458,6 +471,19 @@ namespace MapExtPDX.MapExt.Core
                         updateSystem.World.GetOrCreateSystemManaged<Game.Simulation.ResidentAISystem>().Enabled = false;
                         updateSystem.World.GetOrCreateSystemManaged<Game.Simulation.ResidentAISystem.Actions>().Enabled = false;
                     }
+
+                    if (setting.EnableDownstreamAIEcoSystem)
+                    {
+                        // F2: PersonalCarAISystem
+                        updateSystem.World.GetOrCreateSystemManaged<Game.Simulation.PersonalCarAISystem>().Enabled = false;
+                        updateSystem.World.GetOrCreateSystemManaged<Game.Simulation.PersonalCarAISystem.Actions>().Enabled = false;
+                        // F3: TaxiAISystem
+                        updateSystem.World.GetOrCreateSystemManaged<Game.Simulation.TaxiAISystem>().Enabled = false;
+                        // F5: LeisureSystem
+                        updateSystem.World.GetOrCreateSystemManaged<Game.Simulation.LeisureSystem>().Enabled = false;
+                        // F6: FindSchoolSystem
+                        updateSystem.World.GetOrCreateSystemManaged<Game.Simulation.FindSchoolSystem>().Enabled = false;
+                    }
                 }
 
                 if (setting.isEnableEconomyFix && setting.EnableDemandEcoSystem)
@@ -499,6 +525,19 @@ namespace MapExtPDX.MapExt.Core
                 {
                     updateSystem.UpdateAt<EcoShared.ResidentAISystemMod>(SystemUpdatePhase.GameSimulation);
                     updateSystem.UpdateAfter<EcoShared.ResidentAISystemMod.Actions, EcoShared.ResidentAISystemMod>(SystemUpdatePhase.GameSimulation);
+                }
+
+                if (setting.EnableDownstreamAIEcoSystem)
+                {
+                    // F2: 私家车AI（含 Actions 子系统）
+                    updateSystem.UpdateAt<EcoShared.PersonalCarAISystemMod>(SystemUpdatePhase.GameSimulation);
+                    updateSystem.UpdateAfter<EcoShared.PersonalCarAISystemMod.ActionsMod, EcoShared.PersonalCarAISystemMod>(SystemUpdatePhase.GameSimulation);
+                    // F3: 出租车AI
+                    updateSystem.UpdateAt<EcoShared.TaxiAISystemMod>(SystemUpdatePhase.GameSimulation);
+                    // F5: 休闲系统
+                    updateSystem.UpdateAt<EcoShared.LeisureSystemMod>(SystemUpdatePhase.GameSimulation);
+                    // F6: 找学校系统
+                    updateSystem.UpdateAt<EcoShared.FindSchoolSystemMod>(SystemUpdatePhase.GameSimulation);
                 }
             }
 

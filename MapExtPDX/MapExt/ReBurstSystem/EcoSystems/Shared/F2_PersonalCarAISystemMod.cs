@@ -1,4 +1,4 @@
-﻿using Game;
+using Game;
 using Game.Simulation;
 using Game.Agents;
 using Game.Buildings;
@@ -59,108 +59,69 @@ namespace MapExtPDX.EcoShared
 		[BurstCompile]
 		private struct PersonalCarTickJob : IJobChunk
 		{
-			[ReadOnly]
-			public EntityTypeHandle m_EntityType;
-			[ReadOnly]
-			public ComponentTypeHandle<Unspawned> m_UnspawnedType;
-			[ReadOnly]
-			public ComponentTypeHandle<Bicycle> m_BicycleType;
-			[ReadOnly]
-			public ComponentTypeHandle<PrefabRef> m_PrefabRefType;
-			[ReadOnly]
-			public BufferTypeHandle<LayoutElement> m_LayoutElementType;
+			[ReadOnly] public EntityTypeHandle m_EntityType;
+			[ReadOnly] public ComponentTypeHandle<Unspawned> m_UnspawnedType;
+			[ReadOnly] public ComponentTypeHandle<Bicycle> m_BicycleType;
+			[ReadOnly] public ComponentTypeHandle<PrefabRef> m_PrefabRefType;
+			[ReadOnly] public BufferTypeHandle<LayoutElement> m_LayoutElementType;
 			public ComponentTypeHandle<Game.Vehicles.PersonalCar> m_PersonalCarType;
 			public ComponentTypeHandle<Car> m_CarType;
 			public ComponentTypeHandle<CarCurrentLane> m_CurrentLaneType;
 			public BufferTypeHandle<CarNavigationLane> m_CarNavigationLaneType;
-			[ReadOnly]
-			public EntityStorageInfoLookup m_EntityLookup;
-			[ReadOnly]
-			public ComponentLookup<ParkedCar> m_ParkedCarData;
-			[ReadOnly]
-			public ComponentLookup<Owner> m_OwnerData;
-			[ReadOnly]
-			public ComponentLookup<Game.Objects.SpawnLocation> m_SpawnLocationData;
-			[ReadOnly]
-			public ComponentLookup<Unspawned> m_UnspawnedData;
-			[ReadOnly]
-			public ComponentLookup<CarData> m_PrefabCarData;
-			[ReadOnly]
-			public ComponentLookup<PrefabRef> m_PrefabRefData;
-			[ReadOnly]
-			public ComponentLookup<ParkingLaneData> m_PrefabParkingLaneData;
-			[ReadOnly]
-			public ComponentLookup<ObjectGeometryData> m_PrefabObjectGeometryData;
-			[ReadOnly]
-			public ComponentLookup<CreatureData> m_PrefabCreatureData;
-			[ReadOnly]
-			public ComponentLookup<HumanData> m_PrefabHumanData;
-			[ReadOnly]
-			public ComponentLookup<SpawnLocationData> m_PrefabSpawnLocationData;
-			[ReadOnly]
-			public ComponentLookup<PropertyRenter> m_PropertyRenterData;
-			[ReadOnly]
-			public ComponentLookup<Game.Net.CarLane> m_CarLaneData;
-			[ReadOnly]
-			public ComponentLookup<Game.Net.PedestrianLane> m_PedestrianLaneData;
-			[ReadOnly]
-			public ComponentLookup<Game.Net.ParkingLane> m_ParkingLaneData;
-			[ReadOnly]
-			public ComponentLookup<GarageLane> m_GarageLaneData;
-			[ReadOnly]
-			public ComponentLookup<Game.Net.ConnectionLane> m_ConnectionLaneData;
-			[ReadOnly]
-			public ComponentLookup<Curve> m_CurveData;
-			[ReadOnly]
-			public ComponentLookup<SlaveLane> m_SlaveLaneData;
-			[ReadOnly]
-			public ComponentLookup<Game.Creatures.Resident> m_ResidentData;
-			[ReadOnly]
-			public ComponentLookup<Divert> m_DivertData;
-			[ReadOnly]
-			public ComponentLookup<CurrentVehicle> m_CurrentVehicleData;
-			[ReadOnly]
-			public ComponentLookup<Citizen> m_CitizenData;
-			[ReadOnly]
-			public ComponentLookup<HouseholdMember> m_HouseholdMemberData;
-			[ReadOnly]
-			public ComponentLookup<Household> m_HouseholdData;
-			[ReadOnly]
-			public ComponentLookup<Worker> m_WorkerData;
-			[ReadOnly]
-			public ComponentLookup<TravelPurpose> m_TravelPurposeData;
-			[ReadOnly]
-			public ComponentLookup<MovingAway> m_MovingAwayData;
-			[ReadOnly]
-			public BufferLookup<Passenger> m_Passengers;
-			[ReadOnly]
-			public BufferLookup<Game.Net.SubLane> m_SubLanes;
-			[ReadOnly]
-			public BufferLookup<LaneObject> m_LaneObjects;
-			[ReadOnly]
-			public BufferLookup<LaneOverlap> m_LaneOverlaps;
-			[ReadOnly]
-			public BufferLookup<HouseholdCitizen> m_HouseholdCitizens;
-			[NativeDisableParallelForRestriction]
-			public ComponentLookup<Target> m_TargetData;
-			[NativeDisableParallelForRestriction]
-			public ComponentLookup<PathOwner> m_PathOwnerData;
-			[NativeDisableParallelForRestriction]
-			public BufferLookup<PathElement> m_PathElements;
-			[ReadOnly]
-			public RandomSeed m_RandomSeed;
-			[ReadOnly]
-			public Entity m_City;
-			[ReadOnly]
-			public float m_TimeOfDay;
-			[ReadOnly]
-			public ComponentTypeSet m_MovingToParkedCarRemoveTypes;
-			[ReadOnly]
-			public ComponentTypeSet m_MovingToParkedCarAddTypes;
+			[ReadOnly] public EntityStorageInfoLookup m_EntityLookup;
+			[ReadOnly] public ComponentLookup<ParkedCar> m_ParkedCarData;
+			[ReadOnly] public ComponentLookup<Owner> m_OwnerData;
+			[ReadOnly] public ComponentLookup<Game.Objects.SpawnLocation> m_SpawnLocationData;
+			[ReadOnly] public ComponentLookup<Unspawned> m_UnspawnedData;
+			[ReadOnly] public ComponentLookup<CarData> m_PrefabCarData;
+			[ReadOnly] public ComponentLookup<PrefabRef> m_PrefabRefData;
+			[ReadOnly] public ComponentLookup<ParkingLaneData> m_PrefabParkingLaneData;
+			[ReadOnly] public ComponentLookup<ObjectGeometryData> m_PrefabObjectGeometryData;
+			[ReadOnly] public ComponentLookup<CreatureData> m_PrefabCreatureData;
+			[ReadOnly] public ComponentLookup<HumanData> m_PrefabHumanData;
+			[ReadOnly] public ComponentLookup<SpawnLocationData> m_PrefabSpawnLocationData;
+			[ReadOnly] public ComponentLookup<PropertyRenter> m_PropertyRenterData;
+			[ReadOnly] public ComponentLookup<Game.Net.CarLane> m_CarLaneData;
+			[ReadOnly] public ComponentLookup<Game.Net.PedestrianLane> m_PedestrianLaneData;
+			[ReadOnly] public ComponentLookup<Game.Net.ParkingLane> m_ParkingLaneData;
+			[ReadOnly] public ComponentLookup<GarageLane> m_GarageLaneData;
+			[ReadOnly] public ComponentLookup<Game.Net.ConnectionLane> m_ConnectionLaneData;
+			[ReadOnly] public ComponentLookup<Curve> m_CurveData;
+			[ReadOnly] public ComponentLookup<SlaveLane> m_SlaveLaneData;
+			[ReadOnly] public ComponentLookup<Game.Creatures.Resident> m_ResidentData;
+			[ReadOnly] public ComponentLookup<Divert> m_DivertData;
+			[ReadOnly] public ComponentLookup<CurrentVehicle> m_CurrentVehicleData;
+			[ReadOnly] public ComponentLookup<Citizen> m_CitizenData;
+			[ReadOnly] public ComponentLookup<HouseholdMember> m_HouseholdMemberData;
+			[ReadOnly] public ComponentLookup<Household> m_HouseholdData;
+			[ReadOnly] public ComponentLookup<Worker> m_WorkerData;
+			[ReadOnly] public ComponentLookup<TravelPurpose> m_TravelPurposeData;
+			[ReadOnly] public ComponentLookup<MovingAway> m_MovingAwayData;
+			[ReadOnly] public BufferLookup<Passenger> m_Passengers;
+			[ReadOnly] public BufferLookup<Game.Net.SubLane> m_SubLanes;
+			[ReadOnly] public BufferLookup<LaneObject> m_LaneObjects;
+			[ReadOnly] public BufferLookup<LaneOverlap> m_LaneOverlaps;
+			[ReadOnly] public BufferLookup<HouseholdCitizen> m_HouseholdCitizens;
+			[NativeDisableParallelForRestriction] public ComponentLookup<Target> m_TargetData;
+			[NativeDisableParallelForRestriction] public ComponentLookup<PathOwner> m_PathOwnerData;
+			[NativeDisableParallelForRestriction] public BufferLookup<PathElement> m_PathElements;
+			[ReadOnly] public RandomSeed m_RandomSeed;
+			[ReadOnly] public Entity m_City;
+			[ReadOnly] public float m_TimeOfDay;
+			[ReadOnly] public ComponentTypeSet m_MovingToParkedCarRemoveTypes;
+			[ReadOnly] public ComponentTypeSet m_MovingToParkedCarAddTypes;
 			public EntityCommandBuffer.ParallelWriter m_CommandBuffer;
 			public NativeQueue<SetupQueueItem>.ParallelWriter m_PathfindQueue;
 			public NativeQueue<MoneyTransfer>.ParallelWriter m_MoneyTransferQueue;
 			public NativeQueue<ServiceFeeSystem.FeeEvent>.ParallelWriter m_FeeQueue;
+
+			// [MapExt2] 分级 MaxCost 字段，从 ModSettings 读取
+			[ReadOnly] public float m_FindHomeMaxCost;
+			[ReadOnly] public float m_FindJobMaxCost;
+			[ReadOnly] public float m_ShoppingMaxCost;
+			[ReadOnly] public float m_LeisureMaxCost;
+			[ReadOnly] public float m_EmergencyMaxCost;
+			[ReadOnly] public float m_FindSchoolMaxCost;
 			public void Execute(in ArchetypeChunk chunk, int unfilteredChunkIndex, bool useEnabledMask, in v128 chunkEnabledMask)
 			{
 				NativeArray<Entity> entities = chunk.GetNativeArray(m_EntityType);
@@ -731,14 +692,25 @@ namespace MapExtPDX.EcoShared
 							{
 							case Purpose.EmergencyShelter:
 								parameters.m_Weights = new PathfindWeights(1f, 0.2f, 0f, 0.1f);
+								parameters.m_MaxCost = m_EmergencyMaxCost;
 								break;
+							// [MapExt2-MaxCost] 按出行目的分级设置寻路成本上限
 							case Purpose.GoingHome:
+								parameters.m_MaxCost = m_FindHomeMaxCost;
+								break;
 							case Purpose.GoingToWork:
+								parameters.m_MaxCost = m_FindJobMaxCost;
+								break;
 							case Purpose.GoingToSchool:
+								parameters.m_MaxCost = m_FindSchoolMaxCost;
+								break;
 							case Purpose.Shopping:
+								parameters.m_MaxCost = m_ShoppingMaxCost;
+								break;
 							case Purpose.Leisure:
+								parameters.m_MaxCost = m_LeisureMaxCost;
+								break;
 							case Purpose.MovingAway:
-								// [MapExt2-MaxCost] Allow massive distance rides unconditionally
 								parameters.m_MaxCost = CitizenBehaviorSystem.kMaxMovingAwayCost;
 								break;
 							}
@@ -820,23 +792,14 @@ namespace MapExtPDX.EcoShared
 		}
 
 		private EndFrameBarrier m_EndFrameBarrier;
-
 		private SimulationSystem m_SimulationSystem;
-
 		private PathfindSetupSystem m_PathfindSetupSystem;
-
 		private CitySystem m_CitySystem;
-
 		private TimeSystem m_TimeSystem;
-
 		private ServiceFeeSystem m_ServiceFeeSystem;
-
 		private ActionsMod m_Actions;
-
 		private EntityQuery m_VehicleQuery;
-
 		private ComponentTypeSet m_MovingToParkedCarRemoveTypes;
-
 		private ComponentTypeSet m_MovingToParkedCarAddTypes;
 
 		protected override void OnCreate()
@@ -930,7 +893,14 @@ namespace MapExtPDX.EcoShared
 				m_CommandBuffer = m_EndFrameBarrier.CreateCommandBuffer().AsParallelWriter(),
 				m_PathfindQueue = m_PathfindSetupSystem.GetQueue(this, 64).AsParallelWriter(),
 				m_MoneyTransferQueue = m_Actions.m_MoneyTransferQueue.AsParallelWriter(),
-				m_FeeQueue = m_ServiceFeeSystem.GetFeeQueue(out deps).AsParallelWriter()
+				m_FeeQueue = m_ServiceFeeSystem.GetFeeQueue(out deps).AsParallelWriter(),
+				// [MapExt2] 从 Settings 读取分级 MaxCost
+				m_FindHomeMaxCost = Mod.Instance.CurrentSettings.FindHomeMaxCost,
+				m_FindJobMaxCost = Mod.Instance.CurrentSettings.FindJobMaxCost,
+				m_ShoppingMaxCost = Mod.Instance.CurrentSettings.ShoppingMaxCost,
+				m_LeisureMaxCost = Mod.Instance.CurrentSettings.LeisureMaxCost,
+				m_EmergencyMaxCost = Mod.Instance.CurrentSettings.EmergencyMaxCost,
+				m_FindSchoolMaxCost = Mod.Instance.CurrentSettings.FindSchoolHighSchoolMaxCost
 			}.ScheduleParallel(m_VehicleQuery, JobHandle.CombineDependencies(Dependency, deps));
 			m_PathfindSetupSystem.AddQueueWriter(jobHandle);
 			m_EndFrameBarrier.AddJobHandleForProducer(jobHandle);

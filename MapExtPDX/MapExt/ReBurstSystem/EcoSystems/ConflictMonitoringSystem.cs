@@ -119,6 +119,15 @@ namespace MapExtPDX.EcoShared
                 CheckVanillaSystem<ResidentAISystem>(world, "ResidentAI", conflicts, ref okCount, ref totalChecked, conflictGroups);
             }
 
+            // --- F 系列: 下游AI系统（私家车/出租车/休闲/学校）---
+            if (settings.EnableDownstreamAIEcoSystem)
+            {
+                CheckVanillaSystem<PersonalCarAISystem>(world, "DownstreamAI", conflicts, ref okCount, ref totalChecked, conflictGroups);
+                CheckVanillaSystem<TaxiAISystem>(world, "DownstreamAI", conflicts, ref okCount, ref totalChecked, conflictGroups);
+                CheckVanillaSystem<LeisureSystem>(world, "DownstreamAI", conflicts, ref okCount, ref totalChecked, conflictGroups);
+                CheckVanillaSystem<FindSchoolSystem>(world, "DownstreamAI", conflicts, ref okCount, ref totalChecked, conflictGroups);
+            }
+
             // === 更新 UI 状态 ===
             if (conflicts.Count > 0)
             {
@@ -229,6 +238,13 @@ namespace MapExtPDX.EcoShared
                         {
                             settings.EnableResidentAIEcoSystem = false;
                             ModLog.Warn(Tag, "Auto-disabled ResidentAI group due to conflict.");
+                        }
+                        break;
+                    case "DownstreamAI":
+                        if (settings.EnableDownstreamAIEcoSystem)
+                        {
+                            settings.EnableDownstreamAIEcoSystem = false;
+                            ModLog.Warn(Tag, "Auto-disabled DownstreamAI group due to conflict.");
                         }
                         break;
                 }

@@ -268,6 +268,11 @@ namespace MapExtPDX
         public bool EnableResidentAIEcoSystem { get; set; } = false;
 
         [SettingsUISection(kMiscTab, kEcoSystemEnableGroup)]
+        [SettingsUIDisableByCondition(typeof(ModSettings), nameof(IsEconomyFixDisabled))]
+        [SettingsUIHideByCondition(typeof(ModSettings), nameof(IsNotInMainMenu))]
+        public bool EnableDownstreamAIEcoSystem { get; set; } = false;
+
+        [SettingsUISection(kMiscTab, kEcoSystemEnableGroup)]
         [SettingsUIButton]
         [SettingsUIConfirmation]
         public bool ResetEcoSystemToggles
@@ -279,6 +284,7 @@ namespace MapExtPDX
                 EnableHouseholdPropertyEcoSystem = true;
                 EnableResourceBuyerEcoSystem = false;
                 EnableResidentAIEcoSystem = false;
+                EnableDownstreamAIEcoSystem = false;
             }
         }
 
@@ -645,6 +651,7 @@ namespace MapExtPDX
             EnableHouseholdPropertyEcoSystem = true;
             EnableResourceBuyerEcoSystem = false;
             EnableResidentAIEcoSystem = false;
+            EnableDownstreamAIEcoSystem = false;
 
             // 地形优化
             TerrainBufferPrealloc = true;
