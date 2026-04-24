@@ -1,4 +1,4 @@
-﻿using Game.Buildings;
+using Game.Buildings;
 using Game.Citizens;
 using Game.Common;
 using Game.Companies;
@@ -75,7 +75,7 @@ namespace MapExtPDX.EcoShared
 					m_Households = SystemAPI.GetComponentLookup<Household>(isReadOnly: true),
 					m_HouseholdCitizens = SystemAPI.GetBufferLookup<HouseholdCitizen>(isReadOnly: true),
 					m_OwnedVehicles = SystemAPI.GetBufferLookup<OwnedVehicle>(isReadOnly: true),
-					m_PathfindQueue = m_PathfindSetupSystem.GetQueue(this, 64).AsParallelWriter(),
+					m_PathfindQueue = m_PathfindSetupSystem.GetQueue(this, 64, 16).AsParallelWriter(),
 					m_CommandBuffer = m_EndFrameBarrier.CreateCommandBuffer().AsParallelWriter()
 				};
 				Dependency = jobData.ScheduleParallel(m_SchoolSeekerQuery, Dependency);

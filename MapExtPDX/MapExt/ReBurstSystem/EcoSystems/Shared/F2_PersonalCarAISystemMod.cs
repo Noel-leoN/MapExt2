@@ -891,7 +891,7 @@ namespace MapExtPDX.EcoShared
 				m_MovingToParkedCarRemoveTypes = m_MovingToParkedCarRemoveTypes,
 				m_MovingToParkedCarAddTypes = m_MovingToParkedCarAddTypes,
 				m_CommandBuffer = m_EndFrameBarrier.CreateCommandBuffer().AsParallelWriter(),
-				m_PathfindQueue = m_PathfindSetupSystem.GetQueue(this, 64).AsParallelWriter(),
+				m_PathfindQueue = m_PathfindSetupSystem.GetQueue(this, 64, 16).AsParallelWriter(),
 				m_MoneyTransferQueue = m_Actions.m_MoneyTransferQueue.AsParallelWriter(),
 				m_FeeQueue = m_ServiceFeeSystem.GetFeeQueue(out deps).AsParallelWriter(),
 				// [MapExt2] 从 Settings 读取分级 MaxCost

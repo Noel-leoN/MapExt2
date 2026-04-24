@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using Game;
 using Game.Simulation;
 using System.Threading;
@@ -242,7 +242,7 @@ namespace MapExtPDX.EcoShared
 				m_ParkedToMovingTrailerAddTypes = m_ParkedToMovingTrailerAddTypes,
 				m_DeletedResidents = m_DeletedResidents,
 				m_TimeOfDay = m_TimeSystem.normalizedTime,
-				m_PathfindQueue = m_PathfindSetupSystem.GetQueue(this, 64).AsParallelWriter(),
+				m_PathfindQueue = m_PathfindSetupSystem.GetQueue(this, 64, 16).AsParallelWriter(),
 				m_BoardingQueue = m_Actions.m_BoardingQueue.AsParallelWriter(),
 				m_ActionQueue = m_Actions.m_ActionQueue.AsParallelWriter(),
 				m_CommandBuffer = m_EndFrameBarrier.CreateCommandBuffer().AsParallelWriter()

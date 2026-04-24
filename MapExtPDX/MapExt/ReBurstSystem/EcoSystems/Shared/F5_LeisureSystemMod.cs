@@ -1,4 +1,4 @@
-﻿using Game;
+using Game;
 using Game.Simulation;
 using Colossal.Entities;
 using Game.Agents;
@@ -163,7 +163,7 @@ namespace MapExtPDX.EcoShared
 					m_ResidentPrefabQuery.ToArchetypeChunkListAsync(World.UpdateAllocator.ToAllocator,
 						out var outJobHandle),
 				m_PersonalCarSelectData = m_PersonalCarSelectData,
-				m_PathfindQueue = m_PathFindSetupSystem.GetQueue(this, 64).AsParallelWriter(),
+				m_PathfindQueue = m_PathFindSetupSystem.GetQueue(this, 64, 16).AsParallelWriter(),
 				m_CommandBuffer = m_EndFrameBarrier.CreateCommandBuffer().AsParallelWriter(),
 				m_MeetingQueue = m_AddMeetingSystem.GetMeetingQueue(out var deps).AsParallelWriter(),
 				m_LeisureQueue = m_LeisureQueue.AsParallelWriter(),
