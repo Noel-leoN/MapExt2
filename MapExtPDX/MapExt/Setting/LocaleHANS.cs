@@ -441,6 +441,14 @@ namespace MapExtPDX
                     "禁止所有过境交通工具出现，降低寻路计算量和交通拥堵. (可能需要运行一段时间生效)"
                 },
 
+                // --- Group: 编辑器工具 ---
+                { m_Setting.GetOptionGroupLocaleID(ModSettings.kEditorToolGroup), "编辑器工具" },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.EditorCollisionSkip)), "跳过碰撞检测 (编辑器)" },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.EditorCollisionSkip)),
+                    "允许在地编放置对象时跳过碰撞验证检查。'仅跳过树木'可极大提升种植大量树木时的性能，'跳过所有对象'则对所有物件生效。"
+                },
+
                 // ============================================================
                 // Tab 4: 开发者选项
                 // ============================================================

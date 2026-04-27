@@ -504,6 +504,14 @@ namespace MapExtPDX
                     "Disable Through-Traffic to reduce pathfinding calculation and traffic congestion. It'll take effect after the game has been running for a while."
                 },
 
+                // --- Group: Editor Tool ---
+                { m_Setting.GetOptionGroupLocaleID(ModSettings.kEditorToolGroup), "Editor Tool" },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.EditorCollisionSkip)), "Skip Object Collision (Editor)" },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.EditorCollisionSkip)),
+                    "Allows you to bypass normal collision validation checks when placing objects in the Map Editor. 'Trees Only' skips validation specifically for trees, while 'All Objects' disables collision checks for all plopables."
+                },
+
                 // ============================================================
                 // Tab 4: Debug
                 // ============================================================

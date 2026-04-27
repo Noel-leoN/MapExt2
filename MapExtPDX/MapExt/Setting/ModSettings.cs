@@ -34,6 +34,14 @@ namespace MapExtPDX
         High_8192,      // 高清 8192×8192 (默认)
     }
 
+    /// <summary>编辑器碰撞检测跳过选项</summary>
+    public enum EditorCollisionSkipMode
+    {
+        Off,         // 不干预
+        TreesOnly,   // 仅跳过树木
+        AllObjects   // 跳过所有对象
+    }
+
     /// <summary>水纹理分辨率选项</summary>
     public enum WaterResolutionSetting
     {
@@ -64,10 +72,10 @@ namespace MapExtPDX
     [SettingsUITabOrder(kMapSizeModeTab, kMiscTab, kPerformanceToolTab, kDebugTab)]
     [SettingsUIGroupOrder(kMainModeGroup, kTerrainWaterOptGroup, kResetGroup, kInfoGroup, kEcoGroup, kNoteGroup,
         kEcoSystemEnableGroup, kPathfindingGroup, kEcoBehaviorGroup,
-        kNoDogsGroup, kNoTrafficGroup, kPopDiagGroup, kDebugGroup)]
+        kNoDogsGroup, kNoTrafficGroup, kEditorToolGroup, kPopDiagGroup, kDebugGroup)]
     [SettingsUIShowGroupName(kMainModeGroup, kTerrainWaterOptGroup, kResetGroup, kEcoGroup,
         kEcoSystemEnableGroup, kPathfindingGroup, kEcoBehaviorGroup,
-        kNoDogsGroup, kNoTrafficGroup, kPopDiagGroup, kDebugGroup)]
+        kNoDogsGroup, kNoTrafficGroup, kEditorToolGroup, kPopDiagGroup, kDebugGroup)]
     public class ModSettings : ModSetting
     {
         private const string Tag = "Settings";
@@ -96,6 +104,7 @@ namespace MapExtPDX
         // -- Perf. Tools Tab --
         public const string kNoDogsGroup = "NoDogs";
         public const string kNoTrafficGroup = "NoTraffic";
+        public const string kEditorToolGroup = "EditorTool";
 
         // -- Developer Tab --
         public const string kPopDiagGroup = "PopDiag";
@@ -541,6 +550,26 @@ namespace MapExtPDX
                 .Enabled = !m_NoThroughTrafficSystem;
 
             ModLog.Patch(Tag, "NoThroughTraffic 补丁已应用 (全局并行)");
+        }
+
+        #endregion
+
+        // === Editor Collision ===
+        #region EditorCollisionMode
+
+        [SettingsUISection(kPerformanceToolTab, kEditorToolGroup)]
+        [SettingsUIDropdown(typeof(ModSettings), nameof(GetEditorCollisionSkipItems))]
+        [SettingsUIHideByCondition(typeof(ModSettings), nameof(IsNotInMainMenu))]
+        public EditorCollisionSkipMode EditorCollisionSkip { get; set; }
+
+        public DropdownItem<int>[] GetEditorCollisionSkipItems()
+        {
+            return new DropdownItem<int>[]
+            {
+                new() { value = (int)EditorCollisionSkipMode.Off, displayName = "Off (Vanilla)" },
+                new() { value = (int)EditorCollisionSkipMode.TreesOnly, displayName = "Trees Only" },
+                new() { value = (int)EditorCollisionSkipMode.AllObjects, displayName = "All Objects" }
+            };
         }
 
         #endregion
