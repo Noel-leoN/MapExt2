@@ -229,6 +229,8 @@ namespace MapExtPDX.EcoShared
 				m_Resources = SystemAPI.GetBufferLookup<Game.Economy.Resources>(isReadOnly: true),
 				m_ServiceDispatches = SystemAPI.GetBufferLookup<ServiceDispatch>(isReadOnly: true),
 				m_PrefabActivityLocationElements = SystemAPI.GetBufferLookup<ActivityLocationElement>(isReadOnly: true),
+				m_CurrentDistrictData = SystemAPI.GetComponentLookup<CurrentDistrict>(isReadOnly: true),
+				m_DistrictModifiers = SystemAPI.GetBufferLookup<DistrictModifier>(isReadOnly: true),
 				m_PathOwnerData = SystemAPI.GetComponentLookup<PathOwner>(isReadOnly: false),
 				m_PathElements = SystemAPI.GetBufferLookup<PathElement>(isReadOnly: false),
 				m_RandomSeed = RandomSeed.Next(),
@@ -381,6 +383,8 @@ namespace MapExtPDX.EcoShared
 			[ReadOnly] public BufferLookup<Game.Economy.Resources> m_Resources;
 			[ReadOnly] public BufferLookup<ServiceDispatch> m_ServiceDispatches;
 			[ReadOnly] public BufferLookup<ActivityLocationElement> m_PrefabActivityLocationElements;
+			[ReadOnly] public ComponentLookup<CurrentDistrict> m_CurrentDistrictData;
+			[ReadOnly] public BufferLookup<DistrictModifier> m_DistrictModifiers;
 
 			[NativeDisableContainerSafetyRestriction]
 			public ComponentLookup<Human> m_HumanData;
@@ -1662,8 +1666,8 @@ namespace MapExtPDX.EcoShared
 
 							PrefabRef prefabRef = m_PrefabRefData[renter];
 							if (m_PrefabIndustrialProcessData.HasComponent(prefabRef.m_Prefab) &&
-							    m_PrefabIndustrialProcessData[prefabRef.m_Prefab].m_Output.m_Resource ==
-							    householdNeed.m_Resource)
+							    (m_PrefabIndustrialProcessData[prefabRef.m_Prefab].m_Output.m_Resource &
+							     householdNeed.m_Resource) != Resource.NoResource)
 							{
 								ServiceAvailable serviceAvailable = m_ServiceAvailableData[renter];
 								DynamicBuffer<Game.Economy.Resources> resources = m_Resources[renter];
@@ -3237,7 +3241,14 @@ namespace MapExtPDX.EcoShared
 					parameters.m_Authorization2 = m_PropertyRenters.HasComponent(worker.m_Workplace) ? m_PropertyRenters[worker.m_Workplace].m_Property : worker.m_Workplace;
 				}
 
-				bool flag = random.NextFloat(100f) < 20f;
+				// [1.5.7f] 自行车概率受区域修正器影响
+				float bikeProbability = 20f;
+				if (m_CurrentDistrictData.TryGetComponent(entity2, out var districtData) &&
+				    m_DistrictModifiers.TryGetBuffer(districtData.m_District, out var districtModifiers))
+				{
+					AreaUtils.ApplyModifier(ref bikeProbability, districtModifiers, DistrictModifierType.BikeProbability);
+				}
+				bool flag = random.NextFloat(100f) < bikeProbability;
 				BicycleOwner component2;
 				if (m_CarKeeperData.TryGetEnabledComponent(resident.m_Citizen, out var component))
 				{

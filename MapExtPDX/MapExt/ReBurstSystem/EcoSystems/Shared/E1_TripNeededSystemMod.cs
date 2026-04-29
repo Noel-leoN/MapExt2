@@ -1,4 +1,4 @@
-﻿using Game;
+using Game;
 using Game.Simulation;
 using Colossal.Collections;
 using Game.Agents;
@@ -264,6 +264,7 @@ namespace MapExtPDX.EcoShared
 					m_AmbulanceData = SystemAPI.GetComponentLookup<Game.Vehicles.Ambulance>(isReadOnly: true),
 					m_ConnectionLaneData = SystemAPI.GetComponentLookup<Game.Net.ConnectionLane>(isReadOnly: true),
 					m_CurrentDistrictData = SystemAPI.GetComponentLookup<CurrentDistrict>(isReadOnly: true),
+					m_DistrictModifiers = SystemAPI.GetBufferLookup<DistrictModifier>(isReadOnly: true),
 					m_PathInfos = SystemAPI.GetComponentLookup<PathInformation>(isReadOnly: true),
 					m_Properties = SystemAPI.GetComponentLookup<PropertyRenter>(isReadOnly: true),
 					m_Transforms = SystemAPI.GetComponentLookup<Game.Objects.Transform>(isReadOnly: true),
@@ -744,7 +745,18 @@ namespace MapExtPDX.EcoShared
 					    !(m_CurrentBuildingData[animalTargetInfo.m_Animal].m_CurrentBuilding !=
 					      animalTargetInfo.m_Source) && nativeParallelHashSet.Add(animalTargetInfo.m_Animal))
 					{
-						m_CommandBuffer.AddComponent(animalTargetInfo.m_Animal, new Target(animalTargetInfo.m_Target));
+						// 1.5.7f: 传送模式直接设置 CurrentBuilding，否则发起寻路
+						if (animalTargetInfo.m_Teleport)
+						{
+							m_CommandBuffer.SetComponent(animalTargetInfo.m_Animal, new CurrentBuilding
+							{
+								m_CurrentBuilding = animalTargetInfo.m_Target
+							});
+						}
+						else
+						{
+							m_CommandBuffer.AddComponent(animalTargetInfo.m_Animal, new Target(animalTargetInfo.m_Target));
+						}
 					}
 				}
 
@@ -838,6 +850,7 @@ namespace MapExtPDX.EcoShared
 			[ReadOnly] public ComponentLookup<Game.Vehicles.Ambulance> m_AmbulanceData;
 			[ReadOnly] public ComponentLookup<Game.Net.ConnectionLane> m_ConnectionLaneData;
 			[ReadOnly] public ComponentLookup<CurrentDistrict> m_CurrentDistrictData;
+			[ReadOnly] public BufferLookup<DistrictModifier> m_DistrictModifiers;
 			[ReadOnly] public ComponentLookup<Target> m_Targets;
 			[ReadOnly] public ComponentLookup<Deleted> m_Deleteds;
 			[ReadOnly] public BufferLookup<PathElement> m_PathElements;
@@ -1083,7 +1096,7 @@ namespace MapExtPDX.EcoShared
 				return Entity.Null;
 			}
 
-			private void AddPetTargets(Entity household, Entity source, Entity target)
+			private void AddPetTargets(Entity household, Entity source, Entity target, bool teleport = false)
 			{
 				if (m_HouseholdAnimals.HasBuffer(household))
 				{
@@ -1095,7 +1108,8 @@ namespace MapExtPDX.EcoShared
 						{
 							m_Animal = householdAnimal.m_HouseholdPet,
 							m_Source = source,
-							m_Target = target
+							m_Target = target,
+							m_Teleport = teleport
 						});
 					}
 				}
@@ -1382,7 +1396,12 @@ namespace MapExtPDX.EcoShared
 								parameters.m_Authorization2 = m_PropertyRenters.HasComponent(worker.m_Workplace) ? m_PropertyRenters[worker.m_Workplace].m_Property : worker.m_Workplace;
 							}
 
-							bool useBicycle = random.NextFloat(100f) < 20f;
+							float bikeProbability = 20f;
+							if (m_CurrentDistrictData.TryGetComponent(componentData4.m_Property, out var districtData) && m_DistrictModifiers.TryGetBuffer(districtData.m_District, out var districtModifiers))
+							{
+								AreaUtils.ApplyModifier(ref bikeProbability, districtModifiers, DistrictModifierType.BikeProbability);
+							}
+							bool useBicycle = random.NextFloat(100f) < bikeProbability;
 							if (m_CarKeepers.IsComponentEnabled(entity))
 							{
 								Entity car = m_CarKeepers[entity].m_Car;
@@ -1822,7 +1841,12 @@ namespace MapExtPDX.EcoShared
 								parameters2.m_Authorization2 = m_PropertyRenters.HasComponent(worker3.m_Workplace) ? m_PropertyRenters[worker3.m_Workplace].m_Property : worker3.m_Workplace;
 							}
 
-							bool useBicycle = random.NextFloat(100f) < 20f;
+							float bikeProbability2 = 20f;
+							if (m_CurrentDistrictData.TryGetComponent(componentData13.m_Property, out var districtData2) && m_DistrictModifiers.TryGetBuffer(districtData2.m_District, out var districtModifiers2))
+							{
+								AreaUtils.ApplyModifier(ref bikeProbability2, districtModifiers2, DistrictModifierType.BikeProbability);
+							}
+							bool useBicycle = random.NextFloat(100f) < bikeProbability2;
 							if (m_CarKeepers.IsComponentEnabled(entity))
 							{
 								Entity car2 = m_CarKeepers[entity].m_Car;
@@ -1914,6 +1938,7 @@ namespace MapExtPDX.EcoShared
 			public Entity m_Animal;
 			public Entity m_Source;
 			public Entity m_Target;
+			public bool m_Teleport;
 		}
 
 		#endregion

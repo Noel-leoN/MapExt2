@@ -165,6 +165,11 @@ namespace MapExtPDX.EcoShared
 				{
 					ResetPath(entity, isBicycle, ref random, ref personalCar, ref car, ref currentLane, ref pathOwner);
 				}
+				// [1.5.7f] 自行车在受限行人车道上时标记路径失败
+				if (isBicycle && currentLane.m_Lane != Entity.Null && (pathOwner.m_State & (PathFlags.Pending | PathFlags.Obsolete)) == 0 && m_PedestrianLaneData.TryGetComponent(currentLane.m_Lane, out var pedestrianLane) && pedestrianLane.m_AccessRestriction != Entity.Null && (pedestrianLane.m_Flags & (PedestrianLaneFlags.AllowEnter | PedestrianLaneFlags.AllowExit)) == 0)
+				{
+					pathOwner.m_State |= PathFlags.Failed;
+				}
 				if (((personalCar.m_State & (PersonalCarFlags.Transporting | PersonalCarFlags.Boarding | PersonalCarFlags.Disembarking)) == 0 && !m_EntityLookup.Exists(target.m_Target)) || VehicleUtils.PathfindFailed(pathOwner))
 				{
 					RemovePath(entity, ref pathOwner);

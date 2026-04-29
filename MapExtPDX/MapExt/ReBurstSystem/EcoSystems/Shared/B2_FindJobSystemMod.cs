@@ -1,5 +1,5 @@
-﻿// Game.Simulation.FindJobSystem
-// v1.4.2无变化
+// Game.Simulation.FindJobSystem
+// v1.5.7f 同步依赖链修复 (GetEmployables out deps + AddHouseholdDataReader)
 
 using Colossal.Collections;
 using Game;
@@ -252,7 +252,7 @@ namespace MapExtPDX.EcoShared
                 m_PathfindQueue = m_PathfindSetupSystem.GetQueue(this, 80, 16).AsParallelWriter(),
                 m_CommandBuffer = m_EndFrameBarrier.CreateCommandBuffer().AsParallelWriter(),
                 m_FreeCache = m_FreeCache,
-                m_EmployableByEducation = m_CountHouseholdDataSystem.GetEmployables(),
+                m_EmployableByEducation = m_CountHouseholdDataSystem.GetEmployables(out var employableDeps),
                 m_RandomSeed = RandomSeed.Next(),
                 m_DynamicFindJobMaxCost = Mod.Instance.Settings.FindJobMaxCost,
 
@@ -264,13 +264,16 @@ namespace MapExtPDX.EcoShared
 #endif
             };
 
+            // [1.5.7f] 3-way 依赖合并：加入 employableDeps 防止与 CountHouseholdDataSystem 的数据竞争
             Dependency = findJobJob.ScheduleParallel(
                 m_JobSeekerQuery,
-                JobHandle.CombineDependencies(calculateFreeJob, Dependency)
+                JobHandle.CombineDependencies(calculateFreeJob, Dependency, employableDeps)
             );
 
             m_PathfindSetupSystem.AddQueueWriter(Dependency);
             m_EndFrameBarrier.AddJobHandleForProducer(Dependency);
+            // [1.5.7f] 注册为 CountHouseholdDataSystem 的读取者，防止下次写入时竞态
+            m_CountHouseholdDataSystem.AddHouseholdDataReader(Dependency);
         }
 
         /// <summary>
@@ -756,7 +759,7 @@ namespace MapExtPDX.EcoShared
                 NativeArray<Entity> jobSeekerEntities = chunk.GetNativeArray(m_EntityType);
                 NativeArray<JobSeeker> jobSeekers = chunk.GetNativeArray(ref m_JobSeekerType);
 
-                // int successCount = 0;
+                int successCount = 0; // 入职成功计数（用于 DebugWatchValue）
 
                 // 遍历所有待处理的Chunk实体
                 for (int j = 0; j < jobSeekerEntities.Length; j++)
@@ -833,6 +836,8 @@ namespace MapExtPDX.EcoShared
                                             m_Shift = shift
                                         });
 
+                                        successCount++;
+
                                         // 触发入职事件
                                         m_TriggerBuffer.Enqueue(new TriggerAction(TriggerType.CitizenStartedWorking, Entity.Null, citizenEntity, workplaceEntity));
 
@@ -878,6 +883,8 @@ namespace MapExtPDX.EcoShared
                     m_CommandBuffer.AddComponent(jobSeekerEntity, default(Deleted));
                 }
 
+                // [1.5.7f] 恢复原版入职计数，用于 [DebugWatchValue] 面板监视
+                m_StartedWorking.value += successCount;
             } // Execute
         } // job
         #endregion
