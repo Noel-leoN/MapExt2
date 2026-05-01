@@ -191,6 +191,26 @@ namespace EconomyEX.Settings
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.NoThroughTraffic)),
                     "禁止所有过境交通工具出现，降低寻路计算量和交通拥堵. (可能需要运行一段时间生效)"
                 },
+
+                // --- Group: 编辑器工具 ---
+                { m_Setting.GetOptionGroupLocaleID(ModSettings.kEditorToolGroup), "编辑器工具" },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.EditorCollisionSkip)), "编辑器碰撞覆盖" },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.EditorCollisionSkip)),
+                    "在编辑器模式放置物体时跳过碰撞检测错误。「仅树木」移除树木碰撞警告；「所有对象」移除所有放置碰撞警告。"
+                },
+
+                // ============================================================
+                // Tab: 调试
+                // ============================================================
+                { m_Setting.GetOptionTabLocaleID(ModSettings.kDebugTab), "调试" },
+
+                // --- Group: 人口诊断 ---
+                { m_Setting.GetOptionGroupLocaleID(ModSettings.kPopDiagGroup), "人口诊断" },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.PopDiagReport)), "诊断报告" },
+                { m_Setting.GetOptionDescLocaleID(nameof(ModSettings.PopDiagReport)), "显示家庭人口健康度指标，包含搬离、流浪和找房统计。" },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.RefreshPopDiag)), "刷新诊断数据" },
+                { m_Setting.GetOptionDescLocaleID(nameof(ModSettings.RefreshPopDiag)), "执行一次 ECS 查询以收集人口诊断数据。" },
             };
         }
 

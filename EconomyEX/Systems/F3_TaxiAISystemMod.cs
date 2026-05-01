@@ -1,4 +1,4 @@
-﻿using Game;
+using Game;
 using Game.Simulation;
 using Colossal.Entities;
 using Game.Buildings;
@@ -153,7 +153,7 @@ namespace EconomyEX.Systems
 				m_TimeOfDay = m_TimeSystem.normalizedTime,
 				m_SimulationFrameIndex = m_SimulationSystem.frameIndex,
 				m_CommandBuffer = m_EndFrameBarrier.CreateCommandBuffer().AsParallelWriter(),
-				m_PathfindQueue = m_PathfindSetupSystem.GetQueue(this, 64).AsParallelWriter(),
+				m_PathfindQueue = m_PathfindSetupSystem.GetQueue(this, 64, 16).AsParallelWriter(),
 				m_RouteVehicleQueue = routeVehicleQueue.AsParallelWriter()
 			};
 			UpdateRouteVehiclesJob jobData2 = new UpdateRouteVehiclesJob

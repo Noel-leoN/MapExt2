@@ -3,6 +3,7 @@
 
 using Game;
 using Game.Simulation;
+using Game.Tools;
 using EconomyEX.Systems;
 using Unity.Entities;
 using HarmonyLib;
@@ -44,6 +45,12 @@ namespace EconomyEX.Helpers
             // F 系列: 居民AI系统 (含嵌套 Actions 子系统)
             updateSystem.UpdateAt<ResidentAISystemMod>(SystemUpdatePhase.GameSimulation);
             updateSystem.UpdateAfter<ResidentAISystemMod.Actions, ResidentAISystemMod>(SystemUpdatePhase.GameSimulation);
+
+            // G 系列: 诊断系统 (按需查询，默认禁用)
+            updateSystem.UpdateAt<PopulationDiagnosticSystem>(SystemUpdatePhase.GameSimulation);
+
+            // P 系列: 工具系统 (独立于经济开关)
+            updateSystem.UpdateAt<P2_EditorCollisionOverrideSystem>(SystemUpdatePhase.ToolUpdate);
 
             // 注意: A1-A3 需求系统仅通过 JobPatchHelper Transpiler 替换 Job，无需注册系统
 

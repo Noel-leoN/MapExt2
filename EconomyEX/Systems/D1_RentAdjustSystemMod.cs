@@ -19,10 +19,10 @@ using Unity.Collections;
 using Unity.Entities;
 using Unity.Jobs;
 using Unity.Mathematics;
-using EconomyEX.Helpers;
 using Game;
 using Game.Simulation;
 using Transform = Game.Objects.Transform;
+using EconomyEX.Helpers;
 
 namespace EconomyEX.Systems
 {

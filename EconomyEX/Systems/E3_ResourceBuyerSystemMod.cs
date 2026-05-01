@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Runtime.CompilerServices;
 using Game;
 using Game.Simulation;
@@ -8,6 +8,7 @@ using Game.City;
 using Game.Common;
 using Game.Companies;
 using Game.Economy;
+using Game.Areas;
 using Game.Net;
 using Game.Objects;
 using Game.Pathfind;
@@ -176,6 +177,8 @@ namespace EconomyEX.Systems
 						SystemAPI.GetBufferLookup<HaveCoordinatedMeetingData>(isReadOnly: true),
 					m_OutsideConnectionDatas = SystemAPI.GetComponentLookup<OutsideConnectionData>(isReadOnly: true),
 					m_Populations = SystemAPI.GetComponentLookup<Population>(isReadOnly: false),
+					m_CurrentDistrictData = SystemAPI.GetComponentLookup<CurrentDistrict>(isReadOnly: true),
+					m_DistrictModifiers = SystemAPI.GetBufferLookup<DistrictModifier>(isReadOnly: true),
 					m_TimeOfDay = m_TimeSystem.normalizedTime,
 					m_FrameIndex = m_SimulationSystem.frameIndex,
 					m_RandomSeed = RandomSeed.Next(),
@@ -540,6 +543,9 @@ namespace EconomyEX.Systems
 			[ReadOnly] public ComponentLookup<HumanData> m_PrefabHumanData;
 			[ReadOnly] public ComponentLookup<Population> m_Populations;
 
+			[ReadOnly] public ComponentLookup<CurrentDistrict> m_CurrentDistrictData;
+			[ReadOnly] public BufferLookup<DistrictModifier> m_DistrictModifiers;
+
 			[ReadOnly] public float m_TimeOfDay;
 			[ReadOnly] public uint m_FrameIndex;
 
@@ -865,7 +871,14 @@ namespace EconomyEX.Systems
 					parameters.m_Authorization2 = m_Properties.HasComponent(worker.m_Workplace) ? m_Properties[worker.m_Workplace].m_Property : worker.m_Workplace;
 				}
 
-				bool flag = random.NextFloat(100f) < 20f;
+				// [1.5.7f] 区域自行车概率修正
+				float bikeProbability = 20f;
+				if (m_CurrentDistrictData.TryGetComponent(entity2, out var districtData)
+				    && m_DistrictModifiers.TryGetBuffer(districtData.m_District, out var districtModifiers))
+				{
+					AreaUtils.ApplyModifier(ref bikeProbability, districtModifiers, DistrictModifierType.BikeProbability);
+				}
+				bool flag = random.NextFloat(100f) < bikeProbability;
 				if (m_CarKeepers.IsComponentEnabled(buyer))
 				{
 					Entity car = m_CarKeepers[buyer].m_Car;

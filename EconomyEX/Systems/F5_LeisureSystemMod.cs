@@ -1,7 +1,8 @@
-﻿using Game;
+using Game;
 using Game.Simulation;
 using Colossal.Entities;
 using Game.Agents;
+using Game.Areas;
 using Game.Buildings;
 using Game.Citizens;
 using Game.City;
@@ -149,6 +150,8 @@ namespace EconomyEX.Systems
 				m_HouseholdCitizens = SystemAPI.GetBufferLookup<HouseholdCitizen>(isReadOnly: true),
 				m_RenterBufs = SystemAPI.GetBufferLookup<Renter>(isReadOnly: true),
 				m_ConsumptionDatas = SystemAPI.GetComponentLookup<ConsumptionData>(isReadOnly: true),
+				m_CurrentDistrictData = SystemAPI.GetComponentLookup<CurrentDistrict>(isReadOnly: true),
+				m_DistrictModifiers = SystemAPI.GetBufferLookup<DistrictModifier>(isReadOnly: true),
 				m_EconomyParameters = m_EconomyParameterQuery.GetSingleton<EconomyParameterData>(),
 				// [MapExt2-MaxCost] Bind the dynamic slider setting from mod config
 				m_DynamicLeisureMaxCost = Mod.Instance.Settings.LeisureMaxCost,
@@ -163,7 +166,7 @@ namespace EconomyEX.Systems
 					m_ResidentPrefabQuery.ToArchetypeChunkListAsync(World.UpdateAllocator.ToAllocator,
 						out var outJobHandle),
 				m_PersonalCarSelectData = m_PersonalCarSelectData,
-				m_PathfindQueue = m_PathFindSetupSystem.GetQueue(this, 64).AsParallelWriter(),
+				m_PathfindQueue = m_PathFindSetupSystem.GetQueue(this, 64, 16).AsParallelWriter(),
 				m_CommandBuffer = m_EndFrameBarrier.CreateCommandBuffer().AsParallelWriter(),
 				m_MeetingQueue = m_AddMeetingSystem.GetMeetingQueue(out var deps).AsParallelWriter(),
 				m_LeisureQueue = m_LeisureQueue.AsParallelWriter(),
@@ -332,6 +335,8 @@ namespace EconomyEX.Systems
 			[ReadOnly] public ComponentLookup<Population> m_PopulationData;
 			[ReadOnly] public BufferLookup<Renter> m_RenterBufs;
 			[ReadOnly] public ComponentLookup<ConsumptionData> m_ConsumptionDatas;
+			[ReadOnly] public ComponentLookup<CurrentDistrict> m_CurrentDistrictData;
+			[ReadOnly] public BufferLookup<DistrictModifier> m_DistrictModifiers;
 			[ReadOnly] public RandomSeed m_RandomSeed;
 			[ReadOnly] public ComponentTypeSet m_PathfindTypes;
 			[ReadOnly] public NativeList<ArchetypeChunk> m_HumanChunks;
@@ -471,7 +476,7 @@ namespace EconomyEX.Systems
 								     m_TimeData, population) ||
 							     !WorkerSystem.IsTimeToWork(citizen, m_Workers[entity], ref m_EconomyParameters,
 								     m_TimeOfDay)) && (!m_Students.HasComponent(entity) ||
-								                       StudentSystem.IsTimeToStudy(citizen, m_Students[entity],
+								                       !StudentSystem.IsTimeToStudy(citizen, m_Students[entity],
 									                       ref m_EconomyParameters, m_TimeOfDay, m_SimulationFrame,
 									                       m_TimeData, population)))
 							{
@@ -722,7 +727,14 @@ namespace EconomyEX.Systems
 					parameters.m_Authorization2 = m_PropertyRenters.HasComponent(worker.m_Workplace) ? m_PropertyRenters[worker.m_Workplace].m_Property : worker.m_Workplace;
 				}
 
-				bool isBicycleProbable = random.NextFloat(100f) < 20f;
+				// [1.5.7f] 自行车概率受区域修饰符 BikeProbability 影响
+				float bikeProbability = 20f;
+				if (m_CurrentDistrictData.TryGetComponent(componentData.m_Property, out var currentDistrict)
+				    && m_DistrictModifiers.TryGetBuffer(currentDistrict.m_District, out var districtModifiers))
+				{
+					AreaUtils.ApplyModifier(ref bikeProbability, districtModifiers, DistrictModifierType.BikeProbability);
+				}
+				bool isBicycleProbable = random.NextFloat(100f) < bikeProbability;
 				if (m_CarKeepers.IsComponentEnabled(citizen))
 				{
 					Entity car = m_CarKeepers[citizen].m_Car;

@@ -39,6 +39,7 @@ namespace MapExtPDX.ModeE
         [ReadOnly] public ComponentTypeHandle<PrefabRef> m_PrefabType;
         [ReadOnly] public ComponentTypeHandle<CityServiceUpkeep> m_ServiceUpkeepType;
         [ReadOnly] public ComponentTypeHandle<PropertyOnMarket> m_PropertyOnMarketType; // 正在招租的物业
+        [ReadOnly] public BufferTypeHandle<Renter> m_RenterType; // [1.5.7f] 租户缓冲区句柄
 
         // 组件查找 (ComponentLookups)
         [ReadOnly] public ComponentLookup<Population> m_Populations;
@@ -51,6 +52,7 @@ namespace MapExtPDX.ModeE
         [ReadOnly] public ComponentLookup<ResourceData> m_ResourceDatas;
         [ReadOnly] public ComponentLookup<StorageLimitData> m_StorageLimitDatas;
         [ReadOnly] public ComponentLookup<SpawnableBuildingData> m_SpawnableBuildingDatas;
+        [ReadOnly] public ComponentLookup<CompanyData> m_CompanyDatas; // [1.5.7f] 判断 Renter 是否为公司实体
 
         // 缓冲区查找 (BufferLookups)
         [ReadOnly] public BufferLookup<ServiceUpkeepData> m_ServiceUpkeeps;
@@ -91,7 +93,7 @@ namespace MapExtPDX.ModeE
         // 经济统计数据
         [ReadOnly] public NativeArray<int> m_Productions; // 当前生产量
         [ReadOnly] public NativeArray<int> m_CompanyResourceDemands; // 企业资源需求/消耗量
-        [ReadOnly] public NativeArray<int> m_HouseholdResourceDemands; // 家庭资源需求/消耗量
+        [ReadOnly] public NativeArray<CityProductionStatisticSystem.CityResourceUsage> m_CityResourceUsages; // [1.5.7f] 城市资源使用统计
 
         // 统计计算用临时数组
         public NativeArray<int> m_FreeProperties; // 可用空置物业
@@ -151,9 +153,9 @@ namespace MapExtPDX.ModeE
                 // 无形产品(办公资源)
                 if (EconomyUtils.IsOfficeResource(resourceIter.resource))
                 {
-                    // 办公资源需求权重较高 (IceFlake Studios 官方补丁跟进：由2倍提升至3倍)
-                    m_ResourceDemands[resIndex] =
-                        (m_HouseholdResourceDemands[resIndex] + m_CompanyResourceDemands[resIndex]) * 3;
+                    // [1.5.7f] 使用 CityResourceUsages 中的市民消费数据替代旧的 HouseholdResourceDemands
+                    int citizenUsage = m_CityResourceUsages[resIndex][CityProductionStatisticSystem.CityResourceUsage.Consumer.Citizens];
+                    m_ResourceDemands[resIndex] = 1 + citizenUsage + m_CompanyResourceDemands[resIndex];
                 }
                 // 有形产品(非办公资源,实体工业资源)
                 else
@@ -301,16 +303,30 @@ namespace MapExtPDX.ModeE
             // -----------------------------------------------------------------------
             foreach (var chunk in m_IndustrialPropertyChunks)
             {
-                // 必须是“市场上待租”的物业
-                if (!chunk.Has(ref m_PropertyOnMarketType)) continue;
+                // [1.5.7f] 必须是"市场上待租"的物业，且必须有 Renter buffer
+                if (!chunk.Has(ref m_PropertyOnMarketType) || !chunk.Has(ref m_RenterType)) continue;
 
                 NativeArray<Entity> entities = chunk.GetNativeArray(m_EntityType);
                 NativeArray<PrefabRef> prefabs = chunk.GetNativeArray(ref m_PrefabType);
+                BufferAccessor<Renter> renterAccessor = chunk.GetBufferAccessor(ref m_RenterType);
 
                 for (int i = 0; i < prefabs.Length; i++)
                 {
                     Entity prefab = prefabs[i].m_Prefab;
                     if (!m_BuildingPropertyDatas.HasComponent(prefab)) continue;
+
+                    // [1.5.7f] 检查是否已有公司租户，有则不算空置
+                    bool hasCompanyRenter = false;
+                    DynamicBuffer<Renter> renters = renterAccessor[i];
+                    for (int r = 0; r < renters.Length; r++)
+                    {
+                        if (m_CompanyDatas.HasComponent(renters[r].m_Renter))
+                        {
+                            hasCompanyRenter = true;
+                            break;
+                        }
+                    }
+                    if (hasCompanyRenter) continue;
 
                     BuildingPropertyData propData = m_BuildingPropertyDatas[prefab];
 

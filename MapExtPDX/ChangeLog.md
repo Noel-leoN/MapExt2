@@ -1,10 +1,9 @@
-## v2.5.1 - UI Improvements
+## v2.5.4 - Documentation Update
 
-* **[Settings/UI]:** Added a "Refresh Status" button in the mod settings to manually update the system conflict detection status.
+* **[Documentation]:** Updated README with detailed economy patch and performance tool descriptions, compatibility guidance, and EconomyEX relationship explanation.
 
 ---
 
 ### 主要改动
 
-* **[设置与UI]：** 在模组设置中新增了“刷新状态”按钮，允许玩家手动更新系统冲突检测状态。
-
+* **[文档]：** 更新 README 说明，补充经济补丁与性能工具详细描述、兼容性说明、以及与 EconomyEX 子模组的关系说明。

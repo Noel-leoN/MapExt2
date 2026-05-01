@@ -1,17 +1,29 @@
 using Colossal.IO.AssetDatabase;
 using Game.Modding;
 using Game.Settings;
+using Game.UI.Widgets;
 using Unity.Entities;
 using EconomyEX.Helpers;
+
+namespace EconomyEX
+{
+    /// <summary>编辑器碰撞检测跳过选项</summary>
+    public enum EditorCollisionSkipMode
+    {
+        Off,         // 不干预
+        TreesOnly,   // 仅跳过树木
+        AllObjects   // 跳过所有对象
+    }
+}
 
 namespace EconomyEX.Settings
 {
     [FileLocation("ModsSettings/" + Mod.ModName + "/" + Mod.ModName)]
-    [SettingsUITabOrder(kSectionStatus, kSectionGeneral, kSectionPerfTool)]
+    [SettingsUITabOrder(kSectionStatus, kSectionGeneral, kSectionPerfTool, kDebugTab)]
     [SettingsUIGroupOrder(kSectionStatus, kSectionGeneral, kSectionPathfinding, kSectionBehavior,
-        kNoDogsGroup, kNoTrafficGroup)]
+        kNoDogsGroup, kNoTrafficGroup, kEditorToolGroup, kPopDiagGroup)]
     [SettingsUIShowGroupName(kSectionGeneral, kSectionPathfinding, kSectionBehavior,
-        kNoDogsGroup, kNoTrafficGroup)]
+        kNoDogsGroup, kNoTrafficGroup, kEditorToolGroup, kPopDiagGroup)]
     public class ModSettings : ModSetting
     {
         public const string kSectionGeneral = "General";
@@ -21,6 +33,11 @@ namespace EconomyEX.Settings
         public const string kSectionPerfTool = "PerformanceTool";
         public const string kNoDogsGroup = "NoDogs";
         public const string kNoTrafficGroup = "NoTraffic";
+        public const string kEditorToolGroup = "EditorTool";
+
+        // -- Debug Tab --
+        public const string kDebugTab = "Debug";
+        public const string kPopDiagGroup = "PopDiag";
 
         public ModSettings(IMod mod) : base(mod)
         {
@@ -314,6 +331,56 @@ namespace EconomyEX.Settings
 
         #endregion
 
+        // === Editor Collision ===
+        #region EditorCollisionMode
+
+        [SettingsUISection(kSectionPerfTool, kEditorToolGroup)]
+        [SettingsUIDropdown(typeof(ModSettings), nameof(GetEditorCollisionSkipItems))]
+        public EditorCollisionSkipMode EditorCollisionSkip { get; set; }
+
+        public DropdownItem<int>[] GetEditorCollisionSkipItems()
+        {
+            return new DropdownItem<int>[]
+            {
+                new() { value = (int)EditorCollisionSkipMode.Off, displayName = "Off (Vanilla)" },
+                new() { value = (int)EditorCollisionSkipMode.TreesOnly, displayName = "Trees Only" },
+                new() { value = (int)EditorCollisionSkipMode.AllObjects, displayName = "All Objects" }
+            };
+        }
+
+        #endregion
+
+        // === 人口诊断 ===
+        #region Population Diagnostics
+
+        /// <summary>诊断数据缓存，由 RefreshPopDiag 按钮更新</summary>
+        public string PopDiagData { get; set; } = "Click Refresh to run diagnostics.";
+
+        /// <summary>诊断报告显示</summary>
+        [SettingsUISection(kDebugTab, kPopDiagGroup)]
+        public string PopDiagReport => PopDiagData;
+
+        /// <summary>刷新人口诊断数据</summary>
+        [SettingsUISection(kDebugTab, kPopDiagGroup)]
+        [SettingsUIButton]
+        public bool RefreshPopDiag
+        {
+            set
+            {
+                var system = Unity.Entities.World.DefaultGameObjectInjectionWorld
+                    ?.GetExistingSystemManaged<EconomyEX.Systems.PopulationDiagnosticSystem>();
+                if (system != null)
+                {
+                    PopDiagData = system.RunDiagnostics();
+                }
+                else
+                {
+                    PopDiagData = "PopulationDiagnosticSystem not found.";
+                }
+            }
+        }
+
+        #endregion
 
         public void UpdateStatus()
         {

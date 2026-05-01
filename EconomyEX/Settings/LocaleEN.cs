@@ -197,6 +197,26 @@ namespace EconomyEX.Settings
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.NoThroughTraffic)),
                     "Disable Through-Traffic to reduce pathfinding calculation and traffic congestion. It'll take effect after the game has been running for a while."
                 },
+
+                // --- Group: Editor Tool ---
+                { m_Setting.GetOptionGroupLocaleID(ModSettings.kEditorToolGroup), "Editor Tools" },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.EditorCollisionSkip)), "Editor Collision Override" },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.EditorCollisionSkip)),
+                    "Skip collision detection errors when placing objects in Editor mode. 'Trees Only' removes collision warnings for trees; 'All Objects' removes all placement collision warnings."
+                },
+
+                // ============================================================
+                // Tab: Debug
+                // ============================================================
+                { m_Setting.GetOptionTabLocaleID(ModSettings.kDebugTab), "Debug" },
+
+                // --- Group: PopDiag ---
+                { m_Setting.GetOptionGroupLocaleID(ModSettings.kPopDiagGroup), "Population Diagnostics" },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.PopDiagReport)), "Diagnostic Report" },
+                { m_Setting.GetOptionDescLocaleID(nameof(ModSettings.PopDiagReport)), "Displays household population health metrics including MovingAway, Homeless, and PropertySeeker statistics." },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.RefreshPopDiag)), "Refresh Diagnostics" },
+                { m_Setting.GetOptionDescLocaleID(nameof(ModSettings.RefreshPopDiag)), "Run a one-shot ECS query to collect population diagnostic data." },
             };
         }
 
