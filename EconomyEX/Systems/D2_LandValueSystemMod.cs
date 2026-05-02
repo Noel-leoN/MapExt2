@@ -240,6 +240,8 @@ using EconomyEX.Helpers;
 
                 // 传入配置可改为ModSetting输入)
                 m_LerpSpeed = kLerpSpeed,
+                // 环境衰减系数 (从 ModSettings 百分比转小数)
+                m_EnvDampeningFactor = (Mod.Instance?.Settings?.LandValueEnvironmentEffect ?? 40) / 100f,
             };
 
             // 调度 Edge Job
@@ -402,6 +404,7 @@ using EconomyEX.Helpers;
 
             // ModSetting配置变量
             public float m_LerpSpeed; // 平滑系数
+            public float m_EnvDampeningFactor; // 环境因子衰减系数 (0~1)
 
             // 遍历所有具有地价组件的道路边缘
             public void Execute(in ArchetypeChunk chunk, int unfilteredChunkIndex, bool useEnabledMask, in v128 chunkEnabledMask)
@@ -457,7 +460,9 @@ using EconomyEX.Helpers;
 
                     // === C. 聚合计算 ===
                     float baseline = m_Sampler.m_LvParams.m_LandValueBaseline;
-                    float targetValue = math.max(baseline, baseline + finalMapNetValue + finalServiceBonus);
+                    // 环境衰减：控制环境因子对 Edge 地价的传递比例 (ModSettings Slider)
+                    float dampedEnvValue = finalMapNetValue * m_EnvDampeningFactor;
+                    float targetValue = math.max(baseline, baseline + dampedEnvValue + finalServiceBonus);
 
                     // === D. 写入组件 ===
                     LandValue currentLv = landValues[i];

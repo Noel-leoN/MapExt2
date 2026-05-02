@@ -420,6 +420,16 @@ namespace MapExtPDX
         [SettingsUISlider(min = 128, max = 5120, step = 128, scalarMultiplier = 1, unit = Game.UI.Unit.kInteger)]
         public int HomelessSeekerCap { get; set; } = 1280;
 
+        /// <summary>
+        /// 环境地价影响系数（百分比）。
+        /// 控制环境因子（地形吸引力、电信覆盖、污染等）对道路 Edge 地价的传递比例。
+        /// 0% = 环境因子不影响地价（接近原版行为），100% = 环境因子完全传递（当前默认行为）。
+        /// 推荐 30~50%，既保留地价真实感又避免工商业租金过高。
+        /// </summary>
+        [SettingsUISection(kMiscTab, kEcoBehaviorGroup)]
+        [SettingsUISlider(min = 0, max = 100, step = 5, scalarMultiplier = 1, unit = Game.UI.Unit.kPercentage)]
+        public int LandValueEnvironmentEffect { get; set; } = 40;
+
         [SettingsUISection(kMiscTab, kEcoBehaviorGroup)]
         [SettingsUIButton]
         [SettingsUIConfirmation]
@@ -433,6 +443,7 @@ namespace MapExtPDX
                 HouseholdResourceDemandMultiplier = 3.5f;
                 HomeSeekerCap = 128;
                 HomelessSeekerCap = 1280;
+                LandValueEnvironmentEffect = 40;
             }
         }
 
@@ -673,6 +684,7 @@ namespace MapExtPDX
             HouseholdResourceDemandMultiplier = 3.5f;
             HomeSeekerCap = 128;
             HomelessSeekerCap = 1280;
+            LandValueEnvironmentEffect = 40;
             
             isEnableEconomyFix = true;
             EnableDemandEcoSystem = true;

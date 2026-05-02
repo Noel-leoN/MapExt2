@@ -441,6 +441,25 @@ namespace MapExtPDX
                     "★ Indicators: If large numbers of homeless remain despite vacant housing, increase this value. " +
                     "If mass homeless influx causes frame drops, decrease it. Can be adjusted in-game."
                 },
+                {
+                    m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.LandValueEnvironmentEffect)),
+                    "Land Value: Environment Impact Factor"
+                },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.LandValueEnvironmentEffect)),
+                    "Controls how much environmental factors (terrain attractiveness, telecom coverage, pollution penalties) affect road Edge land values — which directly determine building rent.\n\n" +
+                    "In vanilla, these environmental factors only exist in the UI heatmap and do NOT affect rent calculation. " +
+                    "This mod merges them into the economic simulation for realism, but this can cause significantly higher commercial/industrial rents in well-developed areas.\n\n" +
+                    "★ Value Guide:\n" +
+                    " - 0%: Environment does not affect land value (closest to vanilla behavior)\n" +
+                    " - 40%: Balanced — keeps realistic land value differences while preventing excessive rent (DEFAULT)\n" +
+                    " - 70%: High realism — noticeable rent increase in prime locations\n" +
+                    " - 100%: Full effect — original mod behavior, may cause widespread high-rent warnings\n\n" +
+                    "★ Symptoms:\n" +
+                    " - Too many high-rent icons on commercial/industrial buildings → decrease this value\n" +
+                    " - Land value heatmap looks too flat/uniform → increase this value\n\n" +
+                    "Can be adjusted in-game. Changes take effect gradually as land values smooth over time."
+                },
                 { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.ResetEcoBehavior)), "Reset" },
                 {
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.ResetEcoBehavior)),

@@ -141,6 +141,22 @@ namespace EconomyEX.Settings
                 { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.HomelessSeekerCap)), "找房系统：流浪安置吞吐量" },
                 { m_Setting.GetOptionDescLocaleID(nameof(ModSettings.HomelessSeekerCap)), "每帧最多处理的无家可归家庭找房数量。默认1280。" },
 
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.LandValueEnvironmentEffect)), "地价：环境影响系数" },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.LandValueEnvironmentEffect)),
+                    "控制环境因子（地形吸引力、电信覆盖、污染惩罚等）对道路 Edge 地价的传递比例。Edge 地价直接决定建筑租金。\n\n" +
+                    "原版中这些环境因子仅用于 UI 热力图显示，不影响租金计算。本 Mod 将其纳入经济模拟以提高真实感，但在服务设施完善的城区会导致工商业租金显著偏高。\n\n" +
+                    "★ 系数参考：\n" +
+                    " - 0%：环境不影响地价（最接近原版行为）\n" +
+                    " - 40%：平衡模式 — 保留地价差异化同时避免租金过高（默认推荐）\n" +
+                    " - 70%：高真实感 — 黄金地段租金明显上涨\n" +
+                    " - 100%：完全传递 — Mod 原始行为，可能出现大面积高租金警告\n\n" +
+                    "★ 症状判断：\n" +
+                    " - 工商业建筑大量出现高租金图标 → 降低此值\n" +
+                    " - 地价热力图看起来过于扁平/缺乏差异 → 提高此值\n\n" +
+                    "可于游戏中实时调节。地价变化会随时间平滑过渡。"
+                },
+
                 { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.ResetEcoBehavior)), "重置" },
                 { m_Setting.GetOptionDescLocaleID(nameof(ModSettings.ResetEcoBehavior)), "将所有经济行为与吞吐量参数恢复为默认值。" },
                 { m_Setting.GetOptionWarningLocaleID(nameof(ModSettings.ResetEcoBehavior)), "确认要将所有经济行为参数重置为默认值吗？" },
