@@ -4,7 +4,6 @@
 // BC调用GetCellCenter/GetPollution/GetWind/kTextureSize
 // GetCellCenter/GetPollution引用kMapSize/kTextureSize
 // OnCreate() base.CreateTextures(AirPollutionSystem.kTextureSize);
-// OnUpdate无引
 
 // CellMapSystem<T>解决方案
 // 1. ECS替换模式优点：可全面修改系统行为，灵活控制；缺点：维护稍复杂)
@@ -57,7 +56,6 @@ namespace MapExtPDX.ModeB
     using TargetSystem = AirPollutionSystem;
     // 5. T struct
     using TargetType = AirPollution;
-using MapExtPDX.MapExt.Core;
     // =========================================================================================
 
     /// <summary>

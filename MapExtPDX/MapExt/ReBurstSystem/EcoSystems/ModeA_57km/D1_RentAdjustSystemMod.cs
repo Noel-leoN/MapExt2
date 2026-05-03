@@ -1,4 +1,4 @@
-﻿using Colossal.Entities;
+using Colossal.Entities;
 using Game.Agents;
 using Game.Areas;
 using Game.Buildings;
@@ -187,7 +187,9 @@ namespace MapExtPDX.ModeA
 				m_City = m_CitySystem.City,
 				m_UpdateFrameIndex = updateFrame,
 				m_CommandBuffer = m_EndFrameBarrier.CreateCommandBuffer().AsParallelWriter(),
-				m_IconCommandBuffer = m_IconCommandSystem.CreateCommandBuffer()
+				m_IconCommandBuffer = m_IconCommandSystem.CreateCommandBuffer(),
+				// [MOD] 构建租金调节参数
+				m_RentTuning = BuildRentTuningParams()
 			}.ScheduleParallel(m_BuildingQuery,
 				JobUtils.CombineDependencies(groundPollutionDependencies, airPollutionDependencies,
 					noisePollutionDependencies, Dependency));
@@ -200,6 +202,32 @@ namespace MapExtPDX.ModeA
 			m_TaxSystem.AddReader(rentAdjustJobHandle);
 			m_IconCommandSystem.AddCommandBufferWriter(rentAdjustJobHandle);
 			Dependency = rentAdjustJobHandle;
+		}
+
+		#endregion
+
+		#region Helpers
+
+		/// <summary>从 ModSettings 构建租金调节参数 (Burst 兼容)</summary>
+		private static RentTuningParams BuildRentTuningParams()
+		{
+			var s = Mod.Instance?.Settings;
+			if (s == null) return RentTuningParams.Default;
+			return new RentTuningParams
+			{
+				RentMultiplier = new float3(
+					s.RentMultiplierResidential / 100f,
+					s.RentMultiplierCommercial / 100f,
+					s.RentMultiplierIndustrial / 100f),
+				LandValueFactor = new float3(
+					s.LandValueFactorResidential / 100f,
+					s.LandValueFactorCommercial / 100f,
+					s.LandValueFactorIndustrial / 100f),
+				LevelFactor = new float3(
+					s.LevelFactorResidential / 100f,
+					s.LevelFactorCommercial / 100f,
+					s.LevelFactorIndustrial / 100f),
+			};
 		}
 
 		#endregion
@@ -262,6 +290,47 @@ namespace MapExtPDX.ModeA
 			[ReadOnly] public Entity m_City;
 			public EconomyParameterData m_EconomyParameterData;
 			public EntityCommandBuffer.ParallelWriter m_CommandBuffer;
+			// [MOD] 租金调节参数 (从 ModSettings 构建)
+			public RentTuningParams m_RentTuning;
+
+			/// <summary>
+			/// [MOD] 可调租金计算，替代 PropertyUtils.GetRentPricePerRenter。
+			/// 分区域应用地价贡献、等级贡献、租金乘数。
+			/// </summary>
+			private static int GetModdedRentPerRenter(
+				BuildingPropertyData prop, int level, int lotSize,
+				float landValue, Game.Zones.AreaType area,
+				ref EconomyParameterData econ, bool ignoreLV,
+				in RentTuningParams tuning)
+			{
+				// 区域索引: x=住宅(0), y=商业(1), z=工业(2)
+				int idx;
+				switch (area)
+				{
+					case Game.Zones.AreaType.Commercial: idx = 1; break;
+					case Game.Zones.AreaType.Industrial:  idx = 2; break;
+					default: idx = 0; break;
+				}
+
+				float zoneBase = econ.m_RentPriceBuildingZoneTypeBase[idx];
+				float lvMod    = econ.m_LandValueModifier[idx];
+				float lvFactor  = tuning.LandValueFactor[idx];
+				float levelFact = tuning.LevelFactor[idx];
+				float rentMult  = tuning.RentMultiplier[idx];
+
+				float total = ignoreLV
+					? zoneBase * level * levelFact * lotSize * prop.m_SpaceMultiplier
+					: (landValue * lvMod * lvFactor + zoneBase * level * levelFact)
+					  * lotSize * prop.m_SpaceMultiplier;
+
+				total *= rentMult;
+
+				int renterCount = PropertyUtils.IsMixedBuilding(prop)
+					? UnityEngine.Mathf.RoundToInt(prop.m_ResidentialProperties / (1f - econ.m_MixedBuildingCompanyRentPercentage))
+					: prop.CountProperties();
+
+				return UnityEngine.Mathf.RoundToInt(total / math.max(1, renterCount));
+			}
 
 			/// <summary>
 			/// 判断是否应当显示高租金警告图标。
@@ -386,9 +455,9 @@ namespace MapExtPDX.ModeA
 
 					// ====== 4. 计算地租与市场挂牌价 ======
 					int buildingGarbageFeePerDay = m_FeeParameters.GetBuildingGarbageFeePerDay(areaType, isOffice);
-					int rentPerRenter = PropertyUtils.GetRentPricePerRenter(buildingPropertyData, buildingLevel,
-						lotSize,
-						landValueBase, areaType, ref m_EconomyParameterData, ignoreLandValue);
+					// [MOD] 使用可调租金公式替代原版 PropertyUtils.GetRentPricePerRenter
+					int rentPerRenter = GetModdedRentPerRenter(buildingPropertyData, buildingLevel,
+						lotSize, landValueBase, areaType, ref m_EconomyParameterData, ignoreLandValue, in m_RentTuning);
 
 					if (m_OnMarkets.HasComponent(buildingEntity))
 					{

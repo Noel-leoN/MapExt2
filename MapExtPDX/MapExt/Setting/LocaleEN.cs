@@ -441,25 +441,6 @@ namespace MapExtPDX
                     "★ Indicators: If large numbers of homeless remain despite vacant housing, increase this value. " +
                     "If mass homeless influx causes frame drops, decrease it. Can be adjusted in-game."
                 },
-                {
-                    m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.LandValueEnvironmentEffect)),
-                    "Land Value: Environment Impact Factor"
-                },
-                {
-                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.LandValueEnvironmentEffect)),
-                    "Controls how much environmental factors (terrain attractiveness, telecom coverage, pollution penalties) affect road Edge land values — which directly determine building rent.\n\n" +
-                    "In vanilla, these environmental factors only exist in the UI heatmap and do NOT affect rent calculation. " +
-                    "This mod merges them into the economic simulation for realism, but this can cause significantly higher commercial/industrial rents in well-developed areas.\n\n" +
-                    "★ Value Guide:\n" +
-                    " - 0%: Environment does not affect land value (closest to vanilla behavior)\n" +
-                    " - 40%: Balanced — keeps realistic land value differences while preventing excessive rent (DEFAULT)\n" +
-                    " - 70%: High realism — noticeable rent increase in prime locations\n" +
-                    " - 100%: Full effect — original mod behavior, may cause widespread high-rent warnings\n\n" +
-                    "★ Symptoms:\n" +
-                    " - Too many high-rent icons on commercial/industrial buildings → decrease this value\n" +
-                    " - Land value heatmap looks too flat/uniform → increase this value\n\n" +
-                    "Can be adjusted in-game. Changes take effect gradually as land values smooth over time."
-                },
                 { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.ResetEcoBehavior)), "Reset" },
                 {
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.ResetEcoBehavior)),
@@ -471,7 +452,101 @@ namespace MapExtPDX
                 },
 
                 // ============================================================
-                // Tab 3: Perf. Tools
+                // Tab 3: Rent Control
+                // ============================================================
+                { m_Setting.GetOptionTabLocaleID(ModSettings.kRentControlTab), "Rent Control" },
+
+                // --- Group: Land Value Factor ---
+                { m_Setting.GetOptionGroupLocaleID(ModSettings.kLandValueFactorGroup), "Land Value Factors (Adjustable In-Game)" },
+                {
+                    m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.LandValueEnvironmentEffect)),
+                    "Environment Impact Factor"
+                },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.LandValueEnvironmentEffect)),
+                    "Controls how much environmental factors (terrain attractiveness, telecom coverage, pollution penalties) affect road Edge land values — which directly determine building rent.\n\n" +
+                    "In vanilla, these environmental factors only exist in the UI heatmap and do NOT affect rent calculation. " +
+                    "This mod merges them into the economic simulation for realism, but this can cause significantly higher commercial/industrial rents in well-developed areas.\n\n" +
+                    "★ Value Guide:\n" +
+                    " - 0%: Environment does not affect land value (closest to vanilla behavior)\n" +
+                    " - 40%: Balanced — keeps realistic land value differences while preventing excessive rent (DEFAULT)\n" +
+                    " - 70%: High realism — noticeable rent increase in prime locations\n" +
+                    " - 100%: Full effect — original mod behavior, may cause widespread high-rent warnings\n\n" +
+                    "Can be adjusted in-game. Changes take effect gradually as land values smooth over time."
+                },
+                {
+                    m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.ServiceBonusCapMultiplier)),
+                    "Service Bonus Cap Multiplier"
+                },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.ServiceBonusCapMultiplier)),
+                    "Scales the upper limit of service coverage bonuses (healthcare, police, education, transit) to Edge land values.\n\n" +
+                    "★ Value Guide:\n" +
+                    " - 100%: Default mod cap\n" +
+                    " - 50%: Halves the cap — reduces land value premium in service-dense areas\n" +
+                    " - 200%: Doubles the cap — amplifies service location advantage\n\n" +
+                    "Can be adjusted in-game."
+                },
+
+                // --- Group: Rent Formula ---
+                { m_Setting.GetOptionGroupLocaleID(ModSettings.kRentFormulaGroup), "Rent Formula Tuning (Adjustable In-Game)" },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.RentMultiplierResidential)), "Residential Rent Multiplier" },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.RentMultiplierResidential)),
+                    "Overall multiplier applied to all residential rent. 100% = vanilla equivalent. Lower values reduce rent across all residential buildings.\n\nCan be adjusted in-game."
+                },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.RentMultiplierCommercial)), "Commercial Rent Multiplier" },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.RentMultiplierCommercial)),
+                    "Overall multiplier applied to all commercial rent. 100% = vanilla equivalent. Lower values help commercial businesses survive in high-land-value areas.\n\nCan be adjusted in-game."
+                },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.RentMultiplierIndustrial)), "Industrial Rent Multiplier" },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.RentMultiplierIndustrial)),
+                    "Overall multiplier applied to all industrial rent. 100% = vanilla equivalent.\n\nCan be adjusted in-game."
+                },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.LandValueFactorResidential)), "Residential: Land Value Contribution" },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.LandValueFactorResidential)),
+                    "Controls how strongly Edge land value affects residential rent. 0% = rent ignores land value entirely, 100% = vanilla formula weight.\n\nCan be adjusted in-game."
+                },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.LandValueFactorCommercial)), "Commercial: Land Value Contribution" },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.LandValueFactorCommercial)),
+                    "Controls how strongly Edge land value affects commercial rent. Reducing this helps shops survive in premium locations.\n\nCan be adjusted in-game."
+                },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.LandValueFactorIndustrial)), "Industrial: Land Value Contribution" },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.LandValueFactorIndustrial)),
+                    "Controls how strongly Edge land value affects industrial rent.\n\nCan be adjusted in-game."
+                },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.LevelFactorResidential)), "Residential: Building Level Contribution" },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.LevelFactorResidential)),
+                    "Controls how much building level (upgrade tier) contributes to residential rent. Higher levels normally mean higher rent.\n\nCan be adjusted in-game."
+                },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.LevelFactorCommercial)), "Commercial: Building Level Contribution" },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.LevelFactorCommercial)),
+                    "Controls how much building level contributes to commercial rent.\n\nCan be adjusted in-game."
+                },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.LevelFactorIndustrial)), "Industrial: Building Level Contribution" },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.LevelFactorIndustrial)),
+                    "Controls how much building level contributes to industrial rent.\n\nCan be adjusted in-game."
+                },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.ResetRentControl)), "Reset" },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.ResetRentControl)),
+                    "Reset all Rent Control parameters to their default values."
+                },
+                {
+                    m_Setting.GetOptionWarningLocaleID(nameof(ModSettings.ResetRentControl)),
+                    "Are you sure you want to reset all Rent Control parameters to defaults?"
+                },
+
+                // ============================================================
+                // Tab 4: Perf. Tools
                 // ============================================================
                 { m_Setting.GetOptionTabLocaleID(ModSettings.kPerformanceToolTab), "Perf. Tools" },
 

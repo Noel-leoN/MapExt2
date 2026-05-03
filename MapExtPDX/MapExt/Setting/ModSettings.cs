@@ -69,12 +69,14 @@ namespace MapExtPDX
 
     //[FileLocation(nameof(MapExtPDX))]
     [FileLocation("ModsSettings/" + Mod.ModName + "/" + Mod.ModName)]
-    [SettingsUITabOrder(kMapSizeModeTab, kMiscTab, kPerformanceToolTab, kDebugTab)]
+    [SettingsUITabOrder(kMapSizeModeTab, kMiscTab, kRentControlTab, kPerformanceToolTab, kDebugTab)]
     [SettingsUIGroupOrder(kMainModeGroup, kTerrainWaterOptGroup, kResetGroup, kInfoGroup, kEcoGroup, kNoteGroup,
         kEcoSystemEnableGroup, kPathfindingGroup, kEcoBehaviorGroup,
+        kLandValueFactorGroup, kRentFormulaGroup,
         kNoDogsGroup, kNoTrafficGroup, kEditorToolGroup, kPopDiagGroup, kDebugGroup)]
     [SettingsUIShowGroupName(kMainModeGroup, kTerrainWaterOptGroup, kResetGroup, kEcoGroup,
         kEcoSystemEnableGroup, kPathfindingGroup, kEcoBehaviorGroup,
+        kLandValueFactorGroup, kRentFormulaGroup,
         kNoDogsGroup, kNoTrafficGroup, kEditorToolGroup, kPopDiagGroup, kDebugGroup)]
     public class ModSettings : ModSetting
     {
@@ -84,6 +86,7 @@ namespace MapExtPDX
         public const string kMapSizeModeTab = "MapSize Mode";
         public const string kPerformanceToolTab = "PerformanceTool";
         public const string kMiscTab = "EconomyEX";
+        public const string kRentControlTab = "Rent Control";
         public const string kDebugTab = "Debug";
 
         // === Group 常量 ===
@@ -100,6 +103,10 @@ namespace MapExtPDX
         public const string kEcoSystemEnableGroup = "EcoSystemEnable";
         public const string kPathfindingGroup = "Pathfinding";
         public const string kEcoBehaviorGroup = "EcoBehavior";
+
+        // -- Rent Control Tab --
+        public const string kLandValueFactorGroup = "LandValueFactor";
+        public const string kRentFormulaGroup = "RentFormula";
 
         // -- Perf. Tools Tab --
         public const string kNoDogsGroup = "NoDogs";
@@ -420,16 +427,6 @@ namespace MapExtPDX
         [SettingsUISlider(min = 128, max = 5120, step = 128, scalarMultiplier = 1, unit = Game.UI.Unit.kInteger)]
         public int HomelessSeekerCap { get; set; } = 1280;
 
-        /// <summary>
-        /// 环境地价影响系数（百分比）。
-        /// 控制环境因子（地形吸引力、电信覆盖、污染等）对道路 Edge 地价的传递比例。
-        /// 0% = 环境因子不影响地价（接近原版行为），100% = 环境因子完全传递（当前默认行为）。
-        /// 推荐 30~50%，既保留地价真实感又避免工商业租金过高。
-        /// </summary>
-        [SettingsUISection(kMiscTab, kEcoBehaviorGroup)]
-        [SettingsUISlider(min = 0, max = 100, step = 5, scalarMultiplier = 1, unit = Game.UI.Unit.kPercentage)]
-        public int LandValueEnvironmentEffect { get; set; } = 40;
-
         [SettingsUISection(kMiscTab, kEcoBehaviorGroup)]
         [SettingsUIButton]
         [SettingsUIConfirmation]
@@ -443,7 +440,100 @@ namespace MapExtPDX
                 HouseholdResourceDemandMultiplier = 3.5f;
                 HomeSeekerCap = 128;
                 HomelessSeekerCap = 1280;
+            }
+        }
+
+        #endregion
+
+        // === Rent Control Tab ===
+        #region Rent Control
+
+        // --- 地价因子组 ---
+
+        /// <summary>
+        /// 环境地价影响系数（百分比）。
+        /// 控制环境因子（地形吸引力、电信覆盖、污染等）对道路 Edge 地价的传递比例。
+        /// 0% = 环境因子不影响地价（接近原版行为），100% = 环境因子完全传递。
+        /// 推荐 30~50%，既保留地价真实感又避免工商业租金过高。
+        /// </summary>
+        [SettingsUISection(kRentControlTab, kLandValueFactorGroup)]
+        [SettingsUISlider(min = 0, max = 100, step = 5, scalarMultiplier = 1, unit = Game.UI.Unit.kPercentage)]
+        public int LandValueEnvironmentEffect { get; set; } = 40;
+
+        /// <summary>
+        /// 服务加成上限乘数（百分比）。
+        /// 控制服务覆盖（医疗、警务、教育、交通）对 Edge 地价加成的上限缩放。
+        /// 100% = Mod 默认上限，50% = 上限减半（降低服务密集区的地价溢价）。
+        /// </summary>
+        [SettingsUISection(kRentControlTab, kLandValueFactorGroup)]
+        [SettingsUISlider(min = 0, max = 200, step = 10, scalarMultiplier = 1, unit = Game.UI.Unit.kPercentage)]
+        public int ServiceBonusCapMultiplier { get; set; } = 100;
+
+        // --- 租金公式组 ---
+
+        /// <summary>住宅租金总乘数（百分比）</summary>
+        [SettingsUISection(kRentControlTab, kRentFormulaGroup)]
+        [SettingsUISlider(min = 0, max = 200, step = 5, scalarMultiplier = 1, unit = Game.UI.Unit.kPercentage)]
+        public int RentMultiplierResidential { get; set; } = 100;
+
+        /// <summary>商业租金总乘数（百分比）</summary>
+        [SettingsUISection(kRentControlTab, kRentFormulaGroup)]
+        [SettingsUISlider(min = 0, max = 200, step = 5, scalarMultiplier = 1, unit = Game.UI.Unit.kPercentage)]
+        public int RentMultiplierCommercial { get; set; } = 100;
+
+        /// <summary>工业租金总乘数（百分比）</summary>
+        [SettingsUISection(kRentControlTab, kRentFormulaGroup)]
+        [SettingsUISlider(min = 0, max = 200, step = 5, scalarMultiplier = 1, unit = Game.UI.Unit.kPercentage)]
+        public int RentMultiplierIndustrial { get; set; } = 100;
+
+        /// <summary>住宅地价贡献系数（百分比）</summary>
+        [SettingsUISection(kRentControlTab, kRentFormulaGroup)]
+        [SettingsUISlider(min = 0, max = 200, step = 5, scalarMultiplier = 1, unit = Game.UI.Unit.kPercentage)]
+        public int LandValueFactorResidential { get; set; } = 100;
+
+        /// <summary>商业地价贡献系数（百分比）</summary>
+        [SettingsUISection(kRentControlTab, kRentFormulaGroup)]
+        [SettingsUISlider(min = 0, max = 200, step = 5, scalarMultiplier = 1, unit = Game.UI.Unit.kPercentage)]
+        public int LandValueFactorCommercial { get; set; } = 100;
+
+        /// <summary>工业地价贡献系数（百分比）</summary>
+        [SettingsUISection(kRentControlTab, kRentFormulaGroup)]
+        [SettingsUISlider(min = 0, max = 200, step = 5, scalarMultiplier = 1, unit = Game.UI.Unit.kPercentage)]
+        public int LandValueFactorIndustrial { get; set; } = 100;
+
+        /// <summary>住宅等级贡献系数（百分比）</summary>
+        [SettingsUISection(kRentControlTab, kRentFormulaGroup)]
+        [SettingsUISlider(min = 0, max = 200, step = 5, scalarMultiplier = 1, unit = Game.UI.Unit.kPercentage)]
+        public int LevelFactorResidential { get; set; } = 100;
+
+        /// <summary>商业等级贡献系数（百分比）</summary>
+        [SettingsUISection(kRentControlTab, kRentFormulaGroup)]
+        [SettingsUISlider(min = 0, max = 200, step = 5, scalarMultiplier = 1, unit = Game.UI.Unit.kPercentage)]
+        public int LevelFactorCommercial { get; set; } = 100;
+
+        /// <summary>工业等级贡献系数（百分比）</summary>
+        [SettingsUISection(kRentControlTab, kRentFormulaGroup)]
+        [SettingsUISlider(min = 0, max = 200, step = 5, scalarMultiplier = 1, unit = Game.UI.Unit.kPercentage)]
+        public int LevelFactorIndustrial { get; set; } = 100;
+
+        [SettingsUISection(kRentControlTab, kRentFormulaGroup)]
+        [SettingsUIButton]
+        [SettingsUIConfirmation]
+        public bool ResetRentControl
+        {
+            set
+            {
                 LandValueEnvironmentEffect = 40;
+                ServiceBonusCapMultiplier = 100;
+                RentMultiplierResidential = 100;
+                RentMultiplierCommercial = 100;
+                RentMultiplierIndustrial = 100;
+                LandValueFactorResidential = 100;
+                LandValueFactorCommercial = 100;
+                LandValueFactorIndustrial = 100;
+                LevelFactorResidential = 100;
+                LevelFactorCommercial = 100;
+                LevelFactorIndustrial = 100;
             }
         }
 
@@ -685,6 +775,16 @@ namespace MapExtPDX
             HomeSeekerCap = 128;
             HomelessSeekerCap = 1280;
             LandValueEnvironmentEffect = 40;
+            ServiceBonusCapMultiplier = 100;
+            RentMultiplierResidential = 100;
+            RentMultiplierCommercial = 100;
+            RentMultiplierIndustrial = 100;
+            LandValueFactorResidential = 100;
+            LandValueFactorCommercial = 100;
+            LandValueFactorIndustrial = 100;
+            LevelFactorResidential = 100;
+            LevelFactorCommercial = 100;
+            LevelFactorIndustrial = 100;
             
             isEnableEconomyFix = true;
             EnableDemandEcoSystem = true;

@@ -87,6 +87,15 @@ namespace MapExtPDX.ModeB
                 }
             }
         }
+
+        public struct GroupAmbienceEffect
+        {
+            public GroupAmbienceType m_Type;
+
+            public float m_Amount;
+
+            public int m_CellIndex;
+        }
     }
 
     // v1.2.5f
@@ -138,16 +147,18 @@ namespace MapExtPDX.ModeB
                 }
             }
         }
+
+        public struct GroupAmbienceEffect
+        {
+            public GroupAmbienceType m_Type;
+
+            public float m_Amount;
+
+            public int m_CellIndex;
+        }
     }
 
-    public struct GroupAmbienceEffect
-    {
-        public GroupAmbienceType m_Type;
-
-        public float m_Amount;
-
-        public int m_CellIndex;
-    }
+   
 
 
 }

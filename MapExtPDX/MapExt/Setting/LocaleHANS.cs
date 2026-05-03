@@ -384,21 +384,6 @@ namespace MapExtPDX
                     "★ 如何判断：若城市中大量流浪汉长期无法入住空置住宅，请提高此值。" +
                     "若大量流浪同时涌入导致帧率骤降，请降低此值。可于游戏中实时调节。"
                 },
-                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.LandValueEnvironmentEffect)), "地价：环境影响系数" },
-                {
-                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.LandValueEnvironmentEffect)),
-                    "控制环境因子（地形吸引力、电信覆盖、污染惩罚等）对道路 Edge 地价的传递比例。Edge 地价直接决定建筑租金。\n\n" +
-                    "原版中这些环境因子仅用于 UI 热力图显示，不影响租金计算。本 Mod 将其纳入经济模拟以提高真实感，但在服务设施完善的城区会导致工商业租金显著偏高。\n\n" +
-                    "★ 系数参考：\n" +
-                    " - 0%：环境不影响地价（最接近原版行为）\n" +
-                    " - 40%：平衡模式 — 保留地价差异化同时避免租金过高（默认推荐）\n" +
-                    " - 70%：高真实感 — 黄金地段租金明显上涨\n" +
-                    " - 100%：完全传递 — Mod 原始行为，可能出现大面积高租金警告\n\n" +
-                    "★ 症状判断：\n" +
-                    " - 工商业建筑大量出现高租金图标 → 降低此值\n" +
-                    " - 地价热力图看起来过于扁平/缺乏差异 → 提高此值\n\n" +
-                    "可于游戏中实时调节。地价变化会随时间平滑过渡。"
-                },
                 { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.ResetEcoBehavior)), "重置" },
                 {
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.ResetEcoBehavior)),
@@ -410,7 +395,94 @@ namespace MapExtPDX
                 },
 
                 // ============================================================
-                // Tab 3: 性能工具
+                // Tab 3: 租金管控
+                // ============================================================
+                { m_Setting.GetOptionTabLocaleID(ModSettings.kRentControlTab), "租金管控" },
+
+                // --- Group: 地价因子 ---
+                { m_Setting.GetOptionGroupLocaleID(ModSettings.kLandValueFactorGroup), "地价因子 (可于游戏中实时调节)" },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.LandValueEnvironmentEffect)), "环境影响系数" },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.LandValueEnvironmentEffect)),
+                    "控制环境因子（地形吸引力、电信覆盖、污染惩罚等）对道路 Edge 地价的传递比例。Edge 地价直接决定建筑租金。\n\n" +
+                    "原版中这些环境因子仅用于 UI 热力图显示，不影响租金计算。本 Mod 将其纳入经济模拟以提高真实感，但在服务设施完善的城区会导致工商业租金显著偏高。\n\n" +
+                    "★ 系数参考：\n" +
+                    " - 0%：环境不影响地价（最接近原版行为）\n" +
+                    " - 40%：平衡模式 — 保留地价差异化同时避免租金过高（默认推荐）\n" +
+                    " - 70%：高真实感 — 黄金地段租金明显上涨\n" +
+                    " - 100%：完全传递 — Mod 原始行为，可能出现大面积高租金警告\n\n" +
+                    "可于游戏中实时调节。地价变化会随时间平滑过渡。"
+                },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.ServiceBonusCapMultiplier)), "服务加成上限乘数" },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.ServiceBonusCapMultiplier)),
+                    "缩放服务覆盖（医疗、警务、教育、交通）对 Edge 地价加成的上限。\n\n" +
+                    "★ 系数参考：\n" +
+                    " - 100%：Mod 默认上限\n" +
+                    " - 50%：上限减半 — 降低服务密集区的地价溢价\n" +
+                    " - 200%：上限翻倍 — 放大服务设施的区位优势\n\n" +
+                    "可于游戏中实时调节。"
+                },
+
+                // --- Group: 租金公式 ---
+                { m_Setting.GetOptionGroupLocaleID(ModSettings.kRentFormulaGroup), "租金公式调节 (可于游戏中实时调节)" },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.RentMultiplierResidential)), "住宅租金总乘数" },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.RentMultiplierResidential)),
+                    "应用于所有住宅租金的总体乘数。100% = 等效原版公式。降低此值可全面降低住宅租金。\n\n可于游戏中实时调节。"
+                },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.RentMultiplierCommercial)), "商业租金总乘数" },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.RentMultiplierCommercial)),
+                    "应用于所有商业租金的总体乘数。100% = 等效原版公式。降低此值有助于商业在高地价区域生存。\n\n可于游戏中实时调节。"
+                },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.RentMultiplierIndustrial)), "工业租金总乘数" },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.RentMultiplierIndustrial)),
+                    "应用于所有工业租金的总体乘数。100% = 等效原版公式。\n\n可于游戏中实时调节。"
+                },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.LandValueFactorResidential)), "住宅：地价贡献系数" },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.LandValueFactorResidential)),
+                    "控制 Edge 地价对住宅租金的影响强度。0% = 租金完全忽略地价，100% = 原版公式权重。\n\n可于游戏中实时调节。"
+                },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.LandValueFactorCommercial)), "商业：地价贡献系数" },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.LandValueFactorCommercial)),
+                    "控制 Edge 地价对商业租金的影响强度。降低此值有助于商铺在黄金地段生存。\n\n可于游戏中实时调节。"
+                },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.LandValueFactorIndustrial)), "工业：地价贡献系数" },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.LandValueFactorIndustrial)),
+                    "控制 Edge 地价对工业租金的影响强度。\n\n可于游戏中实时调节。"
+                },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.LevelFactorResidential)), "住宅：等级贡献系数" },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.LevelFactorResidential)),
+                    "控制建筑等级（升级层级）对住宅租金的贡献程度。等级越高通常租金越贵。\n\n可于游戏中实时调节。"
+                },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.LevelFactorCommercial)), "商业：等级贡献系数" },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.LevelFactorCommercial)),
+                    "控制建筑等级对商业租金的贡献程度。\n\n可于游戏中实时调节。"
+                },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.LevelFactorIndustrial)), "工业：等级贡献系数" },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.LevelFactorIndustrial)),
+                    "控制建筑等级对工业租金的贡献程度。\n\n可于游戏中实时调节。"
+                },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.ResetRentControl)), "重置" },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.ResetRentControl)),
+                    "将所有租金管控参数恢复为默认值。"
+                },
+                {
+                    m_Setting.GetOptionWarningLocaleID(nameof(ModSettings.ResetRentControl)),
+                    "确认要将所有租金管控参数重置为默认值吗？"
+                },
+
+                // ============================================================
+                // Tab 4: 性能工具
                 // ============================================================
                 { m_Setting.GetOptionTabLocaleID(ModSettings.kPerformanceToolTab), "性能工具" },
 

@@ -6,7 +6,7 @@ using Unity.Collections;
 using Unity.Entities;
 using Unity.Mathematics;
 using UnityEngine;
-using static MapExtPDX.ModeB.XCellMapSystemRe;
+using static MapExtPDX.ModeA.XCellMapSystemRe;
 using MapExtPDX.MapExt.Core;
 
 namespace MapExtPDX.ModeB

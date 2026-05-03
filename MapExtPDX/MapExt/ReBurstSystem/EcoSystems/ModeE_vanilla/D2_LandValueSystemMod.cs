@@ -242,6 +242,8 @@ using MapExtPDX.MapExt.Core;
                 m_LerpSpeed = kLerpSpeed,
                 // 环境衰减系数 (从 ModSettings 百分比转小数)
                 m_EnvDampeningFactor = (Mod.Instance?.Settings?.LandValueEnvironmentEffect ?? 40) / 100f,
+                // 服务加成上限乘数 (从 ModSettings 百分比转小数)
+                m_ServiceBonusCapMultiplier = (Mod.Instance?.Settings?.ServiceBonusCapMultiplier ?? 100) / 100f,
             };
 
             // 调度 Edge Job
@@ -405,6 +407,7 @@ using MapExtPDX.MapExt.Core;
             // ModSetting配置变量
             public float m_LerpSpeed; // 平滑系数
             public float m_EnvDampeningFactor; // 环境因子衰减系数 (0~1)
+            public float m_ServiceBonusCapMultiplier; // 服务加成上限乘数 (0~2)
 
             // 遍历所有具有地价组件的道路边缘
             public void Execute(in ArchetypeChunk chunk, int unfilteredChunkIndex, bool useEnabledMask, in v128 chunkEnabledMask)
@@ -456,7 +459,7 @@ using MapExtPDX.MapExt.Core;
                         }
                     }
                     // Cap 服务加成
-                    float finalServiceBonus = math.min(serviceBonus, m_Sampler.m_LvParams.m_CommonFactorMaxBonus * 2.5f);
+                    float finalServiceBonus = math.min(serviceBonus, m_Sampler.m_LvParams.m_CommonFactorMaxBonus * 2.5f * m_ServiceBonusCapMultiplier);
 
                     // === C. 聚合计算 ===
                     float baseline = m_Sampler.m_LvParams.m_LandValueBaseline;

@@ -1,4 +1,5 @@
 ﻿using Colossal.Entities;
+using Game;
 using Game.Agents;
 using Game.Areas;
 using Game.Buildings;
@@ -11,18 +12,15 @@ using Game.Net;
 using Game.Notifications;
 using Game.Objects;
 using Game.Prefabs;
+using Game.Simulation;
 using Game.Tools;
 using Game.Vehicles;
-using Game.Zones;
 using Unity.Burst;
 using Unity.Burst.Intrinsics;
 using Unity.Collections;
 using Unity.Entities;
 using Unity.Jobs;
 using Unity.Mathematics;
-using UnityEngine;
-using Game;
-using Game.Simulation;
 
 namespace MapExtPDX.ModeC
 {
@@ -176,7 +174,9 @@ namespace MapExtPDX.ModeC
 					m_City = this.m_CitySystem.City,
 					m_UpdateFrameIndex = updateFrame,
 					m_CommandBuffer = this.m_EndFrameBarrier.CreateCommandBuffer().AsParallelWriter(),
-					m_IconCommandBuffer = this.m_IconCommandSystem.CreateCommandBuffer()
+					m_IconCommandBuffer = this.m_IconCommandSystem.CreateCommandBuffer(),
+					// [MOD] 构建租金调节参数
+					m_RentTuning = BuildRentTuningParams()
 				}, this.m_BuildingQuery,
 				JobUtils.CombineDependencies(groundPollutionDependencies, airPollutionDependencies,
 					noisePollutionDependencies, base.Dependency));
@@ -191,6 +191,31 @@ namespace MapExtPDX.ModeC
 			base.Dependency = rentAdjustJobHandle;
 		}
 
+		#endregion
+
+		#region Helpers
+
+		/// <summary>从 ModSettings 构建租金调节参数 (Burst 兼容)</summary>
+		private static RentTuningParams BuildRentTuningParams()
+		{
+			var s = Mod.Instance?.Settings;
+			if (s == null) return RentTuningParams.Default;
+			return new RentTuningParams
+			{
+				RentMultiplier = new float3(
+					s.RentMultiplierResidential / 100f,
+					s.RentMultiplierCommercial / 100f,
+					s.RentMultiplierIndustrial / 100f),
+				LandValueFactor = new float3(
+					s.LandValueFactorResidential / 100f,
+					s.LandValueFactorCommercial / 100f,
+					s.LandValueFactorIndustrial / 100f),
+				LevelFactor = new float3(
+					s.LevelFactorResidential / 100f,
+					s.LevelFactorCommercial / 100f,
+					s.LevelFactorIndustrial / 100f),
+			};
+		}
 
 		#endregion
 
@@ -252,6 +277,45 @@ namespace MapExtPDX.ModeC
 			[ReadOnly] public Entity m_City;
 			public EconomyParameterData m_EconomyParameterData;
 			public EntityCommandBuffer.ParallelWriter m_CommandBuffer;
+			// [MOD] 租金调节参数 (从 ModSettings 构建)
+			public RentTuningParams m_RentTuning;
+
+			/// <summary>
+			/// [MOD] 可调租金计算，替代 PropertyUtils.GetRentPricePerRenter。
+			/// </summary>
+			private static int GetModdedRentPerRenter(
+				BuildingPropertyData prop, int level, int lotSize,
+				float landValue, Game.Zones.AreaType area,
+				ref EconomyParameterData econ, bool ignoreLV,
+				in RentTuningParams tuning)
+			{
+				int idx;
+				switch (area)
+				{
+					case Game.Zones.AreaType.Commercial: idx = 1; break;
+					case Game.Zones.AreaType.Industrial:  idx = 2; break;
+					default: idx = 0; break;
+				}
+
+				float zoneBase = econ.m_RentPriceBuildingZoneTypeBase[idx];
+				float lvMod    = econ.m_LandValueModifier[idx];
+				float lvFactor  = tuning.LandValueFactor[idx];
+				float levelFact = tuning.LevelFactor[idx];
+				float rentMult  = tuning.RentMultiplier[idx];
+
+				float total = ignoreLV
+					? zoneBase * level * levelFact * lotSize * prop.m_SpaceMultiplier
+					: (landValue * lvMod * lvFactor + zoneBase * level * levelFact)
+					  * lotSize * prop.m_SpaceMultiplier;
+
+				total *= rentMult;
+
+				int renterCount = PropertyUtils.IsMixedBuilding(prop)
+					? UnityEngine.Mathf.RoundToInt(prop.m_ResidentialProperties / (1f - econ.m_MixedBuildingCompanyRentPercentage))
+					: prop.CountProperties();
+
+				return UnityEngine.Mathf.RoundToInt(total / math.max(1, renterCount));
+			}
 
 			private bool CanDisplayHighRentWarnIcon(DynamicBuffer<Renter> renters)
 			{
@@ -353,8 +417,8 @@ namespace MapExtPDX.ModeC
 
 					this.ProcessPollutionNotification(areaType, entity, cityModifiers);
 					int buildingGarbageFeePerDay = this.m_FeeParameters.GetBuildingGarbageFeePerDay(areaType, isOffice);
-					int rentPricePerRenter = PropertyUtils.GetRentPricePerRenter(buildingPropertyData, buildingLevel,
-						lotSize, landValueBase, areaType, ref this.m_EconomyParameterData, ignoreLandValue);
+					int rentPricePerRenter = GetModdedRentPerRenter(buildingPropertyData, buildingLevel,
+						lotSize, landValueBase, areaType, ref this.m_EconomyParameterData, ignoreLandValue, in this.m_RentTuning);
 					if (this.m_OnMarkets.HasComponent(entity))
 					{
 						PropertyOnMarket onMarket = this.m_OnMarkets[entity];
@@ -442,7 +506,7 @@ namespace MapExtPDX.ModeC
 						}
 					}
 
-					if (!((float)renterPovertyStats.x / math.max(1f, renterPovertyStats.y) > 0.7f) ||
+					if (!(renterPovertyStats.x / math.max(1f, renterPovertyStats.y) > 0.7f) ||
 					    !this.CanDisplayHighRentWarnIcon(renters))
 					{
 						this.m_IconCommandBuffer.Remove(entity,
