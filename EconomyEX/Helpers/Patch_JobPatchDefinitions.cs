@@ -40,11 +40,9 @@ namespace EconomyEX.Helpers
         
         // These targets MUST match the classes in EconomyEX/Systems/
         // A1-A3: Job structs are top-level (not nested) — 用于 Transpiler 替换原版 Job
-        // D1: AdjustRentJob is nested inside RentAdjustSystemMod
+        // 注意: D1 (RentAdjust) 已通过 SystemRegistrar 做完整系统替换，不再需要 Job Transpiler
         private static readonly List<TargetInfo> EcoTargets = new List<TargetInfo>
         {
-            // D1: RentAdjust — Job 嵌套在 RentAdjustSystemMod 内
-            new TargetInfo("Game.Simulation.RentAdjustSystem", "OnUpdate", "Game.Simulation.RentAdjustSystem/AdjustRentJob", "EconomyEX.Systems.RentAdjustSystemMod/AdjustRentJob"),
             // A1: ResidentialDemand — 顶级 Job struct
             new TargetInfo("Game.Simulation.ResidentialDemandSystem", "OnUpdate", "Game.Simulation.ResidentialDemandSystem/UpdateResidentialDemandJob", "EconomyEX.Systems.UpdateResidentialDemandJob"),
             // A3: IndustrialDemand — 顶级 Job struct
