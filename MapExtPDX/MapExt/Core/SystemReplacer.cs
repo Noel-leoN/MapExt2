@@ -546,14 +546,10 @@ namespace MapExtPDX.MapExt.Core
             // P2 Editor Collision Override
             updateSystem.UpdateAt<EcoShared.P2_EditorCollisionOverrideSystem>(SystemUpdatePhase.ToolUpdate);
 
-            // --- 人口诊断系统 (按需查询，不参与每帧更新) ---
-            updateSystem.UpdateAt<EcoShared.PopulationDiagnosticSystem>(SystemUpdatePhase.GameSimulation);
-
-            // --- 冲突监控系统 ---
-            if (setting.isEnableEconomyFix)
-            {
-                updateSystem.UpdateAt<EcoShared.ConflictMonitoringSystem>(SystemUpdatePhase.MainLoop);
-            }
+            // === UI 和监控系统（无条件注册，不受 isEnableEconomyFix 约束） ===
+            updateSystem.UpdateAt<MapExtPDX.UI.MapExtUISystem>(SystemUpdatePhase.UIUpdate);
+            updateSystem.UpdateAt<MapExtPDX.UI.PopulationDiagnosticSystem>(SystemUpdatePhase.GameSimulation);
+            updateSystem.UpdateAt<MapExtPDX.UI.ConflictMonitoringSystem>(SystemUpdatePhase.MainLoop);
         }
     }
 }

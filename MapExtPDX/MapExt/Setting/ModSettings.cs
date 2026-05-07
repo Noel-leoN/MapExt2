@@ -699,7 +699,7 @@ namespace MapExtPDX
             {
                 // 触发 ConflictMonitoringSystem 的即时检查
                 var world = Unity.Entities.World.DefaultGameObjectInjectionWorld;
-                var monitor = world?.GetExistingSystemManaged<MapExtPDX.EcoShared.ConflictMonitoringSystem>();
+                var monitor = world?.GetExistingSystemManaged<MapExtPDX.UI.ConflictMonitoringSystem>();
                 if (monitor != null)
                 {
                     monitor.ForceCheck();
@@ -727,7 +727,7 @@ namespace MapExtPDX
             set
             {
                 var system = Unity.Entities.World.DefaultGameObjectInjectionWorld
-                    ?.GetExistingSystemManaged<MapExtPDX.EcoShared.PopulationDiagnosticSystem>();
+                    ?.GetExistingSystemManaged<MapExtPDX.UI.PopulationDiagnosticSystem>();
                 if (system != null)
                 {
                     PopDiagData = system.RunDiagnostics();

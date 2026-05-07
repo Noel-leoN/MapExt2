@@ -72,3 +72,7 @@ CLAUDE.md
 # IDE & Version Control
 .vscode/
 .github/
+
+# UI Mod (React/Webpack)
+**/node_modules/
+**/package-lock.json

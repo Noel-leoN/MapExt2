@@ -8,7 +8,7 @@ using Game.Simulation;
 using Unity.Entities;
 using MapExtPDX.MapExt.Core;
 
-namespace MapExtPDX.EcoShared
+namespace MapExtPDX.UI
 {
     /// <summary>
     /// 全系统冲突监控：定期检查 MapExtPDX 经济系统替换对的运行状态。

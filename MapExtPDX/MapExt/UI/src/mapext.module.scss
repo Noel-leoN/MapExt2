@@ -1,0 +1,220 @@
+/* MapExt In-Game Panel — Coherent Gameface 兼容版 */
+/* 不使用 rem 单位（Gameface 中 rem = 引擎缩放单位），改用 coui 兼容的 px */
+
+/* === 面板容器 === */
+.panel {
+    position: absolute;
+    top: 46rem;
+    left: 0;
+    width: 320rem;
+    max-height: 580rem;
+    overflow-y: auto;
+
+    background-color: rgba(24, 30, 44, 0.94);
+    border: 1rem solid rgba(100, 140, 200, 0.2);
+    border-radius: 6rem;
+
+    color: #d0d8e8;
+    font-size: 13rem;
+    line-height: 1.4;
+    z-index: 100;
+}
+
+/* === 标题栏 === */
+.panelHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10rem 14rem 8rem;
+    border-bottom: 1rem solid rgba(100, 140, 200, 0.15);
+}
+
+.panelTitle {
+    font-size: 15rem;
+    font-weight: 700;
+    color: #e8edf5;
+}
+
+.closeButton {
+    background-color: transparent;
+    border: 1rem solid rgba(255, 255, 255, 0.15);
+    color: #8899bb;
+    font-size: 13rem;
+    font-weight: 700;
+    width: 24rem;
+    height: 24rem;
+    line-height: 22rem;
+    text-align: center;
+    border-radius: 4rem;
+    cursor: pointer;
+}
+
+.closeButton:hover {
+    background-color: rgba(255, 80, 80, 0.3);
+    color: #ffaaaa;
+    border-color: rgba(255, 80, 80, 0.4);
+}
+
+/* === 状态栏 === */
+.statusBar {
+    display: flex;
+    gap: 12rem;
+    padding: 8rem 14rem;
+    background-color: rgba(40, 55, 80, 0.4);
+    border-bottom: 1rem solid rgba(100, 140, 200, 0.15);
+}
+
+.statusItem {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+    flex: 1;
+}
+
+.statusLabel {
+    font-size: 10rem;
+    font-weight: 600;
+    color: #6880a0;
+    text-transform: uppercase;
+    letter-spacing: 1rem;
+}
+
+.statusValue {
+    font-size: 13rem;
+    font-weight: 500;
+    color: #7cc0ff;
+}
+
+/* === Config 展开切换 === */
+.configToggle {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    padding: 8rem 14rem;
+    background-color: transparent;
+    border: none;
+    border-bottom: 1rem solid rgba(100, 140, 200, 0.15);
+    color: #a0b0cc;
+    font-size: 13rem;
+    font-weight: 600;
+    cursor: pointer;
+    text-align: left;
+}
+
+.configToggle:hover {
+    background-color: rgba(60, 80, 120, 0.3);
+    color: #c0d0e8;
+}
+
+.configArea {
+    padding: 4rem 0;
+}
+
+/* === Section === */
+.section {
+    padding: 8rem 14rem;
+}
+
+.section + .section {
+    border-top: 1rem solid rgba(100, 140, 200, 0.12);
+}
+
+.sectionHeader {
+    margin-bottom: 8rem;
+    font-size: 13rem;
+    font-weight: 700;
+    color: #b0c0dd;
+}
+
+.sectionDivider {
+    height: 1rem;
+    background-color: rgba(100, 140, 200, 0.12);
+    margin: 6rem 0;
+}
+
+/* === Slider 行 === */
+.sliderRow {
+    display: flex;
+    align-items: center;
+    gap: 8rem;
+    padding: 4rem 0;
+}
+
+.sliderLabel {
+    width: 72rem;
+    flex-shrink: 0;
+    font-size: 12rem;
+    color: #8899b0;
+    overflow: hidden;
+    white-space: nowrap;
+}
+
+/* --- 自定义滑块（外层热区 + 内层轨道） --- */
+.sliderTrackWrap {
+    position: relative;
+    flex: 1;
+    padding: 8rem 0;
+    cursor: pointer;
+    -webkit-user-select: none;
+    user-select: none;
+}
+
+.sliderTrack {
+    position: relative;
+    width: 100%;
+    height: 6rem;
+    background-color: rgba(80, 100, 140, 0.35);
+    border-radius: 3rem;
+}
+
+.sliderFill {
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 100%;
+    background-color: #5090d0;
+    border-radius: 3rem;
+    pointer-events: none;
+}
+
+.sliderThumb {
+    position: absolute;
+    top: 50%;
+    width: 14rem;
+    height: 14rem;
+    background-color: #7cc0ff;
+    border: 2rem solid #4080c0;
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+}
+
+.sliderValue {
+    width: 56rem;
+    flex-shrink: 0;
+    text-align: right;
+    font-size: 12rem;
+    color: #7cc0ff;
+    font-weight: 500;
+}
+
+/* === 重置按钮 === */
+.resetButton {
+    display: block;
+    width: 100%;
+    margin-top: 8rem;
+    padding: 6rem 0;
+    background-color: rgba(60, 75, 100, 0.3);
+    border: 1rem solid rgba(100, 140, 200, 0.2);
+    border-radius: 4rem;
+    color: #8899b0;
+    font-size: 12rem;
+    font-weight: 500;
+    cursor: pointer;
+}
+
+.resetButton:hover {
+    background-color: rgba(255, 80, 80, 0.15);
+    color: #ffaaaa;
+    border-color: rgba(255, 80, 80, 0.3);
+}

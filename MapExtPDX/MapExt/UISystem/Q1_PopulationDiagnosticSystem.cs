@@ -14,7 +14,7 @@ using Unity.Collections;
 using Unity.Entities;
 using Unity.Mathematics;
 
-namespace MapExtPDX.EcoShared
+namespace MapExtPDX.UI
 {
     /// <summary>
     /// 🔍 [MOD] 人口诊断系统
