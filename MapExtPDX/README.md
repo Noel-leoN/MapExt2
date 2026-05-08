@@ -1,6 +1,8 @@
-# 🚀 Cities Skylines 2 Map Extended Mod (28/57/114/vanilla) with Economy Fix and Performance Improvement
+# 🚀 Cities Skylines 2 Map Extended Mod (28/57/114/vanilla) with Economy Fix, In-Game UI and Performance Improvement
 
 ## 🚀 Update Notice
+
+* **🎛️ v3.0.0 — In-Game UI Dashboard:** This version introduces a new in-game floating panel for real-time parameter tuning. Click the "M" button in the top-left HUD to access three modules: **City Stats** (live household and housing metrics), **Rent Control** (11 interactive sliders for rent formula parameters), and **Pathfinding** (shopping and leisure max cost sliders). The panel supports automatic English/Chinese language switching and has zero performance overhead when closed.
 
 * **💎 Economy Fix and Performance Optimization (Experimental):** This version includes a suite of optimizations specifically tuned for mega-cities (millions of population). It refactors demand logic, land value, housing search, citizen behaviors, and rent systems.
 
@@ -38,9 +40,15 @@
 
 * **🧱 Map Tiles:** The number of unlockable map tiles remains fixed at **529**.
 
-## 💡 Economy Patches and Performance Tools
+## 💡 Economy Patches, In-Game UI and Performance Tools
 
-This mod integrates a comprehensive set of economy patches and performance tools, all configurable via the in-game Option UI:
+This mod integrates a comprehensive set of economy patches, an in-game UI dashboard, and performance tools, all configurable via the in-game Option UI or the HUD panel:
+
+* **🎛️ In-Game UI Dashboard (NEW in v3.0.0):** A floating "M" button in the top-left HUD opens a Master-Detail panel with three modules:
+  * **City Stats:** Real-time display of household counts, housed ratio, homeless, moving away, property seekers (housed and homeless), high-rent buildings, and pets. Data is collected via ECS queries every ~4 seconds, with zero overhead when the panel is closed.
+  * **Rent Control:** 11 interactive sliders for rent multipliers (Res/Com/Ind), land value contribution factors, building level factors, environment effect, and service bonus cap — all applied instantly without restart.
+  * **Pathfinding:** Shopping and leisure max pathfinding cost sliders for quick adjustment during gameplay.
+  * Supports automatic English/Chinese language switching based on the game's locale setting.
 
 * **📊 Economy Overhaul (Beta):** Deep rewrites of RCI demand, job search, home search, rent calculation, consumer behavior, and resident AI pathfinding — optimized for mega-cities with millions of population. Each subsystem can be individually toggled on/off. A built-in **Conflict Monitoring System** with double-check mechanism automatically detects and disables conflicting subsystems if another mod re-enables the same vanilla systems.
 
@@ -139,7 +147,13 @@ In the Map Editor, import a heightmap/worldmap image of the corresponding size:
 
 ---
 
-## 🚀 v2.5.x 更新说明
+## 🚀 v3.0.0 更新说明
+
+* **🎛️ 游戏内 UI 控制面板（v3.0.0 新增）：** 在游戏左上角 HUD 新增"M"浮动按钮，点击展开主从面板，包含三个功能模块：
+  * **城市统计：** 实时显示家庭总数、已租住比例、无家可归、搬离中、找房中（有房/流浪）、高租金建筑数与宠物数量。数据通过 ECS 查询每约 4 秒刷新一次，面板关闭时零开销。
+  * **租金调控：** 11 个交互式滑块，可即时调整住宅/商业/工业租金乘数、地价贡献系数、等级贡献系数、环境影响系数与服务加成上限——无须重启即刻生效。
+  * **寻路参数：** 购物与休闲寻路最大成本滑块，便于在游戏中快速调整。
+  * 支持根据游戏语言设置自动切换中英文界面。
 
 * **💎 经济与性能深度优化（实验性）：** 模组内置了专为百万级人口大城市设计的经济与性能修复补丁。该功能从底层全面重构了各项区域需求、地价系统、居民找房逻辑、居民日常行为与交租计算等。
 
@@ -173,9 +187,15 @@ In the Map Editor, import a heightmap/worldmap image of the corresponding size:
 
 * **🧱 地图瓦片：** 可解锁的地图瓦片总数量维持在 529 块。
 
-## 💡 经济补丁与性能工具
+## 💡 经济补丁、游戏内 UI 与性能工具
 
-本模组整合了一套完整的经济修复补丁与性能优化工具，均可在游戏内选项面板中配置：
+本模组整合了一套完整的经济修复补丁、游戏内 UI 控制面板与性能优化工具，均可在游戏内选项面板或 HUD 面板中配置：
+
+* **🎛️ 游戏内 UI 控制面板（v3.0.0 新增）：** 游戏左上角 HUD 的"M"浮动按钮展开主从面板，含三个模块：
+  * **城市统计：** 实时显示家庭总数、已租住比例、无家可归、搬离中、找房中、高租金建筑数与宠物数。面板关闭时零开销。
+  * **租金调控：** 11 个交互式滑块即时调整租金公式参数，无须重启。
+  * **寻路参数：** 购物与休闲寻路最大成本滑块。
+  * 支持根据游戏语言自动切换中英文。
 
 * **📊 经济系统修复 (Beta)：** 从底层深度重构了 RCI 需求、求职匹配、找房搬家、租金计算、消费行为与居民AI寻路等核心逻辑——专为百万级人口巨型城市优化。各子系统支持独立开关。内置 **冲突监控系统**，采用"二次确认"机制，可自动检测并禁用与其他 Mod 冲突的子系统组。
 

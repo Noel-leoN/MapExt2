@@ -1,9 +1,9 @@
-## v2.6.0 - Rent Control Settings
+## v2.6.1 - Stability Fix
 
-* **[Economy - Rent Control]:** Added a new "Rent Control" settings tab with 11 sliders to customize rent multipliers, land value contribution factors, and service bonus caps for all zoning types.
+* **[Core - ModLog]:** Fixed an intermittent NullReferenceException during early initialization by adding a SafeLog wrapper that falls back to Unity's native logger.
 
 ---
 
 ### 主要改动
 
-* **[经济 - 租金管控]：** 新增"租金管控"设置面板，包含 11 项滑块以自定义各区划的租金乘数、地价影响权重及服务设施加成上限。
+* **[核心 - ModLog]：** 修复初始化早期阶段偶发的 NullReferenceException，通过 SafeLog 包装器回退到 Unity 原生日志。
