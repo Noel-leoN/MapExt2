@@ -1,4 +1,4 @@
-// locales.ts - MapExt 中英文本字典
+// locales.ts - MapExt 中英文本字典 (Phase 1 + Phase 2)
 // 使用游戏引擎内置的 activeLocale binding 检测语言
 
 import { bindValue, useValue } from "cs2/api";
@@ -8,6 +8,7 @@ const activeLocale$ = bindValue<string>("app", "activeLocale");
 
 export const locales = {
     en: {
+        // === Phase 1 ===
         rentRes: "Multiplier for Residential rent calculation. 100% = vanilla equivalent. Lower values reduce rent across all residential buildings.",
         rentCom: "Multiplier for Commercial rent calculation. 100% = vanilla equivalent. Lower values help commercial businesses survive in high-land-value areas.",
         rentInd: "Multiplier for Industrial rent calculation. 100% = vanilla equivalent. Lower values help factories survive.",
@@ -19,9 +20,29 @@ export const locales = {
         panelTitle: "MapExt Dashboard",
         mapSizeLabel: "MapSize",
         rentControlTitle: "Rent Control",
-        pathfindingTitle: "Pathfinding"
+        pathfindingTitle: "Pathfinding",
+
+        // === Phase 2 — Dashboard ===
+        dashboardTitle: "City Stats",
+        totalHouseholds: "Households",
+        rentedHouseholds: "Housed",
+        homelessCount: "Homeless",
+        movingAwayCount: "Moving Away",
+        seekerHoused: "Seekers (Housed)",
+        seekerHomeless: "Seekers (Homeless)",
+        highRentBuildings: "High Rent Bldgs",
+        petCount: "Pets",
+
+        // === Phase 2 — 扩展租金参数 ===
+        lvFactorRes: "Land value contribution to residential rent. 100% = full contribution. Lower values decouple rent from land price.",
+        lvFactorCom: "Land value contribution to commercial rent. 100% = full contribution.",
+        lvFactorInd: "Land value contribution to industrial rent. 100% = full contribution.",
+        levelFactorRes: "Building level contribution to residential rent. Higher-level buildings charge more rent at 100%.",
+        levelFactorCom: "Building level contribution to commercial rent. 100% = vanilla scaling.",
+        levelFactorInd: "Building level contribution to industrial rent. 100% = vanilla scaling.",
     },
     zh: {
+        // === Phase 1 ===
         rentRes: "住宅租金乘数（影响所有住宅租金计算）。100% 为原版倍率。降低可缓解高地价导致的高租金问题。",
         rentCom: "商业租金乘数。100% 为原版倍率。适当降低可帮助商铺在繁华地段生存。",
         rentInd: "工业租金乘数。100% 为原版倍率。",
@@ -33,7 +54,26 @@ export const locales = {
         panelTitle: "MapExt 控制面板",
         mapSizeLabel: "地图尺寸",
         rentControlTitle: "租金调控",
-        pathfindingTitle: "寻路参数"
+        pathfindingTitle: "寻路参数",
+
+        // === Phase 2 — Dashboard ===
+        dashboardTitle: "城市统计",
+        totalHouseholds: "总家庭",
+        rentedHouseholds: "已租住",
+        homelessCount: "无家可归",
+        movingAwayCount: "正在搬离",
+        seekerHoused: "找房（有房）",
+        seekerHomeless: "找房（流浪）",
+        highRentBuildings: "高租金建筑",
+        petCount: "宠物",
+
+        // === Phase 2 — 扩展租金参数 ===
+        lvFactorRes: "住宅地价贡献系数：控制地价在住宅租金公式中的占比。100% = 完全贡献，降低可使租金与地价脱钩。",
+        lvFactorCom: "商业地价贡献系数：控制地价在商业租金公式中的占比。100% = 完全贡献。",
+        lvFactorInd: "工业地价贡献系数：控制地价在工业租金公式中的占比。100% = 完全贡献。",
+        levelFactorRes: "住宅等级贡献系数：建筑等级越高，租金在 100% 时越贵。降低可削弱升级对租金的影响。",
+        levelFactorCom: "商业等级贡献系数：100% = 原版等级缩放。",
+        levelFactorInd: "工业等级贡献系数：100% = 原版等级缩放。",
     }
 };
 

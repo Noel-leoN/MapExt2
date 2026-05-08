@@ -1,4 +1,4 @@
-// MapExtButton — 游戏内浮动按钮 + 展开面板
+// MapExtButton — 游戏内浮动按钮 + 展开面板 (Phase 1 + Phase 2)
 // Coherent Gameface 兼容版：不使用 Emoji/Unicode 特殊字符
 
 import { useValue } from "cs2/api";
@@ -9,6 +9,7 @@ import {
     setPanelOpen,
     mapSizeInfo$, systemStatus$,
 } from "../bindings";
+import { DashboardSection } from "../sections/DashboardSection";
 import { RentControlSection } from "../sections/RentControlSection";
 import { PathfindingSection } from "../sections/PathfindingSection";
 import styles from "../mapext.module.scss";
@@ -47,7 +48,7 @@ export const MapExtButton: React.FC = () => {
                         </button>
                     </div>
 
-                    {/* === 状态信息区 === */}
+                    {/* === 状态信息区（始终可见） === */}
                     <div className={styles.statusBar}>
                         <div className={styles.statusItem}>
                             <span className={styles.statusLabel}>{t("mapSizeLabel")}</span>
@@ -59,8 +60,9 @@ export const MapExtButton: React.FC = () => {
                         </div>
                     </div>
 
-                    {/* === 并行的折叠配置区 === */}
+                    {/* === 折叠配置区 === */}
                     <div className={styles.configArea}>
+                        <DashboardSection />
                         <RentControlSection />
                         <PathfindingSection />
                     </div>

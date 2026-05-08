@@ -550,6 +550,7 @@ namespace MapExtPDX.MapExt.Core
             updateSystem.UpdateAt<MapExtPDX.UI.MapExtUISystem>(SystemUpdatePhase.UIUpdate);
             updateSystem.UpdateAt<MapExtPDX.UI.PopulationDiagnosticSystem>(SystemUpdatePhase.GameSimulation);
             updateSystem.UpdateAt<MapExtPDX.UI.ConflictMonitoringSystem>(SystemUpdatePhase.MainLoop);
+            updateSystem.UpdateAt<MapExtPDX.UI.Q2_CityStatsSystem>(SystemUpdatePhase.GameSimulation);
         }
     }
 }

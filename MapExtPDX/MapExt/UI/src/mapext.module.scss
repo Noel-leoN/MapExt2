@@ -1,4 +1,4 @@
-/* MapExt In-Game Panel — Coherent Gameface 兼容版 */
+/* MapExt In-Game Panel — Coherent Gameface 兼容版 (Phase 1 + Phase 2) */
 /* 不使用 rem 单位（Gameface 中 rem = 引擎缩放单位），改用 coui 兼容的 px */
 
 /* === 面板容器 === */
@@ -7,7 +7,7 @@
     top: 46rem;
     left: 0;
     width: 320rem;
-    max-height: 580rem;
+    max-height: 720rem;
     overflow-y: auto;
 
     background-color: rgba(24, 30, 44, 0.94);
@@ -217,4 +217,48 @@
     background-color: rgba(255, 80, 80, 0.15);
     color: #ffaaaa;
     border-color: rgba(255, 80, 80, 0.3);
+}
+
+/* ============================================ */
+/* === Phase 2: Dashboard 统计数据行样式 === */
+/* ============================================ */
+
+.statRow {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 3rem 0;
+}
+
+.statLabel {
+    font-size: 12rem;
+    color: #8899b0;
+}
+
+.statValue {
+    font-size: 13rem;
+    font-weight: 600;
+    color: #7cc0ff;
+    text-align: right;
+}
+
+.statPercent {
+    font-size: 11rem;
+    color: #6880a0;
+    margin-left: 4rem;
+}
+
+/* 异常值高亮（流浪 > 500 或搬离 > 200 时由前端判断启用） */
+.statWarning {
+    font-size: 13rem;
+    font-weight: 600;
+    color: #ff9944;
+    text-align: right;
+}
+
+.statDanger {
+    font-size: 13rem;
+    font-weight: 600;
+    color: #ff5555;
+    text-align: right;
 }

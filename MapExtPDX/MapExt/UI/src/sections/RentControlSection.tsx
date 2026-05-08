@@ -1,4 +1,4 @@
-// RentControlSection — 租金参数调控区域 (Gameface 兼容版)
+// RentControlSection — 租金参数调控区域 (Phase 1 + Phase 2 扩展)
 
 import React, { useState } from "react";
 import { SliderControl } from "../components/SliderControl";
@@ -7,6 +7,11 @@ import {
     landValueEnv$, serviceBonus$,
     setRentMultRes, setRentMultCom, setRentMultInd,
     setLandValueEnv, setServiceBonus,
+    // Phase 2 扩展
+    lvFactorRes$, lvFactorCom$, lvFactorInd$,
+    levelFactorRes$, levelFactorCom$, levelFactorInd$,
+    setLvFactorRes, setLvFactorCom, setLvFactorInd,
+    setLevelFactorRes, setLevelFactorCom, setLevelFactorInd,
     resetRentControl,
 } from "../bindings";
 import styles from "../mapext.module.scss";
@@ -24,6 +29,7 @@ export const RentControlSection: React.FC = () => {
 
             {isOpen && (
                 <div className={styles.section}>
+                    {/* === Phase 1: 租金总乘数 === */}
                     <SliderControl
                         label="Res. Rent"
                         binding={rentMultRes$}
@@ -48,6 +54,7 @@ export const RentControlSection: React.FC = () => {
 
                     <div className={styles.sectionDivider} />
 
+                    {/* === Phase 1: 地价因子 === */}
                     <SliderControl
                         label="Env. Factor"
                         binding={landValueEnv$}
@@ -61,6 +68,56 @@ export const RentControlSection: React.FC = () => {
                         commit={setServiceBonus}
                         min={0} max={200} step={10}
                         tooltip={t("svcBonus")}
+                    />
+
+                    <div className={styles.sectionDivider} />
+
+                    {/* === Phase 2: 地价贡献系数 === */}
+                    <SliderControl
+                        label="LV Res."
+                        binding={lvFactorRes$}
+                        commit={setLvFactorRes}
+                        min={0} max={200} step={5}
+                        tooltip={t("lvFactorRes")}
+                    />
+                    <SliderControl
+                        label="LV Com."
+                        binding={lvFactorCom$}
+                        commit={setLvFactorCom}
+                        min={0} max={200} step={5}
+                        tooltip={t("lvFactorCom")}
+                    />
+                    <SliderControl
+                        label="LV Ind."
+                        binding={lvFactorInd$}
+                        commit={setLvFactorInd}
+                        min={0} max={200} step={5}
+                        tooltip={t("lvFactorInd")}
+                    />
+
+                    <div className={styles.sectionDivider} />
+
+                    {/* === Phase 2: 等级贡献系数 === */}
+                    <SliderControl
+                        label="Lvl Res."
+                        binding={levelFactorRes$}
+                        commit={setLevelFactorRes}
+                        min={0} max={200} step={5}
+                        tooltip={t("levelFactorRes")}
+                    />
+                    <SliderControl
+                        label="Lvl Com."
+                        binding={levelFactorCom$}
+                        commit={setLevelFactorCom}
+                        min={0} max={200} step={5}
+                        tooltip={t("levelFactorCom")}
+                    />
+                    <SliderControl
+                        label="Lvl Ind."
+                        binding={levelFactorInd$}
+                        commit={setLevelFactorInd}
+                        min={0} max={200} step={5}
+                        tooltip={t("levelFactorInd")}
                     />
 
                     <button
