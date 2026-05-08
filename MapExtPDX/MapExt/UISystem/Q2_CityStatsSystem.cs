@@ -147,6 +147,13 @@ namespace MapExtPDX.UI
             ModLog.Ok(Tag, "城市统计系统已创建 (按需启用, UpdateInterval=256)");
         }
 
+        /// <summary>
+        /// 限制更新频率：每 256 帧执行一次（约 4.3 秒 @60fps）。
+        /// 仅在 Enabled=true 时生效。
+        /// </summary>
+        public override int GetUpdateInterval(SystemUpdatePhase phase)
+            => 256;
+
         protected override void OnUpdate()
         {
             // === 快速计数（O(1) archetype 统计） ===

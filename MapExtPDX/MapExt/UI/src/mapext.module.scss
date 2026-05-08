@@ -1,23 +1,52 @@
-/* MapExt In-Game Panel — Coherent Gameface 兼容版 (Phase 1 + Phase 2) */
-/* 不使用 rem 单位（Gameface 中 rem = 引擎缩放单位），改用 coui 兼容的 px */
+/* MapExt In-Game Panel — Master-Detail 双面板布局 (Phase 2 v2) */
+/* Coherent Gameface 兼容：使用 rem（在 Gameface 中等同 px） */
 
-/* === 面板容器 === */
-.panel {
+/* === 外层容器：左右布局 === */
+.panelContainer {
     position: absolute;
     top: 46rem;
     left: 0;
-    width: 320rem;
-    max-height: 720rem;
-    overflow-y: auto;
+    display: flex;
+    flex-direction: row;
+    gap: 4rem;
+    z-index: 100;
+}
 
+/* === 左侧菜单面板 === */
+.menuPanel {
+    width: 220rem;
     background-color: rgba(24, 30, 44, 0.94);
     border: 1rem solid rgba(100, 140, 200, 0.2);
     border-radius: 6rem;
-
     color: #d0d8e8;
     font-size: 13rem;
     line-height: 1.4;
-    z-index: 100;
+}
+
+/* === 右侧详情面板 === */
+.detailPanel {
+    width: 260rem;
+    max-height: 580rem;
+    overflow-y: auto;
+    background-color: rgba(24, 30, 44, 0.94);
+    border: 1rem solid rgba(100, 140, 200, 0.2);
+    border-radius: 6rem;
+    color: #d0d8e8;
+    font-size: 13rem;
+    line-height: 1.4;
+}
+
+.detailContent {
+    padding: 10rem 14rem;
+}
+
+.detailTitle {
+    font-size: 14rem;
+    font-weight: 700;
+    color: #b0c0dd;
+    margin-bottom: 10rem;
+    padding-bottom: 6rem;
+    border-bottom: 1rem solid rgba(100, 140, 200, 0.2);
 }
 
 /* === 标题栏 === */
@@ -85,15 +114,20 @@
     color: #7cc0ff;
 }
 
-/* === Config 展开切换 === */
-.configToggle {
+/* === 菜单列表 === */
+.menuList {
+    padding: 4rem 0;
+}
+
+.menuItem {
     display: flex;
     align-items: center;
+    gap: 8rem;
     width: 100%;
-    padding: 8rem 14rem;
+    padding: 10rem 14rem;
     background-color: transparent;
     border: none;
-    border-bottom: 1rem solid rgba(100, 140, 200, 0.15);
+    border-bottom: 1rem solid rgba(100, 140, 200, 0.1);
     color: #a0b0cc;
     font-size: 13rem;
     font-weight: 600;
@@ -101,31 +135,18 @@
     text-align: left;
 }
 
-.configToggle:hover {
+.menuItem:hover {
     background-color: rgba(60, 80, 120, 0.3);
     color: #c0d0e8;
 }
 
-.configArea {
-    padding: 4rem 0;
+.menuItemActive {
+    background-color: rgba(80, 140, 220, 0.15);
+    color: #7cc0ff;
+    border-left: 3rem solid #5090d0;
 }
 
-/* === Section === */
-.section {
-    padding: 8rem 14rem;
-}
-
-.section + .section {
-    border-top: 1rem solid rgba(100, 140, 200, 0.12);
-}
-
-.sectionHeader {
-    margin-bottom: 8rem;
-    font-size: 13rem;
-    font-weight: 700;
-    color: #b0c0dd;
-}
-
+/* === Section 通用 === */
 .sectionDivider {
     height: 1rem;
     background-color: rgba(100, 140, 200, 0.12);
@@ -201,9 +222,9 @@
 /* === 重置按钮 === */
 .resetButton {
     display: block;
-    width: 100%;
-    margin-top: 8rem;
-    padding: 6rem 0;
+    width: auto;
+    margin: 8rem 20rem 0;
+    padding: 6rem 16rem;
     background-color: rgba(60, 75, 100, 0.3);
     border: 1rem solid rgba(100, 140, 200, 0.2);
     border-radius: 4rem;
@@ -219,10 +240,7 @@
     border-color: rgba(255, 80, 80, 0.3);
 }
 
-/* ============================================ */
-/* === Phase 2: Dashboard 统计数据行样式 === */
-/* ============================================ */
-
+/* === Dashboard 统计数据行 === */
 .statRow {
     display: flex;
     justify-content: space-between;
@@ -248,7 +266,6 @@
     margin-left: 4rem;
 }
 
-/* 异常值高亮（流浪 > 500 或搬离 > 200 时由前端判断启用） */
 .statWarning {
     font-size: 13rem;
     font-weight: 600;

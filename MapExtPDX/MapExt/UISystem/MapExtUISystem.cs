@@ -206,7 +206,8 @@ namespace MapExtPDX.UI
             }));
 
             // === Dashboard 只读指标 (Phase 2: 8 GetterValueBinding) ===
-            m_Q2System = World.GetExistingSystemManaged<Q2_CityStatsSystem>();
+            // 注意：Q2 系统在 SystemReplacer.Apply() 中注册，此时可能尚未创建
+            // m_Q2System 通过 OnUpdate 懒加载获取，GetterValueBinding lambda 每次读取字段当前值
 
             AddUpdateBinding(new GetterValueBinding<int>(kGroup, "TotalHouseholds",
                 () => m_Q2System?.TotalHouseholds ?? 0));
@@ -277,6 +278,10 @@ namespace MapExtPDX.UI
 
         protected override void OnUpdate()
         {
+            // === Q2 系统懒加载（OnCreate 时 Q2 尚未注册） ===
+            if (m_Q2System == null)
+                m_Q2System = World.GetExistingSystemManaged<Q2_CityStatsSystem>();
+
             // GetterValueBinding 的自动更新由 base.OnUpdate() 处理
             base.OnUpdate();
 
