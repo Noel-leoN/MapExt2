@@ -60,6 +60,14 @@ namespace MapExtPDX.UI
 
         #endregion
 
+        #region Fields — UI 外观参数
+
+        private ValueBinding<int> m_UIFontSize;
+        private ValueBinding<int> m_UIMenuWidth;
+        private ValueBinding<int> m_UIDetailWidth;
+
+        #endregion
+
         #region Fields — Q2 系统引用
 
         private Q2_CityStatsSystem m_Q2System;
@@ -205,6 +213,29 @@ namespace MapExtPDX.UI
                 m_LevelFactorInd.Update(v);
             }));
 
+            // === UI 外观参数 (6: 3 value + 3 trigger) ===
+            AddBinding(m_UIFontSize = new ValueBinding<int>(kGroup, "UIFontSize", s.UIFontSize));
+            AddBinding(new TriggerBinding<int>(kGroup, "SetUIFontSize", v =>
+            {
+                Mod.Instance.Settings.UIFontSize = v;
+                m_UIFontSize.Update(v);
+            }));
+
+            // --- 面板宽度持久化 ---
+            AddBinding(m_UIMenuWidth = new ValueBinding<int>(kGroup, "UIMenuWidth", s.UIMenuPanelWidth));
+            AddBinding(new TriggerBinding<int>(kGroup, "SetUIMenuWidth", v =>
+            {
+                Mod.Instance.Settings.UIMenuPanelWidth = v;
+                m_UIMenuWidth.Update(v);
+            }));
+
+            AddBinding(m_UIDetailWidth = new ValueBinding<int>(kGroup, "UIDetailWidth", s.UIDetailPanelWidth));
+            AddBinding(new TriggerBinding<int>(kGroup, "SetUIDetailWidth", v =>
+            {
+                Mod.Instance.Settings.UIDetailPanelWidth = v;
+                m_UIDetailWidth.Update(v);
+            }));
+
             // === Dashboard 只读指标 (Phase 2: 8 GetterValueBinding) ===
             // 注意：Q2 系统在 SystemReplacer.Apply() 中注册，此时可能尚未创建
             // m_Q2System 通过 OnUpdate 懒加载获取，GetterValueBinding lambda 每次读取字段当前值
@@ -269,7 +300,7 @@ namespace MapExtPDX.UI
                 m_LeisureMaxCost.Update(12000f);
             }));
 
-            ModLog.Ok(Tag, "MapExtUISystem 已创建 (Phase 2: 43 Bindings)");
+            ModLog.Ok(Tag, "MapExtUISystem 已创建 (Phase 3: 49 Bindings)");
         }
 
         #endregion
@@ -285,11 +316,22 @@ namespace MapExtPDX.UI
             // GetterValueBinding 的自动更新由 base.OnUpdate() 处理
             base.OnUpdate();
 
-            // 面板关闭时跳过所有脏检查（零开销）
+            // === UI 外观参数脏检查（无论面板是否打开都必须同步） ===
+            var s = Mod.Instance.Settings;
+
+            if (m_UIFontSize.value != s.UIFontSize)
+                m_UIFontSize.Update(s.UIFontSize);
+
+            if (m_UIMenuWidth.value != s.UIMenuPanelWidth)
+                m_UIMenuWidth.Update(s.UIMenuPanelWidth);
+
+            if (m_UIDetailWidth.value != s.UIDetailPanelWidth)
+                m_UIDetailWidth.Update(s.UIDetailPanelWidth);
+
+            // 面板关闭时跳过调参脏检查（零开销）
             if (!m_PanelOpen.value) return;
 
             // === 反向同步：检测 Options UI 是否修改了值 ===
-            var s = Mod.Instance.Settings;
 
             // --- Phase 1 租金参数 ---
             if (m_RentMultRes.value != s.RentMultiplierResidential)

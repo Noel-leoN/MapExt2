@@ -63,6 +63,16 @@ export const seekerHomelessCount$ = bindValue<number>(G, "SeekerHomelessCount", 
 export const highRentCount$       = bindValue<number>(G, "HighRentBuildingCount", 0);
 export const petCount$            = bindValue<number>(G, "PetCount", 0);
 
+// === UI 外观参数 ===
+export const uiFontSize$    = bindValue<number>(G, "UIFontSize", 13);
+export const setUIFontSize  = (v: number) => trigger(G, "SetUIFontSize", v);
+
+// === 面板宽度持久化 ===
+export const uiMenuWidth$     = bindValue<number>(G, "UIMenuWidth", 220);
+export const uiDetailWidth$   = bindValue<number>(G, "UIDetailWidth", 260);
+export const setUIMenuWidth   = (v: number) => trigger(G, "SetUIMenuWidth", v);
+export const setUIDetailWidth = (v: number) => trigger(G, "SetUIDetailWidth", v);
+
 // === 重置 ===
 export const resetRentControl = () => trigger(G, "ResetRentControl");
 export const resetPathfinding = () => trigger(G, "ResetPathfinding");

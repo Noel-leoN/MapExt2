@@ -486,6 +486,7 @@ namespace MapExtPDX
                 // ============================================================
                 { m_Setting.GetOptionTabLocaleID(ModSettings.kPerformanceToolTab), "性能工具" },
 
+
                 // --- Group: NoDogs ---
                 { m_Setting.GetOptionGroupLocaleID(ModSettings.kNoDogsGroup), "宠物控制 (NoDogs)" },
                 { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.NoDogsOnStreet)), "NoDogs: 禁止外出" },
@@ -536,8 +537,31 @@ namespace MapExtPDX
                     "允许在地编放置对象时跳过碰撞验证检查。'仅跳过树木'可极大提升种植大量树木时的性能，'跳过所有对象'则对所有物件生效。"
                 },
 
+                // --- Group: 游戏内 UI 外观 ---
+                { m_Setting.GetOptionGroupLocaleID(ModSettings.kInGameUIGroup), "游戏内 UI 外观" },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.UIFontSize)), "面板字体大小" },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.UIFontSize)),
+                    "控制游戏内 MapExt 面板的基准字体大小（rem 单位）。默认值：13，范围：10~20。"
+                },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.UIMenuPanelWidth)), "左侧菜单面板宽度" },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.UIMenuPanelWidth)),
+                    "控制左侧菜单面板的宽度（rem 单位）。也可以在游戏内通过拖拽面板边缘调整。默认值：220，范围：160~320。"
+                },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.UIDetailPanelWidth)), "右侧详情面板宽度" },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.UIDetailPanelWidth)),
+                    "控制右侧详情面板的宽度（rem 单位）。也可以在游戏内通过拖拽面板边缘调整。默认值：260，范围：200~450。"
+                },
+
                 // ============================================================
-                // Tab 4: 开发者选项
+                // Tab 5: 界面
+                // ============================================================
+                { m_Setting.GetOptionTabLocaleID(ModSettings.kUITab), "界面" },
+
+                // ============================================================
+                // Tab 6: 开发者选项
                 // ============================================================
                 { m_Setting.GetOptionTabLocaleID(ModSettings.kDebugTab), "开发者选项" },
 

@@ -8,31 +8,35 @@
     left: 0;
     display: flex;
     flex-direction: row;
-    gap: 4rem;
+    align-items: stretch;
     z-index: 100;
+    /* CSS 变量默认值，由 MapExtButton inline style 覆盖 */
+    --me-font-size: 13rem;
 }
 
 /* === 左侧菜单面板 === */
 .menuPanel {
-    width: 220rem;
+    /* width 由 inline style 动态控制 */
+    min-width: 160rem;
     background-color: rgba(24, 30, 44, 0.94);
     border: 1rem solid rgba(100, 140, 200, 0.2);
     border-radius: 6rem;
     color: #d0d8e8;
-    font-size: 13rem;
+    font-size: var(--me-font-size);
     line-height: 1.4;
 }
 
 /* === 右侧详情面板 === */
 .detailPanel {
-    width: 260rem;
+    /* width 由 inline style 动态控制 */
+    min-width: 200rem;
     max-height: 580rem;
     overflow-y: auto;
     background-color: rgba(24, 30, 44, 0.94);
     border: 1rem solid rgba(100, 140, 200, 0.2);
     border-radius: 6rem;
     color: #d0d8e8;
-    font-size: 13rem;
+    font-size: var(--me-font-size);
     line-height: 1.4;
 }
 
@@ -278,4 +282,32 @@
     font-weight: 600;
     color: #ff5555;
     text-align: right;
+}
+
+/* === 拖拽调整宽度柄 === */
+.resizeHandleH {
+    width: 6rem;
+    cursor: col-resize;
+    background-color: transparent;
+    flex-shrink: 0;
+    position: relative;
+}
+
+.resizeHandleH:hover,
+.resizeHandleH:active {
+    background-color: rgba(80, 140, 220, 0.4);
+    border-radius: 3rem;
+}
+
+.resizeHandleV {
+    height: 6rem;
+    cursor: row-resize;
+    background-color: transparent;
+    flex-shrink: 0;
+}
+
+.resizeHandleV:hover,
+.resizeHandleV:active {
+    background-color: rgba(80, 140, 220, 0.4);
+    border-radius: 3rem;
 }

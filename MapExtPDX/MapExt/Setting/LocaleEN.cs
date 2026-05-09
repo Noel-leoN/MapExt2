@@ -550,6 +550,7 @@ namespace MapExtPDX
                 // ============================================================
                 { m_Setting.GetOptionTabLocaleID(ModSettings.kPerformanceToolTab), "Perf. Tools" },
 
+
                 // --- Group: NoDogs ---
                 { m_Setting.GetOptionGroupLocaleID(ModSettings.kNoDogsGroup), "NoDogs Control" },
                 { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.NoDogsOnStreet)), "NoDogs: Disable OnStreet" },
@@ -606,8 +607,31 @@ namespace MapExtPDX
                     "Allows you to bypass normal collision validation checks when placing objects in the Map Editor. 'Trees Only' skips validation specifically for trees, while 'All Objects' disables collision checks for all plopables."
                 },
 
+                // --- Group: In-Game UI ---
+                { m_Setting.GetOptionGroupLocaleID(ModSettings.kInGameUIGroup), "In-Game UI Appearance" },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.UIFontSize)), "Panel Font Size" },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.UIFontSize)),
+                    "Controls the base font size (in rem) of the in-game MapExt panel. Default: 13. Range: 10~20."
+                },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.UIMenuPanelWidth)), "Menu Panel Width" },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.UIMenuPanelWidth)),
+                    "Controls the width of the left menu panel (in rem). Can also be adjusted by dragging the panel edge in-game. Default: 220. Range: 160~320."
+                },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.UIDetailPanelWidth)), "Detail Panel Width" },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.UIDetailPanelWidth)),
+                    "Controls the width of the right detail panel (in rem). Can also be adjusted by dragging the panel edge in-game. Default: 260. Range: 200~450."
+                },
+
                 // ============================================================
-                // Tab 4: Debug
+                // Tab 5: UI
+                // ============================================================
+                { m_Setting.GetOptionTabLocaleID(ModSettings.kUITab), "UI" },
+
+                // ============================================================
+                // Tab 6: Debug
                 // ============================================================
                 { m_Setting.GetOptionTabLocaleID(ModSettings.kDebugTab), "Debug" },
 

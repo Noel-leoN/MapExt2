@@ -69,15 +69,15 @@ namespace MapExtPDX
 
     //[FileLocation(nameof(MapExtPDX))]
     [FileLocation("ModsSettings/" + Mod.ModName + "/" + Mod.ModName)]
-    [SettingsUITabOrder(kMapSizeModeTab, kMiscTab, kRentControlTab, kPerformanceToolTab, kDebugTab)]
+    [SettingsUITabOrder(kMapSizeModeTab, kMiscTab, kRentControlTab, kPerformanceToolTab, kUITab, kDebugTab)]
     [SettingsUIGroupOrder(kMainModeGroup, kTerrainWaterOptGroup, kResetGroup, kInfoGroup, kEcoGroup, kNoteGroup,
         kEcoSystemEnableGroup, kPathfindingGroup, kEcoBehaviorGroup,
         kLandValueFactorGroup, kRentFormulaGroup,
-        kNoDogsGroup, kNoTrafficGroup, kEditorToolGroup, kPopDiagGroup, kDebugGroup)]
+        kNoDogsGroup, kNoTrafficGroup, kEditorToolGroup, kInGameUIGroup, kPopDiagGroup, kDebugGroup)]
     [SettingsUIShowGroupName(kMainModeGroup, kTerrainWaterOptGroup, kResetGroup, kEcoGroup,
         kEcoSystemEnableGroup, kPathfindingGroup, kEcoBehaviorGroup,
         kLandValueFactorGroup, kRentFormulaGroup,
-        kNoDogsGroup, kNoTrafficGroup, kEditorToolGroup, kPopDiagGroup, kDebugGroup)]
+        kNoDogsGroup, kNoTrafficGroup, kEditorToolGroup, kInGameUIGroup, kPopDiagGroup, kDebugGroup)]
     public class ModSettings : ModSetting
     {
         private const string Tag = "Settings";
@@ -87,6 +87,7 @@ namespace MapExtPDX
         public const string kPerformanceToolTab = "PerformanceTool";
         public const string kMiscTab = "EconomyEX";
         public const string kRentControlTab = "Rent Control";
+        public const string kUITab = "UI";
         public const string kDebugTab = "Debug";
 
         // === Group 常量 ===
@@ -112,6 +113,7 @@ namespace MapExtPDX
         public const string kNoDogsGroup = "NoDogs";
         public const string kNoTrafficGroup = "NoTraffic";
         public const string kEditorToolGroup = "EditorTool";
+        public const string kInGameUIGroup = "InGameUI";
 
         // -- Developer Tab --
         public const string kPopDiagGroup = "PopDiag";
@@ -675,6 +677,26 @@ namespace MapExtPDX
 
         #endregion
 
+        // === In-Game UI 外观设置 ===
+        #region InGameUI
+
+        /// <summary>游戏内 UI 面板字体大小（rem 单位）</summary>
+        [SettingsUISection(kUITab, kInGameUIGroup)]
+        [SettingsUISlider(min = 10, max = 20, step = 1, scalarMultiplier = 1, unit = Game.UI.Unit.kInteger)]
+        public int UIFontSize { get; set; } = 13;
+
+        /// <summary>左侧菜单面板宽度（rem 单位）</summary>
+        [SettingsUISection(kUITab, kInGameUIGroup)]
+        [SettingsUISlider(min = 160, max = 320, step = 10, scalarMultiplier = 1, unit = Game.UI.Unit.kInteger)]
+        public int UIMenuPanelWidth { get; set; } = 220;
+
+        /// <summary>右侧详情面板宽度（rem 单位）</summary>
+        [SettingsUISection(kUITab, kInGameUIGroup)]
+        [SettingsUISlider(min = 200, max = 450, step = 10, scalarMultiplier = 1, unit = Game.UI.Unit.kInteger)]
+        public int UIDetailPanelWidth { get; set; } = 260;
+
+        #endregion
+
         public void UpdateLandValueRemakeSystemStates()
         {
         }
@@ -798,6 +820,11 @@ namespace MapExtPDX
             TerrainBufferPrealloc = true;
             TerrainCascadeThrottle = false;  // 默认关闭：会导致远景级联与视口不同步→地形错位
             TerrainCullThrottle = true;       // 默认开启：跳过无变化帧的建筑裁剪Job
+
+            // UI 外观
+            UIFontSize = 13;
+            UIMenuPanelWidth = 220;
+            UIDetailPanelWidth = 260;
         }
 
         // === Dropdown Helpers ===
