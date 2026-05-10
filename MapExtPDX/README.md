@@ -2,6 +2,8 @@
 
 ## 🚀 Update Notice
 
+* **🎛️ v3.0.1 — Dashboard Expansion and World Backdrop Control:** The City Stats dashboard now features 5 collapsible accordion sections with 13 new metrics (residential vacancy by density, commercial company data, population activity, commuters). Added panel height persistence and drag resizing. New **Disable World Backdrop** toggle in the Performance tab prevents background world heightmap loading on existing saves, reducing GPU/VRAM overhead. The Map Editor now shows a performance warning dialog before importing a WorldMap.
+
 * **🎛️ v3.0.0 — In-Game UI Dashboard:** This version introduces a new in-game floating panel for real-time parameter tuning. Click the "M" button in the top-left HUD to access three modules: **City Stats** (live household and housing metrics), **Rent Control** (11 interactive sliders for rent formula parameters), and **Pathfinding** (shopping and leisure max cost sliders). The panel supports automatic English/Chinese language switching and has zero performance overhead when closed.
 
 * **💎 Economy Fix and Performance Optimization (Experimental):** This version includes a suite of optimizations specifically tuned for mega-cities (millions of population). It refactors demand logic, land value, housing search, citizen behaviors, and rent systems.
@@ -44,11 +46,12 @@
 
 This mod integrates a comprehensive set of economy patches, an in-game UI dashboard, and performance tools, all configurable via the in-game Option UI or the HUD panel:
 
-* **🎛️ In-Game UI Dashboard (NEW in v3.0.0):** A floating "M" button in the top-left HUD opens a Master-Detail panel with three modules:
-  * **City Stats:** Real-time display of household counts, housed ratio, homeless, moving away, property seekers (housed and homeless), high-rent buildings, and pets. Data is collected via ECS queries every ~4 seconds, with zero overhead when the panel is closed.
+* **🎛️ In-Game UI Dashboard (v3.0.0+):** A floating "M" button in the top-left HUD opens a Master-Detail panel with three modules:
+  * **City Stats:** 5 collapsible accordion sections — City Overview (household counts, housed ratio, homeless, moving away, seekers, high-rent buildings), Residential Market (vacancy by Low/Med/High density), Commercial Market (active shops, seeking property), Population Activity (shopping, leisure, commuting, returning home), and Misc (commuters, pets). Data is collected via ECS queries every ~4 seconds, with zero overhead when the panel is closed.
   * **Rent Control:** 11 interactive sliders for rent multipliers (Res/Com/Ind), land value contribution factors, building level factors, environment effect, and service bonus cap — all applied instantly without restart.
   * **Pathfinding:** Shopping and leisure max pathfinding cost sliders for quick adjustment during gameplay.
   * Supports automatic English/Chinese language switching based on the game's locale setting.
+  * Panel height and section default-open states are configurable in OptionUI.
 
 * **📊 Economy Overhaul (Beta):** Deep rewrites of RCI demand, job search, home search, rent calculation, consumer behavior, and resident AI pathfinding — optimized for mega-cities with millions of population. Each subsystem can be individually toggled on/off. A built-in **Conflict Monitoring System** with double-check mechanism automatically detects and disables conflicting subsystems if another mod re-enables the same vanilla systems.
 
@@ -64,6 +67,8 @@ This mod integrates a comprehensive set of economy patches, an in-game UI dashbo
 * **🏗️ Editor Collision Override:** Bypass collision validation checks when placing objects in the Map Editor — supports three modes (Off / Trees Only / All Objects). Greatly speeds up tree planting on extended maps.
 
 * **🏔️ Terrain-Water Optimization:** Includes GPU buffer pre-allocation, building cull throttling, terrain cascade throttling, and configurable water simulation quality levels — all adjustable in-game without restart.
+
+* **🌍 Disable World Backdrop (NEW in v3.0.1):** A toggle in the Performance tab that prevents the background world heightmap (Backdrop) from loading on existing saves. Eliminates per-frame GPU overhead, CPU stalls, and frees up VRAM. The Map Editor also shows a performance warning dialog before importing a WorldMap.
 
 ## 🛠️ Usage
 
@@ -147,13 +152,17 @@ In the Map Editor, import a heightmap/worldmap image of the corresponding size:
 
 ---
 
-## 🚀 v3.0.0 更新说明
+## 🚀 v3.0.1 更新说明
+
+* **🎛️ 仪表盘扩展（v3.0.1）：** 城市统计仪表盘重构为 5 个可折叠区块，新增 13 项指标（住宅空置率按低/中/高密度、商业公司数据、人口活动状态、外来通勤者）。新增面板高度持久化与底部拖拽调整，以及各区块默认展开状态的配置开关。
+
+* **🌍 禁用背景世界地图（v3.0.1 新增）：** 性能标签页新增开关，可阻止已有存档加载背景世界地图（Backdrop），消除每帧 GPU 开销与 CPU 阻塞，降低显存占用。地图编辑器导入 WorldMap 时也会弹出性能影响确认对话框。
 
 * **🎛️ 游戏内 UI 控制面板（v3.0.0 新增）：** 在游戏左上角 HUD 新增"M"浮动按钮，点击展开主从面板，包含三个功能模块：
-  * **城市统计：** 实时显示家庭总数、已租住比例、无家可归、搬离中、找房中（有房/流浪）、高租金建筑数与宠物数量。数据通过 ECS 查询每约 4 秒刷新一次，面板关闭时零开销。
+  * **城市统计：** 5 个可折叠区块——城市概览（家庭总数、已租住比例、无家可归、搬离中、找房中、高租金建筑数）、住宅市场（按低/中/高密度空置率）、商业市场（有店铺商家、等待入驻）、人口活动（购物中、休闲中、上班途中、回家途中）、其他（外来通勤、宠物）。数据通过 ECS 查询每约 4 秒刷新一次，面板关闭时零开销。
   * **租金调控：** 11 个交互式滑块，可即时调整住宅/商业/工业租金乘数、地价贡献系数、等级贡献系数、环境影响系数与服务加成上限——无须重启即刻生效。
   * **寻路参数：** 购物与休闲寻路最大成本滑块，便于在游戏中快速调整。
-  * 支持根据游戏语言设置自动切换中英文界面。
+  * 支持根据游戏语言设置自动切换中英文界面。面板高度与各区块默认展开状态可在选项面板中配置。
 
 * **💎 经济与性能深度优化（实验性）：** 模组内置了专为百万级人口大城市设计的经济与性能修复补丁。该功能从底层全面重构了各项区域需求、地价系统、居民找房逻辑、居民日常行为与交租计算等。
 
@@ -191,11 +200,11 @@ In the Map Editor, import a heightmap/worldmap image of the corresponding size:
 
 本模组整合了一套完整的经济修复补丁、游戏内 UI 控制面板与性能优化工具，均可在游戏内选项面板或 HUD 面板中配置：
 
-* **🎛️ 游戏内 UI 控制面板（v3.0.0 新增）：** 游戏左上角 HUD 的"M"浮动按钮展开主从面板，含三个模块：
-  * **城市统计：** 实时显示家庭总数、已租住比例、无家可归、搬离中、找房中、高租金建筑数与宠物数。面板关闭时零开销。
+* **🎛️ 游戏内 UI 控制面板（v3.0.0+）：** 游戏左上角 HUD 的"M"浮动按钮展开主从面板，含三个模块：
+  * **城市统计：** 5 个可折叠区块——城市概览、住宅市场（按密度空置率）、商业市场、人口活动、其他（通勤与宠物）。面板关闭时零开销。
   * **租金调控：** 11 个交互式滑块即时调整租金公式参数，无须重启。
   * **寻路参数：** 购物与休闲寻路最大成本滑块。
-  * 支持根据游戏语言自动切换中英文。
+  * 支持根据游戏语言自动切换中英文。面板高度与各区块默认展开状态可在选项面板配置。
 
 * **📊 经济系统修复 (Beta)：** 从底层深度重构了 RCI 需求、求职匹配、找房搬家、租金计算、消费行为与居民AI寻路等核心逻辑——专为百万级人口巨型城市优化。各子系统支持独立开关。内置 **冲突监控系统**，采用"二次确认"机制，可自动检测并禁用与其他 Mod 冲突的子系统组。
 
@@ -211,6 +220,8 @@ In the Map Editor, import a heightmap/worldmap image of the corresponding size:
 * **🏗️ 编辑器碰撞跳过：** 在地图编辑器放置物体时跳过碰撞验证——支持三档模式（关闭 / 仅树木 / 所有物体），极大提升大地图种树效率。
 
 * **🏔️ 地形-水体性能优化：** 含 GPU 缓冲预分配、建筑裁剪降频、地形级联降频与可配置水模拟质量等级——均可在游戏中实时调节，无须重启。
+
+* **🌍 禁用背景世界地图（v3.0.1 新增）：** 性能标签页中的开关，可阻止已有存档加载背景世界地图（Backdrop），消除每帧 GPU 开销与 CPU 阻塞，降低显存占用。地图编辑器中导入 WorldMap 时也会弹出性能影响确认对话框。
 
 ## 🛠️ 用法
 

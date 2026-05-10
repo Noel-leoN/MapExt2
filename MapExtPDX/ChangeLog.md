@@ -1,19 +1,17 @@
-## v3.0.0 - In-Game UI Dashboard
+## v3.0.1 - Dashboard Expansion and World Backdrop Control
 
-* **[UI - In-Game Panel]:** Added a new in-game floating button and Master-Detail panel for real-time parameter tuning without leaving gameplay. The panel includes three sections: City Stats Dashboard, Rent Control, and Pathfinding.
-* **[UI - City Stats]:** Added a real-time City Stats dashboard showing household counts, homeless, moving away, property seekers, high-rent buildings, and pets. The data collection system runs on-demand (only when the dashboard is open) with zero overhead when closed.
-* **[UI - Rent Control]:** Exposed 11 rent formula parameters (rent multipliers, land value factors, building level factors, environment effect, service bonus) as interactive sliders directly in the game HUD.
-* **[UI - Pathfinding]:** Exposed shopping and leisure pathfinding max cost as interactive sliders in the game HUD.
-* **[UI - Localization]:** The in-game panel supports automatic English and Chinese switching based on the game's active locale setting.
-* **[Core - ModLog]:** Fixed an intermittent NullReferenceException during early initialization by adding a SafeLog wrapper that falls back to Unity's native logger.
+* **[UI - Dashboard]:** Reorganized the City Stats dashboard into 5 collapsible accordion sections (City Stats, Residential Market, Commercial Market, Population Activity, Misc). Added 13 new metrics: residential vacancy by density (Low/Med/High), commercial company data (active shops, seeking property), population activity (shopping, leisure, commuting, returning home), and commuter households.
+* **[UI - Panel Layout]:** Added panel height persistence and bottom-edge drag resizing. Added 5 toggles in OptionUI to configure which dashboard sections are expanded by default. Removed the font size slider. Adjusted default panel widths.
+* **[Performance - DisableWorldBackdrop]:** Added a new toggle in the Performance tab to prevent the background world heightmap (Backdrop) from loading on existing saves. Eliminates per-frame GPU overhead, CPU stalls, and reduces VRAM usage.
+* **[Editor - WorldMap Import Warning]:** Added a confirmation dialog in the Map Editor that warns about performance impact before importing a WorldMap image.
+* **[Localization]:** Added Chinese Simplified (zh-HANS) translations for save validation and WorldMap warning dialogs.
 
 ---
 
 ### 主要改动
 
-* **[UI - 游戏内面板]：** 新增游戏内浮动按钮与主从面板，可在不退出游戏的情况下实时调参。面板包含三个模块：城市统计、租金调控、寻路参数。
-* **[UI - 城市统计]：** 新增实时城市统计仪表盘，显示家庭总数、已租住、无家可归、搬离中、找房中、高租金建筑数与宠物数量。数据收集系统按需运行（仅在面板展开时启用），关闭时零开销。
-* **[UI - 租金调控]：** 将 11 项租金公式参数（租金乘数、地价贡献系数、等级贡献系数、环境系数、服务加成）以交互式滑块形式暴露在游戏 HUD 中。
-* **[UI - 寻路参数]：** 将购物与休闲寻路最大成本以交互式滑块形式暴露在游戏 HUD 中。
-* **[UI - 本地化]：** 游戏内面板支持根据游戏语言设置自动切换中英文界面。
-* **[核心 - ModLog]：** 修复初始化早期阶段偶发的 NullReferenceException，通过 SafeLog 包装器回退到 Unity 原生日志。
+* **[UI - 仪表盘]：** 将城市统计仪表盘重构为 5 个可折叠区块（城市统计、住宅市场、商业市场、人口活动、其他）。新增 13 项指标：按密度分类的住宅空置率（低/中/高密度）、商业公司数据（有店铺商家、等待入驻）、人口活动状态（购物中、休闲中、上班途中、回家途中）以及外来通勤者家庭数。
+* **[UI - 面板布局]：** 新增面板高度持久化与底部拖拽调整功能。在选项面板中新增 5 个开关，可配置仪表盘各区块的默认展开状态。移除字体大小滑块，调整默认面板宽度。
+* **[性能 - 禁用背景世界地图]：** 在性能标签页新增开关，可阻止已有存档加载背景世界地图（Backdrop），消除每帧 GPU 开销与 CPU 阻塞，降低显存占用。
+* **[编辑器 - WorldMap 导入警告]：** 在地图编辑器中导入 WorldMap 时新增性能影响确认对话框。
+* **[本地化]：** 为存档验证与 WorldMap 导入警告对话框新增中文简体 (zh-HANS) 翻译。
