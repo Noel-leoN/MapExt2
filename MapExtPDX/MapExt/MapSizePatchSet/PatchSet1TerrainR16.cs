@@ -3,6 +3,7 @@
 // See LICENSE in the project root for full license information.
 // When using this part of the code, please clearly credit [Project Name] and the author.
 
+using Colossal.IO.AssetDatabase;
 using Game.SceneFlow;
 using Game.Simulation;
 using Game.UI;
@@ -11,6 +12,7 @@ using Game.UI.Localization;
 using HarmonyLib;
 using System;
 using System.Collections.Generic;
+using System.Reflection;
 using UnityEngine;
 using UnityEngine.Experimental.Rendering;
 using Unity.Collections;
@@ -223,5 +225,209 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
                 ModLog.Info(Tag, $"ToR16_Postfix: Result texture ({__result.width}x{__result.height}) is already target size ({TARGET_WIDTH}x{TARGET_HEIGHT}). No resampling needed.");
             }
         }
+    }
+
+    /// <summary>
+    /// 导入世界地图(WorldMap)时弹出性能警告对话框
+    /// 世界地图会引入额外的级联渲染层、每帧降采样、更大的 MinMaxMap 等开销
+    /// 参见: docs/TerrainSystem/TerrainSystem_Analysis.md §5.2
+    /// </summary>
+    [HarmonyPatch]
+    public static class WorldMapImportWarningPatch
+    {
+        private const string Tag = "TerrainR16";
+
+        // 旁路标志: 用户确认后设为 true，允许原方法执行
+        private static bool _bypassWarning = false;
+
+        #region Harmony Patch — OnLoadWorldHeightmap(ImageAsset)
+
+        /// <summary>
+        /// 拦截 TerrainPanelSystem.OnLoadWorldHeightmap(ImageAsset)
+        /// 在导入世界地图前显示性能警告对话框
+        /// </summary>
+        [HarmonyPatch(typeof(TerrainPanelSystem), "OnLoadWorldHeightmap", new Type[] { typeof(ImageAsset) })]
+        [HarmonyPrefix]
+        public static bool OnLoadWorldHeightmap_Prefix(TerrainPanelSystem __instance, ImageAsset asset)
+        {
+            // 旁路: 用户已确认，放行原方法
+            if (_bypassWarning)
+            {
+                _bypassWarning = false;
+                ModLog.Info(Tag, "WorldMap 导入已确认，执行原方法");
+                return true;
+            }
+
+            ModLog.Info(Tag, "WorldMap 导入请求 — 显示性能警告对话框");
+
+            // 显示确认对话框 (确认=导入, 取消=取消导入)
+            var dialog = new ConfirmationDialog(
+                LocalizedString.Id("MAPEXT_WORLDMAP.WarningTitle"),
+                LocalizedString.Id("MAPEXT_WORLDMAP.WarningMessage"),
+                LocalizedString.Id("MAPEXT_WORLDMAP.ConfirmImport"),
+                LocalizedString.Id("MAPEXT_WORLDMAP.CancelImport")
+            );
+
+            // 捕获实例和资产引用用于回调
+            var instance = __instance;
+            var capturedAsset = asset;
+
+            GameManager.instance.userInterface.appBindings.ShowConfirmationDialog(dialog, (int ret) =>
+            {
+                if (ret == 0) // 0 = 确认按钮
+                {
+                    ModLog.Ok(Tag, "用户确认导入 WorldMap");
+
+                    // 设置旁路标志，通过反射重新调用原方法
+                    _bypassWarning = true;
+                    try
+                    {
+                        var method = AccessTools.Method(
+                            typeof(TerrainPanelSystem),
+                            "OnLoadWorldHeightmap",
+                            new Type[] { typeof(ImageAsset) }
+                        );
+                        method.Invoke(instance, new object[] { capturedAsset });
+                    }
+                    catch (Exception ex)
+                    {
+                        _bypassWarning = false;
+                        ModLog.Error(Tag, $"WorldMap 导入回调异常: {ex}");
+                    }
+                }
+                else
+                {
+                    ModLog.Info(Tag, "用户取消导入 WorldMap");
+                }
+            });
+
+            return false; // 阻止原方法执行，等待用户确认
+        }
+
+        #endregion
+
+        #region Harmony Patch — OnLoadWorldHeightmap(string)
+
+        /// <summary>
+        /// 拦截 TerrainPanelSystem.OnLoadWorldHeightmap(string path) — 文件选择器路径
+        /// 在导入世界地图前显示性能警告对话框
+        /// </summary>
+        [HarmonyPatch(typeof(TerrainPanelSystem), "OnLoadWorldHeightmap", new Type[] { typeof(string) })]
+        [HarmonyPrefix]
+        public static bool OnLoadWorldHeightmap_String_Prefix(TerrainPanelSystem __instance, string path)
+        {
+            // 旁路: 用户已确认，放行原方法
+            if (_bypassWarning)
+            {
+                _bypassWarning = false;
+                ModLog.Info(Tag, "WorldMap 文件导入已确认，执行原方法");
+                return true;
+            }
+
+            ModLog.Info(Tag, "WorldMap 文件导入请求 — 显示性能警告对话框");
+
+            var dialog = new ConfirmationDialog(
+                LocalizedString.Id("MAPEXT_WORLDMAP.WarningTitle"),
+                LocalizedString.Id("MAPEXT_WORLDMAP.WarningMessage"),
+                LocalizedString.Id("MAPEXT_WORLDMAP.ConfirmImport"),
+                LocalizedString.Id("MAPEXT_WORLDMAP.CancelImport")
+            );
+
+            var instance = __instance;
+            var capturedPath = path;
+
+            GameManager.instance.userInterface.appBindings.ShowConfirmationDialog(dialog, (int ret) =>
+            {
+                if (ret == 0)
+                {
+                    ModLog.Ok(Tag, "用户确认导入 WorldMap (文件路径)");
+                    _bypassWarning = true;
+                    try
+                    {
+                        var method = AccessTools.Method(
+                            typeof(TerrainPanelSystem),
+                            "OnLoadWorldHeightmap",
+                            new Type[] { typeof(string) }
+                        );
+                        method.Invoke(instance, new object[] { capturedPath });
+                    }
+                    catch (Exception ex)
+                    {
+                        _bypassWarning = false;
+                        ModLog.Error(Tag, $"WorldMap 文件导入回调异常: {ex}");
+                    }
+                }
+                else
+                {
+                    ModLog.Info(Tag, "用户取消导入 WorldMap (文件路径)");
+                }
+            });
+
+            return false;
+        }
+
+        #endregion
+
+        #region Harmony Patch — OnLoadWorldHeightmap(Hash128)
+
+        /// <summary>
+        /// 拦截 TerrainPanelSystem.OnLoadWorldHeightmap(Hash128 guid) — 资产选择器
+        /// 在导入世界地图前显示性能警告对话框
+        /// </summary>
+        [HarmonyPatch(typeof(TerrainPanelSystem), "OnLoadWorldHeightmap", new Type[] { typeof(Colossal.Hash128) })]
+        [HarmonyPrefix]
+        public static bool OnLoadWorldHeightmap_Guid_Prefix(TerrainPanelSystem __instance, Colossal.Hash128 guid)
+        {
+            // 旁路: 用户已确认，放行原方法
+            if (_bypassWarning)
+            {
+                _bypassWarning = false;
+                ModLog.Info(Tag, "WorldMap 资产导入已确认，执行原方法");
+                return true;
+            }
+
+            ModLog.Info(Tag, "WorldMap 资产导入请求 — 显示性能警告对话框");
+
+            var dialog = new ConfirmationDialog(
+                LocalizedString.Id("MAPEXT_WORLDMAP.WarningTitle"),
+                LocalizedString.Id("MAPEXT_WORLDMAP.WarningMessage"),
+                LocalizedString.Id("MAPEXT_WORLDMAP.ConfirmImport"),
+                LocalizedString.Id("MAPEXT_WORLDMAP.CancelImport")
+            );
+
+            var instance = __instance;
+            var capturedGuid = guid;
+
+            GameManager.instance.userInterface.appBindings.ShowConfirmationDialog(dialog, (int ret) =>
+            {
+                if (ret == 0)
+                {
+                    ModLog.Ok(Tag, "用户确认导入 WorldMap (资产GUID)");
+                    _bypassWarning = true;
+                    try
+                    {
+                        var method = AccessTools.Method(
+                            typeof(TerrainPanelSystem),
+                            "OnLoadWorldHeightmap",
+                            new Type[] { typeof(Colossal.Hash128) }
+                        );
+                        method.Invoke(instance, new object[] { capturedGuid });
+                    }
+                    catch (Exception ex)
+                    {
+                        _bypassWarning = false;
+                        ModLog.Error(Tag, $"WorldMap 资产导入回调异常: {ex}");
+                    }
+                }
+                else
+                {
+                    ModLog.Info(Tag, "用户取消导入 WorldMap (资产GUID)");
+                }
+            });
+
+            return false;
+        }
+
+        #endregion
     }
 }
