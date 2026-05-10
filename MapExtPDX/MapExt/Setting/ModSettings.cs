@@ -72,10 +72,12 @@ namespace MapExtPDX
     [SettingsUITabOrder(kMapSizeModeTab, kMiscTab, kRentControlTab, kPerformanceToolTab, kUITab, kDebugTab)]
     [SettingsUIGroupOrder(kMainModeGroup, kTerrainWaterOptGroup, kResetGroup, kInfoGroup, kEcoGroup, kNoteGroup,
         kEcoSystemEnableGroup, kPathfindingGroup, kEcoBehaviorGroup,
+        kTerrainPerfGroup,
         kLandValueFactorGroup, kRentFormulaGroup,
         kNoDogsGroup, kNoTrafficGroup, kEditorToolGroup, kInGameUIGroup, kPopDiagGroup, kDebugGroup)]
     [SettingsUIShowGroupName(kMainModeGroup, kTerrainWaterOptGroup, kResetGroup, kEcoGroup,
         kEcoSystemEnableGroup, kPathfindingGroup, kEcoBehaviorGroup,
+        kTerrainPerfGroup,
         kLandValueFactorGroup, kRentFormulaGroup,
         kNoDogsGroup, kNoTrafficGroup, kEditorToolGroup, kInGameUIGroup, kPopDiagGroup, kDebugGroup)]
     public class ModSettings : ModSetting
@@ -110,6 +112,7 @@ namespace MapExtPDX
         public const string kRentFormulaGroup = "RentFormula";
 
         // -- Perf. Tools Tab --
+        public const string kTerrainPerfGroup = "TerrainPerf";
         public const string kNoDogsGroup = "NoDogs";
         public const string kNoTrafficGroup = "NoTraffic";
         public const string kEditorToolGroup = "EditorTool";
@@ -549,6 +552,21 @@ namespace MapExtPDX
 
         #endregion
 
+        // === 地形性能优化（性能工具 Tab） ===
+
+        #region TerrainPerf
+
+        /// <summary>
+        /// 禁用已有存档中的背景世界地图（Backdrop）。
+        /// 移除每帧 DownSampleHeightMap GPU 开销、额外级联层和 CPU 阻塞回读，
+        /// 大地图下可节省约 0.5-2ms/帧 GPU 时间和 ~37MB VRAM。
+        /// ⚠ 保存存档后 Backdrop 数据将永久丢失。
+        /// </summary>
+        [SettingsUISection(kPerformanceToolTab, kTerrainPerfGroup)]
+        public bool DisableWorldBackdrop { get; set; } = false;
+
+        #endregion
+
         // === NoDogs 2.0 ===
 
         #region NoDogs
@@ -860,6 +878,7 @@ namespace MapExtPDX
             TerrainBufferPrealloc = true;
             TerrainCascadeThrottle = false; // 默认关闭：会导致远景级联与视口不同步→地形错位
             TerrainCullThrottle = true; // 默认开启：跳过无变化帧的建筑裁剪Job
+            DisableWorldBackdrop = false; // 默认关闭：不阻止已有存档的背景世界地图
 
             // UI 外观
             UIMenuPanelWidth = 200;

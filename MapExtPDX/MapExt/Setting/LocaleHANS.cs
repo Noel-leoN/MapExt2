@@ -487,6 +487,23 @@ namespace MapExtPDX
                 { m_Setting.GetOptionTabLocaleID(ModSettings.kPerformanceToolTab), "性能工具" },
 
 
+                // --- Group: 地形性能 ---
+                { m_Setting.GetOptionGroupLocaleID(ModSettings.kTerrainPerfGroup), "地形性能" },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.DisableWorldBackdrop)), "⚠ 禁用背景世界地图 (Backdrop)" },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.DisableWorldBackdrop)),
+                    "加载已有存档时，阻止背景世界地图（World Heightmap）生效。\n\n" +
+                    "★ 性能收益：\n" +
+                    " - 每帧节省约 0.5-2ms GPU 时间（DownSampleHeightMap 不再调度）\n" +
+                    " - 减少 ~37MB 显存占用（降采样纹理和额外级联层不再创建）\n" +
+                    " - 消除 CPU 主线程同步阻塞等待 GPU 回读\n" +
+                    " - 减少 1 层级联渲染（cascade[0] 跳过）\n\n" +
+                    "★ 副作用：可玩区域外的远景变为平坦地形（大地图下边界极远，几乎不可见）。\n\n" +
+                    "⚠ 【重要警告】：开启此选项后保存存档，背景世界地图数据将永久丢失且不可恢复！\n" +
+                    "如果不确定是否需要，建议先备份存档。\n\n" +
+                    "★ 提示：仅对包含背景世界地图的存档有效。无需重启，重新加载存档即可生效。"
+                },
+
                 // --- Group: NoDogs ---
                 { m_Setting.GetOptionGroupLocaleID(ModSettings.kNoDogsGroup), "宠物控制 (NoDogs)" },
                 { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.NoDogsOnStreet)), "NoDogs: 禁止外出" },

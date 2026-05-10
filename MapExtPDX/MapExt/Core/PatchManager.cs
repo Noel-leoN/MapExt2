@@ -62,6 +62,8 @@ namespace MapExtPDX.MapExt.Core
                 // PatchSet1:TerrainSystem
                 { "TerrainSystemPatch", (h) => h.CreateClassProcessor(typeof(TerrainSystemPatches)).Patch() },
                 { "TerrainToR16Patch", (h) => PatchHelpers.PatchAllMethodsInType(h, typeof(TerrainToR16Patch)) },
+                // WorldMap 导入性能警告对话框
+                { "WorldMapImportWarning", (h) => h.CreateClassProcessor(typeof(WorldMapImportWarningPatch)).Patch() },
                 // v2.x.x新增: 远距级联降频优化 (Phase 2.1)
                 { "TerrainCascadeThrottle", (h) => h.CreateClassProcessor(typeof(TerrainSystem_RenderCascades_Patch)).Patch() },
 
@@ -98,6 +100,9 @@ namespace MapExtPDX.MapExt.Core
                 // 水模拟运行时频率优化补丁
                 { "WaterSystemOptRuntimePatch", (h) => h.CreateClassProcessor(typeof(WaterSystemOptRuntimePatch)).Patch() },
 
+                // v2.x.x新增: 地形 Backdrop 禁用补丁 (方案 A: InitializeTerrainData 源头拦截)
+                { "TerrainBackdropDisable", (h) => h.CreateClassProcessor(typeof(TerrainSystem_InitializeTerrainData_DisableBackdrop)).Patch() },
+
                 // v2.2.0改动
                 // PatchSet3:CellMapSystem<T>托管代码部分
                 { "CellMapSystemValuesPatch", (h) => CellMapSystemPatchManager.ApplyPatches(h) },
@@ -127,6 +132,7 @@ namespace MapExtPDX.MapExt.Core
                     {
                         "TerrainSystemPatch",
                         "TerrainToR16Patch",
+                        "WorldMapImportWarning",
                         "TerrainCascadeThrottle",
                         "WaterSystemPatch_Static",
                         "WaterSimulationPatch_Static",
@@ -136,6 +142,7 @@ namespace MapExtPDX.MapExt.Core
                         "WaterSystemInitFix",
                         "WaterAdapterOnUpdatePatch",
                         "WaterSystemOptRuntimePatch",
+                        "TerrainBackdropDisable",
                         "CellMapSystemValuesPatch",
                         "AirwaySystemPatch",
                         "ReBurstSystemsPatches",
@@ -146,6 +153,7 @@ namespace MapExtPDX.MapExt.Core
                     {
                         "TerrainSystemPatch",
                         "TerrainToR16Patch",
+                        "WorldMapImportWarning",
                         "TerrainCascadeThrottle",
                         "WaterSystemPatch_Static",
                         "WaterSimulationPatch_Static",
@@ -155,6 +163,7 @@ namespace MapExtPDX.MapExt.Core
                         "WaterSystemInitFix",
                         "WaterAdapterOnUpdatePatch",
                         "WaterSystemOptRuntimePatch",
+                        "TerrainBackdropDisable",
                         "CellMapSystemValuesPatch",
                         "AirwaySystemPatch",
                         "ReBurstSystemsPatches",
@@ -165,6 +174,7 @@ namespace MapExtPDX.MapExt.Core
                     {
                         "TerrainSystemPatch",
                         "TerrainToR16Patch",
+                        "WorldMapImportWarning",
                         "TerrainCascadeThrottle",
                         "WaterSystemPatch_Static",
                         "WaterSimulationPatch_Static",
@@ -174,6 +184,7 @@ namespace MapExtPDX.MapExt.Core
                         "WaterSystemInitFix",
                         "WaterAdapterOnUpdatePatch",
                         "WaterSystemOptRuntimePatch",
+                        "TerrainBackdropDisable",
                         "CellMapSystemValuesPatch",
                         "AirwaySystemPatch",
                         "ReBurstSystemsPatches",
@@ -183,6 +194,8 @@ namespace MapExtPDX.MapExt.Core
                     return new List<string>
                     {
                         "TerrainToR16Patch",
+                        "WorldMapImportWarning",
+                        "TerrainBackdropDisable",
                         "WaterSystemOptRuntimePatch"
                     };
             }

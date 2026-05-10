@@ -551,6 +551,23 @@ namespace MapExtPDX
                 { m_Setting.GetOptionTabLocaleID(ModSettings.kPerformanceToolTab), "Perf. Tools" },
 
 
+                // --- Group: Terrain Performance ---
+                { m_Setting.GetOptionGroupLocaleID(ModSettings.kTerrainPerfGroup), "Terrain Performance" },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.DisableWorldBackdrop)), "⚠ Disable World Backdrop Map" },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.DisableWorldBackdrop)),
+                    "Prevents the background world heightmap (Backdrop) from loading when opening an existing save.\n\n" +
+                    "★ Performance Benefits:\n" +
+                    " - Saves ~0.5-2ms GPU time per frame (DownSampleHeightMap compute dispatch eliminated)\n" +
+                    " - Reduces ~37MB VRAM (downscaled textures and extra cascade slice not created)\n" +
+                    " - Eliminates CPU main-thread stall waiting for GPU readback\n" +
+                    " - Removes 1 cascade rendering layer (cascade[0] skipped)\n\n" +
+                    "★ Side Effect: Terrain beyond the playable area becomes flat (on large maps the boundary is very far, barely visible).\n\n" +
+                    "⚠ [IMPORTANT WARNING]: If you SAVE your game with this enabled, the world backdrop data will be PERMANENTLY LOST and cannot be recovered!\n" +
+                    "Back up your save first if unsure.\n\n" +
+                    "★ Tip: Only affects saves that contain a world backdrop map. No restart needed — just reload the save."
+                },
+
                 // --- Group: NoDogs ---
                 { m_Setting.GetOptionGroupLocaleID(ModSettings.kNoDogsGroup), "NoDogs Control" },
                 { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.NoDogsOnStreet)), "NoDogs: Disable OnStreet" },

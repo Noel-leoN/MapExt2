@@ -16,6 +16,7 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
     using System.Reflection.Emit;
     using Unity.Entities;
     using Unity.Mathematics;
+    using UnityEngine;
 
     // Target TerrainSystem class
     // 修补FinalizeTerrainData/GetTerrainBounds/GetHeightData等三个方法
@@ -487,6 +488,44 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
 
             // 无任何实体/地形变化，仅相机移动触发 → 跳过 CullBuildingLotsJob
             heightMapRenderRequired = false;
+        }
+    }
+
+
+    // === 优化 4: Backdrop 禁用 (方案 A: InitializeTerrainData 源头拦截) ===
+    // 在 InitializeTerrainData 入口处将 worldMap 参数设为 null
+    // 这样 SetWorldHeightmap(null) → DestroyWorldMap() → worldHeightmap = null
+    // 然后 FinalizeTerrainData 中 worldHeightmap == null → baseLod = 0 → 无 Backdrop 路径
+    // 性能收益: 每帧节省 ~0.5-2ms GPU + ~37MB VRAM + CPU 阻塞消除
+    // 详见: docs/TerrainSystem/TerrainSystem_Analysis_Part2.md §9
+    [HarmonyPatch(typeof(TerrainSystem), "InitializeTerrainData")]
+    internal static class TerrainSystem_InitializeTerrainData_DisableBackdrop
+    {
+        private const string Tag = "TerrainBackdrop";
+
+        [HarmonyPrefix]
+        public static void Prefix(
+            ref Texture2D worldMap,
+            ref float2 inMapSize, ref float2 inWorldSize,
+            ref float2 inMapCorner, ref float2 inWorldCorner)
+        {
+            // 仅在用户启用 Backdrop 禁用时生效
+            if (Mod.Instance?.Settings?.DisableWorldBackdrop != true) return;
+
+            if (worldMap != null)
+            {
+                // 销毁反序列化创建的 worldMap 纹理，防止 GPU 内存泄漏
+                UnityEngine.Object.Destroy(worldMap);
+                worldMap = null;
+
+                // 同步 WorldSize = MapSize，确保 FinalizeTerrainData 中 baseLod = 0
+                inWorldSize = inMapSize;
+                inWorldCorner = inMapCorner;
+
+                ModLog.Patch(Tag,
+                    $"Backdrop disabled: worldMap nullified in InitializeTerrainData. " +
+                    $"MapSize={inMapSize}, WorldSize forced to MapSize");
+            }
         }
     }
 }
