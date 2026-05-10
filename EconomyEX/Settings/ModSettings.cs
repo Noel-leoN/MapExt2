@@ -14,6 +14,15 @@ namespace EconomyEX
         TreesOnly,   // 仅跳过树木
         AllObjects   // 跳过所有对象
     }
+
+    /// <summary>水模拟质量预设</summary>
+    public enum WaterSimQualitySetting
+    {
+        Vanilla_EveryFrame,        // 原版：每帧模拟
+        Reduced_NoBackdrop,        // 降低：关闭 FlowBlur
+        Minimal_Every4Frames,      // 最低：每 4 帧模拟一次
+        Paused_NoFlow              // 暂停：完全停止水流
+    }
 }
 
 namespace EconomyEX.Settings
@@ -22,10 +31,10 @@ namespace EconomyEX.Settings
     [SettingsUITabOrder(kSectionStatus, kSectionGeneral, kRentControlTab, kSectionPerfTool, kDebugTab)]
     [SettingsUIGroupOrder(kSectionStatus, kSectionGeneral, kSectionPathfinding, kSectionBehavior,
         kLandValueFactorGroup, kRentFormulaGroup,
-        kNoDogsGroup, kNoTrafficGroup, kEditorToolGroup, kPopDiagGroup)]
+        kNoDogsGroup, kNoTrafficGroup, kEditorToolGroup, kGpuOptGroup, kPopDiagGroup)]
     [SettingsUIShowGroupName(kSectionGeneral, kSectionPathfinding, kSectionBehavior,
         kLandValueFactorGroup, kRentFormulaGroup,
-        kNoDogsGroup, kNoTrafficGroup, kEditorToolGroup, kPopDiagGroup)]
+        kNoDogsGroup, kNoTrafficGroup, kEditorToolGroup, kGpuOptGroup, kPopDiagGroup)]
     public class ModSettings : ModSetting
     {
         public const string kSectionGeneral = "General";
@@ -36,6 +45,7 @@ namespace EconomyEX.Settings
         public const string kNoDogsGroup = "NoDogs";
         public const string kNoTrafficGroup = "NoTraffic";
         public const string kEditorToolGroup = "EditorTool";
+        public const string kGpuOptGroup = "GpuOptimization";
 
         // -- Debug Tab --
         public const string kDebugTab = "Debug";
@@ -433,6 +443,29 @@ namespace EconomyEX.Settings
 
         #endregion
 
+        // === GPU 性能优化 ===
+        #region GpuOptimization
+
+        [SettingsUISection(kSectionPerfTool, kGpuOptGroup)]
+        public bool DisableWorldBackdrop { get; set; } = false;
+
+        [SettingsUISection(kSectionPerfTool, kGpuOptGroup)]
+        [SettingsUIDropdown(typeof(ModSettings), nameof(GetWaterSimQualityItems))]
+        public WaterSimQualitySetting WaterSimQuality { get; set; } = WaterSimQualitySetting.Vanilla_EveryFrame;
+
+        public DropdownItem<int>[] GetWaterSimQualityItems()
+        {
+            return new DropdownItem<int>[]
+            {
+                new() { value = (int)WaterSimQualitySetting.Vanilla_EveryFrame, displayName = "Vanilla (Every Frame)" },
+                new() { value = (int)WaterSimQualitySetting.Reduced_NoBackdrop, displayName = "Reduced (No FlowBlur)" },
+                new() { value = (int)WaterSimQualitySetting.Minimal_Every4Frames, displayName = "Minimal (Every 4 Frames)" },
+                new() { value = (int)WaterSimQualitySetting.Paused_NoFlow, displayName = "Paused (No Water Flow)" }
+            };
+        }
+
+        #endregion
+
         // === 人口诊断 ===
         #region Population Diagnostics
 
@@ -542,6 +575,8 @@ namespace EconomyEX.Settings
             LevelFactorResidential = 100;
             LevelFactorCommercial = 100;
             LevelFactorIndustrial = 100;
+            DisableWorldBackdrop = false;
+            WaterSimQuality = WaterSimQualitySetting.Vanilla_EveryFrame;
         }
     }
 }

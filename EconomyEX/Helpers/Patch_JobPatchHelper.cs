@@ -11,6 +11,8 @@ namespace EconomyEX.Helpers
 {
     public static class JobPatchHelper
     {
+        private const string Tag = "ReBurst";
+
         private class ResolvedTargetContext
         {
             public JobPatchTarget Target;
@@ -20,11 +22,6 @@ namespace EconomyEX.Helpers
             public bool IsValid;
         }
 
-        // --- Log ---
-        private static void Info(string message) => ModLog.Info("JobPatch", message);
-        private static void Warn(string message) => ModLog.Warn("JobPatch", message);
-        private static void Error(string message) => ModLog.Error("JobPatch", message);
-
 
         /// <summary>
         /// 核心入口：应用一组补丁目标
@@ -33,20 +30,17 @@ namespace EconomyEX.Helpers
         {
             if (harmonyInstance == null)
             {
-                Error("Harmony 实例为空，无法应用补丁！");
+                ModLog.Error(Tag, "Harmony 实例为空，无法应用补丁");
                 return;
             }
 
             if (targets == null || !targets.Any())
             {
-                // Info("没有需要应用的补丁目标");
                 return;
             }
 
             var targetList = targets.ToList();
-#if DEBUG
-            Info($"📥 正在预处理 {targetList.Count} 个 Job 替换目标...");
-#endif
+            ModLog.Debug(Tag, $"正在预处理 {targetList.Count} 个 Job 替换目标...");
 
             // 1. 解析与分组
             var methodGroups = targetList
@@ -56,6 +50,7 @@ namespace EconomyEX.Helpers
 
             int successMethods = 0;
             int failMethods = 0;
+            var succeededNames = new List<string>();
 
             // 2. 按方法应用 Patch
             foreach (var group in methodGroups)
@@ -72,18 +67,26 @@ namespace EconomyEX.Helpers
                         transpiler: new HarmonyMethod(typeof(GenericJobReplacePatch),
                             nameof(GenericJobReplacePatch.Transpiler)));
                     successMethods++;
-#if DEBUG
-                    Info($"✅ 已挂载 Patch: {method.DeclaringType?.Name}.{method.Name}");
-#endif
+                    succeededNames.Add($"{method.DeclaringType?.Name}.{method.Name}");
+                    ModLog.Debug(Tag, $"已挂载 Patch: {method.DeclaringType?.Name}.{method.Name}");
                 }
                 catch (Exception ex)
                 {
                     failMethods++;
-                    Error($"挂载失败: {method.Name}. {ex.Message}");
+                    ModLog.Error(Tag, $"挂载失败: {method.Name}. {ex.Message}");
                 }
             }
 
-            Info($"🎉 初始化完成！成功: {successMethods}, 失败: {failMethods}");
+            // Release 下输出汇总报告
+            ModLog.Report(Tag, "Job Transpiler 挂载汇总", rb =>
+            {
+                rb.Stat("成功", successMethods);
+                rb.Stat("失败", failMethods);
+#if DEBUG
+                foreach (var name in succeededNames)
+                    rb.Item(name);
+#endif
+            });
         }
 
         // 解析逻辑
@@ -122,9 +125,7 @@ namespace EconomyEX.Helpers
                 else if (method == null) reason += $"[方法未找到 {t.TargetMethodName}] ";
                 else if (oldJob == null) reason += $"[原Job未找到 {t.OriginalJobFullName}] ";
                 else if (newJob == null) reason += $"[新Job未找到 {t.ReplacementJobFullName}] ";
-#if DEBUG
-                Warn($"跳过无效目标: {t.TargetTypeName}.{t.TargetMethodName} -> 原因: {reason}");
-#endif
+                ModLog.Debug(Tag, $"跳过无效目标: {t.TargetTypeName}.{t.TargetMethodName} -> 原因: {reason}");
             }
 
             return new ResolvedTargetContext

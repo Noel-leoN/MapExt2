@@ -254,6 +254,31 @@ namespace EconomyEX.Settings
                     "在编辑器模式放置物体时跳过碰撞检测错误。「仅树木」移除树木碰撞警告；「所有对象」移除所有放置碰撞警告。"
                 },
 
+                // --- Group: GPU 性能优化 ---
+                { m_Setting.GetOptionGroupLocaleID(ModSettings.kGpuOptGroup), "GPU 性能优化" },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.DisableWorldBackdrop)), "⚠ 禁用背景世界地图" },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.DisableWorldBackdrop)),
+                    "禁用背景世界地图（Backdrop），节省 GPU 和显存资源。\n\n" +
+                    "★ 性能收益：\n" +
+                    " - 每帧节省 ~0.5-2ms GPU（级联渲染、降采样）\n" +
+                    " - 减少 ~37MB 显存占用\n" +
+                    " - 消除 AsyncGPUReadback 的 CPU 阻塞\n\n" +
+                    "⚠ 注意：可游玩区域以外的远景地形将不再渲染。这仅影响视觉效果，不影响游戏玩法。\n\n" +
+                    "需要重启游戏生效。"
+                },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.WaterSimQuality)), "水体模拟质量" },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.WaterSimQuality)),
+                    "控制水体模拟的 GPU 频率。\n\n" +
+                    "★ 选项说明：\n" +
+                    " - 原版：每帧完整模拟（默认）\n" +
+                    " - 降低：关闭流体模糊，轻微节省 GPU\n" +
+                    " - 最低：每 4 帧模拟一次，显著降低 GPU 负载\n" +
+                    " - 暂停：完全停止水流模拟\n\n" +
+                    "可于游戏中实时调节，即时生效。"
+                },
+
                 // ============================================================
                 // Tab: 调试
                 // ============================================================

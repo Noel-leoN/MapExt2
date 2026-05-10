@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2024 Noel2(Noel-leoN)
+// Copyright (c) 2024 Noel2(Noel-leoN)
 // Licensed under the MIT License.
 // See LICENSE in the project root for full license information.
 
@@ -38,46 +38,93 @@ namespace EconomyEX.Helpers
         private static string Fmt(string tag, string icon, string msg)
             => $"[MapExt|{tag}] {icon} {msg}";
 
+        /// <summary>
+        /// 安全日志包装器。
+        /// Colossal UnityLogger.Internal_WriteStream 在引擎初始化早期阶段
+        /// 偶发 NullReferenceException（内部 context 对象尚未就绪），
+        /// 此方法通过 try-catch 防御该不可控的竞态条件，
+        /// 并回退到 UnityEngine.Debug.Log 确保日志不丢失。
+        /// </summary>
+        private static void SafeLog(Action logAction, string fallbackMsg)
+        {
+            try
+            {
+                logAction();
+            }
+            catch (NullReferenceException)
+            {
+                // Colossal Logger 内部 NRE — 回退到 Unity 原生日志
+                try { UnityEngine.Debug.Log(fallbackMsg); } catch { /* 静默 */ }
+            }
+        }
+
         #endregion
 
         #region 标准日志方法
 
         /// <summary>普通信息</summary>
         public static void Info(string tag, string msg)
-            => Mod.Logger.Info(Fmt(tag, IconInfo, msg));
+        {
+            var text = Fmt(tag, IconInfo, msg);
+            SafeLog(() => Mod.Logger.Info(text), text);
+        }
 
         /// <summary>成功/完成</summary>
         public static void Ok(string tag, string msg)
-            => Mod.Logger.Info(Fmt(tag, IconOk, msg));
+        {
+            var text = Fmt(tag, IconOk, msg);
+            SafeLog(() => Mod.Logger.Info(text), text);
+        }
 
         /// <summary>补丁操作</summary>
         public static void Patch(string tag, string msg)
-            => Mod.Logger.Info(Fmt(tag, IconPatch, msg));
+        {
+            var text = Fmt(tag, IconPatch, msg);
+            SafeLog(() => Mod.Logger.Info(text), text);
+        }
 
         /// <summary>扫描/搜索操作</summary>
         public static void Scan(string tag, string msg)
-            => Mod.Logger.Info(Fmt(tag, IconScan, msg));
+        {
+            var text = Fmt(tag, IconScan, msg);
+            SafeLog(() => Mod.Logger.Info(text), text);
+        }
 
         /// <summary>替换操作</summary>
         public static void Swap(string tag, string msg)
-            => Mod.Logger.Info(Fmt(tag, IconSwap, msg));
+        {
+            var text = Fmt(tag, IconSwap, msg);
+            SafeLog(() => Mod.Logger.Info(text), text);
+        }
 
         /// <summary>警告</summary>
         public static void Warn(string tag, string msg)
-            => Mod.Logger.Warn(Fmt(tag, IconWarn, msg));
+        {
+            var text = Fmt(tag, IconWarn, msg);
+            SafeLog(() => Mod.Logger.Warn(text), text);
+        }
 
         /// <summary>错误</summary>
         public static void Error(string tag, string msg)
-            => Mod.Logger.Error(Fmt(tag, IconError, msg));
+        {
+            var text = Fmt(tag, IconError, msg);
+            SafeLog(() => Mod.Logger.Error(text), text);
+        }
 
         /// <summary>错误（含异常）</summary>
         public static void Error(string tag, Exception e, string msg)
-            => Mod.Logger.Error(e, Fmt(tag, IconError, msg));
+        {
+            var text = Fmt(tag, IconError, msg);
+            SafeLog(() => Mod.Logger.Error(e, text), text);
+        }
 
         /// <summary>DEBUG 级别（仅 Debug 构建输出）</summary>
         [System.Diagnostics.Conditional("DEBUG")]
         public static void Debug(string tag, string msg)
-            => Mod.Logger.Debug(Fmt(tag, IconDebug, msg));
+        {
+            var text = Fmt(tag, IconDebug, msg);
+            SafeLog(() => Mod.Logger.Debug(text), text);
+        }
 
         #endregion
 
@@ -99,7 +146,8 @@ namespace EconomyEX.Helpers
                 sb.AppendLine($"│ {line}");
             sb.Append($"└─── {rb.Lines.Count} entries ───");
 
-            Mod.Logger.Info(Fmt(tag, IconOk, sb.ToString()));
+            var text = Fmt(tag, IconOk, sb.ToString());
+            SafeLog(() => Mod.Logger.Info(text), text);
         }
 
         /// <summary>

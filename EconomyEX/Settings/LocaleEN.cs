@@ -261,6 +261,31 @@ namespace EconomyEX.Settings
                     "Skip collision detection errors when placing objects in Editor mode. 'Trees Only' removes collision warnings for trees; 'All Objects' removes all placement collision warnings."
                 },
 
+                // --- Group: GPU Optimization ---
+                { m_Setting.GetOptionGroupLocaleID(ModSettings.kGpuOptGroup), "GPU Optimization" },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.DisableWorldBackdrop)), "⚠ Disable World Backdrop" },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.DisableWorldBackdrop)),
+                    "Disables the background world heightmap (Backdrop) to save GPU and VRAM resources.\n\n" +
+                    "★ Performance Gain:\n" +
+                    " - Saves ~0.5-2ms GPU per frame (cascade rendering, downsampling)\n" +
+                    " - Reduces ~37MB VRAM usage\n" +
+                    " - Eliminates CPU blocking from AsyncGPUReadback\n\n" +
+                    "⚠ Warning: The distant terrain beyond the playable area will no longer be rendered. This is purely cosmetic and does not affect gameplay.\n\n" +
+                    "Requires game restart to take effect."
+                },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.WaterSimQuality)), "Water Simulation Quality" },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.WaterSimQuality)),
+                    "Controls water simulation GPU frequency.\n\n" +
+                    "★ Options:\n" +
+                    " - Vanilla: Full simulation every frame (default)\n" +
+                    " - Reduced: Disables FlowBlur for minor GPU savings\n" +
+                    " - Minimal: Simulates every 4 frames for significant GPU reduction\n" +
+                    " - Paused: Completely stops water flow simulation\n\n" +
+                    "Can be adjusted in-game. Changes take effect immediately."
+                },
+
                 // ============================================================
                 // Tab: Debug
                 // ============================================================

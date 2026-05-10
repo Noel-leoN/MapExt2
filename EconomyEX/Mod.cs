@@ -125,6 +125,10 @@ namespace EconomyEX
             Settings.UpdateNoDogsSystemStates();
             Settings.UpdateNoThroughTrafficSystemStates();
 
+            // Apply GPU optimization patches (Backdrop Disable + Water Sim Quality)
+            _harmony.CreateClassProcessor(typeof(TerrainBackdropDisablePatch)).Patch();
+            _harmony.CreateClassProcessor(typeof(WaterSystemOptRuntimePatch)).Patch();
+
             Settings.UpdateStatus();
         }
 
