@@ -131,9 +131,9 @@ namespace MapExtPDX.UI
             // === 更新 UI 状态 ===
             if (conflicts.Count > 0)
             {
-                string warningMsg = $"⚠ {conflicts.Count} Conflicts: {string.Join(", ", conflicts)} re-enabled";
+                string warningMsg = $"[!] {conflicts.Count} Conflicts: {string.Join(", ", conflicts)} re-enabled";
                 SetWarning(settings, warningMsg);
-                SetStatusReport(settings, $"⚠ {okCount}/{totalChecked} OK, {conflicts.Count} conflicts");
+                SetStatusReport(settings, $"[!] {okCount}/{totalChecked} OK, {conflicts.Count} conflicts");
 
                 // === 自动 disable 冲突的系统组 ===
                 AutoDisableConflictGroups(settings, conflictGroups);
@@ -143,7 +143,7 @@ namespace MapExtPDX.UI
             else if (totalChecked > 0)
             {
                 SetWarning(settings, "None");
-                SetStatusReport(settings, $"✅ {okCount}/{totalChecked} OK");
+                SetStatusReport(settings, $"{okCount}/{totalChecked} OK");
             }
             else
             {

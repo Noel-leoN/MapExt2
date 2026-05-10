@@ -1,4 +1,4 @@
-// locales.ts - MapExt 中英文本字典 (Phase 1 + Phase 2)
+// locales.ts - MapExt 中英文本字典 (Phase 1 ~ Phase 4)
 // 使用游戏引擎内置的 activeLocale binding 检测语言
 
 import { bindValue, useValue } from "cs2/api";
@@ -40,6 +40,25 @@ export const locales = {
         levelFactorRes: "Building level contribution to residential rent. Higher-level buildings charge more rent at 100%.",
         levelFactorCom: "Building level contribution to commercial rent. 100% = vanilla scaling.",
         levelFactorInd: "Building level contribution to industrial rent. 100% = vanilla scaling.",
+
+        // === Phase 4 — Dashboard 扩展 ===
+        residentialTitle: "Residential Market",
+        commercialTitle: "Commercial Market",
+        activityTitle: "Population Activity",
+        resDensityLow: "Low",
+        resDensityMed: "Medium",
+        resDensityHigh: "High",
+        resVacant: "Vacant",
+        resTotal: "Total",
+        resVacancyRate: "Vacancy",
+        totalCommercial: "Active Shops",
+        commercialPropertyless: "Seeking Property",
+        shoppingCount: "Shopping",
+        leisureCount: "Leisure",
+        goingToWork: "Commuting",
+        goingHome: "Returning Home",
+        commuterCount: "Commuters",
+        miscTitle: "Misc",
     },
     zh: {
         // === Phase 1 ===
@@ -74,6 +93,25 @@ export const locales = {
         levelFactorRes: "住宅等级贡献系数：建筑等级越高，租金在 100% 时越贵。降低可削弱升级对租金的影响。",
         levelFactorCom: "商业等级贡献系数：100% = 原版等级缩放。",
         levelFactorInd: "工业等级贡献系数：100% = 原版等级缩放。",
+
+        // === Phase 4 — Dashboard 扩展 ===
+        residentialTitle: "住宅市场",
+        commercialTitle: "商业市场",
+        activityTitle: "人口活动",
+        resDensityLow: "低密度",
+        resDensityMed: "中密度",
+        resDensityHigh: "高密度",
+        resVacant: "空置",
+        resTotal: "总数",
+        resVacancyRate: "空置率",
+        totalCommercial: "有店铺商家",
+        commercialPropertyless: "等待入驻",
+        shoppingCount: "购物中",
+        leisureCount: "休闲中",
+        goingToWork: "上班途中",
+        goingHome: "回家途中",
+        commuterCount: "外来通勤",
+        miscTitle: "其他",
     }
 };
 

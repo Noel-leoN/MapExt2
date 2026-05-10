@@ -539,11 +539,6 @@ namespace MapExtPDX
 
                 // --- Group: 游戏内 UI 外观 ---
                 { m_Setting.GetOptionGroupLocaleID(ModSettings.kInGameUIGroup), "游戏内 UI 外观" },
-                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.UIFontSize)), "面板字体大小" },
-                {
-                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.UIFontSize)),
-                    "控制游戏内 MapExt 面板的基准字体大小（rem 单位）。默认值：13，范围：10~20。"
-                },
                 { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.UIMenuPanelWidth)), "左侧菜单面板宽度" },
                 {
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.UIMenuPanelWidth)),
@@ -553,6 +548,36 @@ namespace MapExtPDX
                 {
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.UIDetailPanelWidth)),
                     "控制右侧详情面板的宽度（rem 单位）。也可以在游戏内通过拖拽面板边缘调整。默认值：260，范围：200~450。"
+                },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.UIPanelHeight)), "面板高度" },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.UIPanelHeight)),
+                    "控制左侧面板的高度（rem 单位）。也可以在游戏内通过拖拽面板底部调整。默认值：1000，范围：300~1000。"
+                },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.DashboardDefaultCityStats)), "默认展开：城市统计" },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.DashboardDefaultCityStats)),
+                    "勾选后，打开仪表盘时「城市统计」区块将自动展开。"
+                },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.DashboardDefaultResidential)), "默认展开：住宅市场" },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.DashboardDefaultResidential)),
+                    "勾选后，打开仪表盘时「住宅市场」区块将自动展开。"
+                },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.DashboardDefaultCommercial)), "默认展开：商业市场" },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.DashboardDefaultCommercial)),
+                    "勾选后，打开仪表盘时「商业市场」区块将自动展开。"
+                },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.DashboardDefaultActivity)), "默认展开：人口活动" },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.DashboardDefaultActivity)),
+                    "勾选后，打开仪表盘时「人口活动」区块将自动展开。"
+                },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.DashboardDefaultMisc)), "默认展开：其他" },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.DashboardDefaultMisc)),
+                    "勾选后，打开仪表盘时「其他」区块将自动展开。"
                 },
 
                 // ============================================================

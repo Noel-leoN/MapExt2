@@ -609,11 +609,6 @@ namespace MapExtPDX
 
                 // --- Group: In-Game UI ---
                 { m_Setting.GetOptionGroupLocaleID(ModSettings.kInGameUIGroup), "In-Game UI Appearance" },
-                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.UIFontSize)), "Panel Font Size" },
-                {
-                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.UIFontSize)),
-                    "Controls the base font size (in rem) of the in-game MapExt panel. Default: 13. Range: 10~20."
-                },
                 { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.UIMenuPanelWidth)), "Menu Panel Width" },
                 {
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.UIMenuPanelWidth)),
@@ -623,6 +618,36 @@ namespace MapExtPDX
                 {
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.UIDetailPanelWidth)),
                     "Controls the width of the right detail panel (in rem). Can also be adjusted by dragging the panel edge in-game. Default: 260. Range: 200~450."
+                },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.UIPanelHeight)), "Panel Height" },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.UIPanelHeight)),
+                    "Controls the height of the left panel (in rem). Can also be adjusted by dragging the bottom edge in-game. Default: 1000. Range: 300~1000."
+                },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.DashboardDefaultCityStats)), "Default Open: City Stats" },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.DashboardDefaultCityStats)),
+                    "When checked, the 'City Stats' section will be expanded by default when opening the dashboard."
+                },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.DashboardDefaultResidential)), "Default Open: Residential Market" },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.DashboardDefaultResidential)),
+                    "When checked, the 'Residential Market' section will be expanded by default."
+                },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.DashboardDefaultCommercial)), "Default Open: Commercial Market" },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.DashboardDefaultCommercial)),
+                    "When checked, the 'Commercial Market' section will be expanded by default."
+                },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.DashboardDefaultActivity)), "Default Open: Population Activity" },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.DashboardDefaultActivity)),
+                    "When checked, the 'Population Activity' section will be expanded by default."
+                },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.DashboardDefaultMisc)), "Default Open: Misc" },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.DashboardDefaultMisc)),
+                    "When checked, the 'Misc' section will be expanded by default."
                 },
 
                 // ============================================================

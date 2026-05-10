@@ -14,16 +14,19 @@
     --me-font-size: 13rem;
 }
 
-/* === 左侧菜单面板 === */
+/* === 左侧面板（Dashboard 内嵌） === */
 .menuPanel {
-    /* width 由 inline style 动态控制 */
-    min-width: 160rem;
+    /* width + maxHeight 由 inline style 动态控制 */
+    min-width: 180rem;
+    display: flex;
+    flex-direction: column;
     background-color: rgba(24, 30, 44, 0.94);
     border: 1rem solid rgba(100, 140, 200, 0.2);
     border-radius: 6rem;
     color: #d0d8e8;
     font-size: var(--me-font-size);
     line-height: 1.4;
+    overflow: hidden;
 }
 
 /* === 右侧详情面板 === */
@@ -123,6 +126,20 @@
     padding: 4rem 0;
 }
 
+/* === Dashboard 滚动区域（左侧面板中间填充） === */
+.dashboardScroll {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 4rem 10rem;
+}
+
+/* === 底部菜单按钮（Rent / Pathfinding） === */
+.menuFooter {
+    flex-shrink: 0;
+    border-top: 1rem solid rgba(100, 140, 200, 0.15);
+    padding: 2rem 0;
+}
 .menuItem {
     display: flex;
     align-items: center;
@@ -281,6 +298,129 @@
     font-size: 13rem;
     font-weight: 600;
     color: #ff5555;
+    text-align: right;
+}
+
+/* === Phase 4: Dashboard 子标题 === */
+.subTitle {
+    font-size: 12rem;
+    font-weight: 600;
+    color: #90a8cc;
+    margin: 4rem 0 6rem;
+    padding-bottom: 3rem;
+    border-bottom: 1rem dashed rgba(100, 140, 200, 0.15);
+}
+
+/* === Phase 4: 住宅空置率表格 === */
+.statTable {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12rem;
+    margin: 2rem 0 4rem;
+
+    th {
+        color: #6880a0;
+        font-weight: 600;
+        text-align: right;
+        padding: 2rem 6rem;
+        font-size: 11rem;
+    }
+
+    th:first-child {
+        text-align: left;
+        width: 48rem;
+    }
+
+    td {
+        color: #7cc0ff;
+        font-weight: 500;
+        text-align: right;
+        padding: 2rem 6rem;
+    }
+
+    td:first-child {
+        text-align: left;
+        color: #8899b0;
+        font-weight: 400;
+    }
+
+    tr:nth-child(even) {
+        background-color: rgba(40, 55, 80, 0.2);
+    }
+}
+
+/* === Phase 4: Accordion 折叠区块 === */
+.accordionBlock {
+    border-bottom: 1rem solid rgba(100, 140, 200, 0.1);
+}
+
+.accordionBlock:last-child {
+    border-bottom: none;
+}
+
+.accordionHeader {
+    display: flex;
+    align-items: center;
+    gap: 6rem;
+    width: 100%;
+    padding: 7rem 2rem;
+    background-color: transparent;
+    border: none;
+    color: #90a8cc;
+    font-size: 12rem;
+    font-weight: 600;
+    cursor: pointer;
+    text-align: left;
+}
+
+.accordionHeader:hover {
+    background-color: rgba(60, 80, 120, 0.25);
+    color: #b0c8e8;
+}
+
+.accordionOpen {
+    color: #7cc0ff;
+}
+
+.accordionArrow {
+    font-size: 9rem;
+    width: 12rem;
+    flex-shrink: 0;
+    color: #5880a0;
+}
+
+.accordionBody {
+    padding: 2rem 4rem 8rem 20rem;
+}
+
+/* === Phase 4: 住宅密度行（紧凑三列） === */
+.densityRow {
+    display: flex;
+    align-items: baseline;
+    padding: 3rem 0;
+    gap: 4rem;
+}
+
+.densityLabel {
+    width: 52rem;
+    flex-shrink: 0;
+    font-size: 12rem;
+    color: #8899b0;
+}
+
+.densityData {
+    flex: 1;
+    font-size: 12rem;
+    font-weight: 500;
+    color: #7cc0ff;
+    text-align: right;
+}
+
+.densityRate {
+    width: 50rem;
+    flex-shrink: 0;
+    font-size: 11rem;
+    color: #6880a0;
     text-align: right;
 }
 

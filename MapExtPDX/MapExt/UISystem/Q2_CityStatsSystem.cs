@@ -10,15 +10,19 @@ using Game.Creatures;
 using Game.Simulation;
 using Game.Tools;
 using MapExtPDX.MapExt.Core;
+using System.Reflection;
 using Unity.Collections;
 using Unity.Entities;
+using Unity.Jobs;
 
 namespace MapExtPDX.UI
 {
     /// <summary>
-    /// 📊 [MOD] 城市统计数据收集系统（Phase 2）
+    /// 📊 [MOD] 城市统计数据收集系统（Phase 4）
     /// 按需运行：仅当 Dashboard 面板展开时由 MapExtUISystem 启用。
     /// 每 256 帧（约 4.3 秒）执行一次 ECS 查询，收集人口健康度指标。
+    /// Phase 4 新增：住宅空置率、商业活动、人口活动（购物/休闲/通勤）。
+    /// 所有新增数据均从游戏原生缓存系统零成本读取，无需自建 Burst Job。
     /// 面板关闭时 Enabled = false，零开销。
     /// </summary>
     public partial class Q2_CityStatsSystem : GameSystemBase
@@ -39,6 +43,16 @@ namespace MapExtPDX.UI
         private EntityQuery m_PropertySeekerHomelessQuery;
         private EntityQuery m_HighRentBuildingQuery;
         private EntityQuery m_PetQuery;
+        private EntityQuery m_CommuterQuery;
+
+        // --- Phase 4: 游戏原生统计系统引用 ---
+        private CountResidentialPropertySystem m_CountResPropertySystem;
+        private CountCompanyDataSystem m_CountCompanySystem;
+        private ResidentPurposeCounterSystem m_PurposeCounterSystem;
+
+        /// <summary>反射获取的 ResidentPurposeCounterSystem.m_Results（Persistent NativeArray）</summary>
+        private NativeArray<int> m_PurposeResults;
+        private bool m_PurposeResultsValid;
 
         #endregion
 
@@ -67,6 +81,44 @@ namespace MapExtPDX.UI
 
         /// <summary>宠物实体数量</summary>
         public int PetCount { get; private set; }
+
+        // --- Phase 4: 住宅空置率（从 CountResidentialPropertySystem 缓存读取） ---
+
+        /// <summary>低密度空置住宅数</summary>
+        public int FreeResLow { get; private set; }
+        /// <summary>中密度空置住宅数</summary>
+        public int FreeResMed { get; private set; }
+        /// <summary>高密度空置住宅数</summary>
+        public int FreeResHigh { get; private set; }
+        /// <summary>低密度总住宅数</summary>
+        public int TotalResLow { get; private set; }
+        /// <summary>中密度总住宅数</summary>
+        public int TotalResMed { get; private set; }
+        /// <summary>高密度总住宅数</summary>
+        public int TotalResHigh { get; private set; }
+
+        // --- Phase 4: 商业活动（从 CountCompanyDataSystem 缓存读取） ---
+
+        /// <summary>有物业的商业公司总数</summary>
+        public int TotalCommercial { get; private set; }
+        /// <summary>无物业（等待入驻）的商业公司数</summary>
+        public int CommercialPropertyless { get; private set; }
+
+        // --- Phase 4: 人口活动（从 ResidentPurposeCounterSystem 缓存读取） ---
+
+        /// <summary>正在前往购物的市民数</summary>
+        public int ShoppingCount { get; private set; }
+        /// <summary>正在休闲的市民数</summary>
+        public int LeisureCount { get; private set; }
+        /// <summary>正在上班途中的市民数</summary>
+        public int GoingToWorkCount { get; private set; }
+        /// <summary>正在回家途中的市民数</summary>
+        public int GoingHomeCount { get; private set; }
+
+        // --- Phase 4: 通勤者 ---
+
+        /// <summary>外来通勤者家庭数</summary>
+        public int CommuterCount { get; private set; }
 
         #endregion
 
@@ -141,10 +193,43 @@ namespace MapExtPDX.UI
                 ComponentType.Exclude<Deleted>(),
                 ComponentType.Exclude<Temp>());
 
+            // === Phase 4: 通勤者查询 ===
+            m_CommuterQuery = GetEntityQuery(
+                ComponentType.ReadOnly<CommuterHousehold>(),
+                ComponentType.ReadOnly<HouseholdCitizen>(),
+                ComponentType.Exclude<Deleted>(),
+                ComponentType.Exclude<Temp>());
+
+            // === Phase 4: 获取游戏原生统计系统引用 ===
+            m_CountResPropertySystem = World.GetOrCreateSystemManaged<CountResidentialPropertySystem>();
+            m_CountCompanySystem = World.GetOrCreateSystemManaged<CountCompanyDataSystem>();
+            m_PurposeCounterSystem = World.GetOrCreateSystemManaged<ResidentPurposeCounterSystem>();
+
+            // --- 反射获取 ResidentPurposeCounterSystem 的私有 m_Results 字段 ---
+            try
+            {
+                var field = typeof(ResidentPurposeCounterSystem)
+                    .GetField("m_Results", BindingFlags.NonPublic | BindingFlags.Instance);
+                if (field != null)
+                {
+                    m_PurposeResults = (NativeArray<int>)field.GetValue(m_PurposeCounterSystem);
+                    m_PurposeResultsValid = m_PurposeResults.IsCreated && m_PurposeResults.Length >= 12;
+                    ModLog.Ok(Tag, $"ResidentPurposeCounterSystem.m_Results 反射成功 (Length={m_PurposeResults.Length})");
+                }
+                else
+                {
+                    ModLog.Warn(Tag, "ResidentPurposeCounterSystem.m_Results 字段未找到");
+                }
+            }
+            catch (System.Exception ex)
+            {
+                ModLog.Error(Tag, $"反射 ResidentPurposeCounterSystem 失败: {ex.Message}");
+            }
+
             // 默认关闭，由 MapExtUISystem 在 Dashboard 展开时启用
             Enabled = false;
 
-            ModLog.Ok(Tag, "城市统计系统已创建 (按需启用, UpdateInterval=256)");
+            ModLog.Ok(Tag, "城市统计系统已创建 (Phase 4: 按需启用, UpdateInterval=256)");
         }
 
         /// <summary>
@@ -167,6 +252,36 @@ namespace MapExtPDX.UI
 
             // === 高租金建筑需要遍历 Chunk 检查 BuildingFlags ===
             HighRentBuildingCount = CountHighRentBuildings();
+
+            // === Phase 4: 通勤者（O(1) archetype 计数） ===
+            CommuterCount = m_CommuterQuery.CalculateEntityCount();
+
+            // === Phase 4: 住宅空置率（从缓存读取，零成本） ===
+            ReadResidentialVacancy();
+
+            // === Phase 4: 商业活动（从缓存读取，零成本） ===
+            ReadCommercialData();
+
+            // === Phase 4: 人口活动（从缓存读取，零成本） ===
+            ReadPurposeCounterData();
+        }
+
+        /// <summary>
+        /// 联动启用/禁用 ResidentPurposeCounterSystem。
+        /// 由 MapExtUISystem 的 Dashboard 折叠回调间接调用（通过设置 Enabled）。
+        /// </summary>
+        protected override void OnStartRunning()
+        {
+            base.OnStartRunning();
+            if (m_PurposeCounterSystem != null)
+                m_PurposeCounterSystem.Enabled = true;
+        }
+
+        protected override void OnStopRunning()
+        {
+            base.OnStopRunning();
+            if (m_PurposeCounterSystem != null)
+                m_PurposeCounterSystem.Enabled = false;
         }
 
         #endregion
@@ -197,6 +312,57 @@ namespace MapExtPDX.UI
 
             chunks.Dispose();
             return count;
+        }
+
+        /// <summary>
+        /// Phase 4: 从 CountResidentialPropertySystem 读取住宅空置缓存。
+        /// int3.x = Low, .y = Medium, .z = High
+        /// </summary>
+        private void ReadResidentialVacancy()
+        {
+            if (m_CountResPropertySystem == null) return;
+            var data = m_CountResPropertySystem.GetResidentialPropertyData();
+            FreeResLow = data.m_FreeProperties.x;
+            FreeResMed = data.m_FreeProperties.y;
+            FreeResHigh = data.m_FreeProperties.z;
+            TotalResLow = data.m_TotalProperties.x;
+            TotalResMed = data.m_TotalProperties.y;
+            TotalResHigh = data.m_TotalProperties.z;
+        }
+
+        /// <summary>
+        /// Phase 4: 从 CountCompanyDataSystem 读取商业公司缓存。
+        /// 汇总所有资源类型的 ServiceCompanies 和 ServicePropertyless。
+        /// </summary>
+        private void ReadCommercialData()
+        {
+            if (m_CountCompanySystem == null) return;
+            var comData = m_CountCompanySystem.GetCommercialCompanyDatas(out JobHandle deps);
+            deps.Complete();
+
+            int totalSvc = 0;
+            int totalPropertyless = 0;
+            for (int i = 0; i < comData.m_ServiceCompanies.Length; i++)
+            {
+                totalSvc += comData.m_ServiceCompanies[i];
+                totalPropertyless += comData.m_ServicePropertyless[i];
+            }
+
+            TotalCommercial = totalSvc;
+            CommercialPropertyless = totalPropertyless;
+        }
+
+        /// <summary>
+        /// Phase 4: 从 ResidentPurposeCounterSystem 的 m_Results 读取人口活动缓存。
+        /// 索引对应 CountPurpose 枚举：0=GoingHome, 2=GoingToWork, 3=Leisure, 5=Shopping
+        /// </summary>
+        private void ReadPurposeCounterData()
+        {
+            if (!m_PurposeResultsValid) return;
+            GoingHomeCount = m_PurposeResults[0];
+            GoingToWorkCount = m_PurposeResults[2];
+            LeisureCount = m_PurposeResults[3];
+            ShoppingCount = m_PurposeResults[5];
         }
 
         #endregion

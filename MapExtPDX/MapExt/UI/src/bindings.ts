@@ -63,15 +63,39 @@ export const seekerHomelessCount$ = bindValue<number>(G, "SeekerHomelessCount", 
 export const highRentCount$       = bindValue<number>(G, "HighRentBuildingCount", 0);
 export const petCount$            = bindValue<number>(G, "PetCount", 0);
 
-// === UI 外观参数 ===
-export const uiFontSize$    = bindValue<number>(G, "UIFontSize", 13);
-export const setUIFontSize  = (v: number) => trigger(G, "SetUIFontSize", v);
+// === Dashboard Phase 4 扩展指标 (13 GetterValueBinding) ===
+// --- 住宅空置率 ---
+export const freeResLow$    = bindValue<number>(G, "FreeResLow", 0);
+export const freeResMed$    = bindValue<number>(G, "FreeResMed", 0);
+export const freeResHigh$   = bindValue<number>(G, "FreeResHigh", 0);
+export const totalResLow$   = bindValue<number>(G, "TotalResLow", 0);
+export const totalResMed$   = bindValue<number>(G, "TotalResMed", 0);
+export const totalResHigh$  = bindValue<number>(G, "TotalResHigh", 0);
+// --- 商业活动 ---
+export const totalCommercial$        = bindValue<number>(G, "TotalCommercial", 0);
+export const commercialPropertyless$ = bindValue<number>(G, "CommercialPropertyless", 0);
+// --- 人口活动 ---
+export const shoppingCount$    = bindValue<number>(G, "ShoppingCount", 0);
+export const leisureCount$     = bindValue<number>(G, "LeisureCount", 0);
+export const goingToWorkCount$ = bindValue<number>(G, "GoingToWorkCount", 0);
+export const goingHomeCount$   = bindValue<number>(G, "GoingHomeCount", 0);
+// --- 通勤者 ---
+export const commuterCount$    = bindValue<number>(G, "CommuterCount", 0);
 
-// === 面板宽度持久化 ===
+// === 面板尺寸持久化 ===
 export const uiMenuWidth$     = bindValue<number>(G, "UIMenuWidth", 220);
 export const uiDetailWidth$   = bindValue<number>(G, "UIDetailWidth", 260);
+export const uiPanelHeight$   = bindValue<number>(G, "UIPanelHeight", 1000);
 export const setUIMenuWidth   = (v: number) => trigger(G, "SetUIMenuWidth", v);
 export const setUIDetailWidth = (v: number) => trigger(G, "SetUIDetailWidth", v);
+export const setUIPanelHeight = (v: number) => trigger(G, "SetUIPanelHeight", v);
+
+// === Dashboard 默认展开区块 ===
+export const dashDefaultCityStats$   = bindValue<boolean>(G, "DashDefaultCityStats", true);
+export const dashDefaultResidential$ = bindValue<boolean>(G, "DashDefaultResidential", true);
+export const dashDefaultCommercial$  = bindValue<boolean>(G, "DashDefaultCommercial", true);
+export const dashDefaultActivity$    = bindValue<boolean>(G, "DashDefaultActivity", true);
+export const dashDefaultMisc$        = bindValue<boolean>(G, "DashDefaultMisc", true);
 
 // === 重置 ===
 export const resetRentControl = () => trigger(G, "ResetRentControl");

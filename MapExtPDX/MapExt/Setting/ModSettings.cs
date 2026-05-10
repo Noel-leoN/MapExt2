@@ -30,41 +30,41 @@ namespace MapExtPDX
     /// <summary>地形分辨率选项</summary>
     public enum TerrainResolutionSetting
     {
-        Vanilla_4096,   // 原版 4096×4096
-        High_8192,      // 高清 8192×8192 (默认)
+        Vanilla_4096, // 原版 4096×4096
+        High_8192, // 高清 8192×8192 (默认)
     }
 
     /// <summary>编辑器碰撞检测跳过选项</summary>
     public enum EditorCollisionSkipMode
     {
-        Off,         // 不干预
-        TreesOnly,   // 仅跳过树木
-        AllObjects   // 跳过所有对象
+        Off, // 不干预
+        TreesOnly, // 仅跳过树木
+        AllObjects // 跳过所有对象
     }
 
     /// <summary>水纹理分辨率选项</summary>
     public enum WaterResolutionSetting
     {
-        Vanilla_2048,   // 原版 2048×2048
-        Medium_1024,    // 中等 1024×1024
-        Low_512,        // 低 512×512 (推荐)
-        Ultra_256,      // 极低 256×256 (最高性能)
+        Vanilla_2048, // 原版 2048×2048
+        Medium_1024, // 中等 1024×1024
+        Low_512, // 低 512×512 (推荐)
+        Ultra_256, // 极低 256×256 (最高性能)
     }
 
     /// <summary>水模拟质量选项</summary>
     public enum WaterSimQualitySetting
     {
-        Vanilla_EveryFrame,     // 原版：每帧模拟，开启背景水
-        Reduced_NoBackdrop,     // 降低：每帧模拟，关闭背景水
-        Minimal_Every4Frames,   // 极简：每四帧模拟，关闭背景水、模糊和后处理
-        Paused_NoFlow,          // 暂停：停止水流模拟
+        Vanilla_EveryFrame, // 原版：每帧模拟，开启背景水
+        Reduced_NoBackdrop, // 降低：每帧模拟，关闭背景水
+        Minimal_Every4Frames, // 极简：每四帧模拟，关闭背景水、模糊和后处理
+        Paused_NoFlow, // 暂停：停止水流模拟
     }
 
     /// <summary>水纹理格式精度</summary>
     public enum WaterTextureFormatSetting
     {
-        High_RGBA32F,   // 原版高精度 32-bit
-        Low_RGBA16F,    // 降级低精度 16-bit (省一半显存)
+        High_RGBA32F, // 原版高精度 32-bit
+        Low_RGBA16F, // 降级低精度 16-bit (省一半显存)
     }
 
     //[FileLocation(nameof(MapExtPDX))]
@@ -139,6 +139,7 @@ namespace MapExtPDX
         public bool IsInMainMenu => GameManager.instance.gameMode == GameMode.MainMenu;
 
         // === 地图尺寸模式 ===
+
         #region MapSize Mode
 
         [SettingsUISection(kMapSizeModeTab, kMainModeGroup)]
@@ -172,6 +173,7 @@ namespace MapExtPDX
         #endregion
 
         // === 地形-水体优化 (Beta) ===
+
         #region Terrain-Water Optimization
 
         /// <summary>
@@ -203,11 +205,9 @@ namespace MapExtPDX
         // 地形分辨率: 8192 与水模拟级联不兼容，当前仅 4096 可用
         // 水纹理分辨率: Compute Shader 存在纹理尺寸隐式依赖，当前仅 2048 可用
         // 待自定义 Compute Shader (Phase 3) 实现后恢复 UI
-        [SettingsUIHidden]
-        public TerrainResolutionSetting TerrainResolution { get; set; }
+        [SettingsUIHidden] public TerrainResolutionSetting TerrainResolution { get; set; }
 
-        [SettingsUIHidden]
-        public WaterResolutionSetting WaterResolution { get; set; }
+        [SettingsUIHidden] public WaterResolutionSetting WaterResolution { get; set; }
 
         private WaterSimQualitySetting m_waterSimQuality = WaterSimQualitySetting.Vanilla_EveryFrame;
 
@@ -227,8 +227,7 @@ namespace MapExtPDX
         }
 
         // 16-bit 格式已被禁用，因为损失精度会导致流水无法蔓延
-        [SettingsUIHidden]
-        public WaterTextureFormatSetting WaterTextureFormat { get; set; }
+        [SettingsUIHidden] public WaterTextureFormatSetting WaterTextureFormat { get; set; }
 
         // 分辨率选项隐藏后，VRAM 估算也无需显示
         [SettingsUIHidden]
@@ -237,6 +236,7 @@ namespace MapExtPDX
         #endregion
 
         // === 经济系统总开关 ===
+
         #region Economy Overhaul
 
         [SettingsUISection(kMapSizeModeTab, kEcoGroup)]
@@ -258,6 +258,7 @@ namespace MapExtPDX
         public bool IsPatchUnAvailable => true;
 
         // === EconomyEX Tab - 经济子系统启用开关 ===
+
         #region Economy System Toggles
 
         [SettingsUISection(kMiscTab, kEcoSystemEnableGroup)]
@@ -309,6 +310,7 @@ namespace MapExtPDX
         #endregion
 
         // === EconomyEX Tab - 寻路优化参数 ===
+
         #region Pathfinding Parameters
 
         [SettingsUISection(kMiscTab, kPathfindingGroup)]
@@ -342,19 +344,23 @@ namespace MapExtPDX
         public float FindHomeMaxCost { get; set; } = 200000f;
 
         [SettingsUISection(kMiscTab, kPathfindingGroup)]
-        [SettingsUISlider(min = 1000f, max = 200000f, step = 1000f, scalarMultiplier = 1f, unit = Game.UI.Unit.kFloatSingleFraction)]
+        [SettingsUISlider(min = 1000f, max = 200000f, step = 1000f, scalarMultiplier = 1f,
+            unit = Game.UI.Unit.kFloatSingleFraction)]
         public float FindSchoolElementaryMaxCost { get; set; } = 10000f;
 
         [SettingsUISection(kMiscTab, kPathfindingGroup)]
-        [SettingsUISlider(min = 1000f, max = 200000f, step = 1000f, scalarMultiplier = 1f, unit = Game.UI.Unit.kFloatSingleFraction)]
+        [SettingsUISlider(min = 1000f, max = 200000f, step = 1000f, scalarMultiplier = 1f,
+            unit = Game.UI.Unit.kFloatSingleFraction)]
         public float FindSchoolHighSchoolMaxCost { get; set; } = 17000f;
 
         [SettingsUISection(kMiscTab, kPathfindingGroup)]
-        [SettingsUISlider(min = 1000f, max = 200000f, step = 1000f, scalarMultiplier = 1f, unit = Game.UI.Unit.kFloatSingleFraction)]
+        [SettingsUISlider(min = 1000f, max = 200000f, step = 1000f, scalarMultiplier = 1f,
+            unit = Game.UI.Unit.kFloatSingleFraction)]
         public float FindSchoolCollegeMaxCost { get; set; } = 50000f;
 
         [SettingsUISection(kMiscTab, kPathfindingGroup)]
-        [SettingsUISlider(min = 1000f, max = 200000f, step = 1000f, scalarMultiplier = 1f, unit = Game.UI.Unit.kFloatSingleFraction)]
+        [SettingsUISlider(min = 1000f, max = 200000f, step = 1000f, scalarMultiplier = 1f,
+            unit = Game.UI.Unit.kFloatSingleFraction)]
         public float FindSchoolUniversityMaxCost { get; set; } = 100000f;
 
         [SettingsUISection(kMiscTab, kPathfindingGroup)]
@@ -380,6 +386,7 @@ namespace MapExtPDX
         #endregion
 
         // === EconomyEX Tab - 经济行为与吞吐量参数 ===
+
         #region Economy Behavior & Throughput
 
         /// <summary>
@@ -448,6 +455,7 @@ namespace MapExtPDX
         #endregion
 
         // === Rent Control Tab ===
+
         #region Rent Control
 
         // --- 地价因子组 ---
@@ -542,6 +550,7 @@ namespace MapExtPDX
         #endregion
 
         // === NoDogs 2.0 ===
+
         #region NoDogs
 
         private bool m_NoDogsOnStreet = false;
@@ -574,22 +583,21 @@ namespace MapExtPDX
         [SettingsUIConfirmation]
         public bool ApplyNoDogs
         {
-            set
-            {
-                UpdateNoDogsSystemStates();
-            }
+            set { UpdateNoDogsSystemStates(); }
         }
 
         public void UpdateNoDogsSystemStates()
         {
-            ModLog.Info(Tag, $"NoDogs 2.0: OnStreet={m_NoDogsOnStreet}, Generation={m_NoDogsGeneration}, Purge={m_NoDogsPurge}");
+            ModLog.Info(Tag,
+                $"NoDogs 2.0: OnStreet={m_NoDogsOnStreet}, Generation={m_NoDogsGeneration}, Purge={m_NoDogsPurge}");
 
             // 禁止外出：关闭 HouseholdPetSpawnSystem
             World.DefaultGameObjectInjectionWorld.GetOrCreateSystemManaged<Game.Simulation.HouseholdPetSpawnSystem>()
                 .Enabled = !m_NoDogsOnStreet;
 
             // 阻止生成 / 清除存量：通知 ECS 系统
-            var patchSystem = World.DefaultGameObjectInjectionWorld.GetExistingSystemManaged<MapExtPDX.EcoShared.P1_NoDogsPatchSystem>();
+            var patchSystem = World.DefaultGameObjectInjectionWorld
+                .GetExistingSystemManaged<MapExtPDX.EcoShared.P1_NoDogsPatchSystem>();
             if (patchSystem != null)
             {
                 patchSystem.ApplySettings(m_NoDogsGeneration, m_NoDogsPurge);
@@ -615,7 +623,8 @@ namespace MapExtPDX
         {
             set
             {
-                var patchSystem = World.DefaultGameObjectInjectionWorld.GetExistingSystemManaged<MapExtPDX.EcoShared.P1_NoDogsPatchSystem>();
+                var patchSystem = World.DefaultGameObjectInjectionWorld
+                    .GetExistingSystemManaged<MapExtPDX.EcoShared.P1_NoDogsPatchSystem>();
                 if (patchSystem != null)
                 {
                     CurrentPetCount = patchSystem.CountPets();
@@ -626,6 +635,7 @@ namespace MapExtPDX
         #endregion
 
         // === No Through-Traffic ===
+
         #region NoThroughTraffic
 
         private bool m_NoThroughTrafficSystem = false;
@@ -658,6 +668,7 @@ namespace MapExtPDX
         #endregion
 
         // === Editor Collision ===
+
         #region EditorCollisionMode
 
         [SettingsUISection(kPerformanceToolTab, kEditorToolGroup)]
@@ -678,22 +689,49 @@ namespace MapExtPDX
         #endregion
 
         // === In-Game UI 外观设置 ===
+
         #region InGameUI
 
-        /// <summary>游戏内 UI 面板字体大小（rem 单位）</summary>
-        [SettingsUISection(kUITab, kInGameUIGroup)]
-        [SettingsUISlider(min = 10, max = 20, step = 1, scalarMultiplier = 1, unit = Game.UI.Unit.kInteger)]
+        /// <summary>游戏内 UI 面板字体大小（已弃用，保留用于序列化兼容）</summary>
+        [SettingsUIHidden]
         public int UIFontSize { get; set; } = 13;
 
         /// <summary>左侧菜单面板宽度（rem 单位）</summary>
         [SettingsUISection(kUITab, kInGameUIGroup)]
         [SettingsUISlider(min = 160, max = 320, step = 10, scalarMultiplier = 1, unit = Game.UI.Unit.kInteger)]
-        public int UIMenuPanelWidth { get; set; } = 220;
+        public int UIMenuPanelWidth { get; set; } = 200;
 
         /// <summary>右侧详情面板宽度（rem 单位）</summary>
         [SettingsUISection(kUITab, kInGameUIGroup)]
         [SettingsUISlider(min = 200, max = 450, step = 10, scalarMultiplier = 1, unit = Game.UI.Unit.kInteger)]
-        public int UIDetailPanelWidth { get; set; } = 260;
+        public int UIDetailPanelWidth { get; set; } = 220;
+
+        /// <summary>左侧面板高度（rem 单位）</summary>
+        [SettingsUISection(kUITab, kInGameUIGroup)]
+        [SettingsUISlider(min = 300, max = 1000, step = 20, scalarMultiplier = 1, unit = Game.UI.Unit.kInteger)]
+        public int UIPanelHeight { get; set; } = 1000;
+
+        // --- Dashboard 默认展开区块 ---
+
+        /// <summary>打开时默认展开“城市统计”区块</summary>
+        [SettingsUISection(kUITab, kInGameUIGroup)]
+        public bool DashboardDefaultCityStats { get; set; } = true;
+
+        /// <summary>打开时默认展开“住宅市场”区块</summary>
+        [SettingsUISection(kUITab, kInGameUIGroup)]
+        public bool DashboardDefaultResidential { get; set; } = true;
+
+        /// <summary>打开时默认展开“商业市场”区块</summary>
+        [SettingsUISection(kUITab, kInGameUIGroup)]
+        public bool DashboardDefaultCommercial { get; set; } = true;
+
+        /// <summary>打开时默认展开“人口活动”区块</summary>
+        [SettingsUISection(kUITab, kInGameUIGroup)]
+        public bool DashboardDefaultActivity { get; set; } = true;
+
+        /// <summary>打开时默认展开“其他”区块</summary>
+        [SettingsUISection(kUITab, kInGameUIGroup)]
+        public bool DashboardDefaultMisc { get; set; } = true;
 
         #endregion
 
@@ -702,6 +740,7 @@ namespace MapExtPDX
         }
 
         // === Conflict Monitoring ===
+
         #region Conflict Monitoring
 
         /// <summary>冲突警告信息，由 ConflictMonitoringSystem 更新</summary>
@@ -732,6 +771,7 @@ namespace MapExtPDX
         #endregion
 
         // === 人口诊断 ===
+
         #region Population Diagnostics
 
         /// <summary>诊断数据缓存，由 RefreshPopDiag 按钮更新</summary>
@@ -807,7 +847,7 @@ namespace MapExtPDX
             LevelFactorResidential = 100;
             LevelFactorCommercial = 100;
             LevelFactorIndustrial = 100;
-            
+
             isEnableEconomyFix = true;
             EnableDemandEcoSystem = true;
             EnableJobSearchEcoSystem = true;
@@ -818,16 +858,24 @@ namespace MapExtPDX
 
             // 地形优化
             TerrainBufferPrealloc = true;
-            TerrainCascadeThrottle = false;  // 默认关闭：会导致远景级联与视口不同步→地形错位
-            TerrainCullThrottle = true;       // 默认开启：跳过无变化帧的建筑裁剪Job
+            TerrainCascadeThrottle = false; // 默认关闭：会导致远景级联与视口不同步→地形错位
+            TerrainCullThrottle = true; // 默认开启：跳过无变化帧的建筑裁剪Job
 
             // UI 外观
-            UIFontSize = 13;
-            UIMenuPanelWidth = 220;
-            UIDetailPanelWidth = 260;
+            UIMenuPanelWidth = 200;
+            UIDetailPanelWidth = 220;
+            UIPanelHeight = 1000;
+
+            // Dashboard 默认展开区块
+            DashboardDefaultCityStats = true;
+            DashboardDefaultResidential = true;
+            DashboardDefaultCommercial = true;
+            DashboardDefaultActivity = true;
+            DashboardDefaultMisc = true;
         }
 
         // === Dropdown Helpers ===
+
         #region Dropdown Helpers
 
         public DropdownItem<int>[] GetPatchModeDropdownItems()
@@ -861,7 +909,8 @@ namespace MapExtPDX
         {
             return new DropdownItem<int>[]
             {
-                new DropdownItem<int> { value = (int)TerrainResolutionSetting.Vanilla_4096, displayName = "4096×4096 (Vanilla)" },
+                new DropdownItem<int>
+                    { value = (int)TerrainResolutionSetting.Vanilla_4096, displayName = "4096×4096 (Vanilla)" },
             };
         }
 
@@ -869,7 +918,8 @@ namespace MapExtPDX
         {
             return new DropdownItem<int>[]
             {
-                new DropdownItem<int> { value = (int)WaterResolutionSetting.Vanilla_2048, displayName = "2048×2048 (Vanilla)" },
+                new DropdownItem<int>
+                    { value = (int)WaterResolutionSetting.Vanilla_2048, displayName = "2048×2048 (Vanilla)" },
             };
         }
 
@@ -877,10 +927,16 @@ namespace MapExtPDX
         {
             return new DropdownItem<int>[]
             {
-                new DropdownItem<int> { value = (int)WaterSimQualitySetting.Vanilla_EveryFrame, displayName = "Vanilla (Every Frame)" },
-                new DropdownItem<int> { value = (int)WaterSimQualitySetting.Reduced_NoBackdrop, displayName = "Reduced (No Backdrop)" },
-                new DropdownItem<int> { value = (int)WaterSimQualitySetting.Minimal_Every4Frames, displayName = "Minimal (Every 4 Frames)" },
-                new DropdownItem<int> { value = (int)WaterSimQualitySetting.Paused_NoFlow, displayName = "Paused (No Flow)" },
+                new DropdownItem<int>
+                    { value = (int)WaterSimQualitySetting.Vanilla_EveryFrame, displayName = "Vanilla (Every Frame)" },
+                new DropdownItem<int>
+                    { value = (int)WaterSimQualitySetting.Reduced_NoBackdrop, displayName = "Reduced (No Backdrop)" },
+                new DropdownItem<int>
+                {
+                    value = (int)WaterSimQualitySetting.Minimal_Every4Frames, displayName = "Minimal (Every 4 Frames)"
+                },
+                new DropdownItem<int>
+                    { value = (int)WaterSimQualitySetting.Paused_NoFlow, displayName = "Paused (No Flow)" },
             };
         }
 
@@ -888,8 +944,14 @@ namespace MapExtPDX
         {
             return new DropdownItem<int>[]
             {
-                new DropdownItem<int> { value = (int)WaterTextureFormatSetting.High_RGBA32F, displayName = "High - 32-bit HDR (Vanilla)" },
-                new DropdownItem<int> { value = (int)WaterTextureFormatSetting.Low_RGBA16F, displayName = "Low - 16-bit Float (-43% VRAM)" },
+                new DropdownItem<int>
+                {
+                    value = (int)WaterTextureFormatSetting.High_RGBA32F, displayName = "High - 32-bit HDR (Vanilla)"
+                },
+                new DropdownItem<int>
+                {
+                    value = (int)WaterTextureFormatSetting.Low_RGBA16F, displayName = "Low - 16-bit Float (-43% VRAM)"
+                },
             };
         }
 

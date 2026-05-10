@@ -13,6 +13,8 @@ namespace MapExtPDX.UI
     /// 继承 UISystemBase，通过 ValueBinding/TriggerBinding 实现前端双向实时调参。
     /// Phase 1: 7 个高频参数（租金 5 + 寻路 2），21 个 Binding。
     /// Phase 2: +Dashboard 统计 8 + 扩展租金 6 + 面板状态 2 = 新增 22 个，累计 43 个 Binding。
+    /// Phase 3: +UI 外观 4，累计 47 个 Binding。
+    /// Phase 4: +Dashboard 扩展 13（住宅空置 6 + 商业 2 + 人口活动 4 + 通勤 1），累计 60 个 Binding。
     /// 面板关闭时跳过所有更新（零开销）。
     /// </summary>
     public partial class MapExtUISystem : UISystemBase
@@ -62,9 +64,9 @@ namespace MapExtPDX.UI
 
         #region Fields — UI 外观参数
 
-        private ValueBinding<int> m_UIFontSize;
         private ValueBinding<int> m_UIMenuWidth;
         private ValueBinding<int> m_UIDetailWidth;
+        private ValueBinding<int> m_UIPanelHeight;
 
         #endregion
 
@@ -213,14 +215,7 @@ namespace MapExtPDX.UI
                 m_LevelFactorInd.Update(v);
             }));
 
-            // === UI 外观参数 (6: 3 value + 3 trigger) ===
-            AddBinding(m_UIFontSize = new ValueBinding<int>(kGroup, "UIFontSize", s.UIFontSize));
-            AddBinding(new TriggerBinding<int>(kGroup, "SetUIFontSize", v =>
-            {
-                Mod.Instance.Settings.UIFontSize = v;
-                m_UIFontSize.Update(v);
-            }));
-
+            // === UI 外观参数 (4: 2 value + 2 trigger) ===
             // --- 面板宽度持久化 ---
             AddBinding(m_UIMenuWidth = new ValueBinding<int>(kGroup, "UIMenuWidth", s.UIMenuPanelWidth));
             AddBinding(new TriggerBinding<int>(kGroup, "SetUIMenuWidth", v =>
@@ -235,6 +230,25 @@ namespace MapExtPDX.UI
                 Mod.Instance.Settings.UIDetailPanelWidth = v;
                 m_UIDetailWidth.Update(v);
             }));
+
+            AddBinding(m_UIPanelHeight = new ValueBinding<int>(kGroup, "UIPanelHeight", s.UIPanelHeight));
+            AddBinding(new TriggerBinding<int>(kGroup, "SetUIPanelHeight", v =>
+            {
+                Mod.Instance.Settings.UIPanelHeight = v;
+                m_UIPanelHeight.Update(v);
+            }));
+
+            // --- Dashboard 默认展开区块（只读 GetterValueBinding，从 Settings 读取） ---
+            AddUpdateBinding(new GetterValueBinding<bool>(kGroup, "DashDefaultCityStats",
+                () => Mod.Instance?.Settings?.DashboardDefaultCityStats ?? true));
+            AddUpdateBinding(new GetterValueBinding<bool>(kGroup, "DashDefaultResidential",
+                () => Mod.Instance?.Settings?.DashboardDefaultResidential ?? true));
+            AddUpdateBinding(new GetterValueBinding<bool>(kGroup, "DashDefaultCommercial",
+                () => Mod.Instance?.Settings?.DashboardDefaultCommercial ?? true));
+            AddUpdateBinding(new GetterValueBinding<bool>(kGroup, "DashDefaultActivity",
+                () => Mod.Instance?.Settings?.DashboardDefaultActivity ?? true));
+            AddUpdateBinding(new GetterValueBinding<bool>(kGroup, "DashDefaultMisc",
+                () => Mod.Instance?.Settings?.DashboardDefaultMisc ?? true));
 
             // === Dashboard 只读指标 (Phase 2: 8 GetterValueBinding) ===
             // 注意：Q2 系统在 SystemReplacer.Apply() 中注册，此时可能尚未创建
@@ -256,6 +270,41 @@ namespace MapExtPDX.UI
                 () => m_Q2System?.HighRentBuildingCount ?? 0));
             AddUpdateBinding(new GetterValueBinding<int>(kGroup, "PetCount",
                 () => m_Q2System?.PetCount ?? 0));
+
+            // === Dashboard Phase 4 扩展指标 (13 GetterValueBinding) ===
+            // --- 住宅空置率（从 CountResidentialPropertySystem 缓存读取） ---
+            AddUpdateBinding(new GetterValueBinding<int>(kGroup, "FreeResLow",
+                () => m_Q2System?.FreeResLow ?? 0));
+            AddUpdateBinding(new GetterValueBinding<int>(kGroup, "FreeResMed",
+                () => m_Q2System?.FreeResMed ?? 0));
+            AddUpdateBinding(new GetterValueBinding<int>(kGroup, "FreeResHigh",
+                () => m_Q2System?.FreeResHigh ?? 0));
+            AddUpdateBinding(new GetterValueBinding<int>(kGroup, "TotalResLow",
+                () => m_Q2System?.TotalResLow ?? 0));
+            AddUpdateBinding(new GetterValueBinding<int>(kGroup, "TotalResMed",
+                () => m_Q2System?.TotalResMed ?? 0));
+            AddUpdateBinding(new GetterValueBinding<int>(kGroup, "TotalResHigh",
+                () => m_Q2System?.TotalResHigh ?? 0));
+
+            // --- 商业活动（从 CountCompanyDataSystem 缓存读取） ---
+            AddUpdateBinding(new GetterValueBinding<int>(kGroup, "TotalCommercial",
+                () => m_Q2System?.TotalCommercial ?? 0));
+            AddUpdateBinding(new GetterValueBinding<int>(kGroup, "CommercialPropertyless",
+                () => m_Q2System?.CommercialPropertyless ?? 0));
+
+            // --- 人口活动（从 ResidentPurposeCounterSystem 缓存读取） ---
+            AddUpdateBinding(new GetterValueBinding<int>(kGroup, "ShoppingCount",
+                () => m_Q2System?.ShoppingCount ?? 0));
+            AddUpdateBinding(new GetterValueBinding<int>(kGroup, "LeisureCount",
+                () => m_Q2System?.LeisureCount ?? 0));
+            AddUpdateBinding(new GetterValueBinding<int>(kGroup, "GoingToWorkCount",
+                () => m_Q2System?.GoingToWorkCount ?? 0));
+            AddUpdateBinding(new GetterValueBinding<int>(kGroup, "GoingHomeCount",
+                () => m_Q2System?.GoingHomeCount ?? 0));
+
+            // --- 通勤者 ---
+            AddUpdateBinding(new GetterValueBinding<int>(kGroup, "CommuterCount",
+                () => m_Q2System?.CommuterCount ?? 0));
 
             // === 重置按钮 Triggers (2) ===
             AddBinding(new TriggerBinding(kGroup, "ResetRentControl", () =>
@@ -300,7 +349,7 @@ namespace MapExtPDX.UI
                 m_LeisureMaxCost.Update(12000f);
             }));
 
-            ModLog.Ok(Tag, "MapExtUISystem 已创建 (Phase 3: 49 Bindings)");
+            ModLog.Ok(Tag, "MapExtUISystem 已创建 (Phase 4: 60 Bindings)");
         }
 
         #endregion
@@ -319,14 +368,14 @@ namespace MapExtPDX.UI
             // === UI 外观参数脏检查（无论面板是否打开都必须同步） ===
             var s = Mod.Instance.Settings;
 
-            if (m_UIFontSize.value != s.UIFontSize)
-                m_UIFontSize.Update(s.UIFontSize);
-
             if (m_UIMenuWidth.value != s.UIMenuPanelWidth)
                 m_UIMenuWidth.Update(s.UIMenuPanelWidth);
 
             if (m_UIDetailWidth.value != s.UIDetailPanelWidth)
                 m_UIDetailWidth.Update(s.UIDetailPanelWidth);
+
+            if (m_UIPanelHeight.value != s.UIPanelHeight)
+                m_UIPanelHeight.Update(s.UIPanelHeight);
 
             // 面板关闭时跳过调参脏检查（零开销）
             if (!m_PanelOpen.value) return;
