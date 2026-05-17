@@ -89,6 +89,26 @@ namespace MapExtPDX
             Colossal.IO.AssetDatabase.AssetDatabase.global.LoadSettings(ModName, m_Setting, new ModSettings(this));
             ModLog.Ok(Tag, "Settings 已初始化");
 
+#if DEBUG
+            // === 设置值验证日志（仅 DEBUG 编译有效） ===
+            // 用于诊断 .coc 文件加载异常或框架缓存不一致问题
+            ModLog.Debug(Tag, "=== Settings Dump (DEBUG) ===");
+            ModLog.Debug(Tag, $"  PatchMode={m_Setting.PatchModeChoice}");
+            ModLog.Debug(Tag, $"  TerrainRes={m_Setting.TerrainResolution}, WaterRes={m_Setting.WaterResolution}");
+            ModLog.Debug(Tag, $"  WaterSimQuality={m_Setting.WaterSimQuality}, WaterTexFmt={m_Setting.WaterTextureFormat}");
+            ModLog.Debug(Tag, $"  TerrainBufferPrealloc={m_Setting.TerrainBufferPrealloc}");
+            ModLog.Debug(Tag, $"  TerrainCascadeThrottle={m_Setting.TerrainCascadeThrottle}, TerrainCullThrottle={m_Setting.TerrainCullThrottle}");
+            ModLog.Debug(Tag, $"  EnableVanillaConversion={m_Setting.EnableVanillaConversion}, DisableWorldBackdrop={m_Setting.DisableWorldBackdrop}");
+            ModLog.Debug(Tag, $"  EconomyFix={m_Setting.isEnableEconomyFix}");
+            ModLog.Debug(Tag, $"  EcoSystems: Demand={m_Setting.EnableDemandEcoSystem}, JobSearch={m_Setting.EnableJobSearchEcoSystem}");
+            ModLog.Debug(Tag, $"  EcoSystems: HouseholdProp={m_Setting.EnableHouseholdPropertyEcoSystem}, ResBuyer={m_Setting.EnableResourceBuyerEcoSystem}");
+            ModLog.Debug(Tag, $"  EcoSystems: ResidentAI={m_Setting.EnableResidentAIEcoSystem}, DownstreamAI={m_Setting.EnableDownstreamAIEcoSystem}");
+            ModLog.Debug(Tag, $"  NoDogs: Street={m_Setting.NoDogsOnStreet}, Gen={m_Setting.NoDogsGeneration}");
+            ModLog.Debug(Tag, $"  NoThroughTraffic={m_Setting.NoThroughTraffic}");
+            ModLog.Debug(Tag, $"  DisableLoadGameValidation={m_Setting.DisableLoadGameValidation}");
+            ModLog.Debug(Tag, "=== End Settings Dump ===");
+#endif
+
             // === C. 初始化MapSize PatchManager ===
             // 应用启动时默认的补丁模式
             // m_Setting.PatchModeChoice 从配置文件中加载上次保存的模式
@@ -115,6 +135,10 @@ namespace MapExtPDX
             // 加载SaveLoadSystem的弹窗本地化语言库
             ModLocalization.Initialize(GameManager.instance.localizationManager);
             ModLog.Ok(Tag, $"{nameof(ModLocalization)} 本地化文本已加载");
+
+            // 4.2 注册原版存档转换系统
+            updateSystem.UpdateAt<VanillaSaveConversionSystem>(SystemUpdatePhase.LoadSimulation);
+            ModLog.Patch(Tag, $"{nameof(VanillaSaveConversionSystem)} 已注册到 LoadSimulation");
 
             // === E. 性能工具 ===
             // 其他并行的选项补丁

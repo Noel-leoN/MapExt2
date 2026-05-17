@@ -1,5 +1,5 @@
-// MapExt2 UI Bindings — Phase 1 + Phase 2
-// 与 C# MapExtUISystem.cs 的 43 个 Binding 一一对应
+// MapExt2 UI Bindings — Phase 1 ~ Phase 5
+// 与 C# MapExtUISystem.cs 的 68 个 Binding 一一对应
 
 import { bindValue, trigger } from "cs2/api";
 
@@ -96,6 +96,18 @@ export const dashDefaultResidential$ = bindValue<boolean>(G, "DashDefaultResiden
 export const dashDefaultCommercial$  = bindValue<boolean>(G, "DashDefaultCommercial", true);
 export const dashDefaultActivity$    = bindValue<boolean>(G, "DashDefaultActivity", true);
 export const dashDefaultMisc$        = bindValue<boolean>(G, "DashDefaultMisc", true);
+
+// === 水体工具 (Phase 5: 2 value + 2 getter + 4 trigger = 8) ===
+export const waterToolsOpen$ = bindValue<boolean>(G, "WaterToolsOpen", false);
+export const setWaterToolsOpen = (v: boolean) => trigger(G, "SetWaterToolsOpen", v);
+
+export const seaLevel$      = bindValue<number>(G, "SeaLevel", 0);
+export const setSeaLevel     = (v: number) => trigger(G, "SetSeaLevel", v);
+export const applySeaLevel   = () => trigger(G, "ApplySeaLevel");
+export const resetWater      = () => trigger(G, "ResetWater");
+
+export const waterSimSpeed$     = bindValue<number>(G, "WaterSimSpeed", 1);
+export const setWaterSimSpeed   = (v: number) => trigger(G, "SetWaterSimSpeed", v);
 
 // === 重置 ===
 export const resetRentControl = () => trigger(G, "ResetRentControl");

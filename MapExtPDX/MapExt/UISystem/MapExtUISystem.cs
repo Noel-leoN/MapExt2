@@ -3,6 +3,7 @@
 
 using Colossal.UI.Binding;
 using Game;
+using Game.Simulation;
 using Game.UI;
 using MapExtPDX.MapExt.Core;
 
@@ -15,6 +16,7 @@ namespace MapExtPDX.UI
     /// Phase 2: +Dashboard 统计 8 + 扩展租金 6 + 面板状态 2 = 新增 22 个，累计 43 个 Binding。
     /// Phase 3: +UI 外观 4，累计 47 个 Binding。
     /// Phase 4: +Dashboard 扩展 13（住宅空置 6 + 商业 2 + 人口活动 4 + 通勤 1），累计 60 个 Binding。
+    /// Phase 5: +水体工具 8（海平面 3 + 重置 1 + 模拟速度 2 + 面板状态 2），累计 68 个 Binding。
     /// 面板关闭时跳过所有更新（零开销）。
     /// </summary>
     public partial class MapExtUISystem : UISystemBase
@@ -73,6 +75,13 @@ namespace MapExtPDX.UI
         #region Fields — Q2 系统引用
 
         private Q2_CityStatsSystem m_Q2System;
+
+        #endregion
+
+        #region Fields — 水体工具 (Phase 5)
+
+        private WaterSystem m_WaterSystem;
+        private ValueBinding<bool> m_WaterToolsOpen;
 
         #endregion
 
@@ -349,7 +358,60 @@ namespace MapExtPDX.UI
                 m_LeisureMaxCost.Update(12000f);
             }));
 
-            ModLog.Ok(Tag, "MapExtUISystem 已创建 (Phase 4: 60 Bindings)");
+            // === 水体工具 Bindings (Phase 5: 8) ===
+            // --- 面板展开状态 ---
+            AddBinding(m_WaterToolsOpen = new ValueBinding<bool>(kGroup, "WaterToolsOpen", false));
+            AddBinding(new TriggerBinding<bool>(kGroup, "SetWaterToolsOpen", v => m_WaterToolsOpen.Update(v)));
+
+            // --- 海平面值（实时读取引擎值） ---
+            AddUpdateBinding(new GetterValueBinding<float>(kGroup, "SeaLevel",
+                () => m_WaterSystem?.SeaLevel ?? 0f));
+
+            // --- 设置海平面值（修改属性，SeaLevel setter 会自动调用 UpdateSeaLevel） ---
+            AddBinding(new TriggerBinding<float>(kGroup, "SetSeaLevel", v =>
+            {
+                if (m_WaterSystem != null)
+                {
+                    m_WaterSystem.SeaLevel = v;
+                    ModLog.Info(Tag, $"海平面已设置为: {v:F1}m");
+                }
+            }));
+
+            // --- 应用海平面（GPU 重置水面至海平面高度） ---
+            AddBinding(new TriggerBinding(kGroup, "ApplySeaLevel", () =>
+            {
+                if (m_WaterSystem != null)
+                {
+                    m_WaterSystem.ResetToSealevel();
+                    ModLog.Ok(Tag, $"海平面已应用: {m_WaterSystem.SeaLevel:F1}m");
+                }
+            }));
+
+            // --- 重置水面（清除所有水面，从水源重新模拟） ---
+            AddBinding(new TriggerBinding(kGroup, "ResetWater", () =>
+            {
+                if (m_WaterSystem != null)
+                {
+                    m_WaterSystem.Restart();
+                    ModLog.Ok(Tag, "水面已重置，将从水源重新模拟");
+                }
+            }));
+
+            // --- 水模拟速度（实时读取） ---
+            AddUpdateBinding(new GetterValueBinding<int>(kGroup, "WaterSimSpeed",
+                () => m_WaterSystem?.WaterSimSpeed ?? 1));
+
+            // --- 设置水模拟速度 ---
+            AddBinding(new TriggerBinding<int>(kGroup, "SetWaterSimSpeed", v =>
+            {
+                if (m_WaterSystem != null)
+                {
+                    m_WaterSystem.WaterSimSpeed = v;
+                    ModLog.Info(Tag, $"水模拟速度已设置为: {v}x");
+                }
+            }));
+
+            ModLog.Ok(Tag, "MapExtUISystem 已创建 (Phase 5: 68 Bindings)");
         }
 
         #endregion
@@ -358,9 +420,11 @@ namespace MapExtPDX.UI
 
         protected override void OnUpdate()
         {
-            // === Q2 系统懒加载（OnCreate 时 Q2 尚未注册） ===
+            // === 系统懒加载（OnCreate 时尚未注册） ===
             if (m_Q2System == null)
                 m_Q2System = World.GetExistingSystemManaged<Q2_CityStatsSystem>();
+            if (m_WaterSystem == null)
+                m_WaterSystem = World.GetExistingSystemManaged<WaterSystem>();
 
             // GetterValueBinding 的自动更新由 base.OnUpdate() 处理
             base.OnUpdate();

@@ -70,14 +70,14 @@ namespace MapExtPDX
     //[FileLocation(nameof(MapExtPDX))]
     [FileLocation("ModsSettings/" + Mod.ModName + "/" + Mod.ModName)]
     [SettingsUITabOrder(kMapSizeModeTab, kMiscTab, kRentControlTab, kPerformanceToolTab, kUITab, kDebugTab)]
-    [SettingsUIGroupOrder(kMainModeGroup, kTerrainWaterOptGroup, kResetGroup, kInfoGroup, kEcoGroup, kNoteGroup,
+    [SettingsUIGroupOrder(kMainModeGroup, kSaveConvertGroup, kResetGroup, kInfoGroup, kEcoGroup, kNoteGroup,
         kEcoSystemEnableGroup, kPathfindingGroup, kEcoBehaviorGroup,
-        kTerrainPerfGroup,
+        kTerrainWaterOptGroup, kTerrainPerfGroup,
         kLandValueFactorGroup, kRentFormulaGroup,
         kNoDogsGroup, kNoTrafficGroup, kEditorToolGroup, kInGameUIGroup, kPopDiagGroup, kDebugGroup)]
-    [SettingsUIShowGroupName(kMainModeGroup, kTerrainWaterOptGroup, kResetGroup, kEcoGroup,
+    [SettingsUIShowGroupName(kMainModeGroup, kSaveConvertGroup, kResetGroup, kEcoGroup,
         kEcoSystemEnableGroup, kPathfindingGroup, kEcoBehaviorGroup,
-        kTerrainPerfGroup,
+        kTerrainWaterOptGroup, kTerrainPerfGroup,
         kLandValueFactorGroup, kRentFormulaGroup,
         kNoDogsGroup, kNoTrafficGroup, kEditorToolGroup, kInGameUIGroup, kPopDiagGroup, kDebugGroup)]
     public class ModSettings : ModSetting
@@ -96,10 +96,10 @@ namespace MapExtPDX
         // -- 首页 Tab --
         public const string kMainModeGroup = "MainMode";
         public const string kApplyModeGroup = "ApplyMode";
-        public const string kTerrainWaterOptGroup = "TerrainWaterOpt";
         public const string kInfoGroup = "GameInfo";
         public const string kEcoGroup = "EconomyOverhaul";
         public const string kNoteGroup = "Warning";
+        public const string kSaveConvertGroup = "SaveConvert";
         public const string kResetGroup = "Reset";
 
         // -- EconomyEX Tab --
@@ -112,6 +112,7 @@ namespace MapExtPDX
         public const string kRentFormulaGroup = "RentFormula";
 
         // -- Perf. Tools Tab --
+        public const string kTerrainWaterOptGroup = "TerrainWaterOpt";
         public const string kTerrainPerfGroup = "TerrainPerf";
         public const string kNoDogsGroup = "NoDogs";
         public const string kNoTrafficGroup = "NoTraffic";
@@ -183,7 +184,7 @@ namespace MapExtPDX
         /// 地形 StructuredBuffer 首帧预扩容。
         /// 根据地图倍率预分配更大的 GPU Buffer，避免运行时动态扩容卡顿。
         /// </summary>
-        [SettingsUISection(kMapSizeModeTab, kTerrainWaterOptGroup)]
+        [SettingsUISection(kPerformanceToolTab, kTerrainWaterOptGroup)]
         public bool TerrainBufferPrealloc { get; set; } = true;
 
         /// <summary>
@@ -191,7 +192,7 @@ namespace MapExtPDX
         /// 相机平移时若无建筑/地形变化，跳过 CullBuildingLotsJob 全量裁剪，
         /// 复用上一帧缓存列表。
         /// </summary>
-        [SettingsUISection(kMapSizeModeTab, kTerrainWaterOptGroup)]
+        [SettingsUISection(kPerformanceToolTab, kTerrainWaterOptGroup)]
         public bool TerrainCullThrottle { get; set; } = true;
 
         /// <summary>
@@ -199,7 +200,7 @@ namespace MapExtPDX
         /// 远距地形级联每 4 帧更新一次，降低 GPU 开销。
         /// ⚠ 可能导致镜头移动时远景地形短暂错位。
         /// </summary>
-        [SettingsUISection(kMapSizeModeTab, kTerrainWaterOptGroup)]
+        [SettingsUISection(kPerformanceToolTab, kTerrainWaterOptGroup)]
         public bool TerrainCascadeThrottle { get; set; } = false;
 
         // ==========================================
@@ -214,7 +215,7 @@ namespace MapExtPDX
 
         private WaterSimQualitySetting m_waterSimQuality = WaterSimQualitySetting.Vanilla_EveryFrame;
 
-        [SettingsUISection(kMapSizeModeTab, kTerrainWaterOptGroup)]
+        [SettingsUISection(kPerformanceToolTab, kTerrainWaterOptGroup)]
         [SettingsUIDropdown(typeof(ModSettings), nameof(GetWaterSimQualityItems))]
         public WaterSimQualitySetting WaterSimQuality
         {
@@ -556,14 +557,49 @@ namespace MapExtPDX
 
         #region TerrainPerf
 
+        // DisableWorldBackdrop 已移至 kMapSizeModeTab / kSaveConvertGroup
+
+        #endregion
+
+        // === 存档转换实验性功能 ===
+
+        #region SaveConvert
+
+        private bool m_EnableVanillaConversion = false;
+
+        /// <summary>
+        /// ⚠ 高度实验性功能：启用原版 14km 存档转换到当前 MapExt 模式。
+        /// 与 DisableWorldBackdrop 互斥。
+        /// </summary>
+        [SettingsUISection(kMapSizeModeTab, kSaveConvertGroup)]
+        [SettingsUIHideByCondition(typeof(ModSettings), nameof(IsNotInMainMenu))]
+        public bool EnableVanillaConversion
+        {
+            get => m_EnableVanillaConversion;
+            set
+            {
+                m_EnableVanillaConversion = value;
+                if (value) DisableWorldBackdrop = false;
+            }
+        }
+
+        private bool m_DisableWorldBackdrop = false;
+
         /// <summary>
         /// 禁用已有存档中的背景世界地图（Backdrop）。
-        /// 移除每帧 DownSampleHeightMap GPU 开销、额外级联层和 CPU 阻塞回读，
-        /// 大地图下可节省约 0.5-2ms/帧 GPU 时间和 ~37MB VRAM。
-        /// ⚠ 保存存档后 Backdrop 数据将永久丢失。
+        /// 与 EnableVanillaConversion 互斥。
         /// </summary>
-        [SettingsUISection(kPerformanceToolTab, kTerrainPerfGroup)]
-        public bool DisableWorldBackdrop { get; set; } = false;
+        [SettingsUISection(kMapSizeModeTab, kSaveConvertGroup)]
+        [SettingsUIHideByCondition(typeof(ModSettings), nameof(IsNotInMainMenu))]
+        public bool DisableWorldBackdrop
+        {
+            get => m_DisableWorldBackdrop;
+            set
+            {
+                m_DisableWorldBackdrop = value;
+                if (value) m_EnableVanillaConversion = false;
+            }
+        }
 
         #endregion
 
@@ -878,6 +914,7 @@ namespace MapExtPDX
             TerrainBufferPrealloc = true;
             TerrainCascadeThrottle = false; // 默认关闭：会导致远景级联与视口不同步→地形错位
             TerrainCullThrottle = true; // 默认开启：跳过无变化帧的建筑裁剪Job
+            EnableVanillaConversion = false; // 默认关闭：实验性功能
             DisableWorldBackdrop = false; // 默认关闭：不阻止已有存档的背景世界地图
 
             // UI 外观

@@ -451,3 +451,143 @@
     background-color: rgba(80, 140, 220, 0.4);
     border-radius: 3rem;
 }
+
+/* === Phase 5: 水体工具面板 === */
+.waterSubTitle {
+    font-size: 12rem;
+    font-weight: 600;
+    color: #90a8cc;
+    margin: 8rem 0 4rem;
+}
+
+/* 精确输入行 */
+.waterInputRow {
+    display: flex;
+    align-items: center;
+    gap: 6rem;
+    padding: 4rem 0;
+}
+
+.waterInputLabel {
+    width: 60rem;
+    flex-shrink: 0;
+    font-size: 12rem;
+    color: #8899b0;
+}
+
+.waterInput {
+    flex: 1;
+    height: 26rem;
+    padding: 2rem 8rem;
+    background-color: rgba(40, 55, 80, 0.6);
+    border: 1rem solid rgba(100, 140, 200, 0.25);
+    border-radius: 4rem;
+    color: #e8edf5;
+    font-size: 13rem;
+    font-weight: 500;
+    text-align: right;
+    outline: none;
+}
+
+.waterInput:focus {
+    border-color: rgba(80, 140, 220, 0.6);
+    background-color: rgba(40, 55, 80, 0.8);
+}
+
+.waterInputUnit {
+    font-size: 12rem;
+    color: #6880a0;
+    flex-shrink: 0;
+}
+
+/* 操作按钮行 */
+.waterButtonRow {
+    display: flex;
+    gap: 8rem;
+    padding: 6rem 0 2rem;
+}
+
+.waterApplyBtn {
+    flex: 1;
+    padding: 6rem 12rem;
+    background-color: rgba(50, 100, 180, 0.35);
+    border: 1rem solid rgba(80, 140, 220, 0.3);
+    border-radius: 4rem;
+    color: #7cc0ff;
+    font-size: 12rem;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.waterApplyBtn:hover {
+    background-color: rgba(50, 100, 180, 0.55);
+    border-color: rgba(80, 140, 220, 0.5);
+    color: #a0d4ff;
+}
+
+.waterResetBtn {
+    flex: 1;
+    padding: 6rem 12rem;
+    background-color: rgba(60, 75, 100, 0.3);
+    border: 1rem solid rgba(100, 140, 200, 0.2);
+    border-radius: 4rem;
+    color: #8899b0;
+    font-size: 12rem;
+    font-weight: 500;
+    cursor: pointer;
+}
+
+.waterResetBtn:hover {
+    background-color: rgba(255, 80, 80, 0.15);
+    color: #ffaaaa;
+    border-color: rgba(255, 80, 80, 0.3);
+}
+
+/* 模拟速度行 */
+.waterSpeedRow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12rem;
+    padding: 6rem 0;
+}
+
+.waterSpeedBtn {
+    width: 32rem;
+    height: 28rem;
+    background-color: rgba(40, 55, 80, 0.6);
+    border: 1rem solid rgba(100, 140, 200, 0.25);
+    border-radius: 4rem;
+    color: #7cc0ff;
+    font-size: 14rem;
+    font-weight: 700;
+    cursor: pointer;
+    line-height: 26rem;
+    text-align: center;
+}
+
+.waterSpeedBtn:hover:not(:disabled) {
+    background-color: rgba(50, 100, 180, 0.45);
+    border-color: rgba(80, 140, 220, 0.5);
+}
+
+.waterSpeedBtn:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+}
+
+.waterSpeedValue {
+    font-size: 16rem;
+    font-weight: 700;
+    color: #7cc0ff;
+    min-width: 60rem;
+    text-align: center;
+}
+
+.waterSpeedHint {
+    font-size: 10rem;
+    color: #6880a0;
+    text-align: center;
+    padding: 2rem 0 4rem;
+    line-height: 1.4;
+}

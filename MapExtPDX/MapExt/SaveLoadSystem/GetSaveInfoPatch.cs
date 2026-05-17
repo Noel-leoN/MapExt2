@@ -42,6 +42,14 @@ namespace MapExtPDX.SaveLoadSystem
             // 添加新的 CoreValue 条目
             mods.Add(coreValueEntry);
 
+            // 如果是转换存档，追加来源标记
+            if (VanillaConversionState.PendingConversion)
+            {
+                mods.RemoveAll(mod => mod.StartsWith("MapEXT_ConvertedFrom="));
+                mods.Add("MapEXT_ConvertedFrom=vanilla");
+                ModLog.Patch(Tag, "已注入 ConvertedFrom=vanilla 标签");
+            }
+
             // 将修改后的列表转换回数组并更新到 SaveInfo 对象中
             __result.modsEnabled = mods.ToArray();
 

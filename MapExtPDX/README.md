@@ -148,7 +148,7 @@ In the Map Editor, import a heightmap/worldmap image of the corresponding size:
 
 * [Harmony](https://github.com/pardeike/Harmony)
 
-* 🤝 Special thanks to our testers: Rebeccat, HideoKuze2501, Nulos, Jack the Stripper, Bbublegum/Blax, and many others!
+* 🤝 Special thanks to our testers: Rebeccat, HideoKuze2501, Nulos, Jack the Stripper, Bbublegum/Blax, Sulley and many others!
 
 ---
 

@@ -551,6 +551,25 @@ namespace MapExtPDX
                 { m_Setting.GetOptionTabLocaleID(ModSettings.kPerformanceToolTab), "Perf. Tools" },
 
 
+                // --- Group: Save Conversion ---
+                { m_Setting.GetOptionGroupLocaleID(ModSettings.kSaveConvertGroup), "Save Conversion (Experimental)" },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.EnableVanillaConversion)), "⚠ Vanilla Save Conversion (HIGHLY EXPERIMENTAL)" },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.EnableVanillaConversion)),
+                    "⚠ HIGHLY EXPERIMENTAL. Enables conversion of vanilla 14km saves to the current MapExt mode.\n\n" +
+                    "★ What happens during conversion:\n" +
+                    " - Terrain heightmap synthesized (flat fallback if no world backdrop)\n" +
+                    " - NaturalResource (Fertility/Ore/Oil) regenerated via Perlin noise\n" +
+                    " - GroundWater regenerated via Perlin noise\n" +
+                    " - All OutsideConnection nodes (highway/rail/air/sea) DELETED\n" +
+                    " - All 529 map tiles unlocked\n\n" +
+                    "★ Known Issues:\n" +
+                    " - Water simulation may need manual adjustment via MapExt in-game panel\n" +
+                    " - Simulation instability may occur in expanded areas\n\n" +
+                    "★ Use at your own risk. Mutually exclusive with 'Disable World Backdrop'.\n" +
+                    "⚠ Requires game restart after enabling."
+                },
+
                 // --- Group: Terrain Performance ---
                 { m_Setting.GetOptionGroupLocaleID(ModSettings.kTerrainPerfGroup), "Terrain Performance" },
                 { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.DisableWorldBackdrop)), "⚠ Disable World Backdrop Map" },
@@ -562,10 +581,10 @@ namespace MapExtPDX
                     " - Reduces ~37MB VRAM (downscaled textures and extra cascade slice not created)\n" +
                     " - Eliminates CPU main-thread stall waiting for GPU readback\n" +
                     " - Removes 1 cascade rendering layer (cascade[0] skipped)\n\n" +
-                    "★ Side Effect: Terrain beyond the playable area becomes flat (on large maps the boundary is very far, barely visible).\n\n" +
-                    "⚠ [IMPORTANT WARNING]: If you SAVE your game with this enabled, the world backdrop data will be PERMANENTLY LOST and cannot be recovered!\n" +
-                    "Back up your save first if unsure.\n\n" +
-                    "★ Tip: Only affects saves that contain a world backdrop map. No restart needed — just reload the save."
+                    "★ Side Effect: Terrain beyond the playable area becomes flat.\n\n" +
+                    "⚠ [IMPORTANT]: If you SAVE with this enabled, world backdrop data will be PERMANENTLY LOST!\n" +
+                    "★ Mutually exclusive with 'Vanilla Save Conversion'.\n" +
+                    "★ Tip: Only affects saves with a world backdrop map. No restart needed — just reload the save."
                 },
 
                 // --- Group: NoDogs ---

@@ -17,12 +17,13 @@ import {
 import { DashboardSection } from "../sections/DashboardSection";
 import { RentControlSection } from "../sections/RentControlSection";
 import { PathfindingSection } from "../sections/PathfindingSection";
+import { WaterToolsSection } from "../sections/WaterToolsSection";
 import { ResizeHandle } from "./ResizeHandle";
 import styles from "../mapext.module.scss";
 import mapIcon from "../assets/map-icon-M.svg";
 import { useTranslation } from "../locales";
 
-type DetailId = "rent" | "pathfinding" | null;
+type DetailId = "rent" | "pathfinding" | "waterTools" | null;
 
 // 面板尺寸限制
 const MENU_MIN = 180, MENU_MAX = 360;
@@ -139,6 +140,10 @@ export const MapExtButton: React.FC = () => {
                                 <span>{activeDetail === "pathfinding" ? ">" : "+"}</span>
                                 <span>{t("pathfindingTitle")}</span>
                             </button>
+                            <button className={detailClass("waterTools")} onClick={() => toggleDetail("waterTools")}>
+                                <span>{activeDetail === "waterTools" ? ">" : "+"}</span>
+                                <span>{t("waterToolsTitle")}</span>
+                            </button>
                         </div>
 
                         {/* 左侧面板底部高度拖拽柄 */}
@@ -154,6 +159,7 @@ export const MapExtButton: React.FC = () => {
                             <div className={styles.detailPanel} style={{ width: `${detailWidth}rem` }}>
                                 {activeDetail === "rent" && <RentControlSection />}
                                 {activeDetail === "pathfinding" && <PathfindingSection />}
+                                {activeDetail === "waterTools" && <WaterToolsSection />}
                             </div>
                             <ResizeHandle direction="horizontal" onResize={onDetailResize} onResizeEnd={onDetailResizeEnd} />
                         </>

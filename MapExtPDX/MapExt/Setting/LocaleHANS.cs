@@ -487,6 +487,25 @@ namespace MapExtPDX
                 { m_Setting.GetOptionTabLocaleID(ModSettings.kPerformanceToolTab), "性能工具" },
 
 
+                // --- Group: 存档转换 ---
+                { m_Setting.GetOptionGroupLocaleID(ModSettings.kSaveConvertGroup), "存档转换 (实验性)" },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.EnableVanillaConversion)), "⚠ 原版存档转换 (高度实验性)" },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.EnableVanillaConversion)),
+                    "⚠ 高度实验性功能。启用后可将原版14km存档转换到当前MapExt模式。\n\n" +
+                    "★ 转换时执行的操作：\n" +
+                    " - 合成地形高度图（无世界背景时自动生成平面地形）\n" +
+                    " - 重新生成自然资源：肥力/矿石/石油（Perlin 噪声）\n" +
+                    " - 重新生成地下水（Perlin 噪声）\n" +
+                    " - 删除所有外部连接节点（公路/铁路/航空/航运）\n" +
+                    " - 解锁全部 529 格地图分块\n\n" +
+                    "★ 已知问题：\n" +
+                    " - 水体模拟可能需要转换后通过 MapExt 游戏内面板手动调整\n" +
+                    " - 扩展区域可能出现模拟不稳定\n\n" +
+                    "★ 使用风险自负。与「禁用背景世界地图」互斥。\n" +
+                    "⚠ 启用后需重启游戏。"
+                },
+
                 // --- Group: 地形性能 ---
                 { m_Setting.GetOptionGroupLocaleID(ModSettings.kTerrainPerfGroup), "地形性能" },
                 { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.DisableWorldBackdrop)), "⚠ 禁用背景世界地图 (Backdrop)" },
@@ -494,13 +513,12 @@ namespace MapExtPDX
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.DisableWorldBackdrop)),
                     "加载已有存档时，阻止背景世界地图（World Heightmap）生效。\n\n" +
                     "★ 性能收益：\n" +
-                    " - 每帧节省约 0.5-2ms GPU 时间（DownSampleHeightMap 不再调度）\n" +
-                    " - 减少 ~37MB 显存占用（降采样纹理和额外级联层不再创建）\n" +
-                    " - 消除 CPU 主线程同步阻塞等待 GPU 回读\n" +
-                    " - 减少 1 层级联渲染（cascade[0] 跳过）\n\n" +
-                    "★ 副作用：可玩区域外的远景变为平坦地形（大地图下边界极远，几乎不可见）。\n\n" +
-                    "⚠ 【重要警告】：开启此选项后保存存档，背景世界地图数据将永久丢失且不可恢复！\n" +
-                    "如果不确定是否需要，建议先备份存档。\n\n" +
+                    " - 每帧节省约 0.5-2ms GPU 时间\n" +
+                    " - 减少 ~37MB 显存占用\n" +
+                    " - 消除 CPU 主线程同步阻塞等待 GPU 回读\n\n" +
+                    "★ 副作用：可玩区域外的远景变为平坦地形。\n\n" +
+                    "⚠ 开启后保存存档，背景世界地图数据将永久丢失！\n" +
+                    "★ 与「原版存档转换」互斥。\n" +
                     "★ 提示：仅对包含背景世界地图的存档有效。无需重启，重新加载存档即可生效。"
                 },
 

@@ -15,6 +15,7 @@ using HarmonyLib;
 using MapExtPDX.MapExt.Core;
 using System;
 using System.Collections.Generic; // Contains GameManager
+using System.Reflection;
 using System.Linq;
 using static Game.UI.Menu.MenuUISystem;
 
@@ -49,6 +50,13 @@ namespace MapExtPDX.SaveLoadSystem
         [HarmonyPrefix]
         public static bool BeforeLoadGame(MenuUISystem __instance, LoadGameArgs args, bool dismiss)
         {
+            // 旁路: 转换对话框确认后重新触发的加载，直接放行
+            if (VanillaConversionState.PendingConversion)
+            {
+                ModLog.Info(Tag, "检测到 PendingConversion=true，旁路验证直接放行");
+                return true;
+            }
+
             if (Mod.Instance == null || Mod.Instance.CurrentSettings.DisableLoadGameValidation)
             {
                 return true; // 设置开启禁用验证，直接执行原版方法，不执行验证逻辑
@@ -94,13 +102,48 @@ namespace MapExtPDX.SaveLoadSystem
                     return true; // 验证成功，放行加载
 
                 case SaveValidationResult.ModNotUsed:
-                    ModLog.Debug(Tag, "存档未使用本Mod，显示对话框并阻止加载");
-                    ShowInfoDialog(LocalizedString.Id("LOAD_VALIDATION.TitleError"), new LocalizedString("LOAD_VALIDATION.ModNotUsed", null, locParams));
+                    // 检查当前模式是否支持转换（仅 ModeA=4, ModeB=2）且用户已启用转换
+                    bool conversionEnabled = Mod.Instance?.CurrentSettings?.EnableVanillaConversion == true;
+                    if ((currentModCoreValue == 4 || currentModCoreValue == 2) && conversionEnabled)
+                    {
+                        ModLog.Info(Tag, "存档未使用本Mod，转换已启用，显示转换确认对话框");
+                        ShowConvertConfirmDialog(saveInfo, currentModCoreValue, __instance, args, dismiss);
+                    }
+                    else if (currentModCoreValue == 4 || currentModCoreValue == 2)
+                    {
+                        ModLog.Debug(Tag, "存档未使用本Mod，但转换功能未启用");
+                        ShowInfoDialog(
+                            LocalizedString.Id("LOAD_VALIDATION.TitleError"),
+                            LocalizedString.Value("This vanilla save requires conversion. Please enable 'Vanilla Save Conversion' in MapSize tab → Save Conversion group before loading.\n\n此原版存档需要转换。请在 MapSize 选项卡 → 存档转换 组中启用「原版存档转换」后再加载。"));
+                    }
+                    else
+                    {
+                        ModLog.Debug(Tag, $"存档未使用本Mod，当前模式 CV={currentModCoreValue} 不支持转换");
+                        ShowInfoDialog(LocalizedString.Id("LOAD_VALIDATION.TitleError"), new LocalizedString("LOAD_VALIDATION.ModNotUsed", null, locParams));
+                    }
                     return false;
 
                 case SaveValidationResult.CoreValueMismatch:
-                    ModLog.Debug(Tag, "CoreValue 不匹配，显示对话框并阻止加载");
-                    ShowInfoDialog(LocalizedString.Id("LOAD_VALIDATION.TitleError"), new LocalizedString("LOAD_VALIDATION.Mismatch", null, locParams));
+                    // 如果存档是 MapExt vanilla 模式 (CV=1)，也允许转换到扩展模式
+                    int savedCV = 0;
+                    string cvEntry = saveInfo.modsEnabled?.FirstOrDefault(m => m.StartsWith(MetaDataExtenderPatch.CoreValueKeyPrefix));
+                    if (cvEntry != null)
+                        int.TryParse(cvEntry.Substring(MetaDataExtenderPatch.CoreValueKeyPrefix.Length), out savedCV);
+
+                    bool canConvertFromVanillaMode = savedCV == NoneModeCoreValue
+                        && (currentModCoreValue == 4 || currentModCoreValue == 2)
+                        && (Mod.Instance?.CurrentSettings?.EnableVanillaConversion == true);
+
+                    if (canConvertFromVanillaMode)
+                    {
+                        ModLog.Info(Tag, $"存档为 MapExt vanilla 模式 (CV={savedCV})，显示转换确认对话框");
+                        ShowConvertConfirmDialog(saveInfo, currentModCoreValue, __instance, args, dismiss);
+                    }
+                    else
+                    {
+                        ModLog.Debug(Tag, "CoreValue 不匹配，显示对话框并阻止加载");
+                        ShowInfoDialog(LocalizedString.Id("LOAD_VALIDATION.TitleError"), new LocalizedString("LOAD_VALIDATION.Mismatch", null, locParams));
+                    }
                     return false;
 
                 case SaveValidationResult.LegacyMismatch:
@@ -207,12 +250,71 @@ namespace MapExtPDX.SaveLoadSystem
         }
 
         /// <summary>
-        /// 显示一个只有“OK”按钮的信息对话框
+        /// 显示一个只有"OK"按钮的信息对话框
         /// </summary>
         private static void ShowInfoDialog(LocalizedString title, LocalizedString message)
         {
             var dialog = new MessageDialog(title, message, LocalizedString.Id("LOAD_VALIDATION.ConfirmOK"));
             GameManager.instance.userInterface.appBindings.ShowMessageDialog(dialog, null);
+        }
+
+        /// <summary>
+        /// 弹出原版存档转换确认对话框。
+        /// 用户确认后设置转换标志并重新触发加载（PendingConversion 旁路生效）。
+        /// </summary>
+        private static void ShowConvertConfirmDialog(
+            SaveInfo saveInfo, int targetCV,
+            MenuUISystem menuUI, LoadGameArgs args, bool dismiss)
+        {
+            string targetMode = PatchManager.GetModeNameForCoreValue(targetCV);
+            var locParams = new Dictionary<string, ILocElement>
+            {
+                { "TARGET_MODE", LocalizedString.Value(targetMode) }
+            };
+
+            var dialog = new ConfirmationDialog(
+                LocalizedString.Id("VANILLA_CONVERT.Title"),
+                new LocalizedString("VANILLA_CONVERT.Message", null, locParams),
+                LocalizedString.Id("VANILLA_CONVERT.Confirm"),
+                LocalizedString.Id("VANILLA_CONVERT.Cancel")
+            );
+
+            // 捕获回调上下文
+            var capturedInstance = menuUI;
+            var capturedArgs = args;
+            var capturedDismiss = dismiss;
+            var capturedSaveInfo = saveInfo;
+
+            GameManager.instance.userInterface.appBindings.ShowConfirmationDialog(dialog, (int result) =>
+            {
+                if (result == 0) // 0 = 确认按钮
+                {
+                    ModLog.Ok(Tag, $"用户确认转换原版存档 '{capturedSaveInfo.displayName}' → {targetMode}");
+
+                    // 设置转换状态
+                    VanillaConversionState.PendingConversion = true;
+                    VanillaConversionState.TargetCoreValue = targetCV;
+                    VanillaConversionState.OriginalSaveName = capturedSaveInfo.displayName
+                        ?? capturedSaveInfo.cityName ?? "UnknownCity";
+
+                    // 重新触发加载 (PendingConversion=true 会旁路 BeforeLoadGame 验证)
+                    try
+                    {
+                        var safeLGMethod = AccessTools.Method(typeof(MenuUISystem), "SafeLoadGame");
+                        safeLGMethod.Invoke(capturedInstance, new object[] { capturedArgs, capturedDismiss });
+                    }
+                    catch (Exception ex)
+                    {
+                        ModLog.Error(Tag, $"重新触发加载失败: {ex}");
+                        VanillaConversionState.Reset();
+                    }
+                }
+                else
+                {
+                    ModLog.Info(Tag, "用户取消了原版存档转换");
+                    VanillaConversionState.Reset();
+                }
+            });
         }
     }
 }

@@ -59,6 +59,17 @@ export const locales = {
         goingHome: "Returning Home",
         commuterCount: "Commuters",
         miscTitle: "Misc",
+
+        // === Phase 5 — 水体工具 ===
+        waterToolsTitle: "Water Tools",
+        seaLevelLabel: "Sea Level",
+        seaLevelTip: "Current sea level height. Adjust and click Apply to reset water surface to this height.",
+        seaLevelPrecise: "Height",
+        applySeaLevel: "Apply Sea Level",
+        resetWater: "Reset Water",
+        waterSimSpeedLabel: "Water Sim Speed",
+        waterSimPaused: "Paused",
+        waterSimSpeedHint: "Higher values speed up water generation but increase GPU load. Use 1x for normal play.",
     },
     zh: {
         // === Phase 1 ===
@@ -112,6 +123,17 @@ export const locales = {
         goingHome: "回家途中",
         commuterCount: "外来通勤",
         miscTitle: "其他",
+
+        // === Phase 5 — 水体工具 ===
+        waterToolsTitle: "水体工具",
+        seaLevelLabel: "海平面",
+        seaLevelTip: "当前海平面高度。调整后点击“应用海平面”将水面重置到此高度。",
+        seaLevelPrecise: "精确高度",
+        applySeaLevel: "应用海平面",
+        resetWater: "重置水面",
+        waterSimSpeedLabel: "水模拟速度",
+        waterSimPaused: "已暂停",
+        waterSimSpeedHint: "提高速度可加快水体生成，但会增加 GPU 负载。正常游玩请保持 1x。",
     }
 };
 
