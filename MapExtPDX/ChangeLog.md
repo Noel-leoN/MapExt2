@@ -1,17 +1,15 @@
-## v3.0.1 - Dashboard Expansion and World Backdrop Control
+## v4.0.0 - Vanilla Save Conversion and Water Tools
 
-* **[UI - Dashboard]:** Reorganized the City Stats dashboard into 5 collapsible accordion sections (City Stats, Residential Market, Commercial Market, Population Activity, Misc). Added 13 new metrics: residential vacancy by density (Low/Med/High), commercial company data (active shops, seeking property), population activity (shopping, leisure, commuting, returning home), and commuter households.
-* **[UI - Panel Layout]:** Added panel height persistence and bottom-edge drag resizing. Added 5 toggles in OptionUI to configure which dashboard sections are expanded by default. Removed the font size slider. Adjusted default panel widths.
-* **[Performance - DisableWorldBackdrop]:** Added a new toggle in the Performance tab to prevent the background world heightmap (Backdrop) from loading on existing saves. Eliminates per-frame GPU overhead, CPU stalls, and reduces VRAM usage.
-* **[Editor - WorldMap Import Warning]:** Added a confirmation dialog in the Map Editor that warns about performance impact before importing a WorldMap image.
-* **[Localization]:** Added Chinese Simplified (zh-HANS) translations for save validation and WorldMap warning dialogs.
+* **[Save Conversion - Major Feature]:** Added support for importing vanilla (14km) saves and converting them to 28km or 57km mode. The conversion pipeline synthesizes terrain heightmap (with box-filter downsampling and smoothstep edge blending), regenerates natural resources and groundwater via Perlin noise, clears all vehicle and resident entities, removes all outside connections, resets water simulation state, unlocks all 529 map tiles, and auto-saves to a new file. Game restart is required after conversion. Players must then rebuild outside connections (roads, railways, shipping lanes, airline routes, electricity, water supply) and place new water sources at the new map edges.
+* **[UI - Water Tools]:** Added a Water Tools section to the in-game HUD panel with sea level adjustment (slider with 0.1m precision and numeric input), Apply Sea Level (GPU reset water surface to target height), Reset Water (clear all water and re-simulate from sources), and water simulation speed control (0x-128x exponential stepping).
+* **[Settings - Save Conversion]:** Added an "Enable Vanilla Save Conversion" toggle in the MapSize tab. Mutually exclusive with "Disable World Backdrop".
+* **[Localization]:** Added bilingual (EN and zh-HANS) dialog strings for vanilla save conversion confirmation, completion with detailed TODO checklist, and error prompts.
 
 ---
 
 ### 主要改动
 
-* **[UI - 仪表盘]：** 将城市统计仪表盘重构为 5 个可折叠区块（城市统计、住宅市场、商业市场、人口活动、其他）。新增 13 项指标：按密度分类的住宅空置率（低/中/高密度）、商业公司数据（有店铺商家、等待入驻）、人口活动状态（购物中、休闲中、上班途中、回家途中）以及外来通勤者家庭数。
-* **[UI - 面板布局]：** 新增面板高度持久化与底部拖拽调整功能。在选项面板中新增 5 个开关，可配置仪表盘各区块的默认展开状态。移除字体大小滑块，调整默认面板宽度。
-* **[性能 - 禁用背景世界地图]：** 在性能标签页新增开关，可阻止已有存档加载背景世界地图（Backdrop），消除每帧 GPU 开销与 CPU 阻塞，降低显存占用。
-* **[编辑器 - WorldMap 导入警告]：** 在地图编辑器中导入 WorldMap 时新增性能影响确认对话框。
-* **[本地化]：** 为存档验证与 WorldMap 导入警告对话框新增中文简体 (zh-HANS) 翻译。
+* **[存档转换 - 重要功能]：** 新增原版（14km）存档导入并转换至 28km 或 57km 模式的功能。转换流程包括：合成地形高度图（含降采样与平滑边缘混合）、通过 Perlin 噪声重新生成自然资源与地下水、清除所有车辆与居民实体、拆除全部外部连接、重置水体模拟状态、解锁全部 529 格地图分块，并自动保存为新文件。转换完成后必须重启游戏。重启后需重建对外连接（道路、铁路、航道、航线、电力、供水）并重新放置水源。
+* **[UI - 水体工具]：** 在游戏内 HUD 面板新增水体工具模块，包含海平面调节（0.1m 精度滑块与数值输入）、应用海平面（GPU 重置水面至目标高度）、重置水体（清除水面并从水源重新模拟）、以及水模拟速度控制（0x-128x 指数级步进）。
+* **[设置 - 存档转换]：** 在 MapSize 标签页新增"启用原版存档转换"开关，与"禁用背景世界地图"选项互斥。
+* **[本地化]：** 为原版存档转换确认、完成（含详细待办清单）与错误提示对话框新增中英双语文本。

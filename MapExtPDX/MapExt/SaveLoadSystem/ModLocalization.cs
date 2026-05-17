@@ -46,7 +46,7 @@ namespace MapExtPDX.SaveLoadSystem
                 { "VANILLA_CONVERT.Confirm", "Convert and Load" },
                 { "VANILLA_CONVERT.Cancel", "Cancel" },
                 { "VANILLA_CONVERT.Complete", "Conversion Complete" },
-                { "VANILLA_CONVERT.CompleteMessage", "Vanilla save has been converted to {TARGET_MODE}.\nNew save: {SAVE_NAME}\n\n✅ Terrain heightmap synthesized\n✅ Natural resources and ground water regenerated\n✅ All vehicle and resident entities cleared\n✅ All outside connections removed (traffic/electricity/water)\n✅ Water sources upgraded and sea level reset\n⚠ All 529 map tiles unlocked\n\n⚠ RESTART REQUIRED\nFailure to restart will cause water simulation glitches or crashes!\nPlease quit to desktop, reload the new save, and rebuild outside connections." },
+                { "VANILLA_CONVERT.CompleteMessage", "Vanilla save has been converted to {TARGET_MODE}.\nNew save: {SAVE_NAME}\n\n✅ Terrain heightmap synthesized\n✅ Natural resources and ground water regenerated\n✅ All vehicle and resident entities cleared\n✅ All outside connections removed\n✅ Water sources upgraded and sea level reset\n⚠ All 529 map tiles unlocked\n\n⚠ RESTART REQUIRED\nYou MUST quit to desktop and reload the new save.\nFailure to restart will cause water simulation glitches or crashes!\n\n📋 AFTER RESTART - TODO LIST:\n\n1. Rebuild Outside Connections at new map edges:\n   • Roads (highway connections)\n   • Railways (train lines)\n   • Shipping Lanes (cargo and passenger ships)\n   • Airline Routes (airport flight paths)\n   • Electricity (power line connections)\n   • Water Supply (water pipe connections)\n\n2. Place new Water Sources:\n   • Original water sources have been cleared\n   • Place river/sea water sources at desired locations\n   • Wait for water simulation to fill naturally\n   • Use Water Tools (M button) to speed up filling" },
                 { "VANILLA_CONVERT.QuitConfirm", "Quit Game" },
                 { "VANILLA_CONVERT.QuitCancel", "Stay" }
             };
@@ -78,7 +78,7 @@ namespace MapExtPDX.SaveLoadSystem
                 { "VANILLA_CONVERT.Confirm", "转换并加载" },
                 { "VANILLA_CONVERT.Cancel", "取消" },
                 { "VANILLA_CONVERT.Complete", "转换完成" },
-                { "VANILLA_CONVERT.CompleteMessage", "原版存档已转换为 {TARGET_MODE}。\n新存档：{SAVE_NAME}\n\n✅ 地形高度图已合成\n✅ 自然资源与地下水已重新生成\n✅ 所有车辆与居民实体已清除\n✅ 全部外部连接已拆除（交通/电力/水管）\n✅ 水源已升级并重置海平面\n⚠ 全部 529 格地图分块已解锁\n\n⚠ 必须重启游戏\n如果不重启直接游玩，会导致水体异常或游戏崩溃！\n请退出游戏后加载新存档，并在新边界重建外部连接。" },
+                { "VANILLA_CONVERT.CompleteMessage", "原版存档已转换为 {TARGET_MODE}。\n新存档：{SAVE_NAME}\n\n✅ 地形高度图已合成\n✅ 自然资源与地下水已重新生成\n✅ 所有车辆与居民实体已清除\n✅ 全部外部连接已拆除\n✅ 水源已升级并重置海平面\n⚠ 全部 529 格地图分块已解锁\n\n⚠ 必须重启游戏\n请立即退出到桌面并重新加载新存档。\n不重启直接游玩会导致水体异常或游戏崩溃！\n\n📋 重启后待办事项：\n\n1. 在新的地图边界重建对外连接：\n   • 道路（高速公路连接）\n   • 铁路（火车线路）\n   • 航道（货运与客运轮船航线）\n   • 航线（机场飞行航线）\n   • 电力（输电线路连接）\n   • 供水（供水管道连接）\n\n2. 重新设置水源：\n   • 原有水源已被清除\n   • 在所需位置放置河流/海洋水源\n   • 等待水体模拟自然填充\n   • 可使用水体工具（M按钮）加速注水" },
                 { "VANILLA_CONVERT.QuitConfirm", "退出游戏" },
                 { "VANILLA_CONVERT.QuitCancel", "留在游戏" },
             };
