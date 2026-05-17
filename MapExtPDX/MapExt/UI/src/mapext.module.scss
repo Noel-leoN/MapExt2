@@ -460,6 +460,47 @@
     margin: 8rem 0 4rem;
 }
 
+/* 分段选择器行 (8 个按钮，每行 4 个) */
+.waterRangeRow {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 3rem;
+    padding: 4rem 0 6rem;
+}
+
+.waterRangeBtn {
+    flex: 0 0 calc(25% - 3rem);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 4rem 2rem;
+    background-color: rgba(40, 55, 80, 0.5);
+    border: 1rem solid rgba(100, 140, 200, 0.2);
+    border-radius: 4rem;
+    color: #8899b0;
+    font-size: 10rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.15s, border-color 0.15s;
+    white-space: nowrap;
+}
+
+.waterRangeBtn:hover {
+    background-color: rgba(50, 80, 120, 0.5);
+    border-color: rgba(80, 140, 220, 0.35);
+    color: #a0b8d8;
+}
+
+.waterRangeBtnActive {
+    background-color: rgba(50, 100, 180, 0.35);
+    border-color: rgba(80, 140, 220, 0.5);
+    color: #7cc0ff;
+}
+
+.waterRangeHint {
+    display: none;
+}
+
 /* 精确输入行 */
 .waterInputRow {
     display: flex;
@@ -543,13 +584,41 @@
     border-color: rgba(255, 80, 80, 0.3);
 }
 
+/* 锁定海平面按钮 */
+.waterLockBtn {
+    flex: 1;
+    padding: 6rem 8rem;
+    background-color: rgba(60, 75, 100, 0.3);
+    border: 1rem solid rgba(100, 140, 200, 0.2);
+    border-radius: 4rem;
+    color: #8899b0;
+    font-size: 11rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.15s, border-color 0.15s;
+}
+
+.waterLockBtn:hover {
+    background-color: rgba(180, 140, 50, 0.2);
+    border-color: rgba(200, 160, 60, 0.35);
+    color: #d4b060;
+}
+
+.waterLockBtnActive {
+    background-color: rgba(180, 140, 50, 0.3);
+    border-color: rgba(200, 160, 60, 0.5);
+    color: #f0c040;
+    font-weight: 600;
+}
+
 /* 模拟速度行 */
 .waterSpeedRow {
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 12rem;
+    gap: 16rem;
     padding: 6rem 0;
+    width: 100%;
 }
 
 .waterSpeedBtn {

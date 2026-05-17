@@ -84,6 +84,9 @@ namespace MapExtPDX.UI
             var settings = Mod.Instance?.CurrentSettings;
             if (settings == null) return;
 
+            // 所有可监控系统的固定总数（不随用户开关变化）
+            const int TotalSystemCount = 13;
+
             // === 逐组检测原版系统（应为 Disabled） ===
             var conflicts = new List<string>();
             int okCount = 0;
@@ -129,11 +132,13 @@ namespace MapExtPDX.UI
             }
 
             // === 更新 UI 状态 ===
+            int skipped = TotalSystemCount - totalChecked;
+
             if (conflicts.Count > 0)
             {
                 string warningMsg = $"[!] {conflicts.Count} Conflicts: {string.Join(", ", conflicts)} re-enabled";
                 SetWarning(settings, warningMsg);
-                SetStatusReport(settings, $"[!] {okCount}/{totalChecked} OK, {conflicts.Count} conflicts");
+                SetStatusReport(settings, $"[!] {okCount}/{TotalSystemCount} OK, {conflicts.Count} conflicts");
 
                 // === 自动 disable 冲突的系统组 ===
                 AutoDisableConflictGroups(settings, conflictGroups);
@@ -143,12 +148,15 @@ namespace MapExtPDX.UI
             else if (totalChecked > 0)
             {
                 SetWarning(settings, "None");
-                SetStatusReport(settings, $"{okCount}/{totalChecked} OK");
+                string statusText = skipped > 0
+                    ? $"{okCount}/{TotalSystemCount} OK ({skipped} off)"
+                    : $"{okCount}/{TotalSystemCount} OK";
+                SetStatusReport(settings, statusText);
             }
             else
             {
                 SetWarning(settings, "None");
-                SetStatusReport(settings, "All eco-subsystems disabled by user");
+                SetStatusReport(settings, $"0/{TotalSystemCount} (all off)");
             }
         }
 

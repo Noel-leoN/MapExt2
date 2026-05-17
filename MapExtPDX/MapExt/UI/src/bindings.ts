@@ -109,6 +109,11 @@ export const resetWater      = () => trigger(G, "ResetWater");
 export const waterSimSpeed$     = bindValue<number>(G, "WaterSimSpeed", 1);
 export const setWaterSimSpeed   = (v: number) => trigger(G, "SetWaterSimSpeed", v);
 
+// --- 海平面锁定 (Phase 5.1) ---
+export const seaLevelLocked$    = bindValue<boolean>(G, "SeaLevelLocked", false);
+export const setSeaLevelLocked  = (v: boolean) => trigger(G, "SetSeaLevelLocked", v);
+export const lockedSeaLevel$    = bindValue<number>(G, "LockedSeaLevel", 0);
+
 // === 重置 ===
 export const resetRentControl = () => trigger(G, "ResetRentControl");
 export const resetPathfinding = () => trigger(G, "ResetPathfinding");

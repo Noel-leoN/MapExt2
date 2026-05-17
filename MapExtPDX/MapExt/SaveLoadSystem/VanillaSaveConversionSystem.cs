@@ -282,9 +282,15 @@ namespace MapExtPDX.SaveLoadSystem
                 }
                 else if (cv == 2 && detailPixels.IsCreated) // ModeB: 28km
                 {
-                    // worldHeightmap 中心 50%: [1024:3072] → 2048px
-                    // 然后上采样到 4096 作为底图
-                    // detail heightmap 降采样到 2048 → 嵌入中心 [1024:3072]
+                    // === ModeB 合成策略 ===
+                    // worldMap (4096px = 57344m) 中心 50% ([1024:3072] = 28672m)
+                    // 上采样到 4096px，作为底图覆盖 28672m。
+                    // detail heightmap (4096px = 14336m) 降采样到 2048px，嵌入中心 [1024:3072]。
+                    //
+                    // 关键：边缘混合必须使用上采样后的 world 数据作为参考，
+                    // 而不是原始 worldPixels（57344m 坐标系），
+                    // 否则 worldPixels[idx] 和 synthesized[idx] 指向不同的世界位置。
+
                     int cropStart = hmWidth / 4; // 1024
                     int cropSize = hmWidth / 2; // 2048
 
@@ -292,11 +298,18 @@ namespace MapExtPDX.SaveLoadSystem
                     if (!flatFallback)
                         BilinearUpsampleRegion(worldPixels, hmWidth, cropStart, cropSize, synthesized, hmWidth);
 
+                    // 保存上采样后的 world 底图数据，用于后续边缘混合参考
+                    // （此时 synthesized 和 upsampledWorld 共享 28672m 坐标系）
+                    var upsampledWorld = new NativeArray<ushort>(hmWidth * hmWidth, Allocator.Persistent);
+                    NativeArray<ushort>.Copy(synthesized, upsampledWorld);
+
                     // detail heightmap (4096²) 降采样到 2048²，嵌入中心 [1024:3072]
                     int embedSize = hmWidth / 2; // 2048
                     int embedStart = hmWidth / 4; // 1024
 
-                    ModLog.Info(Tag, $"ModeB 合成: 降采样 {hmWidth}² → {embedSize}², 嵌入 [{embedStart}:{embedStart + embedSize}]");
+                    ModLog.Info(Tag, $"ModeB 合成: 降采样 {hmWidth}² → {embedSize}², " +
+                        $"嵌入 [{embedStart}:{embedStart + embedSize}]");
+
                     BoxFilterDownsample(detailPixels, hmWidth, synthesized, hmWidth, embedStart, embedSize);
 
                     // --- 实测边界高度偏差并校准 world 底图 ---
@@ -307,14 +320,17 @@ namespace MapExtPDX.SaveLoadSystem
                         float offsetMetersB = offsetR16B / 65535f * hsoB.x;
                         ModLog.Info(Tag, $"实测边界偏差: {offsetR16B} R16 ≈ {offsetMetersB:F1}m, 校准 world 底图");
                         ApplyOffsetOutsideEmbed(synthesized, hmWidth, embedStart, embedSize, offsetR16B);
-                        for (int i = 0; i < worldPixels.Length; i++)
-                            worldPixels[i] = (ushort)math.clamp(worldPixels[i] + offsetR16B, 0, 65535);
+                        // 同步更新 upsampledWorld 供 edge blend 使用
+                        for (int i = 0; i < upsampledWorld.Length; i++)
+                            upsampledWorld[i] = (ushort)math.clamp(upsampledWorld[i] + offsetR16B, 0, 65535);
                     }
 
-                    // 边缘混合
-                    int blendWidthB = 48; // ~336m (48px × 7m/px)
-                    ApplyEdgeBlend(synthesized, hmWidth, embedStart, embedSize, worldPixels, blendWidthB);
+                    // 边缘混合：使用 upsampledWorld（28672m 坐标系）作为参考
+                    int blendWidthB = 48; // ~336m (48px × 7m/px at 28672/4096)
+                    ApplyEdgeBlend(synthesized, hmWidth, embedStart, embedSize, upsampledWorld, blendWidthB);
                     ModLog.Info(Tag, $"ModeB 边缘混合: blendWidth={blendWidthB}px (~{blendWidthB * 7}m)");
+
+                    upsampledWorld.Dispose();
                 }
 
                 // --- 上传合成纹理到 TerrainSystem ---

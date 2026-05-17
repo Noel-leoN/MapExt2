@@ -17,6 +17,7 @@ namespace MapExtPDX.UI
     /// Phase 3: +UI 外观 4，累计 47 个 Binding。
     /// Phase 4: +Dashboard 扩展 13（住宅空置 6 + 商业 2 + 人口活动 4 + 通勤 1），累计 60 个 Binding。
     /// Phase 5: +水体工具 8（海平面 3 + 重置 1 + 模拟速度 2 + 面板状态 2），累计 68 个 Binding。
+    /// Phase 5.1: +海平面锁定 3（锁定开关 1 + 锁定值读写 2），累计 71 个 Binding。
     /// 面板关闭时跳过所有更新（零开销）。
     /// </summary>
     public partial class MapExtUISystem : UISystemBase
@@ -78,10 +79,20 @@ namespace MapExtPDX.UI
 
         #endregion
 
-        #region Fields — 水体工具 (Phase 5)
+        #region Fields — 水体工具 (Phase 5 + 5.1)
 
         private WaterSystem m_WaterSystem;
         private ValueBinding<bool> m_WaterToolsOpen;
+
+        // --- 海平面锁定 (Phase 5.1) ---
+        private ValueBinding<bool> m_SeaLevelLocked;
+        private float m_LockedSeaLevelValue;
+
+        // --- 水模拟速度持久化 (Phase 5.2) ---
+        // 原版 WaterSystem.OnUpdate 会在多处将 WaterSimSpeed 重置为 1，
+        // 需要记录用户目标值并在每帧强制回写。
+        private int m_UserWaterSimSpeed = -1; // -1 = 尚未由用户设置
+        private bool m_SeaLevelDiagLogged = false;
 
         #endregion
 
@@ -363,9 +374,10 @@ namespace MapExtPDX.UI
             AddBinding(m_WaterToolsOpen = new ValueBinding<bool>(kGroup, "WaterToolsOpen", false));
             AddBinding(new TriggerBinding<bool>(kGroup, "SetWaterToolsOpen", v => m_WaterToolsOpen.Update(v)));
 
-            // --- 海平面值（实时读取引擎值） ---
+            // --- 海平面值（实时读取引擎值，需 Loaded 确认反序列化完成） ---
             AddUpdateBinding(new GetterValueBinding<float>(kGroup, "SeaLevel",
-                () => m_WaterSystem?.SeaLevel ?? 0f));
+                () => (m_WaterSystem != null && m_WaterSystem.Loaded)
+                    ? m_WaterSystem.SeaLevel : 0f));
 
             // --- 设置海平面值（修改属性，SeaLevel setter 会自动调用 UpdateSeaLevel） ---
             AddBinding(new TriggerBinding<float>(kGroup, "SetSeaLevel", v =>
@@ -401,17 +413,39 @@ namespace MapExtPDX.UI
             AddUpdateBinding(new GetterValueBinding<int>(kGroup, "WaterSimSpeed",
                 () => m_WaterSystem?.WaterSimSpeed ?? 1));
 
-            // --- 设置水模拟速度 ---
+            // --- 设置水模拟速度（记录用户目标值）---
             AddBinding(new TriggerBinding<int>(kGroup, "SetWaterSimSpeed", v =>
             {
                 if (m_WaterSystem != null)
                 {
+                    m_UserWaterSimSpeed = v;
                     m_WaterSystem.WaterSimSpeed = v;
-                    ModLog.Info(Tag, $"水模拟速度已设置为: {v}x");
+                    ModLog.Info(Tag, $"水模拟速度已设置为: {v}x (持久化)");
                 }
             }));
 
-            ModLog.Ok(Tag, "MapExtUISystem 已创建 (Phase 5: 68 Bindings)");
+            // === 海平面锁定 Bindings (Phase 5.1: 3) ===
+            AddBinding(m_SeaLevelLocked = new ValueBinding<bool>(kGroup, "SeaLevelLocked", false));
+            AddBinding(new TriggerBinding<bool>(kGroup, "SetSeaLevelLocked", v =>
+            {
+                m_SeaLevelLocked.Update(v);
+                if (v && m_WaterSystem != null && m_WaterSystem.Loaded)
+                {
+                    // 锁定时记录当前海平面值
+                    m_LockedSeaLevelValue = m_WaterSystem.SeaLevel;
+                    ModLog.Ok(Tag, $"海平面已锁定: {m_LockedSeaLevelValue:F1}m");
+                }
+                else if (!v)
+                {
+                    ModLog.Info(Tag, "海平面锁定已解除");
+                }
+            }));
+
+            // 允许在锁定状态下修改目标锁定值
+            AddUpdateBinding(new GetterValueBinding<float>(kGroup, "LockedSeaLevel",
+                () => m_LockedSeaLevelValue));
+
+            ModLog.Ok(Tag, "MapExtUISystem 已创建 (Phase 5.1: 71 Bindings)");
         }
 
         #endregion
@@ -428,6 +462,34 @@ namespace MapExtPDX.UI
 
             // GetterValueBinding 的自动更新由 base.OnUpdate() 处理
             base.OnUpdate();
+
+            // === 海平面锁定：在 base.OnUpdate 后强制回写 ===
+            if (m_SeaLevelLocked.value && m_WaterSystem != null && m_WaterSystem.Loaded)
+            {
+                float current = m_WaterSystem.SeaLevel;
+                if (System.Math.Abs(current - m_LockedSeaLevelValue) > 0.01f)
+                {
+                    m_WaterSystem.SeaLevel = m_LockedSeaLevelValue;
+                }
+            }
+
+            // === 水模拟速度持久化：强制回写用户设定值 ===
+            if (m_UserWaterSimSpeed >= 0 && m_WaterSystem != null)
+            {
+                if (m_WaterSystem.WaterSimSpeed != m_UserWaterSimSpeed)
+                {
+                    m_WaterSystem.WaterSimSpeed = m_UserWaterSimSpeed;
+                }
+            }
+
+            // === SeaLevel 诊断日志（仅首次输出）===
+            if (!m_SeaLevelDiagLogged && m_WaterSystem != null)
+            {
+                m_SeaLevelDiagLogged = true;
+                ModLog.Info(Tag, $"[Diag] WaterSystem.Loaded={m_WaterSystem.Loaded}, " +
+                    $"SeaLevel={m_WaterSystem.SeaLevel:F2}m, " +
+                    $"WaterSimSpeed={m_WaterSystem.WaterSimSpeed}");
+            }
 
             // === UI 外观参数脏检查（无论面板是否打开都必须同步） ===
             var s = Mod.Instance.Settings;

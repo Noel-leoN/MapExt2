@@ -70,6 +70,8 @@ export const locales = {
         waterSimSpeedLabel: "Water Sim Speed",
         waterSimPaused: "Paused",
         waterSimSpeedHint: "Higher values speed up water generation but increase GPU load. Use 1x for normal play.",
+        lockSeaLevel: "Lock Sea Level",
+        lockSeaLevelTip: "Lock sea level to prevent water simulation from changing it. The locked value updates when you set a new sea level.",
     },
     zh: {
         // === Phase 1 ===
@@ -134,6 +136,8 @@ export const locales = {
         waterSimSpeedLabel: "水模拟速度",
         waterSimPaused: "已暂停",
         waterSimSpeedHint: "提高速度可加快水体生成，但会增加 GPU 负载。正常游玩请保持 1x。",
+        lockSeaLevel: "锁定海平面",
+        lockSeaLevelTip: "锁定海平面高度，防止水体模拟改变它。设置新海平面时锁定值会自动更新。",
     }
 };
 
@@ -151,4 +155,13 @@ export function useTranslation() {
     const dict = isZh ? locales.zh : locales.en;
 
     return (key: LocaleKey): string => dict[key];
+}
+
+/**
+ * React Hook：返回当前语言是否为中文。
+ * 供需要直接判断语言的组件使用（如分段选择器标签）。
+ */
+export function useIsZh(): boolean {
+    const locale = useValue(activeLocale$);
+    return !!(locale && locale.toLowerCase().startsWith("zh"));
 }

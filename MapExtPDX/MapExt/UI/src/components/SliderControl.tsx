@@ -19,6 +19,13 @@ export interface SliderControlProps {
     tooltip?: string;
 }
 
+/** 根据 step 精度格式化显示值，避免 IEEE 754 浮点溢出 */
+function formatValue(value: number, step: number): string {
+    if (step >= 1) return Math.round(value).toString();
+    const decimals = Math.max(0, Math.ceil(-Math.log10(step)));
+    return value.toFixed(decimals);
+}
+
 export const SliderControl: React.FC<SliderControlProps> = ({
     label, binding, commit, min, max, step, unit = "%", tooltip
 }) => {
@@ -106,7 +113,7 @@ export const SliderControl: React.FC<SliderControlProps> = ({
                 </div>
             </div>
             <span className={styles.sliderValue}>
-                {displayValue}{unit}
+                {formatValue(displayValue, step)}{unit}
             </span>
         </div>
     );

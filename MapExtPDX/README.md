@@ -4,261 +4,184 @@
 
 > **🎉 NEW: You can now bring your existing vanilla city to 28km or 57km maps!** No need to start from scratch — simply load your vanilla save, and MapExt will automatically convert it to the extended map format. Your terrain, city layout, and buildings are preserved. This is a one-click, non-destructive process.
 
-* **🔄 v4.0.0 — Vanilla Save Conversion and Water Tools:** This version introduces the ability to **import vanilla (14km) game saves and convert them to 28km or 57km mode**. The conversion pipeline automatically synthesizes terrain heightmap, regenerates natural resources and groundwater, clears stale entities, removes outside connections, resets water simulation, unlocks all 529 map tiles, and auto-saves to a new file. A new **Water Tools** section has been added to the in-game HUD panel with sea level control, water simulation speed adjustment (0x-128x), and water reset functionality. ⚠️ Game restart is required after conversion. After restart, you must rebuild outside connections (roads, railways, shipping lanes, airline routes, electricity, water supply) and place new water sources.
-* **🎛️ v3.0.1 — Dashboard Expansion and World Backdrop Control:** The City Stats dashboard now features 5 collapsible accordion sections with 13 new metrics (residential vacancy by density, commercial company data, population activity, commuters). Added panel height persistence and drag resizing. New **Disable World Backdrop** toggle in the Performance tab prevents background world heightmap loading on existing saves, reducing GPU/VRAM overhead. The Map Editor now shows a performance warning dialog before importing a WorldMap.
-* **🎛️ v3.0.0 — In-Game UI Dashboard:** This version introduces a new in-game floating panel for real-time parameter tuning. Click the "M" button in the top-left HUD to access three modules: **City Stats** (live household and housing metrics), **Rent Control** (11 interactive sliders for rent formula parameters), and **Pathfinding** (shopping and leisure max cost sliders). The panel supports automatic English/Chinese language switching and has zero performance overhead when closed.
-* **💎 Economy Fix and Performance Optimization (Experimental):** This version includes a suite of optimizations specifically tuned for mega-cities (millions of population). It refactors demand logic, land value, housing search, citizen behaviors, and rent systems.
-* **⏳ Simulation Catch-up:** Loading an old save may result in extremely slow simulation initially as the new economic logic recalculates everything. Please allow the simulation to run for a while for performance to stabilize.
-* **🌍 Resources Map Loss:** Due to architectural changes in the resource system, **ore, oil, and other natural resources may disappear from existing saves.** You will need to use the `ExtraLandScapingTool` mod to manually repaint them.
-* **⚠️ Compatibility:** This mod fundamentally rewrites core economic logic. It features a **built-in Conflict Monitoring System** that uses a double-check mechanism to automatically detect and disable conflicting economy subsystems at runtime. This means mods like **Realistic Trip**, **Realistic PathFinding**, and similar economy/simulation mods can be installed alongside MapExt — the mod will automatically yield conflicting system groups to avoid crashes. However, if both mods modify the same underlying data, subtle simulation anomalies may still occur. You can check the current conflict status in the **EconomyEX** tab of the Option UI. Please report any anomalies.
-* **🔗 Relationship with [EconomyEX](https://mods.paradoxplaza.com/mods/137149/Windows):** EconomyEX is a **standalone subset** of this mod's economy module, designed exclusively for vanilla-size (14km) maps. If you play on vanilla maps and don't need extended map sizes, you can use EconomyEX alone. **When both mods are installed, EconomyEX will automatically disable itself** to avoid conflicts. For detailed economy patch documentation, please refer to the [EconomyEX mod page](https://mods.paradoxplaza.com/mods/137149/Windows).
+* **🔄 Vanilla Save Conversion:** Import vanilla (14km) saves and convert to 28km or 57km mode. The pipeline synthesizes terrain heightmap, regenerates resources and groundwater, clears stale entities, removes outside connections, resets water simulation, unlocks all 529 tiles, and auto-saves to a new file. ⚠️ Restart required. After restart, rebuild outside connections (roads, railways, shipping lanes, airline routes, electricity, water supply) and place new water sources.
+* **💧 Water Tools:** New HUD panel section with sea level control (0.1m precision slider and numeric input), Apply Sea Level (GPU reset), Reset Water (re-simulate from sources), and simulation speed control (0x-128x exponential stepping).
+* **⚠️ Compatibility:** Built-in Conflict Monitoring System auto-detects and disables conflicting economy subsystems at runtime. Mods like Realistic Trip and Realistic PathFinding can coexist. Check status in the EconomyEX tab.
+* **🔗 [EconomyEX](https://mods.paradoxplaza.com/mods/137149/Windows):** Standalone economy subset for vanilla-size maps. Auto-disables when both mods are installed.
 
 ## ⚠️ IMPORTANT: READ BEFORE USE
 
-* **🛡️ Use at your own risk:** This mod makes extensive modifications to the game engine. There may be unknown issues or conflicts with other mods.
-* **💾 Backup your saves:** ALWAYS use "Save As" to create new save files. Do not directly overwrite existing saves. **Never** attempt to load and overwrite a save created with MapExt if the mod fails to load or is uninstalled.
-* **📏 Match Map Sizes:** In the Option UI, you must select the precise map size (28km / 57km / 114km / Vanilla 14km) that matches your currently loaded map or save. ⚠️ Note: A failsafe prevents loading incorrect sizes for save games, but this does NOT apply to the Map Editor.
-* **💻 Hardware Requirements:** A GPU with 10GB+ VRAM is recommended (this mod uses an additional 1-2GB of VRAM). If the game crashes while loading, you likely have too many custom assets. We strongly recommend creating a pristine, minimal Playset on your first use.
+* **🛡️ Use at your own risk.** This mod makes extensive modifications to the game engine.
+* **💾 Backup your saves:** ALWAYS use "Save As". **Never** overwrite a MapExt save if the mod fails to load or is uninstalled.
+* **📏 Match Map Sizes:** Select the correct map size in Option UI. A failsafe prevents loading mismatched saves (does NOT apply to the Map Editor).
+* **💻 Hardware:** 10GB+ VRAM recommended (mod uses 1-2GB extra). If loading crashes, reduce custom assets.
 
 ## 💎 Introduction
 
 * **📏 Map Size Modes:**
-
-  * **57km (Default):** 4x4 vanilla map dimensions (DEM-14m resolution).
-  * **28km:** 2x2 dimensions (DEM-7m resolution).
-  * **114km:** 8x8 dimensions (DEM-28m resolution). ❌ Not recommended due to extremely low terrain resolution, edge tearing, and simulation calculation errors.
-  * **14km:** Vanilla 1x1 dimensions (DEM-3.5m resolution).
-* **🏔️ Terrain Limitation:** As the map size expands, terrain resolution inevitably decreases. Coastlines and mountains may appear jagged and rough. Due to structural complexity and performance impacts, this mod currently cannot artificially improve terrain resolution. You can mitigate this visually by planting trees or using other objects to cover rough patches. For high-resolution massive maps, consider waiting for the upcoming `LargerMap` mod by algernon.
-* **🧱 Map Tiles:** The number of unlockable map tiles remains fixed at **529**.
+  * **57km (Default):** 4x4 vanilla (DEM-14m). **28km:** 2x2 (DEM-7m). **114km:** 8x8 (DEM-28m, not recommended). **14km:** Vanilla 1x1 (DEM-3.5m).
+* **🏔️ Terrain Limitation:** Terrain resolution decreases with map size. Coastlines may appear jagged. Use trees to cover rough patches.
+* **🧱 Map Tiles:** Fixed at **529** unlockable tiles.
 
 ## 💡 Economy Patches, In-Game UI and Performance Tools
 
-This mod integrates a comprehensive set of economy patches, an in-game UI dashboard, and performance tools, all configurable via the in-game Option UI or the HUD panel:
-
-* **🎛️ In-Game UI Dashboard (v3.0.0+):** A floating "M" button in the top-left HUD opens a Master-Detail panel with three modules:
-
-  * **City Stats:** 5 collapsible accordion sections — City Overview (household counts, housed ratio, homeless, moving away, seekers, high-rent buildings), Residential Market (vacancy by Low/Med/High density), Commercial Market (active shops, seeking property), Population Activity (shopping, leisure, commuting, returning home), and Misc (commuters, pets). Data is collected via ECS queries every ~4 seconds, with zero overhead when the panel is closed.
-  * **Rent Control:** 11 interactive sliders for rent multipliers (Res/Com/Ind), land value contribution factors, building level factors, environment effect, and service bonus cap — all applied instantly without restart.
-  * **Pathfinding:** Shopping and leisure max pathfinding cost sliders for quick adjustment during gameplay.
-  * Supports automatic English/Chinese language switching based on the game's locale setting.
-  * Panel height and section default-open states are configurable in OptionUI.
-* **📊 Economy Overhaul (Beta):** Deep rewrites of RCI demand, job search, home search, rent calculation, consumer behavior, and resident AI pathfinding — optimized for mega-cities with millions of population. Each subsystem can be individually toggled on/off. A built-in **Conflict Monitoring System** with double-check mechanism automatically detects and disables conflicting subsystems if another mod re-enables the same vanilla systems.
-* **📈 Pathfinding Max-Distance Control:** Configurable maximum pathfinding distance for each travel purpose — including shopping, leisure, job search, home search, school enrollment, and emergency services. On vanilla maps the engine hardcodes a 17000-cost cap, which causes vehicles and citizens to vanish mid-route on extended maps. Use the sliders in the **EconomyEX** tab to raise or lower these limits per purpose:
-
-  * **Smaller maps (14km/28km):** Lower values (e.g. Shopping 8000, Leisure 8000–12000) keep citizens local and reduce CPU load.
-  * **Bigger maps (57km/114km):** Raise values (e.g. Shopping 8000–12000, Leisure 12000–20000) so citizens can reach distant services.
-  * **Cross-map activities (Find Job, Find Home, Company Delivery):** Recommended to max out (200000) to ensure isolated towns remain functional.
-* **🐕 NoDogs 2.0:** An enhanced pet control suite with three operating modes — **Disable OnStreet** (prevents pets from appearing on streets), **Prevent New Generation** (blocks new pet spawning for incoming households), and **Purge All Existing** (removes all pet entities from the save for maximum performance gain). Includes a live pet count display. Each option must be explicitly applied via the Apply button.
-* **🚗 No Through-Traffic:** Disables all through-traffic vehicle spawning, reducing pathfinding calculations and traffic congestion on extended maps.
-* **🏗️ Editor Collision Override:** Bypass collision validation checks when placing objects in the Map Editor — supports three modes (Off / Trees Only / All Objects). Greatly speeds up tree planting on extended maps.
-* **🏔️ Terrain-Water Optimization:** Includes GPU buffer pre-allocation, building cull throttling, terrain cascade throttling, and configurable water simulation quality levels — all adjustable in-game without restart.
-* **🌍 Disable World Backdrop:** A toggle in the Performance tab that prevents the background world heightmap (Backdrop) from loading on existing saves. Eliminates per-frame GPU overhead, CPU stalls, and frees up VRAM. The Map Editor also shows a performance warning dialog before importing a WorldMap.
-* **🔄 Vanilla Save Conversion (NEW in v4.0.0):** Import any vanilla (14km) save and convert it to 28km or 57km mode. The one-click conversion handles: terrain heightmap synthesis (box-filter downsampling with smoothstep edge blending), natural resource and groundwater regeneration, vehicle and resident entity cleanup, outside connection removal, water simulation reset, 529 map tile unlock, and automatic save with a new filename. Enable the feature in MapSize tab → Save Conversion group.
-* **💧 Water Tools (NEW in v4.0.0):** A new section in the in-game HUD panel providing direct control over the water simulation engine:
-
-  * **Sea Level:** Adjustable via slider (0-800m, 0.1m precision) or precise numeric input. Click "Apply" to GPU-reset all water surfaces to the target height.
-  * **Reset Water:** Clears all existing water and restarts simulation from water sources.
-  * **Simulation Speed:** Exponential stepping control (0x, 1x, 2x, 4x, 8x, 16x, 32x, 64x, 128x) for rapid water filling or debugging.
+* **🎛️ In-Game UI Dashboard (v3.0+):** "M" button in HUD opens a panel with City Stats (5 accordion sections, 13+ metrics), Rent Control (11 sliders), and Pathfinding sliders. Zero overhead when closed. Auto EN/CN switching.
+* **📊 Economy Overhaul (Beta):** Deep rewrites of RCI demand, job/home search, rent, consumer behavior, and AI pathfinding for mega-cities. Each subsystem toggleable. Built-in conflict monitoring.
+* **📈 Pathfinding Distance Control:** Configurable max distance per travel purpose (shopping, leisure, jobs, home, school). Vanilla hardcodes 17000 — raise for big maps, lower for small maps.
+* **🐕 NoDogs 2.0:** Three modes — Disable OnStreet, Prevent New Generation, Purge All. Live pet count display.
+* **🚗 No Through-Traffic:** Disables through-traffic spawning to reduce pathfinding load.
+* **🏗️ Editor Collision Override:** Skip collision checks in Map Editor (Off / Trees Only / All Objects).
+* **🏔️ Terrain-Water Optimization:** GPU buffer pre-allocation, building cull throttling, terrain cascade throttling, configurable water sim quality — all adjustable in-game.
+* **🌍 Disable World Backdrop:** Prevents background heightmap loading, reducing GPU/VRAM overhead.
+* **🔄 Vanilla Save Conversion (v4.0.0):** One-click import of vanilla saves to extended maps. See Usage section below.
+* **💧 Water Tools (v4.0.0):** Sea level control, water reset, and simulation speed (0x-128x) in the HUD panel.
 
 ## 🛠️ Usage
 
 ### 🗺️ Making a 1:1 Map
 
-In the Map Editor, import a heightmap/worldmap image of the corresponding size:
+Import a heightmap/worldmap in the Map Editor:
 
-* **28km Playable Area:** Heightmap 28,672m / Worldmap 114,688m
-* **57km Playable Area:** Heightmap 57,344m / Worldmap 229,376m
-* **114km Playable Area:** Heightmap 114,688m / Worldmap 458,752m
-* **🖼️ Supported Image Formats:** 4096x4096 16-bit grayscale (PNG or TIFF).
-* 💡 Note: You can import heightmaps with resolutions up to 14336x14336; the mod will automatically downsample/scale them to 4096x4096.
-* **⚠️ Scaling Warning:** If the physical dimensions of your imported map do not mathematically match the target size, the terrain will stretch.
-* **🚀 Performance Tip:** For 57km and 114km maps, do NOT import a "Worldmap" background image — it serves only as visual edge decoration with no gameplay benefit. On a 114km map, the worldmap texture alone can consume an extra **1–2 GB of VRAM** and noticeably reduce frame rates.
+* **28km:** Heightmap 28,672m / Worldmap 114,688m
+* **57km:** Heightmap 57,344m / Worldmap 229,376m
+* **114km:** Heightmap 114,688m / Worldmap 458,752m
+* **Format:** 4096x4096 16-bit grayscale (PNG/TIFF). Resolutions up to 14336x14336 auto-downsampled.
+* **⚠️** Mismatched dimensions will stretch terrain.
+* **🚀 Tip:** Do NOT import Worldmap on 57km/114km maps — it adds 1-2 GB VRAM with no gameplay benefit.
 
-### 🔄 Converting a Vanilla Save to Extended Map (NEW in v4.0.0)
+### 🔄 Converting a Vanilla Save (v4.0.0)
 
-1. In the **Main Menu**, open MapExt Option UI and select the target mode (28km or 57km).
-2. Enable **"Vanilla Save Conversion"** in the MapSize tab → Save Conversion group.
-3. Click **"Load"** on any vanilla (14km) save. A confirmation dialog will appear listing all conversion steps.
-4. Click **"Convert and Load"**. The mod will:
-   * Unlock all 529 map tiles
-   * Clear all vehicles and residents (prevents stale pathfinding references)
-   * Remove all outside connections
-   * Synthesize the terrain heightmap for the new map size
-   * Regenerate natural resources and groundwater
-   * Reset water simulation state
-   * Auto-save as `{OriginalName}_MapExt{Mode}` (e.g., `MyCity_MapExt57km`)
-5. A completion dialog will appear. **You MUST restart the game** to prevent water simulation glitches or crashes.
-6. After restart, load the new save and complete the following:
+1. In **Main Menu**, open MapExt Option UI and select target mode (28km or 57km).
+2. Enable **"Vanilla Save Conversion"** in MapSize tab → Save Conversion group.
+3. **Load** any vanilla (14km) save. A confirmation dialog lists all conversion steps.
+4. Click **"Convert and Load"**. The mod will: unlock 529 tiles, clear vehicles/residents, remove outside connections, synthesize heightmap, regenerate resources/groundwater, reset water, and auto-save as `{Name}_MapExt{Mode}`.
+5. **MUST restart game** after conversion to prevent water glitches or crashes.
+6. After restart, complete:
    * **Rebuild Outside Connections** at new map edges: Roads (highway), Railways, Shipping Lanes, Airline Routes, Electricity (power lines), Water Supply (pipes)
-   * **Place new Water Sources**: Original water sources have been cleared. Place river/sea water sources at desired locations, then wait for water to fill naturally or use the built-in Water Tools (M button) to speed up filling.
+   * **Place new Water Sources**: Original sources cleared. Place river/sea sources, wait for natural fill, or use Water Tools (M button) to speed up.
 
-⚠️ This feature is **highly experimental**. The original save file is never modified.
+⚠️ **Highly experimental.** Original save is never modified.
 
-### 📂 Useful Directory Paths (Paste into File Explorer)
+### 📂 Useful Directory Paths
 
-* **🗺️ Heightmaps and Worldmaps:** `%USERPROFILE%\AppData\LocalLow\Colossal Order\Cities Skylines II\Heightmaps`
-* **🖼️ Overlay Maps:** `%USERPROFILE%\AppData\LocalLow\Colossal Order\Cities Skylines II\Overlays`
-* **📝 Game Logs (for bug reporting):** `%USERPROFILE%\AppData\LocalLow\Colossal Order\Cities Skylines II\Logs`
-* **🛠️ Local Mods Folder:** `%USERPROFILE%\AppData\LocalLow\Colossal Order\Cities Skylines II\Mods`
+* **Heightmaps:** `%USERPROFILE%\AppData\LocalLow\Colossal Order\Cities Skylines II\Heightmaps`
+* **Overlays:** `%USERPROFILE%\AppData\LocalLow\Colossal Order\Cities Skylines II\Overlays`
+* **Logs:** `%USERPROFILE%\AppData\LocalLow\Colossal Order\Cities Skylines II\Logs`
+* **Local Mods:** `%USERPROFILE%\AppData\LocalLow\Colossal Order\Cities Skylines II\Mods`
 
 ### 🔗 Recommended Companion Mods
 
-* **🛰️ Skyve**: Essential for managing Playsets, backing up saves, and diagnosing issues.
-* **📸 Image Overlay**: Allows overlaying a real-world map image in-game, perfect for recreating 1:1 real cities.
-* **🎥 Free Range Camera**: Unlocks camera distance constraints.
-* **💧 Water Features**: Provides better control over water sources — critical for extended custom maps.
-* **🏢 529 Tiles**: Essential for purchasing and managing all map tiles on extended maps.
-* **🏗️ Anarchy**: Removes placement restrictions.
-* **📊 Demand Master Control**: Vanilla simulation often struggles (economic anomalies, pathfinding lag) when populations exceed 200k-500k. Tweaking demand directly can drastically help stability.
+* **Skyve** — Playset management and save backup.
+* **Image Overlay** — Overlay real-world maps for 1:1 city recreation.
+* **Free Range Camera** — Unlock camera distance.
+* **Water Features** — Better water source control for custom maps.
+* **529 Tiles** — Unlock all map tiles.
+* **Anarchy** — Remove placement restrictions.
 
 ## 🔍 Known Issues
 
-* **🚦 Vanilla Pathfinding Flaw:** In vanilla CS2, when populations exceed 200k–500k, pathfinding queue jams cause severe CPU bottlenecks and break the economic simulation. Extending the map makes these underlying issues more apparent. While this mod's built-in Economy and Performance optimizations are designed to significantly alleviate these issues, extreme scenarios may still challenge engine limits. Absolute stability at ultra-high populations cannot be guaranteed.
-* **🏙️ City Planning Advice:** Stable growth is key. Avoid zoning massive residential blocks at once, don't rush to max out citizen happiness overnight, control your service coverage spread, and avoid spamming parks (or avoid parks entirely).
-* **🗺️ Map Edge Glitches:** Due to engine floating-point precision limits, you may notice bizarre terrain height graphical glitches near the absolute edges of extended maps. It's best to build your core residential/commercial/industrial zones closer to the map center.
-* **🔄 Legacy Version Upgrades:** If upgrading from an older unreleased version and playing on sizes other than 57km, manually check the "Debug devalidation" toggle in Option UI, confirm your map size, fully load your save, "Save As" a new file, and then disable the Debug toggle.
+* **🚦 Pathfinding Bottleneck:** At 200k-500k population, vanilla pathfinding jams cause CPU bottlenecks. This mod's optimizations help significantly but cannot guarantee stability at extreme scales.
+* **🗺️ Map Edge Glitches:** Floating-point precision limits may cause terrain height artifacts at map edges. Build core zones closer to center.
+* **🔄 Legacy Upgrades:** From older unreleased versions on non-57km sizes: enable "Debug devalidation", confirm size, load, Save As, then disable Debug.
 
 ## 💡 Tips
 
-* **💧 Quick Water Generation:** Since extended maps take extremely long to manually fill with water, you can now use the built-in **Water Tools** in the in-game HUD panel ("M" button → Water Tools). Set the desired sea level and click "Apply" to instantly fill the ocean, then increase simulation speed (up to 128x) for rapid river and lake filling. Alternatively, use Yenyang's **Water Features** mod for additional water source management.
-* **🧹 Clear Mod Cache:** After the game crashes to desktop due to memory leaks or other issues, residual mod caches are very likely to be generated, which may cause save corruption on subsequent loads (this is not limited to this mod). If you see red error messages on the loading screen, immediately close the game completely, open **Skyve**, and perform a "Clear Mod Cache" operation.
-* **📢 Bug Reporting and Support:** Please report issues or find more advanced tips in the Discord community linked below, or on GitHub.
+* **💧 Quick Water:** Use built-in Water Tools (M button → Water Tools): set sea level, click "Apply" to fill oceans, then set speed to 128x for rapid river/lake filling. Or use **Water Features** mod.
+* **🧹 Clear Mod Cache:** After a crash, open **Skyve** and "Clear Mod Cache" to prevent save corruption on next load.
 
-## 🏆 Credits and Acknowledgements
+## 🏆 Credits
 
-* [Cities: Skylines Modding Discord](https://discord.gg/s6BcrFKepF) (Primary discussion hub)
-* [Cities 2 Modding Discord](https://discord.gg/ABrJqdZJNE)
+* [CS Modding Discord](https://discord.gg/s6BcrFKepF) | [Cities 2 Modding Discord](https://discord.gg/ABrJqdZJNE)
 * [CS2 Modding Instructions](https://github.com/rcav8tr/CS2-Modding-Instructions) by rcav8tr
-* [CS2 BepInEx Mod Template](https://github.com/Captain-Of-Coit/cities-skylines-2-mod-template) by Captain-Of-Coit
-* [BepInEx](https://github.com/BepInEx/BepInEx)
-* [Harmony](https://github.com/pardeike/Harmony)
-* 🤝 Special thanks to our testers: Rebeccat, HideoKuze2501, Nulos, Jack the Stripper, Bbublegum/Blax, Sulley and many others!
+* [BepInEx](https://github.com/BepInEx/BepInEx) | [Harmony](https://github.com/pardeike/Harmony)
+* 🤝 Thanks to testers: Rebeccat, HideoKuze2501, Nulos, Jack the Stripper, Bbublegum/Blax, Sulley and many others!
 
 ---
 
 ## 🔥 v4.0.0 更新说明 — 原版存档一键导入大地图！
 
-> **🎉 重磅新功能：现在可以将你的原版城市直接迁移到 28km 或 57km 大地图！** 无需从零开始，只需加载原版存档，MapExt 会自动将其转换为扩展地图格式。你的地形、城市布局和建筑均会保留。这是一个一键式、无损的过程。
+> **🎉 重磅新功能：现在可以将你的原版城市直接迁移到 28km 或 57km 大地图！** 无需从零开始，只需加载原版存档，MapExt 会自动将其转换为扩展地图格式。你的地形、城市布局和建筑均会保留。
 
-* **🔄 原版存档转换（v4.0.0 新增）：** 支持将原版（14km）游戏存档导入并转换为 28km 或 57km 模式。转换流程自动完成：合成地形高度图、重新生成自然资源与地下水、清除所有车辆与居民实体、拆除外部连接、重置水体模拟状态、解锁全部 529 格地图分块，并自动保存为新文件。⚠️ 转换后必须重启游戏，然后重建对外连接（道路、铁路、航道、航线、电力、供水）并重新放置水源。
-* **💧 水体工具面板（v4.0.0 新增）：** 在游戏内 HUD 面板新增水体工具模块：海平面调节（0.1m 精度滑块与数值输入）、应用海平面（GPU 重置水面至目标高度）、重置水体（清除水面并从水源重新模拟）、水模拟速度控制（0x-128x 指数级步进）。
-* **🎛️ 仪表盘扩展（v3.0.1）：** 城市统计仪表盘重构为 5 个可折叠区块，新增 13 项指标（住宅空置率按低/中/高密度、商业公司数据、人口活动状态、外来通勤者）。新增面板高度持久化与底部拖拽调整，以及各区块默认展开状态的配置开关。
-* **🌍 禁用背景世界地图（v3.0.1）：** 性能标签页新增开关，可阻止已有存档加载背景世界地图（Backdrop），消除每帧 GPU 开销与 CPU 阻塞，降低显存占用。地图编辑器导入 WorldMap 时也会弹出性能影响确认对话框。
-* **🎛️ 游戏内 UI 控制面板（v3.0.0 新增）：** 在游戏左上角 HUD 新增"M"浮动按钮，点击展开主从面板，包含三个功能模块：
-
-  * **城市统计：** 5 个可折叠区块——城市概览（家庭总数、已租住比例、无家可归、搬离中、找房中、高租金建筑数）、住宅市场（按低/中/高密度空置率）、商业市场（有店铺商家、等待入驻）、人口活动（购物中、休闲中、上班途中、回家途中）、其他（外来通勤、宠物）。数据通过 ECS 查询每约 4 秒刷新一次，面板关闭时零开销。
-  * **租金调控：** 11 个交互式滑块，可即时调整住宅/商业/工业租金乘数、地价贡献系数、等级贡献系数、环境影响系数与服务加成上限——无须重启即刻生效。
-  * **寻路参数：** 购物与休闲寻路最大成本滑块，便于在游戏中快速调整。
-  * 支持根据游戏语言设置自动切换中英文界面。面板高度与各区块默认展开状态可在选项面板中配置。
-* **💎 经济与性能深度优化（实验性）：** 模组内置了专为百万级人口大城市设计的经济与性能修复补丁。该功能从底层全面重构了各项区域需求、地价系统、居民找房逻辑、居民日常行为与交租计算等。
-* **⚠️ 兼容性说明：** 本模组已内置 **冲突监控系统 (Conflict Monitoring System)**，采用"二次确认"机制，能够在运行时自动检测并禁用与其他 Mod 产生冲突的经济子系统组。因此，**Realistic Trip**、**Realistic PathFinding** 等同类系列 Mod 现在可以与 MapExt 共存使用——模组将自动让出冲突的系统组以避免崩溃。但若双方修改了相同的底层数据，仍可能出现细微的模拟异常。您可以在选项面板的 **EconomyEX** 标签页中查看当前冲突状态。如遇问题请反馈。
-* **🔗 与 [EconomyEX](https://mods.paradoxplaza.com/mods/137149/Windows) 的关系：** EconomyEX 是本模组经济模块的 **独立子集**，仅适用于原版大小（14km）地图。如果您仅在原版地图上游玩且不需要扩展地图功能，可以单独使用 EconomyEX。**当两者同时安装时，EconomyEX 将自动休眠**以避免冲突。经济补丁的详细说明可参阅 [EconomyEX 模组页面](https://mods.paradoxplaza.com/mods/137149/Windows)。
+* **🔄 原版存档转换：** 将原版（14km）存档转换为 28km 或 57km 模式。自动完成：地形高度图合成、自然资源与地下水重生、车辆与居民清除、外部连接拆除、水体模拟重置、529 格地图解锁、自动另存新文件。⚠️ 转换后必须重启，然后重建对外连接（道路、铁路、航道、航线、电力、供水）并放置水源。
+* **💧 水体工具面板：** HUD 面板新增水体工具：海平面调节（0.1m 精度）、应用海平面（GPU 重置）、重置水体（从水源重新模拟）、模拟速度控制（0x-128x）。
+* **⚠️ 兼容性：** 内置冲突监控系统，自动检测并禁用与其他 Mod 冲突的经济子系统。Realistic Trip 等可共存。
+* **🔗 [EconomyEX](https://mods.paradoxplaza.com/mods/137149/Windows)：** 经济模块独立子集，适用于原版地图。两者同时安装时 EconomyEX 自动休眠。
 
 ## ⚠️ 必读注意事项
 
-* **🛡️ 风险提示**：本模组对原版底层代码进行了大量深度修改，可能存在未知问题或与其他模组冲突，请自行承担风险。
-* **💾 勤备份存档**：强烈建议养成每次**"另存为"新文档**的习惯，切勿直接覆盖旧存档。**绝对不要**在模组卸载或加载失败时，强行读取并覆盖 MapExt 存档, 否则会导致存档损坏。
-* **📏 匹配地图尺寸**：在选项界面中，必须设置与当前游玩地图相匹配的绝对尺寸（28km、57km、114km 或 原版14km）。⚠️ 注：模组已内置防错机制，会阻止跨尺寸读取存档，但该机制**不适用于地图编辑器**。
-* **💻 硬件建议**：推荐显存 10GB 以上（本模组将额外占用 1-2GB 显存）。若加载地图时崩溃，通常可能是因为加载了过多资产模组导致显存爆满。首次使用建议创建一个精简的 Playset 播放集，确认正常后再逐步添加资产。
+* **🛡️ 风险自负**：本模组深度修改游戏引擎，可能存在未知问题。
+* **💾 勤备份存档**：务必"另存为"新档。**绝不**在模组失效时覆盖 MapExt 存档。
+* **📏 匹配地图尺寸**：选项面板中必须设置与存档匹配的尺寸。已内置防错机制（不适用于编辑器）。
+* **💻 硬件**：推荐显存 10GB+（额外占用 1-2GB）。崩溃时请精简资产。
 
 ## 💎 介绍
 
-* **📏 地图尺寸模式列表：**
-
-  * **57公里（默认）**：4x4 原版地图面积，DEM-14米分辨率。
-  * **28公里**：2x2 原版地图面积，DEM-7米分辨率。
-  * **114公里**：8x8 原版地图面积，DEM-28米分辨率。（极不推荐，地形分辨率过低，地图边缘会出现撕裂，且严重影响模拟计算）
-  * **14公里**：原版 1x1 地图面积，DEM-3.5米分辨率。
-* **🏔️ 地形精度限制：** 由于尺寸放大，地形细节不可避免地会降低，海岸线与山脉会显得相对粗糙。受限于复杂的技术原因与性能开销考量，本模组暂不提供地形分辨率无损提升方案。建议通过种树或其他造景手段进行视觉遮挡。如果追求高精度大地形，可以关注 algernon 正在开发的 `LargerMap` 模组。
-* **🧱 地图瓦片：** 可解锁的地图瓦片总数量维持在 529 块。
+* **📏 地图尺寸：** 57km（默认，4x4，DEM-14m）| 28km（2x2，DEM-7m）| 114km（8x8，DEM-28m，不推荐）| 14km（原版 1x1，DEM-3.5m）。
+* **🏔️ 地形精度：** 尺寸越大，地形越粗糙。建议种树遮挡。
+* **🧱 地图瓦片：** 固定 529 块。
 
 ## 💡 经济补丁、游戏内 UI 与性能工具
 
-本模组整合了一套完整的经济修复补丁、游戏内 UI 控制面板与性能优化工具，均可在游戏内选项面板或 HUD 面板中配置：
-
-* **🎛️ 游戏内 UI 控制面板（v3.0.0+）：** 游戏左上角 HUD 的"M"浮动按钮展开主从面板，含三个模块：
-
-  * **城市统计：** 5 个可折叠区块——城市概览、住宅市场（按密度空置率）、商业市场、人口活动、其他（通勤与宠物）。面板关闭时零开销。
-  * **租金调控：** 11 个交互式滑块即时调整租金公式参数，无须重启。
-  * **寻路参数：** 购物与休闲寻路最大成本滑块。
-  * 支持根据游戏语言自动切换中英文。面板高度与各区块默认展开状态可在选项面板配置。
-* **📊 经济系统修复 (Beta)：** 从底层深度重构了 RCI 需求、求职匹配、找房搬家、租金计算、消费行为与居民AI寻路等核心逻辑——专为百万级人口巨型城市优化。各子系统支持独立开关。内置 **冲突监控系统**，采用"二次确认"机制，可自动检测并禁用与其他 Mod 冲突的子系统组。
-* **📈 寻路最远距离控制：** 可针对每种出行目的分别配置最大寻路距离——涵盖购物、休闲、求职、找房、入学、急救服务等。原版引擎硬编码了 17000 的成本上限，在大地图中会导致市民和载具中途消失。在选项面板的 **EconomyEX** 标签页中拖动滑块即可调节：
-
-  * **小地图（14km/28km）：** 使用较低值（如购物 8000、休闲 8000–12000），让市民就近活动，减少 CPU 开销。
-  * **大地图（57km/114km）：** 适当提高（如购物 8000–12000、休闲 12000–20000），使市民能够到达远处的服务设施。
-  * **跨图活动（求职、找房、公司货运）：** 建议拉满（200000），确保偏远城镇正常运转。
-* **🐕 NoDogs 2.0：** 增强版宠物控制套件，三种操作模式 — **禁止外出**（阻止宠物上街，关闭生成、渲染与寻路）、**阻止新生成**（将新移民的宠物生成概率归零）、**清除所有存量**（移除存档中全部宠物实体，最大化性能提升）。含实时宠物数量统计。所有选项需点击"应用"按钮方可生效。
-* **🚗 过境交通控制：** 禁止所有过境交通工具出现，降低大地图的寻路计算量与交通拥堵。
-* **🏗️ 编辑器碰撞跳过：** 在地图编辑器放置物体时跳过碰撞验证——支持三档模式（关闭 / 仅树木 / 所有物体），极大提升大地图种树效率。
-* **🏔️ 地形-水体性能优化：** 含 GPU 缓冲预分配、建筑裁剪降频、地形级联降频与可配置水模拟质量等级——均可在游戏中实时调节，无须重启。
-* **🌍 禁用背景世界地图：** 性能标签页中的开关，可阻止已有存档加载背景世界地图（Backdrop），消除每帧 GPU 开销与 CPU 阻塞，降低显存占用。地图编辑器中导入 WorldMap 时也会弹出性能影响确认对话框。
-* **🔄 原版存档转换（v4.0.0 新增）：** 支持将任意原版（14km）存档一键转换至 28km 或 57km 模式。转换流程自动完成：地形高度图合成、自然资源与地下水重生、车辆与居民实体清除、外部连接拆除、水体模拟重置、529 格地图分块解锁，并自动保存为新文件名。在 MapSize 标签页 → 存档转换 组中启用。
-* **💧 水体工具面板（v4.0.0 新增）：** 游戏内 HUD 面板新增水体工具模块：
-
-  * **海平面调节：** 滑块（0-800m，0.1m 精度）或精确数值输入。点击"应用"可 GPU 重置所有水面至目标高度。
-  * **重置水体：** 清除所有现存水面，从水源头开始重新模拟。
-  * **模拟速度控制：** 指数级步进（0x、1x、2x、4x、8x、16x、32x、64x、128x），可用于快速注水或调试。
+* **🎛️ 游戏内 UI（v3.0+）：** HUD "M"按钮展开面板，含城市统计（5 区块 13+ 指标）、租金调控（11 滑块）、寻路参数。关闭时零开销，自动中英文切换。
+* **📊 经济修复 (Beta)：** 深度重构 RCI 需求、求职匹配、找房、租金、消费行为与 AI 寻路，专为百万人口优化。各子系统独立开关。内置冲突监控。
+* **📈 寻路距离控制：** 按出行目的配置最大寻路距离。大地图适当提高，小地图降低以减少 CPU 开销。
+* **🐕 NoDogs 2.0：** 禁止外出 / 阻止新生成 / 清除全部。含实时宠物计数。
+* **🚗 过境交通控制：** 禁止过境交通，降低寻路负载。
+* **🏗️ 编辑器碰撞跳过：** 三档模式（关闭/仅树木/所有物体）。
+* **🏔️ 地形-水体优化：** GPU 缓冲预分配、建筑裁剪降频、地形级联降频、水模拟质量——游戏内实时调节。
+* **🌍 禁用背景世界地图：** 阻止 Backdrop 加载，降低 GPU/显存开销。
+* **🔄 原版存档转换（v4.0.0）：** 一键导入原版存档至大地图。详见下方用法。
+* **💧 水体工具（v4.0.0）：** 海平面调节、水体重置、模拟速度控制（0x-128x）。
 
 ## 🛠️ 用法
 
-### 🗺️ 制作 1:1 比例地图
+### 🗺️ 制作 1:1 地图
 
-在地图编辑器（Editor）中，导入对应正确尺寸的高程图（Heightmap）与世界贴图（Worldmap）：
+在地图编辑器中导入对应尺寸的高程图/世界贴图：
 
-* **28 公里可玩区域**：高程图 28672 米 / 世界贴图 114688 米
-* **57 公里可玩区域**：高程图 57344 米 / 世界贴图 229376 米
-* **114公里可玩区域**：高程图 114688 米 / 世界贴图 458752 米
-* **🖼️ 支持的图像格式**：4096x4096 16位灰度图（PNG 或 TIFF）。
-* **⚠️ 拉伸警告**：若导入的现实尺寸与上述设定的比例不匹配，地形将自动拉伸。
-* **🚀 性能提示**：对于 57km 及 114km 的地图，强烈建议不要导入只作背景板用的"假"世界贴图。世界贴图仅提供边缘视觉过渡，对游玩毫无物理作用。在 114km 地图上，仅世界贴图纹理就可额外消耗 **1–2 GB 显存**，并显著降低帧率。
+* **28km**：高程图 28672m / 世界贴图 114688m
+* **57km**：高程图 57344m / 世界贴图 229376m
+* **114km**：高程图 114688m / 世界贴图 458752m
+* **格式**：4096x4096 16位灰度图（PNG/TIFF），最高支持 14336x14336 自动降采样。
+* **⚠️** 尺寸不匹配会导致拉伸。
+* **🚀 提示**：57km/114km 地图不要导入 Worldmap——仅视觉装饰，额外消耗 1-2GB 显存。
 
-### 🔄 将原版存档转换为大地图（v4.0.0 新增）
+### 🔄 将原版存档转换为大地图（v4.0.0）
 
-1. 在**主菜单**中打开 MapExt 选项面板，选择目标模式（28km 或 57km）。
-2. 在 MapSize 标签页 → 存档转换 组中启用**「原版存档转换」**。
-3. 点击加载任意原版（14km）存档，弹出确认对话框，列出所有转换步骤。
-4. 点击**「转换并加载」**，Mod 将自动执行：
-   * 解锁全部 529 格地图分块
-   * 清除所有车辆与居民（防止旧寻路引用导致崩溃）
-   * 拆除全部外部连接
-   * 合成目标尺寸的地形高度图
-   * 重新生成自然资源与地下水
-   * 重置水体模拟状态
-   * 自动另存为 `{原始存档名}_MapExt{模式}`（如 `我的城市_MapExt57km`）
-5. 弹出完成对话框。**必须重启游戏**，否则会导致水体异常或崩溃。
-6. 重启后加载新存档，完成以下待办事项：
-   * **重建对外连接**（在新的地图边界）：道路（高速公路）、铁路（火车线路）、航道（货运与客运轮船航线）、航线（机场飞行航线）、电力（输电线路）、供水（供水管道）
-   * **重新放置水源**：原有水源已被清除，需在所需位置放置河流/海洋水源，等待水体自然填充或使用内置水体工具（M按钮）加速注水
+1. **主菜单**中打开 MapExt 选项，选择目标模式（28km 或 57km）。
+2. 在 MapSize 标签页 → 存档转换组中启用**「原版存档转换」**。
+3. 加载任意原版（14km）存档，弹出确认对话框。
+4. 点击**「转换并加载」**。自动执行：解锁 529 分块、清除车辆/居民、拆除外部连接、合成高度图、重生资源/地下水、重置水体、另存为 `{存档名}_MapExt{模式}`。
+5. **必须重启游戏**，否则水体异常或崩溃。
+6. 重启后完成：
+   * **重建对外连接**：道路（高速公路）、铁路、航道（货运/客运轮船）、航线（飞机）、电力（输电线路）、供水（水管）
+   * **放置水源**：原有水源已清除，放置河流/海洋水源后等待填充，或用水体工具（M按钮）加速
 
-⚠️ 此功能为**高度实验性**功能。原始存档文件不会被修改。
+⚠️ **高度实验性**功能。原始存档不会被修改。
 
-### 📂 常用路径速查（可直接粘贴至文件资源管理器地址栏）
+### 📂 常用路径
 
-* **🗺️ 高程图与世界贴图**：`%USERPROFILE%\AppData\LocalLow\Colossal Order\Cities Skylines II\Heightmaps`
-* **🖼️ 覆盖层地图 (配合 Image Overlay)**： `%USERPROFILE%\AppData\LocalLow\Colossal Order\Cities Skylines II\Overlays`
-* **📝 游戏日志 (用于报错排查)**： `%USERPROFILE%\AppData\LocalLow\Colossal Order\Cities Skylines II\Logs`
-* **🛠️ 本地模组文件夹 (仅限手动安装或高级调试，工坊模式请勿改动)**： `%USERPROFILE%\AppData\LocalLow\Colossal Order\Cities Skylines II\Mods`
+* **高程图**：`%USERPROFILE%\AppData\LocalLow\Colossal Order\Cities Skylines II\Heightmaps`
+* **覆盖层**：`%USERPROFILE%\AppData\LocalLow\Colossal Order\Cities Skylines II\Overlays`
+* **日志**：`%USERPROFILE%\AppData\LocalLow\Colossal Order\Cities Skylines II\Logs`
+* **本地模组**：`%USERPROFILE%\AppData\LocalLow\Colossal Order\Cities Skylines II\Mods`
 
-### 🔗 推荐搭配模组（感谢各位开源作者！）
+### 🔗 推荐搭配模组
 
-* **🛰️ Skyve**: 必备。用于管理播放集（Playset）、备份检查存档、排查冲突。
-* **📸 Image Overlay**: 必备。能够在地图上叠加真实世界地图，1:1 照抄现实城市的利器。
-* **🎥 Free Range Camera**: 解除原版相机视野限制。
-* **💧 Water Features**: 更好的水源掌控能力，大地图玩水必备。
-* **🏢 529 Tiles**: 用于解锁大面积的全图瓦片地块。
-* **🏗️ Anarchy**: 无碰撞/无政府建造环境。
-* **📊 Demand Master Control**: 原版游戏在人口达到 20-50 万后极易出现经济崩盘与卡顿，用此模组人工干预需求有助于维持城市基础运转。
+* **Skyve** — 播放集管理与存档备份。
+* **Image Overlay** — 叠加真实地图，1:1 复刻城市。
+* **Free Range Camera** — 解除相机限制。
+* **Water Features** — 大地图水源管理。
+* **529 Tiles** — 解锁全图瓦片。
+* **Anarchy** — 无碰撞建造。
 
 ## 🔍 已知问题
 
-* **🚦 原版寻路瓶颈与经济紊乱：** 在原版机制下，当人口达到 20-50 万（视路网规划而定），寻路队列拥堵会导致极度占用 CPU 并诱发经济模拟崩溃。本模组内置的经济与性能优化功能能够在极大程度上缓解这些致命问题，但不能保证稳定性。
-* **🏙️ 城市发展节奏建议：** 切忌一次性划定超大面积区块；不要过度拔高市民幸福度；不要大幅增加服务设施覆盖；不要建太多公园（甚至最好不建公园）。现实中稳步发展才是城市健康之道，过快的福利提升容易催生大量寻路乱象和经济异常。
-* **🗺️ 地图边缘异常：** 受限于原版框架的浮点精度限制，在大型地图最外侧边缘区域可能会出现奇怪的地形高度错误显示。建议将核心的工业/商业/住宅区选址在地图偏中间。
-* **🔄 向上兼容说明：** 如果您从之前的未发布非 57km 版（如私人测试版 28km/114km）升级上来，请在选项面板勾选 "Debug devalidation"，选好尺寸，载入成功后另存为新档，再关闭 Debug 选项。
-* 📬 欢迎加入 Discord 频道或前往 GitHub 提交报错反馈。
+* **🚦 原版寻路瓶颈：** 人口 20-50 万后寻路拥堵导致 CPU 瓶颈。本模组优化可大幅缓解但无法完全保证稳定性。
+* **🗺️ 地图边缘异常：** 浮点精度限制可能导致边缘地形伪影。核心区域建议偏中间。
+* **🔄 旧版升级：** 非 57km 旧测试版升级请启用 Debug devalidation，确认尺寸后另存为新档。
 
-## 💡 技巧与辅助
+## 💡 技巧
 
-* **💧 快速注水：** 大地图等待水流灌满极其漫长。现在可以使用游戏内 HUD 面板（"M"按钮 → 水体工具）中内置的**水体工具**：设置目标海平面后点击"应用"即可一键填充海洋，再将模拟速度拉到 128x 加速河流与湖泊注水。也可配合 **Water Features** mod 进行更精细的水源管理。
-* **🧹 清理缓存排雷：** 当游戏由于内存泄漏或其他机制崩溃退回桌面后，极易产生模组残留缓存导致后续读取直接坏档（这不限于本模组）。一旦发现载入界面出现报错红字，请立即大退游戏，打开 Skyve 专门执行一次"清理模组缓存"。
+* **💧 快速注水：** 用内置水体工具（M → 水体工具）设置海平面后点击"应用"一键填海，模拟速度拉到 128x 加速注水。也可配合 **Water Features** mod。
+* **🧹 清理缓存：** 崩溃后用 **Skyve** 执行"清理模组缓存"防止坏档。
