@@ -40,13 +40,13 @@ namespace MapExtPDX.SaveLoadSystem
                 { "MAPEXT_WORLDMAP.ConfirmImport", "Import Anyway" },
                 { "MAPEXT_WORLDMAP.CancelImport", "Cancel" },
 
-                // === Vanilla Save Conversion Dialog ===
-                { "VANILLA_CONVERT.Title", "Convert Vanilla Save" },
-                { "VANILLA_CONVERT.Message", "This save was created without MapExt (14km vanilla).\n\nConvert to current mode ({TARGET_MODE})?\n\n⚠ HIGHLY EXPERIMENTAL - the following will happen:\n• All 529 map tiles will be unlocked\n• Terrain heightmap will be synthesized\n• Natural resources and ground water will be regenerated\n• All vehicle and resident entities will be cleared\n• All outside connections will be removed (traffic/electricity/water)\n• Water sources will be upgraded and sea level reset\n\nThe original save file will NOT be modified.\nA new save will be created (Format: SaveName_MapExtMode).\nYou MUST restart the game after conversion to prevent water glitches or crashes." },
-                { "VANILLA_CONVERT.Confirm", "Convert and Load" },
+                // === Vanilla Map Extension Dialog ===
+                { "VANILLA_CONVERT.Title", "Extend Vanilla Map" },
+                { "VANILLA_CONVERT.Message", "This save was created without MapExt (14km vanilla).\n\nExtend to current mode ({TARGET_MODE})?\n\n⚠ HIGHLY EXPERIMENTAL - the following will happen:\n• Playable area will be expanded to new limits\n• All 529 map tiles will be unlocked\n• Terrain heightmap will be synthesized and expanded\n• Original natural resources and ground water will be preserved\n• All vehicle and resident entities will be cleared\n• All outside connections will be removed (traffic/electricity/water)\n• Water sources will be upgraded and sea level reset\n\nThe original save file will NOT be modified.\nA new save will be created (Format: SaveName_MapExtMode).\nYou MUST restart the game after conversion to prevent water glitches or crashes." },
+                { "VANILLA_CONVERT.Confirm", "Extend and Load" },
                 { "VANILLA_CONVERT.Cancel", "Cancel" },
-                { "VANILLA_CONVERT.Complete", "Conversion Complete" },
-                { "VANILLA_CONVERT.CompleteMessage", "Vanilla save has been converted to {TARGET_MODE}.\nNew save: {SAVE_NAME}\n\n✅ Terrain heightmap synthesized\n✅ Natural resources and ground water regenerated\n✅ All vehicle and resident entities cleared\n✅ All outside connections removed\n✅ Water sources upgraded and sea level reset\n⚠ All 529 map tiles unlocked\n\n⚠ RESTART REQUIRED\nYou MUST quit to desktop and reload the new save.\nFailure to restart will cause water simulation glitches or crashes!\n\n📋 AFTER RESTART - TODO LIST:\n\n1. Rebuild Outside Connections at new map edges:\n   • Roads (highway connections)\n   • Railways (train lines)\n   • Shipping Lanes (cargo and passenger ships)\n   • Airline Routes (airport flight paths)\n   • Electricity (power line connections)\n   • Water Supply (water pipe connections)\n\n2. Place new Water Sources:\n   • Original water sources have been cleared\n   • Place river/sea water sources at desired locations\n   • Wait for water simulation to fill naturally\n   • Use Water Tools (M button) to speed up filling" },
+                { "VANILLA_CONVERT.Complete", "Extension Complete" },
+                { "VANILLA_CONVERT.CompleteMessage", "Vanilla map has been extended to {TARGET_MODE}.\nNew save: {SAVE_NAME}\n\n✅ Terrain heightmap synthesized\n✅ Original natural resources and ground water preserved\n✅ All vehicle and resident entities cleared\n✅ All outside connections removed\n✅ Water sources upgraded and sea level reset\n⚠ All 529 map tiles unlocked\n\n⚠ RESTART REQUIRED\nYou MUST quit to desktop and reload the new save.\nFailure to restart will cause water simulation glitches or crashes!\n\n📋 AFTER RESTART - TODO LIST:\n\n1. Rebuild Outside Connections at new map edges:\n   • Roads (highway connections)\n   • Railways (train lines)\n   • Shipping Lanes (cargo and passenger ships)\n   • Airline Routes (airport flight paths)\n   • Electricity (power line connections)\n   • Water Supply (water pipe connections)\n\n2. Place new Water Sources and Adjust Sea Level:\n   • Original water sources have been cleared\n   • You MUST use the Water Features mod to place river/sea sources (no other mods have this feature)\n   • ⚠ Note: Water levels might not be perfectly accurate. Use Water Tools (M button) or Water Features mod to adjust and fill naturally." },
                 { "VANILLA_CONVERT.QuitConfirm", "Quit Game" },
                 { "VANILLA_CONVERT.QuitCancel", "Stay" }
             };
@@ -72,13 +72,13 @@ namespace MapExtPDX.SaveLoadSystem
                 { "MAPEXT_WORLDMAP.ConfirmImport", "仍然导入" },
                 { "MAPEXT_WORLDMAP.CancelImport", "取消" },
 
-                // === 原版存档转换对话框 ===
-                { "VANILLA_CONVERT.Title", "转换原版存档" },
-                { "VANILLA_CONVERT.Message", "此存档未使用 MapExt Mod（原版 14km）。\n\n是否转换为当前模式（{TARGET_MODE}）？\n\n⚠ 高度实验性 - 转换过程将执行以下操作：\n• 解锁全部 529 格地图分块\n• 合成地形高度图\n• 重新生成自然资源与地下水\n• 清除所有车辆与居民实体\n• 拆除全部外部连接（交通/电力/水管）\n• 升级水源并重置海平面\n\n原始存档不会被修改。\n转换后将自动保存为新存档 (格式: 存档名_MapExt模式)。\n必须重启游戏！否则将导致水体表现异常或游戏崩溃。" },
-                { "VANILLA_CONVERT.Confirm", "转换并加载" },
+                // === 原版地图扩展对话框 ===
+                { "VANILLA_CONVERT.Title", "扩展原版地图" },
+                { "VANILLA_CONVERT.Message", "此存档未使用 MapExt Mod（原版 14km）。\n\n是否扩展至当前模式（{TARGET_MODE}）？\n\n⚠ 高度实验性 - 转换过程将执行以下操作：\n• 扩展可游玩区域至新边界\n• 解锁全部 529 格地图分块\n• 合成并扩展地形高度图\n• 完美保留原版自然资源与地下水\n• 清除所有车辆与居民实体\n• 拆除全部外部连接（交通/电力/水管）\n• 升级水源并重置海平面\n\n原始存档不会被修改。\n转换后将自动保存为新存档 (格式: 存档名_MapExt模式)。\n必须重启游戏！否则将导致水体表现异常或游戏崩溃。" },
+                { "VANILLA_CONVERT.Confirm", "扩展并加载" },
                 { "VANILLA_CONVERT.Cancel", "取消" },
-                { "VANILLA_CONVERT.Complete", "转换完成" },
-                { "VANILLA_CONVERT.CompleteMessage", "原版存档已转换为 {TARGET_MODE}。\n新存档：{SAVE_NAME}\n\n✅ 地形高度图已合成\n✅ 自然资源与地下水已重新生成\n✅ 所有车辆与居民实体已清除\n✅ 全部外部连接已拆除\n✅ 水源已升级并重置海平面\n⚠ 全部 529 格地图分块已解锁\n\n⚠ 必须重启游戏\n请立即退出到桌面并重新加载新存档。\n不重启直接游玩会导致水体异常或游戏崩溃！\n\n📋 重启后待办事项：\n\n1. 在新的地图边界重建对外连接：\n   • 道路（高速公路连接）\n   • 铁路（火车线路）\n   • 航道（货运与客运轮船航线）\n   • 航线（机场飞行航线）\n   • 电力（输电线路连接）\n   • 供水（供水管道连接）\n\n2. 重新设置水源：\n   • 原有水源已被清除\n   • 在所需位置放置河流/海洋水源\n   • 等待水体模拟自然填充\n   • 可使用水体工具（M按钮）加速注水" },
+                { "VANILLA_CONVERT.Complete", "扩展完成" },
+                { "VANILLA_CONVERT.CompleteMessage", "原版地图已成功扩展至 {TARGET_MODE}。\n新存档：{SAVE_NAME}\n\n✅ 地形高度图已合成\n✅ 原版自然资源与地下水已完美保留\n✅ 所有车辆与居民实体已清除\n✅ 全部外部连接已拆除\n✅ 水源已升级并重置海平面\n⚠ 全部 529 格地图分块已解锁\n\n⚠ 必须重启游戏\n请立即退出到桌面并重新加载新存档。\n不重启直接游玩会导致水体异常或游戏崩溃！\n\n📋 重启后待办事项：\n\n1. 在新的地图边界重建对外连接：\n   • 道路（高速公路连接）\n   • 铁路（火车线路）\n   • 航道（货运与客运轮船航线）\n   • 航线（机场飞行航线）\n   • 电力（输电线路连接）\n   • 供水（供水管道连接）\n\n2. 重新设置水源与海平面：\n   • 原有水源已被清除，必须使用 Water Features 模组在所需位置重新放置河流/海洋水源（目前无其他模组具备此功能）\n   • ⚠ 提示：转换后水位可能不够准确。建议使用内建水体工具（M按钮）或 Water Features 模组手动调整海平面并加速注水。" },
                 { "VANILLA_CONVERT.QuitConfirm", "退出游戏" },
                 { "VANILLA_CONVERT.QuitCancel", "留在游戏" },
             };

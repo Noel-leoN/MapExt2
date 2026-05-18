@@ -1,4 +1,4 @@
-﻿// Game.Simulation.NaturalResourceSystem : CellMapSystem<NaturalResourceCell>, IJobSerializable, IPostDeserialize
+// Game.Simulation.NaturalResourceSystem : CellMapSystem<NaturalResourceCell>, IJobSerializable, IPostDeserialize
 
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
@@ -192,6 +192,8 @@ namespace MapExtPDX.ModeC
         private void GenerateProceduralResources()
         {
             // 使用 Perlin Noise 生成初始资源 (仅在新游戏时调用)
+            // UV [0,1] 配合固定频率，在扩展地图上资源区域按比例放大
+            // 这是预期行为：更大的地图 → 更大的资源区域（占比不变）
             float3 noiseOffset = default(float3);
             for (int i = 0; i < m_Map.Length; i++)
             {

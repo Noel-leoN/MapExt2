@@ -264,23 +264,31 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
             // (此阶段必须单线程)
             sw.Restart();
             var transpiler = new HarmonyMethod(typeof(CellMapSystemPatchManager), nameof(Transpiler));
+            int patchFailed = 0;
             foreach (var method in distinctMethodsToPatch)
             {
                 try
                 {
                     harmony.Patch(method, transpiler: transpiler);
                 }
-                catch
+                catch (Exception ex)
                 {
-                    // 某些动态方法可能无法 patch，静默跳过
+                    // 记录修补失败的方法，便于诊断坐标映射错位问题
+                    patchFailed++;
+                    ModLog.Warn(Tag,
+                        $"Transpiler 修补失败: {method.DeclaringType?.Name}::{method.Name} — {ex.GetType().Name}: {ex.Message}");
                 }
             }
 
             sw.Stop();
 
-            // 5. 输出结构化报告
+            // --- 5. 关键系统修补验证 ---
+            // 验证噪声/污染写入者系统是否被成功修补，这些系统使用 m_MapSize/m_TextureSize 写入 CellMap
+            VerifyCriticalSystems();
+
+            // 6. 输出结构化报告
             PrintSummary(totalTypesScanned, totalMethodsScanned, distinctMethodsToPatch.Count, scanTime,
-                sw.ElapsedMilliseconds);
+                sw.ElapsedMilliseconds, patchFailed);
         }
 
         #endregion
@@ -288,18 +296,57 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
         #region Helpers
 
         /// <summary>
+        /// 验证关键污染写入者系统是否被 transpiler 成功修补
+        /// BuildingPollutionAddSystem 和 NetPollutionSystem 直接使用 kMapSize/kTextureSize 写入 CellMap buffer
+        /// 若修补失败，建筑和道路噪声数据将写入错误坐标，导致建筑效果与 Infoview 不一致
+        /// </summary>
+        private static void VerifyCriticalSystems()
+        {
+            var criticalTypes = new[]
+            {
+                (typeof(Game.Simulation.BuildingPollutionAddSystem), "OnUpdate"),
+                (typeof(Game.Simulation.NetPollutionSystem),         "OnUpdate"),
+            };
+
+            foreach (var (type, methodName) in criticalTypes)
+            {
+                var method = type.GetMethod(methodName,
+                    BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public);
+
+                if (method == null)
+                {
+                    ModLog.Warn(Tag, $"[关键系统验证] 未找到方法: {type.Name}::{methodName}");
+                    continue;
+                }
+
+                // 检查该方法是否已被 Harmony 修补（是否存在 transpiler patch）
+                var patches = Harmony.GetPatchInfo(method);
+                bool isPatched = patches != null &&
+                                 patches.Transpilers.Any(p => p.owner == Mod.HarmonyIdModes);
+
+                if (isPatched)
+                    ModLog.Ok(Tag, $"[关键系统验证] ✓ {type.Name}::{methodName} — transpiler 已应用");
+                else
+                    ModLog.Warn(Tag,
+                        $"[关键系统验证] ✗ {type.Name}::{methodName} — transpiler 未应用！" +
+                        $" 噪声/污染写入坐标将使用原版 kMapSize=14336，建筑效果可能与 Infoview 不一致。");
+            }
+        }
+
+        /// <summary>
         /// 结构化报告输出
         /// Release: 仅输出统计摘要
         /// Debug: 输出完整修补列表（缩短名称）
         /// </summary>
-        private static void PrintSummary(int types, int methods, int patched, long scanTime, long patchTime)
+        private static void PrintSummary(int types, int methods, int patched, long scanTime, long patchTime, int failed)
         {
             ModLog.Report(Tag, "CellMap Fields 修补报告", rb =>
             {
                 rb.Stat("Namespaces", string.Join(", ", AllowedNamespaces));
                 rb.Stat("Scanned", $"{types} Types, {methods} Methods in {scanTime}ms");
                 rb.Stat("Patched", $"{patched} Methods in {patchTime}ms");
-                rb.Stat("Fields", $"{_replacementMap.Count} registered");
+                rb.Stat("Failed",  $"{failed} Methods (see Warn logs above)");
+                rb.Stat("Fields",  $"{_replacementMap.Count} registered");
 #if DEBUG
                 // Debug 模式: 输出完整修补详情（名称已缩短）
                 foreach (var entry in _patchLog.OrderBy(e => e.Key))

@@ -489,14 +489,13 @@ namespace MapExtPDX
 
                 // --- Group: 存档转换 ---
                 { m_Setting.GetOptionGroupLocaleID(ModSettings.kSaveConvertGroup), "存档转换 (实验性)" },
-                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.EnableVanillaConversion)), "⚠ 原版存档转换 (高度实验性)" },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.EnableVanillaConversion)), "⚠ 原版地图扩展 (高度实验性)" },
                 {
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.EnableVanillaConversion)),
                     "⚠ 高度实验性功能。启用后可将原版14km存档转换到当前MapExt模式。\n\n" +
                     "★ 转换时执行的操作：\n" +
-                    " - 合成地形高度图（无世界背景时自动生成平面地形）\n" +
-                    " - 重新生成自然资源：肥力/矿石/石油（Perlin 噪声）\n" +
-                    " - 重新生成地下水（Perlin 噪声）\n" +
+                    " - 合成并扩展地形高度图（无世界背景时自动生成平面地形）\n" +
+                    " - 完美保留原版自然资源与地下水\n" +
                     " - 删除所有外部连接节点（公路/铁路/航空/航运）\n" +
                     " - 解锁全部 529 格地图分块\n\n" +
                     "★ 已知问题：\n" +

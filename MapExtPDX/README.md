@@ -1,10 +1,25 @@
-# 🚀 Cities Skylines 2 Map Extended Mod (28/57/114/vanilla) — Vanilla Save Import!
+# 🚀 Map Extended Mod (28/57/114/vanilla) — Vanilla Map Extension!
 
-## 🔥 v4.0.0 — Import Your Vanilla Save to Big Map!
+## 🔥 v4.0.1 — Expand Your Existing Vanilla City!
 
-> **🎉 NEW: You can now bring your existing vanilla city to 28km or 57km maps!** No need to start from scratch — simply load your vanilla save, and MapExt will automatically convert it to the extended map format. Your terrain, city layout, and buildings are preserved. This is a one-click, non-destructive process.
+> **🎉 NEW: You can now extend your existing 14km vanilla city to 28km or 57km maps!** No need to start from scratch — simply load your vanilla save, and MapExt will automatically convert it, expanding the playable area to regions previously outside the map limits. Your terrain, city layout, and buildings are perfectly preserved. This is a one-click, non-destructive process.
 
-* **🔄 Vanilla Save Conversion:** Import vanilla (14km) saves and convert to 28km or 57km mode. The pipeline synthesizes terrain heightmap, regenerates resources and groundwater, clears stale entities, removes outside connections, resets water simulation, unlocks all 529 tiles, and auto-saves to a new file. ⚠️ Restart required. After restart, rebuild outside connections (roads, railways, shipping lanes, airline routes, electricity, water supply) and place new water sources.
+### 🛠️ How to Extend Your City
+
+1. In **Main Menu**, open MapExt Option UI and select target mode (28km or 57km).
+2. Enable **"Vanilla Map Extension"** in MapSize tab → Save Conversion group.
+3. **Load** any vanilla (14km) save. A confirmation dialog lists all conversion steps.
+4. Click **"Extend and Load"**. The mod will: unlock 529 tiles, clear vehicles/residents, remove outside connections, synthesize extended heightmap, preserve original resources/groundwater, reset water, and auto-save as `{Name}_MapExt{Mode}`.
+5. **MUST restart game** after conversion to prevent water glitches or crashes.
+6. After restart, complete:
+   * **Rebuild Outside Connections** at new map edges: Roads, Railways, Shipping Lanes, Airline Routes, Electricity, Water Supply
+   * **Place new Water Sources**: Original sources cleared. You MUST use the **Water Features** mod to place river/sea sources (no other mods currently have this feature), then wait for natural fill, or use Water Tools (M button) to speed up.
+   * **Adjust Sea Level**: Note that water levels might not be perfectly accurate after conversion, please manually adjust them using the built-in Water Tools (M button) or the Water Features mod.
+
+⚠️ **Highly experimental.** Original save is never modified.
+
+### 🌟 Other Highlights
+
 * **💧 Water Tools:** New HUD panel section with sea level control (0.1m precision slider and numeric input), Apply Sea Level (GPU reset), Reset Water (re-simulate from sources), and simulation speed control (0x-128x exponential stepping).
 * **⚠️ Compatibility:** Built-in Conflict Monitoring System auto-detects and disables conflicting economy subsystems at runtime. Mods like Realistic Trip and Realistic PathFinding can coexist. Check status in the EconomyEX tab.
 * **🔗 [EconomyEX](https://mods.paradoxplaza.com/mods/137149/Windows):** Standalone economy subset for vanilla-size maps. Auto-disables when both mods are installed.
@@ -33,8 +48,8 @@
 * **🏗️ Editor Collision Override:** Skip collision checks in Map Editor (Off / Trees Only / All Objects).
 * **🏔️ Terrain-Water Optimization:** GPU buffer pre-allocation, building cull throttling, terrain cascade throttling, configurable water sim quality — all adjustable in-game.
 * **🌍 Disable World Backdrop:** Prevents background heightmap loading, reducing GPU/VRAM overhead.
-* **🔄 Vanilla Save Conversion (v4.0.0):** One-click import of vanilla saves to extended maps. See Usage section below.
-* **💧 Water Tools (v4.0.0):** Sea level control, water reset, and simulation speed (0x-128x) in the HUD panel.
+* **🔄 Vanilla Map Extension (v4.0.1):** One-click expansion of vanilla saves to extended maps.
+* **💧 Water Tools (v4.0.1):** Sea level control, water reset, and simulation speed (0x-128x) in the HUD panel.
 
 ## 🛠️ Usage
 
@@ -48,19 +63,6 @@ Import a heightmap/worldmap in the Map Editor:
 * **Format:** 4096x4096 16-bit grayscale (PNG/TIFF). Resolutions up to 14336x14336 auto-downsampled.
 * **⚠️** Mismatched dimensions will stretch terrain.
 * **🚀 Tip:** Do NOT import Worldmap on 57km/114km maps — it adds 1-2 GB VRAM with no gameplay benefit.
-
-### 🔄 Converting a Vanilla Save (v4.0.0)
-
-1. In **Main Menu**, open MapExt Option UI and select target mode (28km or 57km).
-2. Enable **"Vanilla Save Conversion"** in MapSize tab → Save Conversion group.
-3. **Load** any vanilla (14km) save. A confirmation dialog lists all conversion steps.
-4. Click **"Convert and Load"**. The mod will: unlock 529 tiles, clear vehicles/residents, remove outside connections, synthesize heightmap, regenerate resources/groundwater, reset water, and auto-save as `{Name}_MapExt{Mode}`.
-5. **MUST restart game** after conversion to prevent water glitches or crashes.
-6. After restart, complete:
-   * **Rebuild Outside Connections** at new map edges: Roads (highway), Railways, Shipping Lanes, Airline Routes, Electricity (power lines), Water Supply (pipes)
-   * **Place new Water Sources**: Original sources cleared. Place river/sea sources, wait for natural fill, or use Water Tools (M button) to speed up.
-
-⚠️ **Highly experimental.** Original save is never modified.
 
 ### 📂 Useful Directory Paths
 
@@ -98,11 +100,26 @@ Import a heightmap/worldmap in the Map Editor:
 
 ---
 
-## 🔥 v4.0.0 更新说明 — 原版存档一键导入大地图！
+## 🔥 v4.0.1 更新说明 — 扩展你的现有原版城市！
 
-> **🎉 重磅新功能：现在可以将你的原版城市直接迁移到 28km 或 57km 大地图！** 无需从零开始，只需加载原版存档，MapExt 会自动将其转换为扩展地图格式。你的地形、城市布局和建筑均会保留。
+> **🎉 重磅新功能：现在你可以将现有的 14km 原版城市扩展至 28km 或 57km 的庞大区域！** 无需从零开始，只需加载原版存档，MapExt 会自动将其转换，将原版无法游玩的边界区域全部扩展为可玩区域。你的原有地形、城市布局和建筑均会完美保留。
 
-* **🔄 原版存档转换：** 将原版（14km）存档转换为 28km 或 57km 模式。自动完成：地形高度图合成、自然资源与地下水重生、车辆与居民清除、外部连接拆除、水体模拟重置、529 格地图解锁、自动另存新文件。⚠️ 转换后必须重启，然后重建对外连接（道路、铁路、航道、航线、电力、供水）并放置水源。
+### 🛠️ 如何扩展你的现有城市
+
+1. **主菜单**中打开 MapExt 选项，选择目标模式（28km 或 57km）。
+2. 在 MapSize 标签页 → 存档转换组中启用**「原版地图扩展」**。
+3. 加载任意原版（14km）存档，弹出确认对话框。
+4. 点击**「扩展并加载」**。自动执行：解锁 529 分块、清除车辆/居民、拆除外部连接、合成扩展高度图、完美保留原版资源/地下水、重置水体、另存为 `{存档名}_MapExt{模式}`。
+5. **必须重启游戏**，否则水体异常或崩溃。
+6. 重启后完成：
+   * **重建对外连接**：道路、铁路、航道、航线、电力、供水
+   * **放置水源**：原有水源已清除。你必须使用 **Water Features** 模组来放置河流/海洋水源（目前没有其他模组具备此功能），放置后等待填充，或用水体工具（M按钮）加速。
+   * **调整海平面**：提示：转换后水位可能不够准确，建议使用内建的“水体工具”（M键）或配合 Water Features 模组手动调整海平面。
+
+⚠️ **高度实验性功能。** 原始存档不会被修改。
+
+### 🌟 其它亮点更新
+
 * **💧 水体工具面板：** HUD 面板新增水体工具：海平面调节（0.1m 精度）、应用海平面（GPU 重置）、重置水体（从水源重新模拟）、模拟速度控制（0x-128x）。
 * **⚠️ 兼容性：** 内置冲突监控系统，自动检测并禁用与其他 Mod 冲突的经济子系统。Realistic Trip 等可共存。
 * **🔗 [EconomyEX](https://mods.paradoxplaza.com/mods/137149/Windows)：** 经济模块独立子集，适用于原版地图。两者同时安装时 EconomyEX 自动休眠。
@@ -130,8 +147,8 @@ Import a heightmap/worldmap in the Map Editor:
 * **🏗️ 编辑器碰撞跳过：** 三档模式（关闭/仅树木/所有物体）。
 * **🏔️ 地形-水体优化：** GPU 缓冲预分配、建筑裁剪降频、地形级联降频、水模拟质量——游戏内实时调节。
 * **🌍 禁用背景世界地图：** 阻止 Backdrop 加载，降低 GPU/显存开销。
-* **🔄 原版存档转换（v4.0.0）：** 一键导入原版存档至大地图。详见下方用法。
-* **💧 水体工具（v4.0.0）：** 海平面调节、水体重置、模拟速度控制（0x-128x）。
+* **🔄 原版地图扩展（v4.0.1）：** 一键将原版存档扩展至大地图。
+* **💧 水体工具（v4.0.1）：** 海平面调节、水体重置、模拟速度控制（0x-128x）。
 
 ## 🛠️ 用法
 
@@ -145,19 +162,6 @@ Import a heightmap/worldmap in the Map Editor:
 * **格式**：4096x4096 16位灰度图（PNG/TIFF），最高支持 14336x14336 自动降采样。
 * **⚠️** 尺寸不匹配会导致拉伸。
 * **🚀 提示**：57km/114km 地图不要导入 Worldmap——仅视觉装饰，额外消耗 1-2GB 显存。
-
-### 🔄 将原版存档转换为大地图（v4.0.0）
-
-1. **主菜单**中打开 MapExt 选项，选择目标模式（28km 或 57km）。
-2. 在 MapSize 标签页 → 存档转换组中启用**「原版存档转换」**。
-3. 加载任意原版（14km）存档，弹出确认对话框。
-4. 点击**「转换并加载」**。自动执行：解锁 529 分块、清除车辆/居民、拆除外部连接、合成高度图、重生资源/地下水、重置水体、另存为 `{存档名}_MapExt{模式}`。
-5. **必须重启游戏**，否则水体异常或崩溃。
-6. 重启后完成：
-   * **重建对外连接**：道路（高速公路）、铁路、航道（货运/客运轮船）、航线（飞机）、电力（输电线路）、供水（水管）
-   * **放置水源**：原有水源已清除，放置河流/海洋水源后等待填充，或用水体工具（M按钮）加速
-
-⚠️ **高度实验性**功能。原始存档不会被修改。
 
 ### 📂 常用路径
 

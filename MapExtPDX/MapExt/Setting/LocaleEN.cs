@@ -553,14 +553,13 @@ namespace MapExtPDX
 
                 // --- Group: Save Conversion ---
                 { m_Setting.GetOptionGroupLocaleID(ModSettings.kSaveConvertGroup), "Save Conversion (Experimental)" },
-                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.EnableVanillaConversion)), "⚠ Vanilla Save Conversion (HIGHLY EXPERIMENTAL)" },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.EnableVanillaConversion)), "⚠ Vanilla Map Extension (HIGHLY EXPERIMENTAL)" },
                 {
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.EnableVanillaConversion)),
-                    "⚠ HIGHLY EXPERIMENTAL. Enables conversion of vanilla 14km saves to the current MapExt mode.\n\n" +
+                    "⚠ HIGHLY EXPERIMENTAL. Enables extending vanilla 14km saves to the current MapExt mode.\n\n" +
                     "★ What happens during conversion:\n" +
-                    " - Terrain heightmap synthesized (flat fallback if no world backdrop)\n" +
-                    " - NaturalResource (Fertility/Ore/Oil) regenerated via Perlin noise\n" +
-                    " - GroundWater regenerated via Perlin noise\n" +
+                    " - Terrain heightmap synthesized and expanded (flat fallback if no world backdrop)\n" +
+                    " - Original NaturalResource and GroundWater perfectly preserved\n" +
                     " - All OutsideConnection nodes (highway/rail/air/sea) DELETED\n" +
                     " - All 529 map tiles unlocked\n\n" +
                     "★ Known Issues:\n" +

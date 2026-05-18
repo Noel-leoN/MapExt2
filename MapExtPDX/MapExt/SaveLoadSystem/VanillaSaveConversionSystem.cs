@@ -36,8 +36,8 @@ namespace MapExtPDX.SaveLoadSystem
     /// 原版存档转换后处理系统。
     /// 在 OnGameLoaded 时检测 PendingConversion 标志，执行：
     /// ① Heightmap 合成
-    /// ② NaturalResource Perlin 重生
-    /// ③ GroundWater Perlin 初始化
+    /// ② NaturalResource 中心嵌入
+    /// ③ GroundWater 中心嵌入
     /// ④ 自动保存新档
     /// </summary>
     public partial class VanillaSaveConversionSystem : GameSystemBase
@@ -51,17 +51,7 @@ namespace MapExtPDX.SaveLoadSystem
         private const int kVanillaMapSize = 14336;
         private const int kVanillaWorldSize = 57344; // kDefaultMapSize × 4
 
-        // === Perlin 噪声参数 (与原版 SetDefaults 一致) ===
-        // NaturalResource
-        private static readonly float3 kNRPerlinScale = new float3(6.1f, 13.9f, 10.7f);
-        private static readonly float3 kNRPerlinOffset = new float3(0.4f, 0.7f, 0.7f);
-        private static readonly float3 kNRPerlinAmplitude = new float3(5f, 10f, 10f);
 
-        // GroundWater
-        private const float kGWPerlinFreq = 32f;
-        private const float kGWPerlinThreshold = 0.6f;
-        private const float kGWPerlinRange = 0.4f;
-        private const short kGWMaxValue = 10000;
 
         private bool m_ConversionExecuted = false;
         private bool m_OriginalPausedAfterLoading = false;
@@ -125,10 +115,10 @@ namespace MapExtPDX.SaveLoadSystem
                 // ① Heightmap 合成 (含平面底图回退)
                 ExecuteHeightmapSynthesis();
 
-                // ② NaturalResource Perlin 重生
+                // ② NaturalResource 中心嵌入
                 ExecuteNaturalResourceRegen();
 
-                // ③ GroundWater Perlin 初始化
+                // ③ GroundWater 中心嵌入
                 ExecuteGroundWaterInit();
 
                 // ③b 水源升级 + 海平面重置
@@ -603,72 +593,111 @@ namespace MapExtPDX.SaveLoadSystem
 
         #endregion
 
-        #region ② NaturalResource Perlin 重生
+        #region ② NaturalResource 中心嵌入
+
+        // === 原版 NaturalResource 纹理尺寸 ===
+        private const int kVanillaNRTextureSize = 256;
 
         /// <summary>
-        /// NaturalResource Perlin 重生：使用与原版 SetDefaults(NewGame) 一致的 Perlin 噪声填充。
-        /// 通过 Instance 静态属性获取当前模式的 NaturalResourceSystemMod，
-        /// 再通过 AccessTools 访问基类 CellMapSystem<T>.m_Map。
+        /// NaturalResource 资源修复：将反序列化拉伸的数据降采样回原版尺寸，
+        /// 嵌入扩展地图中心区域，外围保持清空（由用户自行创建资源）。
+        ///
+        /// 策略：
+        /// ① 从反序列化后被拉伸的 m_Map 中降采样回原版尺寸 (256²)，恢复原始资源数据。
+        /// ② 清空整个 m_Map。
+        /// ③ 将原版数据 1:1 嵌入到扩展地图中心。
         /// </summary>
         private void ExecuteNaturalResourceRegen()
         {
-            ModLog.Info(Tag, "② 开始 NaturalResource Perlin 重生...");
+            ModLog.Info(Tag, "② 开始 NaturalResource 中心嵌入...");
 
             try
             {
-                var nrSystem = GetNaturalResourceSystemMod();
-                if (nrSystem == null)
+                // === 读取源: 原版 NaturalResourceSystem (存档数据在这里) ===
+                var vanillaSystem = World.GetExistingSystemManaged<NaturalResourceSystem>();
+                if (vanillaSystem == null)
+                {
+                    ModLog.Warn(Tag, "无法获取原版 NaturalResourceSystem 实例，跳过");
+                    return;
+                }
+                CompleteDependencies(vanillaSystem);
+
+                var vanillaMapField = AccessTools.Field(typeof(CellMapSystem<NaturalResourceCell>), "m_Map");
+                if (vanillaMapField == null)
+                {
+                    ModLog.Warn(Tag, "无法获取原版 NaturalResource m_Map 字段，跳过");
+                    return;
+                }
+                var vanillaMap = (NativeArray<NaturalResourceCell>)vanillaMapField.GetValue(vanillaSystem);
+                int vanillaSize = (int)math.sqrt(vanillaMap.Length); // 应为 256
+
+#if DEBUG
+                ModLog.Info(Tag, $"原版 NaturalResource m_Map: Length={vanillaMap.Length}, Size={vanillaSize}");
+#endif
+
+                // 统计原版数据中的非零 cell（兼作全零守卫）
+                int nzFert = 0, nzOre = 0, nzOil = 0;
+                for (int i = 0; i < vanillaMap.Length; i++)
+                {
+                    var dc = vanillaMap[i];
+                    if (dc.m_Fertility.m_Base > 0) nzFert++;
+                    if (dc.m_Ore.m_Base > 0) nzOre++;
+                    if (dc.m_Oil.m_Base > 0) nzOil++;
+                }
+#if DEBUG
+                ModLog.Info(Tag, $"原版数据统计: 非零 Fertility={nzFert}, Ore={nzOre}, Oil={nzOil} (共{vanillaMap.Length}cells)");
+#endif
+
+                if (nzFert == 0 && nzOre == 0 && nzOil == 0)
+                {
+                    ModLog.Warn(Tag, "原版数据全为零，可能存档未正确反序列化，跳过");
+                    return;
+                }
+
+                // === 写入目标: Mod NaturalResourceSystemMod (大地图 CellMap) ===
+                var modSystem = GetNaturalResourceSystemMod();
+                if (modSystem == null)
                 {
                     ModLog.Warn(Tag, "无法获取 NaturalResourceSystemMod 实例，跳过");
                     return;
                 }
+                CompleteDependencies(modSystem);
 
-                // 确保所有未完成的 Job 结束
-                CompleteDependencies(nrSystem);
-
-                // 通过 AccessTools 获取基类 CellMapSystem<NaturalResourceCell>.m_Map
-                var mapField = AccessTools.Field(nrSystem.GetType().BaseType, "m_Map");
-                if (mapField == null)
+                var modMapField = AccessTools.Field(modSystem.GetType().BaseType, "m_Map");
+                if (modMapField == null)
                 {
-                    ModLog.Warn(Tag, "无法获取 NaturalResource m_Map 字段，跳过");
+                    ModLog.Warn(Tag, "无法获取 Mod NaturalResource m_Map 字段，跳过");
                     return;
                 }
+                var modMap = (NativeArray<NaturalResourceCell>)modMapField.GetValue(modSystem);
+                int modSize = (int)math.sqrt(modMap.Length); // ModeA=1024, ModeB=512
 
-                var map = (NativeArray<NaturalResourceCell>)mapField.GetValue(nrSystem);
-                if (!map.IsCreated || map.Length == 0)
+#if DEBUG
+                ModLog.Info(Tag, $"Mod NaturalResource m_Map: Length={modMap.Length}, Size={modSize}");
+#endif
+
+                // --- 清空 mod m_Map ---
+                for (int i = 0; i < modMap.Length; i++)
+                    modMap[i] = default;
+
+                // --- 将原版数据 1:1 嵌入 mod 地图中心 ---
+                // 原版: 256 cells × 56m/cell = 14336m
+                // ModeA 1024²: embedStart = (1024-256)/2 = 384
+                // ModeB 512²:  embedStart = (512-256)/2 = 128
+                int embedStart = (modSize - vanillaSize) / 2;
+                int embedEnd = embedStart + vanillaSize;
+
+                for (int vy = 0; vy < vanillaSize; vy++)
                 {
-                    ModLog.Warn(Tag, $"NaturalResource m_Map 无效 (Length={map.Length})，跳过");
-                    return;
+                    for (int vx = 0; vx < vanillaSize; vx++)
+                    {
+                        int srcIdx = vy * vanillaSize + vx;
+                        int dstIdx = (embedStart + vy) * modSize + (embedStart + vx);
+                        modMap[dstIdx] = vanillaMap[srcIdx];
+                    }
                 }
 
-                int textureSize = (int)math.sqrt(map.Length);
-                ModLog.Info(Tag, $"NaturalResource m_Map: Length={map.Length}, TextureSize={textureSize}");
-
-                // Perlin 噪声填充 (与原版 NaturalResourceSystem.SetDefaults 逻辑一致)
-                for (int i = 0; i < map.Length; i++)
-                {
-                    float u = (float)(i % textureSize) / textureSize;
-                    float v = (float)(i / textureSize) / textureSize;
-
-                    float3 freqU = u * kNRPerlinScale;
-                    float3 freqV = v * kNRPerlinScale;
-
-                    float3 noise;
-                    noise.x = Mathf.PerlinNoise(freqU.x, freqV.x);
-                    noise.y = Mathf.PerlinNoise(freqU.y, freqV.y);
-                    noise.z = Mathf.PerlinNoise(freqU.z, freqV.z);
-
-                    noise = (noise - kNRPerlinOffset) * kNRPerlinAmplitude;
-                    noise = 10000f * math.saturate(noise);
-
-                    NaturalResourceCell cell = default;
-                    cell.m_Fertility.m_Base = (ushort)noise.x;
-                    cell.m_Ore.m_Base = (ushort)noise.y;
-                    cell.m_Oil.m_Base = (ushort)noise.z;
-                    map[i] = cell;
-                }
-
-                ModLog.Ok(Tag, $"NaturalResource Perlin 重生完成: {map.Length} cells");
+                ModLog.Ok(Tag, $"NaturalResource 修复完成: 原版 {vanillaSize}² 嵌入 Mod {modSize}² 中心 [{embedStart}:{embedEnd}], 外围清空");
             }
             catch (Exception ex)
             {
@@ -678,69 +707,96 @@ namespace MapExtPDX.SaveLoadSystem
 
         #endregion
 
-        #region ③ GroundWater Perlin 初始化
+        #region ③ GroundWater 中心嵌入
+
+        // === 原版 GroundWater 纹理尺寸 ===
+        private const int kVanillaGWTextureSize = 256;
 
         /// <summary>
-        /// GroundWater Perlin 初始化：使用与原版 SetDefaults 一致的 Perlin 噪声填充 m_Max 和 m_Amount。
+        /// GroundWater 修复：将反序列化拉伸的数据降采样回原版尺寸，
+        /// 嵌入扩展地图中心区域，外围保持清空。策略与 NaturalResource 相同。
         /// </summary>
         private void ExecuteGroundWaterInit()
         {
-            ModLog.Info(Tag, "③ 开始 GroundWater Perlin 初始化...");
+            ModLog.Info(Tag, "③ 开始 GroundWater 中心嵌入...");
 
             try
             {
-                var gwSystem = GetGroundWaterSystemMod();
-                if (gwSystem == null)
+                // === 读取源: 原版 GroundWaterSystem (存档数据在这里) ===
+                var vanillaSystem = World.GetExistingSystemManaged<GroundWaterSystem>();
+                if (vanillaSystem == null)
+                {
+                    ModLog.Warn(Tag, "无法获取原版 GroundWaterSystem 实例，跳过");
+                    return;
+                }
+                CompleteDependencies(vanillaSystem);
+
+                var vanillaMapField = AccessTools.Field(typeof(CellMapSystem<GroundWater>), "m_Map");
+                if (vanillaMapField == null)
+                {
+                    ModLog.Warn(Tag, "无法获取原版 GroundWater m_Map 字段，跳过");
+                    return;
+                }
+                var vanillaMap = (NativeArray<GroundWater>)vanillaMapField.GetValue(vanillaSystem);
+                int vanillaSize = (int)math.sqrt(vanillaMap.Length); // 应为 256
+
+#if DEBUG
+                ModLog.Info(Tag, $"原版 GroundWater m_Map: Length={vanillaMap.Length}, Size={vanillaSize}");
+                int nzAmount = 0;
+                for (int i = 0; i < vanillaMap.Length; i++)
+                    if (vanillaMap[i].m_Amount > 0) nzAmount++;
+                ModLog.Info(Tag, $"原版数据统计: 非零 Amount={nzAmount} (共{vanillaMap.Length}cells)");
+#endif
+
+                // === 写入目标: Mod GroundWaterSystemMod ===
+                var modSystem = GetGroundWaterSystemMod();
+                if (modSystem == null)
                 {
                     ModLog.Warn(Tag, "无法获取 GroundWaterSystemMod 实例，跳过");
                     return;
                 }
+                CompleteDependencies(modSystem);
 
-                // 确保所有未完成的 Job 结束
-                CompleteDependencies(gwSystem);
-
-                // 通过 AccessTools 获取基类 CellMapSystem<GroundWater>.m_Map
-                var mapField = AccessTools.Field(gwSystem.GetType().BaseType, "m_Map");
-                if (mapField == null)
+                var modMapField = AccessTools.Field(modSystem.GetType().BaseType, "m_Map");
+                if (modMapField == null)
                 {
-                    ModLog.Warn(Tag, "无法获取 GroundWater m_Map 字段，跳过");
+                    ModLog.Warn(Tag, "无法获取 Mod GroundWater m_Map 字段，跳过");
                     return;
                 }
+                var modMap = (NativeArray<GroundWater>)modMapField.GetValue(modSystem);
+                int modSize = (int)math.sqrt(modMap.Length);
 
-                var map = (NativeArray<GroundWater>)mapField.GetValue(gwSystem);
-                if (!map.IsCreated || map.Length == 0)
+#if DEBUG
+                ModLog.Info(Tag, $"Mod GroundWater m_Map: Length={modMap.Length}, Size={modSize}");
+#endif
+
+                // --- 清空 mod m_Map ---
+                for (int i = 0; i < modMap.Length; i++)
+                    modMap[i] = default;
+
+                // --- 将原版数据 1:1 嵌入中心 ---
+                int embedStart = (modSize - vanillaSize) / 2;
+                int embedEnd = embedStart + vanillaSize;
+
+                for (int vy = 0; vy < vanillaSize; vy++)
                 {
-                    ModLog.Warn(Tag, $"GroundWater m_Map 无效 (Length={map.Length})，跳过");
-                    return;
-                }
-
-                int textureSize = (int)math.sqrt(map.Length);
-                ModLog.Info(Tag, $"GroundWater m_Map: Length={map.Length}, TextureSize={textureSize}");
-
-                // Perlin 噪声填充 (与原版 GroundWaterSystem.SetDefaults 逻辑一致)
-                for (int i = 0; i < map.Length; i++)
-                {
-                    float u = (float)(i % textureSize) / textureSize;
-                    float v = (float)(i / textureSize) / textureSize;
-
-                    short maxVal = (short)Mathf.RoundToInt(
-                        kGWMaxValue * math.saturate(
-                            (Mathf.PerlinNoise(kGWPerlinFreq * u, kGWPerlinFreq * v) - kGWPerlinThreshold) / kGWPerlinRange));
-
-                    map[i] = new GroundWater
+                    for (int vx = 0; vx < vanillaSize; vx++)
                     {
-                        m_Amount = maxVal,
-                        m_Max = maxVal
-                    };
+                        int srcIdx = vy * vanillaSize + vx;
+                        int dstIdx = (embedStart + vy) * modSize + (embedStart + vx);
+                        modMap[dstIdx] = vanillaMap[srcIdx];
+                    }
                 }
 
-                ModLog.Ok(Tag, $"GroundWater Perlin 初始化完成: {map.Length} cells");
+                ModLog.Ok(Tag, $"GroundWater 修复完成: 原版 {vanillaSize}² 嵌入 Mod {modSize}² 中心 [{embedStart}:{embedEnd}], 外围清空");
             }
             catch (Exception ex)
             {
                 ModLog.Error(Tag, $"GroundWater 处理失败: {ex}");
             }
         }
+
+
 
         /// <summary>
         /// 完成目标系统的所有挂起 Job 依赖，确保安全读写 m_Map。
