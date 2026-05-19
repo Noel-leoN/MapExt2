@@ -21,12 +21,13 @@
 ### 🌟 Other Highlights
 
 * **💧 Water Tools:** New HUD panel section with sea level control (0.1m precision slider and numeric input), Apply Sea Level (GPU reset), Reset Water (re-simulate from sources), and simulation speed control (0x-128x exponential stepping).
-* **⚠️ Compatibility:** Built-in Conflict Monitoring System auto-detects and disables conflicting economy subsystems at runtime. Mods like Realistic Trip and Realistic PathFinding can coexist. Check status in the EconomyEX tab.
+* **⚠️ Compatibility:** Built-in Conflict Monitoring System attempts to auto-detect and disable conflicting economy subsystems at runtime. However, for optimal performance and simulation stability, it is highly recommended to avoid using other economy or pathfinding mods simultaneously. Check system status in the EconomyEX tab.
 * **🔗 [EconomyEX](https://mods.paradoxplaza.com/mods/137149/Windows):** Standalone economy subset for vanilla-size maps. Auto-disables when both mods are installed.
 
 ## ⚠️ IMPORTANT: READ BEFORE USE
 
 * **🛡️ Use at your own risk.** This mod makes extensive modifications to the game engine.
+* **⚠️ Mod Compatibility:** To ensure optimal performance and avoid unintended game behavior, using this alongside other economy or pathfinding modification mods is strongly discouraged.
 * **💾 Backup your saves:** ALWAYS use "Save As". **Never** overwrite a MapExt save if the mod fails to load or is uninstalled.
 * **📏 Match Map Sizes:** Select the correct map size in Option UI. A failsafe prevents loading mismatched saves (does NOT apply to the Map Editor).
 * **💻 Hardware:** 10GB+ VRAM recommended (mod uses 1-2GB extra). If loading crashes, reduce custom assets.
@@ -121,12 +122,13 @@ Import a heightmap/worldmap in the Map Editor:
 ### 🌟 其它亮点更新
 
 * **💧 水体工具面板：** HUD 面板新增水体工具：海平面调节（0.1m 精度）、应用海平面（GPU 重置）、重置水体（从水源重新模拟）、模拟速度控制（0x-128x）。
-* **⚠️ 兼容性：** 内置冲突监控系统，自动检测并禁用与其他 Mod 冲突的经济子系统。Realistic Trip 等可共存。
+* **⚠️ 兼容性：** 内置冲突监控系统会尝试自动检测并休眠冲突的经济子系统。但为保证最佳性能与模拟稳定性，强烈建议尽量避免同时使用其他修改经济或寻路机制的模组。
 * **🔗 [EconomyEX](https://mods.paradoxplaza.com/mods/137149/Windows)：** 经济模块独立子集，适用于原版地图。两者同时安装时 EconomyEX 自动休眠。
 
 ## ⚠️ 必读注意事项
 
 * **🛡️ 风险自负**：本模组深度修改游戏引擎，可能存在未知问题。
+* **⚠️ 模组兼容性**：强烈建议避免与其他修改经济或寻路机制的模组同时使用，以确保最佳性能并防止潜在的模拟异常。
 * **💾 勤备份存档**：务必"另存为"新档。**绝不**在模组失效时覆盖 MapExt 存档。
 * **📏 匹配地图尺寸**：选项面板中必须设置与存档匹配的尺寸。已内置防错机制（不适用于编辑器）。
 * **💻 硬件**：推荐显存 10GB+（额外占用 1-2GB）。崩溃时请精简资产。
