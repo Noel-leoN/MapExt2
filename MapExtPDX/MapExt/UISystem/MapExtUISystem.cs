@@ -3,9 +3,13 @@
 
 using Colossal.UI.Binding;
 using Game;
+using Game.Objects;
 using Game.Simulation;
 using Game.UI;
 using MapExtPDX.MapExt.Core;
+using Unity.Collections;
+using Unity.Entities;
+using Unity.Mathematics;
 
 namespace MapExtPDX.UI
 {
@@ -83,6 +87,7 @@ namespace MapExtPDX.UI
 
         private WaterSystem m_WaterSystem;
         private ValueBinding<bool> m_WaterToolsOpen;
+        private EntityQuery m_WaterSourceQuery;
 
         // --- 海平面锁定 (Phase 5.1) ---
         private ValueBinding<bool> m_SeaLevelLocked;
@@ -103,6 +108,11 @@ namespace MapExtPDX.UI
         protected override void OnCreate()
         {
             base.OnCreate();
+
+            // 创建水源查询（用于从 WaterSourceData 实体中读取实际海平面）
+            m_WaterSourceQuery = GetEntityQuery(
+                ComponentType.ReadOnly<WaterSourceData>(),
+                ComponentType.ReadOnly<Game.Objects.Transform>());
 
             var s = Mod.Instance.Settings;
 
@@ -374,10 +384,9 @@ namespace MapExtPDX.UI
             AddBinding(m_WaterToolsOpen = new ValueBinding<bool>(kGroup, "WaterToolsOpen", false));
             AddBinding(new TriggerBinding<bool>(kGroup, "SetWaterToolsOpen", v => m_WaterToolsOpen.Update(v)));
 
-            // --- 海平面值（实时读取引擎值，需 Loaded 确认反序列化完成） ---
+            // --- 海平面值（优先从 WaterSourceData 海水源读取，回退到 WaterSystem.SeaLevel）---
             AddUpdateBinding(new GetterValueBinding<float>(kGroup, "SeaLevel",
-                () => (m_WaterSystem != null && m_WaterSystem.Loaded)
-                    ? m_WaterSystem.SeaLevel : 0f));
+                () => GetActualSeaLevel()));
 
             // --- 设置海平面值（修改属性，SeaLevel setter 会自动调用 UpdateSeaLevel） ---
             AddBinding(new TriggerBinding<float>(kGroup, "SetSeaLevel", v =>
@@ -385,6 +394,9 @@ namespace MapExtPDX.UI
                 if (m_WaterSystem != null)
                 {
                     m_WaterSystem.SeaLevel = v;
+                    // 锁定状态下同步更新锁定目标值，避免下一帧 OnUpdate 回写旧值
+                    if (m_SeaLevelLocked.value)
+                        m_LockedSeaLevelValue = v;
                     ModLog.Info(Tag, $"海平面已设置为: {v:F1}m");
                 }
             }));
@@ -482,12 +494,14 @@ namespace MapExtPDX.UI
                 }
             }
 
-            // === SeaLevel 诊断日志（仅首次输出）===
-            if (!m_SeaLevelDiagLogged && m_WaterSystem != null)
+            // === SeaLevel 诊断日志（延迟到 Loaded=true 后才输出）===
+            if (!m_SeaLevelDiagLogged && m_WaterSystem != null && m_WaterSystem.Loaded)
             {
                 m_SeaLevelDiagLogged = true;
-                ModLog.Info(Tag, $"[Diag] WaterSystem.Loaded={m_WaterSystem.Loaded}, " +
-                    $"SeaLevel={m_WaterSystem.SeaLevel:F2}m, " +
+                float actualSL = GetActualSeaLevel();
+                ModLog.Info(Tag, $"[Diag] WaterSystem.Loaded=True, " +
+                    $"SeaLevel(property)={m_WaterSystem.SeaLevel:F2}m, " +
+                    $"SeaLevel(actual)={actualSL:F2}m, " +
                     $"WaterSimSpeed={m_WaterSystem.WaterSimSpeed}");
             }
 
@@ -551,6 +565,51 @@ namespace MapExtPDX.UI
 
             if (m_LevelFactorInd.value != s.LevelFactorIndustrial)
                 m_LevelFactorInd.Update(s.LevelFactorIndustrial);
+        }
+
+        #endregion
+
+        #region Helpers
+
+        /// <summary>
+        /// 获取实际海平面高度。
+        /// 优先从 WaterSourceData 实体中查询海水源 (m_ConstantDepth == 2) 的 Transform.y，
+        /// 若无海水源则回退到 WaterSystem.SeaLevel 属性。
+        /// 原因：旧存档（无 NewWaterSources 格式标签）的 WaterSystem.SeaLevel 始终为 0。
+        /// </summary>
+        private float GetActualSeaLevel()
+        {
+            if (m_WaterSystem == null) return 0f;
+
+            // 先尝试从 WaterSystem.SeaLevel 获取（新格式存档有值）
+            float propertyValue = m_WaterSystem.SeaLevel;
+
+            // 查询海水源实体
+            if (!m_WaterSourceQuery.IsEmptyIgnoreFilter)
+            {
+                var entities = m_WaterSourceQuery.ToEntityArray(Allocator.Temp);
+                float minSeaLevel = float.MaxValue;
+                bool found = false;
+
+                for (int i = 0; i < entities.Length; i++)
+                {
+                    var src = EntityManager.GetComponentData<WaterSourceData>(entities[i]);
+                    // m_ConstantDepth == 2: 海水源 (Sea Water Source)
+                    if (src.m_ConstantDepth == 2)
+                    {
+                        var transform = EntityManager.GetComponentData<Game.Objects.Transform>(entities[i]);
+                        minSeaLevel = math.min(minSeaLevel, transform.m_Position.y);
+                        found = true;
+                    }
+                }
+                entities.Dispose();
+
+                if (found)
+                    return minSeaLevel;
+            }
+
+            // 回退：WaterSystem.SeaLevel（新存档有值，旧存档可能为 0）
+            return propertyValue;
         }
 
         #endregion

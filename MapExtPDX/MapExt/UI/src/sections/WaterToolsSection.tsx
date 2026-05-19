@@ -26,14 +26,11 @@ interface RangePreset {
 }
 
 const RANGE_PRESETS: RangePreset[] = [
-    { key: "0",    label: "0-500",     labelZh: "0-500",     min: 0,    max: 500,  step: 0.1 },
-    { key: "1",    label: "500-1000",  labelZh: "500-1k",    min: 500,  max: 1000, step: 0.5 },
-    { key: "2",    label: "1000-1500", labelZh: "1k-1.5k",   min: 1000, max: 1500, step: 0.5 },
-    { key: "3",    label: "1500-2000", labelZh: "1.5k-2k",   min: 1500, max: 2000, step: 1.0 },
-    { key: "4",    label: "2000-2500", labelZh: "2k-2.5k",   min: 2000, max: 2500, step: 1.0 },
-    { key: "5",    label: "2500-3000", labelZh: "2.5k-3k",   min: 2500, max: 3000, step: 1.0 },
-    { key: "6",    label: "3000-3500", labelZh: "3k-3.5k",   min: 3000, max: 3500, step: 1.0 },
-    { key: "7",    label: "3500-4000", labelZh: "3.5k-4k",   min: 3500, max: 4000, step: 1.0 },
+    { key: "0",  label: "0-500",     labelZh: "0-500",    min: 0,    max: 500,  step: 0.1 },
+    { key: "1",  label: "500-1000",  labelZh: "500-1k",   min: 500,  max: 1000, step: 0.5 },
+    { key: "2",  label: "1000-1500", labelZh: "1k-1.5k",  min: 1000, max: 1500, step: 0.5 },
+    { key: "3",  label: "1500-2000", labelZh: "1.5k-2k",  min: 1500, max: 2000, step: 1.0 },
+    { key: "4",  label: "2000-4000", labelZh: "2k-4k",    min: 2000, max: 4000, step: 2.0 },
 ];
 
 /** 根据当前值自动选择最适合的段位 */

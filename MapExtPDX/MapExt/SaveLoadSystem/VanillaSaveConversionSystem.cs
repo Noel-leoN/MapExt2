@@ -1088,7 +1088,10 @@ namespace MapExtPDX.SaveLoadSystem
                     ComponentType.Exclude<Deleted>());
 
                 int totalSources = sourceQuery.CalculateEntityCount();
-                float minSeaLevel = currentSeaLevel;
+                // 与原版 UpgradeToNewWaterSystem 一致，初始值为 MaxValue
+                // 仅在实际发现 Type 2/3 海源时才更新
+                float minSeaLevel = float.MaxValue;
+                bool hasSeaSource = false;
                 int deletedCount = 0, upgradedCount = 0;
 
                 if (totalSources > 0)
@@ -1105,21 +1108,24 @@ namespace MapExtPDX.SaveLoadSystem
                         if (sourceData.m_ConstantDepth == 3)
                         {
                             minSeaLevel = math.min(minSeaLevel, sourceData.m_Height);
+                            hasSeaSource = true;
                             EntityManager.AddComponent<Deleted>(entity);
                             deletedCount++;
                             continue;
                         }
 
-                        // --- Type 2: 海平面源 → 记录高度后删除 ---
+                        // --- Type 2: 海水源 → 记录 m_Height（绝对海平面高度）---
+                        // 原版 UpgradeToNewWaterSystem 中，Type 2 判断后**不用 continue**，
+                        // 继续走下面的通用坐标升级流程（XZ clamp + WaterUtils.SampleHeight + 相对水深转换）。
+                        // 我们这里也保持一致，仅记录 minSeaLevel 后 fall-through。
                         if (sourceData.m_ConstantDepth == 2)
                         {
                             minSeaLevel = math.min(minSeaLevel, sourceData.m_Height);
-                            EntityManager.AddComponent<Deleted>(entity);
-                            deletedCount++;
-                            continue;
+                            hasSeaSource = true;
+                            // 不 continue —— 走后续的通用坐标升级流程
                         }
 
-                        // --- Type 0 & 1: 河流/湖泊 → 保留并转换 ---
+                        // --- 通用坐标升级（Type 0/1/2 共用）---
                         if (!terrainReady)
                         {
                             // 降级：无地形数据时只能删除
@@ -1148,10 +1154,24 @@ namespace MapExtPDX.SaveLoadSystem
                             // 钳制：至少 1m 水深，避免负值（地形可能因降采样略有变化）
                             sourceData.m_Height = math.max(1f, relativeDepth);
                         }
+                        else if (sourceData.m_ConstantDepth == 2)
+                        {
+                            // Type 2（海水源）: Legacy m_Height 是绝对海平面高度 → 转为相对水深
+                            // 原版: componentData.m_Height = num2 - num3 (WaterSampleHeight - TerrainHeight)
+                            // 我们无法调用 WaterUtils.SampleHeight（需要 GPU 数据），
+                            // 直接用 m_Height（绝对海平面） - 地形高度作为相对水深
+                            float seaRelativeDepth = sourceData.m_Height - newTerrainH;
+                            sourceData.m_Height = math.max(0f, seaRelativeDepth);
+                        }
                         // else: Type 0（流水源）: m_Height 是流量系数，不需要转换
 
-                        // 更新 Transform.y 为新地形高度
-                        transform.m_Position.y = newTerrainH;
+                        // 更新 Transform.y
+                        // 原版: Transform.y = WaterUtils.SampleHeight（GPU 水面采样）
+                        // Type 2 海水源: 水面 ≈ 海平面高度，使用 minSeaLevel
+                        // Type 0/1: 无 GPU 数据，近似用地形高度
+                        transform.m_Position.y = (sourceData.m_ConstantDepth == 2)
+                            ? minSeaLevel
+                            : newTerrainH;
 
                         // 分配新源 ID
                         if (getNextIdMethod != null)
@@ -1167,7 +1187,7 @@ namespace MapExtPDX.SaveLoadSystem
                     entities.Dispose();
                 }
 
-                ModLog.Info(Tag, $"水源处理: 删除 {deletedCount} 个海源, 保留并转换 {upgradedCount} 个河流/湖泊源");
+                ModLog.Info(Tag, $"水源处理: 删除 {deletedCount} 个旧版海源(Type 3), 保留并升级 {upgradedCount} 个水源(含 Type 2 海水源)");
 
                 // --- ⑤ 设置 Legacy 旗标 ---
                 // 使用反射直接设置字段，绕过 setter 中的 UpgradeToNewWaterSystem() 调用
@@ -1190,8 +1210,12 @@ namespace MapExtPDX.SaveLoadSystem
                 ClearWaterGpuState(waterSystem);
 
                 // --- ⑧ 设置海平面 ---
-                waterSystem.SeaLevel = minSeaLevel;
-                ModLog.Info(Tag, $"已设置海平面: {waterSystem.SeaLevel}m");
+                // 仅当实际存在海源（Type 2/3）时才设置 minSeaLevel，
+                // 否则保持当前值（避免 float.MaxValue 覆盖）
+                float finalSeaLevel = hasSeaSource ? minSeaLevel : currentSeaLevel;
+                waterSystem.SeaLevel = finalSeaLevel;
+                ModLog.Info(Tag, $"已设置海平面: {waterSystem.SeaLevel}m" +
+                    (hasSeaSource ? $" (从 Type 2/3 海源检测)" : " (无海源，使用默认值)"));
 
                 // --- ⑨ 重置水渲染（填充水面纹理到海平面高度）---
                 waterSystem.ResetToSealevel();
