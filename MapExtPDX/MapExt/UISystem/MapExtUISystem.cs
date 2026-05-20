@@ -389,6 +389,7 @@ namespace MapExtPDX.UI
                 () => GetActualSeaLevel()));
 
             // --- 设置海平面值（修改属性，SeaLevel setter 会自动调用 UpdateSeaLevel） ---
+            // 注意：滑块拖动时高频触发，不可在此写日志（Colossal 日志系统会 NRE）
             AddBinding(new TriggerBinding<float>(kGroup, "SetSeaLevel", v =>
             {
                 if (m_WaterSystem != null)
@@ -397,7 +398,6 @@ namespace MapExtPDX.UI
                     // 锁定状态下同步更新锁定目标值，避免下一帧 OnUpdate 回写旧值
                     if (m_SeaLevelLocked.value)
                         m_LockedSeaLevelValue = v;
-                    ModLog.Info(Tag, $"海平面已设置为: {v:F1}m");
                 }
             }));
 
@@ -581,10 +581,13 @@ namespace MapExtPDX.UI
         {
             if (m_WaterSystem == null) return 0f;
 
-            // 先尝试从 WaterSystem.SeaLevel 获取（新格式存档有值）
+            // 优先使用 WaterSystem.SeaLevel（引擎控制值，用户修改后立即生效）
             float propertyValue = m_WaterSystem.SeaLevel;
+            if (propertyValue > 0.01f)
+                return propertyValue;
 
-            // 查询海水源实体
+            // 回退：当 SeaLevel = 0（旧存档未反序列化此字段）时，
+            // 从 WaterSourceData 实体中查询 Type 2 海水源的 Transform.y
             if (!m_WaterSourceQuery.IsEmptyIgnoreFilter)
             {
                 var entities = m_WaterSourceQuery.ToEntityArray(Allocator.Temp);
@@ -608,8 +611,7 @@ namespace MapExtPDX.UI
                     return minSeaLevel;
             }
 
-            // 回退：WaterSystem.SeaLevel（新存档有值，旧存档可能为 0）
-            return propertyValue;
+            return 0f;
         }
 
         #endregion
