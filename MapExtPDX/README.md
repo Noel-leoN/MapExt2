@@ -1,6 +1,6 @@
 # 🚀 Map Extended Mod (28/57/114/vanilla) — Vanilla Map Extension!
 
-## 🔥 v4.0.1 — Expand Your Existing Vanilla City!
+## 🔥 v4.0.2 — Expand Your Existing Vanilla City!
 
 > **🎉 NEW: You can now extend your existing 14km vanilla city to 28km or 57km maps!** No need to start from scratch — simply load your vanilla save, and MapExt will automatically convert it, expanding the playable area to regions previously outside the map limits. Your terrain, city layout, and buildings are perfectly preserved. This is a one-click, non-destructive process.
 
@@ -49,8 +49,8 @@
 * **🏗️ Editor Collision Override:** Skip collision checks in Map Editor (Off / Trees Only / All Objects).
 * **🏔️ Terrain-Water Optimization:** GPU buffer pre-allocation, building cull throttling, terrain cascade throttling, configurable water sim quality — all adjustable in-game.
 * **🌍 Disable World Backdrop:** Prevents background heightmap loading, reducing GPU/VRAM overhead.
-* **🔄 Vanilla Map Extension (v4.0.1):** One-click expansion of vanilla saves to extended maps.
-* **💧 Water Tools (v4.0.1):** Sea level control, water reset, and simulation speed (0x-128x) in the HUD panel.
+* **🔄 Vanilla Map Extension (v4.0.2):** One-click expansion of vanilla saves to extended maps.
+* **💧 Water Tools (v4.0.2):** Sea level control, water reset, and simulation speed (0x-128x) in the HUD panel.
 
 ## 🛠️ Usage
 
@@ -101,7 +101,7 @@ Import a heightmap/worldmap in the Map Editor:
 
 ---
 
-## 🔥 v4.0.1 更新说明 — 扩展你的现有原版城市！
+## 🔥 v4.0.2 更新说明 — 扩展你的现有原版城市！
 
 > **🎉 重磅新功能：现在你可以将现有的 14km 原版城市扩展至 28km 或 57km 的庞大区域！** 无需从零开始，只需加载原版存档，MapExt 会自动将其转换，将原版无法游玩的边界区域全部扩展为可玩区域。你的原有地形、城市布局和建筑均会完美保留。
 
@@ -149,8 +149,8 @@ Import a heightmap/worldmap in the Map Editor:
 * **🏗️ 编辑器碰撞跳过：** 三档模式（关闭/仅树木/所有物体）。
 * **🏔️ 地形-水体优化：** GPU 缓冲预分配、建筑裁剪降频、地形级联降频、水模拟质量——游戏内实时调节。
 * **🌍 禁用背景世界地图：** 阻止 Backdrop 加载，降低 GPU/显存开销。
-* **🔄 原版地图扩展（v4.0.1）：** 一键将原版存档扩展至大地图。
-* **💧 水体工具（v4.0.1）：** 海平面调节、水体重置、模拟速度控制（0x-128x）。
+* **🔄 原版地图扩展（v4.0.2）：** 一键将原版存档扩展至大地图。
+* **💧 水体工具（v4.0.2）：** 海平面调节、水体重置、模拟速度控制（0x-128x）。
 
 ## 🛠️ 用法
 

@@ -26,7 +26,7 @@ An advanced economy and performance optimization module, extracted from MapExt f
 
 ---
 
-## 🔗 Community & Links
+## 🔗 Community and Links
 
 - [Cities: Skylines Modding Discord](https://discord.com/channels/1024242828114673724/1366810268331540671)
 
