@@ -51,6 +51,7 @@ namespace EconomyEX
             Settings.RegisterInOptionsUI();
             GameManager.instance.localizationManager.AddSource("en-US", new LocaleEN(Settings));
             GameManager.instance.localizationManager.AddSource("zh-HANS", new LocaleHANS(Settings));
+            GameManager.instance.localizationManager.AddSource("zh-HANT", new LocaleHANT(Settings));
             Colossal.IO.AssetDatabase.AssetDatabase.global.LoadSettings(ModName, Settings, new ModSettings(this));
             
             // Update UI status immediately

@@ -85,6 +85,7 @@ namespace MapExtPDX
             // 读取settings本地化语言库
             GameManager.instance.localizationManager.AddSource("en-US", new LocaleEN(m_Setting));
             GameManager.instance.localizationManager.AddSource("zh-HANS", new LocaleHANS(m_Setting));
+            GameManager.instance.localizationManager.AddSource("zh-HANT", new LocaleHANT(m_Setting));
             // 读取已保存设置
             Colossal.IO.AssetDatabase.AssetDatabase.global.LoadSettings(ModName, m_Setting, new ModSettings(this));
             ModLog.Ok(Tag, "Settings 已初始化");

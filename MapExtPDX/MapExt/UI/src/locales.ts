@@ -102,7 +102,7 @@ export const locales = {
         // === Phase 2 — 扩展租金参数 ===
         lvFactorRes: "住宅地价贡献系数：控制地价在住宅租金公式中的占比。100% = 完全贡献，降低可使租金与地价脱钩。",
         lvFactorCom: "商业地价贡献系数：控制地价在商业租金公式中的占比。100% = 完全贡献。",
-        lvFactorInd: "工业地价贡献系数：控制地价在工业租金公式中的占比。100% = 完全贡献。",
+        lvFactorInd: "工业地价贡献系数：控制地价在工业租金公式中的占比. 100% = 完全贡献。",
         levelFactorRes: "住宅等级贡献系数：建筑等级越高，租金在 100% 时越贵。降低可削弱升级对租金的影响。",
         levelFactorCom: "商业等级贡献系数：100% = 原版等级缩放。",
         levelFactorInd: "工业等级贡献系数：100% = 原版等级缩放。",
@@ -138,6 +138,72 @@ export const locales = {
         waterSimSpeedHint: "提高速度可加快水体生成，但会增加 GPU 负载。正常游玩请保持 1x。",
         lockSeaLevel: "锁定海平面",
         lockSeaLevelTip: "锁定海平面高度，防止水体模拟改变它。设置新海平面时锁定值会自动更新。",
+    },
+    zhHant: {
+        // === Phase 1 ===
+        rentRes: "住宅租金乘數（影響所有住宅租金計算）。100% 為原版倍率。降低可緩解高地價導致的高租金問題。",
+        rentCom: "商業租金乘數。100% 為原版倍率。適當降低可幫助商鋪在繁華地段生存。",
+        rentInd: "工業租金乘數。100% 為原版倍率。",
+        envFactor: "環境地價係數：控制地形吸引力、污染等環境因素對道路地價的影響占比。（推薦/原版 = 40%）",
+        svcBonus: "服務加成上限乘數：調整醫療、警察等城市服務對地價的加成上限倍率。",
+        shopMax: "市民購物尋路最大成本上限。值越高允許走得越遠。\n推薦值：14km/28km 選 8000 | 57km/114km 選 8000~12000",
+        leisureMax: "市民休閒觀光尋路最大成本上限。值越高允許走得越遠。\n推薦值：14km/28km 選 8000~12000 | 57km/114km 選 12000~20000",
+        reset: "恢復預設值",
+        panelTitle: "MapExt 控制面板",
+        mapSizeLabel: "地圖尺寸",
+        rentControlTitle: "租金調控",
+        pathfindingTitle: "尋路參數",
+
+        // === Phase 2 — Dashboard ===
+        dashboardTitle: "城市統計",
+        totalHouseholds: "總家庭",
+        rentedHouseholds: "已租住",
+        homelessCount: "無家可歸",
+        movingAwayCount: "正在搬離",
+        seekerHoused: "找房（有房）",
+        seekerHomeless: "找房（流浪）",
+        highRentBuildings: "高租金建築",
+        petCount: "寵物",
+
+        // === Phase 2 — 扩展租金参数 ===
+        lvFactorRes: "住宅地價貢獻係數：控制地價在住宅租金公式中的占比。100% = 完全貢獻，降低可使租金與地價脫鉤。",
+        lvFactorCom: "商業地價貢獻係數：控制地價在商業租金公式中的占比。100% = 完全貢獻。",
+        lvFactorInd: "工業地價貢獻係數：控制地價在工業租金公式中的占比。100% = 完全貢獻。",
+        levelFactorRes: "住宅等級貢獻係數：建築等級越高，租金在 100% 時越貴。降低可削弱升級對租金的影響。",
+        levelFactorCom: "商業等級貢獻係數：100% = 原版等級縮放。",
+        levelFactorInd: "工業等級貢獻係數：100% = 原版等級縮放。",
+
+        // === Phase 4 — Dashboard 扩展 ===
+        residentialTitle: "住宅市場",
+        commercialTitle: "商業市場",
+        activityTitle: "人口活動",
+        resDensityLow: "低密度",
+        resDensityMed: "中密度",
+        resDensityHigh: "高密度",
+        resVacant: "空置",
+        resTotal: "總數",
+        resVacancyRate: "空置率",
+        totalCommercial: "有店鋪商家",
+        commercialPropertyless: "等待入駐",
+        shoppingCount: "購物中",
+        leisureCount: "休閒中",
+        goingToWork: "上班途中",
+        goingHome: "回家途中",
+        commuterCount: "外來通勤",
+        miscTitle: "其他",
+
+        // === Phase 5 — 水体工具 ===
+        waterToolsTitle: "水體工具",
+        seaLevelLabel: "海平面",
+        seaLevelTip: "當前海平面高度。調整後點擊“套用海平面”將水面重置到此高度。",
+        seaLevelPrecise: "精確高度",
+        applySeaLevel: "套用海平面",
+        resetWater: "重置水面",
+        waterSimSpeedLabel: "水模擬速度",
+        waterSimPaused: "已暫停",
+        waterSimSpeedHint: "提高速度可加快水體生成，但會增加 GPU 負載。正常遊玩請保持 1x。",
+        lockSeaLevel: "鎖定海平面",
+        lockSeaLevelTip: "鎖定海平面高度，防止水體模擬改變它。設置新海平面時鎖定值會自動更新。",
     }
 };
 
@@ -150,9 +216,14 @@ export type LocaleKey = keyof typeof locales.en;
  */
 export function useTranslation() {
     const locale = useValue(activeLocale$);
-    // locale 格式为 "zh-HANS", "en-US", "de-DE" 等
-    const isZh = locale && locale.toLowerCase().startsWith("zh");
-    const dict = isZh ? locales.zh : locales.en;
+    const lower = locale ? locale.toLowerCase() : "";
+    let dict = locales.en;
+
+    if (lower.startsWith("zh-hant") || lower.startsWith("zh-tw") || lower.startsWith("zh-hk")) {
+        dict = locales.zhHant;
+    } else if (lower.startsWith("zh")) {
+        dict = locales.zh;
+    }
 
     return (key: LocaleKey): string => dict[key];
 }

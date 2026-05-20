@@ -5,6 +5,7 @@
 * **[Settings - Map Extension]:** Added an "Enable Vanilla Map Extension" toggle in the MapSize tab. Mutually exclusive with "Disable World Backdrop".
 * **[UI - Water Tools Fixes]:** Fixed sea level detection to query type 2 (Sea Water Source) water source entities when properties return zero for backward compatibility. Removed high-frequency logger calls during slider drag events to prevent UI freezes.
 * **[Localization]:** Added bilingual (EN and zh-HANS) dialog strings for vanilla map extension confirmation, completion checklist, and error prompts.
+* **[Localization]:** Added Traditional Chinese (zh-HANT) localization support for in-game options settings, error validation dialogs, and the dashboard overlay.
 
 ---
 
@@ -15,3 +16,4 @@
 * **[设置 - 地图扩展]：** 在 MapSize 标签页新增"启用原版地图扩展"开关，与"禁用背景世界地图"选项互斥。
 * **[UI - 水体工具修复]：** 修复了海平面检测逻辑，当系统属性为零时支持通过查询海水源实体高度进行计算。移除了滑块拖拽时的高频日志输出以防止 UI 卡死。
 * **[本地化]：** 为原版地图扩展确认、完成与错误提示对话框新增中英双语文本。
+* **[本地化]：** 为所有游戏内选项设置项、错误验证对话框以及仪表盘界面新增繁体中文（zh-HANT）本地化支持。

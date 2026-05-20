@@ -84,7 +84,38 @@ namespace MapExtPDX.SaveLoadSystem
             };
             localizationManager.AddSource("zh-HANS", new MemorySource(zhHans));
 
-            MapExtPDX.MapExt.Core.ModLog.Ok(Tag, "存档验证与WorldMap警告本地化文本已注册 (en-US, zh-HANS)");
+            // 中文繁体本地化
+            var zhHant = new Dictionary<string, string>
+            {
+                // === 存档验证对话框 ===
+                { "LOAD_VALIDATION.TitleError", "載入錯誤" },
+                { "LOAD_VALIDATION.TitleWarning", "警告" },
+                { "LOAD_VALIDATION.TitleLegacy", "偵測到舊版存檔" },
+                { "LOAD_VALIDATION.ModNotUsed", "此存檔未使用 MapExt Mod 建立。不允許載入。請在主選單 MapExt 選項中設置 '{NONE_MODE}' 模式。" },
+                { "LOAD_VALIDATION.Mismatch", "模式不符！此存檔需要 '{SAVED_MODE}'，但您的 Mod 當前設定為 '{CURRENT_MODE}'。請在選項選單中變更 MapExt 的地圖尺寸模式以符合存檔。" },
+                { "LOAD_VALIDATION.LegacyMismatch", "這是舊版存檔。如果是 57km 地圖，請在選項選單中將 Mod 切換為 '{LEGACY_MODE}'。其他地圖尺寸請閱讀 MapExt 的最新說明！" },
+                { "LOAD_VALIDATION.ConfirmOK", "確定" },
+                { "LOAD_VALIDATION.ConfirmContinue", "繼續" },
+
+                // === 世界地图导入性能警告 ===
+                { "MAPEXT_WORLDMAP.WarningTitle", "⚠️ 性能警告" },
+                { "MAPEXT_WORLDMAP.WarningMessage", "匯入世界地圖(WorldMap)會引入額外的渲染開銷：\n\n• 增加一層級聯渲染層（baseLod 提升）\n• 每幀執行 DownSampleHeightMap 降採樣\n• MinMaxMap 尺寸增大（1024 vs 512）\n• GPU 顯示記憶體佔用增加\n\n在大地圖模式下可能導致幀率下降。是否繼續？" },
+                { "MAPEXT_WORLDMAP.ConfirmImport", "仍然匯入" },
+                { "MAPEXT_WORLDMAP.CancelImport", "取消" },
+
+                // === 原版地图扩展对话框 ===
+                { "VANILLA_CONVERT.Title", "擴展原版地圖" },
+                { "VANILLA_CONVERT.Message", "此存檔未使用 MapExt Mod（原版 14km）。\n\n是否擴展至當前模式（{TARGET_MODE}）？\n\n⚠ 高度實驗性 - 轉換過程將執行以下操作：\n• 擴展可遊玩區域至新邊界\n• 解鎖全部 529 格地圖分塊\n• 合成並擴展地形高度圖\n• 完美保留原版自然資源與地下水\n• 清除所有車輛與居民實體\n• 拆除全部外部連接（交通/電力/水管）\n• 升級水源并重置海平面\n\n原始存檔不會被修改。\n轉換後將自動儲存為新存檔 (格式: 存檔名_MapExt模式)。\n必須重啟遊戲！否則將導致水體表現異常或遊戲崩潰。" },
+                { "VANILLA_CONVERT.Confirm", "擴展並載入" },
+                { "VANILLA_CONVERT.Cancel", "取消" },
+                { "VANILLA_CONVERT.Complete", "擴展完成" },
+                { "VANILLA_CONVERT.CompleteMessage", "原版地圖已成功擴展至 {TARGET_MODE}。\n新存檔：{SAVE_NAME}\n\n✅ 地形高度圖已合成\n✅ 原版自然資源與地下水已完美保留\n✅ 所有車輛與居民實體已清除\n✅ 全部外部連接已拆除\n✅ 水源已升級並重置海平面\n⚠ 全部 529 格地圖分塊已解鎖\n\n⚠ 必須重啟遊戲\n請立即退出到桌面並重新載入新存檔。\n不重啟直接遊玩會導致水體異常或遊戲崩潰！\n\n📋 重啟後待辦事項：\n\n1. 在新的地圖邊界重建對外連接：\n   • 道路（高速公路連接）\n   • 鐵路（火車線路）\n   • 航道（貨運與客運輪船航線）\n   • 航線（機場飛行航線）\n   • 電力（輸電線路連接）\n   • 供水（供水管道連接）\n\n2. 重新設置水源與海平面：\n   • 原有水源已被清除，必須使用 Water Features 模組在所需位置重新放置河流/海洋水源（目前無其他模組具備此功能）\n   • ⚠ 提示：轉換後水位可能不夠準確。建議使用內建水體工具（M按鈕）或 Water Features 模組手動調整海平面並加速注水。" },
+                { "VANILLA_CONVERT.QuitConfirm", "退出遊戲" },
+                { "VANILLA_CONVERT.QuitCancel", "留在遊戲" }
+            };
+            localizationManager.AddSource("zh-HANT", new MemorySource(zhHant));
+
+            MapExtPDX.MapExt.Core.ModLog.Ok(Tag, "存档验证与WorldMap警告本地化文本已注册 (en-US, zh-HANS, zh-HANT)");
         }
     }
 }
