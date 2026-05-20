@@ -883,6 +883,27 @@ namespace MapExtPDX.SaveLoadSystem
                 GameManager.instance.Save(newSaveName, saveInfo, targetDb, dummyPreview);
                 UnityEngine.Object.Destroy(dummyPreview);
                 ModLog.Ok(Tag, $"已触发保存: '{newSaveName}'");
+
+                // --- 防误覆盖: 更新 MenuUISystem.m_LastSaveNameBinding ---
+                // 游戏的 QuickSave 和 UI 保存面板默认文件名优先取 m_LastSaveNameBinding.value,
+                // 如果不更新，其值仍为原版存档名，玩家后续保存时有覆盖原存档的风险。
+                try
+                {
+                    var lastSaveField = AccessTools.Field(typeof(MenuUISystem), "m_LastSaveNameBinding");
+                    if (lastSaveField != null)
+                    {
+                        var binding = lastSaveField.GetValue(menuUI);
+                        // ValueBinding<string>.Update(string)
+                        var updateMethod = binding?.GetType().GetMethod("Update",
+                            new[] { typeof(string) });
+                        updateMethod?.Invoke(binding, new object[] { newSaveName });
+                        ModLog.Info(Tag, $"已更新 m_LastSaveNameBinding → '{newSaveName}'");
+                    }
+                }
+                catch (Exception ex2)
+                {
+                    ModLog.Warn(Tag, $"更新 m_LastSaveNameBinding 失败（不影响存档）: {ex2.Message}");
+                }
             }
             catch (Exception ex)
             {
