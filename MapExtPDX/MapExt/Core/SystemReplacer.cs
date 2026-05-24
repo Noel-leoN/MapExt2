@@ -545,6 +545,8 @@ namespace MapExtPDX.MapExt.Core
             updateSystem.UpdateAt<EcoShared.P1_NoDogsPatchSystem>(SystemUpdatePhase.GameSimulation);
             // P2 Editor Collision Override
             updateSystem.UpdateAt<EcoShared.P2_EditorCollisionOverrideSystem>(SystemUpdatePhase.ToolUpdate);
+            // P3 购车停车救援系统（修复原版 InitializeSystem.FindParkingSpace 失败后无兜底的Bug）
+            updateSystem.UpdateAt<EcoShared.P3_VehiclePurchaseRescueSystem>(SystemUpdatePhase.GameSimulation);
 
             // === UI 和监控系统（无条件注册，不受 isEnableEconomyFix 约束） ===
             updateSystem.UpdateAt<MapExtPDX.UI.MapExtUISystem>(SystemUpdatePhase.UIUpdate);

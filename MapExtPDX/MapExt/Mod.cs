@@ -131,6 +131,7 @@ namespace MapExtPDX
                 _globalPatcher.CreateClassProcessor(typeof(LoadGameValidatorPatch)).Patch();
                 ModLog.Patch(Tag, $"{nameof(LoadGameValidatorPatch)} 已应用");
             }
+
             // 其他并行的选项补丁，也在这里添加
             // _globalPatcher.CreateClassProcessor(typeof(ParallelOptionPatch)).Patch();
             // 加载SaveLoadSystem的弹窗本地化语言库
