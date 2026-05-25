@@ -41,6 +41,9 @@ namespace SimpleRadio.Core
         /// <summary>已发现的电台图标 COUI 路径列表</summary>
         private static string[] _stationIcons = Array.Empty<string>();
 
+        /// <summary>随机数生成器（用于电台图标随机分配）</summary>
+        private static readonly Random _rng = new Random();
+
         /// <summary>
         /// 注册 COUI host 并扫描电台图标库。
         /// </summary>
@@ -84,7 +87,7 @@ namespace SimpleRadio.Core
         /// <summary>
         /// 获取电台图标的 COUI 路径。
         /// </summary>
-        /// <param name="stationName">电台名称（= 目录名，用于 hash 分配和 COUI 路径构建）</param>
+        /// <param name="stationName">电台名称（= 目录名，用于 COUI 路径构建）</param>
         /// <param name="stationDir">电台目录的物理路径（用于检测自定义 icon.svg）</param>
         public static string GetStationIcon(string stationName, string stationDir)
         {
@@ -101,10 +104,10 @@ namespace SimpleRadio.Core
                 }
             }
 
-            // 2. 预设图标库（确定性 hash 分配）
+            // 2. 预设图标库（随机分配，每次加载可能不同，增加趣味性）
             if (_stationIcons.Length > 0)
             {
-                int index = Math.Abs(stationName.GetHashCode()) % _stationIcons.Length;
+                int index = _rng.Next(_stationIcons.Length);
                 return _stationIcons[index];
             }
 

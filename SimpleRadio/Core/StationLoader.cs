@@ -174,7 +174,7 @@ namespace SimpleRadio.Core
         /// </summary>
         private static void SubscribeChannelChange(Radio radio)
         {
-            // 避免重复订阅（热刷新时 LoadRadio 会多次调用）
+            // Delegate.Remove(null, x) 返回 null，Delegate.Combine(null, x) 返回 x，两者均 null-safe
             radio.ClipChanged = (OnClipChanged)Delegate.Remove(radio.ClipChanged, new OnClipChanged(OnClipChanged));
             radio.ClipChanged = (OnClipChanged)Delegate.Combine(radio.ClipChanged, new OnClipChanged(OnClipChanged));
         }

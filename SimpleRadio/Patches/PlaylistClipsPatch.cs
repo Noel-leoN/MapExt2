@@ -42,6 +42,8 @@ namespace SimpleRadio.Patches
                 if (!isOurSegment) return true;
 
                 // --- 使用已有 clips 并随机重排 ---
+                // 注：segment.clips 赋值依赖 RuntimeSegment.clips 可接受 AudioAsset[] 的隐式转换
+                //     若游戏版本更新类型签名，外层 try/catch 会回退到原版逻辑
                 if (segment.clips != null && segment.clips.Count > 0)
                 {
                     var list = new List<AudioAsset>(segment.clips);
