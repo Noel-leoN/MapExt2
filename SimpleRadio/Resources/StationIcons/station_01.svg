@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100">
+  <!-- 
+    SimpleRadio Station Icon - Station 01: Pop & Classic Hits (流行与经典金曲)
+    Theme: Retro Microphone & Radio Waves (复古麦克风与无线电波)
+  -->
+  <defs>
+    <linearGradient id="bg_pop" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#ff416c"/>
+      <stop offset="100%" stop-color="#ff4b2b"/>
+    </linearGradient>
+  </defs>
+  
+  <!-- 背景圆盘 -->
+  <circle cx="50" cy="50" r="48" fill="url(#bg_pop)" stroke="#ff857a" stroke-width="2"/>
+  
+  <!-- 核心图案 -->
+  <g fill="white">
+    <!-- 麦克风网格头 -->
+    <rect x="42" y="24" width="16" height="24" rx="8" fill="white"/>
+    
+    <!-- 麦克风网格内阴影细节 -->
+    <rect x="44" y="29" width="12" height="2" fill="#ff4848" opacity="0.4"/>
+    <rect x="44" y="35" width="12" height="2" fill="#ff4848" opacity="0.4"/>
+    <rect x="44" y="41" width="12" height="2" fill="#ff4848" opacity="0.4"/>
+    <line x1="50" y1="24" x2="50" y2="48" stroke="#ff4848" stroke-width="1.5" opacity="0.3"/>
+    
+    <!-- 麦克风颈部环形支架 -->
+    <path d="M35 36 A15 15 0 0 0 65 36" fill="none" stroke="white" stroke-width="3.5" stroke-linecap="round"/>
+    
+    <!-- 支架中轴 -->
+    <rect x="48" y="49" width="4" height="16" rx="1"/>
+    
+    <!-- 三角形加圆弧底座 -->
+    <path d="M36 68 L64 68 A14 6 0 0 0 36 68" fill="white"/>
+    
+    <!-- 两侧动感音波 (半透明，呈现立体空间感) -->
+    <!-- 左音波 -->
+    <path d="M28 26 Q18 36 28 46" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" opacity="0.6"/>
+    <path d="M22 20 Q8 36 22 52" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" opacity="0.3"/>
+    <!-- 右音波 -->
+    <path d="M72 26 Q82 36 72 46" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" opacity="0.6"/>
+    <path d="M78 20 Q92 36 78 52" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" opacity="0.3"/>
+  </g>
+</svg>

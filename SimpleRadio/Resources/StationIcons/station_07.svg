@@ -1,0 +1,60 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100">
+  <!-- 
+    SimpleRadio Station Icon - Station 07: News & Talk Show (新闻与脱口秀访谈)
+    Theme: Overlapping Speech Bubbles & Signal Waves (重叠对话气泡与传播电波)
+  -->
+  <defs>
+    <!-- 渐变色：科技新闻与专业蓝 -->
+    <linearGradient id="bg_news" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0052d4"/>
+      <stop offset="50%" stop-color="#4364f7"/>
+      <stop offset="100%" stop-color="#6fb1fc"/>
+    </linearGradient>
+  </defs>
+  
+  <!-- 背景圆盘 -->
+  <circle cx="50" cy="50" r="48" fill="url(#bg_news)" stroke="#6fb1fc" stroke-width="2"/>
+  
+  <!-- 核心图案 -->
+  <g>
+    <!-- 无线电广播扩散电波 (背景装饰) -->
+    <path d="M22 25 Q8 50 22 75" fill="none" stroke="white" stroke-width="1.8" stroke-linecap="round" opacity="0.3"/>
+    <path d="M78 25 Q92 50 78 75" fill="none" stroke="white" stroke-width="1.8" stroke-linecap="round" opacity="0.3"/>
+    
+    <!-- 左侧实底气泡 (News - 包含新闻文字线条) -->
+    <!-- 气泡圆角框 -->
+    <rect x="23" y="27" width="40" height="28" rx="6" fill="white"/>
+    <!-- 气泡尖角 -->
+    <polygon points="32,55 38,55 32,61" fill="white"/>
+    
+    <!-- 气泡内代表文字的线条 -->
+    <rect x="30" y="34" width="26" height="2.5" rx="1" fill="#4364f7"/>
+    <rect x="30" y="40" width="20" height="2.5" rx="1" fill="#4364f7"/>
+    <rect x="30" y="46" width="14" height="2.5" rx="1" fill="#4364f7"/>
+    
+    <!-- 右侧中空气泡 (Talk - 盖在左气泡上，通过描边产生空间遮挡) -->
+    <!-- 我们需要给右气泡加一个渐变色填充以遮住左气泡的部分，或者直接用带白色边框和渐变填充的框 -->
+    <!-- 气泡圆角框 -->
+    <rect x="42" y="42" width="36" height="26" rx="6" fill="url(#bg_news)" stroke="white" stroke-width="3"/>
+    <!-- 气泡尖角 -->
+    <polygon points="68,68 68,74 62,68" fill="url(#bg_news)" stroke="white" stroke-width="3"/>
+    <!-- 遮瑕补白：为了使右气泡的尖角线与边框自然融合，我们需要盖一小块无边框的填充块 -->
+    <polygon points="66,67 67,67 67,69 64,66" fill="url(#bg_news)"/>
+    <!-- 右气泡的尖角与框的拼合缝隙需要微调。更简单优雅的方法是直接绘制一个完整的 path -->
+    <!-- 让我们直接用 path 绘制右气泡，使其完美自然 -->
+    <!-- 
+      右气泡带尖角路径：
+      起始于 48,42 -> 72,42 (圆角) -> 78,48 -> 78,62 (圆角) -> 72,68 -> 68,68 -> 68,74 (尖角) -> 62,68 -> 48,68 (圆角) -> 42,62 -> 42,48 (圆角) -> 闭合
+    -->
+    <path d="M48 42 L72 42 A6 6 0 0 1 78 48 L78 62 A6 6 0 0 1 72 68 L68 68 L68 74 L62 68 L48 68 A6 6 0 0 1 42 62 L42 48 A6 6 0 0 1 48 42 Z" fill="url(#bg_news)" stroke="white" stroke-width="2.5" stroke-linejoin="round"/>
+    
+    <!-- 右气泡内的交谈音波 (Talk signal) -->
+    <path d="M50 55 Q53 50 53 55 T50 55" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" opacity="0.6"/>
+    <!-- 极简波形 -->
+    <line x1="51" y1="55" x2="51" y2="55" stroke="white" stroke-width="3" stroke-linecap="round"/>
+    <line x1="56" y1="51" x2="56" y2="59" stroke="white" stroke-width="2.2" stroke-linecap="round"/>
+    <line x1="61" y1="48" x2="61" y2="62" stroke="white" stroke-width="2.2" stroke-linecap="round"/>
+    <line x1="66" y1="52" x2="66" y2="58" stroke="white" stroke-width="2.2" stroke-linecap="round"/>
+    <line x1="71" y1="54" x2="71" y2="56" stroke="white" stroke-width="2.2" stroke-linecap="round"/>
+  </g>
+</svg>

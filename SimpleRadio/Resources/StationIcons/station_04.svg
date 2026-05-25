@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100">
+  <!-- 
+    SimpleRadio Station Icon - Station 04: Synthwave & Electro (合成器波与电子乐)
+    Theme: Retro Neon Sun & Cyber Grid (复古割裂太阳与网格波形)
+  -->
+  <defs>
+    <!-- 渐变色：复古赛博暗紫到亮粉 -->
+    <linearGradient id="bg_synth" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0c0721"/>
+      <stop offset="50%" stop-color="#3f2b96"/>
+      <stop offset="100%" stop-color="#ff007f"/>
+    </linearGradient>
+    
+    <!-- 割裂太阳遮罩：下粗上细，制作条纹质感 -->
+    <mask id="sun_mask">
+      <rect x="0" y="0" width="100" height="100" fill="white"/>
+      <rect x="10" y="44" width="80" height="1.5" fill="black"/>
+      <rect x="10" y="48" width="80" height="2.2" fill="black"/>
+      <rect x="10" y="53" width="80" height="3" fill="black"/>
+      <rect x="10" y="59" width="80" height="4" fill="black"/>
+    </mask>
+  </defs>
+  
+  <!-- 背景圆盘 -->
+  <circle cx="50" cy="50" r="48" fill="url(#bg_synth)" stroke="#ff00a0" stroke-width="2"/>
+  
+  <!-- 赛博割裂太阳 -->
+  <circle cx="50" cy="42" r="22" fill="white" mask="url(#sun_mask)"/>
+  
+  <!-- 合成器地平线声波网格与山峰 -->
+  <g fill="none" stroke="white" stroke-linecap="round" stroke-linejoin="round">
+    <!-- 背景山脉 -->
+    <path d="M16 68 L32 50 L48 62 L66 45 L84 68 Z" stroke-width="2" opacity="0.6"/>
+    
+    <!-- 地平线 -->
+    <line x1="12" y1="68" x2="88" y2="68" stroke-width="2.5"/>
+    
+    <!-- 透视网格网线 (从无限远处辐射) -->
+    <line x1="50" y1="68" x2="50" y2="86" stroke-width="1.5" opacity="0.8"/>
+    <line x1="50" y1="68" x2="26" y2="84" stroke-width="1.5" opacity="0.6"/>
+    <line x1="50" y1="68" x2="74" y2="84" stroke-width="1.5" opacity="0.6"/>
+    <line x1="50" y1="68" x2="14" y2="78" stroke-width="1.2" opacity="0.4"/>
+    <line x1="50" y1="68" x2="86" y2="78" stroke-width="1.2" opacity="0.4"/>
+    
+    <!-- 水平网格线 (越往下越宽) -->
+    <line x1="20" y1="73" x2="80" y2="73" stroke-width="1" opacity="0.6"/>
+    <line x1="16" y1="79" x2="84" y2="79" stroke-width="1.2" opacity="0.8"/>
+    <line x1="12" y1="86" x2="88" y2="86" stroke-width="1.5" opacity="0.9"/>
+  </g>
+</svg>

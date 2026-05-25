@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100">
+  <!-- 
+    SimpleRadio Station Icon - Station 02: Jazz & Blues (爵士与布鲁斯)
+    Theme: Saxophone & Melodic Notes (萨克斯风与律动音符)
+  -->
+  <defs>
+    <linearGradient id="bg_jazz" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#1d2671"/>
+      <stop offset="100%" stop-color="#c33764"/>
+    </linearGradient>
+  </defs>
+  
+  <!-- 背景圆盘 -->
+  <circle cx="50" cy="50" r="48" fill="url(#bg_jazz)" stroke="#da70d6" stroke-width="2"/>
+  
+  <!-- 核心图案 -->
+  <g fill="white">
+    <!-- 萨克斯风管身与弯曲颈部 -->
+    <path d="M35 25 L35 32 C35 32 37 45 37 55 C37 63 43 70 51 70 C59 70 65 64 65 54 L65 44" fill="none" stroke="white" stroke-width="4.5" stroke-linecap="round"/>
+    
+    <!-- 萨克斯风大喇叭口 -->
+    <path d="M57 44 C57 39 73 39 73 44 C73 49 57 49 57 44 Z" fill="white"/>
+    
+    <!-- 吹口嘴子 -->
+    <path d="M35 26 L26 23 L27 20 L35 22 Z" fill="white"/>
+    
+    <!-- 萨克斯风管键细节 -->
+    <circle cx="37" cy="40" r="2.2"/>
+    <circle cx="37" cy="48" r="2.2"/>
+    <circle cx="38" cy="56" r="2.2"/>
+    
+    <!-- 飘散的优美音符 (高保真矢量路径) -->
+    <!-- 音符 1 (大音符) -->
+    <path d="M68 28 A3 3 0 1 1 65 25 L65 14 L73 17 L73 20 L68 18 Z"/>
+    
+    <!-- 音符 2 (小半透明音符) -->
+    <path d="M52 24 A2 2 0 1 1 50 22 L50 13 L56 15 L56 17 L52 16 Z" opacity="0.75"/>
+    
+    <!-- 律动空气波动线 -->
+    <path d="M62 38 Q68 34 74 37" fill="none" stroke="white" stroke-width="1.5" stroke-linecap="round" opacity="0.6"/>
+    <path d="M59 33 Q65 29 70 31" fill="none" stroke="white" stroke-width="1" stroke-linecap="round" opacity="0.4"/>
+  </g>
+</svg>

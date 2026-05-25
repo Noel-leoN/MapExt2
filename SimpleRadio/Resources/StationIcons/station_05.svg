@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100">
+  <!-- 
+    SimpleRadio Station Icon - Station 05: Classical & Symphony (古典与交响乐)
+    Theme: Minimalist Violin Outline & Golden f-holes (极简小提琴轮廓与金色双f孔)
+  -->
+  <defs>
+    <!-- 渐变色：皇家深邃酒红 -->
+    <linearGradient id="bg_classical" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#280106"/>
+      <stop offset="100%" stop-color="#6b0e1a"/>
+    </linearGradient>
+  </defs>
+  
+  <!-- 背景圆盘 (带有高贵黄金描边) -->
+  <circle cx="50" cy="50" r="48" fill="url(#bg_classical)" stroke="#d4af37" stroke-width="2"/>
+  
+  <!-- 极简高雅小提琴轮廓 -->
+  <g stroke="white" fill="none" stroke-linecap="round">
+    <!-- 琴头与琴颈中轴线 -->
+    <line x1="50" y1="16" x2="50" y2="82" stroke-width="3"/>
+    
+    <!-- 弦轴盒 (Pegbox) 细微凸出 -->
+    <line x1="47" y1="20" x2="53" y2="20" stroke-width="2"/>
+    <line x1="47" y1="24" x2="53" y2="24" stroke-width="2"/>
+    
+    <!-- 琴身左侧边缘曲线 -->
+    <path d="M50 30 C37 30 35 44 45 50 C34 57 34 74 50 76" stroke-width="2.5"/>
+    
+    <!-- 琴身右侧边缘曲线 -->
+    <path d="M50 30 C63 30 65 44 55 50 C66 57 66 74 50 76" stroke-width="2.5"/>
+    
+    <!-- 拉弦板 (Tailpiece) 倒三角块 -->
+    <path d="M50 64 L46 78 L54 78 Z" fill="white" stroke-width="1"/>
+  </g>
+  
+  <!-- 金色优雅 f 孔 (f-holes) -->
+  <g stroke="#d4af37" stroke-width="1.8" fill="none" stroke-linecap="round">
+    <!-- 左 f 孔 -->
+    <path d="M43 45 C40 50 41 53 43 57" />
+    <!-- 左右小横杠 -->
+    <line x1="40.5" y1="51" x2="43.5" y2="51" />
+    <circle cx="43" cy="44" r="0.8" fill="#d4af37" stroke="none"/>
+    <circle cx="43" cy="58" r="0.8" fill="#d4af37" stroke="none"/>
+    
+    <!-- 右 f 孔 -->
+    <path d="M57 45 C60 50 59 53 57 57" />
+    <line x1="56.5" y1="51" x2="59.5" y2="51" />
+    <circle cx="57" cy="44" r="0.8" fill="#d4af37" stroke="none"/>
+    <circle cx="57" cy="58" r="0.8" fill="#d4af37" stroke="none"/>
+  </g>
+  
+  <!-- 飞扬的古典五线谱装饰弧线 -->
+  <path d="M18 68 Q28 60 50 68 T82 68" fill="none" stroke="white" stroke-width="0.8" opacity="0.25"/>
+  <path d="M18 72 Q28 64 50 72 T82 72" fill="none" stroke="white" stroke-width="0.8" opacity="0.15"/>
+</svg>
