@@ -5,7 +5,7 @@
 
 import { useValue } from "cs2/api";
 import React, { useState, useCallback, useEffect } from "react";
-import { FloatingButton } from "cs2/ui";
+import { FloatingButton, Tooltip } from "cs2/ui";
 import {
     panelOpen$,
     setPanelOpen,
@@ -116,11 +116,15 @@ export const MapExtButton: React.FC = () => {
 
                         <div className={styles.statusBar}>
                             <div className={styles.statusItem}>
-                                <span className={styles.statusLabel}>{t("mapSizeLabel")}</span>
+                                <Tooltip tooltip={t("mapSizeTip")}>
+                                    <span className={styles.statusLabel}>{t("mapSizeLabel")}</span>
+                                </Tooltip>
                                 <span className={styles.statusValue}>{mapSize}</span>
                             </div>
                             <div className={styles.statusItem}>
-                                <span className={styles.statusLabel}>STATUS</span>
+                                <Tooltip tooltip={t("statusTip")}>
+                                    <span className={styles.statusLabel}>STATUS</span>
+                                </Tooltip>
                                 <span className={styles.statusValue}>{status}</span>
                             </div>
                         </div>
@@ -132,18 +136,24 @@ export const MapExtButton: React.FC = () => {
 
                         {/* 底部菜单：Rent Control / Pathfinding → 展开右侧 */}
                         <div className={styles.menuFooter}>
-                            <button className={detailClass("rent")} onClick={() => toggleDetail("rent")}>
-                                <span>{activeDetail === "rent" ? ">" : "+"}</span>
-                                <span>{t("rentControlTitle")}</span>
-                            </button>
-                            <button className={detailClass("pathfinding")} onClick={() => toggleDetail("pathfinding")}>
-                                <span>{activeDetail === "pathfinding" ? ">" : "+"}</span>
-                                <span>{t("pathfindingTitle")}</span>
-                            </button>
-                            <button className={detailClass("waterTools")} onClick={() => toggleDetail("waterTools")}>
-                                <span>{activeDetail === "waterTools" ? ">" : "+"}</span>
-                                <span>{t("waterToolsTitle")}</span>
-                            </button>
+                            <Tooltip tooltip={t("rentControlMenuTip")}>
+                                <button className={detailClass("rent")} onClick={() => toggleDetail("rent")}>
+                                    <span>{activeDetail === "rent" ? ">" : "+"}</span>
+                                    <span>{t("rentControlTitle")}</span>
+                                </button>
+                            </Tooltip>
+                            <Tooltip tooltip={t("pathfindingMenuTip")}>
+                                <button className={detailClass("pathfinding")} onClick={() => toggleDetail("pathfinding")}>
+                                    <span>{activeDetail === "pathfinding" ? ">" : "+"}</span>
+                                    <span>{t("pathfindingTitle")}</span>
+                                </button>
+                            </Tooltip>
+                            <Tooltip tooltip={t("waterToolsMenuTip")}>
+                                <button className={detailClass("waterTools")} onClick={() => toggleDetail("waterTools")}>
+                                    <span>{activeDetail === "waterTools" ? ">" : "+"}</span>
+                                    <span>{t("waterToolsTitle")}</span>
+                                </button>
+                            </Tooltip>
                         </div>
 
                         {/* 左侧面板底部高度拖拽柄 */}

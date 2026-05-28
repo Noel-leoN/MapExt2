@@ -4,6 +4,7 @@
 
 import React, { useState } from "react";
 import { useValue } from "cs2/api";
+import { Tooltip } from "cs2/ui";
 import {
     totalHouseholds$, rentedHouseholds$,
     homelessCount$, movingAwayCount$,
@@ -93,41 +94,55 @@ export const DashboardSection: React.FC = () => {
             {/* === 住房概览 === */}
             <Accordion title={t("dashboardTitle")} defaultOpen={defCityStats}>
                 <div className={styles.statRow}>
-                    <span className={styles.statLabel}>{t("totalHouseholds")}</span>
+                    <Tooltip tooltip={t("totalHouseholdsTip")}>
+                        <span className={styles.statLabel}>{t("totalHouseholds")}</span>
+                    </Tooltip>
                     <span className={styles.statValue}>{fmt(totalHH)}</span>
                 </div>
                 <div className={styles.statRow}>
-                    <span className={styles.statLabel}>{t("rentedHouseholds")}</span>
+                    <Tooltip tooltip={t("rentedHouseholdsTip")}>
+                        <span className={styles.statLabel}>{t("rentedHouseholds")}</span>
+                    </Tooltip>
                     <span className={styles.statValue}>
                         {fmt(rentedHH)}
                         <span className={styles.statPercent}> ({housingPct}%)</span>
                     </span>
                 </div>
                 <div className={styles.statRow}>
-                    <span className={styles.statLabel}>{t("homelessCount")}</span>
+                    <Tooltip tooltip={t("homelessCountTip")}>
+                        <span className={styles.statLabel}>{t("homelessCount")}</span>
+                    </Tooltip>
                     <span className={homeless > 500 ? styles.statWarning : styles.statValue}>
                         {fmt(homeless)}
                     </span>
                 </div>
                 <div className={styles.statRow}>
-                    <span className={styles.statLabel}>{t("movingAwayCount")}</span>
+                    <Tooltip tooltip={t("movingAwayCountTip")}>
+                        <span className={styles.statLabel}>{t("movingAwayCount")}</span>
+                    </Tooltip>
                     <span className={movingAway > 200 ? styles.statWarning : styles.statValue}>
                         {fmt(movingAway)}
                     </span>
                 </div>
                 <div className={styles.sectionDivider} />
                 <div className={styles.statRow}>
-                    <span className={styles.statLabel}>{t("seekerHoused")}</span>
+                    <Tooltip tooltip={t("seekerHousedTip")}>
+                        <span className={styles.statLabel}>{t("seekerHoused")}</span>
+                    </Tooltip>
                     <span className={styles.statValue}>{fmt(seekerHoused)}</span>
                 </div>
                 <div className={styles.statRow}>
-                    <span className={styles.statLabel}>{t("seekerHomeless")}</span>
+                    <Tooltip tooltip={t("seekerHomelessTip")}>
+                        <span className={styles.statLabel}>{t("seekerHomeless")}</span>
+                    </Tooltip>
                     <span className={seekerHomeless > 300 ? styles.statWarning : styles.statValue}>
                         {fmt(seekerHomeless)}
                     </span>
                 </div>
                 <div className={styles.statRow}>
-                    <span className={styles.statLabel}>{t("highRentBuildings")}</span>
+                    <Tooltip tooltip={t("highRentBuildingsTip")}>
+                        <span className={styles.statLabel}>{t("highRentBuildings")}</span>
+                    </Tooltip>
                     <span className={highRent > 200 ? styles.statWarning : styles.statValue}>
                         {fmt(highRent)}
                     </span>
@@ -137,21 +152,27 @@ export const DashboardSection: React.FC = () => {
             {/* === 住宅市场 === */}
             <Accordion title={t("residentialTitle")} defaultOpen={defResidential}>
                 <div className={styles.densityRow}>
-                    <span className={styles.densityLabel}>{t("resDensityLow")}</span>
+                    <Tooltip tooltip={t("resDensityLowTip")}>
+                        <span className={styles.densityLabel}>{t("resDensityLow")}</span>
+                    </Tooltip>
                     <span className={styles.densityData}>
                         {fmt(freeL)} / {fmt(totalL)}
                     </span>
                     <span className={styles.densityRate}>({vacPct(freeL, totalL)}%)</span>
                 </div>
                 <div className={styles.densityRow}>
-                    <span className={styles.densityLabel}>{t("resDensityMed")}</span>
+                    <Tooltip tooltip={t("resDensityMedTip")}>
+                        <span className={styles.densityLabel}>{t("resDensityMed")}</span>
+                    </Tooltip>
                     <span className={styles.densityData}>
                         {fmt(freeM)} / {fmt(totalM)}
                     </span>
                     <span className={styles.densityRate}>({vacPct(freeM, totalM)}%)</span>
                 </div>
                 <div className={styles.densityRow}>
-                    <span className={styles.densityLabel}>{t("resDensityHigh")}</span>
+                    <Tooltip tooltip={t("resDensityHighTip")}>
+                        <span className={styles.densityLabel}>{t("resDensityHigh")}</span>
+                    </Tooltip>
                     <span className={styles.densityData}>
                         {fmt(freeH)} / {fmt(totalH)}
                     </span>
@@ -162,11 +183,15 @@ export const DashboardSection: React.FC = () => {
             {/* === 商业市场 === */}
             <Accordion title={t("commercialTitle")} defaultOpen={defCommercial}>
                 <div className={styles.statRow}>
-                    <span className={styles.statLabel}>{t("totalCommercial")}</span>
+                    <Tooltip tooltip={t("totalCommercialTip")}>
+                        <span className={styles.statLabel}>{t("totalCommercial")}</span>
+                    </Tooltip>
                     <span className={styles.statValue}>{fmt(totalCom)}</span>
                 </div>
                 <div className={styles.statRow}>
-                    <span className={styles.statLabel}>{t("commercialPropertyless")}</span>
+                    <Tooltip tooltip={t("commercialPropertylessTip")}>
+                        <span className={styles.statLabel}>{t("commercialPropertyless")}</span>
+                    </Tooltip>
                     <span className={comPropertyless > 100 ? styles.statWarning : styles.statValue}>
                         {fmt(comPropertyless)}
                     </span>
@@ -176,19 +201,27 @@ export const DashboardSection: React.FC = () => {
             {/* === 人口活动 === */}
             <Accordion title={t("activityTitle")} defaultOpen={defActivity}>
                 <div className={styles.statRow}>
-                    <span className={styles.statLabel}>{t("shoppingCount")}</span>
+                    <Tooltip tooltip={t("shoppingCountTip")}>
+                        <span className={styles.statLabel}>{t("shoppingCount")}</span>
+                    </Tooltip>
                     <span className={styles.statValue}>{fmt(shopping)}</span>
                 </div>
                 <div className={styles.statRow}>
-                    <span className={styles.statLabel}>{t("leisureCount")}</span>
+                    <Tooltip tooltip={t("leisureCountTip")}>
+                        <span className={styles.statLabel}>{t("leisureCount")}</span>
+                    </Tooltip>
                     <span className={styles.statValue}>{fmt(leisure)}</span>
                 </div>
                 <div className={styles.statRow}>
-                    <span className={styles.statLabel}>{t("goingToWork")}</span>
+                    <Tooltip tooltip={t("goingToWorkTip")}>
+                        <span className={styles.statLabel}>{t("goingToWork")}</span>
+                    </Tooltip>
                     <span className={styles.statValue}>{fmt(goWork)}</span>
                 </div>
                 <div className={styles.statRow}>
-                    <span className={styles.statLabel}>{t("goingHome")}</span>
+                    <Tooltip tooltip={t("goingHomeTip")}>
+                        <span className={styles.statLabel}>{t("goingHome")}</span>
+                    </Tooltip>
                     <span className={styles.statValue}>{fmt(goHome)}</span>
                 </div>
             </Accordion>
@@ -196,11 +229,15 @@ export const DashboardSection: React.FC = () => {
             {/* === 其他 === */}
             <Accordion title={t("miscTitle")} defaultOpen={defMisc}>
                 <div className={styles.statRow}>
-                    <span className={styles.statLabel}>{t("commuterCount")}</span>
+                    <Tooltip tooltip={t("commuterCountTip")}>
+                        <span className={styles.statLabel}>{t("commuterCount")}</span>
+                    </Tooltip>
                     <span className={styles.statValue}>{fmt(commuters)}</span>
                 </div>
                 <div className={styles.statRow}>
-                    <span className={styles.statLabel}>{t("petCount")}</span>
+                    <Tooltip tooltip={t("petCountTip")}>
+                        <span className={styles.statLabel}>{t("petCount")}</span>
+                    </Tooltip>
                     <span className={styles.statValue}>{fmt(pets)}</span>
                 </div>
             </Accordion>

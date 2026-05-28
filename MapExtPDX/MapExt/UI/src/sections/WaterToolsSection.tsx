@@ -3,6 +3,7 @@
 
 import React, { useState, useCallback, useEffect } from "react";
 import { useValue } from "cs2/api";
+import { Tooltip } from "cs2/ui";
 import {
     seaLevel$, setSeaLevel, applySeaLevel, resetWater,
     waterSimSpeed$, setWaterSimSpeed,
@@ -183,19 +184,24 @@ export const WaterToolsSection: React.FC = () => {
 
             {/* 操作按钮行 */}
             <div className={styles.waterButtonRow}>
-                <button className={styles.waterApplyBtn} onClick={applySeaLevel}>
-                    {t("applySeaLevel")}
-                </button>
-                <button
-                    className={`${styles.waterLockBtn} ${isLocked ? styles.waterLockBtnActive : ""}`}
-                    onClick={() => setSeaLevelLocked(!isLocked)}
-                    title={t("lockSeaLevelTip")}
-                >
-                    {isLocked ? "🔒" : "🔓"} {t("lockSeaLevel")}
-                </button>
-                <button className={styles.waterResetBtn} onClick={resetWater}>
-                    {t("resetWater")}
-                </button>
+                <Tooltip tooltip={t("applySeaLevelTip")}>
+                    <button className={styles.waterApplyBtn} onClick={applySeaLevel}>
+                        {t("applySeaLevel")}
+                    </button>
+                </Tooltip>
+                <Tooltip tooltip={t("lockSeaLevelTip")}>
+                    <button
+                        className={`${styles.waterLockBtn} ${isLocked ? styles.waterLockBtnActive : ""}`}
+                        onClick={() => setSeaLevelLocked(!isLocked)}
+                    >
+                        {isLocked ? "🔒" : "🔓"} {t("lockSeaLevel")}
+                    </button>
+                </Tooltip>
+                <Tooltip tooltip={t("resetWaterTip")}>
+                    <button className={styles.waterResetBtn} onClick={resetWater}>
+                        {t("resetWater")}
+                    </button>
+                </Tooltip>
             </div>
 
             <div className={styles.sectionDivider} />
