@@ -7,7 +7,8 @@ using static Colossal.IO.AssetDatabase.AudioAsset;
 namespace SimpleRadio.Core
 {
     /// <summary>
-    /// AudioAsset 加载辅助类：将 OGG 文件注册到 AssetDatabase 并注入元数据。
+    /// AudioAsset 加载辅助类：将音频文件注册到 AssetDatabase 并注入元数据。
+    /// 支持 OGG、MP3、WAV 格式。
     /// </summary>
     public static class AudioAssetHelper
     {
@@ -17,14 +18,14 @@ namespace SimpleRadio.Core
                 System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
 
         /// <summary>
-        /// 加载 OGG 文件并注册到 AssetDatabase.user，注入元数据。
+        /// 加载音频文件并注册到 AssetDatabase.user，注入元数据。
         /// 若 asset 已注册则跳过注册步骤，但仍会强制设置元数据。
         /// </summary>
-        public static AudioAsset LoadAndRegister(string oggFilePath, string stationName, string networkName)
+        public static AudioAsset LoadAndRegister(string audioFilePath, string stationName, string networkName)
         {
             try
             {
-                string normalizedPath = oggFilePath.Replace("\\", "/");
+                string normalizedPath = audioFilePath.Replace("\\", "/");
                 var fileInfo = new FileInfo(normalizedPath);
 
                 AudioAsset audioAsset;
@@ -38,28 +39,37 @@ namespace SimpleRadio.Core
                 }
                 else
                 {
-                    // 注册到 user AssetDatabase（触发 PostCreate → ATL 解析 OGG 元数据）
-                    var assetPath = AssetDataPath.Create(fileInfo.DirectoryName, fileInfo.Name, EscapeStrategy.None);
+                    // 注册到 user AssetDatabase（触发 PostCreate → ATL 解析元数据）
+                    // 关键1：必须使用 hasExtension: true 让 AssetDataPath 正确提取扩展名
+                    //        否则 m_Extension 为 null → GetAssetType(null) → ArgumentNullException
+                    // 关键2：subPath 必须使用正斜杠，与 FileSystemDataSource 内部一致
+                    //        否则 ConstructFullPath 的 StartsWith 根路径对比会失败
+                    string subPath = fileInfo.DirectoryName.Replace("\\", "/");
+                    // 关键3：扩展名必须小写，DefaultAssetFactory.GetAssetType 区分大小写
+                    string fileName = Path.GetFileNameWithoutExtension(fileInfo.Name)
+                                    + Path.GetExtension(fileInfo.Name).ToLowerInvariant();
+                    var assetPath = AssetDataPath.Create(subPath, fileName,
+                        hasExtension: true, EscapeStrategy.None);
                     var assetData = AssetDatabase.user.AddAsset(assetPath);
 
                     if (assetData is not AudioAsset newAsset)
                     {
-                        Mod.Logger.Warn($"文件未被识别为 AudioAsset: {oggFilePath}");
+                        Mod.Logger.Warn($"文件未被识别为 AudioAsset: {audioFilePath}");
                         return null;
                     }
                     audioAsset = newAsset;
                 }
 
                 // --- 每次都强制设置元数据 ---
-                // ATL 仅解析 OGG Vorbis Comment 中的标准字段，不会设置 Type="Music"
+                // ATL 解析标准字段（Title/Artist/Album），但不会设置 Type="Music"
                 // 而 RadioUISystem.GetClipInfo 依赖 Type=="Music" 才显示歌曲标题
-                ForceSetMetadata(audioAsset, oggFilePath, stationName, networkName);
+                ForceSetMetadata(audioAsset, audioFilePath, stationName, networkName);
 
                 return audioAsset;
             }
             catch (Exception e)
             {
-                Mod.Logger.Error(e, $"加载音频失败: {oggFilePath}");
+                Mod.Logger.Error(e, $"加载音频失败: {audioFilePath}");
                 return null;
             }
         }

@@ -52,10 +52,21 @@ namespace SimpleRadio
                 // 2. 注册 COUI 图标资源
                 IconManager.Register();
 
-                // 3. 注册 Harmony 补丁
+                // 3. 注册额外音频格式（MP3/WAV）并检测 ExtendedRadio
+                AudioFormatHelper.RegisterExtensions();
+
+                // 4. 注册 Harmony 补丁
                 _harmony = new Harmony(HarmonyId);
                 _harmony.CreateClassProcessor(typeof(RadioLoadPatch)).Patch();       // Postfix: 注入电台
                 _harmony.CreateClassProcessor(typeof(PlaylistClipsPatch)).Patch();   // Prefix: 拦截运行时 clip 刷新
+
+                // 仅在 ExtendedRadio 未加载时注册 LoadAsync 补丁
+                // ExtendedRadio 已有全局 LoadAsync Prefix 处理所有格式
+                if (!AudioFormatHelper.IsExtendedRadioLoaded)
+                {
+                    _harmony.CreateClassProcessor(typeof(AudioLoadPatch)).Patch();   // Prefix: 多格式解码器选择
+                    Logger.Info("已注册 AudioLoadPatch（多格式解码支持）。");
+                }
 
                 Logger.Info($"{ModName} v{ModAssemblyInfo.Version} loaded successfully.");
             }

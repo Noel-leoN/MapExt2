@@ -89,7 +89,7 @@ namespace SimpleRadio.Core
                 {
                     Directory.CreateDirectory(basePath);
                     Mod.Logger.Info($"数据目录已创建: {basePath}");
-                    Mod.Logger.Info("请将 .ogg 文件放入子文件夹中，然后点击\"刷新电台\"或重启游戏。");
+                    Mod.Logger.Info("请将音频文件（.ogg/.mp3/.wav）放入子文件夹中，然后点击\"刷新电台\"或重启游戏。");
                 }
                 catch (Exception e)
                 {
@@ -252,20 +252,26 @@ namespace SimpleRadio.Core
                 return;
             }
 
-            // --- 扫描 .ogg 文件 ---
-            string[] oggFiles = Directory.GetFiles(stationDir, "*.ogg");
-            if (oggFiles.Length == 0)
+            // --- 扫描所有启用格式的音频文件 ---
+            var enabledExts = AudioFormatHelper.GetEnabledExtensions();
+            var audioFiles = new List<string>();
+            foreach (var ext in enabledExts)
             {
-                Mod.Logger.Warn($"电台 '{stationName}' 没有 .ogg 文件，跳过。");
+                audioFiles.AddRange(Directory.GetFiles(stationDir, "*" + ext));
+            }
+
+            if (audioFiles.Count == 0)
+            {
+                Mod.Logger.Warn($"电台 '{stationName}' 没有支持的音频文件，跳过。");
                 return;
             }
 
             // 使用 List 收集，避免 AddToArray 的 O(N²) 问题
-            var clips = new List<AudioAsset>(oggFiles.Length);
+            var clips = new List<AudioAsset>(audioFiles.Count);
 
-            foreach (var oggFile in oggFiles)
+            foreach (var audioFile in audioFiles)
             {
-                var asset = AudioAssetHelper.LoadAndRegister(oggFile, stationName, NetworkKey);
+                var asset = AudioAssetHelper.LoadAndRegister(audioFile, stationName, NetworkKey);
                 if (asset != null)
                 {
                     clips.Add(asset);

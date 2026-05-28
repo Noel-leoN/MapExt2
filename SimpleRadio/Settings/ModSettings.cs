@@ -11,18 +11,21 @@ namespace SimpleRadio.Settings
 {
     /// <summary>
     /// SimpleRadio 设置面板。
-    /// 提供只读信息展示、打开数据目录、热刷新电台功能。
+    /// 提供只读信息展示、打开数据目录、热刷新电台、格式开关功能。
     /// </summary>
     [FileLocation("ModsSettings/" + Mod.ModName + "/" + Mod.ModName)]
-    [SettingsUITabOrder(kTabInfo)]
-    [SettingsUIGroupOrder(kGroupStatus, kGroupActions)]
-    [SettingsUIShowGroupName(kGroupStatus, kGroupActions)]
+    [SettingsUITabOrder(kTabInfo, kTabFormat)]
+    [SettingsUIGroupOrder(kGroupStatus, kGroupActions, kGroupFormats, kGroupCompat)]
+    [SettingsUIShowGroupName(kGroupStatus, kGroupActions, kGroupFormats, kGroupCompat)]
     public class ModSettings : ModSetting
     {
         // === Section/Group 常量 ===
         public const string kTabInfo = "Info";
+        public const string kTabFormat = "Format";
         public const string kGroupStatus = "Status";
         public const string kGroupActions = "Actions";
+        public const string kGroupFormats = "Formats";
+        public const string kGroupCompat = "Compatibility";
 
         // === 内部状态 ===
         private int _stationCount;
@@ -32,6 +35,10 @@ namespace SimpleRadio.Settings
         public ModSettings(IMod mod) : base(mod)
         {
         }
+
+        // ================================================================
+        // Info Tab
+        // ================================================================
 
         // === 只读信息展示 ===
 
@@ -101,7 +108,38 @@ namespace SimpleRadio.Settings
         /// </summary>
         public bool IsRadioNotReady => StationLoader.RadioInstance == null;
 
-        // === 持久化设置（隐藏，不显示在 UI 中） ===
+        // ================================================================
+        // Format Tab
+        // ================================================================
+
+        // === 格式开关 ===
+
+        /// <summary>
+        /// MP3 格式支持开关。
+        /// </summary>
+        [SettingsUISection(kTabFormat, kGroupFormats)]
+        public bool EnableMP3 { get; set; } = true;
+
+        /// <summary>
+        /// WAV 格式支持开关。
+        /// </summary>
+        [SettingsUISection(kTabFormat, kGroupFormats)]
+        public bool EnableWAV { get; set; } = true;
+
+        // === 兼容性信息 ===
+
+        /// <summary>
+        /// 显示 ExtendedRadio 兼容状态。
+        /// </summary>
+        [SettingsUISection(kTabFormat, kGroupCompat)]
+        public string ExtendedRadioStatus =>
+            AudioFormatHelper.IsExtendedRadioLoaded
+                ? "Detected — SimpleRadio format patches disabled"
+                : "Not detected — SimpleRadio format patches active";
+
+        // ================================================================
+        // 持久化设置（隐藏）
+        // ================================================================
 
         /// <summary>
         /// 上次退出时选择的电台名称，由设置系统自动持久化。
@@ -127,6 +165,8 @@ namespace SimpleRadio.Settings
             _songCount = 0;
             _hasLoaded = false;
             LastStation = "";
+            EnableMP3 = true;
+            EnableWAV = true;
         }
     }
 }
