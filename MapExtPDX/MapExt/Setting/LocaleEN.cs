@@ -726,6 +726,11 @@ namespace MapExtPDX
                     "Checking this will disable the validation. Only use this for special cases, such as unrecognised saves from older MapExt versions. Please ensure you've selected the correct 'MapSize Mode' before loading, or you might corrupt your save!\n" +
                     "Always backup your saves before using this feature."
                 },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.EnableRescueDebugLog)), "• Enable Vehicle Rescue Debug Log" },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.EnableRescueDebugLog)),
+                    "Enable printing logs whenever the vehicle purchase rescue system performs a rescue, retry, or deletion.\n★ Keep disabled under normal gameplay to avoid log file bloat."
+                },
             };
             return entries;
         }

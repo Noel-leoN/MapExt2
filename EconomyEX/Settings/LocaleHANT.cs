@@ -290,6 +290,11 @@ namespace EconomyEX.Settings
                 { m_Setting.GetOptionDescLocaleID(nameof(ModSettings.PopDiagReport)), "顯示家庭人口健康度指標，包含搬離、流浪和找房統計。" },
                 { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.RefreshPopDiag)), "重新整理診斷數據" },
                 { m_Setting.GetOptionDescLocaleID(nameof(ModSettings.RefreshPopDiag)), "執行一次 ECS 查詢以收集人口診斷數據。" },
+
+                // --- Group: 偵測 ---
+                { m_Setting.GetOptionGroupLocaleID(ModSettings.kDebugGroup), "偵測參數" },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.EnableRescueDebugLog)), "• 啟用購車救援偵測日誌" },
+                { m_Setting.GetOptionDescLocaleID(nameof(ModSettings.EnableRescueDebugLog)), "開啟後，購車救援系統在每次執行救援、重試或清理放棄邏輯時會列印日誌。\n★ 建議在大城市或穩定運行後保持關閉以防止日誌檔案膨脹。" },
             };
         }
 

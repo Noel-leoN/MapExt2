@@ -211,7 +211,7 @@ namespace EconomyEX.Systems
                 rescuedCount++;
             }
 
-            if (rescuedCount > 0)
+            if (rescuedCount > 0 && Mod.Instance?.Settings?.EnableRescueDebugLog == true)
             {
                 ModLog.Ok(Tag, $"购车救援：已将 {rescuedCount} 辆停放失败的新购车辆传送到住宅附近重新停放");
             }
@@ -279,17 +279,17 @@ namespace EconomyEX.Systems
                 }
             }
 
-            if (successCount > 0)
+            if (successCount > 0 && Mod.Instance?.Settings?.EnableRescueDebugLog == true)
             {
                 ModLog.Ok(Tag, $"购车救援完成：{successCount} 辆车辆已成功停放在住宅附近");
             }
 
-            if (retryCount > 0)
+            if (retryCount > 0 && Mod.Instance?.Settings?.EnableRescueDebugLog == true)
             {
                 ModLog.Info(Tag, $"购车救援重试：{retryCount} 辆车辆仍在等待住宅附近车位空出");
             }
 
-            if (removedCount > 0)
+            if (removedCount > 0 && Mod.Instance?.Settings?.EnableRescueDebugLog == true)
             {
                 ModLog.Warn(Tag, $"购车救援放弃：{removedCount} 辆车辆超过最大重试次数({kMaxRetries})已删除");
             }

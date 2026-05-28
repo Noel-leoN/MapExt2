@@ -650,6 +650,11 @@ namespace MapExtPDX
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.DisableLoadGameValidation)),
                     "⚠️ 警告！默认(不勾选)为启用游戏读取存档验证，以防止错误设置地图尺寸模式而读取不同尺寸的存档造成坏档！\n该选项勾选后将取消验证，仅用于使用旧版MapExt mod特殊尺寸模式而无法正确识别的情况。使用旧版存档请务必确认'地图尺寸模式'是否设置正确，否则可能坏档！\n务必在使用该功能前备份您的存档"
                 },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.EnableRescueDebugLog)), "• 启用购车救援调试日志" },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.EnableRescueDebugLog)),
+                    "开启后，购车救援系统在每次执行救援、重试或清理放弃逻辑时会打印日志。\n★ 建议在大城市或稳定运行后保持关闭以防止日志文件膨胀。"
+                },
             };
             return entries;
         }

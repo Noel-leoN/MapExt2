@@ -862,6 +862,10 @@ namespace MapExtPDX
         [SettingsUISection(kDebugTab, kDebugGroup)]
         public bool DisableLoadGameValidation { get; set; } = false;
 
+        // 购车救援调试日志开关
+        [SettingsUISection(kDebugTab, kDebugGroup)]
+        public bool EnableRescueDebugLog { get; set; } = false;
+
         // === Defaults ===
         public override void SetDefaults()
         {
@@ -909,6 +913,7 @@ namespace MapExtPDX
             EnableResourceBuyerEcoSystem = false;
             EnableResidentAIEcoSystem = false;
             EnableDownstreamAIEcoSystem = false;
+            EnableRescueDebugLog = false;
 
             // 地形优化
             TerrainBufferPrealloc = true;

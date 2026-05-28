@@ -31,10 +31,10 @@ namespace EconomyEX.Settings
     [SettingsUITabOrder(kSectionStatus, kSectionGeneral, kRentControlTab, kSectionPerfTool, kDebugTab)]
     [SettingsUIGroupOrder(kSectionStatus, kSectionGeneral, kSectionPathfinding, kSectionBehavior,
         kLandValueFactorGroup, kRentFormulaGroup,
-        kNoDogsGroup, kNoTrafficGroup, kEditorToolGroup, kGpuOptGroup, kPopDiagGroup)]
+        kNoDogsGroup, kNoTrafficGroup, kEditorToolGroup, kGpuOptGroup, kPopDiagGroup, kDebugGroup)]
     [SettingsUIShowGroupName(kSectionGeneral, kSectionPathfinding, kSectionBehavior,
         kLandValueFactorGroup, kRentFormulaGroup,
-        kNoDogsGroup, kNoTrafficGroup, kEditorToolGroup, kGpuOptGroup, kPopDiagGroup)]
+        kNoDogsGroup, kNoTrafficGroup, kEditorToolGroup, kGpuOptGroup, kPopDiagGroup, kDebugGroup)]
     public class ModSettings : ModSetting
     {
         public const string kSectionGeneral = "General";
@@ -50,6 +50,7 @@ namespace EconomyEX.Settings
         // -- Debug Tab --
         public const string kDebugTab = "Debug";
         public const string kPopDiagGroup = "PopDiag";
+        public const string kDebugGroup = "Debug";
 
         // -- Rent Control Tab --
         public const string kRentControlTab = "Rent Control";
@@ -498,6 +499,10 @@ namespace EconomyEX.Settings
 
         #endregion
 
+        // === Debug ===
+        [SettingsUISection(kDebugTab, kDebugGroup)]
+        public bool EnableRescueDebugLog { get; set; } = false;
+
         public void UpdateStatus()
         {
             if (Mod.IsMapExtPresent)
@@ -577,6 +582,7 @@ namespace EconomyEX.Settings
             LevelFactorIndustrial = 100;
             DisableWorldBackdrop = false;
             WaterSimQuality = WaterSimQualitySetting.Vanilla_EveryFrame;
+            EnableRescueDebugLog = false;
         }
     }
 }

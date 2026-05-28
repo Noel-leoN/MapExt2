@@ -297,6 +297,11 @@ namespace EconomyEX.Settings
                 { m_Setting.GetOptionDescLocaleID(nameof(ModSettings.PopDiagReport)), "Displays household population health metrics including MovingAway, Homeless, and PropertySeeker statistics." },
                 { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.RefreshPopDiag)), "Refresh Diagnostics" },
                 { m_Setting.GetOptionDescLocaleID(nameof(ModSettings.RefreshPopDiag)), "Run a one-shot ECS query to collect population diagnostic data." },
+
+                // --- Group: Debug ---
+                { m_Setting.GetOptionGroupLocaleID(ModSettings.kDebugGroup), "Debug Settings" },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.EnableRescueDebugLog)), "• Enable Vehicle Rescue Debug Log" },
+                { m_Setting.GetOptionDescLocaleID(nameof(ModSettings.EnableRescueDebugLog)), "Enable printing logs whenever the vehicle purchase rescue system performs a rescue, retry, or deletion.\n★ Keep disabled under normal gameplay to avoid log file bloat." },
             };
         }
 
