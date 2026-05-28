@@ -579,7 +579,7 @@ namespace EconomyEX.Systems
 
 			private void CheckNavigationLanes(DynamicBuffer<CarNavigationLane> navigationLanes, ref Game.Vehicles.Taxi taxi, ref CarCurrentLane currentLane, ref Target target)
 			{
-				if (navigationLanes.Length == 0 || navigationLanes.Length == 8)
+				if (navigationLanes.Length == 0 || navigationLanes.Length == 12)
 				{
 					return;
 				}
