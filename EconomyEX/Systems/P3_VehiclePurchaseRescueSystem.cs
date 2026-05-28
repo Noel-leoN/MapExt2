@@ -9,11 +9,12 @@ using Game.Objects;
 using Game.Simulation;
 using Game.Tools;
 using Game.Vehicles;
-using MapExtPDX.MapExt.Core;
+using EconomyEX;
+using EconomyEX.Helpers;
 using Unity.Collections;
 using Unity.Entities;
 
-namespace MapExtPDX.EcoShared
+namespace EconomyEX.Systems
 {
     #region Component
 

@@ -1,11 +1,10 @@
-## v2.6.1 - Stability Fix
+## v4.0.6 - Vehicle Purchase Fix
 
-* **[Core - ModLog]:** Fixed an intermittent NullReferenceException during early initialization by adding a SafeLog wrapper that falls back to Unity's native logger.
-* **[Localization]:** Added Traditional Chinese (zh-HANT) localization support for all in-game OptionUI settings.
+* **[Fix - Vehicle Purchase]:** Fixed an issue where newly purchased citizen vehicles could still get lost or fail to park under certain conditions.
 
 ---
 
 ### 主要改动
 
-* **[核心 - ModLog]：** 修复初始化早期阶段偶发的 NullReferenceException，通过 SafeLog 包装器回退到 Unity 原生日志。
-* **[本地化]：** 为所有游戏内选项设置项新增繁体中文（zh-HANT）本地化支持。
+* **[修复 - 购车丢失]：** 修复了新购买的市民车辆在特定情况下仍会丢失或无法正常停放的问题。
+

@@ -52,6 +52,9 @@ namespace EconomyEX.Helpers
             // P 系列: 工具系统 (独立于经济开关)
             updateSystem.UpdateAt<P2_EditorCollisionOverrideSystem>(SystemUpdatePhase.ToolUpdate);
 
+            // P 系列: 购车救援系统
+            updateSystem.UpdateAt<P3_VehiclePurchaseRescueSystem>(SystemUpdatePhase.GameSimulation);
+
             // 注意: A1-A3 需求系统仅通过 JobPatchHelper Transpiler 替换 Job，无需注册系统
 
             // Initial State: DISABLED (Waiting for Map Size Check)
@@ -94,6 +97,7 @@ namespace EconomyEX.Helpers
             SetSystemEnabled<ResourceBuyerSystemMod>(world, true);
             SetSystemEnabled<ResidentAISystemMod>(world, true);
             SetSystemEnabled<ResidentAISystemMod.Actions>(world, true);
+            SetSystemEnabled<P3_VehiclePurchaseRescueSystem>(world, true);
 
             Mod.Info("EconomyEX Systems ENABLED. Vanilla Systems DISABLED.");
         }
@@ -133,6 +137,7 @@ namespace EconomyEX.Helpers
             SetSystemEnabled<ResourceBuyerSystemMod>(world, false);
             SetSystemEnabled<ResidentAISystemMod>(world, false);
             SetSystemEnabled<ResidentAISystemMod.Actions>(world, false);
+            SetSystemEnabled<P3_VehiclePurchaseRescueSystem>(world, false);
 
             if (isInitialStandby)
                 Mod.Info("EconomyEX Systems registered (STANDBY). Awaiting map size verification...");
