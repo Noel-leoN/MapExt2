@@ -54,8 +54,9 @@ namespace SimpleRadio.Core
             try
             {
                 // 1. 注册 mod 部署目录（预设图标）
-                _modDir = Path.Combine(EnvPath.kUserDataPath, "Mods", Mod.ModName)
-                    .Replace('\\', '/');
+                // 动态获取程序集所在目录，防止在 PDX Mods 订阅环境下（.cache 目录）路径硬编码失效导致图标红叉
+                string dllPath = typeof(Mod).Assembly.Location;
+                _modDir = Path.GetDirectoryName(dllPath).Replace('\\', '/');
 
                 if (!Directory.Exists(_modDir))
                 {

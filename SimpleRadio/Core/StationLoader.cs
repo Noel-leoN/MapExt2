@@ -43,9 +43,9 @@ namespace SimpleRadio.Core
         public static string GetDataPath()
         {
             // EnvPath.kUserDataPath 来自 Application.persistentDataPath，使用正斜杠
-            // 转换为系统原生路径分隔符确保 explorer.exe 正确解析
+            // 转换为系统原生路径分隔符并使用 Path.GetFullPath 确保 explorer.exe 在任何环境下都能正确解析
             string rawPath = Path.Combine(EnvPath.kUserDataPath, "ModsData", DataFolder);
-            return rawPath.Replace('/', Path.DirectorySeparatorChar);
+            return Path.GetFullPath(rawPath);
         }
 
         /// <summary>
