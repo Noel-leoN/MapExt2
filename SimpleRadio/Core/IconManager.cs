@@ -1,6 +1,5 @@
 using System;
 using System.IO;
-using Colossal.PSI.Environment;
 using Colossal.UI;
 
 namespace SimpleRadio.Core
@@ -47,26 +46,25 @@ namespace SimpleRadio.Core
         /// <summary>
         /// 注册 COUI host 并扫描电台图标库。
         /// </summary>
-        public static void Register()
+        /// <param name="modDir">Mod 部署目录（由 Mod.OnLoad 通过 TryGetExecutableAsset 解析）</param>
+        public static void Register(string modDir)
         {
             if (_registered) return;
 
             try
             {
                 // 1. 注册 mod 部署目录（预设图标）
-                // 动态获取程序集所在目录，防止在 PDX Mods 订阅环境下（.cache 目录）路径硬编码失效导致图标红叉
-                string dllPath = typeof(Mod).Assembly.Location;
-                _modDir = Path.GetDirectoryName(dllPath).Replace('\\', '/');
-
-                if (!Directory.Exists(_modDir))
+                if (string.IsNullOrEmpty(modDir) || !Directory.Exists(modDir))
                 {
-                    Mod.Logger.Warn($"Mod 部署目录不存在: {_modDir}");
-                    return;
+                    Mod.Logger.Warn($"Mod 部署目录无效或不存在: {modDir ?? "(null)"}，预设图标将不可用。");
                 }
-
-                UIManager.defaultUISystem.AddHostLocation(kResourceKey, _modDir, false);
-                _registered = true;
-                Mod.Logger.Info($"COUI host 已注册: {kResourceKey} -> {_modDir}");
+                else
+                {
+                    _modDir = modDir.Replace('\\', '/');
+                    UIManager.defaultUISystem.AddHostLocation(kResourceKey, _modDir, false);
+                    _registered = true;
+                    Mod.Logger.Info($"COUI host 已注册: {kResourceKey} -> {_modDir}");
+                }
 
                 // 2. 注册 ModsData 目录（用户自定义 icon.svg）
                 string dataDir = StationLoader.GetDataPath().Replace('\\', '/');
@@ -77,7 +75,7 @@ namespace SimpleRadio.Core
                 }
 
                 // 3. 扫描预设图标库
-                ScanStationIcons();
+                if (_registered) ScanStationIcons();
             }
             catch (Exception e)
             {

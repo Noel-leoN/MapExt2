@@ -24,6 +24,13 @@ An advanced economy and performance optimization module, extracted from MapExt f
 - **Compatibility**: Automatically yields to MapExtPDX when both are present to prevent conflicts.
 - **Documentation**: [EconomyEX/README.md](./EconomyEX/README.md)
 
+### 3. [SimpleRadio](./SimpleRadio) (Sub-Mod)
+
+A custom radio mod allowing players to easily play custom music stations by dropping audio files into a folder.
+
+- **Key Features**: Zero-configuration, OGG/MP3/WAV format support, automatic metadata reading, game settings panel integration, station hot-reloads, and compatibility with ExtendedRadio.
+- **Documentation**: [SimpleRadio/README.md](./SimpleRadio/README.md)
+
 ---
 
 ## 🔗 Community and Links
@@ -58,6 +65,13 @@ An advanced economy and performance optimization module, extracted from MapExt f
 - **核心功能**：比例需求计算、求职逻辑 CPU 性能优化，以及公平租金系统。
 - **兼容性**：当与 MapExtPDX 同时启用时，会自动让权以防止系统冲突。
 - **文档**：[EconomyEX/README.md](./EconomyEX/README.md)
+
+### 3. [SimpleRadio](./SimpleRadio) (子模组)
+
+极简自定义音乐电台模组，玩家只需将音频文件拖入文件夹即可轻松在游戏内创建和播放自定义音乐电台。
+
+- **核心功能**：零配置开箱即用、支持 OGG/MP3/WAV 格式、自动读取音乐元数据（歌曲名和艺术家）、记住上次播放状态、支持游戏内设置面板热刷新，并与 ExtendedRadio 完全兼容。
+- **文档**：[SimpleRadio/README.md](./SimpleRadio/README.md)
 
 ---
 

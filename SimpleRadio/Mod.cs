@@ -49,13 +49,25 @@ namespace SimpleRadio
                 GameManager.instance.localizationManager.AddSource("zh-HANS", new LocaleHANS(Settings));
                 AssetDatabase.global.LoadSettings(ModName, Settings, new ModSettings(this));
 
-                // 2. 注册 COUI 图标资源
-                IconManager.Register();
+                // 2. 解析 Mod 部署目录（通过游戏官方 API，适配本地和 PDX 订阅环境）
+                string modDir = null;
+                if (GameManager.instance.modManager.TryGetExecutableAsset(this, out var asset))
+                {
+                    modDir = new System.IO.FileInfo(asset.path).Directory?.FullName;
+                    Logger.Info($"Mod 部署目录: {modDir}");
+                }
+                else
+                {
+                    Logger.Warn("无法通过 TryGetExecutableAsset 获取部署路径，图标可能不可用。");
+                }
 
-                // 3. 注册额外音频格式（MP3/WAV）并检测 ExtendedRadio
+                // 3. 注册 COUI 图标资源
+                IconManager.Register(modDir);
+
+                // 4. 注册额外音频格式（MP3/WAV）并检测 ExtendedRadio
                 AudioFormatHelper.RegisterExtensions();
 
-                // 4. 注册 Harmony 补丁
+                // 5. 注册 Harmony 补丁
                 _harmony = new Harmony(HarmonyId);
                 _harmony.CreateClassProcessor(typeof(RadioLoadPatch)).Patch();       // Postfix: 注入电台
                 _harmony.CreateClassProcessor(typeof(PlaylistClipsPatch)).Patch();   // Prefix: 拦截运行时 clip 刷新
