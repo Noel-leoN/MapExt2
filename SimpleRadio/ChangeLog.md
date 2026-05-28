@@ -1,5 +1,9 @@
 # ChangeLog
 
+## v1.0.1
+
+- 优化电台图标与平台兼容性，修复部分情况下图标无法显示的问题。(Optimized radio station icons and compatibility to fix display issues.)
+
 ## v1.0.0
 
 - Initial release

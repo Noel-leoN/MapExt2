@@ -25,24 +25,16 @@ Drop your music files into a folder and they appear as a radio station in-game. 
 
 ### Example Structure
 
-```
-ModsData/SimpleRadio/
-├── My Rock Station/
-│   ├── track01.ogg
-│   ├── track02.mp3
-│   └── icon.svg          ← Optional custom icon
-└── Chill Vibes/
-    ├── lofi_beat_1.ogg
-    └── lofi_beat_2.wav
-```
+**ModsData/SimpleRadio/**
+
+- **My Rock Station/** — track01.ogg, track02.mp3, icon.svg (optional custom icon)
+- **Chill Vibes/** — lofi_beat_1.ogg, lofi_beat_2.wav
 
 ## Supported Formats
 
-| Format | Extension | Status | Notes |
-| ------ | --------- | ------ | ----- |
-| OGG Vorbis | `.ogg` | ✅ Always enabled | Native game format, recommended |
-| MP3 | `.mp3` | ✅ Enabled by default | Widely compatible |
-| WAV | `.wav` | ✅ Enabled by default | See warning below |
+- ✅ **OGG Vorbis** (.ogg) — Always enabled. Native game format, recommended.
+- ✅ **MP3** (.mp3) — Enabled by default. Widely compatible.
+- ✅ **WAV** (.wav) — Enabled by default. See warning below.
 
 > **WAV Warning**: WAV files are uncompressed and typically **10x larger** than OGG/MP3 (~30-50 MB per song). This may significantly increase disk usage and cause brief stuttering on HDD when switching tracks. **Recommended: convert WAV to OGG or MP3** for better performance.
 
@@ -69,10 +61,8 @@ Open **Options > SimpleRadio** to access:
 
 ## Compatibility
 
-| Mod            | Status                                         |
-| -------------- | ---------------------------------------------- |
-| ExtendedRadio  | ✅ Fully compatible (independent network keys) |
-| All other mods | ✅ No known conflicts                          |
+- **ExtendedRadio** — ✅ Fully compatible (independent network keys)
+- **All other mods** — ✅ No known conflicts
 
 When ExtendedRadio is detected, SimpleRadio automatically disables its own audio format patches to avoid conflicts. ExtendedRadio's built-in multi-format support will handle audio decoding instead.
 
@@ -114,24 +104,16 @@ When ExtendedRadio is detected, SimpleRadio automatically disables its own audio
 
 ### 目录结构示例
 
-```
-ModsData/SimpleRadio/
-├── 流行音乐/
-│   ├── 歌曲1.ogg
-│   ├── 歌曲2.mp3
-│   └── icon.svg          ← 可选自定义图标
-└── 古典音乐/
-    ├── lofi_1.ogg
-    └── lofi_2.wav
-```
+**ModsData/SimpleRadio/**
+
+- **流行音乐/** — 歌曲1.ogg, 歌曲2.mp3, icon.svg（可选自定义图标）
+- **古典音乐/** — lofi_1.ogg, lofi_2.wav
 
 ## 支持格式
 
-| 格式 | 扩展名 | 状态 | 说明 |
-| ---- | ------ | ---- | ---- |
-| OGG Vorbis | `.ogg` | ✅ 始终启用 | 游戏原生格式，推荐使用 |
-| MP3 | `.mp3` | ✅ 默认启用 | 广泛兼容 |
-| WAV | `.wav` | ✅ 默认启用 | 请注意下方提醒 |
+- ✅ **OGG Vorbis** (.ogg) — 始终启用，游戏原生格式，推荐使用。
+- ✅ **MP3** (.mp3) — 默认启用，广泛兼容。
+- ✅ **WAV** (.wav) — 默认启用，请注意下方提醒。
 
 > **WAV 提醒**：WAV 是无压缩格式，文件体积通常是 OGG/MP3 的 **10 倍**（每首约 30-50 MB）。可能显著增加磁盘占用，且在机械硬盘上切歌时可能出现短暂卡顿。**建议：将 WAV 转换为 OGG 或 MP3** 以获得更好的性能。
 
@@ -158,10 +140,8 @@ ModsData/SimpleRadio/
 
 ## 兼容性
 
-| Mod           | 状态                          |
-| ------------- | ----------------------------- |
-| ExtendedRadio | ✅ 完全兼容（独立的网络键名） |
-| 其他 mod      | ✅ 无已知冲突                 |
+- **ExtendedRadio** — ✅ 完全兼容（独立的网络键名）
+- **其他 mod** — ✅ 无已知冲突
 
 当检测到 ExtendedRadio 已加载时，SimpleRadio 会自动禁用自身的音频格式补丁以避免冲突。ExtendedRadio 内置的多格式支持将接管音频解码。
 
