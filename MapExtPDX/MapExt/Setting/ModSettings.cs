@@ -725,6 +725,28 @@ namespace MapExtPDX
 
         #region EditorCollisionMode
 
+        /// <summary>
+        /// 地形笔刷道路阻挡。
+        /// 启用后，地形工具（升降/平整/坡度/平滑）的效果不会穿越道路传播，
+        /// 道路自动成为地形编辑的边界。
+        /// </summary>
+        [SettingsUISection(kPerformanceToolTab, kEditorToolGroup)]
+        public bool TerrainBrushRoadBlock { get; set; } = false;
+
+        /// <summary>
+        /// 道路阻挡宽度余量（米）。
+        /// 在道路边缘两侧各扩展指定距离作为保护区。
+        /// 值越大，道路附近受保护的区域越宽。
+        /// 实时生效，无需重启。
+        /// </summary>
+        [SettingsUISection(kPerformanceToolTab, kEditorToolGroup)]
+        [SettingsUISlider(min = 0f, max = 8f, step = 0.5f, scalarMultiplier = 1f,
+            unit = Game.UI.Unit.kFloatSingleFraction)]
+        [SettingsUIDisableByCondition(typeof(ModSettings), nameof(IsRoadBlockDisabled))]
+        public float TerrainBrushRoadMargin { get; set; } = 2f;
+
+        public bool IsRoadBlockDisabled => !TerrainBrushRoadBlock;
+
         [SettingsUISection(kPerformanceToolTab, kEditorToolGroup)]
         [SettingsUIDropdown(typeof(ModSettings), nameof(GetEditorCollisionSkipItems))]
         [SettingsUIHideByCondition(typeof(ModSettings), nameof(IsNotInMainMenu))]

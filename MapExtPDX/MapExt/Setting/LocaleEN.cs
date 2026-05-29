@@ -641,6 +641,20 @@ namespace MapExtPDX
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.EditorCollisionSkip)),
                     "Allows you to bypass normal collision validation checks when placing objects in the Map Editor. 'Trees Only' skips validation specifically for trees, while 'All Objects' disables collision checks for all plopables."
                 },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.TerrainBrushRoadBlock)), "Terrain Brush Road Block" },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.TerrainBrushRoadBlock)),
+                    "When enabled, terrain tools (raise/lower/level/slope/smooth) will not affect terrain on the other side of roads. " +
+                    "Roads act as natural barriers for terrain editing, useful for shaping riverbanks along roads.\n\n" +
+                    "★ Tip: Changes take effect immediately, no restart required."
+                },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.TerrainBrushRoadMargin)), "Road Block Margin (m)" },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.TerrainBrushRoadMargin)),
+                    "Extra protection width on each side of the road edge. Higher values create a wider buffer zone around roads. " +
+                    "Changes take effect immediately on the next brush stroke.\n\n" +
+                    "★ Recommended: 1.0 ~ 4.0m for most roads."
+                },
 
                 // --- Group: In-Game UI ---
                 { m_Setting.GetOptionGroupLocaleID(ModSettings.kInGameUIGroup), "In-Game UI Appearance" },

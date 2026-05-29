@@ -110,6 +110,10 @@ namespace MapExtPDX.MapExt.Core
                 // PatchSet4:AirWaySystem
                 { "AirwaySystemPatch", (h) => h.CreateClassProcessor(typeof(AirwaySystem_OnUpdate_Patch)).Patch() },
 
+                // PatchSet5:Tools — 地形笔刷道路阻挡
+                // 始终注册，由 Prefix 内部 Settings 开关控制启停，实现实时切换
+                { "TerrainBrushRoadBlock", (h) => h.CreateClassProcessor(typeof(Tools.TerrainBrushBlockPatch)).Patch() },
+
                 // PatchSetFinal:ReBurstJobSystems
                 // 集中调用方式
                 {
@@ -145,6 +149,7 @@ namespace MapExtPDX.MapExt.Core
                         "TerrainBackdropDisable",
                         "CellMapSystemValuesPatch",
                         "AirwaySystemPatch",
+                        "TerrainBrushRoadBlock",
                         "ReBurstSystemsPatches",
                     };
 
@@ -166,6 +171,7 @@ namespace MapExtPDX.MapExt.Core
                         "TerrainBackdropDisable",
                         "CellMapSystemValuesPatch",
                         "AirwaySystemPatch",
+                        "TerrainBrushRoadBlock",
                         "ReBurstSystemsPatches",
                     };
 
@@ -187,6 +193,7 @@ namespace MapExtPDX.MapExt.Core
                         "TerrainBackdropDisable",
                         "CellMapSystemValuesPatch",
                         "AirwaySystemPatch",
+                        "TerrainBrushRoadBlock",
                         "ReBurstSystemsPatches",
                     };
 
@@ -196,7 +203,8 @@ namespace MapExtPDX.MapExt.Core
                         "TerrainToR16Patch",
                         "WorldMapImportWarning",
                         "TerrainBackdropDisable",
-                        "WaterSystemOptRuntimePatch"
+                        "WaterSystemOptRuntimePatch",
+                        "TerrainBrushRoadBlock"
                     };
             }
         }

@@ -569,6 +569,20 @@ namespace MapExtPDX
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.EditorCollisionSkip)),
                     "允許在地圖編輯器放置物件時跳過碰撞驗證檢查。'僅跳過樹木'可極大提升種植大量樹木時的性能，'跳過所有物件'則對所有物件生效。"
                 },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.TerrainBrushRoadBlock)), "地形筆刷道路阻擋" },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.TerrainBrushRoadBlock)),
+                    "啟用後，地形工具（升降/平整/坡度/平滑）的效果不會穿越道路傳播到另一側。" +
+                    "道路自動成為地形編輯的邊界，方便河岸修整。\n\n" +
+                    "★ 提示：即時生效，無需重啟。"
+                },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.TerrainBrushRoadMargin)), "道路阻擋寬度餘量 (m)" },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.TerrainBrushRoadMargin)),
+                    "道路邊緣兩側的額外保護寬度。值越大，道路附近受保護的區域越寬。" +
+                    "改變後下一筆立刻生效。\n\n" +
+                    "★ 建議值：大多數道路 1.0 ~ 4.0m。"
+                },
 
                 // --- Group: 游戏内 UI 外观 ---
                 { m_Setting.GetOptionGroupLocaleID(ModSettings.kInGameUIGroup), "遊戲內 UI 外觀" },
