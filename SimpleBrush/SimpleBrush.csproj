@@ -2,19 +2,18 @@
 
 	<PropertyGroup>
 		<Configurations>Debug;Release</Configurations>
-		<AssemblyName>MapExt2</AssemblyName>
-		<RootNamespace>MapExtPDX</RootNamespace>
-		<Description>MapSize Extend 28/57/114km</Description>
+		<AssemblyName>SimpleBrush</AssemblyName>
+		<RootNamespace>SimpleBrush</RootNamespace>
+		<Description>Unlock hidden natural resource brushes and restore depleted resources.</Description>
 		<Authors>Noel2</Authors>
 		<Copyright>Copyright (c) [2025] [Noel2/Noel-leoN/=Noel=]</Copyright>
-		<Title>MapExt: Big Map, Economy and Performance</Title>
-		<Version>4.1.0</Version>
+		<Title>SimpleBrush</Title>
+		<Version>1.0.0</Version>
 
 		<!--The file where mod information which is required for publishing mod on PDX mods are stored-->
 		<PublishConfigurationPath>Properties\PublishConfiguration.xml</PublishConfigurationPath>
 		
 		<TreatWarningsAsErrors>True</TreatWarningsAsErrors>
-		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 	</PropertyGroup>
 
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
@@ -42,34 +41,19 @@
 		<Reference Include="Colossal.IO.AssetDatabase">
 			<Private>false</Private>
 		</Reference>
-		<Reference Include="Colossal.UI">
-			<Private>false</Private>
-		</Reference>
-		<Reference Include="Colossal.UI.Binding">
-			<Private>false</Private>
-		</Reference>
 		<Reference Include="Colossal.Localization">
-			<Private>false</Private>
-		</Reference>
-		<Reference Include="Colossal.Collections">
-			<Private>false</Private>
-		</Reference>
-		<Reference Include="Colossal.Mathematics">
-			<Private>false</Private>
-		</Reference>
-		<Reference Include="Unity.InputSystem">
 			<Private>false</Private>
 		</Reference>
 		<Reference Include="UnityEngine.CoreModule">
 			<Private>false</Private>
 		</Reference>
-		<Reference Include="Unity.Burst">
+		<Reference Include="Unity.Entities">
 			<Private>false</Private>
 		</Reference>
 		<Reference Include="Unity.Collections">
 			<Private>false</Private>
 		</Reference>
-		<Reference Include="Unity.Entities">
+		<Reference Include="Unity.Burst">
 			<Private>false</Private>
 		</Reference>
 		<Reference Include="Unity.Mathematics">
@@ -84,20 +68,11 @@
 		<Reference Update="System.Core">
 			<Private>false</Private>
 		</Reference>
-		<Reference Update="System.Data">
-			<Private>false</Private>
-		</Reference>
 	</ItemGroup>
 	
-	<ItemGroup>
-		<PackageReference Include="Lib.Harmony" Version="2.2.2" />
-	</ItemGroup>
-	
-
 	<ItemGroup>
 		<None Include="$(ModPropsFile)" Link="Properties\Mod.props" />
 		<None Include="$(ModTargetsFile)" Link="Properties\Mod.targets" />
-		<None Include="MapExt2.sln" />
 		<None Include="Properties\PublishConfiguration.csproj" />
 	</ItemGroup>
 
@@ -113,34 +88,4 @@
 		<None Include="Properties\PublishConfiguration.csproj" />
 	</ItemGroup>
 
-	
-
-	<!-- UI Frontend: UI/ 目录为纯前端项目，排除所有内容不参与 C# 编译 -->
-	<ItemGroup>
-		<Compile Remove="MapExt\UI\**" />
-		<EmbeddedResource Remove="MapExt\UI\**" />
-		<None Remove="MapExt\UI\node_modules\**" />
-	</ItemGroup>
-
-	<!-- XCellMapSystemRe: 源文件参与编译(namespace ReBurstSystemCore 与生成文件不冲突)，旧文件排除 -->
-	<ItemGroup>
-		<None Include="MapExt\ReBurstSystem\ReBurstCore\XCellMapSystemRe.Generate.ps1" />
-		<!-- 告诉 VS 这两个文件是构建输入，修改它们会触发 VS 取消 "Up-To-Date" 而是去调用 MSBuild -->
-		<UpToDateCheckInput Include="MapExt\ReBurstSystem\ReBurstCore\XCellMapSystemRe.cs" />
-		<UpToDateCheckInput Include="MapExt\ReBurstSystem\ReBurstCore\XCellMapSystemRe.Generate.ps1" />
-	</ItemGroup>
-
-
-	<!-- PreBuild: 从源文件自动生成各 Mode 的 XCellMapSystemRe.cs -->
-	<Target Name="GenerateXCellMapSystemRe" BeforeTargets="BeforeBuild">
-		<Exec Command="powershell -ExecutionPolicy Bypass -File &quot;$(ProjectDir)MapExt\ReBurstSystem\ReBurstCore\XCellMapSystemRe.Generate.ps1&quot; -Force" />
-	</Target>
-
-	<!-- AfterBuild: 自动构建 UI 前端 (npm run build) -->
-	<Target Name="BuildUI" AfterTargets="AfterBuild">
-		<Message Importance="high" Text="[MapExt] Building UI frontend..." />
-		<Exec Command="npm run build" WorkingDirectory="$(ProjectDir)MapExt\UI" />
-	</Target>
-
 </Project>
-

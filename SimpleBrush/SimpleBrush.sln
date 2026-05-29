@@ -1,0 +1,25 @@
+
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 18
+VisualStudioVersion = 18.2.11415.280 d18.0
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SimpleBrush", "SimpleBrush.csproj", "{A3D953E2-9F0E-4D7D-B561-2F8A3C6E9B01}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{A3D953E2-9F0E-4D7D-B561-2F8A3C6E9B01}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A3D953E2-9F0E-4D7D-B561-2F8A3C6E9B01}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A3D953E2-9F0E-4D7D-B561-2F8A3C6E9B01}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A3D953E2-9F0E-4D7D-B561-2F8A3C6E9B01}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {E7C4D1A9-3B5F-4E8D-A2F6-9D0C1B7E4A3F}
+	EndGlobalSection
+EndGlobal

@@ -30,7 +30,7 @@ namespace EconomyEX.Settings
                 { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.SystemStatusReport)), "• 系统状态" },
                 { m_Setting.GetOptionDescLocaleID(nameof(ModSettings.SystemStatusReport)), "经济系统替换对的实时状态报告。" },
 
-                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.RefreshStatus)), "↻ 刷新状态" },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.RefreshStatus)), "★ 刷新状态" },
                 { m_Setting.GetOptionDescLocaleID(nameof(ModSettings.RefreshStatus)), "点击手动刷新冲突检测和系统状态显示。" },
 
                 { m_Setting.GetOptionTabLocaleID(ModSettings.kSectionGeneral), "通用设置" },

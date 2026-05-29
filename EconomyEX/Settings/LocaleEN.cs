@@ -30,7 +30,7 @@ namespace EconomyEX.Settings
                 { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.SystemStatusReport)), "• System Status" },
                 { m_Setting.GetOptionDescLocaleID(nameof(ModSettings.SystemStatusReport)), "Real-time status of economy system replacement pairs." },
 
-                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.RefreshStatus)), "↻ Refresh Status" },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.RefreshStatus)), "★ Refresh Status" },
                 { m_Setting.GetOptionDescLocaleID(nameof(ModSettings.RefreshStatus)), "Click to manually refresh conflict detection and system status display." },
 
                 { m_Setting.GetOptionTabLocaleID(ModSettings.kSectionGeneral), "General" },

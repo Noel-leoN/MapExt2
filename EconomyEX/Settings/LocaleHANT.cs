@@ -30,7 +30,7 @@ namespace EconomyEX.Settings
                 { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.SystemStatusReport)), "• 系統狀態" },
                 { m_Setting.GetOptionDescLocaleID(nameof(ModSettings.SystemStatusReport)), "經濟系統替換的即時狀態報告。" },
 
-                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.RefreshStatus)), "↻ 重新整理狀態" },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.RefreshStatus)), "★ 重新整理狀態" },
                 { m_Setting.GetOptionDescLocaleID(nameof(ModSettings.RefreshStatus)), "點擊手動重新整理衝突偵測和系統狀態顯示。" },
 
                 { m_Setting.GetOptionTabLocaleID(ModSettings.kSectionGeneral), "通用設定" },
