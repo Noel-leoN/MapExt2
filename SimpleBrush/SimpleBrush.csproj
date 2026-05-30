@@ -4,7 +4,7 @@
 		<Configurations>Debug;Release</Configurations>
 		<AssemblyName>SimpleBrush</AssemblyName>
 		<RootNamespace>SimpleBrush</RootNamespace>
-		<Description>Unlock hidden natural resource brushes and restore depleted resources.</Description>
+		<Description>Unlock natural resource brushes and restore depleted resources.</Description>
 		<Authors>Noel2</Authors>
 		<Copyright>Copyright (c) [2025] [Noel2/Noel-leoN/=Noel=]</Copyright>
 		<Title>SimpleBrush</Title>

@@ -31,6 +31,17 @@ A custom radio mod allowing players to easily play custom music stations by drop
 - **Key Features**: Zero-configuration, OGG/MP3/WAV format support, automatic metadata reading, game settings panel integration, station hot-reloads, and compatibility with ExtendedRadio.
 - **Documentation**: [SimpleRadio/README.md](./SimpleRadio/README.md)
 
+### 4. [SimpleBrush](./SimpleBrush) (Sub-Mod)
+
+A lightweight resource brush tool that unlocks hidden natural resource brushes and lets you restore depleted resources with one click.
+
+- **Key Features**: 
+  - Reveals hidden Ore, Oil, Fertile Land, and Ground Water brushes in the Terraforming toolbar.
+  - Works in both Game and Editor modes with zero Harmony patches.
+  - One-click buttons to restore Fertility, Ore, Oil, Fish, or all resources to full capacity in Mod Settings.
+- **Compatibility**: Fully compatible. When MapExt2 is active, resource operations are transparently redirected to the extended CellMap buffer.
+- **Documentation**: [SimpleBrush/README.md](./SimpleBrush/README.md)
+
 ---
 
 ## 🔗 Community and Links
@@ -72,6 +83,17 @@ A custom radio mod allowing players to easily play custom music stations by drop
 
 - **核心功能**：零配置开箱即用、支持 OGG/MP3/WAV 格式、自动读取音乐元数据（歌曲名和艺术家）、记住上次播放状态、支持游戏内设置面板热刷新，并与 ExtendedRadio 完全兼容。
 - **文档**：[SimpleRadio/README.md](./SimpleRadio/README.md)
+
+### 4. [SimpleBrush](./SimpleBrush) (子模组)
+
+极简自然资源笔刷与恢复工具，解锁隐藏资源笔刷并支持一键恢复已枯竭的自然资源。
+
+- **核心功能**：
+  - 在地形工具栏中解锁隐藏的矿石、石油、肥沃土地和地下水笔刷。
+  - 零 Harmony 补丁，纯原生 API 实现，同时支持游戏模式与编辑器模式。
+  - 游戏内设置面板提供一键重置功能，可单独或全部恢复肥沃度、矿石、石油、鱼类资源至满额。
+- **兼容性**：完全兼容。当 MapExt2 激活时，资源修改操作会自动重定向并应用到扩展的 CellMap 缓冲区。
+- **文档**：[SimpleBrush/README.md](./SimpleBrush/README.md)
 
 ---
 

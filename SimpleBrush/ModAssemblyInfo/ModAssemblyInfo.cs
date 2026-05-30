@@ -12,6 +12,6 @@ namespace SimpleBrush
         public const string Name        = "SimpleBrush";
         public const string Version     = "1.0.0";
         public const string Title       = "SimpleBrush";
-        public const string Description = "Unlock hidden natural resource brushes and restore depleted resources.";
+        public const string Description = "Unlock natural resource brushes and restore depleted resources.";
     }
 }
