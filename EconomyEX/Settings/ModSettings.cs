@@ -500,9 +500,9 @@ namespace EconomyEX.Settings
         #endregion
 
         // === Debug ===
-        // 购车救援系统主开关（默认开启，P 系列独立于经济开关）
+        // 购车救援系统主开关（默认关闭，P 系列独立于经济开关）
         [SettingsUISection(kDebugTab, kDebugGroup)]
-        public bool EnableVehicleRescue { get; set; } = true;
+        public bool EnableVehicleRescue { get; set; } = false;
 
         // 购车救援调试日志开关
         [SettingsUISection(kDebugTab, kDebugGroup)]
@@ -590,7 +590,7 @@ namespace EconomyEX.Settings
             LevelFactorIndustrial = 100;
             DisableWorldBackdrop = false;
             WaterSimQuality = WaterSimQualitySetting.Vanilla_EveryFrame;
-            EnableVehicleRescue = true;
+            EnableVehicleRescue = false;
             EnableRescueDebugLog = false;
         }
     }
