@@ -10,7 +10,9 @@ using Game.Objects;
 using Game.Tools;
 using Game.Vehicles;
 using MapExtPDX.MapExt.Core;
+using System;
 using System.Collections.Generic;
+using System.IO;
 using Unity.Collections;
 using Unity.Entities;
 
@@ -53,6 +55,9 @@ namespace MapExtPDX.EcoShared
         // === 纯内存追踪：已救援车辆 → 重试计数 ===
         // 不注入任何自定义 Component，存档零污染
         private readonly Dictionary<Entity, int> m_RescuedVehicles = new();
+
+        // === 文件日志路径（延迟初始化） ===
+        private string m_LogFilePath;
 
         // === ComponentLookup 用于高效访问 ===
         private ComponentLookup<ParkedCar> m_ParkedCarLookup;
@@ -192,10 +197,8 @@ namespace MapExtPDX.EcoShared
                 rescuedCount++;
             }
 
-            if (rescuedCount > 0 && Mod.Instance?.Settings?.EnableRescueDebugLog == true)
-            {
-                ModLog.Ok(Tag, $"购车救援：已将 {rescuedCount} 辆停放失败的新购车辆传送到住宅附近重新停放");
-            }
+            if (rescuedCount > 0)
+                DebugLog($"购车救援：已将 {rescuedCount} 辆停放失败的新购车辆传送到住宅附近重新停放");
         }
 
         /// <summary>
@@ -204,17 +207,24 @@ namespace MapExtPDX.EcoShared
         /// </summary>
         private void ProcessRetry(NativeArray<Entity> entities, EntityCommandBuffer ecb)
         {
-            // 收集需要从追踪表中移除 of Entity（避免遍历中修改字典）
+            // 拷贝所有的追踪 Key 以免在循环中修改字典导致 Enumerator 失效
+            using var keys = new NativeList<Entity>(m_RescuedVehicles.Count, Allocator.Temp);
+            foreach (var key in m_RescuedVehicles.Keys)
+            {
+                keys.Add(key);
+            }
+
+            // 收集需要从追踪表中移除的 Entity（避免遍历中修改字典）
             using var toRemove = new NativeList<Entity>(Allocator.Temp);
             int retryCount = 0;
             int successCount = 0;
             int removedCount = 0;
 
-            // 遍历追踪表中的已救援车辆
-            foreach (var kvp in m_RescuedVehicles)
+            for (int i = 0; i < keys.Length; i++)
             {
-                Entity vehicle = kvp.Key;
-                int currentRetry = kvp.Value;
+                Entity vehicle = keys[i];
+                if (!m_RescuedVehicles.TryGetValue(vehicle, out int currentRetry))
+                    continue;
 
                 // 实体已被销毁或不再匹配 Query → 清理
                 if (!EntityManager.Exists(vehicle) || !m_ParkedCarLookup.HasComponent(vehicle))
@@ -272,20 +282,12 @@ namespace MapExtPDX.EcoShared
                 m_RescuedVehicles.Remove(toRemove[i]);
             }
 
-            if (successCount > 0 && Mod.Instance?.Settings?.EnableRescueDebugLog == true)
-            {
-                ModLog.Ok(Tag, $"购车救援完成：{successCount} 辆车辆已成功停放在住宅附近");
-            }
-
-            if (retryCount > 0 && Mod.Instance?.Settings?.EnableRescueDebugLog == true)
-            {
-                ModLog.Info(Tag, $"购车救援重试：{retryCount} 辆车辆仍在等待住宅附近车位空出");
-            }
-
-            if (removedCount > 0 && Mod.Instance?.Settings?.EnableRescueDebugLog == true)
-            {
-                ModLog.Warn(Tag, $"购车救援放弃：{removedCount} 辆车辆超过最大重试次数({kMaxRetries})已删除");
-            }
+            if (successCount > 0)
+                DebugLog($"购车救援完成：{successCount} 辆车辆已成功停放在住宅附近");
+            if (retryCount > 0)
+                DebugLog($"购车救援重试：{retryCount} 辆车辆仍在等待住宅附近车位空出");
+            if (removedCount > 0)
+                DebugLog($"购车救援放弃：{removedCount} 辆车辆超过最大重试次数({kMaxRetries})已删除");
         }
 
         /// <summary>
@@ -357,6 +359,36 @@ namespace MapExtPDX.EcoShared
                     break;
                 }
             }
+        }
+
+        #endregion
+
+        #region Debug File Log
+
+        /// <summary>
+        /// 文件日志：绕过 Unity/Colossal Logger，直接写入 ModsData 目录下的独立日志文件。
+        /// 仅在 EnableRescueDebugLog 开启时写入，低频调用无性能影响。
+        /// </summary>
+        private void DebugLog(string message)
+        {
+            if (Mod.Instance?.Settings?.EnableRescueDebugLog != true)
+                return;
+
+            try
+            {
+                if (m_LogFilePath == null)
+                {
+                    var dir = Path.Combine(
+                        UnityEngine.Application.persistentDataPath,
+                        "ModsData", "MapExt2");
+                    Directory.CreateDirectory(dir);
+                    m_LogFilePath = Path.Combine(dir, "rescue_debug.log");
+                }
+
+                File.AppendAllText(m_LogFilePath,
+                    $"[{DateTime.Now:HH:mm:ss}] {message}{Environment.NewLine}");
+            }
+            catch { /* 静默：文件 I/O 失败不应影响游戏 */ }
         }
 
         #endregion

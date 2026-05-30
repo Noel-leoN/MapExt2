@@ -9,8 +9,8 @@ namespace MapExtPDX.MapExt.Tools
 {
     /// <summary>
     /// 道路阻挡几何运算工具。
-    /// 提供基于奇偶穿越计数的射线-线段测试，用于判断像素是否被道路中心线阻隔。
-    /// v2: 使用奇偶穿越判定取代"任意命中"判定，正确处理弯道/U 型道路。
+    /// 提供基于奇偶穿越计数的射线-线段测试 + 距离缓冲区测试。
+    /// v3: 增加距离缓冲区，改善低分辨率 heightmap 下的阻挡效果。
     /// </summary>
     public static class RoadBlockMath
     {
@@ -19,26 +19,62 @@ namespace MapExtPDX.MapExt.Tools
         #region Helpers
 
         /// <summary>
-        /// 奇偶穿越测试：检测射线 (from → to) 穿越道路中心线的次数。
-        /// 奇数次 = 对侧（应阻挡），偶数次 = 同侧（应允许）。
-        /// 正确处理 U 型道路、环形道路等复杂曲线情况。
+        /// 综合阻挡判定：
+        /// 1. 奇偶穿越测试 — 像素是否在道路对侧
+        /// 2. 距离缓冲测试 — 像素是否在道路中心线 margin 范围内
+        /// 两者取 OR：对侧一定阻挡，缓冲区内也阻挡（保护道路表面）。
         /// </summary>
         public static bool IsBlockedByRoad(
-            float2 from, float2 to, NativeList<Line2> roadSegments)
+            float2 from, float2 to, NativeList<Line2> roadSegments, float margin)
         {
             int crossingCount = 0;
+            float minDistSq = float.MaxValue;
+            float marginSq = margin * margin;
+
             for (int i = 0; i < roadSegments.Length; i++)
             {
-                if (SegmentsIntersect(from, to, roadSegments[i].a, roadSegments[i].b))
+                var seg = roadSegments[i];
+
+                // 穿越计数
+                if (SegmentsIntersect(from, to, seg.a, seg.b))
                     crossingCount++;
+
+                // 距离缓冲（仅当 margin > 0 时检测）
+                if (margin > 0f && minDistSq > marginSq)
+                {
+                    float distSq = PointToSegmentDistSq(to, seg.a, seg.b);
+                    minDistSq = math.min(minDistSq, distSq);
+                }
             }
-            // 奇数次穿越 = 对侧
-            return (crossingCount & 1) == 1;
+
+            // 奇数次穿越 = 对侧 → 阻挡
+            if ((crossingCount & 1) == 1) return true;
+
+            // 距离缓冲区内 → 阻挡（保护道路表面不被地形修改）
+            if (margin > 0f && minDistSq <= marginSq) return true;
+
+            return false;
+        }
+
+        /// <summary>
+        /// 计算点 p 到线段 (a→b) 的最短距离的平方。
+        /// 避免 sqrt 提高性能。
+        /// </summary>
+        public static float PointToSegmentDistSq(float2 p, float2 a, float2 b)
+        {
+            float2 ab = b - a;
+            float2 ap = p - a;
+            float abLenSq = math.lengthsq(ab);
+
+            if (abLenSq < 1e-10f) return math.lengthsq(ap); // 退化线段
+
+            float t = math.saturate(math.dot(ap, ab) / abLenSq);
+            float2 closest = a + t * ab;
+            return math.lengthsq(p - closest);
         }
 
         /// <summary>
         /// 经典 2D 线段相交检测（基于叉积符号判断）。
-        /// 判断线段 (a1→a2) 与线段 (b1→b2) 是否相交。
         /// </summary>
         public static bool SegmentsIntersect(float2 a1, float2 a2, float2 b1, float2 b2)
         {

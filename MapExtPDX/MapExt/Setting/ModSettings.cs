@@ -740,10 +740,10 @@ namespace MapExtPDX
         /// 实时生效，无需重启。
         /// </summary>
         [SettingsUISection(kPerformanceToolTab, kEditorToolGroup)]
-        [SettingsUISlider(min = 0f, max = 8f, step = 0.5f, scalarMultiplier = 1f,
+        [SettingsUISlider(min = 0f, max = 30f, step = 1f, scalarMultiplier = 1f,
             unit = Game.UI.Unit.kFloatSingleFraction)]
         [SettingsUIDisableByCondition(typeof(ModSettings), nameof(IsRoadBlockDisabled))]
-        public float TerrainBrushRoadMargin { get; set; } = 2f;
+        public float TerrainBrushRoadMargin { get; set; } = 4f;
 
         public bool IsRoadBlockDisabled => !TerrainBrushRoadBlock;
 

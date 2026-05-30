@@ -30,6 +30,7 @@ namespace MapExtPDX.MapExt.Tools
 
         // 缓存的反射字段引用（懒加载）
         private static System.Reflection.FieldInfo s_HeightmapField;
+        private static System.Reflection.MethodInfo s_TriggerAsyncChangeMethod;
 
         // Prefix → Postfix 状态传递（主线程顺序执行，无并发）
         private static bool s_Active;
@@ -38,7 +39,9 @@ namespace MapExtPDX.MapExt.Tools
         private static int s_HmW, s_HmH;
         private static float2 s_PlayableArea, s_PlayableOffset;
         private static float2 s_BrushCenter;
+        private static float s_Margin;
         private static NativeList<Line2> s_RoadSegments;
+        private static int s_FrameCounter; // TriggerAsyncChange 速率限制
 
         #endregion
 
@@ -127,6 +130,7 @@ namespace MapExtPDX.MapExt.Tools
             // 6. 保存状态
             s_RoadSegments = segments;
             s_BrushCenter = brush.m_Position.xz;
+            s_Margin = margin;
             s_Active = true;
         }
 
@@ -147,7 +151,7 @@ namespace MapExtPDX.MapExt.Tools
                 // 1. 读取修改后的 heightmap 区域
                 ushort[] currentHeights = ReadHeightmapRegion(heightmap, s_PxX, s_PxY, s_W, s_H);
 
-                // 2. 逐像素: 道路对侧 → 用 backup 恢复，道路同侧 → 保留修改
+                // 2. 逐像素判定: 道路对侧或缓冲区内 → 用 backup 恢复
                 bool anyRestored = false;
                 for (int y = 0; y < s_H; y++)
                 {
@@ -160,10 +164,9 @@ namespace MapExtPDX.MapExt.Tools
                             ((float)hmX / s_HmW) * s_PlayableArea.x + s_PlayableOffset.x,
                             ((float)hmY / s_HmH) * s_PlayableArea.y + s_PlayableOffset.y);
 
-                        // 奇偶穿越测试: brushCenter → worldPos 穿越道路中心线的次数
-                        // 奇数次 = 对侧 → 阻挡; 偶数次 = 同侧 → 允许
+                        // 综合判定: 奇偶穿越(对侧) OR 距离缓冲(道路表面保护)
                         if (RoadBlockMath.IsBlockedByRoad(
-                            s_BrushCenter, worldPos, s_RoadSegments))
+                            s_BrushCenter, worldPos, s_RoadSegments, s_Margin))
                         {
                             int idx = y * s_W + x;
                             currentHeights[idx] = s_BackupHeights[idx];
@@ -176,6 +179,16 @@ namespace MapExtPDX.MapExt.Tools
                 if (anyRestored)
                 {
                     WriteHeightmapRegion(heightmap, currentHeights, s_PxX, s_PxY, s_W, s_H);
+
+                    // 4. 强制触发地形级联更新（每 5 帧最多一次，避免干扰 WaterSystem 异步读取）
+                    s_FrameCounter++;
+                    if (s_FrameCounter >= 5)
+                    {
+                        s_FrameCounter = 0;
+                        if (s_TriggerAsyncChangeMethod == null)
+                            s_TriggerAsyncChangeMethod = AccessTools.Method(typeof(TerrainSystem), "TriggerAsyncChange");
+                        s_TriggerAsyncChangeMethod?.Invoke(__instance, null);
+                    }
                 }
             }
             catch (System.Exception ex)
@@ -250,19 +263,29 @@ namespace MapExtPDX.MapExt.Tools
 
         /// <summary>
         /// 将 CPU 像素数据写回 heightmap RenderTexture 的指定区域。
+        /// 使用两步拷贝: Texture2D → 中间 RT → heightmap，
+        /// 避免直接 Texture2D→enableRandomWrite RT 拷贝的兼容性问题。
         /// </summary>
         private static void WriteHeightmapRegion(
             RenderTexture heightmap, ushort[] data, int px, int py, int w, int h)
         {
+            // CPU → Texture2D
             var writeTex = new Texture2D(w, h, TextureFormat.R16, false);
             var raw = writeTex.GetRawTextureData<ushort>();
             Unity.Collections.NativeArray<ushort>.Copy(data, raw);
             writeTex.Apply(false);
 
+            // 步骤 1: Texture2D → 中间 RT (普通 RT，无 enableRandomWrite)
+            var intermediateRT = RenderTexture.GetTemporary(w, h, 0, heightmap.graphicsFormat);
+            intermediateRT.filterMode = FilterMode.Point;
             Graphics.CopyTexture(writeTex, 0, 0, 0, 0, w, h,
-                                 heightmap, 0, 0, px, py);
-
+                                 intermediateRT, 0, 0, 0, 0);
             Object.Destroy(writeTex);
+
+            // 步骤 2: 中间 RT → heightmap (RT→RT，GPU 内部拷贝，可靠)
+            Graphics.CopyTexture(intermediateRT, 0, 0, 0, 0, w, h,
+                                 heightmap, 0, 0, px, py);
+            RenderTexture.ReleaseTemporary(intermediateRT);
         }
 
         #endregion
