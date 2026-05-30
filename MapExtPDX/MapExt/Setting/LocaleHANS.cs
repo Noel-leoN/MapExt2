@@ -664,6 +664,13 @@ namespace MapExtPDX
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.DisableLoadGameValidation)),
                     "⚠️ 警告！默认(不勾选)为启用游戏读取存档验证，以防止错误设置地图尺寸模式而读取不同尺寸的存档造成坏档！\n该选项勾选后将取消验证，仅用于使用旧版MapExt mod特殊尺寸模式而无法正确识别的情况。使用旧版存档请务必确认'地图尺寸模式'是否设置正确，否则可能坏档！\n务必在使用该功能前备份您的存档"
                 },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.EnableVehicleRescue)), "• 启用购车停放救援" },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.EnableVehicleRescue)),
+                    "启用购车救援系统：检测市民在商铺新购私家车后因停车位不足导致车辆丢失（m_Lane == Null）的情况，将其传送到车主住宅附近重新停放。\n\n" +
+                    "★ 默认关闭。仅在观察到购车后车辆消失时启用。\n" +
+                    "★ 该系统会为被救援的车辆添加自定义 ECS 组件（VehicleRescued）。禁用本 Mod 后，存档中的该组件数据会被游戏安全忽略。"
+                },
                 { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.EnableRescueDebugLog)), "• 启用购车救援调试日志" },
                 {
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.EnableRescueDebugLog)),

@@ -144,6 +144,10 @@ namespace MapExtPDX.EcoShared
 
         protected override void OnUpdate()
         {
+            // 主开关检查：未启用时不执行任何逻辑
+            if (Mod.Instance?.Settings?.EnableVehicleRescue != true)
+                return;
+
             // 更新 ComponentLookup
             m_ParkedCarLookup.Update(this);
             m_PersonalCarLookup.Update(this);

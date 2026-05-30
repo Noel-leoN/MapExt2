@@ -663,10 +663,17 @@ namespace MapExtPDX
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.DisableLoadGameValidation)),
                     "⚠️ 警告！預設(不勾選)為啟用遊戲讀取存檔驗證，以防止錯誤設定地圖尺寸模式而讀取不同尺寸的存檔造成損壞存檔！\n該選項勾選後將取消驗證，僅用於使用舊版 MapExt mod 特殊尺寸模式而無法正確識別的情況。使用舊版存檔請務必確認 '地圖尺寸模式' 是否設定正確，否則可能損壞存檔！\n務必在使用該功能前備份您的存檔"
                 },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.EnableVehicleRescue)), "• 啟用購車停放救援" },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.EnableVehicleRescue)),
+                    "啟用購車救援系統：偵測市民在商鋪新購私家車後因停車位不足導致車輛遺失（m_Lane == Null）的情況，將其傳送到車主住宅附近重新停放。\n\n" +
+                    "★ 預設關閉。僅在觀察到購車後車輛消失時啟用。\n" +
+                    "★ 該系統會為被救援的車輛新增自訂 ECS 元件（VehicleRescued）。停用本模組後，存檔中的該元件數據會被遊戲安全忽略。"
+                },
                 { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.EnableRescueDebugLog)), "• 啟用購車救援偵測日誌" },
                 {
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.EnableRescueDebugLog)),
-                    "開啟後，購車救援系統在每次執行救援、重試或清理放棄邏輯時會列印日誌。\n★ 建議在大城市或穩定運行後保持關閉以防止日誌檔案膨脹。"
+                    "開啟後，購車救援系統在每次執行救援、重試或清理放棄邏輯時會列印日誌。\n★ 建議在大城市或穩定執行後保持關閉以防止日誌檔案膨脹。"
                 },
             };
             return entries;

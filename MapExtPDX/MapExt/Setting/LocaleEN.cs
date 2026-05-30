@@ -740,6 +740,13 @@ namespace MapExtPDX
                     "Checking this will disable the validation. Only use this for special cases, such as unrecognised saves from older MapExt versions. Please ensure you've selected the correct 'MapSize Mode' before loading, or you might corrupt your save!\n" +
                     "Always backup your saves before using this feature."
                 },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.EnableVehicleRescue)), "• Enable Vehicle Purchase Rescue" },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.EnableVehicleRescue)),
+                    "Enables the vehicle purchase rescue system that detects newly purchased personal cars stuck without a parking lane (m_Lane == Null) and teleports them near the owner's home for re-parking.\n\n" +
+                    "★ Default: OFF. Enable only if you observe vehicles disappearing after purchase.\n" +
+                    "★ This system adds a custom ECS component (VehicleRescued) to rescued vehicles. If you later disable this mod, the component data in the save is harmlessly ignored by the game."
+                },
                 { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.EnableRescueDebugLog)), "• Enable Vehicle Rescue Debug Log" },
                 {
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.EnableRescueDebugLog)),

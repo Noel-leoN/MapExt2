@@ -884,9 +884,16 @@ namespace MapExtPDX
         [SettingsUISection(kDebugTab, kDebugGroup)]
         public bool DisableLoadGameValidation { get; set; } = false;
 
+        // 购车救援系统主开关（默认关闭，保险起见）
+        [SettingsUISection(kDebugTab, kDebugGroup)]
+        public bool EnableVehicleRescue { get; set; } = false;
+
         // 购车救援调试日志开关
         [SettingsUISection(kDebugTab, kDebugGroup)]
+        [SettingsUIDisableByCondition(typeof(ModSettings), nameof(IsVehicleRescueDisabled))]
         public bool EnableRescueDebugLog { get; set; } = false;
+
+        public bool IsVehicleRescueDisabled => !EnableVehicleRescue;
 
         // === Defaults ===
         public override void SetDefaults()
@@ -935,6 +942,7 @@ namespace MapExtPDX
             EnableResourceBuyerEcoSystem = false;
             EnableResidentAIEcoSystem = false;
             EnableDownstreamAIEcoSystem = false;
+            EnableVehicleRescue = false;
             EnableRescueDebugLog = false;
 
             // 地形优化
