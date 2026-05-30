@@ -160,8 +160,9 @@ namespace MapExtPDX.MapExt.Tools
                             ((float)hmX / s_HmW) * s_PlayableArea.x + s_PlayableOffset.x,
                             ((float)hmY / s_HmH) * s_PlayableArea.y + s_PlayableOffset.y);
 
-                        // 射线测试: brushCenter → worldPos 是否穿越任何道路线段
-                        if (RoadBlockMath.RayIntersectsAnySegment(
+                        // 奇偶穿越测试: brushCenter → worldPos 穿越道路中心线的次数
+                        // 奇数次 = 对侧 → 阻挡; 偶数次 = 同侧 → 允许
+                        if (RoadBlockMath.IsBlockedByRoad(
                             s_BrushCenter, worldPos, s_RoadSegments))
                         {
                             int idx = y * s_W + x;

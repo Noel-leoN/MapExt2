@@ -13,34 +13,38 @@ namespace MapExtPDX.MapExt.Tools
 {
     /// <summary>
     /// 道路几何体查询工具。
-    /// 从 ECS 世界中查询指定 Bounds 内的道路 EdgeGeometry，
-    /// 将贝塞尔曲线采样为线段集合供遮罩计算使用。
-    /// 支持道路宽度余量（margin），将线段向法线方向膨胀。
+    /// 从 ECS 世界中查询指定 Bounds 内的道路中心线几何，
+    /// 将贝塞尔曲线采样为 2D 线段集合供奇偶穿越判定使用。
+    /// v2: 使用道路中心线（左右边缘取平均），消除双边穿越混淆。
     /// </summary>
     public static class RoadSegmentQuery
     {
         // === Constants and Fields ===
 
-        /// <summary>贝塞尔曲线采样精度（每条道路段采样的线段数）</summary>
-        private const int kBezierSamples = 8;
+        /// <summary>
+        /// 贝塞尔曲线采样精度（每条道路半段采样的线段数）。
+        /// v2: 8 → 16，提升弯道精度。
+        /// </summary>
+        private const int kBezierSamples = 16;
 
         // === Helpers ===
 
         #region Helpers
 
         /// <summary>
-        /// 查询 brushBounds 范围内的所有道路边缘线段（2D XZ 平面）。
-        /// 道路线段会根据 margin 参数向外法线方向膨胀，扩大保护区域。
+        /// 查询 brushBounds 范围内的所有道路中心线线段（2D XZ 平面）。
+        /// 使用道路左右边缘的平均值计算中心线，每条道路段产生一条连续折线。
         /// </summary>
         /// <param name="em">Entity Manager</param>
         /// <param name="brushBounds">笔刷范围（世界坐标 XZ 平面）</param>
-        /// <param name="margin">道路两侧向外扩展的余量（米），默认 2m</param>
-        /// <returns>道路线段列表，调用方负责 Dispose</returns>
+        /// <param name="margin">AABB 预筛选扩展余量（米），默认 2m</param>
+        /// <param name="allocator">NativeList 分配器，默认 TempJob（跨方法安全）</param>
+        /// <returns>道路中心线线段列表，调用方负责 Dispose</returns>
         public static NativeList<Line2> GetRoadSegmentsInBounds(
             EntityManager em, Bounds2 brushBounds, float margin = 2f,
             Allocator allocator = Allocator.TempJob)
         {
-            var result = new NativeList<Line2>(32, allocator);
+            var result = new NativeList<Line2>(64, allocator);
 
             // 查询所有含 EdgeGeometry 的非删除、非临时 Entity
             var query = em.CreateEntityQuery(
@@ -61,12 +65,13 @@ namespace MapExtPDX.MapExt.Tools
                 if (!MathUtils.Intersect(edgeBounds, brushBounds))
                     continue;
 
-                // --- 对道路段的左右边缘贝塞尔曲线各采样 ---
-                // 采样时根据 margin 向外法线方向膨胀线段
-                SampleBezierToSegments(geometry.m_Start.m_Left, margin, ref result);
-                SampleBezierToSegments(geometry.m_Start.m_Right, margin, ref result);
-                SampleBezierToSegments(geometry.m_End.m_Left, margin, ref result);
-                SampleBezierToSegments(geometry.m_End.m_Right, margin, ref result);
+                // --- 对道路前后半段分别采样中心线 ---
+                SampleCenterLine(
+                    geometry.m_Start.m_Left, geometry.m_Start.m_Right,
+                    ref result);
+                SampleCenterLine(
+                    geometry.m_End.m_Left, geometry.m_End.m_Right,
+                    ref result);
             }
 
             entities.Dispose();
@@ -74,45 +79,34 @@ namespace MapExtPDX.MapExt.Tools
         }
 
         /// <summary>
-        /// 将 Bezier4x3 曲线在 XZ 平面上采样为 kBezierSamples 条线段。
-        /// 如果 margin > 0，每条线段向法线方向双侧膨胀生成两条平行线段。
+        /// 将道路半段的中心线（左右边缘 Bezier 取平均）在 XZ 平面上
+        /// 采样为 kBezierSamples 条线段。
+        /// 中心线 = (left(t) + right(t)) / 2，消除双边穿越混淆。
         /// </summary>
-        private static void SampleBezierToSegments(
-            Bezier4x3 curve, float margin, ref NativeList<Line2> segments)
+        private static void SampleCenterLine(
+            Bezier4x3 leftCurve, Bezier4x3 rightCurve,
+            ref NativeList<Line2> segments)
         {
-            float2 prev = curve.a.xz;
+            // 起点: 两条曲线的控制点 a 取平均
+            float2 prev = (leftCurve.a.xz + rightCurve.a.xz) * 0.5f;
 
             for (int i = 1; i <= kBezierSamples; i++)
             {
                 float t = (float)i / kBezierSamples;
-                float3 point = MathUtils.Position(curve, t);
-                float2 current = point.xz;
+                float3 leftPt = MathUtils.Position(leftCurve, t);
+                float3 rightPt = MathUtils.Position(rightCurve, t);
+                float2 center = (leftPt.xz + rightPt.xz) * 0.5f;
 
                 // 跳过退化线段（两点重合）
-                float2 delta = current - prev;
-                float lenSq = math.lengthsq(delta);
-                if (lenSq < 1e-6f)
+                float2 delta = center - prev;
+                if (math.lengthsq(delta) < 1e-6f)
                 {
-                    prev = current;
+                    prev = center;
                     continue;
                 }
 
-                if (margin > 0f)
-                {
-                    // 向外法线方向膨胀线段（道路宽度余量）
-                    float2 dir = delta * math.rsqrt(lenSq); // normalize
-                    float2 normal = new float2(-dir.y, dir.x); // 左法线
-
-                    // 生成两条平行线段：原始 + 左右偏移
-                    segments.Add(new Line2(prev + normal * margin, current + normal * margin));
-                    segments.Add(new Line2(prev - normal * margin, current - normal * margin));
-                }
-                else
-                {
-                    segments.Add(new Line2(prev, current));
-                }
-
-                prev = current;
+                segments.Add(new Line2(prev, center));
+                prev = center;
             }
         }
 
