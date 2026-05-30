@@ -62,8 +62,14 @@ namespace MapExtPDX
                 },
 
                 // --- Group: Terrain-Water Optimization (Beta) ---
-                { m_Setting.GetOptionGroupLocaleID(ModSettings.kTerrainWaterOptGroup), "Terrain-Water Performance Optimization (Adjustable In-Game)" },
-                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.TerrainBufferPrealloc)), "Terrain Buffer Pre-allocation" },
+                {
+                    m_Setting.GetOptionGroupLocaleID(ModSettings.kTerrainWaterOptGroup),
+                    "Terrain-Water Performance Optimization (Adjustable In-Game)"
+                },
+                {
+                    m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.TerrainBufferPrealloc)),
+                    "Terrain Buffer Pre-allocation"
+                },
                 {
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.TerrainBufferPrealloc)),
                     "Pre-allocates larger GPU StructuredBuffers on the first frame based on map scale multiplier, " +
@@ -71,7 +77,10 @@ namespace MapExtPDX
                     "★ Recommended: ON for all large maps. No visual side effects.\n" +
                     "★ Tip: Applies instantly, no restart required."
                 },
-                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.TerrainCullThrottle)), "Terrain Building Cull Throttle" },
+                {
+                    m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.TerrainCullThrottle)),
+                    "Terrain Building Cull Throttle"
+                },
                 {
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.TerrainCullThrottle)),
                     "Skips redundant building re-culling during camera panning when no buildings or terrain have actually changed: " +
@@ -81,7 +90,10 @@ namespace MapExtPDX
                     "★ Recommended: ON for all large maps. No visual side effects.\n" +
                     "★ Tip: Applies instantly, no restart required."
                 },
-                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.TerrainCascadeThrottle)), "⚠ Terrain Cascade Throttle (Experimental)" },
+                {
+                    m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.TerrainCascadeThrottle)),
+                    "⚠ Terrain Cascade Throttle (Experimental)"
+                },
                 {
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.TerrainCascadeThrottle)),
                     "Reduces GPU load by updating distant terrain cascade layers every 4 frames instead of every frame.\n\n" +
@@ -112,7 +124,9 @@ namespace MapExtPDX
                     "Existing saves will keep their original resolution.\n" +
                     "⚠️ Restart required after change."
                 },
-                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.WaterResolution)), "Water Simulation Resolution" },
+                {
+                    m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.WaterResolution)), "Water Simulation Resolution"
+                },
                 {
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.WaterResolution)),
                     "Water simulation texture size. Lower values greatly reduce GPU/VRAM usage with minimal visual impact. " +
@@ -236,7 +250,10 @@ namespace MapExtPDX
                 },
 
                 // --- Group: Pathfinding Cost Limits ---
-                { m_Setting.GetOptionGroupLocaleID(ModSettings.kPathfindingGroup), "Pathfinding Cost Limits (Adjustable In-Game)" },
+                {
+                    m_Setting.GetOptionGroupLocaleID(ModSettings.kPathfindingGroup),
+                    "Pathfinding Cost Limits (Adjustable In-Game)"
+                },
                 { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.ShoppingMaxCost)), "Max Shopping Pathfind Cost" },
                 {
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.ShoppingMaxCost)),
@@ -344,7 +361,10 @@ namespace MapExtPDX
                 },
 
                 // --- Group: Economy Behavior and Throughput ---
-                { m_Setting.GetOptionGroupLocaleID(ModSettings.kEcoBehaviorGroup), "Economy Behavior and Throughput (Adjustable In-Game)" },
+                {
+                    m_Setting.GetOptionGroupLocaleID(ModSettings.kEcoBehaviorGroup),
+                    "Economy Behavior and Throughput (Adjustable In-Game)"
+                },
                 {
                     m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.JobSeekerCap)), "Job Search: Seeker Throughput"
                 },
@@ -457,7 +477,10 @@ namespace MapExtPDX
                 { m_Setting.GetOptionTabLocaleID(ModSettings.kRentControlTab), "Rent Control" },
 
                 // --- Group: Land Value Factor ---
-                { m_Setting.GetOptionGroupLocaleID(ModSettings.kLandValueFactorGroup), "Land Value Factors (Adjustable In-Game)" },
+                {
+                    m_Setting.GetOptionGroupLocaleID(ModSettings.kLandValueFactorGroup),
+                    "Land Value Factors (Adjustable In-Game)"
+                },
                 {
                     m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.LandValueEnvironmentEffect)),
                     "Environment Impact Factor"
@@ -489,48 +512,78 @@ namespace MapExtPDX
                 },
 
                 // --- Group: Rent Formula ---
-                { m_Setting.GetOptionGroupLocaleID(ModSettings.kRentFormulaGroup), "Rent Formula Tuning (Adjustable In-Game)" },
-                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.RentMultiplierResidential)), "Residential Rent Multiplier" },
+                {
+                    m_Setting.GetOptionGroupLocaleID(ModSettings.kRentFormulaGroup),
+                    "Rent Formula Tuning (Adjustable In-Game)"
+                },
+                {
+                    m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.RentMultiplierResidential)),
+                    "Residential Rent Multiplier"
+                },
                 {
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.RentMultiplierResidential)),
                     "Overall multiplier applied to all residential rent. 100% = vanilla equivalent. Lower values reduce rent across all residential buildings.\n\nCan be adjusted in-game."
                 },
-                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.RentMultiplierCommercial)), "Commercial Rent Multiplier" },
+                {
+                    m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.RentMultiplierCommercial)),
+                    "Commercial Rent Multiplier"
+                },
                 {
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.RentMultiplierCommercial)),
                     "Overall multiplier applied to all commercial rent. 100% = vanilla equivalent. Lower values help commercial businesses survive in high-land-value areas.\n\nCan be adjusted in-game."
                 },
-                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.RentMultiplierIndustrial)), "Industrial Rent Multiplier" },
+                {
+                    m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.RentMultiplierIndustrial)),
+                    "Industrial Rent Multiplier"
+                },
                 {
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.RentMultiplierIndustrial)),
                     "Overall multiplier applied to all industrial rent. 100% = vanilla equivalent.\n\nCan be adjusted in-game."
                 },
-                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.LandValueFactorResidential)), "Residential: Land Value Contribution" },
+                {
+                    m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.LandValueFactorResidential)),
+                    "Residential: Land Value Contribution"
+                },
                 {
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.LandValueFactorResidential)),
                     "Controls how strongly Edge land value affects residential rent. 0% = rent ignores land value entirely, 100% = vanilla formula weight.\n\nCan be adjusted in-game."
                 },
-                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.LandValueFactorCommercial)), "Commercial: Land Value Contribution" },
+                {
+                    m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.LandValueFactorCommercial)),
+                    "Commercial: Land Value Contribution"
+                },
                 {
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.LandValueFactorCommercial)),
                     "Controls how strongly Edge land value affects commercial rent. Reducing this helps shops survive in premium locations.\n\nCan be adjusted in-game."
                 },
-                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.LandValueFactorIndustrial)), "Industrial: Land Value Contribution" },
+                {
+                    m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.LandValueFactorIndustrial)),
+                    "Industrial: Land Value Contribution"
+                },
                 {
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.LandValueFactorIndustrial)),
                     "Controls how strongly Edge land value affects industrial rent.\n\nCan be adjusted in-game."
                 },
-                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.LevelFactorResidential)), "Residential: Building Level Contribution" },
+                {
+                    m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.LevelFactorResidential)),
+                    "Residential: Building Level Contribution"
+                },
                 {
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.LevelFactorResidential)),
                     "Controls how much building level (upgrade tier) contributes to residential rent. Higher levels normally mean higher rent.\n\nCan be adjusted in-game."
                 },
-                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.LevelFactorCommercial)), "Commercial: Building Level Contribution" },
+                {
+                    m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.LevelFactorCommercial)),
+                    "Commercial: Building Level Contribution"
+                },
                 {
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.LevelFactorCommercial)),
                     "Controls how much building level contributes to commercial rent.\n\nCan be adjusted in-game."
                 },
-                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.LevelFactorIndustrial)), "Industrial: Building Level Contribution" },
+                {
+                    m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.LevelFactorIndustrial)),
+                    "Industrial: Building Level Contribution"
+                },
                 {
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.LevelFactorIndustrial)),
                     "Controls how much building level contributes to industrial rent.\n\nCan be adjusted in-game."
@@ -553,7 +606,10 @@ namespace MapExtPDX
 
                 // --- Group: Save Conversion ---
                 { m_Setting.GetOptionGroupLocaleID(ModSettings.kSaveConvertGroup), "Save Conversion (Experimental)" },
-                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.EnableVanillaConversion)), "⚠ Vanilla Map Extension (HIGHLY EXPERIMENTAL)" },
+                {
+                    m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.EnableVanillaConversion)),
+                    "⚠ Vanilla Map Extension (HIGHLY EXPERIMENTAL)"
+                },
                 {
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.EnableVanillaConversion)),
                     "⚠ HIGHLY EXPERIMENTAL. Enables extending vanilla 14km saves to the current MapExt mode.\n\n" +
@@ -571,7 +627,10 @@ namespace MapExtPDX
 
                 // --- Group: Terrain Performance ---
                 { m_Setting.GetOptionGroupLocaleID(ModSettings.kTerrainPerfGroup), "Terrain Performance" },
-                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.DisableWorldBackdrop)), "⚠ Disable World Backdrop Map" },
+                {
+                    m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.DisableWorldBackdrop)),
+                    "⚠ Disable World Backdrop Map"
+                },
                 {
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.DisableWorldBackdrop)),
                     "Prevents the background world heightmap (Backdrop) from loading when opening an existing save.\n\n" +
@@ -636,19 +695,28 @@ namespace MapExtPDX
 
                 // --- Group: Editor Tool ---
                 { m_Setting.GetOptionGroupLocaleID(ModSettings.kEditorToolGroup), "Editor Tool" },
-                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.EditorCollisionSkip)), "Skip Object Collision (Editor)" },
+                {
+                    m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.EditorCollisionSkip)),
+                    "Skip Object Collision (Editor)"
+                },
                 {
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.EditorCollisionSkip)),
                     "Allows you to bypass normal collision validation checks when placing objects in the Map Editor. 'Trees Only' skips validation specifically for trees, while 'All Objects' disables collision checks for all plopables."
                 },
-                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.TerrainBrushRoadBlock)), "Terrain Brush Road Block" },
+                {
+                    m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.TerrainBrushRoadBlock)),
+                    "Terrain Brush Road Block (Test)"
+                },
                 {
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.TerrainBrushRoadBlock)),
                     "When enabled, terrain tools (raise/lower/level/slope/smooth) will not affect terrain on the other side of roads. " +
                     "Roads act as natural barriers for terrain editing, useful for shaping riverbanks along roads.\n\n" +
                     "★ Tip: Changes take effect immediately, no restart required."
                 },
-                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.TerrainBrushRoadMargin)), "Road Block Margin (m)" },
+                {
+                    m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.TerrainBrushRoadMargin)),
+                    "Road Block Margin (m)"
+                },
                 {
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.TerrainBrushRoadMargin)),
                     "Extra protection width on each side of the road edge. Higher values create a wider buffer zone around roads. " +
@@ -673,22 +741,34 @@ namespace MapExtPDX
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.UIPanelHeight)),
                     "Controls the height of the left panel (in rem). Can also be adjusted by dragging the bottom edge in-game. Default: 1000. Range: 300~1000."
                 },
-                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.DashboardDefaultCityStats)), "Default Open: City Stats" },
+                {
+                    m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.DashboardDefaultCityStats)),
+                    "Default Open: City Stats"
+                },
                 {
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.DashboardDefaultCityStats)),
                     "When checked, the 'City Stats' section will be expanded by default when opening the dashboard."
                 },
-                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.DashboardDefaultResidential)), "Default Open: Residential Market" },
+                {
+                    m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.DashboardDefaultResidential)),
+                    "Default Open: Residential Market"
+                },
                 {
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.DashboardDefaultResidential)),
                     "When checked, the 'Residential Market' section will be expanded by default."
                 },
-                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.DashboardDefaultCommercial)), "Default Open: Commercial Market" },
+                {
+                    m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.DashboardDefaultCommercial)),
+                    "Default Open: Commercial Market"
+                },
                 {
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.DashboardDefaultCommercial)),
                     "When checked, the 'Commercial Market' section will be expanded by default."
                 },
-                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.DashboardDefaultActivity)), "Default Open: Population Activity" },
+                {
+                    m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.DashboardDefaultActivity)),
+                    "Default Open: Population Activity"
+                },
                 {
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.DashboardDefaultActivity)),
                     "When checked, the 'Population Activity' section will be expanded by default."
@@ -740,14 +820,20 @@ namespace MapExtPDX
                     "Checking this will disable the validation. Only use this for special cases, such as unrecognised saves from older MapExt versions. Please ensure you've selected the correct 'MapSize Mode' before loading, or you might corrupt your save!\n" +
                     "Always backup your saves before using this feature."
                 },
-                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.EnableVehicleRescue)), "• Enable Vehicle Purchase Rescue" },
+                {
+                    m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.EnableVehicleRescue)),
+                    "• Enable Vehicle Purchase Rescue"
+                },
                 {
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.EnableVehicleRescue)),
                     "Enables the vehicle purchase rescue system that detects newly purchased personal cars stuck without a parking lane (m_Lane == Null) and teleports them near the owner's home for re-parking.\n\n" +
                     "★ Default: OFF. Enable only if you observe vehicles disappearing after purchase.\n" +
-                    "★ This system adds a custom ECS component (VehicleRescued) to rescued vehicles. If you later disable this mod, the component data in the save is harmlessly ignored by the game."
+                    "★ Pure in-memory tracking — no custom components are written to entities or save files."
                 },
-                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.EnableRescueDebugLog)), "• Enable Vehicle Rescue Debug Log" },
+                {
+                    m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.EnableRescueDebugLog)),
+                    "• Enable Vehicle Rescue Debug Log"
+                },
                 {
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.EnableRescueDebugLog)),
                     "Enable printing logs whenever the vehicle purchase rescue system performs a rescue, retry, or deletion.\n★ Keep disabled under normal gameplay to avoid log file bloat."

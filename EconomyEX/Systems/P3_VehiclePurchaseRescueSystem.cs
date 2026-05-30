@@ -6,29 +6,17 @@ using Game;
 using Game.Buildings;
 using Game.Common;
 using Game.Objects;
-using Game.Simulation;
+
 using Game.Tools;
 using Game.Vehicles;
 using EconomyEX;
 using EconomyEX.Helpers;
+using System.Collections.Generic;
 using Unity.Collections;
 using Unity.Entities;
 
 namespace EconomyEX.Systems
 {
-    #region Component
-
-    /// <summary>
-    /// 标记已被购车救援系统处理过的车辆，防止重复传送。
-    /// m_RetryCount 追踪重试次数，超过上限后删除僵尸车辆。
-    /// </summary>
-    public struct VehicleRescued : IComponentData
-    {
-        public int m_RetryCount;
-    }
-
-    #endregion
-
     /// <summary>
     /// 修复原版市民在商铺购车后因停车位不足导致车辆丢失的Bug。
     /// 
@@ -38,6 +26,9 @@ namespace EconomyEX.Systems
     /// 修复策略：检测 m_Lane==Null 的新购私家车，传送到车主住宅附近，
     /// 利用原版 FixParkingLocation 的 m_ResetLocation 机制让原版系统以住宅为中心重新查找车位。
     /// 低频运行（每64帧一次），配合重试上限防止无限循环。
+    /// 
+    /// 【设计】使用纯内存 Dictionary 追踪已救援车辆，不注入任何自定义 ECS 组件到实体上，
+    /// 确保存档零污染，禁用 Mod 后不留痕迹。
     /// </summary>
     public partial class P3_VehiclePurchaseRescueSystem : GameSystemBase
     {
@@ -57,11 +48,12 @@ namespace EconomyEX.Systems
         /// </summary>
         private const int kMaxRetries = 8;
 
-        // === 阶段1：检测首次停放失败的新购车辆 ===
-        private EntityQuery m_RescueQuery;
+        // === 候选车辆 Query：检测所有可能需要救援的新购车辆 ===
+        private EntityQuery m_CandidateQuery;
 
-        // === 阶段2：对已救援但仍失败的车辆重试 ===
-        private EntityQuery m_RetryQuery;
+        // === 纯内存追踪：已救援车辆 → 重试计数 ===
+        // 不注入任何自定义 Component，存档零污染
+        private readonly Dictionary<Entity, int> m_RescuedVehicles = new();
 
         // === ComponentLookup 用于高效访问 ===
         private ComponentLookup<ParkedCar> m_ParkedCarLookup;
@@ -69,9 +61,6 @@ namespace EconomyEX.Systems
         private ComponentLookup<Owner> m_OwnerLookup;
         private ComponentLookup<PropertyRenter> m_PropertyRenterLookup;
         private ComponentLookup<Game.Objects.Transform> m_TransformLookup;
-
-        // === 低频更新 ===
-        private SimulationSystem m_SimulationSystem;
 
         #endregion
 
@@ -86,12 +75,10 @@ namespace EconomyEX.Systems
         {
             base.OnCreate();
 
-            m_SimulationSystem = World.GetOrCreateSystemManaged<SimulationSystem>();
-
-            // --- 阶段1 Query：首次检测未停放的新购私家车 ---
+            // --- 候选 Query：所有可能需要救援的新购私家车 ---
             // ParkedCar + PersonalCar + Owner + Unspawned
-            // 排除：Created（未初始化）、Deleted、Temp、FixParkingLocation（正在被原版处理）、VehicleRescued（已救援过）
-            m_RescueQuery = GetEntityQuery(new EntityQueryDesc
+            // 排除：Created（未初始化）、Deleted、Temp、FixParkingLocation（正在被原版处理）
+            m_CandidateQuery = GetEntityQuery(new EntityQueryDesc
             {
                 All = new ComponentType[]
                 {
@@ -105,33 +92,12 @@ namespace EconomyEX.Systems
                     ComponentType.ReadOnly<Created>(),
                     ComponentType.ReadOnly<Deleted>(),
                     ComponentType.ReadOnly<Temp>(),
-                    ComponentType.ReadOnly<FixParkingLocation>(),
-                    ComponentType.ReadOnly<VehicleRescued>()
-                }
-            });
-
-            // --- 阶段2 Query：对已救援但仍失败的车辆重试 ---
-            // 有 VehicleRescued 标记 + 仍然 Unspawned + FixParkingLocation 已被原版系统处理移除
-            m_RetryQuery = GetEntityQuery(new EntityQueryDesc
-            {
-                All = new ComponentType[]
-                {
-                    ComponentType.ReadOnly<ParkedCar>(),
-                    ComponentType.ReadOnly<PersonalCar>(),
-                    ComponentType.ReadOnly<Owner>(),
-                    ComponentType.ReadOnly<VehicleRescued>(),
-                    ComponentType.ReadOnly<Unspawned>()
-                },
-                None = new ComponentType[]
-                {
-                    ComponentType.ReadOnly<Deleted>(),
-                    ComponentType.ReadOnly<Temp>(),
                     ComponentType.ReadOnly<FixParkingLocation>()
                 }
             });
 
             // 仅在有匹配实体时才激活本系统，避免空帧开销
-            RequireAnyForUpdate(m_RescueQuery, m_RetryQuery);
+            RequireForUpdate(m_CandidateQuery);
 
             // 初始化 ComponentLookup
             m_ParkedCarLookup = GetComponentLookup<ParkedCar>(true);
@@ -145,6 +111,10 @@ namespace EconomyEX.Systems
 
         protected override void OnUpdate()
         {
+            // 主开关检查：未启用时不执行任何逻辑
+            if (Mod.Instance?.Settings?.EnableVehicleRescue != true)
+                return;
+
             // 更新 ComponentLookup
             m_ParkedCarLookup.Update(this);
             m_PersonalCarLookup.Update(this);
@@ -152,11 +122,24 @@ namespace EconomyEX.Systems
             m_PropertyRenterLookup.Update(this);
             m_TransformLookup.Update(this);
 
-            // === 阶段 1：首次救援 ===
-            ProcessRescue();
+            // 统一 Query 结果
+            using var entities = m_CandidateQuery.ToEntityArray(Allocator.Temp);
 
-            // === 阶段 2：对已救援但仍失败的车辆重试 ===
-            ProcessRetry();
+            // 使用 EntityCommandBuffer 延迟执行结构性修改，防止 ComponentLookup 在循环中失效
+            using (var ecb = new EntityCommandBuffer(Allocator.Temp))
+            {
+                // === 阶段 1：首次救援新车辆 ===
+                ProcessRescue(entities, ecb);
+
+                // === 阶段 2：对已救援但仍失败的车辆重试 ===
+                ProcessRetry(entities, ecb);
+
+                // === 清理：移除已不在 Query 中的陈旧记录 ===
+                CleanupStaleEntries(entities);
+
+                // 统一执行所有记录的修改
+                ecb.Playback(EntityManager);
+            }
         }
 
         #endregion
@@ -166,17 +149,16 @@ namespace EconomyEX.Systems
         /// <summary>
         /// 阶段1：检测 InitializeSystem.FindParkingSpace() 失败的新购车辆，传送到住宅附近并交由原版系统重试。
         /// </summary>
-        private void ProcessRescue()
+        private void ProcessRescue(NativeArray<Entity> entities, EntityCommandBuffer ecb)
         {
-            if (m_RescueQuery.IsEmptyIgnoreFilter)
-                return;
-
-            using var entities = m_RescueQuery.ToEntityArray(Allocator.Temp);
             int rescuedCount = 0;
 
             for (int i = 0; i < entities.Length; i++)
             {
                 Entity vehicle = entities[i];
+
+                // 跳过已在追踪中的车辆（由阶段2处理）
+                if (m_RescuedVehicles.ContainsKey(vehicle)) continue;
 
                 // 关键过滤：只处理 m_Lane 为 Null 的车辆（停放失败）
                 ParkedCar parkedCar = m_ParkedCarLookup[vehicle];
@@ -193,20 +175,19 @@ namespace EconomyEX.Systems
                 // 获取住宅 Transform
                 if (!m_TransformLookup.TryGetComponent(homeProperty, out var homeTf)) continue;
 
-                // 1. 添加 VehicleRescued 标记（防止重复传送），初始重试计数为 0
-                EntityManager.AddComponentData(vehicle, new VehicleRescued { m_RetryCount = 0 });
+                // 1. 记录到内存追踪表（初始重试计数为 0）
+                m_RescuedVehicles[vehicle] = 0;
 
                 // 2. 将车辆 Transform 传送到住宅位置
-                EntityManager.SetComponentData(vehicle, homeTf);
+                ecb.SetComponent(vehicle, homeTf);
 
                 // 3. 添加 FixParkingLocation，m_ResetLocation = homeProperty
                 //    原版 FixParkingLocationSystem 会以住宅 Transform 为搜索中心，100m 范围内查找车位
-                EntityManager.AddComponentData(vehicle,
-                    new FixParkingLocation(Entity.Null, homeProperty));
+                ecb.AddComponent(vehicle, new FixParkingLocation(Entity.Null, homeProperty));
 
                 // 4. 添加 Updated 标记，原版 FixParkingLocationSystem.m_FixQuery 要求
                 //    All={Updated} + Any={FixParkingLocation} 才能匹配到该实体
-                EntityManager.AddComponent<Updated>(vehicle);
+                ecb.AddComponent<Updated>(vehicle);
 
                 rescuedCount++;
             }
@@ -221,40 +202,47 @@ namespace EconomyEX.Systems
         /// 阶段2：对已救援但住宅附近仍无车位的车辆，重新挂 FixParkingLocation 持续重试。
         /// 超过最大重试次数后删除僵尸车辆。
         /// </summary>
-        private void ProcessRetry()
+        private void ProcessRetry(NativeArray<Entity> entities, EntityCommandBuffer ecb)
         {
-            if (m_RetryQuery.IsEmptyIgnoreFilter)
-                return;
-
-            using var entities = m_RetryQuery.ToEntityArray(Allocator.Temp);
+            // 收集需要从追踪表中移除的 Entity（避免遍历中修改字典）
+            using var toRemove = new NativeList<Entity>(Allocator.Temp);
             int retryCount = 0;
             int successCount = 0;
             int removedCount = 0;
 
-            for (int i = 0; i < entities.Length; i++)
+            // 遍历追踪表中的已救援车辆
+            foreach (var kvp in m_RescuedVehicles)
             {
-                Entity vehicle = entities[i];
+                Entity vehicle = kvp.Key;
+                int currentRetry = kvp.Value;
+
+                // 实体已被销毁或不再匹配 Query → 清理
+                if (!EntityManager.Exists(vehicle) || !m_ParkedCarLookup.HasComponent(vehicle))
+                {
+                    toRemove.Add(vehicle);
+                    continue;
+                }
+
+                // FixParkingLocation 仍挂着 → 原版系统还没处理完，跳过
+                if (EntityManager.HasComponent<FixParkingLocation>(vehicle))
+                    continue;
 
                 ParkedCar parkedCar = m_ParkedCarLookup[vehicle];
 
-                // 已成功停放 → 移除标记，完成救援
+                // 已成功停放 → 从追踪表移除，完成救援
                 if (parkedCar.m_Lane != Entity.Null)
                 {
-                    EntityManager.RemoveComponent<VehicleRescued>(vehicle);
+                    toRemove.Add(vehicle);
                     successCount++;
                     continue;
                 }
 
-                // 读取当前重试计数
-                VehicleRescued rescued = EntityManager.GetComponentData<VehicleRescued>(vehicle);
-
                 // 超过最大重试次数 → 删除僵尸车辆
-                if (rescued.m_RetryCount >= kMaxRetries)
+                if (currentRetry >= kMaxRetries)
                 {
-                    // 清理 Household 的 OwnedVehicle Buffer 中对该车辆的引用
                     CleanupOwnership(vehicle);
-                    // 标记删除
-                    EntityManager.AddComponent<Deleted>(vehicle);
+                    ecb.AddComponent<Deleted>(vehicle);
+                    toRemove.Add(vehicle);
                     removedCount++;
                     continue;
                 }
@@ -263,20 +251,25 @@ namespace EconomyEX.Systems
                 Entity homeProperty = GetHomeProperty(vehicle);
                 if (homeProperty != Entity.Null)
                 {
-                    rescued.m_RetryCount++;
-                    EntityManager.SetComponentData(vehicle, rescued);
-                    EntityManager.AddComponentData(vehicle,
-                        new FixParkingLocation(Entity.Null, homeProperty));
-                    EntityManager.AddComponent<Updated>(vehicle);
+                    m_RescuedVehicles[vehicle] = currentRetry + 1;
+                    ecb.AddComponent(vehicle, new FixParkingLocation(Entity.Null, homeProperty));
+                    ecb.AddComponent<Updated>(vehicle);
                     retryCount++;
                 }
                 else
                 {
                     // 无住宅（家庭已搬走或解散）→ 直接删除
                     CleanupOwnership(vehicle);
-                    EntityManager.AddComponent<Deleted>(vehicle);
+                    ecb.AddComponent<Deleted>(vehicle);
+                    toRemove.Add(vehicle);
                     removedCount++;
                 }
+            }
+
+            // 批量清理追踪表
+            for (int i = 0; i < toRemove.Length; i++)
+            {
+                m_RescuedVehicles.Remove(toRemove[i]);
             }
 
             if (successCount > 0 && Mod.Instance?.Settings?.EnableRescueDebugLog == true)
@@ -292,6 +285,38 @@ namespace EconomyEX.Systems
             if (removedCount > 0 && Mod.Instance?.Settings?.EnableRescueDebugLog == true)
             {
                 ModLog.Warn(Tag, $"购车救援放弃：{removedCount} 辆车辆超过最大重试次数({kMaxRetries})已删除");
+            }
+        }
+
+        /// <summary>
+        /// 清理陈旧的追踪记录：移除已不存在于 ECS 世界中的实体。
+        /// 防止 Dictionary 内存泄漏。
+        /// </summary>
+        private void CleanupStaleEntries(NativeArray<Entity> entities)
+        {
+            if (m_RescuedVehicles.Count == 0)
+                return;
+
+            // 构建当前 Query 匹配的实体集合
+            var activeSet = new HashSet<Entity>(entities.Length);
+            for (int i = 0; i < entities.Length; i++)
+            {
+                activeSet.Add(entities[i]);
+            }
+
+            // 移除不在 Query 中且实体已不存在的记录
+            using var toRemove = new NativeList<Entity>(Allocator.Temp);
+            foreach (var kvp in m_RescuedVehicles)
+            {
+                if (!activeSet.Contains(kvp.Key) && !EntityManager.Exists(kvp.Key))
+                {
+                    toRemove.Add(kvp.Key);
+                }
+            }
+
+            for (int i = 0; i < toRemove.Length; i++)
+            {
+                m_RescuedVehicles.Remove(toRemove[i]);
             }
         }
 

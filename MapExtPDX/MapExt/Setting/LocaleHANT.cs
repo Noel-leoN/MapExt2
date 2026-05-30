@@ -569,7 +569,7 @@ namespace MapExtPDX
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.EditorCollisionSkip)),
                     "允許在地圖編輯器放置物件時跳過碰撞驗證檢查。'僅跳過樹木'可極大提升種植大量樹木時的性能，'跳過所有物件'則對所有物件生效。"
                 },
-                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.TerrainBrushRoadBlock)), "地形筆刷道路阻擋" },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.TerrainBrushRoadBlock)), "地形筆刷道路阻擋 (測試)" },
                 {
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.TerrainBrushRoadBlock)),
                     "啟用後，地形工具（升降/平整/坡度/平滑）的效果不會穿越道路傳播到另一側。" +
@@ -668,7 +668,7 @@ namespace MapExtPDX
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.EnableVehicleRescue)),
                     "啟用購車救援系統：偵測市民在商鋪新購私家車後因停車位不足導致車輛遺失（m_Lane == Null）的情況，將其傳送到車主住宅附近重新停放。\n\n" +
                     "★ 預設關閉。僅在觀察到購車後車輛消失時啟用。\n" +
-                    "★ 該系統會為被救援的車輛新增自訂 ECS 元件（VehicleRescued）。停用本模組後，存檔中的該元件數據會被遊戲安全忽略。"
+                    "★ 純記憶體追蹤，不會向實體或存檔寫入任何自訂元件。"
                 },
                 { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.EnableRescueDebugLog)), "• 啟用購車救援偵測日誌" },
                 {

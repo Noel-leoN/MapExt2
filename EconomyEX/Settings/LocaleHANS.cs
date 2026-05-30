@@ -293,6 +293,8 @@ namespace EconomyEX.Settings
 
                 // --- Group: 调试 ---
                 { m_Setting.GetOptionGroupLocaleID(ModSettings.kDebugGroup), "调试参数" },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.EnableVehicleRescue)), "• 启用购车救援系统" },
+                { m_Setting.GetOptionDescLocaleID(nameof(ModSettings.EnableVehicleRescue)), "启用后，自动检测因停车位不足而丢失的新购车辆，将其传送到车主住宅附近重新停放。\n关闭后系统完全不执行任何逻辑。" },
                 { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.EnableRescueDebugLog)), "• 启用购车救援调试日志" },
                 { m_Setting.GetOptionDescLocaleID(nameof(ModSettings.EnableRescueDebugLog)), "开启后，购车救援系统在每次执行救援、重试或清理放弃逻辑时会打印日志。\n★ 建议在大城市或稳定运行后保持关闭以防止日志文件膨胀。" },
             };

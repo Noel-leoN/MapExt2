@@ -293,6 +293,8 @@ namespace EconomyEX.Settings
 
                 // --- Group: 偵測 ---
                 { m_Setting.GetOptionGroupLocaleID(ModSettings.kDebugGroup), "偵測參數" },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.EnableVehicleRescue)), "• 啟用購車救援系統" },
+                { m_Setting.GetOptionDescLocaleID(nameof(ModSettings.EnableVehicleRescue)), "啟用後，自動偵測因停車位不足而遺失的新購車輛，將其傳送到車主住宅附近重新停放。\n關閉後系統完全不執行任何邏輯。" },
                 { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.EnableRescueDebugLog)), "• 啟用購車救援偵測日誌" },
                 { m_Setting.GetOptionDescLocaleID(nameof(ModSettings.EnableRescueDebugLog)), "開啟後，購車救援系統在每次執行救援、重試或清理放棄邏輯時會列印日誌。\n★ 建議在大城市或穩定運行後保持關閉以防止日誌檔案膨脹。" },
             };

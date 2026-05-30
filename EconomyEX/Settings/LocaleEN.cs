@@ -300,6 +300,8 @@ namespace EconomyEX.Settings
 
                 // --- Group: Debug ---
                 { m_Setting.GetOptionGroupLocaleID(ModSettings.kDebugGroup), "Debug Settings" },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.EnableVehicleRescue)), "• Enable Vehicle Purchase Rescue" },
+                { m_Setting.GetOptionDescLocaleID(nameof(ModSettings.EnableVehicleRescue)), "When enabled, automatically detects newly purchased vehicles lost due to insufficient parking, and teleports them near the owner's home for re-parking.\nWhen disabled, the system is completely inactive." },
                 { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.EnableRescueDebugLog)), "• Enable Vehicle Rescue Debug Log" },
                 { m_Setting.GetOptionDescLocaleID(nameof(ModSettings.EnableRescueDebugLog)), "Enable printing logs whenever the vehicle purchase rescue system performs a rescue, retry, or deletion.\n★ Keep disabled under normal gameplay to avoid log file bloat." },
             };

@@ -187,7 +187,10 @@ namespace MapExtPDX
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.EnableResidentAIEcoSystem)),
                     "修复市民寻路AI等待时间的逻辑缺陷，缓解大地图底层寻路内存溢出的问题。\n\n⚠️ 与 Realistic PathFinding 等寻路 Mod 不兼容！\n⚠️ 修改后需重启游戏生效。\n\n⚠️ 默认关闭，以避免与流行寻路Mod冲突。"
                 },
-                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.EnableDownstreamAIEcoSystem)), "└─ 载具AI与寻路系统组 (Beta)" },
+                {
+                    m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.EnableDownstreamAIEcoSystem)),
+                    "└─ 载具AI与寻路系统组 (Beta)"
+                },
                 {
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.EnableDownstreamAIEcoSystem)),
                     "替换私家车AI、出租车AI、休闲系统和找学校系统为可配置版本，按出行目的分级设置寻路成本上限。防止车辆在大地图中因寻路成本超过原版硬编码上限而在途中消失。\n\n⚠️ 与修改相同载具AI系统的 Mod 不兼容！\n⚠️ 修改后需重启游戏生效。\n\n⚠️ 默认关闭 (Beta)。"
@@ -324,7 +327,10 @@ namespace MapExtPDX
                     " - 200万人口：2000 ~ 4000\n" +
                     " - 500万以上人口：4000 ~ 8000"
                 },
-                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.ShoppingTrafficReduction)), "购物概率人口压制系数 (x0.0001)" },
+                {
+                    m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.ShoppingTrafficReduction)),
+                    "购物概率人口压制系数 (x0.0001)"
+                },
                 {
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.ShoppingTrafficReduction)),
                     "控制城市人口对家庭购物概率的衰减影响。公式：shopChance = 200 / sqrt(系数 × 人口)。" +
@@ -570,7 +576,7 @@ namespace MapExtPDX
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.EditorCollisionSkip)),
                     "允许在地编放置对象时跳过碰撞验证检查。'仅跳过树木'可极大提升种植大量树木时的性能，'跳过所有对象'则对所有物件生效。"
                 },
-                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.TerrainBrushRoadBlock)), "地形笔刷道路阻挡" },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.TerrainBrushRoadBlock)), "地形笔刷道路阻挡 (测试)" },
                 {
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.TerrainBrushRoadBlock)),
                     "启用后，地形工具（升降/平整/坡度/平滑）的效果不会穿越道路传播到另一侧。" +
@@ -669,7 +675,7 @@ namespace MapExtPDX
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.EnableVehicleRescue)),
                     "启用购车救援系统：检测市民在商铺新购私家车后因停车位不足导致车辆丢失（m_Lane == Null）的情况，将其传送到车主住宅附近重新停放。\n\n" +
                     "★ 默认关闭。仅在观察到购车后车辆消失时启用。\n" +
-                    "★ 该系统会为被救援的车辆添加自定义 ECS 组件（VehicleRescued）。禁用本 Mod 后，存档中的该组件数据会被游戏安全忽略。"
+                    "★ 纯内存追踪，不会向实体或存档写入任何自定义组件。"
                 },
                 { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.EnableRescueDebugLog)), "• 启用购车救援调试日志" },
                 {
