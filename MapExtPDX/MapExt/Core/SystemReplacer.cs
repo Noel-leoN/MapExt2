@@ -12,6 +12,13 @@ namespace MapExtPDX.MapExt.Core
     {
         public static void Apply(UpdateSystem updateSystem, Harmony globalPatcher, ModSettings setting)
         {
+            // === 设置快照日志（Release 级别，用于诊断 .coc 缓存不一致） ===
+            ModLog.Info("SystemReplacer",
+                $"Apply: CV={PatchManager.CurrentCoreValue}, EcoFix={setting.isEnableEconomyFix}, " +
+                $"Household={setting.EnableHouseholdPropertyEcoSystem}, Job={setting.EnableJobSearchEcoSystem}, " +
+                $"ResBuyer={setting.EnableResourceBuyerEcoSystem}, ResidentAI={setting.EnableResidentAIEcoSystem}, " +
+                $"DownAI={setting.EnableDownstreamAIEcoSystem}, Demand={setting.EnableDemandEcoSystem}");
+
             // Part 1:
             // --- CellMapSystem<T> ECS替换 ---
             // Telecom/Wind 等系统暂不替换
