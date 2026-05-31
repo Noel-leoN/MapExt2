@@ -26,13 +26,13 @@ namespace EconomyEX.Systems
         private const string Tag = "P2_CollisionSys";
         private ToolSystem m_ToolSystem;
         private EntityQuery m_ErrorQuery;
-        private ModificationEndBarrier m_ModificationBarrier;
+        private ToolOutputBarrier m_ToolOutputBarrier;
 
         protected override void OnCreate()
         {
             base.OnCreate();
             m_ToolSystem = World.GetOrCreateSystemManaged<ToolSystem>();
-            m_ModificationBarrier = World.GetOrCreateSystemManaged<ModificationEndBarrier>();
+            m_ToolOutputBarrier = World.GetOrCreateSystemManaged<ToolOutputBarrier>();
 
             // 只查询工具正在放置的物体 (Temp)，且包含 Error 或 Warning
             m_ErrorQuery = GetEntityQuery(new EntityQueryDesc
@@ -61,11 +61,11 @@ namespace EconomyEX.Systems
                 m_PrefabRefType = SystemAPI.GetComponentTypeHandle<PrefabRef>(true),
                 m_TreeDataLookup = SystemAPI.GetComponentLookup<TreeData>(true),
                 m_SkipMode = skipMode,
-                m_CommandBuffer = m_ModificationBarrier.CreateCommandBuffer().AsParallelWriter()
+                m_CommandBuffer = m_ToolOutputBarrier.CreateCommandBuffer().AsParallelWriter()
             };
 
             Dependency = job.ScheduleParallel(m_ErrorQuery, Dependency);
-            m_ModificationBarrier.AddJobHandleForProducer(Dependency);
+            m_ToolOutputBarrier.AddJobHandleForProducer(Dependency);
         }
 
         [BurstCompile]
