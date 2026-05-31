@@ -35,6 +35,10 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
         {
             var quality = ResolutionManager.WaterSimQuality;
 
+            // Vanilla 模式：完全不干预，零开销直通原版
+            if (quality == WaterSimQualitySetting.Vanilla_EveryFrame)
+                return true;
+
             switch (quality)
             {
                 case WaterSimQualitySetting.Paused_NoFlow:
