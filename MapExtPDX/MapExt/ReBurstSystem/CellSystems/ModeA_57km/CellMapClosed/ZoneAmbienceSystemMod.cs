@@ -1,4 +1,4 @@
-﻿// Game.Simulation.ZoneAmbienceSystem : CellMapSystem<ZoneAmbienceCell>, IJobSerializable
+// Game.Simulation.ZoneAmbienceSystem : CellMapSystem<ZoneAmbienceCell>, IJobSerializable
 
 using System.Runtime.CompilerServices;
 using Colossal.Serialization.Entities;

@@ -1,4 +1,4 @@
-﻿// Game.Simulation.SoilWaterSystem : CellMapSystem<SoilWater>, IJobSerializable, IPostDeserialize
+// Game.Simulation.SoilWaterSystem : CellMapSystem<SoilWater>, IJobSerializable, IPostDeserialize
 
 using System;
 using System.Runtime.CompilerServices;

@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2024 Noel2(Noel-leoN)
+// Copyright (c) 2024 Noel2(Noel-leoN)
 // Licensed under the MIT License.
 
 using System.Collections.Generic;

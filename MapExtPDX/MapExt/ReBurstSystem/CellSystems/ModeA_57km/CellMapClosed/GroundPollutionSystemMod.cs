@@ -1,4 +1,4 @@
-﻿using System.Runtime.CompilerServices;
+using System.Runtime.CompilerServices;
 using Colossal.Mathematics;
 using Colossal.Serialization.Entities;
 using Game;

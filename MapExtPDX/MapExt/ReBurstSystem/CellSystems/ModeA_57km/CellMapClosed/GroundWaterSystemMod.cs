@@ -1,4 +1,4 @@
-﻿// Game.Simulation.GroundWaterSystem : CellMapSystem<GroundWater>, IJobSerializable
+// Game.Simulation.GroundWaterSystem : CellMapSystem<GroundWater>, IJobSerializable
 
 using System.Runtime.CompilerServices;
 using Colossal.Collections;

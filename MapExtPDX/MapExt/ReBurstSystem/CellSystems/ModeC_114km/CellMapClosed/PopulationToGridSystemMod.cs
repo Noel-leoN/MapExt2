@@ -1,4 +1,4 @@
-﻿// Game.Simulation.PopulationToGridSystem : CellMapSystem<PopulationCell>, IJobSerializable
+// Game.Simulation.PopulationToGridSystem : CellMapSystem<PopulationCell>, IJobSerializable
 
 using System.Runtime.CompilerServices;
 using Colossal.Entities;

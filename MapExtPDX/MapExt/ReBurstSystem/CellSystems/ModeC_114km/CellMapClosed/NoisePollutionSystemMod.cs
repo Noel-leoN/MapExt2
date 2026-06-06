@@ -1,4 +1,4 @@
-﻿// Game.Simulation.NoisePollutionSystem : CellMapSystem<NoisePollution>, IJobSerializable
+// Game.Simulation.NoisePollutionSystem : CellMapSystem<NoisePollution>, IJobSerializable
 
 using System.Runtime.CompilerServices;
 using Colossal.Serialization.Entities;

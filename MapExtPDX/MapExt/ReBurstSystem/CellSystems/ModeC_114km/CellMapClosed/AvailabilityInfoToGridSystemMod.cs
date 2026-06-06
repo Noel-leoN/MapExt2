@@ -1,4 +1,4 @@
-﻿// Game.Simulation.AvailabilityInfoToGridSystem : CellMapSystem<AvailabilityInfoCell>, IJobSerializable
+// Game.Simulation.AvailabilityInfoToGridSystem : CellMapSystem<AvailabilityInfoCell>, IJobSerializable
 
 // BC调用GetCellCenter/kTextureSize
 // GetCellCenter/GetAvailabilityInfo/引用kMapSize/kTextureSize
