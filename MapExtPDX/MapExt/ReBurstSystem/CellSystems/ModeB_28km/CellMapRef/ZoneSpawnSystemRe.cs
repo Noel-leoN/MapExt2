@@ -1,4 +1,4 @@
-﻿using Game.Buildings;
+using Game.Buildings;
 using Game.Common;
 using Game.Economy;
 using Game.Net;

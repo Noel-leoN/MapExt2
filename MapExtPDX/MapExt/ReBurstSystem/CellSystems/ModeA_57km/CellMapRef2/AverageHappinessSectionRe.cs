@@ -1,4 +1,4 @@
-﻿// Game.UI.InGame.AverageHappinessSection
+// Game.UI.InGame.AverageHappinessSection
 // OnUpdate
 
 using Game.Areas;

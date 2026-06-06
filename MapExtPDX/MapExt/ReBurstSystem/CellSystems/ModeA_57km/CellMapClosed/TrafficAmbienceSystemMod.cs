@@ -1,4 +1,4 @@
-﻿﻿// Game.Simulation.TrafficAmbienceSystem : CellMapSystem<Game.Simulation.TrafficAmbienceCell>, Colossal.Serialization.Entities.IJobSerializable
+﻿// Game.Simulation.TrafficAmbienceSystem : CellMapSystem<Game.Simulation.TrafficAmbienceCell>, Colossal.Serialization.Entities.IJobSerializable
 
 using System.Runtime.CompilerServices;
 using Colossal.Serialization.Entities;

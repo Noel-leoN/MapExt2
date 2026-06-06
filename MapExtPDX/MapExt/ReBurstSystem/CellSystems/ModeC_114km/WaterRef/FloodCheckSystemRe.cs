@@ -1,4 +1,4 @@
-﻿using Colossal.Mathematics;
+using Colossal.Mathematics;
 using Game.Events;
 using Game.Objects;
 using Game.Prefabs;

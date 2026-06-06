@@ -1,4 +1,4 @@
-﻿// Game.Simulation.ResidentialDemandSystem
+// Game.Simulation.ResidentialDemandSystem
 // 系统实例被多个外部系统调用，采用Job通用替换。
 
 using Colossal.Collections;

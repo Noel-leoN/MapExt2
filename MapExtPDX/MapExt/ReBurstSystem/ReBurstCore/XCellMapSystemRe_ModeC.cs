@@ -1,4 +1,4 @@
-﻿// [AUTO-GENERATED] 由 XCellMapSystemRe.Generate.ps1 从 XCellMapSystemRe.cs 自动生成，请勿手动编辑
+// [AUTO-GENERATED] 由 XCellMapSystemRe.Generate.ps1 从 XCellMapSystemRe.cs 自动生成，请勿手动编辑
 // Mode: ModeC, kMapSize: 114688
 // kTextureSize 倍率由 CellMapTextureSizeMultiplier 在编译时自动计算
 

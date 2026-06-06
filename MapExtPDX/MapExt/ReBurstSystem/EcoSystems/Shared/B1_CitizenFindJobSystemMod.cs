@@ -1,4 +1,4 @@
-﻿// Game.Simulation.CitizenFindJobSystem
+// Game.Simulation.CitizenFindJobSystem
 // v2.0 - 大型人口城市适配版（等比缩放概率 + 软限流）
 
 using System.Threading;

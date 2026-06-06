@@ -1,4 +1,4 @@
-﻿using Game.Buildings;
+using Game.Buildings;
 using Game.Citizens;
 using Game.City;
 using Game.Companies;

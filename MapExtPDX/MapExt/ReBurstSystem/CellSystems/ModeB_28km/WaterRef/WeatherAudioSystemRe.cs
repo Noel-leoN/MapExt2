@@ -1,4 +1,4 @@
-﻿using Game.Effects;
+using Game.Effects;
 using Game.Objects;
 using Game.Prefabs;
 using Game.Simulation;

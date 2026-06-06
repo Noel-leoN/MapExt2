@@ -1,4 +1,4 @@
-﻿using Game.Events;
+using Game.Events;
 using Game.Prefabs;
 using Unity.Burst;
 using Unity.Burst.Intrinsics;

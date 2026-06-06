@@ -1,4 +1,4 @@
-﻿
+
 using Colossal.Collections;
 using Game.Buildings;
 using Game.Objects;

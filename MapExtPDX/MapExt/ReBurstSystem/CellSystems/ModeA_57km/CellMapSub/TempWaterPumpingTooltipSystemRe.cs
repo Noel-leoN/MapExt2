@@ -1,4 +1,4 @@
-﻿// Game.UI.Tooltip.TempWaterPumpingTooltipSystem
+// Game.UI.Tooltip.TempWaterPumpingTooltipSystem
 
 using Colossal.Collections;
 using Game.Buildings;

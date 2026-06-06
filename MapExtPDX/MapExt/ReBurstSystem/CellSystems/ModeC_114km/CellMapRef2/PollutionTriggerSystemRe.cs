@@ -1,4 +1,4 @@
-﻿// Game.Simulation.PollutionTriggerSystem.cs
+// Game.Simulation.PollutionTriggerSystem.cs
 // OnUpdate
 
 using Colossal.Collections;

@@ -1,4 +1,4 @@
-﻿// Game.Areas.MapTileSystem
+// Game.Areas.MapTileSystem
 
 using Colossal.Mathematics;
 using Game.Areas;

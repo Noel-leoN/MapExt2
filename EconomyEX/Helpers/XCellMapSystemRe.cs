@@ -1,4 +1,4 @@
-﻿// [EconomyEX] 从 MapExtPDX.MapExt.Core 复制并适配为 EconomyEX 独立版本
+// [EconomyEX] 从 MapExtPDX.MapExt.Core 复制并适配为 EconomyEX 独立版本
 // 固定 kMapSize = 14336 (原版标准地图)
 // 原始来源: MapExtPDX/MapExt/ReBurstSystem/ReBurstCore/XCellMapSystemRe.cs
 

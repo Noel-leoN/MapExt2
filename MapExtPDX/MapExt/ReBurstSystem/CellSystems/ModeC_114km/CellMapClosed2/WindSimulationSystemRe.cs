@@ -1,4 +1,4 @@
-﻿using Game.Simulation;
+using Game.Simulation;
 using Unity.Burst;
 using Unity.Collections;
 using Unity.Jobs;

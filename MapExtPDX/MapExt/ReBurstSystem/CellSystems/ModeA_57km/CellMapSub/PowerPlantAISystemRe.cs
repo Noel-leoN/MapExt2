@@ -1,4 +1,4 @@
-﻿// Game.Simulation.PowerPlantAISystem
+// Game.Simulation.PowerPlantAISystem
 
 using System;
 using Colossal.Collections;

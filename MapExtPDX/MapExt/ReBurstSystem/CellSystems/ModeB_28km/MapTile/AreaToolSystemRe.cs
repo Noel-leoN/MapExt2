@@ -1,4 +1,4 @@
-﻿// Game.Tools.AreaToolSystem
+// Game.Tools.AreaToolSystem
 
 using Colossal.Collections;
 using Colossal.Mathematics;

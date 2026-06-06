@@ -1,4 +1,4 @@
-﻿// Game.Rendering.NetColorSystem
+// Game.Rendering.NetColorSystem
 
 using Colossal.Collections;
 using Game.Net;

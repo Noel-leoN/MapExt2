@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using HarmonyLib;
 using Game;
 using Game.Simulation;

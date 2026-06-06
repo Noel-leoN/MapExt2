@@ -1,4 +1,4 @@
-﻿// Game.UI.InGame.PollutionInfoviewUISystem.cs
+// Game.UI.InGame.PollutionInfoviewUISystem.cs
 // PerformUpdate()
 
 using Game.Buildings;

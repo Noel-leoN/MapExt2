@@ -1,4 +1,4 @@
-﻿// Game.Simulation.WaterPumpingStationAISystem
+// Game.Simulation.WaterPumpingStationAISystem
 
 using System;
 using Colossal.Collections;

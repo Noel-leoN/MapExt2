@@ -1,4 +1,4 @@
-﻿﻿// Game.Simulation.AirPollutionSystem : CellMapSystem<AirPollution>, IJobSerializable
+﻿// Game.Simulation.AirPollutionSystem : CellMapSystem<AirPollution>, IJobSerializable
 
 // 需修改内容
 // BC调用GetCellCenter/GetPollution/GetWind/kTextureSize

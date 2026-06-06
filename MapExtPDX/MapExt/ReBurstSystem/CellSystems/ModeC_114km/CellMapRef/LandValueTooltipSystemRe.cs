@@ -1,4 +1,4 @@
-﻿using Colossal.Collections;
+using Colossal.Collections;
 using Game.Prefabs;
 using Game.Simulation;
 using Unity.Burst;

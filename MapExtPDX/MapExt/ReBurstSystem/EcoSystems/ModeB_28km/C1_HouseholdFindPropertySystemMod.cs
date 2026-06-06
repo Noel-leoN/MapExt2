@@ -1,4 +1,4 @@
-﻿// Game.Simulation.HouseholdFindPropertySystem
+// Game.Simulation.HouseholdFindPropertySystem
 
 // Game.Simulation.CitizenPathFindSetup + SetupFindHomeJob
 

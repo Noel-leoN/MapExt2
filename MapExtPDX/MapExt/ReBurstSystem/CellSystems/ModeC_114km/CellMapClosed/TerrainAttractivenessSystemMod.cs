@@ -1,4 +1,4 @@
-﻿﻿// Game.Simulation.TerrainAttractivenessSystem : CellMapSystem<TerrainAttractiveness>, IJobSerializable
+﻿// Game.Simulation.TerrainAttractivenessSystem : CellMapSystem<TerrainAttractiveness>, IJobSerializable
 
 using System.Runtime.CompilerServices;
 using Colossal.Serialization.Entities;

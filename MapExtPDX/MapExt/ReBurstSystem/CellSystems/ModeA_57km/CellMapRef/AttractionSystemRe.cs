@@ -1,4 +1,4 @@
-﻿using Game.Buildings;
+using Game.Buildings;
 using Game.Prefabs;
 using Game.Simulation;
 using Unity.Burst;

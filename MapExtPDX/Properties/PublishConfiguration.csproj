@@ -1,4 +1,4 @@
-﻿<Project>
+<Project>
     <!-- Create an xml file with configuration information for publishing mod on Paradox Mods. -->
     <Target Name="AddPublishConfiguration" BeforeTargets="BeforeCompile;CoreCompile" Inputs="$(MSBuildAllProjects)" Outputs="$(IntermediateOutputPath)GeneratedFile.xml">
         <!-- Get the screenshot files, if any. -->

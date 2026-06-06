@@ -1,4 +1,4 @@
-﻿// [SOURCE] 本文件为 XCellMapSystemRe 的源文件，可在 IDE 中正常编辑和检查语法
+// [SOURCE] 本文件为 XCellMapSystemRe 的源文件，可在 IDE 中正常编辑和检查语法
 // 构建时由 XCellMapSystemRe.Generate.ps1 读取本文件，替换 namespace/kMapSize 生成各 Mode 文件
 // 注意: 本文件本身不参与编译，仅作为生成源
 

@@ -1,4 +1,4 @@
-﻿// Game.Tools.ValidationSystem;
+// Game.Tools.ValidationSystem;
 
 using Colossal.Collections;
 using Colossal.Mathematics;

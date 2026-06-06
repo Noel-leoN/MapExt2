@@ -1,4 +1,4 @@
-﻿using Colossal.Entities;
+using Colossal.Entities;
 using Game;
 using Game.Agents;
 using Game.Areas;

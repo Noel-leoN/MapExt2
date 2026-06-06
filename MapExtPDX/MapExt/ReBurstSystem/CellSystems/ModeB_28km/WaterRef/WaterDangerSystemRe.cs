@@ -1,4 +1,4 @@
-﻿using Colossal.Collections;
+using Colossal.Collections;
 using Colossal.Mathematics;
 using Game.Buildings;
 using Game.City;
