@@ -819,6 +819,10 @@ namespace MapExtPDX
 
         #region Conflict Monitoring
 
+        /// <summary>启动时检测到的已知冲突 Mod 列表，由 ModConflictDetector 填充</summary>
+        [SettingsUISection(kMiscTab, kEcoSystemEnableGroup)]
+        public string DetectedConflictMods { get; set; } = "Not scanned";
+
         /// <summary>冲突警告信息，由 ConflictMonitoringSystem 更新</summary>
         [SettingsUISection(kMiscTab, kEcoSystemEnableGroup)]
         public string ConflictWarning { get; set; } = "None";
@@ -836,7 +840,7 @@ namespace MapExtPDX
             {
                 // 触发 ConflictMonitoringSystem 的即时检查
                 var world = Unity.Entities.World.DefaultGameObjectInjectionWorld;
-                var monitor = world?.GetExistingSystemManaged<MapExtPDX.UI.ConflictMonitoringSystem>();
+                var monitor = world?.GetExistingSystemManaged<MapExtPDX.MapExt.Core.ConflictMonitoringSystem>();
                 if (monitor != null)
                 {
                     monitor.ForceCheck();

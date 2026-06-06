@@ -558,7 +558,7 @@ namespace MapExtPDX.MapExt.Core
             // === UI 和监控系统（无条件注册，不受 isEnableEconomyFix 约束） ===
             updateSystem.UpdateAt<MapExtPDX.UI.MapExtUISystem>(SystemUpdatePhase.UIUpdate);
             updateSystem.UpdateAt<MapExtPDX.UI.PopulationDiagnosticSystem>(SystemUpdatePhase.GameSimulation);
-            updateSystem.UpdateAt<MapExtPDX.UI.ConflictMonitoringSystem>(SystemUpdatePhase.MainLoop);
+            updateSystem.UpdateAt<MapExtPDX.MapExt.Core.ConflictMonitoringSystem>(SystemUpdatePhase.MainLoop);
             updateSystem.UpdateAt<MapExtPDX.UI.Q2_CityStatsSystem>(SystemUpdatePhase.GameSimulation);
         }
     }

@@ -162,7 +162,18 @@ namespace MapExtPDX
             // 执行诊断系统
             // updateSystem.UpdateAt<SaveGameDiagnosticSystem>(SystemUpdatePhase.LateUpdate);
 
-            // === G. ECS替换系统补丁 ===
+            // === G. 冲突 Mod 指纹检测 ===
+            ModConflictDetector.ScanLoadedMods();
+            m_Setting.DetectedConflictMods = ModConflictDetector.GetDetectedModsSummary();
+            // 根据检测结果生成基于当前设置的冲突报告
+            var conflictReport = ModConflictDetector.GetConflictReport(m_Setting);
+            if (conflictReport != "None")
+            {
+                m_Setting.ConflictWarning = $"[Startup] {conflictReport}";
+                ModLog.Warn(Tag, $"启动冲突报告: {conflictReport}");
+            }
+
+            // === H. ECS替换系统补丁 ===
             // CellMapSystem<T> 和 经济系统 的ECS替换补丁
             SystemReplacer.Apply(updateSystem, _globalPatcher, m_Setting);
         }

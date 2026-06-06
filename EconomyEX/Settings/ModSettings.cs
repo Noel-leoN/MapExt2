@@ -64,6 +64,10 @@ namespace EconomyEX.Settings
         [SettingsUISection(kSectionStatus, kSectionStatus)]
         public string StatusInfo { get; private set; } = "Initializing...";
 
+        /// <summary>启动时检测到的已知冲突 Mod 列表</summary>
+        [SettingsUISection(kSectionStatus, kSectionStatus)]
+        public string DetectedConflictMods { get; set; } = "Not scanned";
+
         [SettingsUISection(kSectionStatus, kSectionStatus)]
         public string ConflictWarning { get; set; } = "None"; // Updated by ConflictMonitoringSystem
 

@@ -57,6 +57,16 @@ namespace EconomyEX
             // Update UI status immediately
             Settings.UpdateStatus();
 
+            // Scan for known conflicting mods
+            ModConflictDetector.ScanLoadedMods();
+            Settings.DetectedConflictMods = ModConflictDetector.GetDetectedModsSummary();
+            var conflictReport = ModConflictDetector.GetConflictReport(Settings);
+            if (conflictReport != "None")
+            {
+                Settings.ConflictWarning = $"[Startup] {conflictReport}";
+                Warn($"启动冲突报告: {conflictReport}");
+            }
+
             if (IsMapExtPresent) return; // Stop here if MapExt is found.
 
             // 3. Initialize Harmony

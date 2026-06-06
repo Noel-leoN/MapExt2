@@ -233,6 +233,11 @@ namespace MapExtPDX
                     m_Setting.GetOptionWarningLocaleID(nameof(ModSettings.ResetEcoSystemToggles)),
                     "Are you sure you want to reset all economy system toggles to defaults?"
                 },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.DetectedConflictMods)), "Detected Conflict Mods" },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.DetectedConflictMods)),
+                    "Lists known third-party mods detected at startup that may conflict with MapExt economy systems. Detected at launch, zero runtime cost."
+                },
                 { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.ConflictWarning)), "Conflict Warning" },
                 {
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.ConflictWarning)),

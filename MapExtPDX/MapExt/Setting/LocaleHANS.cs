@@ -204,6 +204,11 @@ namespace MapExtPDX
                     m_Setting.GetOptionWarningLocaleID(nameof(ModSettings.ResetEcoSystemToggles)),
                     "确认要将所有经济子系统开关重置为默认值吗？"
                 },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.DetectedConflictMods)), "检测到的冲突Mod" },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.DetectedConflictMods)),
+                    "列出启动时检测到的已知第三方冲突Mod。启动时一次性扫描，零运行时开销。"
+                },
                 { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.ConflictWarning)), "冲突警告" },
                 {
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.ConflictWarning)),

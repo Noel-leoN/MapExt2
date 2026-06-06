@@ -119,6 +119,21 @@ namespace EconomyEX.Helpers
                 CheckVanillaSystem<ResidentAISystem>(world, "ResidentAI", conflicts, ref okCount, ref totalChecked, conflictGroups);
             }
 
+            // === 反向检测: EcoEX 自身替换系统是否被外部 Mod 禁用 ===
+            if (ModConflictDetector.IsScanned)
+            {
+                if (ModConflictDetector.HasRealisticPathFinding && settings.EnableResidentAIEcoSystem)
+                {
+                    CheckModSystem<EconomyEX.Systems.ResidentAISystemMod>(world, "ResidentAI", conflicts, ref okCount, ref totalChecked, conflictGroups);
+                }
+
+                if (ModConflictDetector.HasRealisticPathFinding && settings.EnableResourceBuyerEcoSystem)
+                {
+                    CheckModSystem<EconomyEX.Systems.TripNeededSystemMod>(world, "ResourceBuyer", conflicts, ref okCount, ref totalChecked, conflictGroups);
+                    CheckModSystem<EconomyEX.Systems.ResourceBuyerSystemMod>(world, "ResourceBuyer", conflicts, ref okCount, ref totalChecked, conflictGroups);
+                }
+            }
+
             // === 更新 UI 状态 ===
             if (conflicts.Count > 0)
             {
@@ -192,6 +207,48 @@ namespace EconomyEX.Helpers
             {
                 // 已正确禁用，清除待验证状态
                 _pendingVerification.Remove(systemName);
+                okCount++;
+            }
+        }
+
+        /// <summary>
+        /// 反向检测：检查 EcoEX 自己的替换系统是否被外部 Mod 禁用。
+        /// 逻辑与 CheckVanillaSystem 相反：期望 system.Enabled == true。
+        /// </summary>
+        private void CheckModSystem<T>(World world, string group,
+            List<string> conflicts, ref int okCount, ref int totalChecked,
+            HashSet<string> conflictGroups) where T : GameSystemBase
+        {
+            totalChecked++;
+            string systemName = typeof(T).Name;
+
+            var system = world.GetExistingSystemManaged<T>();
+            if (system == null)
+            {
+                okCount++;
+                return;
+            }
+
+            if (!system.Enabled)
+            {
+                system.Enabled = true; // 尝试恢复
+
+                string key = "mod_" + systemName;
+                if (_pendingVerification.Contains(key))
+                {
+                    conflicts.Add(systemName + " (disabled by external mod)");
+                    conflictGroups.Add(group);
+                    _pendingVerification.Remove(key);
+                }
+                else
+                {
+                    _pendingVerification.Add(key);
+                    okCount++;
+                }
+            }
+            else
+            {
+                _pendingVerification.Remove("mod_" + systemName);
                 okCount++;
             }
         }

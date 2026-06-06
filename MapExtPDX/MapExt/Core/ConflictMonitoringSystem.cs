@@ -6,9 +6,9 @@ using Game;
 using Game.SceneFlow;
 using Game.Simulation;
 using Unity.Entities;
-using MapExtPDX.MapExt.Core;
+using EcoShared = MapExtPDX.EcoShared;
 
-namespace MapExtPDX.UI
+namespace MapExtPDX.MapExt.Core
 {
     /// <summary>
     /// 全系统冲突监控：定期检查 MapExtPDX 经济系统替换对的运行状态。
@@ -84,8 +84,10 @@ namespace MapExtPDX.UI
             var settings = Mod.Instance?.CurrentSettings;
             if (settings == null) return;
 
-            // 所有可监控系统的固定总数（不随用户开关变化）
-            const int TotalSystemCount = 13;
+            // 基础监控系统数（原版系统检查）
+            const int BaseSystemCount = 13;
+            // 反向检测系统数（MapExt 自身替换系统被外部禁用）
+            int reverseCheckCount = 0;
 
             // === 逐组检测原版系统（应为 Disabled） ===
             var conflicts = new List<string>();
@@ -131,14 +133,45 @@ namespace MapExtPDX.UI
                 CheckVanillaSystem<FindSchoolSystem>(world, "DownstreamAI", conflicts, ref okCount, ref totalChecked, conflictGroups);
             }
 
+            // === 反向检测: MapExt 自身替换系统是否被外部 Mod 禁用 ===
+            // 仅在检测到已知冲突 Mod 存在时执行，避免无意义开销
+            if (ModConflictDetector.IsScanned)
+            {
+                if (ModConflictDetector.HasRealisticPathFinding && settings.EnableResidentAIEcoSystem)
+                {
+                    CheckModSystem<EcoShared.ResidentAISystemMod>(world, "ResidentAI", conflicts, ref okCount, ref totalChecked, conflictGroups);
+                    reverseCheckCount++;
+                }
+
+                if (ModConflictDetector.HasRealisticPathFinding && settings.EnableResourceBuyerEcoSystem)
+                {
+                    CheckModSystem<EcoShared.TripNeededSystemMod>(world, "ResourceBuyer", conflicts, ref okCount, ref totalChecked, conflictGroups);
+                    CheckModSystem<EcoShared.ResourceBuyerSystemMod>(world, "ResourceBuyer", conflicts, ref okCount, ref totalChecked, conflictGroups);
+                    reverseCheckCount += 2;
+                }
+
+                if (ModConflictDetector.HasTime2Work && settings.EnableDownstreamAIEcoSystem)
+                {
+                    CheckModSystem<EcoShared.LeisureSystemMod>(world, "DownstreamAI", conflicts, ref okCount, ref totalChecked, conflictGroups);
+                    reverseCheckCount++;
+                }
+
+                if (ModConflictDetector.HasRealisticParking && settings.EnableDownstreamAIEcoSystem)
+                {
+                    CheckModSystem<EcoShared.PersonalCarAISystemMod>(world, "DownstreamAI", conflicts, ref okCount, ref totalChecked, conflictGroups);
+                    reverseCheckCount++;
+                }
+            }
+
             // === 更新 UI 状态 ===
-            int skipped = TotalSystemCount - totalChecked;
+            int totalSystemCount = BaseSystemCount + reverseCheckCount;
+            int skipped = totalSystemCount - totalChecked;
 
             if (conflicts.Count > 0)
             {
                 string warningMsg = $"[!] {conflicts.Count} Conflicts: {string.Join(", ", conflicts)} re-enabled";
                 SetWarning(settings, warningMsg);
-                SetStatusReport(settings, $"[!] {okCount}/{TotalSystemCount} OK, {conflicts.Count} conflicts");
+                SetStatusReport(settings, $"[!] {okCount}/{totalSystemCount} OK, {conflicts.Count} conflicts");
 
                 // === 自动 disable 冲突的系统组 ===
                 AutoDisableConflictGroups(settings, conflictGroups);
@@ -149,14 +182,14 @@ namespace MapExtPDX.UI
             {
                 SetWarning(settings, "None");
                 string statusText = skipped > 0
-                    ? $"{okCount}/{TotalSystemCount} OK ({skipped} off)"
-                    : $"{okCount}/{TotalSystemCount} OK";
+                    ? $"{okCount}/{totalSystemCount} OK ({skipped} off)"
+                    : $"{okCount}/{totalSystemCount} OK";
                 SetStatusReport(settings, statusText);
             }
             else
             {
                 SetWarning(settings, "None");
-                SetStatusReport(settings, $"0/{TotalSystemCount} (all off)");
+                SetStatusReport(settings, $"0/{totalSystemCount} (all off)");
             }
         }
 
@@ -209,6 +242,51 @@ namespace MapExtPDX.UI
             {
                 // 已正确禁用，清除待验证状态
                 _pendingVerification.Remove(systemName);
+                okCount++;
+            }
+        }
+
+        /// <summary>
+        /// 反向检测：检查 MapExt 自己的替换系统是否被外部 Mod 禁用。
+        /// 逻辑与 CheckVanillaSystem 相反：期望 system.Enabled == true。
+        /// </summary>
+        private void CheckModSystem<T>(World world, string group,
+            List<string> conflicts, ref int okCount, ref int totalChecked,
+            HashSet<string> conflictGroups) where T : GameSystemBase
+        {
+            totalChecked++;
+            string systemName = typeof(T).Name;
+
+            var system = world.GetExistingSystemManaged<T>();
+            if (system == null)
+            {
+                // 系统未注册（该组未启用），不是冲突
+                okCount++;
+                return;
+            }
+
+            if (!system.Enabled)
+            {
+                // MapExt 的替换系统被外部 Mod 禁用了
+                system.Enabled = true; // 尝试恢复
+
+                string key = "mod_" + systemName;
+                if (_pendingVerification.Contains(key))
+                {
+                    // 二次确认: 持续被禁用 → 真正冲突
+                    conflicts.Add(systemName + " (disabled by external mod)");
+                    conflictGroups.Add(group);
+                    _pendingVerification.Remove(key);
+                }
+                else
+                {
+                    _pendingVerification.Add(key);
+                    okCount++;
+                }
+            }
+            else
+            {
+                _pendingVerification.Remove("mod_" + systemName);
                 okCount++;
             }
         }

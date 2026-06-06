@@ -24,6 +24,8 @@ namespace EconomyEX.Settings
                 { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.StatusInfo)), "• Module Status" },
                 { m_Setting.GetOptionDescLocaleID(nameof(ModSettings.StatusInfo)), "Current working status of the economy module." },
 
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.DetectedConflictMods)), "• Detected Conflict Mods" },
+                { m_Setting.GetOptionDescLocaleID(nameof(ModSettings.DetectedConflictMods)), "Lists known third-party mods detected at startup that may conflict with EconomyEX economy systems. Detected at launch, zero runtime cost." },
                 { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.ConflictWarning)), "• Conflict Warning" },
                 { m_Setting.GetOptionDescLocaleID(nameof(ModSettings.ConflictWarning)), "Detected conflicts that might cause issues." },
 

@@ -24,6 +24,8 @@ namespace EconomyEX.Settings
                 { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.StatusInfo)), "• 模組狀態" },
                 { m_Setting.GetOptionDescLocaleID(nameof(ModSettings.StatusInfo)), "當前經濟模組的工作狀態。" },
 
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.DetectedConflictMods)), "• 偵測到的衝突Mod" },
+                { m_Setting.GetOptionDescLocaleID(nameof(ModSettings.DetectedConflictMods)), "列出啟動時偵測到的已知第三方衝突Mod。啟動時一次性掃描，零執行時開銷。" },
                 { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.ConflictWarning)), "• 衝突警告" },
                 { m_Setting.GetOptionDescLocaleID(nameof(ModSettings.ConflictWarning)), "偵測到的可能導致錯誤的衝突資訊。" },
 
