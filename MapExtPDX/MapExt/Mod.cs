@@ -221,6 +221,23 @@ namespace MapExtPDX
                     }
                 );
             }
+
+            // === J. RPF 硬冲突通知 ===
+            // RPF 的 UpdateGroupSystem 跨阶段注册会导致 ECB 崩溃，两者不能共存
+            if (ModConflictDetector.HasRealisticPathFinding)
+            {
+                NotificationSystem.Push(
+                    identifier: "mapext.rpf_incompatible",
+                    title: LocalizedString.Value("MapExt2: Incompatible Mod Detected"),
+                    text: LocalizedString.Value(
+                        "[MapExt2] RealisticPathFinding (RPF) is incompatible with MapExt2. " +
+                        "RPF's cross-phase system registration causes EntityCommandBuffer crashes. " +
+                        "Please disable one of them to avoid errors."),
+                    progressState: Colossal.PSI.Common.ProgressState.Failed,
+                    progress: 100
+                );
+                ModLog.Error(Tag, "RPF 与 MapExt2 存在不可调和的 ECS 管线冲突（UpdateGroupSystem 跨阶段注册），请禁用其中之一。");
+            }
         }
 
         // 被Settings中的Apply按钮调用
