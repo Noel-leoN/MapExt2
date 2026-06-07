@@ -154,7 +154,8 @@ namespace MapExtPDX.MapExt.Core
                 globalPatcher.CreateClassProcessor(typeof(ModeA.PopulationToGridSystemMod.Patches))
                     .Patch();
 
-                updateSystem.UpdateAt<ModeA.SoilWaterSystemMod>(SystemUpdatePhase.GameSimulation);
+                // 原版未注册 GameSimulation（无下游消费者），仅保留 Deserialize + Harmony 以确保 CellMap 扩容
+                // updateSystem.UpdateAt<ModeA.SoilWaterSystemMod>(SystemUpdatePhase.GameSimulation);
                 updateSystem.UpdateAfter<PostDeserialize<ModeA.SoilWaterSystemMod>>(SystemUpdatePhase.Deserialize);
                 globalPatcher.CreateClassProcessor(typeof(ModeA.SoilWaterSystemMod.Patches))
                     .Patch();
@@ -260,7 +261,8 @@ namespace MapExtPDX.MapExt.Core
                 globalPatcher.CreateClassProcessor(typeof(ModeB.PopulationToGridSystemMod.Patches))
                     .Patch();
 
-                updateSystem.UpdateAt<ModeB.SoilWaterSystemMod>(SystemUpdatePhase.GameSimulation);
+                // 原版未注册 GameSimulation（无下游消费者），仅保留 Deserialize + Harmony 以确保 CellMap 扩容
+                // updateSystem.UpdateAt<ModeB.SoilWaterSystemMod>(SystemUpdatePhase.GameSimulation);
                 updateSystem.UpdateAfter<PostDeserialize<ModeB.SoilWaterSystemMod>>(SystemUpdatePhase.Deserialize);
                 globalPatcher.CreateClassProcessor(typeof(ModeB.SoilWaterSystemMod.Patches))
                     .Patch();
@@ -366,7 +368,8 @@ namespace MapExtPDX.MapExt.Core
                 globalPatcher.CreateClassProcessor(typeof(ModeC.PopulationToGridSystemMod.Patches))
                     .Patch();
 
-                updateSystem.UpdateAt<ModeC.SoilWaterSystemMod>(SystemUpdatePhase.GameSimulation);
+                // 原版未注册 GameSimulation（无下游消费者），仅保留 Deserialize + Harmony 以确保 CellMap 扩容
+                // updateSystem.UpdateAt<ModeC.SoilWaterSystemMod>(SystemUpdatePhase.GameSimulation);
                 updateSystem.UpdateAfter<PostDeserialize<ModeC.SoilWaterSystemMod>>(SystemUpdatePhase.Deserialize);
                 globalPatcher.CreateClassProcessor(typeof(ModeC.SoilWaterSystemMod.Patches))
                     .Patch();
@@ -539,6 +542,9 @@ namespace MapExtPDX.MapExt.Core
                     // F2: 私家车AI（含 Actions 子系统）
                     updateSystem.UpdateAt<EcoShared.PersonalCarAISystemMod>(SystemUpdatePhase.GameSimulation);
                     updateSystem.UpdateAfter<EcoShared.PersonalCarAISystemMod.ActionsMod, EcoShared.PersonalCarAISystemMod>(SystemUpdatePhase.GameSimulation);
+                    // F2b: 私家车AI 存档加载阶段（对齐原版 SystemOrder.cs L620-621）
+                    updateSystem.UpdateAt<EcoShared.PersonalCarAISystemMod>(SystemUpdatePhase.LoadSimulation);
+                    updateSystem.UpdateAfter<EcoShared.PersonalCarAISystemMod.ActionsMod, EcoShared.PersonalCarAISystemMod>(SystemUpdatePhase.LoadSimulation);
                     // F3: 出租车AI
                     updateSystem.UpdateAt<EcoShared.TaxiAISystemMod>(SystemUpdatePhase.GameSimulation);
                     // F5: 休闲系统
