@@ -4,7 +4,9 @@ using System.Reflection;
 using Colossal.Logging;
 using Game;
 using Game.Modding;
+using Game.PSI;
 using Game.SceneFlow;
+using Game.UI.Localization;
 using HarmonyLib;
 using EconomyEX.Systems;
 using EconomyEX.Settings;
@@ -59,11 +61,11 @@ namespace EconomyEX
 
             // Scan for known conflicting mods
             ModConflictDetector.ScanLoadedMods();
-            Settings.DetectedConflictMods = ModConflictDetector.GetDetectedModsSummary();
+            Settings._detectedConflictMods = ModConflictDetector.GetDetectedModsSummary();
             var conflictReport = ModConflictDetector.GetConflictReport(Settings);
             if (conflictReport != "None")
             {
-                Settings.ConflictWarning = $"[Startup] {conflictReport}";
+                Settings._conflictWarning = $"[Startup] {conflictReport}";
                 Warn($"启动冲突报告: {conflictReport}");
             }
 
@@ -77,14 +79,45 @@ namespace EconomyEX
             MapSizeDetector.Install(_harmony);
             Info("MapSizeDetector installed.");
 
-            // 5. Register Systems (but keep them disabled/unpatched until MapSize is verified)
+            // 5. Auto-disable conflicting groups BEFORE system registration
+            var disabledGroups = ModConflictDetector.AutoDisableConflictGroups(Settings);
+            if (disabledGroups.Count > 0)
+            {
+                Settings._conflictWarning = $"[Auto-Disabled] {string.Join(", ", disabledGroups)}";
+                Settings._systemStatusReport = $"Auto-disabled {disabledGroups.Count} group(s) due to conflicts";
+            }
+
+            // 6. Register Systems (but keep them disabled/unpatched until MapSize is verified)
             // We Register them to the World so they exist, but we don't enable them yet.
             // Actual enabling happens in MapSizeDetector.OnVanillaMapDetected()
             SystemRegistrar.RegisterSystems(updateSystem);
             
-            // 6. Install Conflict Monitoring
-            // Runs in the game loop to check if our systems get disabled or vanilla ones get enabled
+            // 7. Install Conflict Monitoring (passive diagnostic)
             updateSystem.UpdateAt<ConflictMonitoringSystem>(SystemUpdatePhase.MainLoop);
+
+            // 8. Main menu notification
+            if (disabledGroups.Count > 0)
+            {
+                // pageId = AssemblyName.Namespace.TypeName (见 ModSetting 构造函数)
+                const string pageId = "EconomyEX.EconomyEX.Mod";
+                const string sectionId = "EconomyEX.EconomyEX.Mod.Status";
+
+                NotificationSystem.Push(
+                    identifier: "economyex.conflict",
+                    title: LocalizedString.Value("RESTART REQUIRED!!!"),
+                    text: LocalizedString.Value(
+                        $"[EconomyEX] Disabled {disabledGroups.Count} group(s) " +
+                        $"due to mod conflicts: {string.Join(", ", disabledGroups)}"),
+                    progressState: Colossal.PSI.Common.ProgressState.Failed,
+                    progress: 100,
+                    onClicked: () =>
+                    {
+                        var optionsUI = Unity.Entities.World.DefaultGameObjectInjectionWorld?
+                            .GetExistingSystemManaged<Game.UI.Menu.OptionsUISystem>();
+                        optionsUI?.OpenPage(pageId, sectionId, false);
+                    }
+                );
+            }
         }
 
         public void OnDispose()

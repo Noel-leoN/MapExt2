@@ -8,7 +8,9 @@ using System.Reflection;
 using Colossal.Logging;
 using Game;
 using Game.Modding;
+using Game.PSI;
 using Game.SceneFlow;
+using Game.UI.Localization;
 using HarmonyLib;
 using MapExtPDX.MapExt.Core;
 using MapExtPDX.SaveLoadSystem;
@@ -18,7 +20,9 @@ namespace MapExtPDX
     public class Mod : IMod
     {
         private const string Tag = "Mod";
+
         public const string ModName = "MapExtPDX"; // 保持与BepInEx版本一致
+
         // public const string ModFileName = "MapExtPDX2";
         public const string ModNameZH = "大地图mod";
         public static string ModVersion => Assembly.GetExecutingAssembly().GetName().Version.ToString(3);
@@ -30,6 +34,7 @@ namespace MapExtPDX
         // 定义设置UI
         private ModSettings m_Setting;
         public ModSettings CurrentSettings => m_Setting;
+
         /// <summary>
         /// Settings 别名，使 EcoSystems 代码与 EconomyEX 保持一致的访问路径。
         /// </summary>
@@ -52,9 +57,12 @@ namespace MapExtPDX
         /// </summary>
         //  双Harmony实例名称定义
         public static readonly string HarmonyIdGlobal = $"{ModName}_global";
+
         public static readonly string HarmonyIdModes = $"{ModName}_modes";
+
         // 用于全局并行补丁定义
         private Harmony _globalPatcher;
+
         // 用于MapSize模式选择补丁集定义
         private Harmony _modePatcher;
 
@@ -96,14 +104,20 @@ namespace MapExtPDX
             ModLog.Debug(Tag, "=== Settings Dump (DEBUG) ===");
             ModLog.Debug(Tag, $"  PatchMode={m_Setting.PatchModeChoice}");
             ModLog.Debug(Tag, $"  TerrainRes={m_Setting.TerrainResolution}, WaterRes={m_Setting.WaterResolution}");
-            ModLog.Debug(Tag, $"  WaterSimQuality={m_Setting.WaterSimQuality}, WaterTexFmt={m_Setting.WaterTextureFormat}");
+            ModLog.Debug(Tag,
+                $"  WaterSimQuality={m_Setting.WaterSimQuality}, WaterTexFmt={m_Setting.WaterTextureFormat}");
             ModLog.Debug(Tag, $"  TerrainBufferPrealloc={m_Setting.TerrainBufferPrealloc}");
-            ModLog.Debug(Tag, $"  TerrainCascadeThrottle={m_Setting.TerrainCascadeThrottle}, TerrainCullThrottle={m_Setting.TerrainCullThrottle}");
-            ModLog.Debug(Tag, $"  EnableVanillaConversion={m_Setting.EnableVanillaConversion}, DisableWorldBackdrop={m_Setting.DisableWorldBackdrop}");
+            ModLog.Debug(Tag,
+                $"  TerrainCascadeThrottle={m_Setting.TerrainCascadeThrottle}, TerrainCullThrottle={m_Setting.TerrainCullThrottle}");
+            ModLog.Debug(Tag,
+                $"  EnableVanillaConversion={m_Setting.EnableVanillaConversion}, DisableWorldBackdrop={m_Setting.DisableWorldBackdrop}");
             ModLog.Debug(Tag, $"  EconomyFix={m_Setting.isEnableEconomyFix}");
-            ModLog.Debug(Tag, $"  EcoSystems: Demand={m_Setting.EnableDemandEcoSystem}, JobSearch={m_Setting.EnableJobSearchEcoSystem}");
-            ModLog.Debug(Tag, $"  EcoSystems: HouseholdProp={m_Setting.EnableHouseholdPropertyEcoSystem}, ResBuyer={m_Setting.EnableResourceBuyerEcoSystem}");
-            ModLog.Debug(Tag, $"  EcoSystems: ResidentAI={m_Setting.EnableResidentAIEcoSystem}, DownstreamAI={m_Setting.EnableDownstreamAIEcoSystem}");
+            ModLog.Debug(Tag,
+                $"  EcoSystems: Demand={m_Setting.EnableDemandEcoSystem}, JobSearch={m_Setting.EnableJobSearchEcoSystem}");
+            ModLog.Debug(Tag,
+                $"  EcoSystems: HouseholdProp={m_Setting.EnableHouseholdPropertyEcoSystem}, ResBuyer={m_Setting.EnableResourceBuyerEcoSystem}");
+            ModLog.Debug(Tag,
+                $"  EcoSystems: ResidentAI={m_Setting.EnableResidentAIEcoSystem}, DownstreamAI={m_Setting.EnableDownstreamAIEcoSystem}");
             ModLog.Debug(Tag, $"  NoDogs: Street={m_Setting.NoDogsOnStreet}, Gen={m_Setting.NoDogsGeneration}");
             ModLog.Debug(Tag, $"  NoThroughTraffic={m_Setting.NoThroughTraffic}");
             ModLog.Debug(Tag, $"  DisableLoadGameValidation={m_Setting.DisableLoadGameValidation}");
@@ -118,7 +132,6 @@ namespace MapExtPDX
             ModLog.Info(Tag, $"正在初始化 PatchManager 使用设置模式: {m_Setting.PatchModeChoice}");
             // 执行MapSize关联主要系统补丁
             PatchManager.Initialize(_modePatcher, initialMode);
-
 
 
             // === D. 存档验证系统 === 
@@ -164,18 +177,50 @@ namespace MapExtPDX
 
             // === G. 冲突 Mod 指纹检测 ===
             ModConflictDetector.ScanLoadedMods();
-            m_Setting.DetectedConflictMods = ModConflictDetector.GetDetectedModsSummary();
+            m_Setting._detectedConflictMods = ModConflictDetector.GetDetectedModsSummary();
             // 根据检测结果生成基于当前设置的冲突报告
             var conflictReport = ModConflictDetector.GetConflictReport(m_Setting);
             if (conflictReport != "None")
             {
-                m_Setting.ConflictWarning = $"[Startup] {conflictReport}";
+                m_Setting._conflictWarning = $"[Startup] {conflictReport}";
                 ModLog.Warn(Tag, $"启动冲突报告: {conflictReport}");
+            }
+
+            // 自动禁用与冲突 Mod 重叠的系统组（在 SystemReplacer.Apply 之前执行！）
+            var disabledGroups = ModConflictDetector.AutoDisableConflictGroups(m_Setting);
+            if (disabledGroups.Count > 0)
+            {
+                m_Setting._conflictWarning = $"[Auto-Disabled] {string.Join(", ", disabledGroups)}";
+                m_Setting._systemStatusReport = $"Auto-disabled {disabledGroups.Count} group(s) due to conflicts";
             }
 
             // === H. ECS替换系统补丁 ===
             // CellMapSystem<T> 和 经济系统 的ECS替换补丁
             SystemReplacer.Apply(updateSystem, _globalPatcher, m_Setting);
+
+            // === I. 主菜单通知（冲突提醒） ===
+            if (disabledGroups.Count > 0)
+            {
+                // pageId = AssemblyName.Namespace.TypeName (见 ModSetting 构造函数)
+                const string pageId = "MapExt2.MapExtPDX.Mod";
+                const string sectionId = "MapExt2.MapExtPDX.Mod.EconomyEX";
+
+                NotificationSystem.Push(
+                    identifier: "mapext.conflict",
+                    title: LocalizedString.Value("RESTART REQUIRED!!!"),
+                    text: LocalizedString.Value(
+                        $"[MapExt2] Disabled {disabledGroups.Count} group(s) " +
+                        $"due to mod conflicts: {string.Join(", ", disabledGroups)}"),
+                    progressState: Colossal.PSI.Common.ProgressState.Failed,
+                    progress: 100,
+                    onClicked: () =>
+                    {
+                        var optionsUI = Unity.Entities.World.DefaultGameObjectInjectionWorld?
+                            .GetExistingSystemManaged<Game.UI.Menu.OptionsUISystem>();
+                        optionsUI?.OpenPage(pageId, sectionId, false);
+                    }
+                );
+            }
         }
 
         // 被Settings中的Apply按钮调用
@@ -226,6 +271,5 @@ namespace MapExtPDX
             ModLog.Info(Tag, $"当前游戏模式为 {gameMode}");
             return gameMode;
         }
-
     } // class Mod
 } // namespace MapExtPDX

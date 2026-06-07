@@ -142,6 +142,10 @@ namespace MapExtPDX.UI
                 kGroup, "SystemStatus",
                 () => Mod.Instance?.Settings?.SystemStatusReport ?? "N/A"));
 
+            AddUpdateBinding(new GetterValueBinding<string>(
+                kGroup, "SystemStatusTooltip",
+                () => Mod.Instance?.Settings?._systemStatusTooltip ?? ""));
+
             // === 租金核心参数 Bindings (10) ===
             // --- 住宅租金乘数 ---
             AddBinding(m_RentMultRes = new ValueBinding<int>(kGroup, "RentMultRes", s.RentMultiplierResidential));

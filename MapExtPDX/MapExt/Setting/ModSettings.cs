@@ -821,15 +821,21 @@ namespace MapExtPDX
 
         /// <summary>启动时检测到的已知冲突 Mod 列表，由 ModConflictDetector 填充</summary>
         [SettingsUISection(kMiscTab, kEcoSystemEnableGroup)]
-        public string DetectedConflictMods { get; set; } = "Not scanned";
+        public string DetectedConflictMods => _detectedConflictMods;
+        internal string _detectedConflictMods = "Not scanned";
 
         /// <summary>冲突警告信息，由 ConflictMonitoringSystem 更新</summary>
         [SettingsUISection(kMiscTab, kEcoSystemEnableGroup)]
-        public string ConflictWarning { get; set; } = "None";
+        public string ConflictWarning => _conflictWarning;
+        internal string _conflictWarning = "None";
 
         /// <summary>系统状态报告概要</summary>
         [SettingsUISection(kMiscTab, kEcoSystemEnableGroup)]
-        public string SystemStatusReport { get; set; } = "Waiting...";
+        public string SystemStatusReport => _systemStatusReport;
+        internal string _systemStatusReport = "Waiting...";
+
+        /// <summary>InGame UI 悬停提示：列出已禁用/启用的系统组详情</summary>
+        internal string _systemStatusTooltip = "";
 
         /// <summary>手动刷新状态按钮，触发 ConflictMonitoringSystem 即时检查</summary>
         [SettingsUISection(kMiscTab, kEcoSystemEnableGroup)]

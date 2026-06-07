@@ -35,6 +35,9 @@ namespace MapExtPDX.MapExt.Core
         /// <summary>是否已完成扫描</summary>
         public static bool IsScanned { get; private set; }
 
+        /// <summary>所有已加载的非官方 Mod 名称（供 CellMap 冲突弹窗展示）</summary>
+        private static readonly List<string> AllLoadedModNames = new List<string>();
+
         // === 扫描入口 ===
 
         /// <summary>
@@ -49,6 +52,12 @@ namespace MapExtPDX.MapExt.Core
             {
                 var name = modInfo.asset.name;
                 if (string.IsNullOrEmpty(name)) continue;
+
+                // 记录所有非 MapExt 自身的 Mod 名称（排除官方、自身和 Harmony 库）
+                if (!name.Contains("MapExt") && !name.Contains("EconomyEX")
+                    && !name.StartsWith("0Harmony") && !name.StartsWith("Lib.Harmony")
+                    && !AllLoadedModNames.Contains(name))
+                    AllLoadedModNames.Add(name);
 
                 // RWH: 多种可能的 asset 名称
                 if (name.Contains("RealisticWorkplacesAndHouseholds") || name == "RWH")
@@ -158,6 +167,107 @@ namespace MapExtPDX.MapExt.Core
                 detected.Add("UrbanInequality (data: EconomyParameterData)");
 
             return detected.Count > 0 ? string.Join("; ", detected) : "None";
+        }
+
+        // === 启动时自动禁用冲突系统组 ===
+
+        /// <summary>
+        /// 在 Mod.OnLoad 阶段、SystemReplacer.Apply 之前调用。
+        /// 根据已检测到的冲突 Mod 指纹，自动禁用对应的 Economy 系统组设置。
+        /// 这确保 SystemReplacer.Apply 不会注册与其他 Mod 冲突的系统替换。
+        /// 返回被禁用的组名列表（用于 UI 提示）。
+        /// 同时填充 settings._systemStatusTooltip 供 InGame UI 悬停显示。
+        /// </summary>
+        public static List<string> AutoDisableConflictGroups(ModSettings settings)
+        {
+            if (!IsScanned) return new List<string>();
+
+            var disabled = new List<string>(); // 组名
+            var reasons = new List<string>();   // “组名 (conflict: ModName)”
+
+            // RPF 替换 ResidentAISystem + ResourceBuyerSystem
+            if (HasRealisticPathFinding)
+            {
+                if (settings.EnableResidentAIEcoSystem)
+                {
+                    settings.EnableResidentAIEcoSystem = false;
+                    disabled.Add("ResidentAI");
+                    reasons.Add("ResidentAI (RealisticPathFinding)");
+                    ModLog.Warn(Tag, "Auto-disabled ResidentAI group (conflict: RealisticPathFinding)");
+                }
+                if (settings.EnableResourceBuyerEcoSystem)
+                {
+                    settings.EnableResourceBuyerEcoSystem = false;
+                    disabled.Add("ResourceBuyer");
+                    reasons.Add("ResourceBuyer (RealisticPathFinding)");
+                    ModLog.Warn(Tag, "Auto-disabled ResourceBuyer group (conflict: RealisticPathFinding)");
+                }
+            }
+
+            // Time2Work 替换 LeisureSystem（属于 DownstreamAI 组）
+            if (HasTime2Work && settings.EnableDownstreamAIEcoSystem)
+            {
+                settings.EnableDownstreamAIEcoSystem = false;
+                disabled.Add("DownstreamAI");
+                reasons.Add("DownstreamAI (Time2Work)");
+                ModLog.Warn(Tag, "Auto-disabled DownstreamAI group (conflict: Time2Work -> LeisureSystem)");
+            }
+
+            // RealisticParking 替换 PersonalCarAISystem（也属于 DownstreamAI 组）
+            if (HasRealisticParking && settings.EnableDownstreamAIEcoSystem)
+            {
+                settings.EnableDownstreamAIEcoSystem = false;
+                if (!disabled.Contains("DownstreamAI"))
+                {
+                    disabled.Add("DownstreamAI");
+                    reasons.Add("DownstreamAI (RealisticParking)");
+                }
+                ModLog.Warn(Tag, "Auto-disabled DownstreamAI group (conflict: RealisticParking -> PersonalCarAI)");
+            }
+
+            // RWH 修改 BuildingPropertyData（影响 HouseholdProperty 组）
+            if (HasRWH && settings.EnableHouseholdPropertyEcoSystem)
+            {
+                settings.EnableHouseholdPropertyEcoSystem = false;
+                disabled.Add("HouseholdProperty");
+                reasons.Add("HouseholdProperty (RWH)");
+                ModLog.Warn(Tag, "Auto-disabled HouseholdProperty group (conflict: RWH -> BuildingPropertyData)");
+            }
+
+            // 填充 tooltip
+            if (disabled.Count > 0)
+            {
+                var activeGroups = new List<string>();
+                if (settings.EnableDemandEcoSystem) activeGroups.Add("Demand");
+                if (settings.EnableJobSearchEcoSystem) activeGroups.Add("JobSearch");
+                if (settings.EnableHouseholdPropertyEcoSystem) activeGroups.Add("HouseholdProperty");
+                if (settings.EnableResourceBuyerEcoSystem) activeGroups.Add("ResourceBuyer");
+                if (settings.EnableResidentAIEcoSystem) activeGroups.Add("ResidentAI");
+                if (settings.EnableDownstreamAIEcoSystem) activeGroups.Add("DownstreamAI");
+
+                settings._systemStatusTooltip =
+                    $"Disabled: {string.Join(", ", reasons)}\n" +
+                    $"Active: {(activeGroups.Count > 0 ? string.Join(", ", activeGroups) : "None")}";
+
+                ModLog.Warn(Tag, $"共自动禁用 {disabled.Count} 个系统组: {string.Join(", ", disabled)}");
+            }
+            else
+            {
+                settings._systemStatusTooltip = "All economy system groups active. No conflicts.";
+            }
+
+            return disabled;
+        }
+
+        /// <summary>
+        /// 返回所有已加载的非官方 Mod 名称（排除 MapExt/EcoEX 自身）。
+        /// 供 CellMap 冲突弹窗展示可疑 Mod 列表。
+        /// </summary>
+        public static string GetAllModNames()
+        {
+            return AllLoadedModNames.Count > 0
+                ? string.Join(", ", AllLoadedModNames)
+                : "(none)";
         }
     }
 }

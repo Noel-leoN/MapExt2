@@ -32,6 +32,9 @@ namespace EconomyEX.Helpers
         /// <summary>UrbanInequality — EconomyParameterData 修改风险</summary>
         public static bool HasUrbanInequality { get; private set; }
 
+        /// <summary>MapExtPDX 是否同时加载（若是，EcoEX 应委托冲突检测给 MapExtPDX）</summary>
+        public static bool HasMapExt { get; private set; }
+
         /// <summary>是否已完成扫描</summary>
         public static bool IsScanned { get; private set; }
 
@@ -74,6 +77,11 @@ namespace EconomyEX.Helpers
                 {
                     HasUrbanInequality = true;
                     ModLog.Warn(Tag, $"检测到潜在冲突 Mod: {name} (EconomyParameterData 修改)");
+                }
+                else if (name.Contains("MapExt2") || name.Contains("MapExtPDX"))
+                {
+                    HasMapExt = true;
+                    ModLog.Info(Tag, $"MapExtPDX 已加载: {name}");
                 }
             }
 
@@ -148,6 +156,50 @@ namespace EconomyEX.Helpers
                 detected.Add("UrbanInequality (data: EconomyParameterData)");
 
             return detected.Count > 0 ? string.Join("; ", detected) : "None";
+        }
+
+        // === 启动时自动禁用冲突系统组 ===
+
+        /// <summary>
+        /// 在 Mod.OnLoad 阶段、SystemRegistrar 之前调用。
+        /// 根据已检测到的冲突 Mod 指纹，自动禁用对应的系统组设置。
+        /// 返回被禁用的组名列表（用于 UI 提示）。
+        /// </summary>
+        public static List<string> AutoDisableConflictGroups(EconomyEX.Settings.ModSettings settings)
+        {
+            if (!IsScanned) return new List<string>();
+
+            var disabled = new List<string>();
+
+            if (HasRealisticPathFinding)
+            {
+                if (settings.EnableResidentAIEcoSystem)
+                {
+                    settings.EnableResidentAIEcoSystem = false;
+                    disabled.Add("ResidentAI");
+                    ModLog.Warn(Tag, "Auto-disabled ResidentAI group (conflict: RealisticPathFinding)");
+                }
+                if (settings.EnableResourceBuyerEcoSystem)
+                {
+                    settings.EnableResourceBuyerEcoSystem = false;
+                    disabled.Add("ResourceBuyer");
+                    ModLog.Warn(Tag, "Auto-disabled ResourceBuyer group (conflict: RealisticPathFinding)");
+                }
+            }
+
+            if (HasRWH && settings.EnableHouseholdPropertyEcoSystem)
+            {
+                settings.EnableHouseholdPropertyEcoSystem = false;
+                disabled.Add("HouseholdProperty");
+                ModLog.Warn(Tag, "Auto-disabled HouseholdProperty group (conflict: RWH)");
+            }
+
+            if (disabled.Count > 0)
+            {
+                ModLog.Warn(Tag, $"共自动禁用 {disabled.Count} 个系统组: {string.Join(", ", disabled)}");
+            }
+
+            return disabled;
         }
     }
 }
