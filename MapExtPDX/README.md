@@ -97,7 +97,7 @@ Import a heightmap/worldmap in the Map Editor:
 * [CS Modding Discord](https://discord.gg/s6BcrFKepF) | [Cities 2 Modding Discord](https://discord.gg/ABrJqdZJNE)
 * [CS2 Modding Instructions](https://github.com/rcav8tr/CS2-Modding-Instructions) by rcav8tr
 * [BepInEx](https://github.com/BepInEx/BepInEx) | [Harmony](https://github.com/pardeike/Harmony)
-* 🤝 Thanks to testers: Rebeccat, HideoKuze2501, Nulos, Jack the Stripper, Bbublegum/Blax, Sulley and many others!
+* 🤝 Special thanks to the following people for their invaluable feedback and suggestions: Rebeccat, HideoKuze2501, Nulos, Jack the Stripper, Bbublegum/Blax, Sulley, krzychu124 and everyone else who helped!
 
 ---
 
