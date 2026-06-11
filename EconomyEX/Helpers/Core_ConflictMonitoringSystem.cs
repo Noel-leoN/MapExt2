@@ -98,6 +98,7 @@ namespace EconomyEX.Helpers
                 if (settings.EnableResourceBuyerEcoSystem)
                 {
                     CheckVanillaDisabled<TripNeededSystem>(world, "ResourceBuyer", conflicts, ref okCount, ref totalChecked);
+                    CheckVanillaDisabled<ServiceCoverageSystem>(world, "ResourceBuyer", conflicts, ref okCount, ref totalChecked);
                     CheckVanillaDisabled<ResourceBuyerSystem>(world, "ResourceBuyer", conflicts, ref okCount, ref totalChecked);
                 }
                 if (settings.EnableResidentAIEcoSystem)
@@ -155,16 +156,6 @@ namespace EconomyEX.Helpers
                 conflicts.Add($"{typeof(T).Name} [{group}]");
             else
                 okCount++;
-        }
-
-        #endregion
-
-        #region UI Helpers
-
-        private static void SetStatusReport(ModSettings settings, string value)
-        {
-            if (settings.SystemStatusReport != value)
-                settings._systemStatusReport = value;
         }
 
         #endregion

@@ -286,15 +286,5 @@ namespace MapExtPDX.MapExt.Core
         }
 
         #endregion
-
-        #region UI Helpers
-
-        private static void SetStatusReport(ModSettings settings, string value)
-        {
-            if (settings.SystemStatusReport != value)
-                settings._systemStatusReport = value;
-        }
-
-        #endregion
     }
 }
