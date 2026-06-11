@@ -61,7 +61,6 @@ BurstDebugInformation_DoNotShip/
 # Temporary Files
 *.log
 *.binlog
-*.ps1
 
 # AI Agent & GitNexus
 .gitnexus
@@ -69,6 +68,9 @@ BurstDebugInformation_DoNotShip/
 .agents/
 AGENTS.md
 CLAUDE.md
+
+# Internal knowledge-asset backup repo (overlay, see .agents/workflows/backup-internal.md)
+.git-internal/
 
 # IDE & Version Control
 .vscode/
