@@ -17,6 +17,7 @@ namespace MapExtPDX.UI
     /// 🎛️ [MOD] MapExt 游戏内 UI 中央控制器
     /// 继承 UISystemBase，通过 ValueBinding/TriggerBinding 实现前端双向实时调参。
     /// Phase 1: 7 个高频参数（租金 5 + 寻路 2），21 个 Binding。
+    /// Phase 1.1: +寻路扩展 4（急诊 + 找工 + 找房 + 找小学），累计增加 8 个 Binding。
     /// Phase 2: +Dashboard 统计 8 + 扩展租金 6 + 面板状态 2 = 新增 22 个，累计 43 个 Binding。
     /// Phase 3: +UI 外观 4，累计 47 个 Binding。
     /// Phase 4: +Dashboard 扩展 13（住宅空置 6 + 商业 2 + 人口活动 4 + 通勤 1），累计 60 个 Binding。
@@ -51,10 +52,14 @@ namespace MapExtPDX.UI
 
         #endregion
 
-        #region Fields — 寻路核心参数 (Phase 1: 2 value + 2 trigger = 4)
+        #region Fields — 寻路核心参数 (Phase 1: 2 value + 2 trigger = 4) + 扩展 (4 value + 4 trigger = 8)
 
         private ValueBinding<float> m_ShoppingMaxCost;
         private ValueBinding<float> m_LeisureMaxCost;
+        private ValueBinding<float> m_EmergencyMaxCost;
+        private ValueBinding<float> m_FindJobMaxCost;
+        private ValueBinding<float> m_FindHomeMaxCost;
+        private ValueBinding<float> m_FindSchoolElemMaxCost;
 
         #endregion
 
@@ -202,6 +207,39 @@ namespace MapExtPDX.UI
             {
                 Mod.Instance.Settings.LeisureMaxCost = v;
                 m_LeisureMaxCost.Update(v);
+            }));
+
+            // === 寻路扩展参数 Bindings (Phase 1.1: 8) ===
+            // --- 急诊寻路上限 ---
+            AddBinding(m_EmergencyMaxCost = new ValueBinding<float>(kGroup, "EmergencyMaxCost", s.EmergencyMaxCost));
+            AddBinding(new TriggerBinding<float>(kGroup, "SetEmergencyMaxCost", v =>
+            {
+                Mod.Instance.Settings.EmergencyMaxCost = v;
+                m_EmergencyMaxCost.Update(v);
+            }));
+
+            // --- 找工作寻路上限 ---
+            AddBinding(m_FindJobMaxCost = new ValueBinding<float>(kGroup, "FindJobMaxCost", s.FindJobMaxCost));
+            AddBinding(new TriggerBinding<float>(kGroup, "SetFindJobMaxCost", v =>
+            {
+                Mod.Instance.Settings.FindJobMaxCost = v;
+                m_FindJobMaxCost.Update(v);
+            }));
+
+            // --- 找房寻路上限 ---
+            AddBinding(m_FindHomeMaxCost = new ValueBinding<float>(kGroup, "FindHomeMaxCost", s.FindHomeMaxCost));
+            AddBinding(new TriggerBinding<float>(kGroup, "SetFindHomeMaxCost", v =>
+            {
+                Mod.Instance.Settings.FindHomeMaxCost = v;
+                m_FindHomeMaxCost.Update(v);
+            }));
+
+            // --- 找小学寻路上限 ---
+            AddBinding(m_FindSchoolElemMaxCost = new ValueBinding<float>(kGroup, "FindSchoolElemMaxCost", s.FindSchoolElementaryMaxCost));
+            AddBinding(new TriggerBinding<float>(kGroup, "SetFindSchoolElemMaxCost", v =>
+            {
+                Mod.Instance.Settings.FindSchoolElementaryMaxCost = v;
+                m_FindSchoolElemMaxCost.Update(v);
             }));
 
             // === 扩展租金公式参数 Bindings (Phase 2: 12) ===
@@ -378,9 +416,17 @@ namespace MapExtPDX.UI
                 var settings = Mod.Instance.Settings;
                 settings.ShoppingMaxCost = 8000f;
                 settings.LeisureMaxCost = 12000f;
+                settings.EmergencyMaxCost = 6000f;
+                settings.FindJobMaxCost = 200000f;
+                settings.FindHomeMaxCost = 200000f;
+                settings.FindSchoolElementaryMaxCost = 10000f;
 
                 m_ShoppingMaxCost.Update(8000f);
                 m_LeisureMaxCost.Update(12000f);
+                m_EmergencyMaxCost.Update(6000f);
+                m_FindJobMaxCost.Update(200000f);
+                m_FindHomeMaxCost.Update(200000f);
+                m_FindSchoolElemMaxCost.Update(10000f);
             }));
 
             // === 水体工具 Bindings (Phase 5: 8) ===
@@ -550,6 +596,21 @@ namespace MapExtPDX.UI
             // ReSharper disable once CompareOfFloatsByEqualityOperator
             if (m_LeisureMaxCost.value != s.LeisureMaxCost)
                 m_LeisureMaxCost.Update(s.LeisureMaxCost);
+
+            // --- Phase 1.1 寻路扩展参数 ---
+            // ReSharper disable CompareOfFloatsByEqualityOperator
+            if (m_EmergencyMaxCost.value != s.EmergencyMaxCost)
+                m_EmergencyMaxCost.Update(s.EmergencyMaxCost);
+
+            if (m_FindJobMaxCost.value != s.FindJobMaxCost)
+                m_FindJobMaxCost.Update(s.FindJobMaxCost);
+
+            if (m_FindHomeMaxCost.value != s.FindHomeMaxCost)
+                m_FindHomeMaxCost.Update(s.FindHomeMaxCost);
+
+            if (m_FindSchoolElemMaxCost.value != s.FindSchoolElementaryMaxCost)
+                m_FindSchoolElemMaxCost.Update(s.FindSchoolElementaryMaxCost);
+            // ReSharper restore CompareOfFloatsByEqualityOperator
 
             // --- Phase 2 扩展租金参数 ---
             if (m_LvFactorRes.value != s.LandValueFactorResidential)

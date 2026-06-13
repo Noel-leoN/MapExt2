@@ -5,6 +5,8 @@ import { SliderControl } from "../components/SliderControl";
 import {
     shopMaxCost$, leisureMaxCost$,
     setShopMaxCost, setLeisureMaxCost,
+    emergencyMaxCost$, findJobMaxCost$, findHomeMaxCost$, findSchoolElemMaxCost$,
+    setEmergencyMaxCost, setFindJobMaxCost, setFindHomeMaxCost, setFindSchoolElemMaxCost,
     resetPathfinding,
 } from "../bindings";
 import styles from "../mapext.module.scss";
@@ -34,12 +36,51 @@ export const PathfindingSection: React.FC = () => {
                 tooltip={t("leisureMax")}
             />
 
+            <div className={styles.sectionDivider} />
+
+            <SliderControl
+                label={t("emergencyLabel")}
+                binding={emergencyMaxCost$}
+                commit={setEmergencyMaxCost}
+                min={1000} max={17000} step={500}
+                unit=""
+                tooltip={t("emergencyMax")}
+            />
+            <SliderControl
+                label={t("findJobLabel")}
+                binding={findJobMaxCost$}
+                commit={setFindJobMaxCost}
+                min={17000} max={200000} step={1000}
+                unit=""
+                tooltip={t("findJobMax")}
+            />
+            <SliderControl
+                label={t("findHomeLabel")}
+                binding={findHomeMaxCost$}
+                commit={setFindHomeMaxCost}
+                min={17000} max={200000} step={1000}
+                unit=""
+                tooltip={t("findHomeMax")}
+            />
+            <SliderControl
+                label={t("findSchoolLabel")}
+                binding={findSchoolElemMaxCost$}
+                commit={setFindSchoolElemMaxCost}
+                min={1000} max={200000} step={1000}
+                unit=""
+                tooltip={t("findSchoolMax")}
+            />
+
             <button
                 className={styles.resetButton}
                 onClick={resetPathfinding}
             >
                 {t("reset")}
             </button>
+
+            <div className={styles.optionHint}>
+                {t("pathfindingOptionHint")}
+            </div>
         </div>
     );
 };

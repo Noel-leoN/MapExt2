@@ -662,3 +662,14 @@
     padding: 2rem 0 4rem;
     line-height: 1.4;
 }
+
+/* === 提示文字（引导用户去 OptionUI） === */
+.optionHint {
+    margin-top: 10rem;
+    padding: 8rem 4rem 0;
+    border-top: 1rem dashed rgba(100, 140, 200, 0.15);
+    font-size: 10rem;
+    color: #6880a0;
+    line-height: 1.5;
+    font-style: italic;
+}

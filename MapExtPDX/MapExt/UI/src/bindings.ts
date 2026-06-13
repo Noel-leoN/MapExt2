@@ -38,6 +38,17 @@ export const leisureMaxCost$  = bindValue<number>(G, "LeisureMaxCost", 12000);
 export const setShopMaxCost    = (v: number) => trigger(G, "SetShopMaxCost", v);
 export const setLeisureMaxCost = (v: number) => trigger(G, "SetLeisureMaxCost", v);
 
+// === 寻路扩展参数 (Phase 1.1: 4 value + 4 trigger) ===
+export const emergencyMaxCost$      = bindValue<number>(G, "EmergencyMaxCost", 6000);
+export const findJobMaxCost$        = bindValue<number>(G, "FindJobMaxCost", 200000);
+export const findHomeMaxCost$       = bindValue<number>(G, "FindHomeMaxCost", 200000);
+export const findSchoolElemMaxCost$ = bindValue<number>(G, "FindSchoolElemMaxCost", 10000);
+
+export const setEmergencyMaxCost      = (v: number) => trigger(G, "SetEmergencyMaxCost", v);
+export const setFindJobMaxCost        = (v: number) => trigger(G, "SetFindJobMaxCost", v);
+export const setFindHomeMaxCost       = (v: number) => trigger(G, "SetFindHomeMaxCost", v);
+export const setFindSchoolElemMaxCost = (v: number) => trigger(G, "SetFindSchoolElemMaxCost", v);
+
 // === 扩展租金公式参数 (Phase 2: 6 value + 6 trigger) ===
 export const lvFactorRes$    = bindValue<number>(G, "LvFactorRes", 100);
 export const lvFactorCom$    = bindValue<number>(G, "LvFactorCom", 100);

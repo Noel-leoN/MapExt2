@@ -1,8 +1,11 @@
 # 🚀 Map Extended Mod (28/57/114/vanilla) — Vanilla Map Extension!
 
-## 🔥 v4.0.2 — Expand Your Existing Vanilla City!
+## 🔥 v4.0 — Expand Your Existing Vanilla City!
 
 > **🎉 NEW: You can now extend your existing 14km vanilla city to 28km or 57km maps!** No need to start from scratch — simply load your vanilla save, and MapExt will automatically convert it, expanding the playable area to regions previously outside the map limits. Your terrain, city layout, and buildings are perfectly preserved. This is a one-click, non-destructive process.
+>
+> **⚠️ v4.2 Conflict Detection:** MapExt includes a runtime conflict detection system. It displays warnings and may disable its own conflicting subsystems to prevent simulation issues or game crashes. However, it is still recommended not to enable conflicting mods simultaneously to ensure simulation accuracy.
+> Please note that **this mod is incompatible with RealisticPathFinding, and this conflict cannot be resolved by the conflict detection system. Do not install both mods simultaneously.**
 
 ### 🛠️ How to Extend Your City
 
@@ -101,9 +104,12 @@ Import a heightmap/worldmap in the Map Editor:
 
 ---
 
-## 🔥 v4.0.2 更新说明 — 扩展你的现有原版城市！
+## 🔥 v4.0 更新说明 — 扩展你的现有原版城市！
 
-> **🎉 重磅新功能：现在你可以将现有的 14km 原版城市扩展至 28km 或 57km 的庞大区域！** 无需从零开始，只需加载原版存档，MapExt 会自动将其转换，将原版无法游玩的边界区域全部扩展为可玩区域。你的原有地形、城市布局和建筑均会完美保留。
+> **🎉 重磅新功能：现在你可以将现有的 14km 原版城市扩展至 28km 或 57km 的庞大区域！** 无需从零开始，只需加载原版存档，MapExt 会自动将其转换，将原版无法游玩的边界区域全部扩展为可玩区域。你的原有地形、城市布局和建筑均会保留。
+>
+> **⚠️ v4.2 冲突检测：** MapExt 引入了运行时冲突检测系统，将显示警告并停用可能冲突的自身子系统，以避免模拟异常或游戏崩溃。但仍然建议不要同时启用可能冲突的模组，以确保模拟准确。
+> 请注意，**本模组与 RealisticPathFinding 不兼容，即使冲突检测系统也无法排除，不能同时安装。**
 
 ### 🛠️ 如何扩展你的现有城市
 

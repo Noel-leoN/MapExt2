@@ -99,6 +99,17 @@ export const locales = {
         rentControlMenuTip: "Open Rent Control details to adjust residential, commercial and industrial rent multipliers.",
         pathfindingMenuTip: "Open Pathfinding details to adjust citizens' max travel cost limits for shopping and leisure.",
         waterToolsMenuTip: "Open Water Tools details to manage sea levels, lock sea height, or speed up simulation.",
+
+        // === Phase 1.1 — Pathfinding Extended ===
+        emergencyLabel: "Emergency",
+        findJobLabel: "Find Job",
+        findHomeLabel: "Find Home",
+        findSchoolLabel: "School",
+        emergencyMax: "Max pathfind cost for emergency service dispatch.\nDefault: 6000",
+        findJobMax: "Max pathfind cost for citizens seeking employment.\nHigher values allow longer commutes. Default: 200000",
+        findHomeMax: "Max pathfind cost for homeless households searching for housing.\nDefault: 200000",
+        findSchoolMax: "Max pathfind cost for children finding an elementary school.\nDefault: 10000",
+        pathfindingOptionHint: "More pathfinding options (Company Freight, High School, College, University) are available in Options > EconomyEX > Pathfinding.",
     },
     zh: {
         // === Phase 1 ===
@@ -192,6 +203,17 @@ export const locales = {
         rentControlMenuTip: "打开租金控制详情以调整住宅、商业和工业 of 租金系数。",
         pathfindingMenuTip: "打开寻路参数详情以调整市民在购物和休闲时的最大出行意愿成本限制。",
         waterToolsMenuTip: "打开水体工具详情以管理海平面、锁定水深或加速水体流速模拟。",
+
+        // === Phase 1.1 — 寻路扩展 ===
+        emergencyLabel: "急救",
+        findJobLabel: "找工作",
+        findHomeLabel: "找房",
+        findSchoolLabel: "找学校",
+        emergencyMax: "急救服务调度的最大寻路成本。\n默认值：6000",
+        findJobMax: "市民找工作的最大寻路成本。值越高允许更远的通勤距离。\n默认值：200000",
+        findHomeMax: "流浪家庭找房的最大寻路成本。\n默认值：200000",
+        findSchoolMax: "孩子找小学的最大寻路成本。\n默认值：10000",
+        pathfindingOptionHint: "更多寻路参数（公司货运、高中、大学、研究所）请前往 设置 > EconomyEX > Pathfinding 调节。",
     },
     zhHant: {
         // === Phase 1 ===
@@ -283,8 +305,19 @@ export const locales = {
         mapSizeTip: "基於當前已解鎖區域計算出的實際可玩地圖尺寸。",
         statusTip: "顯示 MapExt 擴充系統當前的運作狀態是否正常。",
         rentControlMenuTip: "打開租金控制詳情以調整住宅、商業和工業的租金乘數。",
-        pathfindingMenuTip: "打開路徑參數詳情以調整市民在購物和休閒時的最大出行成本意願限制。",
+        pathfindingMenuTip: "打開路徑參數詳情以調整市民在購物和休閒時的最大出行成本意愿限制。",
         waterToolsMenuTip: "打開水體工具詳情以管理海平面、鎖定水深或加速水體流速模擬。",
+
+        // === Phase 1.1 — 尋路擴展 ===
+        emergencyLabel: "急救",
+        findJobLabel: "找工作",
+        findHomeLabel: "找房",
+        findSchoolLabel: "找學校",
+        emergencyMax: "急救服務調度的最大尋路成本。\n預設值：6000",
+        findJobMax: "市民找工作的最大尋路成本。值越高允許更遠的通勤距離。\n預設值：200000",
+        findHomeMax: "流浪家庭找房的最大尋路成本。\n預設值：200000",
+        findSchoolMax: "孩子找小學的最大尋路成本。\n預設值：10000",
+        pathfindingOptionHint: "更多尋路參數（公司貨運、高中、大學、研究所）請前往 設定 > EconomyEX > Pathfinding 調節。",
     }
 };
 
