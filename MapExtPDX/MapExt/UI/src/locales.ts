@@ -144,7 +144,7 @@ export const locales = {
         // === Phase 2 — 扩展租金参数 ===
         lvFactorRes: "住宅地价贡献系数：控制地价在住宅租金公式中的占比。100% = 完全贡献，降低可使租金与地价脱钩。",
         lvFactorCom: "商业地价贡献系数：控制地价在商业租金公式中的占比。100% = 完全贡献。",
-        lvFactorInd: "工业地价贡献系数：控制地价在工业租金公式中的占比. 100% = 完全贡献。",
+        lvFactorInd: "工业地价贡献系数：控制地价在工业租金公式中的占比。100% = 完全贡献。",
         levelFactorRes: "住宅等级贡献系数：建筑等级越高，租金在 100% 时越贵。降低可削弱升级对租金的影响。",
         levelFactorCom: "商业等级贡献系数：100% = 原版等级缩放。",
         levelFactorInd: "工业等级贡献系数：100% = 原版等级缩放。",
@@ -152,7 +152,7 @@ export const locales = {
         // === Phase 4 — Dashboard 扩展 ===
         residentialTitle: "住宅市场",
         commercialTitle: "商业市场",
-        activityTitle: "人口 activity",
+        activityTitle: "人口活动",
         resDensityLow: "低密度",
         resDensityMed: "中密度",
         resDensityHigh: "高密度",
@@ -204,7 +204,7 @@ export const locales = {
         resetWaterTip: "完全重置水体模拟，用以清除异常波浪、局部积水或突发洪水。",
         mapSizeTip: "基于当前已解锁区域计算出的实际可玩地图尺寸。",
         statusTip: "显示 MapExt 扩展系统当前的运行状态是否正常。",
-        rentControlMenuTip: "打开租金控制详情以调整住宅、商业和工业 of 租金系数。",
+        rentControlMenuTip: "打开租金控制详情以调整住宅、商业和工业的租金乘数。",
         pathfindingMenuTip: "打开寻路参数详情以调整市民在购物和休闲时的最大出行意愿成本限制。",
         waterToolsMenuTip: "打开水体工具详情以管理海平面、锁定水深或加速水体流速模拟。",
 

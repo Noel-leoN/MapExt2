@@ -5,7 +5,7 @@
 > **🎉 NEW: You can now extend your existing 14km vanilla city to 28km or 57km maps!** No need to start from scratch — simply load your vanilla save, and MapExt will automatically convert it, expanding the playable area to regions previously outside the map limits. Your terrain, city layout, and buildings are perfectly preserved. This is a one-click, non-destructive process.
 >
 > **⚠️ v4.2 Conflict Detection:** MapExt includes a runtime conflict detection system. It displays warnings and may disable its own conflicting subsystems to prevent simulation issues or game crashes. However, it is still recommended not to enable conflicting mods simultaneously to ensure simulation accuracy.
-> Please note that **this mod is incompatible with RealisticPathFinding, and this conflict cannot be resolved by the conflict detection system. Do not install both mods simultaneously.**
+> Please note that **this mod is incompatible with RealisticPathFinding, and cannot be resolved by the conflict detection system. Do not install both mods simultaneously.**
 
 ### 🛠️ How to Extend Your City
 

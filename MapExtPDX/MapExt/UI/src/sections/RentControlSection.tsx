@@ -93,21 +93,21 @@ export const RentControlSection: React.FC = () => {
 
             {/* === 等级贡献系数 === */}
             <SliderControl
-                label="Lvl Res."
+                label="Level Res."
                 binding={levelFactorRes$}
                 commit={setLevelFactorRes}
                 min={0} max={200} step={5}
                 tooltip={t("levelFactorRes")}
             />
             <SliderControl
-                label="Lvl Com."
+                label="Level Com."
                 binding={levelFactorCom$}
                 commit={setLevelFactorCom}
                 min={0} max={200} step={5}
                 tooltip={t("levelFactorCom")}
             />
             <SliderControl
-                label="Lvl Ind."
+                label="Level Ind."
                 binding={levelFactorInd$}
                 commit={setLevelFactorInd}
                 min={0} max={200} step={5}

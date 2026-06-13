@@ -183,7 +183,7 @@
 }
 
 .sliderLabel {
-    width: 72rem;
+    width: 80rem;
     flex-shrink: 0;
     font-size: 12rem;
     color: #8899b0;
@@ -232,7 +232,7 @@
 }
 
 .sliderValue {
-    width: 56rem;
+    width: 64rem;
     flex-shrink: 0;
     text-align: right;
     font-size: 12rem;
@@ -664,6 +664,7 @@
 }
 
 /* === 提示文字（引导用户去 OptionUI） === */
+/* 注意：不使用 font-style: italic，Coherent Gameface 缺少 CJK 斜体字形会导致中文渲染为方框 */
 .optionHint {
     margin-top: 10rem;
     padding: 8rem 4rem 0;
@@ -671,5 +672,4 @@
     font-size: 10rem;
     color: #6880a0;
     line-height: 1.5;
-    font-style: italic;
 }
