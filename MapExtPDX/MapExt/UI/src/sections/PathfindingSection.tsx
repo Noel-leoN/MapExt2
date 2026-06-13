@@ -20,7 +20,7 @@ export const PathfindingSection: React.FC = () => {
             <div className={styles.detailTitle}>{t("pathfindingTitle")}</div>
 
             <SliderControl
-                label="Shopping"
+                label={t("shoppingLabel")}
                 binding={shopMaxCost$}
                 commit={setShopMaxCost}
                 min={1000} max={200000} step={1000}
@@ -28,7 +28,7 @@ export const PathfindingSection: React.FC = () => {
                 tooltip={t("shopMax")}
             />
             <SliderControl
-                label="Leisure"
+                label={t("leisureLabel")}
                 binding={leisureMaxCost$}
                 commit={setLeisureMaxCost}
                 min={1000} max={200000} step={1000}

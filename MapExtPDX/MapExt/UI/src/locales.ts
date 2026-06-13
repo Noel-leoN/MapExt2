@@ -21,6 +21,8 @@ export const locales = {
         mapSizeLabel: "MapSize",
         rentControlTitle: "Rent Control",
         pathfindingTitle: "Pathfinding",
+        shoppingLabel: "Shopping",
+        leisureLabel: "Leisure",
 
         // === Phase 2 — Dashboard ===
         dashboardTitle: "City Stats",
@@ -125,6 +127,8 @@ export const locales = {
         mapSizeLabel: "地图尺寸",
         rentControlTitle: "租金调控",
         pathfindingTitle: "寻路参数",
+        shoppingLabel: "购物",
+        leisureLabel: "休闲",
 
         // === Phase 2 — Dashboard ===
         dashboardTitle: "城市统计",
@@ -229,6 +233,8 @@ export const locales = {
         mapSizeLabel: "地圖尺寸",
         rentControlTitle: "租金調控",
         pathfindingTitle: "路徑參數",
+        shoppingLabel: "購物",
+        leisureLabel: "休閒",
 
         // === Phase 2 — Dashboard ===
         dashboardTitle: "城市統計",
