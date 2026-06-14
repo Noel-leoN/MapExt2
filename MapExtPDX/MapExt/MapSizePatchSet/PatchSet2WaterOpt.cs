@@ -24,6 +24,11 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
     /// 3. 频率控制仅通过 WaterSimSpeed 属性实现。
     ///    WaterSimSpeed=0 时 Simulate() 内部会跳过模拟循环，
     ///    但仍保持 m_NextSimulationFrame 递增和 Active Tiles 更新。
+    /// 
+    /// NOTE: 水模拟速度 Mod UI 调节功能已暂时禁用。
+    /// 原因：原版 Simulate() 在 terrainChangeCounter 归零时强制设 WaterSimSpeed=1，
+    /// 与 Mod 持久化回写形成每帧竞争（speed 在 userValue 和 1 之间交替），
+    /// 导致 UI 显示横跳。需要 Transpiler 修改 Simulate() 内部逻辑才能彻底解决。
     /// </summary>
     [HarmonyPatch(typeof(WaterSystem), "OnSimulateGPU")]
     internal static class WaterSystemOptRuntimePatch

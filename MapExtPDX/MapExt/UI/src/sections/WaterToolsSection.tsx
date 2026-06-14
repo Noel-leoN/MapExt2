@@ -204,9 +204,12 @@ export const WaterToolsSection: React.FC = () => {
                 </Tooltip>
             </div>
 
-            <div className={styles.sectionDivider} />
+            {/* [DISABLED] 水速功能整体禁用，分隔线也隐藏 */}
+            {/* <div className={styles.sectionDivider} /> */}
 
-            {/* === 水模拟速度 === */}
+            {/* === [DISABLED] 水模拟速度 ===
+             * 因原版 Simulate() 每帧强制 speed=1 与 Mod 持久化回写冲突导致 UI 横跳，暂时禁用。
+             * 需要 Transpiler 修改 Simulate() 内部逻辑才能彻底解决。
             <div className={styles.waterSubTitle}>{t("waterSimSpeedLabel")}</div>
             <div className={styles.waterSpeedRow}>
                 <button
@@ -224,6 +227,7 @@ export const WaterToolsSection: React.FC = () => {
                 >▲</button>
             </div>
             <div className={styles.waterSpeedHint}>{t("waterSimSpeedHint")}</div>
+            */}
         </div>
     );
 };

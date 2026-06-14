@@ -98,10 +98,9 @@ namespace MapExtPDX.UI
         private ValueBinding<bool> m_SeaLevelLocked;
         private float m_LockedSeaLevelValue;
 
-        // --- 水模拟速度持久化 (Phase 5.2) ---
-        // 原版 WaterSystem.OnUpdate 会在多处将 WaterSimSpeed 重置为 1，
-        // 需要记录用户目标值并在每帧强制回写。
-        private int m_UserWaterSimSpeed = -1; // -1 = 尚未由用户设置
+        // --- [DISABLED] 水模拟速度持久化 (Phase 5.2) ---
+        // 因原版 Simulate() 每帧强制 speed=1 与 Mod 持久化回写冲突导致横跳，暂时禁用。
+        // private int m_UserWaterSimSpeed = -1;
         private bool m_SeaLevelDiagLogged = false;
 
         #endregion
@@ -109,6 +108,20 @@ namespace MapExtPDX.UI
         #region Lifecycle
 
         public override GameMode gameMode => GameMode.Game;
+
+        /// <summary>
+        /// 每次加载新游戏/Editor 时调用（World 不重建，OnCreate 不再执行）。
+        /// 重置所有会话级状态，避免跨会话残留导致 UI 横跳。
+        /// </summary>
+        protected override void OnGamePreload(Colossal.Serialization.Entities.Purpose purpose, GameMode mode)
+        {
+            base.OnGamePreload(purpose, mode);
+
+            m_SeaLevelDiagLogged = false;
+            // 懒加载引用在 OnUpdate 中重新获取
+            m_WaterSystem = null;
+            m_Q2System = null;
+        }
 
         protected override void OnCreate()
         {
@@ -471,19 +484,14 @@ namespace MapExtPDX.UI
                 }
             }));
 
-            // --- 水模拟速度（实时读取） ---
+            // --- [DISABLED] 水模拟速度 Bindings ---
+            // 因原版 Simulate() 每帧强制 speed=1 与 Mod 持久化回写冲突导致 UI 横跳，暂时禁用。
+            // 保留 binding 名称（前端仍有引用），但使用固定值避免错误。
             AddUpdateBinding(new GetterValueBinding<int>(kGroup, "WaterSimSpeed",
                 () => m_WaterSystem?.WaterSimSpeed ?? 1));
-
-            // --- 设置水模拟速度（记录用户目标值）---
             AddBinding(new TriggerBinding<int>(kGroup, "SetWaterSimSpeed", v =>
             {
-                if (m_WaterSystem != null)
-                {
-                    m_UserWaterSimSpeed = v;
-                    m_WaterSystem.WaterSimSpeed = v;
-                    ModLog.Info(Tag, $"水模拟速度已设置为: {v}x (持久化)");
-                }
+                // 暂不处理：原版 Simulate() 会覆盖任何手动设定值
             }));
 
             // === 海平面锁定 Bindings (Phase 5.1: 3) ===
@@ -525,6 +533,9 @@ namespace MapExtPDX.UI
             // GetterValueBinding 的自动更新由 base.OnUpdate() 处理
             base.OnUpdate();
 
+            // === [DISABLED] 水模拟速度持久化 ===
+            // 因原版 Simulate() 每帧强制 speed=1 与 Mod 持久化逻辑冲突，已禁用。
+
             // === 海平面锁定：在 base.OnUpdate 后强制回写 ===
             if (m_SeaLevelLocked.value && m_WaterSystem != null && m_WaterSystem.Loaded)
             {
@@ -532,15 +543,6 @@ namespace MapExtPDX.UI
                 if (System.Math.Abs(current - m_LockedSeaLevelValue) > 0.01f)
                 {
                     m_WaterSystem.SeaLevel = m_LockedSeaLevelValue;
-                }
-            }
-
-            // === 水模拟速度持久化：强制回写用户设定值 ===
-            if (m_UserWaterSimSpeed >= 0 && m_WaterSystem != null)
-            {
-                if (m_WaterSystem.WaterSimSpeed != m_UserWaterSimSpeed)
-                {
-                    m_WaterSystem.WaterSimSpeed = m_UserWaterSimSpeed;
                 }
             }
 
