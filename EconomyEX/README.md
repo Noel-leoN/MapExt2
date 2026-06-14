@@ -10,7 +10,9 @@ This mod replaces multiple vanilla economic simulation systems. It features a **
 
 * **MapExt (MapExtPDX):** Do NOT install both. MapExt already includes this economy module built-in (and usually updates faster). If both are subscribed, EconomyEX will automatically disable itself.
 
-* **Realistic PathFinding / Realistic JobSearch / Realistic Trips:** These mods can now coexist — the Conflict Monitoring System will automatically detect and yield conflicting system groups to avoid crashes. However, if both mods modify the same underlying data, subtle simulation anomalies may still occur. You can check the current conflict status in the **Status** tab of the Option UI. If you prefer manual control, you can also disable specific system groups individually in EconomyEX's settings panel.
+* **Realistic PathFinding:** **CRITICAL INCOMPATIBILITY.** Do NOT subscribe to Realistic PathFinding simultaneously. This is a hard architectural conflict that **cannot be resolved or auto-mitigated by the conflict detection system.** You must only subscribe to one of them.
+
+* **Realistic JobSearch / Realistic Trips:** These mods can coexist — the Conflict Monitoring System will automatically detect and yield conflicting system groups to avoid crashes. However, if both mods modify the same underlying data, subtle simulation anomalies may still occur. You can check the current conflict status in the **Status** tab of the Option UI. If you prefer manual control, you can also disable specific system groups individually in EconomyEX's settings panel.
 
 * **Extended Maps (28 km+):** This mod auto-detects map size and only activates on vanilla (14km) maps. For extended maps, use MapExt instead.
 
@@ -136,7 +138,9 @@ Subscribe on Paradox Mods. No additional dependencies.
 
 * **MapExt (MapExtPDX)**：请勿同时安装。MapExt 已经内置了完全相同的经济模块（一般会比这个独立版本优先更新）。如果同时订阅，EconomyEX 会自动休眠。
 
-* **Realistic PathFinding / Realistic JobSearch / Realistic Trips**：现在可以共存——冲突监控系统会自动检测并让出冲突的系统组以避免崩溃。但若双方修改了相同的底层数据，仍可能出现细微的模拟异常。您可以在选项面板的 **Status** 标签页中查看当前冲突状态。如需手动控制，也可在设置面板中单独关闭特定的子系统组。
+* **Realistic PathFinding（真实寻路）**：**严重不兼容，严禁同时订阅！** 这种底层的架构冲突**无法被冲突检测系统自动修复或规避。** 您必须且只能在两者中选择订阅一个。
+
+* **Realistic JobSearch / Realistic Trips**：可以共存——冲突监控系统会自动检测并让出冲突的系统组以避免崩溃。但若双方修改了相同的底层数据，仍可能出现细微的模拟异常。您可以在选项面板的 **Status** 标签页中查看当前冲突状态。如需手动控制，也可在设置面板中单独关闭特定的子系统组。
 
 * **大地图（28 km 以上）**：本模组会自动检测地图大小，仅在原版尺寸地图上生效。如需大地图，请使用 MapExt。
 
