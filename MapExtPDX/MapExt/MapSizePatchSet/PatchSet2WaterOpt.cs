@@ -79,8 +79,53 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
                     break;
             }
 
-            // 始终执行原版 OnSimulateGPU，不跳帧
+        // 始终执行原版 OnSimulateGPU，不跳帧
             return true;
+        }
+    }
+
+    /// <summary>
+    /// 修复 Editor 模式下水模拟速度横跳问题。
+    /// 
+    /// 根因：MapExt 的地形补丁导致 TerrainWillChange() 在 Editor 中每帧被调用，
+    /// 每次都设 WaterSimSpeed=0 和 m_terrainChangeCounter=1。
+    /// 而 Simulate() 在 counter 归零时恢复 WaterSimSpeed=1，
+    /// 形成每帧 0→1→0→1 的交替横跳。
+    /// 
+    /// 修复策略：当 terrain change 已在处理中（counter > 0）时，
+    /// 仅刷新 counter 但不重复设 WaterSimSpeed=0。
+    /// 首次调用正常执行原版逻辑（暂停水模拟等待地形稳定）。
+    /// </summary>
+    [HarmonyPatch(typeof(WaterSystem), nameof(WaterSystem.TerrainWillChange))]
+    internal static class WaterSystem_TerrainWillChange_Patch
+    {
+        // 通过反射缓存 m_terrainChangeCounter 字段访问器
+        private static System.Reflection.FieldInfo s_counterField;
+        private static bool s_fieldResolved = false;
+
+        [HarmonyPrefix]
+        static bool Prefix(WaterSystem __instance)
+        {
+            // 首次调用时解析私有字段
+            if (!s_fieldResolved)
+            {
+                s_counterField = AccessTools.Field(typeof(WaterSystem), "m_terrainChangeCounter");
+                s_fieldResolved = true;
+                if (s_counterField == null)
+                {
+                    ModLog.Warn("WaterTWC", "无法解析 m_terrainChangeCounter 字段，补丁降级为直通模式");
+                }
+            }
+
+            // 字段解析失败时直通原版
+            if (s_counterField == null)
+                return true;
+
+            // 只设 counter（让 Simulate() 走 CopyToHeightmapStep 分支），
+            // 不设 WaterSimSpeed=0（避免每帧 0/1 交替横跳）。
+            // Simulate() 的 counter>0 分支本身已阻止水模拟运行，无需额外暂停。
+            s_counterField.SetValue(__instance, 1);
+            return false; // 跳过原版
         }
     }
 }

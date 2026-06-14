@@ -99,6 +99,8 @@ namespace MapExtPDX.MapExt.Core
                 
                 // 水模拟运行时频率优化补丁
                 { "WaterSystemOptRuntimePatch", (h) => h.CreateClassProcessor(typeof(WaterSystemOptRuntimePatch)).Patch() },
+                // Editor 水模拟速度横跳修复：防止 TerrainWillChange 每帧重复设 speed=0
+                { "WaterTerrainWillChangeFix", (h) => h.CreateClassProcessor(typeof(WaterSystem_TerrainWillChange_Patch)).Patch() },
 
                 // v2.x.x新增: 地形 Backdrop 禁用补丁 (方案 A: InitializeTerrainData 源头拦截)
                 { "TerrainBackdropDisable", (h) => h.CreateClassProcessor(typeof(TerrainSystem_InitializeTerrainData_DisableBackdrop)).Patch() },
@@ -146,6 +148,7 @@ namespace MapExtPDX.MapExt.Core
                         "WaterSystemInitFix",
                         "WaterAdapterOnUpdatePatch",
                         "WaterSystemOptRuntimePatch",
+                        "WaterTerrainWillChangeFix",
                         "TerrainBackdropDisable",
                         "CellMapSystemValuesPatch",
                         "AirwaySystemPatch",
@@ -168,6 +171,7 @@ namespace MapExtPDX.MapExt.Core
                         "WaterSystemInitFix",
                         "WaterAdapterOnUpdatePatch",
                         "WaterSystemOptRuntimePatch",
+                        "WaterTerrainWillChangeFix",
                         "TerrainBackdropDisable",
                         "CellMapSystemValuesPatch",
                         "AirwaySystemPatch",
@@ -190,6 +194,7 @@ namespace MapExtPDX.MapExt.Core
                         "WaterSystemInitFix",
                         "WaterAdapterOnUpdatePatch",
                         "WaterSystemOptRuntimePatch",
+                        "WaterTerrainWillChangeFix",
                         "TerrainBackdropDisable",
                         "CellMapSystemValuesPatch",
                         "AirwaySystemPatch",
@@ -204,6 +209,7 @@ namespace MapExtPDX.MapExt.Core
                         "WorldMapImportWarning",
                         "TerrainBackdropDisable",
                         "WaterSystemOptRuntimePatch",
+                        "WaterTerrainWillChangeFix",
                         "TerrainBrushRoadBlock"
                     };
             }
