@@ -14,12 +14,24 @@ namespace EconomyEX.Helpers
             harmony.CreateClassProcessor(typeof(MapSizeDetectorPatch)).Patch();
         }
 
+        /// <summary>
+        /// [BUGFIX] 场景切换时重置所有静态状态标志。
+        /// 由 Prefix 在每次 FinalizeTerrainData 时自动调用。
+        /// </summary>
+        internal static void ResetState()
+        {
+            HasCheckedMapSize = false;
+        }
+
         [HarmonyPatch(typeof(TerrainSystem), "FinalizeTerrainData")]
         public static class MapSizeDetectorPatch
         {
             [HarmonyPrefix]
             public static void Prefix(ref float2 inMapSize)
             {
+                // [BUGFIX] 每次加载新地图时先重置状态，确保不残留上一次场景的过期标志
+                ResetState();
+
                 HasCheckedMapSize = true;
                 Mod.Info($"Map Load Detected. Size: {inMapSize.x}x{inMapSize.y}");
 

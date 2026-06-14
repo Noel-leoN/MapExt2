@@ -1247,6 +1247,7 @@ namespace MapExtPDX.ModeA
 
         // --- 静态缓存字段 ---
         private static bool _initialized = false;
+        private static World _cachedWorld; // [BUGFIX] 用于检测 World 重建（场景切换）
         private static EntityQuery _findHomeQuery;
         private static EntityQuery _healthcareParamQuery;
         private static EntityQuery _parkParamQuery;
@@ -1279,8 +1280,12 @@ namespace MapExtPDX.ModeA
             }
 
             // 2. [BUGFIX-2] 使用 bool 标记替代 EntityQuery struct 的 default 比较
-            if (_initialized) return;
+            // [BUGFIX-3] 场景切换后 World 会被销毁重建，必须检测 World 变化并重新初始化所有缓存
+            var currentWorld = system.World;
+            if (_initialized && _cachedWorld == currentWorld && _cachedWorld.IsCreated)
+                return;
             _initialized = true;
+            _cachedWorld = currentWorld;
 
             var world = system.World;
 

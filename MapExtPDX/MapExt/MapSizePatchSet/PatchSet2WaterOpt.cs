@@ -11,33 +11,42 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
     /// <summary>
     /// 水模拟运行时性能优化补丁。
     /// 拦截 WaterSystem.OnSimulateGPU，通过 WaterSimSpeed 控制模拟频率。
-    /// 可以实时调整，无需重启游戏。
     /// 
-    /// 设计原则:
-    /// 1. Prefix 始终 return true，不跳过 OnSimulateGPU。
-    ///    因为 Simulate() 末尾的 Active Tiles 更新、帧计数递增等维护逻辑
-    ///    必须每帧执行，否则水流扩散被 GPU 剔除冻结。
-    /// 2. 不干预 m_SimulateBackdrop。
-    ///    直接操控 m_SimulateBackdrop 字段会绕过 InitBackdropTexture()，
-    ///    导致 m_depthsBackdropReader.m_sourceTexture = null，
-    ///    切换回 Vanilla 时 CheckReadbacks → ExecuteReadBack 抛出 NullRef。
-    /// 3. 频率控制仅通过 WaterSimSpeed 属性实现。
-    ///    WaterSimSpeed=0 时 Simulate() 内部会跳过模拟循环，
-    ///    但仍保持 m_NextSimulationFrame 递增和 Active Tiles 更新。
+    /// 同时包含 Editor 水速横跳修复：
+    /// TerrainWillChange() 在 Editor 中被每帧调用（MapExt 地形补丁导致），
+    /// 每次设 WaterSimSpeed=0。Simulate() 在 counter 归零时恢复 speed=1。
+    /// 此 0/1 交替导致原版 Editor Water 面板（DebugSystem）显示横跳。
     /// 
-    /// NOTE: 水模拟速度 Mod UI 调节功能已暂时禁用。
-    /// 原因：原版 Simulate() 在 terrainChangeCounter 归零时强制设 WaterSimSpeed=1，
-    /// 与 Mod 持久化回写形成每帧竞争（speed 在 userValue 和 1 之间交替），
-    /// 导致 UI 显示横跳。需要 Transpiler 修改 Simulate() 内部逻辑才能彻底解决。
+    /// 修复策略：在 Postfix 中检测 speed 是否被 TerrainWillChange 瞬态置 0，
+    /// 若 Simulate 已将其恢复为 1（说明 terrain change 已处理完毕），
+    /// 则保持该恢复值。这个方案不依赖对 TerrainWillChange 的 hook
+    /// （该方法可能被 JIT 内联导致 Harmony detour 无效）。
     /// </summary>
     [HarmonyPatch(typeof(WaterSystem), "OnSimulateGPU")]
     internal static class WaterSystemOptRuntimePatch
     {
         private static int s_frameCounter = 0;
 
+        /// <summary>
+        /// 记录用户设定的 speed 值（> 1 时才更新）。
+        /// TerrainWillChange 只设 0，Simulate() 只设 0/1，
+        /// 因此 speed > 1 只可能来自用户。
+        /// </summary>
+        internal static int StableSpeed = 1;
+
         [HarmonyPrefix]
         static bool Prefix(WaterSystem __instance, CommandBuffer cmd)
         {
+            // === 捕获用户意图值（在 Simulate 覆盖前） ===
+            // Postfix 每帧将 speed 恢复为 StableSpeed，
+            // 所以正常帧间 preSpeed 只可能是 StableSpeed 值或 0（TerrainWillChange）。
+            // 若 preSpeed 不等于 StableSpeed 且 > 0，则必定是用户通过 Editor 面板设置的新值。
+            int preSpeed = __instance.WaterSimSpeed;
+            if (preSpeed > 0 && preSpeed != StableSpeed)
+            {
+                StableSpeed = preSpeed;
+            }
+
             var quality = ResolutionManager.WaterSimQuality;
 
             // Vanilla 模式：完全不干预，零开销直通原版
@@ -79,53 +88,71 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
                     break;
             }
 
-        // 始终执行原版 OnSimulateGPU，不跳帧
+            // 始终执行原版 OnSimulateGPU，不跳帧
             return true;
+        }
+
+        /// <summary>
+        /// Postfix: 修复 Editor 水速横跳。
+        /// 
+        /// 机制：TerrainWillChange() 可能被 JIT 内联到 TerrainSystem.UpdateCascades 中，
+        /// 导致 Harmony 无法 hook 它。因此在 OnSimulateGPU 完成后修复 speed 值。
+        /// 
+        /// Simulate() 内部流程（每帧）：
+        /// 1. counter > 0: counter--, 当 counter==0 时设 speed=1（terrain 恢复完成）
+        /// 2. speed > 0: 执行水模拟
+        /// 3. OnSimulateGPU 返回后：TerrainWillChange 可能设 speed=0, counter=1
+        /// 
+        /// Postfix 在步骤 2 之后、步骤 3 之前执行。
+        /// 此时 speed 应为 Simulate() 的最终意图值。
+        /// 如果 speed=0 且非用户手动暂停（Paused_NoFlow），则恢复为 StableSpeed。
+        /// </summary>
+        [HarmonyPostfix]
+        static void Postfix(WaterSystem __instance)
+        {
+            int postSpeed = __instance.WaterSimSpeed;
+            
+            if (postSpeed == 0 && ResolutionManager.WaterSimQuality != WaterSimQualitySetting.Paused_NoFlow)
+            {
+                // speed=0 来自 TerrainWillChange 的瞬态重置 → 恢复用户值
+                __instance.WaterSimSpeed = StableSpeed;
+            }
+            else if (postSpeed == 1 && StableSpeed > 1)
+            {
+                // Simulate() L1430 硬编码 speed=1（counter→0），
+                // 但用户通过 Editor 面板设了更高值 → 恢复用户值
+                __instance.WaterSimSpeed = StableSpeed;
+            }
+            // postSpeed > 1 → 用户刚设的新值，不干预
+            // postSpeed == 1 && StableSpeed == 1 → 默认状态，不干预
         }
     }
 
     /// <summary>
-    /// 修复 Editor 模式下水模拟速度横跳问题。
-    /// 
-    /// 根因：MapExt 的地形补丁导致 TerrainWillChange() 在 Editor 中每帧被调用，
-    /// 每次都设 WaterSimSpeed=0 和 m_terrainChangeCounter=1。
-    /// 而 Simulate() 在 counter 归零时恢复 WaterSimSpeed=1，
-    /// 形成每帧 0→1→0→1 的交替横跳。
-    /// 
-    /// 修复策略：当 terrain change 已在处理中（counter > 0）时，
-    /// 仅刷新 counter 但不重复设 WaterSimSpeed=0。
-    /// 首次调用正常执行原版逻辑（暂停水模拟等待地形稳定）。
+    /// TerrainWillChange 防重复补丁（可能因 JIT 内联而不生效，
+    /// 但保留作为第一道防线。主要修复逻辑在 OnSimulateGPU Postfix 中）。
     /// </summary>
     [HarmonyPatch(typeof(WaterSystem), nameof(WaterSystem.TerrainWillChange))]
     internal static class WaterSystem_TerrainWillChange_Patch
     {
-        // 通过反射缓存 m_terrainChangeCounter 字段访问器
         private static System.Reflection.FieldInfo s_counterField;
         private static bool s_fieldResolved = false;
 
         [HarmonyPrefix]
         static bool Prefix(WaterSystem __instance)
         {
-            // 首次调用时解析私有字段
             if (!s_fieldResolved)
             {
                 s_counterField = AccessTools.Field(typeof(WaterSystem), "m_terrainChangeCounter");
                 s_fieldResolved = true;
-                if (s_counterField == null)
-                {
-                    ModLog.Warn("WaterTWC", "无法解析 m_terrainChangeCounter 字段，补丁降级为直通模式");
-                }
             }
 
-            // 字段解析失败时直通原版
             if (s_counterField == null)
                 return true;
 
-            // 只设 counter（让 Simulate() 走 CopyToHeightmapStep 分支），
-            // 不设 WaterSimSpeed=0（避免每帧 0/1 交替横跳）。
-            // Simulate() 的 counter>0 分支本身已阻止水模拟运行，无需额外暂停。
+            // 只设 counter，不碰 speed
             s_counterField.SetValue(__instance, 1);
-            return false; // 跳过原版
+            return false;
         }
     }
 }
