@@ -43,10 +43,13 @@ namespace MapExtPDX.MapExt.Core
         protected override void OnGameLoadingComplete(Purpose purpose, GameMode mode)
         {
             base.OnGameLoadingComplete(purpose, mode);
-            if (mode == GameMode.Game && !_initialCheckDone)
+            if (mode == GameMode.Game)
             {
+                // [BUGFIX] 移除 _initialCheckDone guard，确保每次加载都运行诊断
+                // 二次加载后系统状态可能异常，必须每次验证
+                string loadLabel = _initialCheckDone ? "二次加载" : "首次加载";
                 _initialCheckDone = true;
-                ModLog.Ok(Tag, "游戏加载完成，执行首次系统状态诊断");
+                ModLog.Ok(Tag, $"游戏加载完成（{loadLabel}），执行系统状态诊断");
                 RunDiagnostics();
             }
         }
