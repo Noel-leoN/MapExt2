@@ -1,6 +1,7 @@
 // Copyright (c) 2024 Noel2(Noel-leoN)
 // Licensed under the MIT License.
 
+using System;
 using System.Collections.Generic;
 using Colossal.Serialization.Entities;
 using Game;
@@ -10,6 +11,7 @@ using Game.SceneFlow;
 using Game.Simulation;
 using Game.UI;
 using Game.UI.Localization;
+using MapExtPDX.MapExt.MapSizePatchSet;
 using Unity.Entities;
 
 namespace MapExtPDX.MapExt.Core
@@ -40,6 +42,46 @@ namespace MapExtPDX.MapExt.Core
             ModLog.Ok(Tag, "ConflictMonitoringSystem 已创建（被动诊断模式）");
         }
 
+        /// <summary>
+        /// [BUGFIX] 场景切换守卫：在退出主菜单（Cleanup）时重置所有 PatchSet 的静态会话状态。
+        /// 根因：退出主菜单时原版引擎会释放/重建资源（Terrain Buffers、CellMap 数据等），
+        /// 但 Harmony patch 中的 static 标志不会自动重置，导致二次加载跳过关键初始化。
+        /// </summary>
+        protected override void OnGamePreload(Purpose purpose, GameMode mode)
+        {
+            base.OnGamePreload(purpose, mode);
+            if (purpose == Purpose.Cleanup)
+            {
+                ModLog.Info(Tag, "检测到场景清理（Cleanup），重置所有 PatchSet 会话状态...");
+                try
+                {
+                    // PatchSet1: Terrain StructuredBuffer 扩容标志
+                    TerrainSystemPatches.ResetSessionState();
+                    // PatchSet1: 级联渲染降频快照
+                    TerrainSystem_RenderCascades_Patch.ResetSessionState();
+                    // PatchSet2: Water 地形欺骗资源引用
+                    WaterTerrainSwap.ResetSessionState();
+                    // 诊断标志：允许二次加载重新诊断
+                    _cellMapDialogShown = false;
+                    ModLog.Ok(Tag, "所有 PatchSet 会话状态已重置");
+                }
+                catch (Exception ex)
+                {
+                    ModLog.Error(Tag, $"会话状态重置失败: {ex.Message}");
+                }
+            }
+            else
+            {
+                // [BUGFIX] 在加载开始前（而非加载完成后）立即重新禁用被引擎复活的原版系统。
+                // 消除加载期间原版+替换系统双跑的窗口期，彻底解决 JobTempAlloc 警告。
+                var settings = Mod.Instance?.CurrentSettings;
+                if (settings != null)
+                {
+                    SystemReplacer.ReDisableVanillaSystems(this.World, settings);
+                }
+            }
+        }
+
         protected override void OnGameLoadingComplete(Purpose purpose, GameMode mode)
         {
             base.OnGameLoadingComplete(purpose, mode);
@@ -50,6 +92,14 @@ namespace MapExtPDX.MapExt.Core
                 string loadLabel = _initialCheckDone ? "二次加载" : "首次加载";
                 _initialCheckDone = true;
                 ModLog.Ok(Tag, $"游戏加载完成（{loadLabel}），执行系统状态诊断");
+
+                // [BUGFIX] 退出主菜单后引擎会重新启用所有系统，必须在诊断前重新禁用
+                var settings = Mod.Instance?.CurrentSettings;
+                if (settings != null)
+                {
+                    SystemReplacer.ReDisableVanillaSystems(this.World, settings);
+                }
+
                 RunDiagnostics();
             }
         }

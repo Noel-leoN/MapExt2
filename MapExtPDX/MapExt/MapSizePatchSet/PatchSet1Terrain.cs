@@ -156,6 +156,17 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
 
         private static bool s_BufferExpanded = false;
 
+        /// <summary>
+        /// [BUGFIX] 退出主菜单时重置会话状态。
+        /// TerrainSystem 在 Cleanup 期间会释放 ManagedStructuredBuffers，
+        /// 二次加载时必须重新执行扩容。
+        /// </summary>
+        internal static void ResetSessionState()
+        {
+            s_BufferExpanded = false;
+            ModLog.Info(Tag, "TerrainPatch session state reset (s_BufferExpanded=false)");
+        }
+
         [HarmonyPatch("OnUpdate")]
         [HarmonyPostfix]
         public static void OnUpdate_BufferExpansion_Postfix(TerrainSystem __instance)
@@ -298,6 +309,16 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
         private static FieldInfo s_ShaderCascadeRangesField;
         private static int s_ShaderPropertyID = -1;
         private static bool s_FieldsResolved = false;
+
+        /// <summary>
+        /// [BUGFIX] 退出主菜单时重置级联范围快照，避免二次加载使用旧数据。
+        /// </summary>
+        internal static void ResetSessionState()
+        {
+            s_HasSavedRanges = false;
+            s_FrameCounter = 0;
+            ModLog.Info(Tag, "CascadePatch session state reset");
+        }
 
         /// <summary>
         /// Prefix: 在节流帧恢复上次渲染时的远 LOD 范围，避免 range/texture 不同步

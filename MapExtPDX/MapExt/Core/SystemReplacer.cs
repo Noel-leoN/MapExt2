@@ -10,6 +10,83 @@ namespace MapExtPDX.MapExt.Core
 {
     public static class SystemReplacer
     {
+        /// <summary>
+        /// [BUGFIX] 重新禁用被引擎重新启用的原版系统。
+        /// 退出主菜单后 CS2 引擎会重置所有系统的 Enabled 状态为 true，
+        /// 但 Apply() 只在 Mod.OnLoad() 中调用一次。
+        /// 此方法在每次 OnGameLoadingComplete 时调用，确保原版系统保持禁用。
+        /// </summary>
+        public static void ReDisableVanillaSystems(Unity.Entities.World world, ModSettings setting)
+        {
+            if (world == null || !world.IsCreated) return;
+            if (PatchManager.CurrentCoreValue == 1) return;
+
+            int count = 0;
+
+            // --- CellMap 替换系统 ---
+            count += DisableIfEnabled<Game.Simulation.AirPollutionSystem>(world);
+            count += DisableIfEnabled<Game.Simulation.AvailabilityInfoToGridSystem>(world);
+            count += DisableIfEnabled<Game.Simulation.GroundPollutionSystem>(world);
+            count += DisableIfEnabled<Game.Simulation.GroundWaterSystem>(world);
+            count += DisableIfEnabled<Game.Simulation.LandValueSystem>(world);
+            count += DisableIfEnabled<Game.Simulation.NaturalResourceSystem>(world);
+            count += DisableIfEnabled<Game.Simulation.NoisePollutionSystem>(world);
+            count += DisableIfEnabled<Game.Simulation.PopulationToGridSystem>(world);
+            count += DisableIfEnabled<Game.Simulation.SoilWaterSystem>(world);
+            count += DisableIfEnabled<Game.Simulation.TerrainAttractivenessSystem>(world);
+            count += DisableIfEnabled<Game.Simulation.TrafficAmbienceSystem>(world);
+            count += DisableIfEnabled<Game.Simulation.ZoneAmbienceSystem>(world);
+
+            // --- Economy 替换系统 ---
+            if (setting.isEnableEconomyFix && setting.EnableHouseholdPropertyEcoSystem)
+            {
+                count += DisableIfEnabled<Game.Simulation.RentAdjustSystem>(world);
+                count += DisableIfEnabled<Game.Simulation.HouseholdFindPropertySystem>(world);
+                count += DisableIfEnabled<Game.Simulation.HouseholdBehaviorSystem>(world);
+            }
+            if (setting.isEnableEconomyFix && setting.EnableJobSearchEcoSystem)
+            {
+                count += DisableIfEnabled<Game.Simulation.CitizenFindJobSystem>(world);
+                count += DisableIfEnabled<Game.Simulation.FindJobSystem>(world);
+            }
+            if (setting.isEnableEconomyFix && setting.EnableResourceBuyerEcoSystem)
+            {
+                count += DisableIfEnabled<Game.Simulation.TripNeededSystem>(world);
+                count += DisableIfEnabled<Game.Simulation.ServiceCoverageSystem>(world);
+                count += DisableIfEnabled<Game.Simulation.ResourceBuyerSystem>(world);
+            }
+            if (setting.isEnableEconomyFix && setting.EnableResidentAIEcoSystem)
+            {
+                count += DisableIfEnabled<Game.Simulation.ResidentAISystem>(world);
+                count += DisableIfEnabled<Game.Simulation.ResidentAISystem.Actions>(world);
+            }
+            if (setting.isEnableEconomyFix && setting.EnableDownstreamAIEcoSystem)
+            {
+                count += DisableIfEnabled<Game.Simulation.PersonalCarAISystem>(world);
+                count += DisableIfEnabled<Game.Simulation.PersonalCarAISystem.Actions>(world);
+                count += DisableIfEnabled<Game.Simulation.TaxiAISystem>(world);
+                count += DisableIfEnabled<Game.Simulation.LeisureSystem>(world);
+                count += DisableIfEnabled<Game.Simulation.FindSchoolSystem>(world);
+            }
+
+            if (count > 0)
+                ModLog.Warn("SystemReplacer", $"[BUGFIX] 重新禁用了 {count} 个被引擎重新启用的原版系统");
+            else
+                ModLog.Info("SystemReplacer", "所有原版系统已正确禁用，无需修复");
+        }
+
+        private static int DisableIfEnabled<T>(Unity.Entities.World world) where T : GameSystemBase
+        {
+            var system = world.GetExistingSystemManaged<T>();
+            if (system != null && system.Enabled)
+            {
+                system.Enabled = false;
+                ModLog.Info("SystemReplacer", $"  重新禁用: {typeof(T).Name}");
+                return 1;
+            }
+            return 0;
+        }
+
         public static void Apply(UpdateSystem updateSystem, Harmony globalPatcher, ModSettings setting)
         {
             // === 设置快照日志（Release 级别，用于诊断 .coc 缓存不一致） ===

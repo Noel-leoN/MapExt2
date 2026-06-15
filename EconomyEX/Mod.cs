@@ -1,6 +1,4 @@
 using System;
-using System.Linq;
-using System.Reflection;
 using Colossal.Logging;
 using Game;
 using Game.Modding;
@@ -38,15 +36,16 @@ namespace EconomyEX
         public void OnLoad(UpdateSystem updateSystem)
         {
             Instance = this;
-            Info($"Loading {ModName}...");
 
-            // 1. Check for MapExt
+            // 1. Check for MapExt — 必须在所有初始化之前
             if (CheckMapExtPresence())
             {
-                Warn("MapExt detected! EconomyEX will remain DORMANT to avoid conflicts.");
                 IsMapExtPresent = true;
-                // We still load settings to explain why it's disabled, but we don't patch anything.
+                Logger.Warn("MapExtPDX detected. EconomyEX will NOT initialize (fully dormant). No conflicts.");
+                return; // 完全跳过：不注册 Settings/UI/Harmony/Systems
             }
+
+            Info($"Loading {ModName}...");
 
             // 2. Initialize Settings
             Settings = new ModSettings(this);
@@ -55,8 +54,6 @@ namespace EconomyEX
             GameManager.instance.localizationManager.AddSource("zh-HANS", new LocaleHANS(Settings));
             GameManager.instance.localizationManager.AddSource("zh-HANT", new LocaleHANT(Settings));
             Colossal.IO.AssetDatabase.AssetDatabase.global.LoadSettings(ModName, Settings, new ModSettings(this));
-            
-            // Update UI status immediately
             Settings.UpdateStatus();
 
             // Scan for known conflicting mods
@@ -68,8 +65,6 @@ namespace EconomyEX
                 Settings._conflictWarning = $"[Startup] {conflictReport}";
                 Warn($"启动冲突报告: {conflictReport}");
             }
-
-            if (IsMapExtPresent) return; // Stop here if MapExt is found.
 
             // 3. Initialize Harmony
             _harmony = new Harmony(HarmonyId);
@@ -138,8 +133,16 @@ namespace EconomyEX
 
         private bool CheckMapExtPresence()
         {
-            return AppDomain.CurrentDomain.GetAssemblies()
-                .Any(a => a.GetName().Name == "MapExtPDX");
+            // 使用 PDX modManager 而非 AppDomain.GetAssemblies()
+            // modManager 在所有 mod 的 OnLoad() 前已填充完毕，不受加载顺序影响
+            foreach (var modInfo in GameManager.instance.modManager)
+            {
+                var name = modInfo.asset.name;
+                if (string.IsNullOrEmpty(name)) continue;
+                if (name.Contains("MapExt2") || name.Contains("MapExtPDX"))
+                    return true;
+            }
+            return false;
         }
 
         /// <summary>
