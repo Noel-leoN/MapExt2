@@ -15,27 +15,38 @@ namespace MapExtPDX.MapExt.Core
         /// 退出主菜单后 CS2 引擎会重置所有系统的 Enabled 状态为 true，
         /// 但 Apply() 只在 Mod.OnLoad() 中调用一次。
         /// 此方法在每次 OnGameLoadingComplete 时调用，确保原版系统保持禁用。
+        ///
+        /// 各 Mode 重新禁用的系统须与 Apply() 中对应分支严格一致：
+        /// ModeA/B/C 禁用全部 CellMap 系统 + 经济系统；
+        /// ModeE (CV==1) 为 vanilla 尺寸，仅禁用 LandValueSystem + 经济系统，不碰其余 CellMap 系统。
         /// </summary>
         public static void ReDisableVanillaSystems(Unity.Entities.World world, ModSettings setting)
         {
             if (world == null || !world.IsCreated) return;
-            if (PatchManager.CurrentCoreValue == 1) return;
 
             int count = 0;
 
-            // --- CellMap 替换系统 ---
-            count += DisableIfEnabled<Game.Simulation.AirPollutionSystem>(world);
-            count += DisableIfEnabled<Game.Simulation.AvailabilityInfoToGridSystem>(world);
-            count += DisableIfEnabled<Game.Simulation.GroundPollutionSystem>(world);
-            count += DisableIfEnabled<Game.Simulation.GroundWaterSystem>(world);
+            // --- LandValue 替换系统（所有 Mode 含 ModeE 均替换，须重新禁用） ---
+            // 对照 Apply()：ModeA/B/C 在 CellMap 段禁用，ModeE 在其专属分支 (CV==1) 禁用。
             count += DisableIfEnabled<Game.Simulation.LandValueSystem>(world);
-            count += DisableIfEnabled<Game.Simulation.NaturalResourceSystem>(world);
-            count += DisableIfEnabled<Game.Simulation.NoisePollutionSystem>(world);
-            count += DisableIfEnabled<Game.Simulation.PopulationToGridSystem>(world);
-            count += DisableIfEnabled<Game.Simulation.SoilWaterSystem>(world);
-            count += DisableIfEnabled<Game.Simulation.TerrainAttractivenessSystem>(world);
-            count += DisableIfEnabled<Game.Simulation.TrafficAmbienceSystem>(world);
-            count += DisableIfEnabled<Game.Simulation.ZoneAmbienceSystem>(world);
+
+            // --- 其余 CellMap 替换系统（仅 ModeA/B/C） ---
+            // ModeE 为 vanilla 尺寸，不替换这些系统，因此跳过——
+            // 否则会错误禁用 ModeE 下仍由原版负责的污染/资源/网格系统，引入新 bug。
+            if (PatchManager.CurrentCoreValue != 1)
+            {
+                count += DisableIfEnabled<Game.Simulation.AirPollutionSystem>(world);
+                count += DisableIfEnabled<Game.Simulation.AvailabilityInfoToGridSystem>(world);
+                count += DisableIfEnabled<Game.Simulation.GroundPollutionSystem>(world);
+                count += DisableIfEnabled<Game.Simulation.GroundWaterSystem>(world);
+                count += DisableIfEnabled<Game.Simulation.NaturalResourceSystem>(world);
+                count += DisableIfEnabled<Game.Simulation.NoisePollutionSystem>(world);
+                count += DisableIfEnabled<Game.Simulation.PopulationToGridSystem>(world);
+                count += DisableIfEnabled<Game.Simulation.SoilWaterSystem>(world);
+                count += DisableIfEnabled<Game.Simulation.TerrainAttractivenessSystem>(world);
+                count += DisableIfEnabled<Game.Simulation.TrafficAmbienceSystem>(world);
+                count += DisableIfEnabled<Game.Simulation.ZoneAmbienceSystem>(world);
+            }
 
             // --- Economy 替换系统 ---
             if (setting.isEnableEconomyFix && setting.EnableHouseholdPropertyEcoSystem)

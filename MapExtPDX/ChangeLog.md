@@ -1,3 +1,24 @@
+## [4.2.1] - 2026-06-15
+
+### 🐛 修复 / Fixed
+
+- 修复了在地图编辑器中调整地形时，水面模拟速度异常跳变（忽快忽慢）的问题，使水流表现更稳定自然。
+  Fixed abnormal water simulation speed jitter when editing terrain in the map editor, making water flow more stable and natural.
+- 修复了在原版地图尺寸下，退出到主菜单后再次载入存档时，地价与部分经济相关数据可能出现异常的问题。
+  Fixed a potential land value and economy data anomaly when reloading a save on vanilla-size maps after returning to the main menu.
+
+### ⚡ 性能 / Performance
+
+- 为大尺寸地图的水面模拟提供运行时优化选项，降低水面计算对帧率的影响。
+  Added a runtime optimization option for water simulation on large maps to reduce its impact on frame rate.
+
+### 🗑️ 移除 / Removed
+
+- 暂时移除了此前不稳定的水流速度手动调节功能，避免引发异常表现。
+  Temporarily removed the previously unstable manual water flow speed control to prevent abnormal behavior.
+
+---
+
 ## v4.2.0 - Enhanced Mod Conflict Auto-Detection
 
 * **[Conflict Detection]:** Conflicting economy system groups are now automatically disabled at startup when known incompatible mods are detected.
