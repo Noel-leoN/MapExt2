@@ -7,11 +7,6 @@
 - 修复了在原版地图尺寸下，退出到主菜单后再次载入存档时，地价与部分经济相关数据可能出现异常的问题。
   Fixed a potential land value and economy data anomaly when reloading a save on vanilla-size maps after returning to the main menu.
 
-### ⚡ 性能 / Performance
-
-- 为大尺寸地图的水面模拟提供运行时优化选项，降低水面计算对帧率的影响。
-  Added a runtime optimization option for water simulation on large maps to reduce its impact on frame rate.
-
 ### 🗑️ 移除 / Removed
 
 - 暂时移除了此前不稳定的水流速度手动调节功能，避免引发异常表现。
