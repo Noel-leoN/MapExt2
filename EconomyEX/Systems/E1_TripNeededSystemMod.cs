@@ -307,9 +307,9 @@ namespace EconomyEX.Systems
 					m_TriggerBuffer = m_TriggerSystem.CreateActionBuffer().AsParallelWriter(),
 					m_DebugDisableSpawning = debugDisableSpawning,
 					// [MOD EXT]
-					m_DynamicLeisureMaxCost = Mod.Instance.Settings.LeisureMaxCost,
-					m_DynamicShoppingMaxCost = Mod.Instance.Settings.ShoppingMaxCost,
-					m_DynamicEmergencyMaxCost = Mod.Instance.Settings.EmergencyMaxCost
+					m_DynamicLeisureMaxCost = Mod.Instance?.Settings?.LeisureMaxCost ?? CitizenBehaviorSystem.kMaxPathfindCost,
+					m_DynamicShoppingMaxCost = Mod.Instance?.Settings?.ShoppingMaxCost ?? CitizenBehaviorSystem.kMaxPathfindCost,
+					m_DynamicEmergencyMaxCost = Mod.Instance?.Settings?.EmergencyMaxCost ?? CitizenBehaviorSystem.kMaxPathfindCost
 				};
 				PetTargetJob jobData2 = new PetTargetJob
 				{
@@ -1355,6 +1355,12 @@ namespace EconomyEX.Systems
 								// 休闲观光出行：使用用户可调的休闲滑块
 								dynamicMaxCost = m_DynamicLeisureMaxCost;
 							}
+							else if (tripInfo.m_Purpose == Purpose.Hospital ||
+							         tripInfo.m_Purpose == Purpose.Crime)
+							{
+								// 就医/犯罪：使用用户可调的紧急服务滑块（与分支B保持一致）
+								dynamicMaxCost = m_DynamicEmergencyMaxCost;
+							}
 							else
 							{
 								// 其他一般出行：保持原版默认
@@ -1644,6 +1650,47 @@ namespace EconomyEX.Systems
 								m_LeaveQueue.Enqueue(entity);
 							}
 
+							// [MOD FIX] 还原原版 IL_102e 传送逻辑：纯步行/出租车路径的通勤者回家或搬离直接传送
+							bool isPedestrianOnly = false;
+							bool isPedestrianGoingHomeFromOC = false;
+							if (componentData.m_Destination != Entity.Null &&
+							    (componentData.m_Methods & (PathMethod.Pedestrian | PathMethod.Taxi)) != 0)
+							{
+								isPedestrianOnly = (componentData.m_Methods &
+									(PathMethod.Road | PathMethod.PublicTransportDay |
+									 PathMethod.PublicTransportNight | PathMethod.MediumRoad)) == 0;
+								if (isPedestrianOnly && tripNeeded.m_Purpose == Purpose.GoingHome)
+								{
+									isPedestrianGoingHomeFromOC = m_OutsideConnections.HasComponent(currentBuilding2);
+								}
+							}
+							bool isPedestrianMovingAwayToOC = isPedestrianOnly
+								&& tripNeeded.m_Purpose == Purpose.MovingAway
+								&& m_OutsideConnections.HasComponent(entity2);
+
+							if (isPedestrianGoingHomeFromOC || isPedestrianMovingAwayToOC)
+							{
+								// 纯步行传送：直接修改 CurrentBuilding，不生成 Creature 实体
+								m_CommandBuffer.SetComponent(unfilteredChunkIndex, entity, new CurrentBuilding
+								{
+									m_CurrentBuilding = target.m_Target
+								});
+								m_CommandBuffer.SetComponentEnabled<Arrived>(unfilteredChunkIndex, entity, value: true);
+								m_CommandBuffer.AddComponent(unfilteredChunkIndex, entity, new TravelPurpose
+								{
+									m_Data = tripNeeded.m_Data,
+									m_Purpose = tripNeeded.m_Purpose,
+									m_Resource = tripNeeded.m_Resource
+								});
+								AddPetTargets(household, currentBuilding, target.m_Target, teleport: true);
+								// 清理并跳过正常出发流程
+								RemoveAllTrips(trips);
+								m_CommandBuffer.RemoveComponent(unfilteredChunkIndex, entity, in m_PathfindTypes);
+								m_CommandBuffer.RemoveComponent<Target>(unfilteredChunkIndex, entity);
+								continue;
+							}
+
+							// 正常生成 Creature 实体出发
 							Entity entity5 = Entity.Null;
 							if (nativeArray4.Length != 0)
 							{
