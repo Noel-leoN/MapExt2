@@ -365,8 +365,8 @@ namespace MapExtPDX.EcoShared
                 {
                     FamilySize = citizens.Length,
                     TotalWealth = EconomyUtils.GetHouseholdTotalWealth(household, resources),
-                    // --- 车辆统计 ---
-                    CarCount = m_OwnedVehicles.HasBuffer(householdEntity) ? m_OwnedVehicles[householdEntity].Length : 0,
+                    // --- 车辆统计 (TryGetBuffer 合并为单次查找) ---
+                    CarCount = m_OwnedVehicles.TryGetBuffer(householdEntity, out var vehicleBuf) ? vehicleBuf.Length : 0,
                     // 初始化后续将被累加的年龄组合值
                     AgeCounts = int4.zero,
                     HasAdultOrElderly = false,
@@ -456,14 +456,14 @@ namespace MapExtPDX.EcoShared
             // 移除多余的 IsLeisure 传入,调用前已做判断
             private int GetWeightOptimized(int spendableMoney, ResourceData data, HouseholdCache cache)
             {
-                // 预判：如果权重因子都是0，直接返回
-                if (data is { m_ChildWeight: 0, m_TeenWeight: 0, m_AdultWeight: 0, m_ElderlyWeight: 0, m_CarConsumption: 0 })
-                    return 0;
-
                 // 基础消耗
                 float baseConsumption = data.m_BaseConsumption;
                 // 车辆消耗
                 baseConsumption += cache.CarCount * data.m_CarConsumption;
+
+                // 预判：baseConsumption 为 0 则整个结果必为 0（ageWeight 是乘法因子，无需额外检查）
+                if (baseConsumption == 0f)
+                    return 0;
 
                 // 财富修正
                 float wealthMod = data.m_WealthModifier;
@@ -634,16 +634,17 @@ namespace MapExtPDX.EcoShared
                     // 如果家庭不是无家可归状态，则更新其需求。
                     if (!chunkHasHomeless)
                     {
-                        bool hasHome = true;
-                        // 没有无家可归组件，但也没有租房组件或者租房组件指向空实体(原版修复失去房产或其他原因导致无房的家庭却没有纳入无家可归的bug)
-                        if (!m_PropertyRenters.HasComponent(householdEntity) ||
-                            m_PropertyRenters[householdEntity].m_Property == Entity.Null)
+                        // 没有无家可归组件，但也没有租房组件或者租房组件指向空实体
+                        // (修复失去房产或其他原因导致无房的家庭却没有纳入无家可归的bug)
+                        bool hasHome = m_PropertyRenters.HasComponent(householdEntity) &&
+                                       m_PropertyRenters[householdEntity].m_Property != Entity.Null;
+
+                        if (!hasHome)
                         {
-                            // 如果已经标记为"搬入" (MovedIn)，则说明失去了房子，变为无家可归，则添加标记为无家可归状态
+                            // 如果已经标记为"搬入" (MovedIn)，则说明失去了房子，变为无家可归
                             if ((household.m_Flags & HouseholdFlags.MovedIn) != HouseholdFlags.None)
                             {
                                 m_CommandBuffer.AddComponent<HomelessHousehold>(unfilteredChunkIndex, householdEntity);
-                                hasHome = false;
                             }
                         }
 
