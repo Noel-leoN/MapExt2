@@ -2694,7 +2694,15 @@ namespace EconomyEX.Systems
 						dynamicBuffer.Add(new PathElement(currentLane.m_Lane, yy));
 					}
 
-					while (TryFindNextLane(ref ignoreLanes, ref lane, ref yy.y))
+					// 🚀 [MOD: MapExt2 - Safety Hardening] ---------------------------------------------
+					// 显式迭代上限：原版用可增长的 Temp NativeList 做 lane 去重，忽略集合永远增长以保证终止。
+					// 改用定容 FixedList128Bytes 后，一旦忽略列表填满 (Capacity)，去重失效，相邻 lane 可能
+					// 被反复返回，引发复杂路网下的无限/超长循环。此上限保证无论拓扑如何都必然终止；
+					// 上限对齐 ignoreLanes.Capacity，使去重仍有效的安全区内行为与原版完全一致。
+					// ----------------------------------------------------------------------------------
+					int waitLaneIterations = 0;
+					while (waitLaneIterations++ < ignoreLanes.Capacity &&
+					       TryFindNextLane(ref ignoreLanes, ref lane, ref yy.y))
 					{
 						if (ignoreLanes.Length < ignoreLanes.Capacity) ignoreLanes.Add(lane);
 						yy.x = yy.y;
