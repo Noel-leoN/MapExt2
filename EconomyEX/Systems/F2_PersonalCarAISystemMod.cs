@@ -716,7 +716,7 @@ namespace EconomyEX.Systems
 								parameters.m_MaxCost = m_LeisureMaxCost;
 								break;
 							case Purpose.MovingAway:
-								parameters.m_MaxCost = CitizenBehaviorSystem.kMaxMovingAwayCost;
+								parameters.m_MaxCost = m_FindHomeMaxCost;
 								break;
 							}
 						}

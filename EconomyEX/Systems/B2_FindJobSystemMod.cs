@@ -1,6 +1,7 @@
 // Game.Simulation.FindJobSystem
 // v1.5.7f 同步依赖链修复 (GetEmployables out deps + AddHouseholdDataReader)
 
+using EconomyEX.Helpers;
 using Colossal.Collections;
 using Game;
 using Game.Agents;
@@ -83,6 +84,8 @@ namespace EconomyEX.Systems
         private CountHouseholdDataSystem m_CountHouseholdDataSystem;
         private PathfindSetupSystem m_PathfindSetupSystem;
         private EndFrameBarrier m_EndFrameBarrier;
+        // 1.6.0f: TripPriority 依賴（Mod 保留自定義滑塊，此字段用於編譯對齊）
+        private EntityQuery m_TripPriorityParametersQuery;
         #endregion
 
         #region Native Containers
@@ -156,6 +159,8 @@ namespace EconomyEX.Systems
             m_RequestCount = new NativeArray<int>(1, Allocator.Persistent); // 长度1的数组
 
             RequireAnyForUpdate(m_JobSeekerQuery, m_ResultsQuery);
+            m_TripPriorityParametersQuery = GetEntityQuery(ComponentType.ReadOnly<TripPriorityParametersData>());
+            RequireForUpdate(m_TripPriorityParametersQuery);
 
 #if DEBUG
             m_DebugStats = new NativeArray<int>(DEBUG_ARRAY_SIZE, Allocator.Persistent);
@@ -255,6 +260,7 @@ namespace EconomyEX.Systems
                 m_EmployableByEducation = m_CountHouseholdDataSystem.GetEmployables(out var employableDeps),
                 m_RandomSeed = RandomSeed.Next(),
                 m_DynamicFindJobMaxCost = Mod.Instance.Settings.FindJobMaxCost,
+                m_TripPriorityParameters = m_TripPriorityParametersQuery.GetSingleton<TripPriorityParametersData>(),
 
                 // [优化] 传入计数器进行限流（从 ModSettings 读取）
                 m_RequestCount = m_RequestCount,
@@ -472,6 +478,8 @@ namespace EconomyEX.Systems
             public RandomSeed m_RandomSeed; // 随机种子
 
             public float m_DynamicFindJobMaxCost; // 动态最大寻路成本
+            // 1.6.0f: TripPriority 依賴
+            [ReadOnly] public TripPriorityParametersData m_TripPriorityParameters;
 
             // [优化] 限流参数
             [NativeDisableUnsafePtrRestriction]

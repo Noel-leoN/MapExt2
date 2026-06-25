@@ -1,3 +1,4 @@
+using EconomyEX.Helpers;
 using Game;
 using Game.Simulation;
 using Colossal.Entities;
@@ -61,6 +62,8 @@ namespace EconomyEX.Systems
 		private ComponentTypeSet m_PathfindTypes;
 		private NativeQueue<LeisureEvent> m_LeisureQueue;
 		private PersonalCarSelectData m_PersonalCarSelectData;
+		// 1.6.0f: TripPriority 依賴（Mod 保留自定義滑塊，此字段用於編譯對齊）
+		private EntityQuery m_TripPriorityParametersQuery;
 
 		#endregion
 
@@ -97,6 +100,8 @@ namespace EconomyEX.Systems
 			RequireForUpdate(m_LeisureQuery);
 			RequireForUpdate(m_EconomyParameterQuery);
 			RequireForUpdate(m_LeisureParameterQuery);
+			m_TripPriorityParametersQuery = GetEntityQuery(ComponentType.ReadOnly<TripPriorityParametersData>());
+			RequireForUpdate(m_TripPriorityParametersQuery);
 		}
 
 		protected override void OnDestroy()
@@ -155,6 +160,7 @@ namespace EconomyEX.Systems
 				m_EconomyParameters = m_EconomyParameterQuery.GetSingleton<EconomyParameterData>(),
 				// [MapExt2-MaxCost] Bind the dynamic slider setting from mod config
 				m_DynamicLeisureMaxCost = Mod.Instance.Settings.LeisureMaxCost,
+				m_TripPriorityParameters = m_TripPriorityParametersQuery.GetSingleton<TripPriorityParametersData>(),
 				m_SimulationFrame = m_SimulationSystem.frameIndex,
 				m_TimeOfDay = m_TimeSystem.normalizedTime,
 				m_UpdateFrameIndex = updateFrameWithInterval,
@@ -344,6 +350,8 @@ namespace EconomyEX.Systems
 			public EconomyParameterData m_EconomyParameters;
 			// [MapExt2-MaxCost] Storage for dynamic slider
 			public float m_DynamicLeisureMaxCost;
+			// 1.6.0f: TripPriority 依賴
+			[ReadOnly] public TripPriorityParametersData m_TripPriorityParameters;
 			public EntityCommandBuffer.ParallelWriter m_CommandBuffer;
 			public NativeQueue<SetupQueueItem>.ParallelWriter m_PathfindQueue;
 			public NativeQueue<LeisureEvent>.ParallelWriter m_LeisureQueue;
@@ -492,12 +500,15 @@ namespace EconomyEX.Systems
 								dynamicBuffer.Add(new TripNeeded
 								{
 									m_TargetAgent = destination,
-									m_Purpose = Purpose.Leisure
+									m_Purpose = Purpose.Leisure,
+									m_Priority = 128 // 1.6.0f: 預設優先級
 								});
 								m_CommandBuffer.AddComponent(unfilteredChunkIndex, entity, new Target
 								{
 									m_Target = destination
 								});
+								// 1.6.0f: 找到休閒目標，清除搜尋冷卻
+								m_CommandBuffer.RemoveComponent<LeisureSeekerCooldown>(unfilteredChunkIndex, entity);
 							}
 							else
 							{
@@ -522,6 +533,11 @@ namespace EconomyEX.Systems
 
 							m_CommandBuffer.RemoveComponent<Leisure>(unfilteredChunkIndex, entity);
 							m_CommandBuffer.RemoveComponent(unfilteredChunkIndex, entity, in m_PathfindTypes);
+							// 1.6.0f: 尋路失敗且無目標，設置冷卻防止頻繁重搜
+							m_CommandBuffer.AddComponent(unfilteredChunkIndex, entity, new LeisureSeekerCooldown
+							{
+								m_SimulationFrame = m_SimulationFrame
+							});
 						}
 					}
 					else if (!m_Purposes.HasComponent(entity))

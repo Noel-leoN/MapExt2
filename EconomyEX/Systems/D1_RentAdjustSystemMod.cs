@@ -1,3 +1,4 @@
+using EconomyEX.Helpers;
 using Colossal.Entities;
 using Game.Agents;
 using Game.Areas;
@@ -21,7 +22,6 @@ using Unity.Jobs;
 using Unity.Mathematics;
 using Game;
 using Game.Simulation;
-using EconomyEX.Helpers;
 using Transform = Game.Objects.Transform;
 
 namespace EconomyEX.Systems
@@ -73,7 +73,6 @@ namespace EconomyEX.Systems
 		private EntityQuery m_CitizenHappinessParameterQuery;
 		private EntityQuery m_BuildingParameterQuery;
 		private EntityQuery m_PollutionParameterQuery;
-		private EntityQuery m_FeeParameterQuery;
 		private EntityQuery m_BuildingQuery;
 		protected int cycles;
 
@@ -111,7 +110,6 @@ namespace EconomyEX.Systems
 			m_CitizenHappinessParameterQuery =
 				GetEntityQuery(ComponentType.ReadOnly<CitizenHappinessParameterData>());
 			m_PollutionParameterQuery = GetEntityQuery(ComponentType.ReadOnly<PollutionParameterData>());
-			m_FeeParameterQuery = GetEntityQuery(ComponentType.ReadOnly<ServiceFeeParameterData>());
 			RequireForUpdate(m_EconomyParameterQuery);
 			RequireForUpdate(m_DemandParameterQuery);
 			RequireForUpdate(m_HealthcareParameterQuery);
@@ -120,7 +118,6 @@ namespace EconomyEX.Systems
 			RequireForUpdate(m_TelecomParameterQuery);
 			RequireForUpdate(m_GarbageParameterQuery);
 			RequireForUpdate(m_PoliceParameterQuery);
-			RequireForUpdate(m_FeeParameterQuery);
 			RequireForUpdate(m_BuildingQuery);
 		}
 
@@ -179,7 +176,6 @@ namespace EconomyEX.Systems
 				m_BuildingConfigurationData =
 					m_BuildingParameterQuery.GetSingleton<BuildingConfigurationData>(),
 				m_PollutionParameters = m_PollutionParameterQuery.GetSingleton<PollutionParameterData>(),
-				m_FeeParameters = m_FeeParameterQuery.GetSingleton<ServiceFeeParameterData>(),
 				m_DeliveryTrucks = SystemAPI.GetComponentLookup<Game.Vehicles.DeliveryTruck>(isReadOnly: true),
 				m_ZonePropertiesDatas = SystemAPI.GetComponentLookup<ZonePropertiesData>(isReadOnly: true),
 				m_ServiceAvailables = SystemAPI.GetComponentLookup<ServiceAvailable>(isReadOnly: true),
@@ -285,7 +281,7 @@ namespace EconomyEX.Systems
 			public CitizenHappinessParameterData m_CitizenHappinessParameterData;
 			public BuildingConfigurationData m_BuildingConfigurationData;
 			public PollutionParameterData m_PollutionParameters;
-			public ServiceFeeParameterData m_FeeParameters;
+
 			public IconCommandBuffer m_IconCommandBuffer;
 			public uint m_UpdateFrameIndex;
 			[ReadOnly] public Entity m_City;
@@ -455,7 +451,6 @@ namespace EconomyEX.Systems
 					ProcessPollutionNotification(areaType, buildingEntity, cityModifiers);
 
 					// ====== 4. 计算地租与市场挂牌价 ======
-					int buildingGarbageFeePerDay = m_FeeParameters.GetBuildingGarbageFeePerDay(areaType, isOffice);
 					// [MOD] 使用可调租金公式替代原版 PropertyUtils.GetRentPricePerRenter
 					int rentPerRenter = GetModdedRentPerRenter(buildingPropertyData, buildingLevel,
 						lotSize, landValueBase, areaType, ref m_EconomyParameterData, ignoreLandValue, in m_RentTuning);
@@ -540,13 +535,11 @@ namespace EconomyEX.Systems
 							propertyRenterData.m_Rent = rentPerRenter;
 							m_PropertyRenters[renter] = propertyRenterData;
 
-							int totalCostPerDay = rentPerRenter + buildingGarbageFeePerDay;
-
 							// --- 5b. 结算驱逐/升迁状态 ---
 							if (isHousehold)
 							{
 								// 🔧 [MOD修复] 彻底分离强迫驱离与自主改善房屋的逻辑：
-								if (totalCostPerDay > renterUpkeepCapacity)
+								if (rentPerRenter > renterUpkeepCapacity)
 								{
 									// 此家庭已被榨干最后一丝潜能，挂起待赶指令 (PropertySeeker)
 									m_CommandBuffer.SetComponentEnabled<PropertySeeker>(unfilteredChunkIndex,
@@ -554,7 +547,7 @@ namespace EconomyEX.Systems
 								}
 								// 🎲 [MOD平滑设定] 改善住房：当生活成本 < 家庭收入 15% 时表明手头极其充裕。
 								// 以 renter Index 平抑曲线并加入 30% 几率寻求改善，避免全城搬迁拥堵寻路网。
-								else if (totalCostPerDay < householdIncome * 0.15f)
+								else if (rentPerRenter < householdIncome * 0.15f)
 								{
 									if (((uint)renter.Index + m_UpdateFrameIndex) % 10 < 3)
 									{
@@ -566,7 +559,7 @@ namespace EconomyEX.Systems
 							else
 							{
 								// 公司单位统一以自身估值和流水维持破产线运转
-								if (totalCostPerDay > renterUpkeepCapacity)
+								if (rentPerRenter > renterUpkeepCapacity)
 								{
 									m_CommandBuffer.SetComponentEnabled<PropertySeeker>(unfilteredChunkIndex,
 										renter, value: true);

@@ -154,7 +154,8 @@ namespace MapExtPDX.EcoShared
 				m_SimulationFrameIndex = m_SimulationSystem.frameIndex,
 				m_CommandBuffer = m_EndFrameBarrier.CreateCommandBuffer().AsParallelWriter(),
 				m_PathfindQueue = m_PathfindSetupSystem.GetQueue(this, 64, 16).AsParallelWriter(),
-				m_RouteVehicleQueue = routeVehicleQueue.AsParallelWriter()
+				m_RouteVehicleQueue = routeVehicleQueue.AsParallelWriter(),
+				m_FindHomeMaxCost = Mod.Instance.Settings.FindHomeMaxCost
 			};
 			UpdateRouteVehiclesJob jobData2 = new UpdateRouteVehiclesJob
 			{
@@ -251,6 +252,8 @@ namespace MapExtPDX.EcoShared
 			public EntityCommandBuffer.ParallelWriter m_CommandBuffer;
 			public NativeQueue<SetupQueueItem>.ParallelWriter m_PathfindQueue;
 			public NativeQueue<RouteVehicleUpdate>.ParallelWriter m_RouteVehicleQueue;
+			// [MapExt2-MaxCost] 1.6.0f: 替代已移除的 kMaxMovingAwayCost
+			[ReadOnly] public float m_FindHomeMaxCost;
             
 			public void Execute(in ArchetypeChunk chunk, int unfilteredChunkIndex, bool useEnabledMask, in v128 chunkEnabledMask)
 			{
@@ -765,7 +768,7 @@ namespace MapExtPDX.EcoShared
 							case Purpose.Leisure:
 							case Purpose.MovingAway:
 								// [MapExt2-MaxCost] Allow massive distance taxi rides unconditionally
-								parameters.m_MaxCost = CitizenBehaviorSystem.kMaxMovingAwayCost;
+								parameters.m_MaxCost = m_FindHomeMaxCost;
 								break;
 							}
 						}

@@ -716,7 +716,7 @@ namespace MapExtPDX.EcoShared
 								parameters.m_MaxCost = m_LeisureMaxCost;
 								break;
 							case Purpose.MovingAway:
-								parameters.m_MaxCost = CitizenBehaviorSystem.kMaxMovingAwayCost;
+								parameters.m_MaxCost = m_FindHomeMaxCost;
 								break;
 							}
 						}
@@ -900,12 +900,12 @@ namespace MapExtPDX.EcoShared
 				m_MoneyTransferQueue = m_Actions.m_MoneyTransferQueue.AsParallelWriter(),
 				m_FeeQueue = m_ServiceFeeSystem.GetFeeQueue(out deps).AsParallelWriter(),
 				// [MapExt2] 从 Settings 读取分级 MaxCost
-				m_FindHomeMaxCost = Mod.Instance.CurrentSettings.FindHomeMaxCost,
-				m_FindJobMaxCost = Mod.Instance.CurrentSettings.FindJobMaxCost,
-				m_ShoppingMaxCost = Mod.Instance.CurrentSettings.ShoppingMaxCost,
-				m_LeisureMaxCost = Mod.Instance.CurrentSettings.LeisureMaxCost,
-				m_EmergencyMaxCost = Mod.Instance.CurrentSettings.EmergencyMaxCost,
-				m_FindSchoolMaxCost = Mod.Instance.CurrentSettings.FindSchoolHighSchoolMaxCost
+				m_FindHomeMaxCost = Mod.Instance.Settings.FindHomeMaxCost,
+				m_FindJobMaxCost = Mod.Instance.Settings.FindJobMaxCost,
+				m_ShoppingMaxCost = Mod.Instance.Settings.ShoppingMaxCost,
+				m_LeisureMaxCost = Mod.Instance.Settings.LeisureMaxCost,
+				m_EmergencyMaxCost = Mod.Instance.Settings.EmergencyMaxCost,
+				m_FindSchoolMaxCost = Mod.Instance.Settings.FindSchoolHighSchoolMaxCost
 			}.ScheduleParallel(m_VehicleQuery, JobHandle.CombineDependencies(Dependency, deps));
 			m_PathfindSetupSystem.AddQueueWriter(jobHandle);
 			m_EndFrameBarrier.AddJobHandleForProducer(jobHandle);

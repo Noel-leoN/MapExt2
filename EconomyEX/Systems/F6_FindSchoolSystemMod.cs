@@ -1,3 +1,4 @@
+using EconomyEX.Helpers;
 using Game.Buildings;
 using Game.Citizens;
 using Game.Common;
@@ -51,6 +52,8 @@ namespace EconomyEX.Systems
 			RequireAnyForUpdate(m_SchoolSeekerQuery, m_ResultsQuery);
 			RequireForUpdate<EconomyParameterData>();
 			RequireForUpdate<TimeData>();
+			// 1.6.0f: TripPriority 依賴
+			RequireForUpdate<TripPriorityParametersData>();
 		}
 
 		protected override void OnUpdate()
@@ -76,7 +79,9 @@ namespace EconomyEX.Systems
 					m_HouseholdCitizens = SystemAPI.GetBufferLookup<HouseholdCitizen>(isReadOnly: true),
 					m_OwnedVehicles = SystemAPI.GetBufferLookup<OwnedVehicle>(isReadOnly: true),
 					m_PathfindQueue = m_PathfindSetupSystem.GetQueue(this, 64, 16).AsParallelWriter(),
-					m_CommandBuffer = m_EndFrameBarrier.CreateCommandBuffer().AsParallelWriter()
+					m_CommandBuffer = m_EndFrameBarrier.CreateCommandBuffer().AsParallelWriter(),
+					// 1.6.0f: TripPriority 依賴
+					m_TripPriorityParameters = SystemAPI.GetSingleton<TripPriorityParametersData>()
 				};
 				Dependency = jobData.ScheduleParallel(m_SchoolSeekerQuery, Dependency);
 				m_PathfindSetupSystem.AddQueueWriter(Dependency);
@@ -133,6 +138,8 @@ namespace EconomyEX.Systems
 			public float m_DynamicFindSchoolUniversityMaxCost;
 			public NativeQueue<SetupQueueItem>.ParallelWriter m_PathfindQueue;
 			public EntityCommandBuffer.ParallelWriter m_CommandBuffer;
+			// 1.6.0f: TripPriority 依賴
+			[ReadOnly] public TripPriorityParametersData m_TripPriorityParameters;
 
 			public void Execute(in ArchetypeChunk chunk, int unfilteredChunkIndex, bool useEnabledMask, in v128 chunkEnabledMask)
 			{

@@ -4,6 +4,8 @@
 
 using System;
 using System.Reflection;
+using Colossal;
+using Colossal.Collections;
 using Colossal.Entities;
 using Game;
 using Game.Agents;
@@ -76,6 +78,21 @@ namespace MapExtPDX.ModeB
         private EntityQuery m_GarbageParameterQuery;
         private EntityQuery m_PoliceParameterQuery;
         private EntityQuery m_CitizenHappinessParameterQuery;
+        private EntityQuery m_TripPriorityParametersQuery;
+
+        // --- 1.6.0f Debug 计数器 ---
+        [DebugWatchValue] private NativeValue<int> m_DebugStartFindHomeHomeless;
+        [DebugWatchValue] private NativeValue<int> m_DebugStartFindHomeNormal;
+        [DebugWatchValue] private NativeValue<int> m_DebugRetryInvalidTarget;
+        [DebugWatchValue] private NativeValue<int> m_DebugMoveAwayNoProperty;
+        [DebugWatchValue] private NativeValue<int> m_DebugKeptOldHome;
+        [DebugWatchValue] private NativeValue<int> m_DebugRentedNewProperty;
+        private NativeCounter m_DebugStartFindHomeHomelessCounter;
+        private NativeCounter m_DebugStartFindHomeNormalCounter;
+        private NativeCounter m_DebugRetryInvalidTargetCounter;
+        private NativeCounter m_DebugMoveAwayNoPropertyCounter;
+        private NativeCounter m_DebugKeptOldHomeCounter;
+        private NativeCounter m_DebugRentedNewPropertyCounter;
 
         #endregion
 
@@ -151,6 +168,7 @@ namespace MapExtPDX.ModeB
                 }
             };
             m_FreePropertyQuery = GetEntityQuery(entityQueryDesc, entityQueryDesc2);
+            m_TripPriorityParametersQuery = GetEntityQuery(ComponentType.ReadOnly<TripPriorityParametersData>());
             RequireForUpdate(m_EconomyParameterQuery);
             RequireForUpdate(m_HealthcareParameterQuery);
             RequireForUpdate(m_ParkParameterQuery);
@@ -158,11 +176,24 @@ namespace MapExtPDX.ModeB
             RequireForUpdate(m_TelecomParameterQuery);
             RequireForUpdate(m_HouseholdQuery);
             RequireForUpdate(m_DemandParameterQuery);
+            RequireForUpdate(m_TripPriorityParametersQuery);
             m_DefaultDistribution = new DebugWatchDistribution(persistent: true, relative: true);
             m_EvaluateDistributionLow = new DebugWatchDistribution(persistent: true, relative: true);
             m_EvaluateDistributionMedium = new DebugWatchDistribution(persistent: true, relative: true);
             m_EvaluateDistributionHigh = new DebugWatchDistribution(persistent: true, relative: true);
             m_EvaluateDistributionLowrent = new DebugWatchDistribution(persistent: true, relative: true);
+            m_DebugStartFindHomeHomeless = new NativeValue<int>(Allocator.Persistent);
+            m_DebugStartFindHomeNormal = new NativeValue<int>(Allocator.Persistent);
+            m_DebugRetryInvalidTarget = new NativeValue<int>(Allocator.Persistent);
+            m_DebugMoveAwayNoProperty = new NativeValue<int>(Allocator.Persistent);
+            m_DebugKeptOldHome = new NativeValue<int>(Allocator.Persistent);
+            m_DebugRentedNewProperty = new NativeValue<int>(Allocator.Persistent);
+            m_DebugStartFindHomeHomelessCounter = new NativeCounter(Allocator.Persistent);
+            m_DebugStartFindHomeNormalCounter = new NativeCounter(Allocator.Persistent);
+            m_DebugRetryInvalidTargetCounter = new NativeCounter(Allocator.Persistent);
+            m_DebugMoveAwayNoPropertyCounter = new NativeCounter(Allocator.Persistent);
+            m_DebugKeptOldHomeCounter = new NativeCounter(Allocator.Persistent);
+            m_DebugRentedNewPropertyCounter = new NativeCounter(Allocator.Persistent);
         }
 
         protected override void OnDestroy()
@@ -172,6 +203,18 @@ namespace MapExtPDX.ModeB
             m_EvaluateDistributionMedium.Dispose();
             m_EvaluateDistributionHigh.Dispose();
             m_EvaluateDistributionLowrent.Dispose();
+            m_DebugStartFindHomeHomeless.Dispose();
+            m_DebugStartFindHomeNormal.Dispose();
+            m_DebugRetryInvalidTarget.Dispose();
+            m_DebugMoveAwayNoProperty.Dispose();
+            m_DebugKeptOldHome.Dispose();
+            m_DebugRentedNewProperty.Dispose();
+            m_DebugStartFindHomeHomelessCounter.Dispose();
+            m_DebugStartFindHomeNormalCounter.Dispose();
+            m_DebugRetryInvalidTargetCounter.Dispose();
+            m_DebugMoveAwayNoPropertyCounter.Dispose();
+            m_DebugKeptOldHomeCounter.Dispose();
+            m_DebugRentedNewPropertyCounter.Dispose();
             base.OnDestroy();
         }
 
@@ -290,15 +333,38 @@ namespace MapExtPDX.ModeB
                 m_City = m_CitySystem.City,
                 m_PathfindQueue = m_PathfindSetupSystem.GetQueue(this, 80, 16).AsParallelWriter(),
                 m_CommandBuffer = m_EndFrameBarrier.CreateCommandBuffer(),
+                m_TripPriorityParameters = m_TripPriorityParametersQuery.GetSingleton<TripPriorityParametersData>(),
                 m_DynamicFindHomeMaxCost = Mod.Instance.Settings.FindHomeMaxCost,
                 m_MaxProcessHomelessPerUpdate = Mod.Instance.Settings.HomelessSeekerCap,
-                m_MaxProcessNormalPerUpdate = Mod.Instance.Settings.HomeSeekerCap
+                m_MaxProcessNormalPerUpdate = Mod.Instance.Settings.HomeSeekerCap,
+                m_DebugStartFindHomeHomelessCounter = m_DebugStartFindHomeHomelessCounter.ToConcurrent(),
+                m_DebugStartFindHomeNormalCounter = m_DebugStartFindHomeNormalCounter.ToConcurrent(),
+                m_DebugRetryInvalidTargetCounter = m_DebugRetryInvalidTargetCounter.ToConcurrent(),
+                m_DebugMoveAwayNoPropertyCounter = m_DebugMoveAwayNoPropertyCounter.ToConcurrent(),
+                m_DebugKeptOldHomeCounter = m_DebugKeptOldHomeCounter.ToConcurrent(),
+                m_DebugRentedNewPropertyCounter = m_DebugRentedNewPropertyCounter.ToConcurrent()
             };
             JobHandle prepareJobHandle = preparePropertyJobData.ScheduleParallel(m_FreePropertyQuery,
                 JobUtils.CombineDependencies(Dependency, groundPollutionDependencies, noisePollutionDependencies,
                     airPollutionDependencies, telecomDependencies, deps));
             Dependency = findPropertyJobData.Schedule(JobHandle.CombineDependencies(prepareJobHandle,
                 movedInHouseholdListDeps, homelessHouseholdListDeps));
+            SumDebugCountersJob sumDebugJob = new SumDebugCountersJob
+            {
+                m_DebugStartFindHomeHomelessCounter = m_DebugStartFindHomeHomelessCounter,
+                m_DebugStartFindHomeNormalCounter = m_DebugStartFindHomeNormalCounter,
+                m_DebugRetryInvalidTargetCounter = m_DebugRetryInvalidTargetCounter,
+                m_DebugMoveAwayNoPropertyCounter = m_DebugMoveAwayNoPropertyCounter,
+                m_DebugKeptOldHomeCounter = m_DebugKeptOldHomeCounter,
+                m_DebugRentedNewPropertyCounter = m_DebugRentedNewPropertyCounter,
+                m_DebugStartFindHomeHomeless = m_DebugStartFindHomeHomeless,
+                m_DebugStartFindHomeNormal = m_DebugStartFindHomeNormal,
+                m_DebugRetryInvalidTarget = m_DebugRetryInvalidTarget,
+                m_DebugMoveAwayNoProperty = m_DebugMoveAwayNoProperty,
+                m_DebugKeptOldHome = m_DebugKeptOldHome,
+                m_DebugRentedNewProperty = m_DebugRentedNewProperty
+            };
+            Dependency = sumDebugJob.Schedule(Dependency);
             m_EndFrameBarrier.AddJobHandleForProducer(Dependency);
             m_PathfindSetupSystem.AddQueueWriter(Dependency);
             m_AirPollutionSystem.AddReader(Dependency);
@@ -520,9 +586,16 @@ namespace MapExtPDX.ModeB
             [ReadOnly] public Entity m_City;
             public NativeQueue<SetupQueueItem>.ParallelWriter m_PathfindQueue;
             public NativeQueue<RentAction>.ParallelWriter m_RentActionQueue;
+            [ReadOnly] public TripPriorityParametersData m_TripPriorityParameters;
             public float m_DynamicFindHomeMaxCost;
             public int m_MaxProcessHomelessPerUpdate;
             public int m_MaxProcessNormalPerUpdate;
+            public NativeCounter.Concurrent m_DebugStartFindHomeHomelessCounter;
+            public NativeCounter.Concurrent m_DebugStartFindHomeNormalCounter;
+            public NativeCounter.Concurrent m_DebugRetryInvalidTargetCounter;
+            public NativeCounter.Concurrent m_DebugMoveAwayNoPropertyCounter;
+            public NativeCounter.Concurrent m_DebugKeptOldHomeCounter;
+            public NativeCounter.Concurrent m_DebugRentedNewPropertyCounter;
 
             /// <summary>
             /// 🧳 构造寻找新家的参数（起点、方法、权重及目标分）并发出寻路请求。
@@ -764,6 +837,7 @@ namespace MapExtPDX.ModeB
                     if (m_PathInformations[householdEntity].m_State != PathFlags.Pending &&
                         math.csum(m_ResidentialPropertyData.m_FreeProperties) < 10)
                     {
+                        m_DebugMoveAwayNoPropertyCounter.Increment();
                         CitizenUtils.HouseholdMoveAway(m_CommandBuffer, householdEntity);
                     }
 
@@ -780,6 +854,7 @@ namespace MapExtPDX.ModeB
                     (isWorkplaceNull ? GetCurrentLocation(householdCitizens) : firstWorkplaceOrSchool);
                 if (householdHomeBuilding == Entity.Null && targetLocation == Entity.Null)
                 {
+                    m_DebugMoveAwayNoPropertyCounter.Increment();
                     CitizenUtils.HouseholdMoveAway(m_CommandBuffer, householdEntity);
                     return false;
                 }
@@ -790,6 +865,14 @@ namespace MapExtPDX.ModeB
                 propertySeeker.m_BestPropertyScore = bestPropertyScore;
                 propertySeeker.m_LastPropertySeekFrame = m_SimulationFrame;
                 m_PropertySeekers[householdEntity] = propertySeeker;
+                if (m_HomelessHouseholds.HasComponent(householdEntity))
+                {
+                    m_DebugStartFindHomeHomelessCounter.Increment();
+                }
+                else
+                {
+                    m_DebugStartFindHomeNormalCounter.Increment();
+                }
                 StartHomeFinding(householdEntity, commuteCitizen, targetLocation, householdHomeBuilding,
                     propertySeeker.m_BestPropertyScore, isWorkplaceNull, householdCitizens);
                 return true;
@@ -892,10 +975,12 @@ namespace MapExtPDX.ModeB
                     if (!m_HomelessHouseholds.HasComponent(householdEntity) && !needSupport &&
                         income < m_PropertyRenters[householdEntity].m_Rent)
                     {
+                        m_DebugMoveAwayNoPropertyCounter.Increment();
                         CitizenUtils.HouseholdMoveAway(m_CommandBuffer, householdEntity, MoveAwayReason.NoMoney);
                     }
                     else
                     {
+                        m_DebugKeptOldHomeCounter.Increment();
                         // 移除找房组件，消停一会不要再一直找了（进入冷却周期）
                         m_CommandBuffer.SetComponentEnabled<PropertySeeker>(householdEntity, value: false);
                     }
@@ -917,6 +1002,7 @@ namespace MapExtPDX.ModeB
                         m_CachedPropertyInfo[candidateProperty] = cachedInfo;
                     }
 
+                    m_DebugRentedNewPropertyCounter.Increment();
                     m_CommandBuffer.SetComponentEnabled<PropertySeeker>(householdEntity, value: false);
                 }
                 // 情况 3：依然无家可归，并且在收容所里也没有哪怕一个临时安身之所 -> 离开城市
@@ -925,11 +1011,13 @@ namespace MapExtPDX.ModeB
                           m_HomelessHouseholds[householdEntity].m_TempHome ==
                           Entity.Null))
                 {
+                    m_DebugMoveAwayNoPropertyCounter.Increment();
                     CitizenUtils.HouseholdMoveAway(m_CommandBuffer, householdEntity);
                 }
                 // 情况 4：没有通过验证，什么也没发生成为过眼烟云。刷新 PropertySeeker 不断重试。
                 else
                 {
+                    m_DebugRetryInvalidTargetCounter.Increment();
                     propertySeeker.m_BestProperty = default(Entity);
                     propertySeeker.m_BestPropertyScore = float.NegativeInfinity;
                     m_PropertySeekers[householdEntity] = propertySeeker;
@@ -943,6 +1031,36 @@ namespace MapExtPDX.ModeB
                         m_CommandBuffer.SetComponentEnabled<PropertySeeker>(householdEntity, value: false);
                     }
                 }
+            }
+        }
+
+        /// <summary>
+        /// [Job] 1.6.0f 新增：将并发计数器汇总到 DebugWatch 可观测值。
+        /// </summary>
+        [BurstCompile]
+        private struct SumDebugCountersJob : IJob
+        {
+            public NativeCounter m_DebugStartFindHomeHomelessCounter;
+            public NativeCounter m_DebugStartFindHomeNormalCounter;
+            public NativeCounter m_DebugRetryInvalidTargetCounter;
+            public NativeCounter m_DebugMoveAwayNoPropertyCounter;
+            public NativeCounter m_DebugKeptOldHomeCounter;
+            public NativeCounter m_DebugRentedNewPropertyCounter;
+            public NativeValue<int> m_DebugStartFindHomeHomeless;
+            public NativeValue<int> m_DebugStartFindHomeNormal;
+            public NativeValue<int> m_DebugRetryInvalidTarget;
+            public NativeValue<int> m_DebugMoveAwayNoProperty;
+            public NativeValue<int> m_DebugKeptOldHome;
+            public NativeValue<int> m_DebugRentedNewProperty;
+
+            public void Execute()
+            {
+                m_DebugStartFindHomeHomeless.value = m_DebugStartFindHomeHomelessCounter.Count;
+                m_DebugStartFindHomeNormal.value = m_DebugStartFindHomeNormalCounter.Count;
+                m_DebugRetryInvalidTarget.value = m_DebugRetryInvalidTargetCounter.Count;
+                m_DebugMoveAwayNoProperty.value = m_DebugMoveAwayNoPropertyCounter.Count;
+                m_DebugKeptOldHome.value = m_DebugKeptOldHomeCounter.Count;
+                m_DebugRentedNewProperty.value = m_DebugRentedNewPropertyCounter.Count;
             }
         }
 
@@ -1039,7 +1157,7 @@ namespace MapExtPDX.ModeB
         public TelecomParameterData m_TelecomParameters;
         public GarbageParameterData m_GarbageParameters;
         public PoliceConfigurationData m_PoliceParameters;
-        public ServiceFeeParameterData m_ServiceFeeParameterData;
+        public ServiceFeeParameterData m_ServiceFeeParameterData; // 1.6.0f: m_GarbageFeeRCIO -> m_GarbageFee
         public CitizenHappinessParameterData m_CitizenHappinessParameterData;
 
         [ReadOnly] public Entity m_City;
@@ -1166,7 +1284,7 @@ namespace MapExtPDX.ModeB
                     }
 
                     // 💰 3. 租金预判 (注意：垃圾费依旧以总户数 maxPropertiesInBuilding 分摊)
-                    int garbageFeePerProperty = m_ServiceFeeParameterData.m_GarbageFeeRCIO.x / maxPropertiesInBuilding;
+                    int garbageFeePerProperty = (int)m_ServiceFeeParameterData.m_GarbageFee.m_Default / maxPropertiesInBuilding;
                     // householdIncome 已经提取到外层循环
                     // isHouseholdNeedSupport 已经提取到外层循环
                     Entity zonePrefab = m_SpawnableDatas[prefab].m_ZonePrefab;

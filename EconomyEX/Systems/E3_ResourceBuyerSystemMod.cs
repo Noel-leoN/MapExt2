@@ -1,3 +1,4 @@
+using EconomyEX.Helpers;
 using System;
 using System.Runtime.CompilerServices;
 using Game;
@@ -64,6 +65,8 @@ namespace EconomyEX.Systems
 		private CitySystem m_CitySystem;
 		private CityProductionStatisticSystem m_CityProductionStatisticSystem;
 		private NativeQueue<SalesEvent> m_SalesQueue;
+		// 1.6.0f: TripPriority 依賴（Mod 保留自定義滑塊，此字段用於編譯對齊）
+		private EntityQuery m_TripPriorityParametersQuery;
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 
@@ -118,6 +121,8 @@ namespace EconomyEX.Systems
 			RequireForUpdate(m_BuyerQuery);
 			RequireForUpdate(m_EconomyParameterQuery);
 			RequireForUpdate(m_PopulationQuery);
+			m_TripPriorityParametersQuery = GetEntityQuery(ComponentType.ReadOnly<TripPriorityParametersData>());
+			RequireForUpdate(m_TripPriorityParametersQuery);
 		}
 
 		protected override void OnDestroy()
@@ -231,7 +236,8 @@ namespace EconomyEX.Systems
 					m_CitizenConsumptionAccumulator =
 						m_CityProductionStatisticSystem.GetCityResourceUsageAccumulator(
 							CityProductionStatisticSystem.CityResourceUsage.Consumer.Citizens, out deps),
-					m_CommandBuffer = m_EndFrameBarrier.CreateCommandBuffer()
+					m_CommandBuffer = m_EndFrameBarrier.CreateCommandBuffer(),
+					m_TripPriorityParameters = m_TripPriorityParametersQuery.GetSingleton<TripPriorityParametersData>()
 				};
 				Dependency =
 					jobData2.Schedule(JobHandle.CombineDependencies(Dependency, deps));
@@ -280,6 +286,8 @@ namespace EconomyEX.Systems
 			[ReadOnly] public ResourcePrefabs m_ResourcePrefabs;
 
 			[ReadOnly] public PersonalCarSelectData m_PersonalCarSelectData;
+			// 1.6.0f: TripPriority 依賴
+			[ReadOnly] public TripPriorityParametersData m_TripPriorityParameters;
 			[ReadOnly] public ComponentLookup<Population> m_PopulationData;
 			public NativeArray<int> m_CitizenConsumptionAccumulator;
 
@@ -721,7 +729,8 @@ namespace EconomyEX.Systems
 									m_TargetAgent = destination,
 									m_Purpose = ((!flag3) ? Purpose.Shopping : Purpose.CompanyShopping),
 									m_Data = resourceBuyer.m_AmountNeeded,
-									m_Resource = resourceBuyer.m_ResourceNeeded
+									m_Resource = resourceBuyer.m_ResourceNeeded,
+									m_Priority = 128 // 1.6.0f: 預設優先級
 								});
 								if (!m_Targets.HasComponent(entities[i]))
 								{

@@ -57,6 +57,8 @@ namespace MapExtPDX.EcoShared
 		private CityConfigurationSystem m_CityConfigurationSystem;
 		private VehicleCapacitySystem m_VehicleCapacitySystem;
 		private TriggerSystem m_TriggerSystem;
+		// 1.6.0f: TripPriority 依賴（Mod 保留自定義滑塊，此字段用於編譯對齊）
+		private EntityQuery m_TripPriorityParametersQuery;
 
 		[DebugWatchValue] private DebugWatchDistribution m_DebugPathCostsCar;
 		[DebugWatchValue] private DebugWatchDistribution m_DebugPathCostsPublic;
@@ -126,6 +128,8 @@ namespace MapExtPDX.EcoShared
 				ComponentType.ReadWrite<Blocker>()
 			});
 			m_PathfindSetupSystem = World.GetOrCreateSystemManaged<PathfindSetupSystem>();
+			m_TripPriorityParametersQuery = GetEntityQuery(ComponentType.ReadOnly<TripPriorityParametersData>());
+			RequireForUpdate(m_TripPriorityParametersQuery);
 			RequireAnyForUpdate(m_CitizenGroup, m_CompanyGroup);
 		}
 
@@ -297,6 +301,7 @@ namespace MapExtPDX.EcoShared
 					m_RandomSeed = RandomSeed.Next(),
 					m_TimeOfDay = m_TimeSystem.normalizedTime,
 					m_ResetTripArchetype = m_ResetTripArchetype,
+					m_TripPriorityParameters = m_TripPriorityParametersQuery.GetSingleton<TripPriorityParametersData>(),
 					m_HumanSpawnTypes = m_HumanSpawnTypes,
 					m_PathfindTypes = m_PathfindTypes,
 					m_PersonalCarSelectData = m_PersonalCarSelectData,
@@ -309,7 +314,8 @@ namespace MapExtPDX.EcoShared
 					// [MOD EXT]
 					m_DynamicLeisureMaxCost = Mod.Instance?.Settings?.LeisureMaxCost ?? CitizenBehaviorSystem.kMaxPathfindCost,
 					m_DynamicShoppingMaxCost = Mod.Instance?.Settings?.ShoppingMaxCost ?? CitizenBehaviorSystem.kMaxPathfindCost,
-					m_DynamicEmergencyMaxCost = Mod.Instance?.Settings?.EmergencyMaxCost ?? CitizenBehaviorSystem.kMaxPathfindCost
+					m_DynamicEmergencyMaxCost = Mod.Instance?.Settings?.EmergencyMaxCost ?? CitizenBehaviorSystem.kMaxPathfindCost,
+					m_FindHomeMaxCost = Mod.Instance?.Settings?.FindHomeMaxCost ?? CitizenBehaviorSystem.kMaxPathfindCost
 				};
 				PetTargetJob jobData2 = new PetTargetJob
 				{
@@ -873,6 +879,8 @@ namespace MapExtPDX.EcoShared
 			[ReadOnly] public RandomSeed m_RandomSeed;
 			[ReadOnly] public float m_TimeOfDay;
 			[ReadOnly] public EntityArchetype m_ResetTripArchetype;
+			// 1.6.0f: TripPriority 依賴（Mod 保留自定義滑塊，此字段供後續邏輯或編譯對齊使用）
+			[ReadOnly] public TripPriorityParametersData m_TripPriorityParameters;
 			[ReadOnly] public ComponentTypeSet m_HumanSpawnTypes;
 			[ReadOnly] public ComponentTypeSet m_PathfindTypes;
 			[ReadOnly] public PersonalCarSelectData m_PersonalCarSelectData;
@@ -888,6 +896,7 @@ namespace MapExtPDX.EcoShared
 			public float m_DynamicLeisureMaxCost;
 			public float m_DynamicShoppingMaxCost;
 			public float m_DynamicEmergencyMaxCost;
+			public float m_FindHomeMaxCost;
 
 			private void GetResidentFlags(Entity citizen, Entity currentBuilding, bool isMailSender, bool pathFailed,
 				ref Target target, ref Purpose purpose, ref Purpose divertPurpose, ref uint timer,
@@ -1332,14 +1341,14 @@ namespace MapExtPDX.EcoShared
 							if (isMovingAway)
 							{
 								// 搬家离城：使用超大范围确保能到达外部连接
-								dynamicMaxCost = CitizenBehaviorSystem.kMaxMovingAwayCost;
+								dynamicMaxCost = m_FindHomeMaxCost;
 							}
 							else if (tripInfo.m_Purpose == Purpose.GoingHome ||
 							         tripInfo.m_Purpose == Purpose.GoingToWork ||
 							         tripInfo.m_Purpose == Purpose.GoingToSchool)
 							{
 								// 刚需出行（回家/上班/上学）：使用全图可达范围，防止大地图远郊市民回不了家
-								dynamicMaxCost = CitizenBehaviorSystem.kMaxMovingAwayCost;
+								dynamicMaxCost = m_FindHomeMaxCost;
 							}
 							else if (tripInfo.m_Purpose == Purpose.Shopping ||
 							         tripInfo.m_Purpose == Purpose.CompanyShopping)
@@ -1807,7 +1816,7 @@ namespace MapExtPDX.EcoShared
 							{
 								case Purpose.GoingHome:
 									// 通勤者回外部连接：必须全范围
-									dynamicMaxCost = CitizenBehaviorSystem.kMaxMovingAwayCost;
+									dynamicMaxCost = m_FindHomeMaxCost;
 									break;
 								case Purpose.Sightseeing:
 								case Purpose.VisitAttractions:

@@ -59,7 +59,6 @@ namespace MapExtPDX.ModeC
 		private EntityQuery m_CitizenHappinessParameterQuery;
 		private EntityQuery m_BuildingParameterQuery;
 		private EntityQuery m_PollutionParameterQuery;
-		private EntityQuery m_FeeParameterQuery;
 		private EntityQuery m_BuildingQuery;
 		protected int cycles;
 
@@ -97,7 +96,6 @@ namespace MapExtPDX.ModeC
 			this.m_CitizenHappinessParameterQuery =
 				GetEntityQuery(ComponentType.ReadOnly<CitizenHappinessParameterData>());
 			this.m_PollutionParameterQuery = GetEntityQuery(ComponentType.ReadOnly<PollutionParameterData>());
-			this.m_FeeParameterQuery = GetEntityQuery(ComponentType.ReadOnly<ServiceFeeParameterData>());
 			RequireForUpdate(this.m_EconomyParameterQuery);
 			RequireForUpdate(this.m_DemandParameterQuery);
 			RequireForUpdate(this.m_HealthcareParameterQuery);
@@ -106,7 +104,6 @@ namespace MapExtPDX.ModeC
 			RequireForUpdate(this.m_TelecomParameterQuery);
 			RequireForUpdate(this.m_GarbageParameterQuery);
 			RequireForUpdate(this.m_PoliceParameterQuery);
-			RequireForUpdate(this.m_FeeParameterQuery);
 			RequireForUpdate(this.m_BuildingQuery);
 		}
 
@@ -165,7 +162,6 @@ namespace MapExtPDX.ModeC
 					m_BuildingConfigurationData =
 						this.m_BuildingParameterQuery.GetSingleton<BuildingConfigurationData>(),
 					m_PollutionParameters = this.m_PollutionParameterQuery.GetSingleton<PollutionParameterData>(),
-					m_FeeParameters = this.m_FeeParameterQuery.GetSingleton<ServiceFeeParameterData>(),
 					m_DeliveryTrucks = SystemAPI.GetComponentLookup<Game.Vehicles.DeliveryTruck>(isReadOnly: true),
 					m_ZonePropertiesDatas = SystemAPI.GetComponentLookup<ZonePropertiesData>(isReadOnly: true),
 					m_ServiceAvailables = SystemAPI.GetComponentLookup<ServiceAvailable>(isReadOnly: true),
@@ -271,7 +267,6 @@ namespace MapExtPDX.ModeC
 			public CitizenHappinessParameterData m_CitizenHappinessParameterData;
 			public BuildingConfigurationData m_BuildingConfigurationData;
 			public PollutionParameterData m_PollutionParameters;
-			public ServiceFeeParameterData m_FeeParameters;
 			public IconCommandBuffer m_IconCommandBuffer;
 			public uint m_UpdateFrameIndex;
 			[ReadOnly] public Entity m_City;
@@ -416,7 +411,7 @@ namespace MapExtPDX.ModeC
 					}
 
 					this.ProcessPollutionNotification(areaType, entity, cityModifiers);
-					int buildingGarbageFeePerDay = this.m_FeeParameters.GetBuildingGarbageFeePerDay(areaType, isOffice);
+					int buildingGarbageFeePerDay = 0;
 					int rentPricePerRenter = GetModdedRentPerRenter(buildingPropertyData, buildingLevel,
 						lotSize, landValueBase, areaType, ref this.m_EconomyParameterData, ignoreLandValue, in this.m_RentTuning);
 					if (this.m_OnMarkets.HasComponent(entity))

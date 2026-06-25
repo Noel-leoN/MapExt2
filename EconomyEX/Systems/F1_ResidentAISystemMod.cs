@@ -247,7 +247,8 @@ namespace EconomyEX.Systems
 				m_PathfindQueue = m_PathfindSetupSystem.GetQueue(this, 64, 16).AsParallelWriter(),
 				m_BoardingQueue = m_Actions.m_BoardingQueue.AsParallelWriter(),
 				m_ActionQueue = m_Actions.m_ActionQueue.AsParallelWriter(),
-				m_CommandBuffer = m_EndFrameBarrier.CreateCommandBuffer().AsParallelWriter()
+				m_CommandBuffer = m_EndFrameBarrier.CreateCommandBuffer().AsParallelWriter(),
+				m_FindHomeMaxCost = Mod.Instance.Settings.FindHomeMaxCost
 			};
 			JobHandle dependsOn = jobData.ScheduleParallel(m_CreatureQuery,
 				JobHandle.CombineDependencies(Dependency, jobHandle));
@@ -406,6 +407,8 @@ namespace EconomyEX.Systems
 			public NativeQueue<Boarding>.ParallelWriter m_BoardingQueue;
 			public NativeQueue<ResidentAction>.ParallelWriter m_ActionQueue;
 			public EntityCommandBuffer.ParallelWriter m_CommandBuffer;
+			// [MapExt2-MaxCost] 1.6.0f: 替代已移除的 kMaxMovingAwayCost
+			[ReadOnly] public float m_FindHomeMaxCost;
 
 			public void Execute(in ArchetypeChunk chunk, int unfilteredChunkIndex, bool useEnabledMask,
 				in v128 chunkEnabledMask)
@@ -3336,7 +3339,7 @@ namespace EconomyEX.Systems
 						case Purpose.GoingToWork:
 						case Purpose.GoingToSchool:
 						case Purpose.MovingAway:
-							parameters.m_MaxCost = CitizenBehaviorSystem.kMaxMovingAwayCost;
+							parameters.m_MaxCost = m_FindHomeMaxCost;
 							break;
 					}
 				}
