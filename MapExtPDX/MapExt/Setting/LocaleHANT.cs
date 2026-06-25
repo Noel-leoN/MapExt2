@@ -255,12 +255,12 @@ namespace MapExtPDX
                     "★ 建議值：\n" +
                     " - 全地圖通用：4000 ~ 8000（預設：6000）"
                 },
-                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.FindJobMaxCost)), "找工作最高尋路成本" },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.FindJobCostMultiplier)), "找工作尋路成本乘數" },
                 {
-                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.FindJobMaxCost)),
-                    "控制市民為了尋求工作崗位，最多願意跨越多大規模的地圖。該行為頻率極低，建議直接拉滿（對性能影響不明顯）。\n" +
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.FindJobCostMultiplier)),
+                    "控制市民為了尋求工作崗位，最多願意跨越多少地圖像素距離（基於出行優先級基準的乘數）。乘數越高，大地圖遠郊孤島小鎮越容易招到工人。\n" +
                     "★ 建議值：\n" +
-                    " - 全地圖通用：200000"
+                    " - 全地圖通用：14.3（預設，對應約 20.0 km）"
                 },
                 { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.FindHomeMaxCost)), "找房搬家最高尋路成本" },
                 {

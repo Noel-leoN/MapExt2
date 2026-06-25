@@ -232,12 +232,20 @@
 }
 
 .sliderValue {
-    width: 64rem;
+    width: 85rem;
     flex-shrink: 0;
     text-align: right;
     font-size: 12rem;
     color: #7cc0ff;
     font-weight: 500;
+}
+
+.sliderSubValue {
+    font-size: 9.5rem;
+    color: rgba(140, 160, 190, 0.85);
+    font-weight: 400;
+    margin-left: 3rem;
+    white-space: nowrap;
 }
 
 /* === 重置按钮 === */

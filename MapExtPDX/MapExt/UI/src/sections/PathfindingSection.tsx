@@ -5,8 +5,8 @@ import { SliderControl } from "../components/SliderControl";
 import {
     shopMaxCost$, leisureMaxCost$,
     setShopMaxCost, setLeisureMaxCost,
-    emergencyMaxCost$, findJobMaxCost$, findHomeMaxCost$, findSchoolElemMaxCost$,
-    setEmergencyMaxCost, setFindJobMaxCost, setFindHomeMaxCost, setFindSchoolElemMaxCost,
+    emergencyMaxCost$, findJobMultiplier$, findHomeMaxCost$, findSchoolElemMaxCost$,
+    setEmergencyMaxCost, setFindJobMultiplier, setFindHomeMaxCost, setFindSchoolElemMaxCost,
     resetPathfinding,
 } from "../bindings";
 import styles from "../mapext.module.scss";
@@ -48,11 +48,12 @@ export const PathfindingSection: React.FC = () => {
             />
             <SliderControl
                 label={t("findJobLabel")}
-                binding={findJobMaxCost$}
-                commit={setFindJobMaxCost}
-                min={17000} max={200000} step={1000}
-                unit=""
+                binding={findJobMultiplier$}
+                commit={setFindJobMultiplier}
+                min={1.0} max={20.0} step={0.5}
+                unit="×"
                 tooltip={t("findJobMax")}
+                displayTransform={(v: number) => `~${(v * 14025 / 10000).toFixed(1)} km`}
             />
             <SliderControl
                 label={t("findHomeLabel")}

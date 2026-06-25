@@ -57,7 +57,7 @@ namespace MapExtPDX.UI
         private ValueBinding<float> m_ShoppingMaxCost;
         private ValueBinding<float> m_LeisureMaxCost;
         private ValueBinding<float> m_EmergencyMaxCost;
-        private ValueBinding<float> m_FindJobMaxCost;
+        private ValueBinding<float> m_FindJobCostMultiplier;
         private ValueBinding<float> m_FindHomeMaxCost;
         private ValueBinding<float> m_FindSchoolElemMaxCost;
 
@@ -231,12 +231,12 @@ namespace MapExtPDX.UI
                 m_EmergencyMaxCost.Update(v);
             }));
 
-            // --- 找工作寻路上限 ---
-            AddBinding(m_FindJobMaxCost = new ValueBinding<float>(kGroup, "FindJobMaxCost", s.FindJobMaxCost));
-            AddBinding(new TriggerBinding<float>(kGroup, "SetFindJobMaxCost", v =>
+            // --- 找工作寻路倍率 ---
+            AddBinding(m_FindJobCostMultiplier = new ValueBinding<float>(kGroup, "FindJobCostMultiplier", s.FindJobCostMultiplier));
+            AddBinding(new TriggerBinding<float>(kGroup, "SetFindJobCostMultiplier", v =>
             {
-                Mod.Instance.Settings.FindJobMaxCost = v;
-                m_FindJobMaxCost.Update(v);
+                Mod.Instance.Settings.FindJobCostMultiplier = v;
+                m_FindJobCostMultiplier.Update(v);
             }));
 
             // --- 找房寻路上限 ---
@@ -430,14 +430,14 @@ namespace MapExtPDX.UI
                 settings.ShoppingMaxCost = 8000f;
                 settings.LeisureMaxCost = 12000f;
                 settings.EmergencyMaxCost = 6000f;
-                settings.FindJobMaxCost = 200000f;
+                settings.FindJobCostMultiplier = 14.3f;
                 settings.FindHomeMaxCost = 200000f;
                 settings.FindSchoolElementaryMaxCost = 10000f;
 
                 m_ShoppingMaxCost.Update(8000f);
                 m_LeisureMaxCost.Update(12000f);
                 m_EmergencyMaxCost.Update(6000f);
-                m_FindJobMaxCost.Update(200000f);
+                m_FindJobCostMultiplier.Update(14.3f);
                 m_FindHomeMaxCost.Update(200000f);
                 m_FindSchoolElemMaxCost.Update(10000f);
             }));
@@ -604,8 +604,8 @@ namespace MapExtPDX.UI
             if (m_EmergencyMaxCost.value != s.EmergencyMaxCost)
                 m_EmergencyMaxCost.Update(s.EmergencyMaxCost);
 
-            if (m_FindJobMaxCost.value != s.FindJobMaxCost)
-                m_FindJobMaxCost.Update(s.FindJobMaxCost);
+            if (m_FindJobCostMultiplier.value != s.FindJobCostMultiplier)
+                m_FindJobCostMultiplier.Update(s.FindJobCostMultiplier);
 
             if (m_FindHomeMaxCost.value != s.FindHomeMaxCost)
                 m_FindHomeMaxCost.Update(s.FindHomeMaxCost);

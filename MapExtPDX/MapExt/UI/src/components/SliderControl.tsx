@@ -17,6 +17,8 @@ export interface SliderControlProps {
     step: number;
     unit?: string;
     tooltip?: string;
+    /** 可選：將數值轉換為額外顯示文字（如距離 km），顯示在值后方 */
+    displayTransform?: (value: number) => string;
 }
 
 /** 根据 step 精度格式化显示值，避免 IEEE 754 浮点溢出 */
@@ -27,7 +29,7 @@ function formatValue(value: number, step: number): string {
 }
 
 export const SliderControl: React.FC<SliderControlProps> = ({
-    label, binding, commit, min, max, step, unit = "%", tooltip
+    label, binding, commit, min, max, step, unit = "%", tooltip, displayTransform
 }) => {
     const serverValue = useValue(binding);
     const [localValue, setLocalValue] = useState<number | null>(null);
@@ -114,6 +116,7 @@ export const SliderControl: React.FC<SliderControlProps> = ({
             </div>
             <span className={styles.sliderValue}>
                 {formatValue(displayValue, step)}{unit}
+                {displayTransform && <span className={styles.sliderSubValue}> {displayTransform(displayValue)}</span>}
             </span>
         </div>
     );
