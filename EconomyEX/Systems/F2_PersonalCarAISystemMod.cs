@@ -806,6 +806,7 @@ namespace EconomyEX.Systems
 		private EntityQuery m_VehicleQuery;
 		private ComponentTypeSet m_MovingToParkedCarRemoveTypes;
 		private ComponentTypeSet m_MovingToParkedCarAddTypes;
+		private EntityQuery m_TripPriorityParametersQuery; // 1.6.0f: TripPriority 查詢
 
 		protected override void OnCreate()
 		{
@@ -833,6 +834,7 @@ namespace EconomyEX.Systems
 				ComponentType.ReadWrite<PathElement>()
 			});
 			m_MovingToParkedCarAddTypes = new ComponentTypeSet(ComponentType.ReadWrite<ParkedCar>(), ComponentType.ReadWrite<Stopped>(), ComponentType.ReadWrite<Updated>());
+			m_TripPriorityParametersQuery = GetEntityQuery(ComponentType.ReadOnly<TripPriorityParametersData>());
 		}
 
 		protected override void OnUpdate()
@@ -842,6 +844,10 @@ namespace EconomyEX.Systems
 			m_VehicleQuery.SetSharedComponentFilter(new UpdateFrame(index));
 			m_Actions.m_MoneyTransferQueue = new NativeQueue<MoneyTransfer>(Allocator.TempJob);
 			JobHandle deps;
+			// [1.6.0f] 主线程取一次 TripPriority singleton，计算 FindJob MaxCost = GetMaxCost(GoingToWork) × 1.1 × 用户乘数
+			var tripParams = m_TripPriorityParametersQuery.GetSingleton<TripPriorityParametersData>();
+			float findJobMaxCost = tripParams.GetMaxCost(tripParams.m_PriorityGoingToWork) * 1.1f
+				* Mod.Instance.Settings.FindJobCostMultiplier;
 			JobHandle jobHandle = new PersonalCarTickJob
 			{
 				m_EntityType = SystemAPI.GetEntityTypeHandle(),
@@ -901,7 +907,7 @@ namespace EconomyEX.Systems
 				m_FeeQueue = m_ServiceFeeSystem.GetFeeQueue(out deps).AsParallelWriter(),
 				// [MapExt2] 从 Settings 读取分级 MaxCost
 				m_FindHomeMaxCost = Mod.Instance.Settings.FindHomeMaxCost,
-				m_FindJobMaxCost = Mod.Instance.Settings.FindJobMaxCost,
+				m_FindJobMaxCost = findJobMaxCost,
 				m_ShoppingMaxCost = Mod.Instance.Settings.ShoppingMaxCost,
 				m_LeisureMaxCost = Mod.Instance.Settings.LeisureMaxCost,
 				m_EmergencyMaxCost = Mod.Instance.Settings.EmergencyMaxCost,

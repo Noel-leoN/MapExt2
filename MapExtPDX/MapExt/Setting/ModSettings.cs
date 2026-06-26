@@ -342,8 +342,7 @@ namespace MapExtPDX
             unit = Game.UI.Unit.kFloatSingleFraction)]
         public float FindJobCostMultiplier { get; set; } = 14.3f;
 
-        // [MapExt2] Temporarily restored for debug/restore purposes
-        public float FindJobMaxCost { get; set; } = 200000f;
+
 
         [SettingsUISection(kMiscTab, kPathfindingGroup)]
         [SettingsUISlider(min = 17000f, max = 200000f, step = 1000f, scalarMultiplier = 1f,
@@ -382,7 +381,6 @@ namespace MapExtPDX
                 LeisureMaxCost = 12000f;
                 EmergencyMaxCost = 6000f;
                 FindJobCostMultiplier = 14.3f;
-                FindJobMaxCost = 200000f;
                 FindHomeMaxCost = 200000f;
                 FindSchoolElementaryMaxCost = 10000f;
                 FindSchoolHighSchoolMaxCost = 17000f;
@@ -926,7 +924,6 @@ namespace MapExtPDX
             LeisureMaxCost = 12000f;
             EmergencyMaxCost = 6000f;
             FindJobCostMultiplier = 14.3f;
-            FindJobMaxCost = 200000f;
             FindHomeMaxCost = 200000f;
             FindSchoolElementaryMaxCost = 10000f;
             FindSchoolHighSchoolMaxCost = 17000f;

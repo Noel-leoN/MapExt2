@@ -276,6 +276,7 @@ namespace EconomyEX.Systems
 					m_Targets = SystemAPI.GetComponentLookup<Target>(isReadOnly: true),
 					m_Deleteds = SystemAPI.GetComponentLookup<Deleted>(isReadOnly: true),
 					m_PathElements = SystemAPI.GetBufferLookup<PathElement>(isReadOnly: true),
+					m_OwnedVehicles = SystemAPI.GetBufferLookup<OwnedVehicle>(isReadOnly: true),
 					m_CarKeepers = SystemAPI.GetComponentLookup<CarKeeper>(isReadOnly: true),
 					m_BicycleOwners = SystemAPI.GetComponentLookup<BicycleOwner>(isReadOnly: true),
 					m_PropertyRenters = SystemAPI.GetComponentLookup<PropertyRenter>(isReadOnly: true),
@@ -861,6 +862,7 @@ namespace EconomyEX.Systems
 			[ReadOnly] public ComponentLookup<Target> m_Targets;
 			[ReadOnly] public ComponentLookup<Deleted> m_Deleteds;
 			[ReadOnly] public BufferLookup<PathElement> m_PathElements;
+			[ReadOnly] public BufferLookup<OwnedVehicle> m_OwnedVehicles; // 1.6.0f: 离职/退学门控所需（HouseholdHasCar）
 			[ReadOnly] public ComponentLookup<CarKeeper> m_CarKeepers;
 			[ReadOnly] public ComponentLookup<BicycleOwner> m_BicycleOwners;
 			[ReadOnly] public ComponentLookup<PropertyRenter> m_PropertyRenters;
@@ -1582,9 +1584,16 @@ namespace EconomyEX.Systems
 									Worker value3 = m_Workers[entity];
 									if (componentData.m_Destination == Entity.Null)
 									{
-										m_CommandBuffer.RemoveComponent<Worker>(unfilteredChunkIndex, entity);
-										m_TriggerBuffer.Enqueue(new TriggerAction(TriggerType.CitizenBecameUnemployed,
-											Entity.Null, entity, value3.m_Workplace));
+										// 1.6.0f: 仅当市民是开车通勤者(CarKeeper)或家庭无车时才解雇。
+										// 大地图上无车市民通勤距离更远、更易不可达,此门控避免其被直接解雇。
+										bool isCarKeeper = m_CarKeepers.IsComponentEnabled(entity);
+										bool householdHasCar = CitizenUtils.HouseholdHasCar(household, m_OwnedVehicles, m_PersonalCarData);
+										if (isCarKeeper || !householdHasCar)
+										{
+											m_CommandBuffer.RemoveComponent<Worker>(unfilteredChunkIndex, entity);
+											m_TriggerBuffer.Enqueue(new TriggerAction(TriggerType.CitizenBecameUnemployed,
+												Entity.Null, entity, value3.m_Workplace));
+										}
 									}
 									else
 									{
@@ -1595,16 +1604,23 @@ namespace EconomyEX.Systems
 								else if (tripNeeded.m_Purpose == Purpose.GoingToSchool &&
 								         m_Students.HasComponent(entity))
 								{
+									Game.Citizens.Student value4 = m_Students[entity];
 									if (componentData.m_Destination == Entity.Null)
 									{
-										m_CommandBuffer.AddComponent<StudentsRemoved>(unfilteredChunkIndex,
-											m_Students[entity].m_School);
-										m_CommandBuffer.RemoveComponent<Game.Citizens.Student>(unfilteredChunkIndex,
-											entity);
+										// 1.6.0f: 小学生(Level==1)永不退学;其余仅开车通勤者或家庭无车时才退学。
+										bool isElementary = value4.m_Level == 1;
+										bool isCarKeeper = m_CarKeepers.IsComponentEnabled(entity);
+										bool householdHasCar = CitizenUtils.HouseholdHasCar(household, m_OwnedVehicles, m_PersonalCarData);
+										if (!isElementary && (isCarKeeper || !householdHasCar))
+										{
+											m_CommandBuffer.AddComponent<StudentsRemoved>(unfilteredChunkIndex,
+												value4.m_School);
+											m_CommandBuffer.RemoveComponent<Game.Citizens.Student>(unfilteredChunkIndex,
+												entity);
+										}
 									}
 									else
 									{
-										Game.Citizens.Student value4 = m_Students[entity];
 										value4.m_LastCommuteTime = componentData.m_Duration;
 										m_Students[entity] = value4;
 									}

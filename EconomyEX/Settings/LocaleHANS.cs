@@ -86,11 +86,12 @@ namespace EconomyEX.Settings
                     "★ 提示：建议在此成本范围内合理布局医院与警局。若相关设施非常密集，可进一步降低此值。\n" +
                     "★ 建议值：4000 ~ 8000（默认：6000）"
                 },
-                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.FindJobMaxCost)), "找工作最高寻路成本" },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.FindJobCostMultiplier)), "找工作寻路成本乘数" },
                 {
-                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.FindJobMaxCost)),
-                    "控制市民为了寻求工作岗位，最多愿意跨越多大规模的地图。该行为频率极低，建议直接拉满（对性能影响不明显）。\n" +
-                    "★ 建议值：200000"
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.FindJobCostMultiplier)),
+                    "控制市民为了寻求工作岗位，最多愿意跨越多少地图像素距离（基于出行优先级基准的乘数）。乘数越高，大地图远郊孤岛小镇越容易招到工人。\n" +
+                    "★ 建议值：\n" +
+                    " - 全地图通用：14.3（默认，对应约 20.0 km）"
                 },
                 { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.FindHomeMaxCost)), "找房搬家最高寻路成本" },
                 {

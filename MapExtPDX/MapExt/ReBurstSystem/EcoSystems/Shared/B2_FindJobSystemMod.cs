@@ -229,6 +229,11 @@ namespace MapExtPDX.EcoShared
                 m_FreeCache = m_FreeCache
             }.ScheduleParallel(m_FreeQuery, resetCacheJob);
 
+            // [1.6.0f] 主线程计算 FindJob 实际 MaxCost = GetMaxCost(GoingToWork) × 1.1 × 用户乘数
+            var tripParams = m_TripPriorityParametersQuery.GetSingleton<TripPriorityParametersData>();
+            float findJobMaxCost = tripParams.GetMaxCost(tripParams.m_PriorityGoingToWork) * 1.1f
+                                   * Mod.Instance.Settings.FindJobCostMultiplier;
+
             // 查找工作任务
             var findJobJob = new FindJobJob
             {
@@ -251,6 +256,7 @@ namespace MapExtPDX.EcoShared
                 // 缓冲区查找
                 m_HouseholdCitizens = SystemAPI.GetBufferLookup<HouseholdCitizen>(true),
                 m_OwnedVehicles = SystemAPI.GetBufferLookup<OwnedVehicle>(true),
+                m_PersonalCars = SystemAPI.GetComponentLookup<Game.Vehicles.PersonalCar>(true),
 
                 // 系统数据
                 m_PathfindQueue = m_PathfindSetupSystem.GetQueue(this, 80, 16).AsParallelWriter(),
@@ -258,7 +264,7 @@ namespace MapExtPDX.EcoShared
                 m_FreeCache = m_FreeCache,
                 m_EmployableByEducation = m_CountHouseholdDataSystem.GetEmployables(out var employableDeps),
                 m_RandomSeed = RandomSeed.Next(),
-                m_DynamicFindJobMaxCost = Mod.Instance.Settings.FindJobMaxCost,
+                m_FindJobMaxCost = findJobMaxCost,
                 m_TripPriorityParameters = m_TripPriorityParametersQuery.GetSingleton<TripPriorityParametersData>(),
 
                 // [优化] 传入计数器进行限流（从 ModSettings 读取）
@@ -466,6 +472,7 @@ namespace MapExtPDX.EcoShared
             [ReadOnly] public ComponentLookup<Deleted> m_Deleteds; // 已删除标记查询
             [ReadOnly] public BufferLookup<HouseholdCitizen> m_HouseholdCitizens; // 家庭市民缓冲区
             [ReadOnly] public BufferLookup<OwnedVehicle> m_OwnedVehicles; // 拥有车辆缓冲区
+            [ReadOnly] public ComponentLookup<Game.Vehicles.PersonalCar> m_PersonalCars; // 1.6.0f: 车辆检查
 
             public NativeQueue<SetupQueueItem>.ParallelWriter m_PathfindQueue; // 寻路队列写入器
             public EntityCommandBuffer.ParallelWriter m_CommandBuffer; // 命令缓冲区（用于添加/删除组件）
@@ -476,7 +483,7 @@ namespace MapExtPDX.EcoShared
 
             public RandomSeed m_RandomSeed; // 随机种子
 
-            public float m_DynamicFindJobMaxCost; // 动态最大寻路成本
+            public float m_FindJobMaxCost; // 寻路最大成本（主线程计算：基准值 × 乘数）
             // 1.6.0f: TripPriority 依賴
             [ReadOnly] public TripPriorityParametersData m_TripPriorityParameters;
 
@@ -650,14 +657,21 @@ namespace MapExtPDX.EcoShared
                         Household householdData = m_Households[householdEntity];
                         DynamicBuffer<HouseholdCitizen> householdCitizens = m_HouseholdCitizens[householdEntity];
 
+                        // 1.6.0f: 显式检查是否有车，决定寻路方式
+                        PathMethod pathMethod = PathMethod.Pedestrian | PathMethod.PublicTransportDay | PathMethod.PublicTransportNight;
+                        if (CitizenUtils.HouseholdHasCar(householdEntity, m_OwnedVehicles, m_PersonalCars))
+                        {
+                            pathMethod |= PathMethod.Road | PathMethod.MediumRoad;
+                        }
+
                         // 配置寻路参数
                         PathfindParameters parameters = new PathfindParameters
                         {
                             m_MaxSpeed = 111.111115f, // 极高速度，通常用于抽象计算
                             m_WalkSpeed = 1.6666667f, // 步行速度 (~6km/h)
                             m_Weights = CitizenUtils.GetPathfindWeights(citizenData, householdData, householdCitizens.Length),
-                            m_Methods = (PathMethod.Pedestrian | PathMethod.PublicTransportDay | PathMethod.PublicTransportNight),
-                            m_MaxCost = m_DynamicFindJobMaxCost,
+                            m_Methods = pathMethod,
+                            m_MaxCost = m_FindJobMaxCost,
                             m_PathfindFlags = (PathfindFlags.Simplified | PathfindFlags.IgnorePath) // 简化寻路，不需要实际路径，只需要找到目的地
                         };
 

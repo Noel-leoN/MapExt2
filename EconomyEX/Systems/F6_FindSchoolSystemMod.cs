@@ -78,6 +78,7 @@ namespace EconomyEX.Systems
 					m_Households = SystemAPI.GetComponentLookup<Household>(isReadOnly: true),
 					m_HouseholdCitizens = SystemAPI.GetBufferLookup<HouseholdCitizen>(isReadOnly: true),
 					m_OwnedVehicles = SystemAPI.GetBufferLookup<OwnedVehicle>(isReadOnly: true),
+					m_PersonalCars = SystemAPI.GetComponentLookup<Game.Vehicles.PersonalCar>(isReadOnly: true),
 					m_PathfindQueue = m_PathfindSetupSystem.GetQueue(this, 64, 16).AsParallelWriter(),
 					m_CommandBuffer = m_EndFrameBarrier.CreateCommandBuffer().AsParallelWriter(),
 					// 1.6.0f: TripPriority 依賴
@@ -131,6 +132,7 @@ namespace EconomyEX.Systems
 			[ReadOnly] public ComponentLookup<Household> m_Households;
 			[ReadOnly] public BufferLookup<HouseholdCitizen> m_HouseholdCitizens;
 			[ReadOnly] public BufferLookup<OwnedVehicle> m_OwnedVehicles;
+			[ReadOnly] public ComponentLookup<Game.Vehicles.PersonalCar> m_PersonalCars; // 1.6.0f: HouseholdHasCar 门控
 			// [MapExt2-MaxCost] Inject settings variables
 			public float m_DynamicFindSchoolElementaryMaxCost;
 			public float m_DynamicFindSchoolHighSchoolMaxCost;
@@ -183,12 +185,19 @@ namespace EconomyEX.Systems
 							_ => CitizenBehaviorSystem.kMaxPathfindCost
 						};
 
+						// 1.6.0f: 有车家庭的学生在寻路方法中加入车道，避免大地图上仅靠步行/公交不可达而失学
+						PathMethod schoolMethods = PathMethod.Pedestrian | PathMethod.PublicTransportDay;
+						if (CitizenUtils.HouseholdHasCar(household, m_OwnedVehicles, m_PersonalCars))
+						{
+							schoolMethods |= PathMethod.Road | PathMethod.MediumRoad;
+						}
+
 						PathfindParameters parameters = new PathfindParameters
 						{
 							m_MaxSpeed = 111.111115f,
 							m_WalkSpeed = 1.6666667f,
 							m_Weights = CitizenUtils.GetPathfindWeights(citizen, householdData, householdCitizens.Length),
-							m_Methods = PathMethod.Pedestrian | PathMethod.PublicTransportDay,
+							m_Methods = schoolMethods,
 							m_MaxCost = dynamicMaxCost,
 							m_PathfindFlags = PathfindFlags.Simplified | PathfindFlags.IgnorePath
 						};
