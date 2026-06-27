@@ -1,39 +1,17 @@
-## [4.2.1] - 2026-06-15
+## v4.3.0 - Game 1.6.0f Compatibility
 
-### 🐛 修复 / Fixed
-
-- 修复了在地图编辑器中调整地形时，水面模拟速度异常跳变（忽快忽慢）的问题，使水流表现更稳定自然。
-  Fixed abnormal water simulation speed jitter when editing terrain in the map editor, making water flow more stable and natural.
-- 修复了在原版地图尺寸下，退出到主菜单后再次载入存档时，地价与部分经济相关数据可能出现异常的问题。
-  Fixed a potential land value and economy data anomaly when reloading a save on vanilla-size maps after returning to the main menu.
-
-### 🗑️ 移除 / Removed
-
-- 暂时移除了此前不稳定的水流速度手动调节功能，避免引发异常表现。
-  Temporarily removed the previously unstable manual water flow speed control to prevent abnormal behavior.
-
----
-
-## v4.2.0 - Enhanced Mod Conflict Auto-Detection
-
-* **[Conflict Detection]:** Conflicting economy system groups are now automatically disabled at startup when known incompatible mods are detected.
-* **[Conflict Detection]:** Added a critical CellMap conflict warning popup that shows affected systems and all loaded mods when a CellMap system is unexpectedly disabled.
-* **[Conflict Detection]:** Added main menu notification when economy system groups are auto-disabled due to conflicts.
-* **[Conflict Detection]:** Added an incompatibility warning for RealisticPathFinding (RPF), which cannot coexist with MapExt2.
-* **[Performance]:** Changed system conflict monitoring to passive diagnostic mode with zero runtime overhead.
-* **[Fix]:** Fixed SoilWaterSystem registration to match vanilla behavior.
-* **[Fix]:** Fixed PersonalCarAISystem missing save-load phase registration.
-* **[UI]:** Added system status tooltip in the in-game panel.
+* **[Compatibility]:** Updated the mod for Cities: Skylines II 1.6.0f.
+* **[Fix]:** Citizens without a car and elementary school students are no longer incorrectly dismissed from their job or school when destinations are far away on large maps.
+* **[Fix]:** Households that lost their property are now correctly marked as homeless.
+* **[Economy]:** Building rent calculation updated to match the 1.6.0f garbage fee changes.
+* **[Settings]:** The Find Job pathfinding slider now uses an absolute cost value, consistent with the other pathfinding sliders.
 
 ---
 
 ### 主要改动
 
-* **[冲突检测]：** 启动时检测到已知冲突 Mod 后，自动禁用对应的经济系统组，无需手动干预。
-* **[冲突检测]：** 新增 CellMap 严重冲突弹窗，显示受影响的系统和所有已加载的 Mod。
-* **[冲突检测]：** 新增主菜单通知，提示因冲突被自动禁用的系统组。
-* **[冲突检测]：** 新增 RealisticPathFinding (RPF) 不兼容警告。
-* **[性能]：** 冲突监控改为被动诊断模式，零运行时开销。
-* **[修复]：** 修正 SoilWaterSystem 注册方式以匹配原版行为。
-* **[修复]：** 补全 PersonalCarAISystem 存档加载阶段的注册。
-* **[UI]：** 在游戏内面板新增系统状态悬停提示。
+* **[兼容性]：** 适配《城市：天际线 2》1.6.0f 版本。
+* **[修复]：** 大地图上无车市民与小学生不再因目的地过远而被异常解雇或退学。
+* **[修复]：** 修复失去房产的家庭未被正确标记为无家可归的问题。
+* **[经济]：** 建筑租金计算适配 1.6.0f 的垃圾费机制调整。
+* **[设置]：** 找工作寻路滑块改为绝对成本数值，与其他寻路滑块单位统一。

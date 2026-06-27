@@ -230,10 +230,8 @@ namespace EconomyEX.Systems
                 m_FreeCache = m_FreeCache
             }.ScheduleParallel(m_FreeQuery, resetCacheJob);
 
-            // [1.6.0f] 主线程计算 FindJob 实际 MaxCost = GetMaxCost(GoingToWork) × 1.1 × 用户乘数
-            var tripParams = m_TripPriorityParametersQuery.GetSingleton<TripPriorityParametersData>();
-            float findJobMaxCost = tripParams.GetMaxCost(tripParams.m_PriorityGoingToWork) * 1.1f
-                                   * Mod.Instance.Settings.FindJobCostMultiplier;
+            // [1.6.0f] FindJob 寻路 MaxCost：用户可调绝对成本上限（方案 B，与其余寻路滑块单位统一）
+            float findJobMaxCost = Mod.Instance.Settings.FindJobMaxCost;
 
             // 查找工作任务
             var findJobJob = new FindJobJob

@@ -1,15 +1,15 @@
-## v4.2.0 - Enhanced Mod Conflict Auto-Detection
+## v4.3.0 - Game 1.6.0f Compatibility
 
-* **[Conflict Detection]:** Conflicting economy system groups are now automatically disabled at startup when known incompatible mods are detected.
-* **[Conflict Detection]:** Added main menu notification when economy system groups are auto-disabled due to conflicts.
-* **[Conflict Detection]:** When MapExtPDX is also loaded, EconomyEX defers all conflict monitoring to MapExtPDX to avoid duplicate checks.
-* **[Performance]:** Changed system conflict monitoring to passive diagnostic mode with zero runtime overhead.
+* **[Compatibility]:** Updated for game version 1.6.0f.
+* **[Fix]:** Citizens without a car and elementary school students are no longer dropped from their job or school when a route is temporarily unreachable.
+* **[Fix]:** Fixed an issue where households that lost their home were not correctly marked as homeless.
+* **[Economy]:** Adjusted rent calculation to match the reworked garbage fee structure in 1.6.0f.
 
 ---
 
 ### 主要改动
 
-* **[冲突检测]：** 启动时检测到已知冲突 Mod 后，自动禁用对应的经济系统组，无需手动干预。
-* **[冲突检测]：** 新增主菜单通知，提示因冲突被自动禁用的系统组。
-* **[冲突检测]：** 当 MapExtPDX 同时加载时，EconomyEX 将冲突监控委托给 MapExtPDX，避免重复检测。
-* **[性能]：** 冲突监控改为被动诊断模式，零运行时开销。
+* **[兼容性]：** 适配游戏 1.6.0f 版本。
+* **[修复]：** 无车市民与小学生不再因路线暂时无法到达而被解雇或退学。
+* **[修复]：** 修复了失去住房的家庭未能正确标记为无家可归的问题。
+* **[经济]：** 调整租金计算以适配 1.6.0f 重构后的垃圾费结构。

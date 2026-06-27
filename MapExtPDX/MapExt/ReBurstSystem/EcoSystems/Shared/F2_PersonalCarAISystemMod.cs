@@ -844,10 +844,8 @@ namespace MapExtPDX.EcoShared
 			m_VehicleQuery.SetSharedComponentFilter(new UpdateFrame(index));
 			m_Actions.m_MoneyTransferQueue = new NativeQueue<MoneyTransfer>(Allocator.TempJob);
 			JobHandle deps;
-			// [1.6.0f] 主线程取一次 TripPriority singleton，计算 FindJob MaxCost = GetMaxCost(GoingToWork) × 1.1 × 用户乘数
-			var tripParams = m_TripPriorityParametersQuery.GetSingleton<TripPriorityParametersData>();
-			float findJobMaxCost = tripParams.GetMaxCost(tripParams.m_PriorityGoingToWork) * 1.1f
-				* Mod.Instance.Settings.FindJobCostMultiplier;
+			// [1.6.0f] FindJob 寻路 MaxCost：用户可调绝对成本上限（方案 B，与其余寻路滑块单位统一）
+			float findJobMaxCost = Mod.Instance.Settings.FindJobMaxCost;
 			JobHandle jobHandle = new PersonalCarTickJob
 			{
 				m_EntityType = SystemAPI.GetEntityTypeHandle(),

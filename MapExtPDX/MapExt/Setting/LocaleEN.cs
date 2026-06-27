@@ -299,12 +299,12 @@ namespace MapExtPDX
                     "★ Recommended values:\n" +
                     " - All Map Sizes: 4000 ~ 8000 (Default: 6000)"
                 },
-                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.FindJobCostMultiplier)), "Find Job Pathfind Cost Multiplier" },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.FindJobMaxCost)), "Max Find Job Pathfind Cost" },
                 {
-                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.FindJobCostMultiplier)),
-                    "Controls how far citizens are willing to search across the map for a job as a multiplier of the base work priority trip parameters. A higher value helps isolated towns on large maps finding workers.\n" +
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.FindJobMaxCost)),
+                    "Controls how far citizens are willing to search across the map for a job. A higher value helps isolated towns on large maps finding workers.\n" +
                     "★ Recommended:\n" +
-                    " - All Map Sizes: 14.3 (Default)"
+                    " - All Map Sizes: 200000 (Default)"
                 },
                 {
                     m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.FindHomeMaxCost)), "Max Find Home Pathfind Cost"

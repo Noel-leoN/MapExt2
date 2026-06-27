@@ -229,10 +229,8 @@ namespace MapExtPDX.EcoShared
                 m_FreeCache = m_FreeCache
             }.ScheduleParallel(m_FreeQuery, resetCacheJob);
 
-            // [1.6.0f] 主线程计算 FindJob 实际 MaxCost = GetMaxCost(GoingToWork) × 1.1 × 用户乘数
-            var tripParams = m_TripPriorityParametersQuery.GetSingleton<TripPriorityParametersData>();
-            float findJobMaxCost = tripParams.GetMaxCost(tripParams.m_PriorityGoingToWork) * 1.1f
-                                   * Mod.Instance.Settings.FindJobCostMultiplier;
+            // [Mod] FindJob 寻路最大成本：拋棄原版优先级公式，改用用户可调的绝对成本滑块（与其他寻路滑块单位统一）
+            float findJobMaxCost = Mod.Instance.Settings.FindJobMaxCost;
 
             // 查找工作任务
             var findJobJob = new FindJobJob
