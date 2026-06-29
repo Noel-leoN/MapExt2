@@ -16,7 +16,7 @@ using Unity.Jobs;
 using Unity.Mathematics;
 using MapExtPDX.MapExt.Core;
 
-namespace MapExtPDX.ModeA
+namespace MapExtPDX.ModeD
 {
     // v1.3.6f??/v1.4.2f??
     [BurstCompile]

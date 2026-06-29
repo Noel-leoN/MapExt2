@@ -18,7 +18,7 @@ using Unity.Mathematics;
 using static Game.Tools.AreaToolSystem;
 using MapExtPDX.MapExt.Core;
 
-namespace MapExtPDX.ModeA
+namespace MapExtPDX.ModeD
 {
     [BurstCompile]
     public struct CreateDefinitionsJob : IJob

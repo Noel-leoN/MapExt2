@@ -14,7 +14,7 @@ using Unity.Mathematics;
 using Game.Simulation;
 using MapExtPDX.MapExt.Core;
 
-namespace MapExtPDX.ModeA
+namespace MapExtPDX.ModeD
 {
     [BurstCompile]
     public struct CalculateAverageAirPollutionJob : IJobChunk

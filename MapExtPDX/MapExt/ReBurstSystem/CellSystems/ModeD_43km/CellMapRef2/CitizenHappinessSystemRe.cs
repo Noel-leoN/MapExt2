@@ -16,7 +16,7 @@ using UnityEngine;
 using MapExtPDX.MapExt.Core;
 // using static Game.Simulation.CitizenHappinessSystem;
 
-namespace MapExtPDX.ModeA
+namespace MapExtPDX.ModeD
 {
     public enum HappinessFactor
     {

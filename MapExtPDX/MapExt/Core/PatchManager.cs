@@ -202,6 +202,29 @@ namespace MapExtPDX.MapExt.Core
                         "ReBurstSystemsPatches",
                     };
 
+                case PatchModeSetting.ModeD: // 模式43km (3倍)
+                    return new List<string>
+                    {
+                        "TerrainSystemPatch",
+                        "TerrainToR16Patch",
+                        "WorldMapImportWarning",
+                        "TerrainCascadeThrottle",
+                        "WaterSystemPatch_Static",
+                        "WaterSimulationPatch_Static",
+                        "WaterSimulationLegacyPatch_Static",
+                        "WaterLevelChangeSystemMethodPatches_Static",
+                        "WaterSystem_BaseDataReader_Patch",
+                        "WaterSystemInitFix",
+                        "WaterAdapterOnUpdatePatch",
+                        "WaterSystemOptRuntimePatch",
+                        "WaterTerrainWillChangeFix",
+                        "TerrainBackdropDisable",
+                        "CellMapSystemValuesPatch",
+                        "AirwaySystemPatch",
+                        "TerrainBrushRoadBlock",
+                        "ReBurstSystemsPatches",
+                    };
+
                 case PatchModeSetting.None: // 14km vanilla模式
                     return new List<string>
                     {
@@ -301,7 +324,7 @@ namespace MapExtPDX.MapExt.Core
                 default: return 4;
                 case PatchModeSetting.ModeB: return 2;
                 case PatchModeSetting.ModeC: return 8;
-                // case PatchModeSetting.ModeD: return 16;
+                case PatchModeSetting.ModeD: return 3; // 43km (3x) — 注意: 旧版 ModeD 曾为 16x/229km，已废弃，此处为全新 3x 语义
                 case PatchModeSetting.None: return 1;
             }
         }
@@ -349,7 +372,7 @@ namespace MapExtPDX.MapExt.Core
                 case 4: return ("ModeA 57km");
                 case 2: return ("ModeB 28km");
                 case 8: return ("ModeC 114km");
-                // case 16: return ("ModeD 229km");
+                case 3: return ("ModeD 43km");
                 case 1: return ("Vanilla 14km");
 
                 // 防止意外传入未知CV

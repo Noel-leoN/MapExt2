@@ -6,7 +6,7 @@ using Unity.Mathematics;
 using MapExtPDX.MapExt.Core;
 //using static Game.Simulation.WindSimulationSystem;
 
-namespace MapExtPDX.ModeA
+namespace MapExtPDX.ModeD
 {
     // cellcenter in bcjob
     [BurstCompile]

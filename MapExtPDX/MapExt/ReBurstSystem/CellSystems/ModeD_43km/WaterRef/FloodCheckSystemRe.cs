@@ -10,7 +10,7 @@ using Unity.Entities;
 using Unity.Mathematics;
 using MapExtPDX.MapExt.Core;
 
-namespace MapExtPDX.ModeA
+namespace MapExtPDX.ModeD
 {
     [BurstCompile]
     public struct FloodCheckJob : IJobChunk

@@ -10,7 +10,7 @@ using Unity.Jobs;
 using Unity.Mathematics;
 using MapExtPDX.MapExt.Core;
 
-namespace MapExtPDX.ModeA
+namespace MapExtPDX.ModeD
 {
     [BurstCompile]
     public struct GenerateMapTilesJob : IJobParallelFor

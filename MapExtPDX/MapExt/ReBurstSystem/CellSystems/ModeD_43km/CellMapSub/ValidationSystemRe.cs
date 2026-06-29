@@ -23,7 +23,7 @@ using MapExtPDX.MapExt.Core;
 // ValidationJob -> Game.Buildings.ValidationHelpers.ValidateBuilding -> GroundWaterSystem.GetGroundWater -> kMapSize/kTextureSize
 // v2.1.1 mod新增遗漏
 
-namespace MapExtPDX.ModeA
+namespace MapExtPDX.ModeD
 {
     /// <summary>
     /// 并行作业，用于在一组原型块（archetype chunks）中对各种实体、对象和组件执行验证检查

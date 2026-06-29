@@ -41,7 +41,7 @@ using Unity.Entities;
 using Unity.Jobs;
 using Unity.Mathematics;
 
-namespace MapExtPDX.ModeA
+namespace MapExtPDX.ModeD
 {
     // =========================================================================================
     // [配置区域]

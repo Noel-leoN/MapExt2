@@ -22,8 +22,7 @@ namespace MapExtPDX
         ModeA, // CoreValue = 4  // 57km (default)
         ModeB, // CoreValue = 2  // 28km
         ModeC, // CoreValue = 8  // 114km
-
-        // ModeD, // CoreValue = 16 // 229km
+        ModeD, // CoreValue = 3  // 43km
         None // Vanilla = 1
     }
 
@@ -1003,6 +1002,7 @@ namespace MapExtPDX
                 case PatchModeSetting.ModeA: return "• ModeA 57km (4x4)";
                 case PatchModeSetting.ModeB: return "• ModeB 28km (2x2)";
                 case PatchModeSetting.ModeC: return "• ModeC 114km (8x8) (Not Recommended)";
+                case PatchModeSetting.ModeD: return "• ModeD 43km (3x3)";
                 case PatchModeSetting.None: return "• None 14km (Vanilla)";
                 default: return mode.ToString();
             }

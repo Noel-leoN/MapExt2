@@ -227,6 +227,7 @@ namespace MapExtPDX.MapExt.ReBurstSystem.Core
                 case PatchModeSetting.ModeA: return "A";
                 case PatchModeSetting.ModeB: return "B";
                 case PatchModeSetting.ModeC: return "C";
+                case PatchModeSetting.ModeD: return "D";
                 case PatchModeSetting.None: return "E"; // E for Eco-Only / None
                 default: return "A";
             }

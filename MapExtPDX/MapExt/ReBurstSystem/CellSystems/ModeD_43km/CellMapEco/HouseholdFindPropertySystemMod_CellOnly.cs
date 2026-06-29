@@ -23,7 +23,7 @@ using Unity.Mathematics;
 using Game;
 using Game.Simulation;
 
-namespace MapExtPDX.ModeA
+namespace MapExtPDX.ModeD
 {
     public partial class HouseholdFindPropertySystemMod_CellOnly : GameSystemBase
     {

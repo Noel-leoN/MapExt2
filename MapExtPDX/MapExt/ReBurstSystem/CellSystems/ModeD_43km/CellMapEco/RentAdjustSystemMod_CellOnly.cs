@@ -22,7 +22,7 @@ using Unity.Entities;
 using Unity.Jobs;
 using Unity.Mathematics;
 
-namespace MapExtPDX.ModeA
+namespace MapExtPDX.ModeD
 {
 	public partial class RentAdjustSystemMod_CellOnly : GameSystemBase
 	{

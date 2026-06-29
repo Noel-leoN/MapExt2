@@ -24,7 +24,7 @@ using Unity.Mathematics;
 using UnityEngine;
 using UnityEngine.Scripting;
 
-namespace MapExtPDX.ModeA
+namespace MapExtPDX.ModeD
 {
     // =========================================================================================
     // [配置区域]

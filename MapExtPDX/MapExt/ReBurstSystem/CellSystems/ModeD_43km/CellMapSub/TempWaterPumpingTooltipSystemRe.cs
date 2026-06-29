@@ -14,7 +14,7 @@ using Unity.Mathematics;
 using UnityEngine;
 using MapExtPDX.MapExt.Core;
 
-namespace MapExtPDX.ModeA
+namespace MapExtPDX.ModeD
 {
     // v2.1.1 mod
     [BurstCompile]

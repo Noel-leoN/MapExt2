@@ -6,10 +6,10 @@ using Unity.Collections;
 using Unity.Entities;
 using Unity.Mathematics;
 using UnityEngine;
-using static MapExtPDX.ModeA.XCellMapSystemRe;
+using static MapExtPDX.ModeD.XCellMapSystemRe;
 using MapExtPDX.MapExt.Core;
 
-namespace MapExtPDX.ModeA
+namespace MapExtPDX.ModeD
 {
     [BurstCompile]
     public struct WaterLevelChangeJob : IJobChunk
