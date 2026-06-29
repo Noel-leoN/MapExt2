@@ -30,6 +30,11 @@ $modes = @(
     },
     @{
         Dir       = "."
+        Namespace = "ModeD"
+        MapSize   = "43008"
+    },
+    @{
+        Dir       = "."
         Namespace = "ModeE"
         MapSize   = "14336"
     }
