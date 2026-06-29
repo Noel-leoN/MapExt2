@@ -39,7 +39,7 @@ namespace MapExtPDX
                 { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.PatchModeChoice)), "► 選擇地圖尺寸模式" },
                 {
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.PatchModeChoice)),
-                    "⚠️ 變更模式後必須點擊「套用設定」按鈕生效！\n\n模式詳情:\n - ModeA: 57km (4x4) DEM:14m\n - ModeB: 28km (2x2) DEM:7m\n - ModeC: 114km (8x8) DEM:28m\n - ModeD: 43km (3x3) DEM:10.5m\n - 純淨模式: 14km 原版(1x1) DEM:3.5m\n\n注意:\n1. 隨著地圖尺寸的增加，DEM地形解析度會相應降低，導致部分山地、水岸與坡道顯得粗糙。如果對地形平滑度要求較高，建議使用較為平坦的地圖或使用模組工具進行修飾。\n2. 由於遊戲底層的浮點精度限制，在地圖邊緣區域可能會出現模擬數據計算偏差（產生虛假的視覺效果），使用 114km 模式時尤為明顯。建議將城市活動中心（住/商/工）儘量建設在地圖中心區域。\n\n⚠️ 【重要警告】：在變更地圖尺寸模式後，【必須重啟遊戲】才能安全載入存檔，否則可能導致損壞存檔！"
+                    "⚠️ 變更模式後必須點擊「套用設定」按鈕生效！\n\n模式詳情:\n - ModeA: 57km (4x4) DEM:14m\n - ModeB: 28km (2x2) DEM:7m\n - ModeC: 114km (8x8) DEM:28m\n - ModeD: 43km (3x3) DEM:10.5m (實驗性 - 由於地圖尺寸非2的次方，部分模擬系統可能出現未知異常，請謹慎使用)\n - 純淨模式: 14km 原版(1x1) DEM:3.5m\n\n注意:\n1. 隨著地圖尺寸的增加，DEM地形解析度會相應降低，導致部分山地、水岸與坡道顯得粗糙。如果對地形平滑度要求較高，建議使用較為平坦的地圖或使用模組工具進行修飾。\n2. 由於遊戲底層的浮點精度限制，在地圖邊緣區域可能會出現模擬數據計算偏差（產生虛假的視覺效果），使用 114km 模式時尤為明顯。建議將城市活動中心（住/商/工）儘量建設在地圖中心區域。\n\n⚠️ 【重要警告】：在變更地圖尺寸模式後，【必須重啟遊戲】才能安全載入存檔，否則可能導致損壞存檔！"
                 },
                 {
                     m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.ModSettingCoreValue)),
