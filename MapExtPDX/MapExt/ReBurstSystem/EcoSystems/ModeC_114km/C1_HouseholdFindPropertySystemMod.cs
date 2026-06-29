@@ -930,19 +930,17 @@ namespace MapExtPDX.ModeC
                 if (candidateProperty != Entity.Null && m_CachedPropertyInfo.ContainsKey(candidateProperty) &&
                     m_CachedPropertyInfo[candidateProperty].free > 0)
                 {
-                    targetPropertyScore = XCellMapSystemRe.GetPropertyScore(candidateProperty, householdEntity,
-                        householdCitizens, ref m_PrefabRefs, ref m_BuildingProperties, ref m_Buildings,
-                        ref m_BuildingDatas, ref m_Households, ref m_Citizens, ref m_Students,
-                        ref m_Workers, ref m_SpawnableDatas, ref m_Crimes, ref m_ServiceCoverages,
-                        ref m_Lockeds, ref m_ElectricityConsumers, ref m_WaterConsumers,
-                        ref m_GarbageProducers, ref m_MailProducers, ref m_Transforms,
-                        ref m_Abandoneds, ref m_Parks, ref m_Availabilities, m_TaxRates,
-                        m_PollutionMap, m_AirPollutionMap, m_NoiseMap, m_TelecomCoverages,
-                        m_CityModifiers[m_City], m_HealthcareParameters.m_HealthcareServicePrefab,
-                        m_ParkParameters.m_ParkServicePrefab, m_EducationParameters.m_EducationServicePrefab,
-                        m_TelecomParameters.m_TelecomServicePrefab,
-                        m_GarbageParameters.m_GarbageServicePrefab, m_PoliceParameters.m_PoliceServicePrefab,
-                        m_CitizenHappinessParameterData, m_GarbageParameters);
+                    // === [MOD OPT] 复用 PreparePropertyJob 预缓存的 GenericApartmentQuality ===
+                    // candidateProperty 此处必然已被 PreparePropertyJob 收录（上方 free>0 已校验），
+                    // 其 quality 是按建筑的纯函数计算、与家庭和占用率无关，同帧只读快照下与重算等价。
+                    // 改走 GetPropertyScoreWithCachedQuality 跳过昂贵的 GetGenericApartmentQuality 重算。
+                    CachedPropertyInformation cachedTarget = m_CachedPropertyInfo[candidateProperty];
+                    targetPropertyScore = XCellMapSystemRe.GetPropertyScoreWithCachedQuality(candidateProperty,
+                        householdEntity, householdCitizens, in cachedTarget.quality,
+                        ref m_Buildings, ref m_Households, ref m_Citizens, ref m_Students,
+                        ref m_Workers, ref m_ServiceCoverages, ref m_Abandoneds, ref m_Parks,
+                        ref m_Availabilities, m_TaxRates, m_CityModifiers[m_City],
+                        m_CitizenHappinessParameterData);
                 }
 
                 // ❌ 阶段3：权衡比对阶段

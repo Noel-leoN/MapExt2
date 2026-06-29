@@ -1188,6 +1188,117 @@ namespace MapExtPDX.ModeE
             }
         }
 
+        // === [MOD OPT] 复用预缓存 GenericApartmentQuality 的 GetPropertyScore 重载 ===
+        /// <summary>
+        /// GetPropertyScore 的性能优化重载：直接接收调用方预先缓存的 GenericApartmentQuality，
+        /// 跳过内部对 GetGenericApartmentQuality 的重复计算（污染/服务覆盖/犯罪/水电垃圾等按建筑的纯函数计算）。
+        /// <para>
+        /// 【正确性依据】GenericApartmentQuality 仅依赖建筑/prefab 的物理属性，与家庭无关、与房屋占用率（free）无关，
+        /// 故 PreparePropertyJob 在同一帧、同一只读快照下缓存的 quality 与此处重算位元级等价。
+        /// </para>
+        /// <para>
+        /// 【适用边界】仅可用于"候选房一定已被 PreparePropertyJob 收录（free>0 才入缓存）"的场景，
+        /// 即 ProcessPathInformations 中对 candidateProperty 的最终评分。
+        /// 不可用于评估自住房（householdHomeBuilding 未必有空位、不在缓存内）。
+        /// </para>
+        /// <para>
+        /// 与原始 GetPropertyScore 的唯一差异是 quality 来源（缓存 vs 重算），
+        /// 其余收容所判定 / 通勤分 / 服务可用性 / 最终加权完全保持一致。
+        /// </para>
+        /// </summary>
+        public static float GetPropertyScoreWithCachedQuality(Entity property, Entity household,
+            DynamicBuffer<HouseholdCitizen> citizenBuffer, in GenericApartmentQuality cachedQuality,
+            ref ComponentLookup<Building> buildings, ref ComponentLookup<Household> households,
+            ref ComponentLookup<Citizen> citizens, ref ComponentLookup<Game.Citizens.Student> students,
+            ref ComponentLookup<Worker> workers, ref BufferLookup<Game.Net.ServiceCoverage> serviceCoverages,
+            ref ComponentLookup<Abandoned> abandoneds, ref ComponentLookup<Game.Buildings.Park> parks,
+            ref BufferLookup<Game.Net.ResourceAvailability> availabilities, NativeArray<int> taxRates,
+            DynamicBuffer<CityModifier> cityModifiers,
+            CitizenHappinessParameterData citizenHappinessParameterData)
+        {
+            if (!buildings.HasComponent(property))
+            {
+                return float.NegativeInfinity;
+            }
+
+            bool flag = (households[household].m_Flags & HouseholdFlags.MovedIn) != 0;
+            bool flag2 = BuildingUtils.IsHomelessShelterBuilding(property, ref parks, ref abandoneds);
+            if (flag2 && !flag)
+            {
+                return float.NegativeInfinity;
+            }
+
+            Building buildingData = buildings[property];
+            // 关键差异：直接使用缓存的 quality，不再调用 GetGenericApartmentQuality
+            GenericApartmentQuality genericApartmentQuality = cachedQuality;
+            int length = citizenBuffer.Length;
+            float num = 0f;
+            int num2 = 0;
+            int num3 = 0;
+            int num4 = 0;
+            int num5 = 0;
+            int num6 = 0;
+            unchecked
+            {
+                for (int i = 0; i < citizenBuffer.Length; i++)
+                {
+                    Entity citizen = citizenBuffer[i].m_Citizen;
+                    Citizen citizen2 = citizens[citizen];
+                    num4 += citizen2.Happiness;
+                    if (citizen2.GetAge() == CitizenAge.Child)
+                    {
+                        num5++;
+                    }
+                    else
+                    {
+                        num3++;
+                        num6 += CitizenHappinessSystem.GetTaxBonuses(citizen2.GetEducationLevel(), taxRates,
+                            cityModifiers, in citizenHappinessParameterData).y;
+                    }
+
+                    if (students.HasComponent(citizen))
+                    {
+                        num2++;
+                        Game.Citizens.Student student = students[citizen];
+                        if (student.m_School != property)
+                        {
+                            num += student.m_LastCommuteTime;
+                        }
+                    }
+                    else if (workers.HasComponent(citizen))
+                    {
+                        num2++;
+                        Worker worker = workers[citizen];
+                        if (worker.m_Workplace != property)
+                        {
+                            num += worker.m_LastCommuteTime;
+                        }
+                    }
+                }
+
+                if (num2 > 0)
+                {
+                    num /= (float)num2;
+                }
+
+                if (citizenBuffer.Length > 0)
+                {
+                    num4 /= citizenBuffer.Length;
+                    if (num3 > 0)
+                    {
+                        num6 /= num3;
+                    }
+                }
+
+                float serviceAvailability = PropertyUtils.GetServiceAvailability(buildingData.m_RoadEdge,
+                    buildingData.m_CurvePosition, availabilities);
+                float cachedApartmentQuality =
+                    GetCachedApartmentQuality(length, num5, num4, genericApartmentQuality);
+                float num7 = (flag2 ? (-1000) : 0);
+                return serviceAvailability + cachedApartmentQuality * 10f + (float)(2 * num6) - num + num7;
+            }
+        }
+
         public static GenericApartmentQuality GetGenericApartmentQuality(Entity building,
             Entity buildingPrefab, ref Building buildingData,
             ref ComponentLookup<BuildingPropertyData> buildingProperties,
