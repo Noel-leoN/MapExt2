@@ -1,6 +1,6 @@
 <Project>
     <!-- Create an xml file with configuration information for publishing mod on Paradox Mods. -->
-    <Target Name="AddPublishConfiguration" BeforeTargets="BeforeCompile;CoreCompile" Inputs="$(MSBuildAllProjects)" Outputs="$(IntermediateOutputPath)GeneratedFile.xml">
+    <Target Name="AddPublishConfiguration" BeforeTargets="BeforeCompile;CoreCompile;BeforePublish">
         <!-- Get the screenshot files, if any. -->
         <ItemGroup>
             <ScreenshotFiles Include="Properties\Screenshots\*" />
@@ -40,6 +40,8 @@
             <TargetModId Condition="'$(TargetModId)' == ''">107939</TargetModId>
             <!-- 默认名称，也可通过属性覆盖 -->
             <TargetDisplayName Condition="'$(TargetDisplayName)' == ''">$(Title)</TargetDisplayName>
+            <!-- 默认可访问级别 -->
+            <TargetAccessLevel Condition="'$(TargetAccessLevel)' == ''">Public</TargetAccessLevel>
         </PropertyGroup>
 
         <!-- The generated text is based on the PublishConfiguration.xml file that comes with the Paradox mod template. -->
@@ -99,6 +101,9 @@ $(CDataEnd)</ChangeLog>
     <ExternalLink Type="github" Url="https://github.com/Noel-leoN/MapExt2" />
 	<ExternalLink Type="discord" Url="https://discord.com/channels/1024242828114673724/1366810268331540671" />
 	<ExternalLink Type="kofi" Url="https://ko-fi.com/noel2" />
+
+    <!-- Access Control Level.  Supported values: Public, Private, Unlisted -->
+    <AccessLevel Value="$(TargetAccessLevel)" />
 </Publish>]]>
             </GeneratedText>
             <GeneratedFilePath>$(ProjectDir)Properties\PublishConfiguration.xml</GeneratedFilePath>
