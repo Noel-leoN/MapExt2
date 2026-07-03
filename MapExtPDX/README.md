@@ -1,4 +1,4 @@
-# 🚀 Map Extended Mod (28/57/114/vanilla) — Vanilla Map Extension!
+# 🚀 Map Extended Mod (28/43/57/114/vanilla) — Vanilla Map Extension!
 
 ## 🔥 v4.0 — Expand Your Existing Vanilla City!
 
@@ -38,7 +38,7 @@
 ## 💎 Introduction
 
 * **📏 Map Size Modes:**
-  * **57km (Default):** 4x4 vanilla (DEM-14m). **28km:** 2x2 (DEM-7m). **114km:** 8x8 (DEM-28m, not recommended). **14km:** Vanilla 1x1 (DEM-3.5m).
+  * **57km (Default):** 4x4 vanilla (DEM-14m). **43km:** 3x3 (DEM-10.5m). **28km:** 2x2 (DEM-7m). **114km:** 8x8 (DEM-28m, not recommended). **14km:** Vanilla 1x1 (DEM-3.5m).
 * **🏔️ Terrain Limitation:** Terrain resolution decreases with map size. Coastlines may appear jagged. Use trees to cover rough patches.
 * **🧱 Map Tiles:** Fixed at **529** unlockable tiles.
 
@@ -62,6 +62,7 @@
 Import a heightmap/worldmap in the Map Editor:
 
 * **28km:** Heightmap 28,672m / Worldmap 114,688m
+* **43km:** Heightmap 43,008m / Worldmap 172,032m
 * **57km:** Heightmap 57,344m / Worldmap 229,376m
 * **114km:** Heightmap 114,688m / Worldmap 458,752m
 * **Format:** 4096x4096 16-bit grayscale (PNG/TIFF). Resolutions up to 14336x14336 auto-downsampled.
@@ -141,7 +142,7 @@ Import a heightmap/worldmap in the Map Editor:
 
 ## 💎 介绍
 
-* **📏 地图尺寸：** 57km（默认，4x4，DEM-14m）| 28km（2x2，DEM-7m）| 114km（8x8，DEM-28m，不推荐）| 14km（原版 1x1，DEM-3.5m）。
+* **📏 地图尺寸：** 57km（默认，4x4，DEM-14m）| 43km（3x3，DEM-10.5m）| 28km（2x2，DEM-7m）| 114km（8x8，DEM-28m，不推荐）| 14km（原版 1x1，DEM-3.5m）。
 * **🏔️ 地形精度：** 尺寸越大，地形越粗糙。建议种树遮挡。
 * **🧱 地图瓦片：** 固定 529 块。
 
@@ -165,6 +166,7 @@ Import a heightmap/worldmap in the Map Editor:
 在地图编辑器中导入对应尺寸的高程图/世界贴图：
 
 * **28km**：高程图 28672m / 世界贴图 114688m
+* **43km**：高程图 43008m / 世界贴图 172032m
 * **57km**：高程图 57344m / 世界贴图 229376m
 * **114km**：高程图 114688m / 世界贴图 458752m
 * **格式**：4096x4096 16位灰度图（PNG/TIFF），最高支持 14336x14336 自动降采样。
