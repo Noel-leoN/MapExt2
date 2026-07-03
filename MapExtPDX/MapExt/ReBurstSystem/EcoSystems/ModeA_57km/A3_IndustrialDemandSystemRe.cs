@@ -634,17 +634,30 @@ namespace MapExtPDX.ModeA
                     ? (2 * m_IndustrialBuildingDemand.value / industrialResourceCount)
                     : 0);
 
-            // 办公公司总需求
-            // this.m_OfficeCompanyDemand.value *= 2 * this.m_OfficeCompanyDemand.value / officeResourceCount;
-            // 此处可能是书写错误，变成了自乘；
-            //============重要修正：改为办公建筑需求计算并去掉自乘============
+            // === 辦公需求歸一化（兩處改動性質不同，勿混為一談）===
+            //
+            // 【改動 A：m_OfficeCompanyDemand 去平方 —— 屬「潔癖式正確」，行為增益趨近於零】
+            //   原版寫法：m_OfficeCompanyDemand.value *= 2 * m_OfficeCompanyDemand.value / count
+            //   對照同段落 m_IndustrialBuildingDemand / m_StorageBuildingDemand 皆為乾淨的「= 」賦值，
+            //   唯獨此行誤用「*=」，使結果變成 value = value × (2×value/count)，即平方級增長。
+            //   幾乎可確定是複製貼上後漏改運算子的「無意手誤」，非設計、非掩飾：
+            //   officeCompanyDemand 在全 Game.dll 僅被 IndustrialSpawnSystem 當作
+            //   「(industrial + storage + office) > 0」的布林開關使用（決定該幀是否生成新公司），
+            //   對正整數平方後仍為正，布林結果不變 → 無任何可見症狀（UI／建物數／存檔皆不受影響），
+            //   故原廠 QA 復現不出、長期未修。此處改為線性只是消除隱患，實際手感幾乎無變化。
+            //
+            // 【改動 B：m_OfficeBuildingDemand 補歸一化 —— 這才是真正改變辦公生長速率的實質改動】
+            //   玩家看到的辦公需求條與實際蓋樓走的是 officeBuildingDemand（見 CityInfoUISystem）。
+            //   原版此值為所有辦公資源 buildingDemand 的「裸累加」後直接 clamp(0,100)，
+            //   極易長期頂滿 100 → 辦公無腦瘋長。此處補一層「2×平均」歸一化，
+            //   將其由「求和」改為「求平均強度」，辦公建築需求方才理性、不再恆定觸頂。
+            //   注意：此行偏離原版行為，會影響辦公密度實際生長速率，調參時以此為準。
             if (officeResourceCount > 0)
             {
-                // 原版逻辑：value = value * 2 * value / count (平方级增长，非常危险)
-                // [MODIFIED ] 修正为线性或更加平滑的逻辑： value = 2 * value / count
+                // 改動 A：線性化，僅消除平方隱患（下游只作布林用，行為近乎不變）
                 m_OfficeCompanyDemand.value = 2 * m_OfficeCompanyDemand.value / officeResourceCount;
 
-                // 办公建筑需求通常跟随公司需求，但也需要归一化
+                // 改動 B：新增歸一化，實質抑制辦公需求觸頂（真正影響手感的一行）
                 m_OfficeBuildingDemand.value = (m_OfficeBuildingDemand.value > 0)
                     ? (2 * m_OfficeBuildingDemand.value / officeResourceCount)
                     : 0;
