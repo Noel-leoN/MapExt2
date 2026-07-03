@@ -1,5 +1,5 @@
 // Game.Simulation.ResidentialDemandSystem
-// 系统实例被多个外部系统调用，采用Job通用替换。
+// 系統實例被多個外部系統呼叫，採用 Job 通用替換。
 
 using Colossal.Collections;
 using Game.Buildings;
@@ -15,122 +15,125 @@ using Unity.Entities;
 using Unity.Jobs;
 using Unity.Mathematics;
 
-// using UnityEngine; // 使用Unity.Mathematics代替以符合Burs
+// using UnityEngine; // 使用 Unity.Mathematics 代替以符合 Burst
 
 
 namespace MapExtPDX.ModeB
 {
     /// <summary>
-    /// ResidentialDemandSystem居民需求系统
-    /// 经济/人口系统核心，源头生成居民建筑需求与家庭迁入需求。
-    /// 原系统问题：
-    /// 1.几乎全部采用硬编码绝对值判断，当人口规模扩大时，需求计算严重失衡；
-    /// 2.部分逻辑存在严重缺陷，如空置率逻辑、学生效应等；
-    /// 3.建筑需求与家庭需求混淆，比如空置率高时建筑需求砍至0，同时连带家庭需求砍至0；
+    /// ResidentialDemandSystem 居民需求系統
+    /// 經濟／人口系統核心，源頭生成居民建築需求與家庭遷入需求。
+    /// 原系統問題：
+    /// 1. 幾乎全部採用硬編碼絕對值判斷，當人口規模擴大時，需求計算嚴重失衡；
+    /// 2. 部分邏輯存在嚴重缺陷，如空置率邏輯、學生效應等；
+    /// 3. 建築需求與家庭需求混淆，比如空置率高時建築需求砍至 0，同時連帶家庭需求砍至 0；
     /// </summary>
-    /// 【参考模型】
-    /// 城市人口增长和房地产发展需求动力分析模型：
-    /// (原系统属于相当简陋的模型并且数值不尽合理)
-    /// 1. 核心驱动层 (Primary Drivers) - 占比约 60%
-    /// 就业机会与产业结构(30%)： 有没有好工作是人来的根本原因。
-    /// 游戏对应：空闲工作机会。
-    /// 宏观经济与金融环境(20%)： 利率高低、信贷宽松程度直接决定房地产能否开发。
-    /// 游戏对应：税收和独特银行建筑、政策。
-    /// 基础设施与交通(10%)： 地铁、高铁、机场的通达性。
-    /// 游戏对应：公共交通、道路密度。
-    /// 2. 调节与限制层(Secondary Regulators) - 占比约 30%
-    /// 住房成本与生活成本(15%)： 房价太高会挤出人口（负面），也会吸引投资（正面）。
-    /// 游戏对应：地价、商业发展指数
-    /// 政府政策与规划(10%)： 区域规划（Zoning）、学区划分。
-    /// 游戏对应：教育水平、区域政策
-    /// 人口结构(5%)： 老龄化程度、出生率、移民政策。
-    /// 游戏对应：人口年龄构成、政策。
-    /// 3. 摩擦与环境层(Tertiary Friction Factors) - 占比约 10%
-    /// 治安与公共安全(4%)：
-    /// 医疗卫生(3%)：
-    /// 环境质量与气候(3%)： 空气污染、气候舒适度。
+    /// 【參考模型】
+    /// 城市人口增長和房地產發展需求動力分析模型：
+    /// （原系統屬於相當簡陋的模型並且數值不盡合理）
+    /// 1. 核心驅動層 (Primary Drivers) - 佔比約 60%
+    /// 就業機會與產業結構 (30%)： 有沒有好工作是人來的根本原因。
+    /// 遊戲對應：空閒工作機會。
+    /// 宏觀經濟與金融環境 (20%)： 利率高低、信貸寬鬆程度直接決定房地產能否開發。
+    /// 遊戲對應：稅收和獨特銀行建築、政策。
+    /// 基礎設施與交通 (10%)： 地鐵、高鐵、機場的通達性。
+    /// 遊戲對應：公共交通、道路密度。
+    /// 2. 調節與限制層 (Secondary Regulators) - 佔比約 30%
+    /// 住房成本與生活成本 (15%)： 房價太高會擠出人口（負面），也會吸引投資（正面）。
+    /// 遊戲對應：地價、商業發展指數
+    /// 政府政策與規劃 (10%)： 區域規劃（Zoning）、學區劃分。
+    /// 遊戲對應：教育水平、區域政策
+    /// 人口結構 (5%)： 老齡化程度、出生率、移民政策。
+    /// 遊戲對應：人口年齡構成、政策。
+    /// 3. 摩擦與環境層 (Tertiary Friction Factors) - 佔比約 10%
+    /// 治安與公共安全 (4%)：
+    /// 醫療衛生 (3%)：
+    /// 環境品質與氣候 (3%)： 空氣污染、氣候舒適度。
     [BurstCompile]
     public struct UpdateResidentialDemandJob : IJob
     {
-        // ================= 输入数据 (只读) =================
-        [ReadOnly] public NativeList<Entity> m_UnlockedZonePrefabs; // 已解锁的区域类型
-        [ReadOnly] public ComponentLookup<Population> m_Populations; // 人口组件查找
-        [ReadOnly] public ComponentLookup<ZoneData> m_ZoneDatas; // 区域数据查找
-        [ReadOnly] public ComponentLookup<ZonePropertiesData> m_ZonePropertiesDatas; // 区域属性查找
-        [ReadOnly] public NativeList<DemandParameterData> m_DemandParameters; // 需求参数配置（全局参数）
-        [ReadOnly] public NativeArray<int> m_StudyPositions; // 1-4级教育的空闲学位数量
-        [ReadOnly] public NativeArray<int> m_TaxRates; // 0-4级学历的税率
-        [ReadOnly] public float m_UnemploymentRate; // 失业率
-        public Entity m_City; // 城市实体引用
+        // ================= 輸入資料 (唯讀) =================
+        [ReadOnly] public NativeList<Entity> m_UnlockedZonePrefabs; // 已解鎖的區域類型
+        [ReadOnly] public ComponentLookup<Population> m_Populations; // 人口組件查找
+        [ReadOnly] public ComponentLookup<ZoneData> m_ZoneDatas; // 區域資料查找
+        [ReadOnly] public ComponentLookup<ZonePropertiesData> m_ZonePropertiesDatas; // 區域屬性查找
+        [ReadOnly] public NativeList<DemandParameterData> m_DemandParameters; // 需求參數配置（全域參數）
+        [ReadOnly] public NativeArray<int> m_StudyPositions; // 1-4 級教育的空閒學位數量
+        [ReadOnly] public NativeArray<int> m_TaxRates; // 0-4 級學歷的稅率
+        [ReadOnly] public float m_UnemploymentRate; // 失業率（百分比值，例如 5.0 表示 5%）
+        public Entity m_City; // 城市實體引用
 
-        // ================= 输出与状态数据 =================
-        public NativeValue<int> m_HouseholdDemand; // 输出：总家庭迁入需求 (基础值)
-        public NativeValue<int3> m_BuildingDemand; // 输出：建筑需求向量 (x:低, y:中, z:高)
+        // ================= 輸出與狀態資料 =================
+        public NativeValue<int> m_HouseholdDemand; // 輸出：總家庭遷入需求 (基礎值)
+        public NativeValue<int3> m_BuildingDemand; // 輸出：建築需求向量 (x:低, y:中, z:高)
 
-        // UI 显示用的因子 (决定需求面板上的提示信息，如"税收太高"、"空置房屋多")
+        // UI 顯示用的因子 (決定需求面板上的提示資訊，如「稅收太高」、「空置房屋多」)
         public NativeArray<int> m_LowDemandFactors;
         public NativeArray<int> m_MediumDemandFactors;
         public NativeArray<int> m_HighDemandFactors;
 
-        public CountHouseholdDataSystem.HouseholdData m_HouseholdCountData; // 包含无家可归数据
-        public CountResidentialPropertySystem.ResidentialPropertyData m_ResidentialPropertyData; // 空置房与总房产数据
-        public Workplaces m_FreeWorkplaces; // 空闲岗位
-        public Workplaces m_TotalWorkplaces; // 总岗位
-        public NativeQueue<TriggerAction> m_TriggerQueue; // 触发器队列（如教程、音效）
+        public CountHouseholdDataSystem.HouseholdData m_HouseholdCountData; // 包含無家可歸資料
+        public CountResidentialPropertySystem.ResidentialPropertyData m_ResidentialPropertyData; // 空置房與總房產資料
+        public Workplaces m_FreeWorkplaces; // 空閒崗位
+        public Workplaces m_TotalWorkplaces; // 總崗位
+        public NativeQueue<TriggerAction> m_TriggerQueue; // 觸發器佇列（如教程、音效）
 
-        public float2 m_ResidentialDemandWeightsSelector; // 权重选择器 (x:负值权重, y:正值权重)
-        public bool m_UnlimitedDemand; // 作弊模式：无限需求
+        public float2 m_ResidentialDemandWeightsSelector; // 權重選擇器 (x:負值權重, y:正值權重)
+        public bool m_UnlimitedDemand; // 作弊模式：無限需求
 
-        // ================= 核心逻辑 =================
+        // ================= 核心邏輯 =================
         public void Execute()
         {
             // === 配置中心 ===
-            // 家庭需求全局因子;原始值=1f
+            // 家庭需求全域因子；原始值=1f
             float kHouseholdDemandFactor = 1f;
 
-            // 建筑需求全局因子；原始值=1f
+            // 建築需求全域因子；原始值=1f
             float buildingLowFactor = 1f; // 低密度住宅
             float buildingMedFactor = 1f; // 中密度住宅
             float buildingHighFactor = 1f; // 高密度住宅
 
-            // --- 基础权重 (决定各因子对总分的影响力) ---
-            float kHappinessWeight = 1.0f; // 幸福度权重
-            float kTaxWeight = 1.0f; // 税收权重
-            float kHomelessPenaltyWeight = 1.0f; // 无家可归(负面)权重
-            float kHomelessBonusWeight = 1.0f; // 无家可归(高密度正面)权重
-            float ksimJobWeight = 1.0f; // 简单工作就业权重
-            float kcomJobWeight = 1.0f; // 复杂工作就业权重
-            float kStudentWeight = 1.0f; // 教育资源权重
-            float kUnemploymentWeight = 1.0f; // 失业率权重
+            // --- 基礎權重 (決定各因子對總分的影響力) ---
+            float kHappinessWeight = 1.0f; // 幸福度權重
+            float kTaxWeight = 1.0f; // 稅收權重
+            float kHomelessPenaltyWeight = 1.0f; // 無家可歸(負面)權重
+            float kHomelessBonusWeight = 1.0f; // 無家可歸(高密度正面)權重
+            float ksimJobWeight = 1.0f; // 簡單工作就業權重
+            float kcomJobWeight = 1.0f; // 複雜工作就業權重
+            float kStudentWeight = 1.0f; // 教育資源權重
+            float kUnemploymentWeight = 1.0f; // 失業率權重
 
-            // 空置率影响设定
-            // 1. 目标健康空置率 (比如 5%，参考国际平均水平)
+            // 空置率影響設定
+            // 1. 目標健康空置率 (比如 5%，參考國際平均水平)
             float kTargetVacancyRate = 0.05f;
-            // 2. 严重空置率 25% (超过此值强制停止建设)
+            // 2. 嚴重空置率 25% (超過此值強制停止建設)
             float kPanicVacancyRate = 0.25f;
-            // 3. 空置率敏感度 
-            // 差值：例如 目标0.05 - 实际0.10 = -0.05(空置太多，降低需求)
-            // 放大倍数 2000f 意味着 1% 的偏差调整约 20点需求
-            // 预设为1500f,增加将加强空置率奖惩，减少将削弱
+            // 3. 空置率敏感度
+            // 差值：例如 目標 0.05 - 實際 0.10 = -0.05(空置太多，降低需求)
+            // 放大倍數 1500f 意味著 1% 的偏差調整約 15 點需求
+            // 預設為 1500f，增加將加強空置率獎懲，減少將削弱
             float kVacancySensitivity = 1500f;
-            // 4. 虚拟缓冲
-            // 在计算比率时，分母加上这个值。
-            // 作用：在新城市(房产总数<100)时，大幅稀释空置率的波动。
-            // 例如：只有10套房，空了10套。无缓冲=100%空置(崩盘)。有缓冲(60)=10/70=14%空置(可控)。
+            // 4. 虛擬緩衝
+            // 在計算比率時，分母加上這個值。
+            // 作用：在新城市(房產總數<100)時，大幅稀釋空置率的波動。
+            // 例如：只有 10 套房，空了 10 套。無緩衝=100%空置(崩盤)。有緩衝(150)=10/160=6%空置(可控)。
             float kVirtualHousingBuffer = 150f;
-            // 5. 权重系数
-            // 空置率低影响建筑权重
+            // 5. 權重係數
+            // 空置率低影響建築權重
             // float kBuildWeight = 1.0f;
-            // 空置率高吸引移民权重
+            // 空置率高吸引移民權重
             // float kMoveInWeight = 0.5f;
-            // [MODIFIED] 低密度专属较温和的敏感度
+            // [MODIFIED] 低密度專屬較溫和的敏感度
             float kVacancySensitivityLow = 500f;
 
-            // 无家可归中性率 (全球通行标准一般容忍度0.05% )
-            float kNeutralHomelessRate = 0.0005f;
+            // [MODIFIED 2026-07] 無家可歸中性率 (市民口徑)。
+            // 量綱統一：homelessRate 分子分母皆採市民數（見下方 homelessRate 計算），
+            // 對齊原版 CountHouseholdDataSystem.HomelessnessRate 的市民口徑，避免家庭/市民混用。
+            // 由家庭口徑 0.0005 依「每戶約 2 人」重新標定為 0.001，維持觸發點大致不變。
+            float kNeutralHomelessRate = 0.001f;
             // =================== 配置中心 ====================
 
-            // A. 检查已解锁的密度类型
+            // A. 檢查已解鎖的密度類型
 
             bool3 unlockedDensities = default(bool3);
             foreach (Entity prefab in m_UnlockedZonePrefabs)
@@ -148,45 +151,48 @@ namespace MapExtPDX.ModeB
                 }
             }
 
-            // 获取房产基础数据
+            // 取得房產基礎資料
             int3 freeProperties = m_ResidentialPropertyData.m_FreeProperties;
             int3 totalProperties = m_ResidentialPropertyData.m_TotalProperties;
             DemandParameterData paramsData = m_DemandParameters[0];
 
-            // 计算人口数及基础因子
+            // 計算人口數及基礎因子
             Population cityPopulation = m_Populations[m_City];
             int popCount = math.max(1, cityPopulation.m_Population); // 防止除零
 
-            // B.计算各类基础因子
+            // B. 計算各類基礎因子
 
-            // --- [新城市红利] ---
-            // 人口越少，红利越高。超过20,000人口后该值为0。初始约20。
+            // --- [新城市紅利] ---
+            // 注意：此因子實際恆定在 19~20 之間，並非隨人口衰減至 0。
+            // 因為 smoothstep(0,20,t) 的值域為 [0,1]，20f 減去它只能落在 [19,20]。
+            // 即便人口達 40 萬(t=20)使 smoothstep=1，本值仍為 19。
+            // 這是原版既有寫法：名為「紅利」，實質是一個約等於 20 的固定移民基礎分。保留原行為。
             float populationBonusFactor = 20f - math.smoothstep(0f, 20f, cityPopulation.m_Population / 20000f);
 
             // --- [教育因子] ---
-            // 计算教育容量 (累加1-4级所有学位)
-            // 原版逻辑在1000个学额时封顶毫无意义
-            // 改为假设理想状态是覆盖 20% 的人口 (模拟学龄人口)            
+            // 計算教育容量 (累加 1-4 級所有學位)
+            // 原版邏輯在 1000 個學額時封頂毫無意義
+            // 改為假設理想狀態是覆蓋 20% 的人口 (模擬學齡人口)
             int totalStudentSlots = 0;
             for (int j = 1; j <= 4; j++)
             {
                 totalStudentSlots += m_StudyPositions[j];
             }
 
-            float studentCoverage = totalStudentSlots / (popCount * 0.2f); // 假设20%人口上学
+            float studentCoverage = totalStudentSlots / (popCount * 0.2f); // 假設 20% 人口上學
             float studentFactor = paramsData.m_StudentEffect * math.clamp(studentCoverage * 5f, 0f, 5f);
 
             // --- [幸福度因子] ---
-            // 平均幸福度 vs 最低幸福度阈值
-            // 采用相对值，无需修改
+            // 平均幸福度 vs 最低幸福度閾值
+            // 採用相對值，無需修改
             int effectiveHappiness = math.max(paramsData.m_MinimumHappiness, cityPopulation.m_AverageHappiness);
             float happinessFactor = paramsData.m_HappinessEffect *
                                     (effectiveHappiness - paramsData.m_NeutralHappiness);
 
-            // --- [税收因子] ---
-            // 计算所有学历等级的平均税率与 10% 的差值
-            // 如果税率>10%，因子为负；税率<10%，因子为正。
-            // 采用相对值，无需修改
+            // --- [稅收因子] ---
+            // 計算所有學歷等級的平均稅率與 10% 的差值
+            // 如果稅率>10%，因子為負；稅率<10%，因子為正。
+            // 採用相對值，無需修改
             float avgTaxDeviation = 0f;
             for (int k = 0; k < 5; k++)
             {
@@ -195,10 +201,10 @@ namespace MapExtPDX.ModeB
 
             float taxFactor = paramsData.m_TaxEffect.x * (avgTaxDeviation / 5f);
 
-            // --- [就业率因子] ---
-            // 修复(改为比率) ---
-            // 计算空缺职位比例。如果空缺率 > 中性值(比如10%)，则有加成。
-            // 就业空缺率中位数
+            // --- [就業率因子] ---
+            // 修復(改為比率) ---
+            // 計算空缺職位比例。如果空缺率 > 中性值(比如 10%)，則有加成。
+            // 就業空缺率中位數
             float neutralJobRate = paramsData.m_NeutralAvailableWorkplacePercentage / 100f;
 
             float totalSimpJobs = math.max(1f, m_TotalWorkplaces.SimpleWorkplacesCount);
@@ -207,35 +213,38 @@ namespace MapExtPDX.ModeB
             float simpJobRate = m_FreeWorkplaces.SimpleWorkplacesCount / totalSimpJobs;
             float compJobRate = m_FreeWorkplaces.ComplexWorkplacesCount / totalCompJobs;
 
-            // 放大倍数设为 100f，意味着每 1% 的额外空缺提供一定点数的吸引力
+            // 放大倍數設為 100f，意味著每 1% 的額外空缺提供一定點數的吸引力
             float simpleJobFactor = paramsData.m_AvailableWorkplaceEffect * (simpJobRate - neutralJobRate) * 100f;
             simpleJobFactor = math.clamp(simpleJobFactor, 0f, 40f);
 
             float complexJobFactor = paramsData.m_AvailableWorkplaceEffect * (compJobRate - neutralJobRate) * 100f;
             complexJobFactor = math.clamp(complexJobFactor, 0f, 20f);
 
-            // --- [失业率因子] ---
-            // [MODIFIED] 修正：自然失业率(NAIRU)强制为 4.5% (东亚+欧美紧凑型)，抛弃原版内置20%魔幻参数影响
-            // (中性失业率 - 当前失业率)。如果当前失业率高，结果为负，降低需求。
+            // --- [失業率因子] ---
+            // [MODIFIED] 修正：自然失業率(NAIRU)強制為 4.5% (東亞+歐美緊湊型)，拋棄原版內建 20% 魔幻參數影響
+            // (中性失業率 - 當前失業率)。如果當前失業率高，結果為負，降低需求。
             float unemploymentFactor = 4.5f - m_UnemploymentRate;
             if (unemploymentFactor < 0f)
             {
-                // [MODIFIED] 重拳出击：突破NAIRU时，成倍扣减家庭需求，截断失业潮人口涌入
+                // [MODIFIED] 重拳出擊：突破 NAIRU 時，成倍扣減家庭需求，截斷失業潮人口湧入
                 unemploymentFactor *= 2.5f;
             }
 
             //--- [流浪人口因子] ---
-            // 修复：改为比例
-            // 避免大城市因绝对数量高而受到不合理的惩罚            
-            float homelessRate = m_HouseholdCountData.m_HomelessHouseholdCount / (float)popCount;
-            // 归一化：如果流浪率是中性率的2倍，则系数为2。
+            // 修復：改為比例，避免大城市因絕對數量高而受到不合理的懲罰
+            // [MODIFIED 2026-07] 量綱統一：分子改用市民數 m_HomelessCitizenCount，
+            // 與分母 popCount(市民)同口徑；不再用家庭數 / 市民數的混用量綱。
+            float homelessRate = m_HouseholdCountData.m_HomelessCitizenCount / (float)popCount;
+            // 歸一化：如果流浪率是中性率的 2 倍，則係數為 2。
             float homelessRatioNormalized = homelessRate / kNeutralHomelessRate;
-            // HouseholdDemand 负面惩罚 (无家可归太多降低城市吸引力) 
-            float homelessPenalty = (0f - paramsData.m_HomelessEffect) * math.clamp(homelessRatioNormalized, 0f, 5f);
-            // BuildingDemand正面需求 (无家可归的人急需住房，主要推高高密度/廉租房需求)
+            // HouseholdDemand 負面懲罰 (無家可歸太多降低城市吸引力)
+            // [MODIFIED 2026-07] 上限由 clamp(,0,5)→(,0,2.5)：單因子懲罰上限由 -100 收斂到 -50，
+            // 與下方 homelessBonus 的 +40 大致對稱，避免單一因子瞬間把家庭需求壓到 0、造成移民面板忽開忽關。
+            float homelessPenalty = (0f - paramsData.m_HomelessEffect) * math.clamp(homelessRatioNormalized, 0f, 2.5f);
+            // BuildingDemand 正面需求 (無家可歸的人急需住房，主要推高高密度/廉租房需求)
             float homelessBonus = paramsData.m_HomelessEffect * math.clamp(homelessRatioNormalized, 0f, 2f);
 
-            // C. 应用权重 (加权处理)
+            // C. 應用權重 (加權處理)
             populationBonusFactor = GetFactorValue(populationBonusFactor, m_ResidentialDemandWeightsSelector);
             happinessFactor = GetFactorValue(happinessFactor * kHappinessWeight, m_ResidentialDemandWeightsSelector);
             homelessPenalty =
@@ -249,24 +258,24 @@ namespace MapExtPDX.ModeB
             unemploymentFactor =
                 GetFactorValue(unemploymentFactor * kUnemploymentWeight, m_ResidentialDemandWeightsSelector);
 
-            // D. 计算总家庭迁入需求 (Household Demand)
-            // 基础池子，决定了有多少人想进城
-            // 人口/幸福度/税收/失业率/工作机会/学生资源/无家可归惩罚等综合影响
-            // 无家可归加成只影响建筑需求，不影响家庭需求
+            // D. 計算總家庭遷入需求 (Household Demand)
+            // 基礎池子，決定了有多少人想進城
+            // 人口/幸福度/稅收/失業率/工作機會/學生資源/無家可歸懲罰等綜合影響
+            // 無家可歸加成只影響建築需求，不影響家庭需求
             float baseHouseholdScore = populationBonusFactor + happinessFactor + homelessPenalty + taxFactor +
                                        unemploymentFactor + studentFactor + math.max(simpleJobFactor, complexJobFactor);
-            // 限制在 0-200 之间
+            // 限制在 0-200 之間
             m_HouseholdDemand.value = (int)math.clamp(baseHouseholdScore * kHouseholdDemandFactor, 0f, 200f);
 
-            // E. 计算空置率因子 (Vacancy Logic)            
+            // E. 計算空置率因子 (Vacancy Logic)
             //============================================================================
-            // --- 修复 6: 空置率惩罚修正：动态空置率逻辑(核心修改)
-            // 原逻辑理想空闲量极低且为硬编码(5,10,10)，导致房屋过剩时需求被严重压制
-            // 新逻辑使得需求计算基于总房产的百分比，而不是固定数值
+            // --- 修復 6: 空置率懲罰修正：動態空置率邏輯(核心修改)
+            // 原邏輯理想空閒量極低且為硬編碼(5,10,10)，導致房屋過剩時需求被嚴重壓制
+            // 新邏輯使得需求計算基於總房產的百分比，而不是固定數值
             //============================================================================
 
-            // 计算空置率影响
-            // [MODIFIED] 低密度因为自身建筑容量小，使用专属的温和敏感度(kVacancySensitivityLow)，避免需求大起大落
+            // 計算空置率影響
+            // [MODIFIED] 低密度因為自身建築容量小，使用專屬的溫和敏感度(kVacancySensitivityLow)，避免需求大起大落
             int offsetLow = GetSmoothedVacancyOffset(freeProperties.x, totalProperties.x, kVirtualHousingBuffer,
                 kTargetVacancyRate, kVacancySensitivityLow);
             int offsetMed = GetSmoothedVacancyOffset(freeProperties.y, totalProperties.y, kVirtualHousingBuffer,
@@ -274,8 +283,8 @@ namespace MapExtPDX.ModeB
             int offsetHigh = GetSmoothedVacancyOffset(freeProperties.z, totalProperties.z, kVirtualHousingBuffer,
                 kTargetVacancyRate, kVacancySensitivity);
 
-            // E+. 计算熔断系数 (Cutoff Multiplier)
-            // 修复空城风险：如果空置率过高，直接乘0
+            // E+. 計算熔斷係數 (Cutoff Multiplier)
+            // 修復空城風險：如果空置率過高，直接乘 0
             float cutOffLow = GetVacancyMultiplier(freeProperties.x, totalProperties.x, kVirtualHousingBuffer,
                 kPanicVacancyRate);
             float cutOffMed = GetVacancyMultiplier(freeProperties.y, totalProperties.y, kVirtualHousingBuffer,
@@ -283,14 +292,14 @@ namespace MapExtPDX.ModeB
             float cutOffHigh = GetVacancyMultiplier(freeProperties.z, totalProperties.z, kVirtualHousingBuffer,
                 kPanicVacancyRate);
 
-            // F. 组合最终需求
-            // 公式：(家庭需求 + 空置率修正) * 熔断乘数
-            // 注意：流浪汉Bonus(homelessBonus) 只加给高密度，且不应受空置率负面影响太大(因为他们急需住房)
+            // F. 組合最終需求
+            // 公式：(家庭需求 + 空置率修正) * 熔斷乘數
+            // 注意：流浪漢 Bonus(homelessBonus) 只加給高密度，且不應受空置率負面影響太大(因為他們急需住房)
 
             float finalLow = (m_HouseholdDemand.value - (simpleJobFactor / 2) + offsetLow) * cutOffLow;
             float finalMed = (m_HouseholdDemand.value + offsetMed) * cutOffMed;
 
-            // 高密度特殊处理：流浪汉直接推高需求，但仍然受制于严重空置熔断
+            // 高密度特殊處理：流浪漢直接推高需求，但仍然受制於嚴重空置熔斷
             float finalHigh = (m_HouseholdDemand.value + homelessBonus + offsetHigh) * cutOffHigh;
 
             m_BuildingDemand.value = new int3(
@@ -299,18 +308,18 @@ namespace MapExtPDX.ModeB
                 (int)math.clamp(finalHigh * buildingHighFactor, 0f, 100f)
             );
 
-            // F. 填充 UI 因子数组 (Low/Medium/High DemandFactors)
-            // 索引含义推测：7=幸福, 6=工作, 5=失业, 11=税收, 13=空置率, 12=学生, 8=无家可归(高密度)
+            // F. 填充 UI 因子陣列 (Low/Medium/High DemandFactors)
+            // 索引含義推測：7=幸福, 6=工作, 5=失業, 11=稅收, 13=空置率, 12=學生, 8=無家可歸(高密度)
 
             // 低密度 UI 因子
-            // 使用math代替MathF以符合Burst
+            // 使用 math 代替 MathF 以符合 Burst
             m_LowDemandFactors[7] = (int)math.round(happinessFactor);
-            m_LowDemandFactors[6] = (int)math.round(simpleJobFactor) / 2; // 低密度对简单工作需求只有一半权重
+            m_LowDemandFactors[6] = (int)math.round(simpleJobFactor) / 2; // 低密度對簡單工作需求只有一半權重
             m_LowDemandFactors[5] = (int)math.round(unemploymentFactor);
             m_LowDemandFactors[11] = (int)math.round(taxFactor);
-            // 低密度无学生加成(学生不会住别墅)
-            m_LowDemandFactors[13] = offsetLow; // 显示空置率带来的加成或惩罚
-            m_LowDemandFactors[18] = (totalProperties.x <= 0) ? 20 : 0; // 提示未建设
+            // 低密度無學生加成(學生不會住別墅)
+            m_LowDemandFactors[13] = offsetLow; // 顯示空置率帶來的加成或懲罰
+            m_LowDemandFactors[18] = (totalProperties.x <= 0) ? 20 : 0; // 提示未建設
 
             // 中密度 UI 因子
             m_MediumDemandFactors[7] = (int)math.round(happinessFactor);
@@ -323,7 +332,7 @@ namespace MapExtPDX.ModeB
 
             // 高密度 UI 因子
             m_HighDemandFactors[7] = (int)math.round(happinessFactor);
-            m_HighDemandFactors[8] = (int)math.round(homelessBonus); // 高密度独有：流浪汉提供正向需求
+            m_HighDemandFactors[8] = (int)math.round(homelessBonus); // 高密度獨有：流浪漢提供正向需求
             m_HighDemandFactors[6] = (int)math.round(simpleJobFactor);
             m_HighDemandFactors[5] = (int)math.round(unemploymentFactor);
             m_HighDemandFactors[11] = (int)math.round(taxFactor);
@@ -331,8 +340,8 @@ namespace MapExtPDX.ModeB
             m_HighDemandFactors[13] = offsetHigh;
             m_HighDemandFactors[18] = (totalProperties.z <= 0) ? 20 : 0;
 
-            // 处理特殊情况 UI 清零
-            if (totalSimpJobs + totalCompJobs <= 2) // 几乎无工作
+            // 處理特殊情況 UI 清零
+            if (totalSimpJobs + totalCompJobs <= 2) // 幾乎無工作
             {
                 if (m_LowDemandFactors[6] > 0) m_LowDemandFactors[6] = 0;
                 if (m_MediumDemandFactors[6] > 0) m_MediumDemandFactors[6] = 0;
@@ -346,11 +355,11 @@ namespace MapExtPDX.ModeB
                 m_HighDemandFactors[5] = 0;
             }
 
-            //// G. 计算各密度总分 (Sum Factors)           
+            //// G. 計算各密度總分 (Sum Factors)
             ////============================================================================
             //// --- 修正 ---
-            //// 应用空置率惩罚修正(建筑需求)移除空置率一票否决逻辑，改为使用动态计算的需求偏移值
-            //// 移除重复计算的因子(幸福度、税收、学生、失业率、就业率)
+            //// 應用空置率懲罰修正(建築需求)移除空置率一票否決邏輯，改為使用動態計算的需求偏移值
+            //// 移除重複計算的因子(幸福度、稅收、學生、失業率、就業率)
             ////============================================================================
             //float baseDemand = m_HouseholdDemand.value * kHouseholdDemandFactor;
 
@@ -360,18 +369,18 @@ namespace MapExtPDX.ModeB
             //// 中密度
             //float sumMed = baseDemand + /* happinessFactor + taxFactor + simpleJobFactor + unemploymentFactor + studentFactor + */ offsetMed;
 
-            //// 高密度 (包含流浪汉正面加成)
+            //// 高密度 (包含流浪漢正面加成)
             //float sumHigh = baseDemand + /*happinessFactor + taxFactor + simpleJobFactor + unemploymentFactor + studentFactor + */ homelessBonus + offsetHigh;
 
-            //// I. 最终建筑需求 (Final Calculation)
+            //// I. 最終建築需求 (Final Calculation)
             //int finalLow = (int)(math.clamp(sumLow, 0f, 100f) * /*cutOffLow **/ buildingLowFactor) ;
             //int finalMed = (int)(math.clamp(sumMed, 0f, 100f) * /*cutOffMed **/ buildingMedFactor);
             //int finalHigh = (int)(math.clamp(sumHigh, 0f, 100f) * /*cutOffHigh **/ buildingHighFactor);
 
-            //// 建筑需求最终值
+            //// 建築需求最終值
             //m_BuildingDemand.value = new int3(finalLow, finalMed, finalHigh);
 
-            // 应用解锁限制
+            // 應用解鎖限制
             m_BuildingDemand.value = math.select(default(int3), m_BuildingDemand.value, unlockedDensities);
 
             // 作弊模式
@@ -380,7 +389,7 @@ namespace MapExtPDX.ModeB
                 m_BuildingDemand.value = 100;
             }
 
-            // J. 触发器 (Trigger)
+            // J. 觸發器 (Trigger)
             float totalPropCount = totalProperties.x + totalProperties.y + totalProperties.z;
             float totalDemandSum =
                 m_BuildingDemand.value.x + m_BuildingDemand.value.y + m_BuildingDemand.value.z;
@@ -393,7 +402,7 @@ namespace MapExtPDX.ModeB
                 (totalPropCount > 100) ? (freePropCount * 100f / totalPropCount) : 100f));
         }
 
-        // 辅助方法：根据正负值应用不同的权重
+        // 輔助方法：根據正負值應用不同的權重
         private int GetFactorValue(float factorValue, float2 weightSelector)
         {
             if (!(factorValue < 0f))
@@ -401,46 +410,44 @@ namespace MapExtPDX.ModeB
                 return (int)(factorValue * weightSelector.y); // 正值乘 y
             }
 
-            return (int)(factorValue * weightSelector.x); // 负值乘 
+            return (int)(factorValue * weightSelector.x); // 負值乘 x
         }
 
-        // 辅助函数，用于根据空缺获取需求偏移
-        // 修复后的空置率偏移计算
+        // 輔助函數，用於根據空缺取得需求偏移
+        // 修復後的空置率偏移計算
         private int GetSmoothedVacancyOffset(int free, int total, float buffer, float targetRate, float sensitivity)
         {
-            // 使用缓冲分母：math.max(total, buffer) 不够平滑，建议直接 total + buffer
-            // 这样当 total=0 时，分母为 buffer，空置率=0
-            // 当 total 很大时，buffer 的影响忽略不计
+            // 使用緩衝分母：math.max(total, buffer) 不夠平滑，改為直接 total + buffer
+            // 這樣當 total=0 時，分母為 buffer，空置率=0
+            // 當 total 很大時，buffer 的影響忽略不計
             free = math.clamp(free, 0, total);
             float effectiveTotal = total + buffer;
             float vacancyRate = free / effectiveTotal;
 
-            // 偏差 = 目标 - 实际
-            // 实际 15% (0.15), 目标 8% (0.08) -> 差值 -0.07
-            // -0.07 * 1500 = -105 分。这足以抵消大多数正面需求。
+            // 偏差 = 目標 - 實際
+            // 實際 15% (0.15), 目標 5% (0.05) -> 差值 -0.10
+            // -0.10 * 1500 = -150 分。這足以抵消大多數正面需求。
             float score = (targetRate - vacancyRate) * sensitivity;
 
-            // 限制单项影响范围，防止溢出UI显示或逻辑崩坏
+            // 限制單項影響範圍，防止溢出 UI 顯示或邏輯崩壞
             return (int)math.clamp(score, -200f, 200f);
         }
 
-        // 新增：空置率熔断乘数
+        // 新增：空置率熔斷乘數
         private float GetVacancyMultiplier(int free, int total, float buffer, float panicRate)
         {
             float effectiveTotal = total + buffer;
             float vacancyRate = free / effectiveTotal;
 
-            // 如果空置率 >= 恐慌线 (20%)，乘数为 0
-            // 如果空置率 <= 恐慌线 - 5% (15%)，乘数为 1
-            // 中间平滑过渡
+            // 如果空置率 >= 恐慌線 (panicRate，預設 25%)，乘數為 0
+            // 如果空置率 <= 恐慌線 - 5% (預設 20%)，乘數為 1
+            // 中間平滑過渡
             float lowerThreshold = panicRate - 0.05f;
 
-            // smoothstep 在 lower~panic 之间返回 0~1
-            // 我们需要反过来，所以用 1 - smoothstep
+            // smoothstep 在 lower~panic 之間返回 0~1
+            // 我們需要反過來，所以用 1 - smoothstep
             float penalty = math.smoothstep(lowerThreshold, panicRate, vacancyRate);
             return 1.0f - penalty;
         }
     }
 }
-
-
