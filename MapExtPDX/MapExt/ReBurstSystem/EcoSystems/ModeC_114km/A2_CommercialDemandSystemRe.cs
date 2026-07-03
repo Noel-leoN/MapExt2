@@ -25,6 +25,12 @@ namespace MapExtPDX.ModeC
     [BurstCompile]
     public struct UpdateCommercialDemandJob : IJob
     {
+        // ⚠️⚠️⚠️ 欄位佈局約束（改動欄位前必讀）⚠️⚠️⚠️
+        // 本 Job 透過 Transpiler 替換原版 CommercialDemandSystem.UpdateCommercialDemandJob，
+        // 由 JobPatchHelper 直接「複用原版 System 壓棧的 Job 實例記憶體佈局」——
+        // 因此以下欄位的【型別 + 宣告順序】必須與原版逐一嚴格對齊（名稱不影響佈局，型別／順序錯位會讓 Burst 讀到錯誤記憶體，
+        // 導致靜默資料損壞或崩潰，且【編譯不會報錯】）。
+        // 新增／刪除／重排任何欄位前，務必先比對 _KnowledgeBase 原版欄位塊；遊戲版本升級時由 /check-upgrade 覆核。
         [DeallocateOnJobCompletion][ReadOnly] public NativeArray<ZoneData> m_UnlockedZoneDatas;
         [ReadOnly] public NativeList<ArchetypeChunk> m_CommercialPropertyChunks;
         [ReadOnly] public ComponentTypeHandle<PrefabRef> m_PrefabType;
