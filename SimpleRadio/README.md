@@ -61,7 +61,7 @@ Open **Options > SimpleRadio** to access:
 
 ## Compatibility
 
-- **ExtendedRadio** — ✅ Fully compatible (independent network keys)
+- **ExtendedRadio** — ✅ Compatible, can be used together (just avoid identical station names)
 - **All other mods** — ✅ No known conflicts
 
 SimpleRadio runs fully standalone — its audio format support only applies to its own stations, so it behaves the same whether ExtendedRadio is installed or not. As an extra safeguard, if another radio mod crashes while stations are loading, SimpleRadio catches the error so the game's radio keeps working.
@@ -140,8 +140,8 @@ SimpleRadio runs fully standalone — its audio format support only applies to i
 
 ## 兼容性
 
-- **ExtendedRadio** — ✅ 完全兼容（独立的网络键名）
-- **其他 mod** — ✅ 无已知冲突
+- **ExtendedRadio** — ✅ 相容，可同時使用（電台名稱避免與其他 Mod 重複即可）
+- **其他 mod** — ✅ 無已知衝突
 
 SimpleRadio 完全獨立運行——其音訊格式支援僅作用於自身電台，無論是否安裝 ExtendedRadio，行為都完全一致。此外還有一層保險：若其他電台 Mod 在載入電台時出錯，SimpleRadio 會自動攔截該錯誤，確保遊戲電台持續正常運作。
 
