@@ -14,8 +14,10 @@ namespace SimpleRadio.Core
         private static readonly string[] ExtraExtensions = { ".mp3", ".wav" };
 
         /// <summary>
-        /// 检测 ExtendedRadio 是否已加载。
-        /// 若已加载，其全局 LoadAsync Prefix 已覆盖所有格式，我们无需重复 patch。
+        /// 偵測 ExtendedRadio 是否已載入。
+        /// 純資訊用途：僅供設定面板顯示相容狀態，不再作為任何 patch 的開關。
+        /// SimpleRadio 採「軟獨佔」策略，副檔名註冊與 AudioLoadPatch 一律無條件執行，
+        /// 對自身資產完全自主解碼，不依賴 ExtendedRadio 的任何行為。
         /// </summary>
         public static bool IsExtendedRadioLoaded { get; private set; }
 
@@ -64,11 +66,10 @@ namespace SimpleRadio.Core
         /// </summary>
         public static void RegisterExtensions()
         {
-            // --- 检测 ExtendedRadio ---
-            // 此旗標僅用於決定「是否跳過自己的 AudioLoadPatch」（見 Mod.OnLoad），
-            // 副檔名註冊無論如何都必須執行。
+            // --- 偵測 ExtendedRadio（純資訊用途）---
+            // 此旗標僅供設定面板顯示相容狀態，不再 gating 任何 patch 或註冊行為。
             //
-            // 為何不能因偵測到 ExtendedRadio 就跳過註冊：
+            // 為何副檔名註冊必須無條件執行：
             //   ExtendedRadio 的 mp3/wav/flac 副檔名映射受其自身設定開關 gating，
             //   而那些開關預設全部為 false（見 ExtendedRadio Settings.cs）。
             //   若我們在偵測到它時就 return，兩邊都不會註冊 .mp3/.wav →
@@ -80,7 +81,7 @@ namespace SimpleRadio.Core
 
             if (IsExtendedRadioLoaded)
             {
-                Mod.Logger.Info("检测到 ExtendedRadio 已加载：仍会注册副档名，但跳过 AudioLoadPatch（解码交由 ExtendedRadio 的全局 Prefix 处理）。");
+                Mod.Logger.Info("偵測到 ExtendedRadio 已載入：SimpleRadio 以獨立模式運作（無條件註冊副檔名與 AudioLoadPatch，自主解碼，並防護第三方電台 Mod 於 LoadRadio 的崩潰）。");
             }
 
             // --- 注册扩展名（无条件执行）---

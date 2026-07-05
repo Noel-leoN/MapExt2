@@ -80,10 +80,10 @@ namespace SimpleRadio.Settings
                 { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.ExtendedRadioStatus)), "ExtendedRadio" },
                 { m_Setting.GetOptionDescLocaleID(nameof(ModSettings.ExtendedRadioStatus)),
                     "Shows whether ExtendedRadio is detected.\n\n" +
-                    "When ExtendedRadio is active, it already provides its own multi-format audio support " +
-                    "(including MP3 and WAV). SimpleRadio will automatically disable its own format patches " +
-                    "to avoid conflicts. The format toggles above will still control which files SimpleRadio scans, " +
-                    "but audio decoding will be handled by ExtendedRadio." },
+                    "SimpleRadio runs fully standalone: it registers its own audio formats and decoders " +
+                    "regardless of ExtendedRadio, so its stations never depend on ExtendedRadio being present or configured a certain way.\n\n" +
+                    "It also guards the radio loading step: if ExtendedRadio (or any other radio mod) throws during station loading, " +
+                    "SimpleRadio neutralizes the error so the game audio system stays enabled and both vanilla and SimpleRadio stations survive." },
             };
         }
 

@@ -79,9 +79,10 @@ namespace SimpleRadio.Settings
                 { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.ExtendedRadioStatus)), "ExtendedRadio" },
                 { m_Setting.GetOptionDescLocaleID(nameof(ModSettings.ExtendedRadioStatus)),
                     "显示 ExtendedRadio 的检测状态。\n\n" +
-                    "当 ExtendedRadio 已启用时，它已提供自己的多格式音频支持（包括 MP3 和 WAV）。" +
-                    "SimpleRadio 会自动禁用自身的格式补丁以避免冲突。" +
-                    "上方的格式开关仍控制 SimpleRadio 扫描哪些文件，但音频解码将由 ExtendedRadio 处理。" },
+                    "SimpleRadio 以完全独立的方式运行：无论 ExtendedRadio 是否存在，都会自行注册音频格式与解码器，" +
+                    "因此电台不依赖 ExtendedRadio 的安装或特定配置。\n\n" +
+                    "同时会防护电台加载环节：若 ExtendedRadio（或其他电台 Mod）在加载电台时抛出异常，" +
+                    "SimpleRadio 会中和该错误，使游戏音频系统保持启用，原版与 SimpleRadio 电台均可正常保留。" },
             };
         }
 
