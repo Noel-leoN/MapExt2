@@ -134,8 +134,8 @@ namespace SimpleRadio.Settings
         [SettingsUISection(kTabFormat, kGroupCompat)]
         public string ExtendedRadioStatus =>
             AudioFormatHelper.IsExtendedRadioLoaded
-                ? "Detected — SimpleRadio runs standalone and guards against its crashes"
-                : "Not detected — SimpleRadio runs standalone";
+                ? "Detected — compatible"
+                : "Not detected";
 
         // ================================================================
         // 持久化设置（隐藏）
