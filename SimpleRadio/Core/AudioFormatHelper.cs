@@ -65,16 +65,25 @@ namespace SimpleRadio.Core
         public static void RegisterExtensions()
         {
             // --- 检测 ExtendedRadio ---
+            // 此旗標僅用於決定「是否跳過自己的 AudioLoadPatch」（見 Mod.OnLoad），
+            // 副檔名註冊無論如何都必須執行。
+            //
+            // 為何不能因偵測到 ExtendedRadio 就跳過註冊：
+            //   ExtendedRadio 的 mp3/wav/flac 副檔名映射受其自身設定開關 gating，
+            //   而那些開關預設全部為 false（見 ExtendedRadio Settings.cs）。
+            //   若我們在偵測到它時就 return，兩邊都不會註冊 .mp3/.wav →
+            //   這些副檔名沒有型別映射 → AssetDatabase.user.AddAsset 回傳 null →
+            //   SimpleRadio 的 mp3/wav 檔案全數靜默失敗，電台空掉。
+            //   原版 DefaultAssetFactory 對重複副檔名僅 warn 不拋例外，故無條件註冊是安全的。
             IsExtendedRadioLoaded = AppDomain.CurrentDomain.GetAssemblies()
                 .Any(a => a.GetName().Name == "ExtendedRadio");
 
             if (IsExtendedRadioLoaded)
             {
-                Mod.Logger.Info("检测到 ExtendedRadio 已加载，跳过格式扩展名注册和 LoadAsync 补丁。");
-                return;
+                Mod.Logger.Info("检测到 ExtendedRadio 已加载：仍会注册副档名，但跳过 AudioLoadPatch（解码交由 ExtendedRadio 的全局 Prefix 处理）。");
             }
 
-            // --- 注册扩展名 ---
+            // --- 注册扩展名（无条件执行）---
             var factory = DefaultAssetFactory.instance;
             foreach (var ext in ExtraExtensions)
             {
