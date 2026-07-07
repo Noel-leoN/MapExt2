@@ -1,9 +1,13 @@
-## v1.0.2 - ExtendedRadio Compatibility Fix
+## v1.0.3 - Compatibility and Localization
 
-* **[Compatibility]:** Fixed custom stations potentially being lost when coexisting with ExtendedRadio, due to non-deterministic Harmony Postfix execution order on `Radio.LoadRadio`.
+* **[Compatibility]:** Added a safeguard to automatically intercept errors from other radio mods, preventing the entire game radio system from breaking or disabling.
+* **[Compatibility]:** Optimized station loading sequence and made SimpleRadio run fully standalone regardless of whether ExtendedRadio is installed.
+* **[Localization]:** Added Traditional Chinese support and updated descriptions in the settings menu.
 
 ---
 
-### 主要改动
+### 主要變動
 
-* **[兼容性]：** 修复与 ExtendedRadio 共存时，因 Harmony Postfix 执行顺序不确定导致自定义电台可能被覆盖丢失的问题。
+* **[相容性]：** 新增錯誤防護機制，能自動攔截其他電台 Mod 的執行錯誤，避免遊戲內的所有電台因此失效或無法播放。
+* **[相容性]：** 優化自訂電台的載入順序，無論是否安裝了 ExtendedRadio，本 Mod 都能完全獨立且正常運作。
+* **[在地化]：** 新增繁體中文支援，並優化設定選單中的各項說明文字。
