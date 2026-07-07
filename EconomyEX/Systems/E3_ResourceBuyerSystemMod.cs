@@ -28,6 +28,11 @@ using UnityEngine;
 
 namespace EconomyEX.Systems
 {
+	/// <summary>
+	/// ResourceBuyerSystem 完整替換（System Replacement，基準 1.6.0f）。
+	/// 刻意不跟版項：1.6.0f 新增的 BuyerOutcome / IncrementOutcome 遙測統計體系
+	/// （純 UI／遙測計數，Mod 無消費端，省略以減少 Job 開銷）——/check-upgrade 比對時勿誤報為遺漏。
+	/// </summary>
 	public partial class ResourceBuyerSystemMod : GameSystemBase
 	{
 		#region Constants
@@ -645,22 +650,35 @@ namespace EconomyEX.Systems
 						bool flag2 = m_OutsideConnections.HasComponent(destination);
 						if (m_Properties.HasComponent(destination) || flag2)
 						{
-							DynamicBuffer<Game.Economy.Resources> resources = m_Resources[destination];
-							int num = EconomyUtils.GetResources(resourceBuyer.m_ResourceNeeded, resources);
-							if (m_StorageCompanies.HasComponent(destination))
+							// [1.6.0f] 虛擬商品 + OC 賣家：跳過庫存檢查。OC 的虛擬服務無實體庫存，
+							// 查庫存恆為 0 會誤判缺貨並反覆重試尋路（1.6.0f 官方根因修復，
+							// 與 FindShopForCitizen 的 SetupTargetFlags.Import 配套）
+							int num;
+							if (flag && flag2)
 							{
-								int allBuyingResourcesTrucks = VehicleUtils.GetAllBuyingResourcesTrucks(destination,
-									resourceBuyer.m_ResourceNeeded, ref m_DeliveryTrucks, ref m_GuestVehicles,
-									ref m_LayoutElements);
-								num -= allBuyingResourcesTrucks;
+								num = resourceBuyer.m_AmountNeeded;
 							}
-
-							if (num <= 0 || (!flag2 && num < resourceBuyer.m_AmountNeeded / 2))
+							else
 							{
-								m_CommandBuffer.RemoveComponent(unfilteredChunkIndex, entity, in m_PathfindTypes);
-								// [MOD EXT] BUG FIX: Vanilla fails to remove the ResourceBuyer component when stock is insufficient, leading to an infinite pathfinding loop.
-								m_CommandBuffer.RemoveComponent<ResourceBuyer>(unfilteredChunkIndex, entity);
-								continue;
+								DynamicBuffer<Game.Economy.Resources> resources = m_Resources[destination];
+								num = EconomyUtils.GetResources(resourceBuyer.m_ResourceNeeded, resources);
+								if (m_StorageCompanies.HasComponent(destination))
+								{
+									int allBuyingResourcesTrucks = VehicleUtils.GetAllBuyingResourcesTrucks(destination,
+										resourceBuyer.m_ResourceNeeded, ref m_DeliveryTrucks, ref m_GuestVehicles,
+										ref m_LayoutElements);
+									num -= allBuyingResourcesTrucks;
+								}
+
+								// [1.6.0f 對齊] 缺貨僅移除尋路結果、保留 ResourceBuyer 供下 tick 換賣家重試
+								// （1.5.10f / 1.6.0f 皆如此；成功／買不起／尋路失敗才移除）。舊註釋所稱
+								// "vanilla infinite pathfinding loop" 經三版核實不成立，實為缺少上方
+								// 虛擬商品分支的症狀；重試負載由 tick 節流閥與 MaxCost 滑塊約束。
+								if (num <= 0 || (!flag2 && num < resourceBuyer.m_AmountNeeded / 2))
+								{
+									m_CommandBuffer.RemoveComponent(unfilteredChunkIndex, entity, in m_PathfindTypes);
+									continue;
+								}
 							}
 
 							resourceBuyer.m_AmountNeeded = math.min(resourceBuyer.m_AmountNeeded, num);
@@ -818,6 +836,12 @@ namespace EconomyEX.Systems
 				Entity buyer, Resource resource, int amount, SetupTargetFlags flags, Citizen citizenData,
 				Household householdData, int householdCitizenCount, bool virtualGood)
 			{
+				// [1.6.0f] 虛擬商品允許以 OC 進口作為賣家（與 ProcessResourceBuyer 的跳過庫存檢查配套）
+				if (virtualGood)
+				{
+					flags |= SetupTargetFlags.Import;
+				}
+
 				m_CommandBuffer.AddComponent(index, buyer, in m_PathfindTypes);
 				m_CommandBuffer.SetComponent(index, buyer, new PathInformation
 				{
@@ -960,6 +984,10 @@ namespace EconomyEX.Systems
 				{
 					m_State = PathFlags.Pending
 				});
+				// [MOD EXT] 等比縮放（非調參）：原版 = GetTransportCost(1f) + Weights(0.01, 0.01, tc, 0.01)、無 MaxCost。
+				// GetTransportCost 對 distance 嚴格線性，故此處 (1, 1, tc(100f), 1) ≡ 原版整體 ×100，
+				// 賣家／路線選擇行為與原版全等；放大量綱是為讓 m_CompanyShoppingMaxCost 滑塊與市民端同量綱。
+				// 若改回原版權重，滑塊值須同步 ÷100，否則等效搜索半徑 ×100。
 				float transportCost = EconomyUtils.GetTransportCost(100f, amount,
 					m_ResourceDatas[m_ResourcePrefabs[resource]].m_Weight, StorageTransferFlags.Car);
 				PathfindParameters parameters = new PathfindParameters

@@ -404,6 +404,9 @@ namespace EconomyEX.Systems
                     CitizenAge age = citizen.GetAge();
 
                     // === 1. 排除儿童和老人 ===
+                    // [刻意偏差] 原版對分支 1/2 無條件寫計時；Mod 以 m_IsUnemployedFindJob 條件化，
+                    // 讓 employed pass 在此二分支不觸碰失業計時（在職者冷卻中不虛累、出冷卻即歸零，
+                    // 消費端無感知差異）。分支 3（搬離）則依原版無條件累加
                     if (age == CitizenAge.Child || age == CitizenAge.Elderly)
                     {
                         if (m_IsUnemployedFindJob)
@@ -426,7 +429,7 @@ namespace EconomyEX.Systems
 
                         if (lastSeekFrame + cooldown > m_SimulationFrame)
                         {
-                            if (m_IsUnemployedFindJob)
+                            if (m_IsUnemployedFindJob) // [刻意偏差] 僅 unemployed pass 寫計時，見分支 1 說明
                             {
                                 citizen.m_UnemploymentTimeCounter += kUnemploymentIncrement;
                                 citizens[i] = citizen;
@@ -439,8 +442,13 @@ namespace EconomyEX.Systems
                     }
 
                     // === 3. 搬离检查 ===
+                    // [1.6.0f 對齊] 原版（1.5.10f / 1.6.0f 同）此分支無條件累加失業計時後才 continue，
+                    // 照抄時曾遺漏，致搬離中市民計時凍結、幸福度失業懲罰偏輕。此處依原版無條件累加
+                    //（分支 1/2 的 m_IsUnemployedFindJob 條件化為刻意偏差，見分支 1 說明）
                     if (m_MovingAways.HasComponent(household))
                     {
+                        citizen.m_UnemploymentTimeCounter += kUnemploymentIncrement;
+                        citizens[i] = citizen;
 #if DEBUG
                         unsafe { Interlocked.Increment(ref ((int*)m_DebugCounters.GetUnsafePtr())[m_DebugOffset + CNT_Skip_Other]); }
 #endif
