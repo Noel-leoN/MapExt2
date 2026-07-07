@@ -65,21 +65,19 @@ namespace SimpleRadio
                 // 3. 注册 COUI 图标资源
                 IconManager.Register(modDir);
 
-                // 4. 注册额外音频格式（MP3/WAV）并检测 ExtendedRadio
+                // 4. 註冊額外音訊格式（MP3/WAV），無條件執行（見 AudioFormatHelper 說明）
                 AudioFormatHelper.RegisterExtensions();
 
-                // 5. 注册 Harmony 补丁
+                // 5. 註冊 Harmony 補丁
                 _harmony = new Harmony(HarmonyId);
-                _harmony.CreateClassProcessor(typeof(RadioLoadPatch)).Patch();       // Postfix: 注入电台
-                _harmony.CreateClassProcessor(typeof(PlaylistClipsPatch)).Patch();   // Prefix: 拦截运行时 clip 刷新
+                _harmony.CreateClassProcessor(typeof(RadioLoadPatch)).Patch();       // Postfix + Finalizer: 注入電台並中和第三方崩潰
+                _harmony.CreateClassProcessor(typeof(PlaylistClipsPatch)).Patch();   // Prefix: 攔截執行期 clip 刷新
 
-                // 仅在 ExtendedRadio 未加载时注册 LoadAsync 补丁
-                // ExtendedRadio 已有全局 LoadAsync Prefix 处理所有格式
-                if (!AudioFormatHelper.IsExtendedRadioLoaded)
-                {
-                    _harmony.CreateClassProcessor(typeof(AudioLoadPatch)).Patch();   // Prefix: 多格式解码器选择
-                    Logger.Info("已注册 AudioLoadPatch（多格式解码支持）。");
-                }
+                // 獨立模式：無條件註冊 AudioLoadPatch（多格式解碼器選擇）。
+                // 其 Prefix 內建「僅攔截 SimpleRadio 自身資產」的守衛，對他人資產放行，
+                // 與 ExtendedRadio 的全域 LoadAsync Prefix 可安全共存；不再依賴其存在與否。
+                _harmony.CreateClassProcessor(typeof(AudioLoadPatch)).Patch();
+                Logger.Info("已註冊 AudioLoadPatch（多格式解碼支援，獨立自主）。");
 
                 Logger.Info($"{ModName} v{ModAssemblyInfo.Version} loaded successfully.");
             }
