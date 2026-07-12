@@ -518,6 +518,113 @@ namespace MapExtPDX.MapExt.Core
                 }
             }
 
+            // 43km ModeD (3x)
+            if (PatchManager.CurrentCoreValue == 3)
+            {
+                // ==================================================
+                // --- CellMapSystem<T> ECS替换 ---
+                // ==================================================
+                updateSystem.UpdateAt<ModeD.AirPollutionSystemMod>(SystemUpdatePhase
+                    .GameSimulation);
+                globalPatcher.CreateClassProcessor(typeof(ModeD.AirPollutionSystemMod.Patches))
+                    .Patch();
+
+                updateSystem.UpdateAt<ModeD.AvailabilityInfoToGridSystemMod>(SystemUpdatePhase
+                    .GameSimulation);
+                globalPatcher
+                    .CreateClassProcessor(typeof(ModeD.AvailabilityInfoToGridSystemMod.Patches))
+                    .Patch();
+
+                updateSystem.UpdateAt<ModeD.GroundPollutionSystemMod>(SystemUpdatePhase
+                    .GameSimulation);
+                globalPatcher.CreateClassProcessor(typeof(ModeD.GroundPollutionSystemMod.Patches))
+                    .Patch();
+
+                updateSystem.UpdateAt<ModeD.GroundWaterSystemMod>(SystemUpdatePhase.GameSimulation);
+                globalPatcher.CreateClassProcessor(typeof(ModeD.GroundWaterSystemMod.Patches))
+                    .Patch();
+
+
+                updateSystem.UpdateAt<ModeD.NaturalResourceSystemMod>(SystemUpdatePhase
+                    .GameSimulation);
+                updateSystem.UpdateAt<ModeD.NaturalResourceSystemMod>(SystemUpdatePhase
+                    .EditorSimulation);
+                updateSystem.UpdateAfter<PostDeserialize<ModeD.NaturalResourceSystemMod>>(
+                    SystemUpdatePhase.Deserialize);
+                globalPatcher.CreateClassProcessor(typeof(ModeD.NaturalResourceSystemMod.Patches))
+                    .Patch();
+
+                updateSystem.UpdateAt<ModeD.NoisePollutionSystemMod>(SystemUpdatePhase
+                    .GameSimulation);
+                globalPatcher.CreateClassProcessor(typeof(ModeD.NoisePollutionSystemMod.Patches))
+                    .Patch();
+
+                updateSystem.UpdateAt<ModeD.PopulationToGridSystemMod>(SystemUpdatePhase
+                    .GameSimulation);
+                globalPatcher.CreateClassProcessor(typeof(ModeD.PopulationToGridSystemMod.Patches))
+                    .Patch();
+
+                // 原版未注册 GameSimulation（无下游消费者），仅保留 Deserialize + Harmony 以确保 CellMap 扩容
+                // updateSystem.UpdateAt<ModeD.SoilWaterSystemMod>(SystemUpdatePhase.GameSimulation);
+                updateSystem.UpdateAfter<PostDeserialize<ModeD.SoilWaterSystemMod>>(SystemUpdatePhase.Deserialize);
+                globalPatcher.CreateClassProcessor(typeof(ModeD.SoilWaterSystemMod.Patches))
+                    .Patch();
+
+                updateSystem.UpdateAt<ModeD.TerrainAttractivenessSystemMod>(SystemUpdatePhase
+                    .GameSimulation);
+                globalPatcher
+                    .CreateClassProcessor(typeof(ModeD.TerrainAttractivenessSystemMod.Patches))
+                    .Patch();
+
+                updateSystem.UpdateAt<ModeD.TrafficAmbienceSystemMod>(SystemUpdatePhase
+                    .GameSimulation);
+                globalPatcher.CreateClassProcessor(typeof(ModeD.TrafficAmbienceSystemMod.Patches))
+                    .Patch();
+
+                updateSystem.UpdateAt<ModeD.ZoneAmbienceSystemMod>(SystemUpdatePhase
+                    .GameSimulation);
+                globalPatcher.CreateClassProcessor(typeof(ModeD.ZoneAmbienceSystemMod.Patches))
+                    .Patch();
+
+                // --- LandValueSystemRemake + UI设置 ---
+                updateSystem.UpdateAt<ModeD.LandValueSystemMod>(SystemUpdatePhase.GameSimulation);
+                globalPatcher.CreateClassProcessor(typeof(ModeD.LandValueSystemMod.Patches))
+                    .Patch();
+                // updateSystem.UpdateAt<LandValueConfigSyncSystem>(SystemUpdatePhase.GameSimulation);
+                // ======================================================
+
+                // ============================================
+                // --- Mode-specific 经济系统 (C1/D1) ---
+                // ============================================
+
+                if (setting.isEnableEconomyFix)
+                {
+                    if (setting.EnableHouseholdPropertyEcoSystem)
+                    {
+                        // HarmonyPrefix修补CitizenPathfindSetup.SetupFindHomeJob(HouseholdFindPropertySystem关联)
+                        globalPatcher.CreateClassProcessor(typeof(ModeD.PathfindSetupSystem_FindTargets_Patch)).Patch();
+                        updateSystem.UpdateAt<ModeD.HouseholdFindPropertySystemMod>(SystemUpdatePhase.GameSimulation);
+                        updateSystem.UpdateAt<ModeD.RentAdjustSystemMod>(SystemUpdatePhase.GameSimulation);
+                    }
+                    else
+                    {
+                        updateSystem.UpdateAt<ModeD.HouseholdFindPropertySystemMod_CellOnly>(SystemUpdatePhase.GameSimulation);
+                        updateSystem.UpdateAt<ModeD.RentAdjustSystemMod_CellOnly>(SystemUpdatePhase.GameSimulation);
+                    }
+                }
+                else
+                {
+                    updateSystem.UpdateAt<ModeD.HouseholdFindPropertySystemMod_CellOnly>(SystemUpdatePhase.GameSimulation);
+                    updateSystem.UpdateAt<ModeD.RentAdjustSystemMod_CellOnly>(SystemUpdatePhase.GameSimulation);
+                }
+
+                if (setting.isEnableEconomyFix && setting.EnableDemandEcoSystem)
+                {
+                    // Job通用替换修补ResidentialDemand/IndustrialDemand/RentAdjust
+                    JobPatchHelper.Apply(globalPatcher, JobPatchDefinitions.GetEcoSystemTargets(PatchModeSetting.ModeD));
+                }
+            }
+
             // vanilla ModeE (None)
             if (PatchManager.CurrentCoreValue == 1)
             {

@@ -17,7 +17,7 @@ using Unity.Jobs;
 using Unity.Mathematics;
 using UnityEngine;
 
-namespace MapExtPDX.ModeE
+namespace MapExtPDX.ModeD
 {
     /// <summary>
     /// 更新工業／辦公／倉儲需求的作業。

@@ -23,7 +23,8 @@ namespace MapExtPDX.UI
     /// Phase 4: +Dashboard 扩展 13（住宅空置 6 + 商业 2 + 人口活动 4 + 通勤 1），累计 60 个 Binding。
     /// Phase 5: +水体工具 8（海平面 3 + 重置 1 + 模拟速度 2 + 面板状态 2），累计 68 个 Binding。
     /// Phase 5.1: +海平面锁定 3（锁定开关 1 + 锁定值读写 2），累计 71 个 Binding。
-    /// 面板关闭时跳过所有更新（零开销）。
+    /// 面板關閉時跳過 ValueBinding 的反向同步脏檢查；GetterValueBinding 仍由 base.OnUpdate 每幀輪詢，
+    /// 但 getter 均為欄位讀取或快取值，無實體掃描與分配開銷。
     /// </summary>
     public partial class MapExtUISystem : UISystemBase
     {
@@ -31,6 +32,9 @@ namespace MapExtPDX.UI
 
         private const string Tag = "UISystem";
         private const string kGroup = "mapext";
+
+        /// <summary>WaterSourceData.m_ConstantDepth == 2 表示海水源（Sea Water Source，反編譯 WaterSourceData 語意）。</summary>
+        private const int kSeaWaterSourceType = 2;
 
         #endregion
 
@@ -103,6 +107,13 @@ namespace MapExtPDX.UI
         // private int m_UserWaterSimSpeed = -1;
         private bool m_SeaLevelDiagLogged = false;
 
+        // --- 效能快取 ---
+        /// <summary>舊存檔海平面回退查詢的快取（避免每幀掃描 WaterSourceData 實體）。</summary>
+        private float m_FallbackSeaLevel;
+        private bool m_FallbackSeaLevelCached = false;
+        /// <summary>MapSizeInfo 字串快取（CurrentCoreValue 在一場會話中不變，避免每幀字串插值）。</summary>
+        private string m_MapSizeInfoCache;
+
         #endregion
 
         #region Lifecycle
@@ -118,6 +129,9 @@ namespace MapExtPDX.UI
             base.OnGamePreload(purpose, mode);
 
             m_SeaLevelDiagLogged = false;
+            // 快取失效：新會話重新計算
+            m_FallbackSeaLevelCached = false;
+            m_MapSizeInfoCache = null;
             // 懒加载引用在 OnUpdate 中重新获取
             m_WaterSystem = null;
             m_Q2System = null;
@@ -154,7 +168,7 @@ namespace MapExtPDX.UI
             // === 只读信息 (GetterValueBinding，自动脏检查) ===
             AddUpdateBinding(new GetterValueBinding<string>(
                 kGroup, "MapSizeInfo",
-                () => $"{PatchManager.CurrentCoreValue * 14336}m"));
+                () => m_MapSizeInfoCache ??= $"{PatchManager.CurrentCoreValue * 14336}m"));
 
             AddUpdateBinding(new GetterValueBinding<string>(
                 kGroup, "SystemStatus",
@@ -447,7 +461,7 @@ namespace MapExtPDX.UI
             AddBinding(m_WaterToolsOpen = new ValueBinding<bool>(kGroup, "WaterToolsOpen", false));
             AddBinding(new TriggerBinding<bool>(kGroup, "SetWaterToolsOpen", v => m_WaterToolsOpen.Update(v)));
 
-            // --- 海平面值（优先从 WaterSourceData 海水源读取，回退到 WaterSystem.SeaLevel）---
+            // --- 海平面值（優先讀 WaterSystem.SeaLevel，屬性≈0 的舊存檔回退到 WaterSourceData 海水源，結果快取）---
             AddUpdateBinding(new GetterValueBinding<float>(kGroup, "SeaLevel",
                 () => GetActualSeaLevel()));
 
@@ -455,7 +469,7 @@ namespace MapExtPDX.UI
             // 注意：滑块拖动时高频触发，不可在此写日志（Colossal 日志系统会 NRE）
             AddBinding(new TriggerBinding<float>(kGroup, "SetSeaLevel", v =>
             {
-                if (m_WaterSystem != null)
+                if (m_WaterSystem != null && m_WaterSystem.Loaded)
                 {
                     m_WaterSystem.SeaLevel = v;
                     // 锁定状态下同步更新锁定目标值，避免下一帧 OnUpdate 回写旧值
@@ -480,6 +494,8 @@ namespace MapExtPDX.UI
                 if (m_WaterSystem != null)
                 {
                     m_WaterSystem.Restart();
+                    // 水面重建後海水源可能變動，失效回退快取
+                    m_FallbackSeaLevelCached = false;
                     ModLog.Ok(Tag, "水面已重置，将从水源重新模拟");
                 }
             }));
@@ -640,21 +656,24 @@ namespace MapExtPDX.UI
 
         /// <summary>
         /// 获取实际海平面高度。
-        /// 优先从 WaterSourceData 实体中查询海水源 (m_ConstantDepth == 2) 的 Transform.y，
-        /// 若无海水源则回退到 WaterSystem.SeaLevel 属性。
-        /// 原因：旧存档（无 NewWaterSources 格式标签）的 WaterSystem.SeaLevel 始终为 0。
+        /// 優先使用 WaterSystem.SeaLevel（引擎控制值，使用者修改後立即生效）；
+        /// 當屬性 ≈ 0（舊存檔無 NewWaterSources 格式標籤、未反序列化此欄位）時，
+        /// 回退為查詢 WaterSourceData 海水源 (m_ConstantDepth == 2) 的 Transform.y 最小值。
+        /// 回退查詢結果會快取（水源不變時無需每幀掃描），ResetWater / 新會話時失效重查。
         /// </summary>
         private float GetActualSeaLevel()
         {
             if (m_WaterSystem == null) return 0f;
 
-            // 优先使用 WaterSystem.SeaLevel（引擎控制值，用户修改后立即生效）
             float propertyValue = m_WaterSystem.SeaLevel;
             if (propertyValue > 0.01f)
                 return propertyValue;
 
-            // 回退：当 SeaLevel = 0（旧存档未反序列化此字段）时，
-            // 从 WaterSourceData 实体中查询 Type 2 海水源的 Transform.y
+            // --- 舊存檔回退（結果快取，避免每幀 ToEntityArray 分配與實體掃描） ---
+            if (m_FallbackSeaLevelCached)
+                return m_FallbackSeaLevel;
+
+            float result = 0f;
             if (!m_WaterSourceQuery.IsEmptyIgnoreFilter)
             {
                 var entities = m_WaterSourceQuery.ToEntityArray(Allocator.Temp);
@@ -664,8 +683,7 @@ namespace MapExtPDX.UI
                 for (int i = 0; i < entities.Length; i++)
                 {
                     var src = EntityManager.GetComponentData<WaterSourceData>(entities[i]);
-                    // m_ConstantDepth == 2: 海水源 (Sea Water Source)
-                    if (src.m_ConstantDepth == 2)
+                    if (src.m_ConstantDepth == kSeaWaterSourceType)
                     {
                         var transform = EntityManager.GetComponentData<Game.Objects.Transform>(entities[i]);
                         minSeaLevel = math.min(minSeaLevel, transform.m_Position.y);
@@ -675,10 +693,12 @@ namespace MapExtPDX.UI
                 entities.Dispose();
 
                 if (found)
-                    return minSeaLevel;
+                    result = minSeaLevel;
             }
 
-            return 0f;
+            m_FallbackSeaLevel = result;
+            m_FallbackSeaLevelCached = true;
+            return result;
         }
 
         #endregion

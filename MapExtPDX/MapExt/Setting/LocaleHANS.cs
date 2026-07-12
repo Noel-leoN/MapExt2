@@ -678,14 +678,25 @@ namespace MapExtPDX
                 { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.EnableVehicleRescue)), "• 启用购车停放救援" },
                 {
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.EnableVehicleRescue)),
-                    "启用购车救援系统：检测市民在商铺新购私家车后因停车位不足导致车辆丢失（m_Lane == Null）的情况，将其传送到车主住宅附近重新停放。\n\n" +
-                    "★ 默认关闭。仅在观察到购车后车辆消失时启用。\n" +
+                    "启用购车救援系统：检测市民私家车因停车位不足导致丢失（m_Lane == Null）的情况，将其传送到车主住宅附近重新停放。\n\n" +
+                    "★ 同时会自动清理存档中已存在的存量幽灵车辆：有住宅者救援，无家可归的孤儿车安全删除（对旧存档特别有用）。\n" +
+                    "★ 默认关闭。可先用下方“扫描幽灵车辆”按钮确认存档中的规模。\n" +
                     "★ 纯内存追踪，不会向实体或存档写入任何自定义组件。"
                 },
                 { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.EnableRescueDebugLog)), "• 启用购车救援调试日志" },
                 {
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.EnableRescueDebugLog)),
                     "开启后，购车救援系统在每次执行救援、重试或清理放弃逻辑时会打印日志。\n★ 建议在大城市或稳定运行后保持关闭以防止日志文件膨胀。"
+                },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.GhostVehicleScanReport)), "幽灵车辆扫描报告" },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.GhostVehicleScanReport)),
+                    "显示最近一次扫描的统计结果：幽灵车总数、可救援数、孤儿车数。"
+                },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.ScanGhostVehicles)), "扫描幽灵车辆" },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.ScanGhostVehicles)),
+                    "扫描当前存档中停放失败的幽灵私家车并统计数量。纯只读操作，不做任何修改；实际清理由救援系统在启用后低频自动完成。"
                 },
             };
             return entries;

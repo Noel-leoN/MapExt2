@@ -482,19 +482,53 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
     /// 当确认建筑实体未变化时，将其设 false → 跳过 CullBuildingLotsJob
     /// 注意: heightMapRenderRequired 是 CullForCascades 的值参数，修改不影响调用方
     ///       UpdateCascades 的局部变量（控制 CullCascade）不受影响
+    ///
+    /// [FIX] 區域包含檢查：
+    /// 原假設「裁剪區域恆為整個可玩區域」只在載入帧/CascadeReset 帧成立；
+    /// 純相機移動帧的 area 是移動後的近距級聯區域（UpdateCascades L4180-4182），
+    /// 而筆刷修改帧的裁剪區僅覆蓋筆刷範圍，會把 m_BuildingCullList 縮小成局部列表。
+    /// 因此只有當本帧 area 完全包含於「上次實際執行裁剪的區域」內時才可安全跳過，
+    /// 否則快取列表可能缺少新區域的建築，導致級聯紋理烘焙時丟失建築地基整平。
     /// </summary>
     [HarmonyPatch(typeof(TerrainSystem), "CullForCascades")]
     internal static class TerrainSystem_CullForCascades_Throttle
     {
-        [HarmonyPrefix]
-        public static void Prefix(TerrainSystem __instance, ref bool heightMapRenderRequired)
+        private const string Tag = "TerrainCullOpt";
+        private const float kAreaEpsilon = 0.5f;
+
+        // --- 上次實際執行 CullBuildingLotsJob 時的裁剪區域 ---
+        private static float4 s_LastCulledArea;
+        private static bool s_HasCulledArea = false;
+
+        /// <summary>
+        /// [BUGFIX] 退出主菜单时重置会话状态，二次加载不得复用旧裁剪区域。
+        /// </summary>
+        internal static void ResetSessionState()
         {
-            // 功能未启用或非大地图
-            if (PatchManager.CurrentCoreValue <= 1) return;
-            if (Mod.Instance?.Settings?.TerrainCullThrottle != true) return;
+            s_HasCulledArea = false;
+            ModLog.Info(Tag, "CullThrottle session state reset");
+        }
+
+        [HarmonyPrefix]
+        public static void Prefix(TerrainSystem __instance, float4 area, ref bool heightMapRenderRequired)
+        {
+            // 本帧原本就不做建筑裁剪（仅道路/区域更新触发）
+            if (!heightMapRenderRequired) return;
+
+            // 功能未启用或非大地图 → 原版行为，但仍记录裁剪区域供之后启用时判断
+            if (PatchManager.CurrentCoreValue <= 1 ||
+                Mod.Instance?.Settings?.TerrainCullThrottle != true)
+            {
+                RecordCull(area);
+                return;
+            }
 
             // 有地形修改或加载帧 → 必须完整裁剪
-            if (TerrainSystem_UpdateCascades_TrackState.s_NeedFullBuildingCull) return;
+            if (TerrainSystem_UpdateCascades_TrackState.s_NeedFullBuildingCull)
+            {
+                RecordCull(area);
+                return;
+            }
 
             // 检查建筑实体是否真的变化了
             var buildingsField = TerrainSystem_UpdateCascades_TrackState.BuildingsChangedField;
@@ -504,11 +538,34 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
             if (queryObj is EntityQuery entityQuery)
             {
                 // 有建筑增删/修改 → 不跳过
-                if (!entityQuery.IsEmptyIgnoreFilter) return;
+                if (!entityQuery.IsEmptyIgnoreFilter)
+                {
+                    RecordCull(area);
+                    return;
+                }
             }
 
-            // 无任何实体/地形变化，仅相机移动触发 → 跳过 CullBuildingLotsJob
-            heightMapRenderRequired = false;
+            // 仅相机移动触发：只有当本帧区域被上次实际裁剪区域完全覆盖时才可跳过
+            if (s_HasCulledArea &&
+                area.x >= s_LastCulledArea.x - kAreaEpsilon &&
+                area.y >= s_LastCulledArea.y - kAreaEpsilon &&
+                area.z <= s_LastCulledArea.z + kAreaEpsilon &&
+                area.w <= s_LastCulledArea.w + kAreaEpsilon)
+            {
+                // 快取列表已覆盖新区域 → 跳过 CullBuildingLotsJob
+                heightMapRenderRequired = false;
+                return;
+            }
+
+            // 快取不覆盖（如筆刷修改後首次平移）→ 放行完整裁剪并更新记录
+            RecordCull(area);
+        }
+
+        /// <summary>記錄本帧實際執行裁剪的區域（僅在 CullBuildingLotsJob 將被調度時呼叫）。</summary>
+        private static void RecordCull(float4 area)
+        {
+            s_LastCulledArea = area;
+            s_HasCulledArea = true;
         }
     }
 

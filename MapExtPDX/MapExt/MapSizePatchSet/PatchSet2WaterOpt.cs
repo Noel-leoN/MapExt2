@@ -25,7 +25,20 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
     [HarmonyPatch(typeof(WaterSystem), "OnSimulateGPU")]
     internal static class WaterSystemOptRuntimePatch
     {
+        private const string Tag = "WaterOpt";
+
         private static int s_frameCounter = 0;
+
+        // --- 背景水（Backdrop）模擬開關 ---
+        // m_SimulateBackdrop 由存檔反序列化（部分地圖原生無背景水），
+        // 覆寫前記住原值，切回 Vanilla/Paused 時還原。
+        // 直接寫私有欄位而非 simulateBackdrop 屬性：
+        // 屬性 setter 會觸發 OnBackdropActiveChanged（重建紋理 + 16 帧重模擬 + m_NewMap=16），
+        // 運行時切換不可承受；直接寫欄位僅跳過背景水的模擬與渲染分支。
+        private static System.Reflection.FieldInfo s_simulateBackdropField;
+        private static bool s_backdropFieldResolved = false;
+        private static bool s_backdropOverridden = false;
+        private static bool s_originalBackdrop = false;
 
         /// <summary>
         /// 记录用户设定的 speed 值（> 1 时才更新）。
@@ -33,6 +46,18 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
         /// 因此 speed > 1 只可能来自用户。
         /// </summary>
         internal static int StableSpeed = 1;
+
+        /// <summary>
+        /// [BUGFIX] 退出主菜单时重置会话状态。
+        /// m_SimulateBackdrop 会在下次加载时重新反序列化，覆写记录必须作废。
+        /// </summary>
+        internal static void ResetSessionState()
+        {
+            s_backdropOverridden = false;
+            StableSpeed = 1;
+            s_frameCounter = 0;
+            ModLog.Info(Tag, "WaterOpt session state reset");
+        }
 
         [HarmonyPrefix]
         static bool Prefix(WaterSystem __instance, CommandBuffer cmd)
@@ -49,20 +74,24 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
 
             var quality = ResolutionManager.WaterSimQuality;
 
-            // Vanilla 模式：完全不干预，零开销直通原版
+            // Vanilla 模式：仅确保背景水已还原，其余零开销直通原版
             if (quality == WaterSimQualitySetting.Vanilla_EveryFrame)
+            {
+                RestoreBackdrop(__instance);
                 return true;
+            }
 
             switch (quality)
             {
                 case WaterSimQualitySetting.Paused_NoFlow:
-                    // 完全暂停模拟，但 Simulate() 仍然执行维护逻辑
+                    // 完全暂停模拟，但 Simulate() 仍然执行维护逻辑；背景水还原为存档原值
                     __instance.WaterSimSpeed = 0;
                     __instance.BlurFlowMap = false;
+                    RestoreBackdrop(__instance);
                     break;
 
                 case WaterSimQualitySetting.Minimal_Every4Frames:
-                    // 每 4 帧执行一次完整 GPU 模拟，其余帧仅维护状态
+                    // 每 4 帧执行一次完整 GPU 模拟，其余帧仅维护状态；关闭背景水与 Flow Blur
                     s_frameCounter++;
                     if (s_frameCounter % 4 != 0)
                     {
@@ -74,22 +103,67 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
                         if (s_frameCounter >= 10000) s_frameCounter = 0;
                     }
                     __instance.BlurFlowMap = false;
+                    DisableBackdrop(__instance);
                     break;
 
                 case WaterSimQualitySetting.Reduced_NoBackdrop:
-                    // 每帧模拟，关闭 Flow Blur 节省部分 GPU 开销
+                    // 每帧模拟，仅关闭背景水模拟/渲染（Flow Blur 保持原版）
                     __instance.BlurFlowMap = true;
-                    break;
-
-                case WaterSimQualitySetting.Vanilla_EveryFrame:
-                default:
-                    // 完全原版行为，不干预任何参数
-                    __instance.BlurFlowMap = true;
+                    DisableBackdrop(__instance);
                     break;
             }
 
             // 始终执行原版 OnSimulateGPU，不跳帧
             return true;
+        }
+
+        // --- Backdrop Helpers ---
+
+        private static System.Reflection.FieldInfo ResolveBackdropField()
+        {
+            if (!s_backdropFieldResolved)
+            {
+                s_backdropFieldResolved = true;
+                s_simulateBackdropField = AccessTools.Field(typeof(WaterSystem), "m_SimulateBackdrop");
+                if (s_simulateBackdropField == null)
+                    ModLog.Warn(Tag, "无法解析 m_SimulateBackdrop 字段，背景水开关不可用");
+            }
+            return s_simulateBackdropField;
+        }
+
+        /// <summary>關閉背景水模擬與渲染，並同步 colossal_WaterParams shader 全域值（y 分量 = backdrop 開關）。</summary>
+        private static void DisableBackdrop(WaterSystem instance)
+        {
+            var field = ResolveBackdropField();
+            if (field == null) return;
+
+            bool current = (bool)field.GetValue(instance);
+            if (!current) return; // 地圖原生無背景水或已關閉
+
+            if (!s_backdropOverridden)
+            {
+                s_backdropOverridden = true;
+                s_originalBackdrop = true;
+                ModLog.Patch(Tag, "背景水模拟已关闭 (WaterSimQuality)");
+            }
+            field.SetValue(instance, false);
+            UnityEngine.Shader.SetGlobalVector("colossal_WaterParams",
+                new UnityEngine.Vector4(instance.SeaLevel, 0f, 0f, 0f));
+        }
+
+        /// <summary>還原背景水為存檔原值（僅當本補丁曾覆寫時）。</summary>
+        private static void RestoreBackdrop(WaterSystem instance)
+        {
+            if (!s_backdropOverridden) return;
+            s_backdropOverridden = false;
+
+            var field = ResolveBackdropField();
+            if (field == null) return;
+
+            field.SetValue(instance, s_originalBackdrop);
+            UnityEngine.Shader.SetGlobalVector("colossal_WaterParams",
+                new UnityEngine.Vector4(instance.SeaLevel, s_originalBackdrop ? 1f : 0f, 0f, 0f));
+            ModLog.Patch(Tag, $"背景水模拟已还原为存档原值: {s_originalBackdrop}");
         }
 
         /// <summary>

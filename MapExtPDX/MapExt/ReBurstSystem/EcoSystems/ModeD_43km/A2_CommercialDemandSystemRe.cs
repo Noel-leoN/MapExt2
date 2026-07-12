@@ -13,7 +13,7 @@ using Unity.Jobs;
 using Unity.Mathematics;
 using UnityEngine;
 
-namespace MapExtPDX.ModeA
+namespace MapExtPDX.ModeD
 {
     /// <summary>
     /// 更新商業需求的作業。

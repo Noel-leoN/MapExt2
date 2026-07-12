@@ -81,6 +81,8 @@ namespace MapExtPDX.EcoShared
         private EntityQuery m_HouseholdGroup;
         private EntityQuery m_EconomyParameterGroup;
         private EntityQuery m_GameModeSettingQuery;
+        // [MOD-對齊原版] band 改善找房所需的市民參數單例（原版 HouseholdBehaviorSystem 標配）
+        private EntityQuery m_CitizenParameterQuery;
 
         private SimulationSystem m_SimulationSystem;
         private EndFrameBarrier m_EndFrameBarrier;
@@ -126,6 +128,11 @@ namespace MapExtPDX.EcoShared
                 .WithAll<EconomyParameterData>()
                 .Build();
 
+            // [MOD-對齊原版] band 改善找房所需的市民參數單例
+            m_CitizenParameterQuery = SystemAPI.QueryBuilder()
+                .WithAll<CitizenParametersData>()
+                .Build();
+
             // 创建家庭查询 - 包含所有正常家庭（排除游客、搬走的、已删除的、临时的）
             m_HouseholdGroup = SystemAPI.QueryBuilder()
                 .WithAllRW<Household, HouseholdNeed>()
@@ -141,6 +148,7 @@ namespace MapExtPDX.EcoShared
             // 设置系统运行所需的查询条件
             RequireForUpdate(m_HouseholdGroup);
             RequireForUpdate(m_EconomyParameterGroup);
+            RequireForUpdate(m_CitizenParameterQuery);
         }
 
 
@@ -203,6 +211,9 @@ namespace MapExtPDX.EcoShared
 
                 // 获取经济参数单例数据
                 m_EconomyParameters = SystemAPI.GetSingleton<EconomyParameterData>(),
+
+                // [MOD-對齊原版] band 改善找房所需的市民參數單例
+                m_CitizenParameters = SystemAPI.GetSingleton<CitizenParametersData>(),
 
                 // 获取资源系统的预制体数据
                 m_ResourcePrefabs = m_ResourceSystem.GetPrefabs(),
@@ -325,6 +336,9 @@ namespace MapExtPDX.EcoShared
 
             // 经济参数
             public EconomyParameterData m_EconomyParameters;
+
+            // [MOD-對齊原版] 市民參數（band 改善找房用）
+            public CitizenParametersData m_CitizenParameters;
 
             // 并行实体命令缓冲区（用于添加/删除组件）
             public EntityCommandBuffer.ParallelWriter m_CommandBuffer;
@@ -686,17 +700,55 @@ namespace MapExtPDX.EcoShared
                         Entity householdHomeBuilding = BuildingUtils.GetHouseholdHomeBuilding(householdEntity,
                             ref m_PropertyRenters, ref m_HomelessHouseholds);
 
-                        // --- 修改代码 ---
-                        // 【优化】仅当家庭确实没有房屋时才强制启用 PropertySeeker，保证最基本、最必要的找房逻辑。
+                        // 仅当家庭确实没有房屋时才强制启用 PropertySeeker，保证最基本、最必要的找房逻辑。
                         // m_RenterBufs额外健壮性检查，防止房屋没有租户列表。
                         if (householdHomeBuilding == Entity.Null || !m_RenterBufs.HasBuffer(householdHomeBuilding))
                         {
                             m_CommandBuffer.SetComponentEnabled<PropertySeeker>(unfilteredChunkIndex,
                                 householdEntities[i], value: true);
                         }
-                        // 【优化】整个 'else' 分支被移除，彻底杜绝所有基于随机数的“改善性”找房请求。
-                        // RentAdjustSystem 已经存在同类逻辑
-                        // “寻求改善”的逻辑现在完全交由 RentAdjustSystem 来更智能地处理。
+                        // [MOD-對齊原版 1.6.0f] 補回「改善性找房」的 band 機率邏輯（原版 HouseholdBehaviorSystem）。
+                        // 之前版本刪此分支、改由 RentAdjustSystem 以靜態 30/70 分區處理，那是非原版且會造成固定人群
+                        // 永恆 churn 的退化實作；現還原原版 band 模型，由 CitizenParametersData 精細參數驅動。
+                        // 語意：以「租金/收入」偏離理想帶(idealBand)的程度決定找房機率，並隨城市人口反比縮放
+                        //       (m_LookForHomePopulationFactor)，這正是大城市不爆搬遷潮的關鍵閥門。
+                        // 註：本系統 kUpdatesPerDay=128(原版256)，找房機率「刻意不做 tick 補償」——找房是機率節奏、
+                        //     慢一半無害，反而更適合本 Mod 的大城市場景；消耗側(kUpdateScale)才需守恆補償。
+                        else
+                        {
+                            float2 idealBand = m_CitizenParameters.m_LookForHomeRentIncomeIdealBand;
+                            float2 chanceMultiplier = m_CitizenParameters.m_LookForHomeChanceMultiplier;
+                            int2 chanceClamp = m_CitizenParameters.m_LookForHomeChanceClamp;
+
+                            // 人口縮放基數：人口越多，找房機率的分母越大 → 單 tick 命中率越低
+                            int popScaledChance = math.clamp(
+                                (int)math.round(m_CitizenParameters.m_LookForHomePopulationFactor * cityPopulation),
+                                chanceClamp.x, chanceClamp.y);
+
+                            int rent = m_PropertyRenters.TryGetComponent(householdEntity, out var pr) ? pr.m_Rent : 0;
+                            int income = basecache.LastDayIncome;
+                            float rentIncomeRatio = income > 0 ? (float)rent / income : 1f;
+
+                            // 距理想帶的偏離量(帶外才 > 0)，歸一化後 lerp 到機率乘數
+                            float bandWidth = math.max(0.0001f, math.max(idealBand.x, 1f - idealBand.y));
+                            float deviation = math.saturate(
+                                math.max(0f, math.max(idealBand.x - rentIncomeRatio, rentIncomeRatio - idealBand.y))
+                                / bandWidth);
+                            float chanceMult = math.lerp(chanceMultiplier.y, chanceMultiplier.x, deviation);
+                            int finalChance = math.max(chanceClamp.x, (int)math.round(popScaledChance * chanceMult));
+
+                            // 無家可歸家庭提高找房積極度(除以 divisor 縮小分母)
+                            if (chunkHasHomeless)
+                            {
+                                finalChance /= math.max(1, m_CitizenParameters.m_LookForHomeHomelessDivisor);
+                            }
+
+                            if (random.NextInt(finalChance) == 0)
+                            {
+                                m_CommandBuffer.SetComponentEnabled<PropertySeeker>(unfilteredChunkIndex,
+                                    householdEntities[i], value: true);
+                            }
+                        }
                     }
 
                     // 将修改后的 household 实体数据写回 Household 数组
