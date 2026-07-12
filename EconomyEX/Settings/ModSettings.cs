@@ -517,6 +517,28 @@ namespace EconomyEX.Settings
 
         public bool IsVehicleRescueDisabled => !EnableVehicleRescue;
 
+        /// <summary>幽靈車掃描報告緩存，由 ScanGhostVehicles 按鈕更新</summary>
+        public string GhostVehicleScanData { get; set; } = "Click Scan to count ghost vehicles.";
+
+        /// <summary>幽靈車掃描報告顯示（計算屬性，按鈕點擊後 UI 自動重新求值）</summary>
+        [SettingsUISection(kDebugTab, kDebugGroup)]
+        public string GhostVehicleScanReport => GhostVehicleScanData;
+
+        /// <summary>掃描存量幽靈車（純唯讀統計，實際清理由救援系統低頻自動執行）</summary>
+        [SettingsUISection(kDebugTab, kDebugGroup)]
+        [SettingsUIButton]
+        public bool ScanGhostVehicles
+        {
+            set
+            {
+                var system = Unity.Entities.World.DefaultGameObjectInjectionWorld
+                    ?.GetExistingSystemManaged<EconomyEX.Systems.P3_VehiclePurchaseRescueSystem>();
+                GhostVehicleScanData = system != null
+                    ? system.ScanGhostVehicles()
+                    : "P3_VehiclePurchaseRescueSystem not found (load a game first).";
+            }
+        }
+
         public void UpdateStatus()
         {
             if (Mod.IsMapExtPresent)

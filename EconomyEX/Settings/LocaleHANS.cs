@@ -300,6 +300,10 @@ namespace EconomyEX.Settings
                 { m_Setting.GetOptionDescLocaleID(nameof(ModSettings.EnableVehicleRescue)), "启用后，自动检测因停车位不足而丢失的新购车辆，将其传送到车主住宅附近重新停放。\n关闭后系统完全不执行任何逻辑。" },
                 { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.EnableRescueDebugLog)), "• 启用购车救援调试日志" },
                 { m_Setting.GetOptionDescLocaleID(nameof(ModSettings.EnableRescueDebugLog)), "开启后，购车救援系统在每次执行救援、重试或清理放弃逻辑时会打印日志。\n★ 建议在大城市或稳定运行后保持关闭以防止日志文件膨胀。" },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.GhostVehicleScanReport)), "幽灵车辆扫描报告" },
+                { m_Setting.GetOptionDescLocaleID(nameof(ModSettings.GhostVehicleScanReport)), "显示最近一次扫描的统计结果：幽灵车总数、可救援数、孤儿车数。" },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.ScanGhostVehicles)), "扫描幽灵车辆" },
+                { m_Setting.GetOptionDescLocaleID(nameof(ModSettings.ScanGhostVehicles)), "扫描当前存档中停放失败的幽灵私家车并统计数量。纯只读操作，不做任何修改；实际清理由救援系统在启用后低频自动完成。" },
             };
         }
 

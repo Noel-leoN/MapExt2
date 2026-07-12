@@ -307,6 +307,10 @@ namespace EconomyEX.Settings
                 { m_Setting.GetOptionDescLocaleID(nameof(ModSettings.EnableVehicleRescue)), "When enabled, automatically detects newly purchased vehicles lost due to insufficient parking, and teleports them near the owner's home for re-parking.\nWhen disabled, the system is completely inactive." },
                 { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.EnableRescueDebugLog)), "• Enable Vehicle Rescue Debug Log" },
                 { m_Setting.GetOptionDescLocaleID(nameof(ModSettings.EnableRescueDebugLog)), "Enable printing logs whenever the vehicle purchase rescue system performs a rescue, retry, or deletion.\n★ Keep disabled under normal gameplay to avoid log file bloat." },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.GhostVehicleScanReport)), "Ghost Vehicle Scan Report" },
+                { m_Setting.GetOptionDescLocaleID(nameof(ModSettings.GhostVehicleScanReport)), "Shows the result of the last scan: total ghost vehicles, rescuable count, and orphan count." },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.ScanGhostVehicles)), "Scan Ghost Vehicles" },
+                { m_Setting.GetOptionDescLocaleID(nameof(ModSettings.ScanGhostVehicles)), "Scans the current save for personal cars stuck without a parking lane and reports the count. Read-only — no changes are made; actual cleanup runs automatically at low frequency once the rescue system is enabled." },
             };
         }
 

@@ -137,6 +137,12 @@ namespace MapExtPDX.ModeE
             // 對齊原版 CountHouseholdDataSystem.HomelessnessRate 的市民口徑，避免家庭/市民混用。
             // 由家庭口徑 0.0005 依「每戶約 2 人」重新標定為 0.001，維持觸發點大致不變。
             float kNeutralHomelessRate = 0.001f;
+
+            // [MODIFIED] 自然失業率 (NAIRU)。取代原版約 20% 的中性失業率參數 (m_NeutralUnemployment)，
+            // 作者判定原版值不合理，改採東亞+歐美緊湊型城市的 4.5%。
+            float kNeutralUnemploymentRate = 4.5f;
+            // 突破 NAIRU 後的懲罰倍率：失業率超過自然失業率時，成倍扣減家庭需求以截斷失業潮人口湧入。
+            float kUnemploymentPenaltyMultiplier = 2.5f;
             // =================== 配置中心 ====================
 
             // A. 檢查已解鎖的密度類型
@@ -227,13 +233,13 @@ namespace MapExtPDX.ModeE
             complexJobFactor = math.clamp(complexJobFactor, 0f, 20f);
 
             // --- [失業率因子] ---
-            // [MODIFIED] 修正：自然失業率(NAIRU)強制為 4.5% (東亞+歐美緊湊型)，拋棄原版內建 20% 魔幻參數影響
+            // [MODIFIED] 修正：自然失業率(NAIRU)強制為 kNeutralUnemploymentRate (東亞+歐美緊湊型)，拋棄原版內建 20% 魔幻參數影響
             // (中性失業率 - 當前失業率)。如果當前失業率高，結果為負，降低需求。
-            float unemploymentFactor = 4.5f - m_UnemploymentRate;
+            float unemploymentFactor = kNeutralUnemploymentRate - m_UnemploymentRate;
             if (unemploymentFactor < 0f)
             {
                 // [MODIFIED] 重拳出擊：突破 NAIRU 時，成倍扣減家庭需求，截斷失業潮人口湧入
-                unemploymentFactor *= 2.5f;
+                unemploymentFactor *= kUnemploymentPenaltyMultiplier;
             }
 
             //--- [流浪人口因子] ---
@@ -315,7 +321,10 @@ namespace MapExtPDX.ModeE
             );
 
             // F. 填充 UI 因子陣列 (Low/Medium/High DemandFactors)
-            // 索引含義推測：7=幸福, 6=工作, 5=失業, 11=稅收, 13=空置率, 12=學生, 8=無家可歸(高密度)
+            // ⚠️ [脆弱點] 以下索引 (7/6/5/11/13/12/8/18) 為對原版 DemandFactor 顯示順序的【經驗推測值】，
+            //    非來自具名列舉，遊戲本體若調整需求面板因子順序，這裡會【靜默錯位】(顯示錯誤但不崩潰、編譯不報錯)。
+            //    遊戲版本升級後務必經 /check-upgrade 覆核原版 DemandFactor enum / UI 因子順序是否變動。
+            // 索引含義推測：7=幸福, 6=工作, 5=失業, 11=稅收, 13=空置率, 12=學生, 8=無家可歸(高密度), 18=未建設提示
 
             // 低密度 UI 因子
             // 使用 math 代替 MathF 以符合 Burst

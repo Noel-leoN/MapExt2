@@ -535,34 +535,13 @@ namespace MapExtPDX.ModeE
 							m_PropertyRenters[renter] = propertyRenterData;
 
 							// --- 5b. 结算驱逐/升迁状态 ---
-							if (isHousehold)
+							// 🔧 [MOD-對齊原版] 本系統只對「公司」掛起 PropertySeeker（原版 !flag3 && rent > capacity）。
+							// 家庭的改善／換房找房完全交由 HouseholdBehaviorSystemMod 的 band 機率邏輯處理，
+							// 兩系統分工與原版 1.6.0f 一致，避免雙重觸發與非原版的靜態分區問題。
+							if (!isHousehold && rentPerRenter > renterUpkeepCapacity)
 							{
-								// 🔧 [MOD修复] 彻底分离强迫驱离与自主改善房屋的逻辑：
-								if (rentPerRenter > renterUpkeepCapacity)
-								{
-									// 此家庭已被榨干最后一丝潜能，挂起待赶指令 (PropertySeeker)
-									m_CommandBuffer.SetComponentEnabled<PropertySeeker>(unfilteredChunkIndex,
-										renter, value: true);
-								}
-								// 🎲 [MOD平滑设定] 改善住房：当生活成本 < 家庭收入 15% 时表明手头极其充裕。
-								// 以 renter Index 平抑曲线并加入 30% 几率寻求改善，避免全城搬迁拥堵寻路网。
-								else if (rentPerRenter < householdIncome * 0.15f)
-								{
-									if (((uint)renter.Index + m_UpdateFrameIndex) % 10 < 3)
-									{
-										m_CommandBuffer.SetComponentEnabled<PropertySeeker>(unfilteredChunkIndex,
-											renter, value: true);
-									}
-								}
-							}
-							else
-							{
-								// 公司单位统一以自身估值和流水维持破产线运转
-								if (rentPerRenter > renterUpkeepCapacity)
-								{
-									m_CommandBuffer.SetComponentEnabled<PropertySeeker>(unfilteredChunkIndex,
-										renter, value: true);
-								}
+								m_CommandBuffer.SetComponentEnabled<PropertySeeker>(unfilteredChunkIndex,
+									renter, value: true);
 							}
 
 							// --- 5c. 统计支付能力数据 ---

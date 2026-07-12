@@ -2543,11 +2543,14 @@ namespace EconomyEX.Systems
 
 					divert.m_Data += random.NextInt(1, 3);
 
-					// 📌 [MOD: MapExt2 - Logic Fix] ----------------------------------------------------
-					// 修正官方魔法值遗漏：ReachWaitingHome 中的等待时间阈值同步修复为 250 (原版误留为2500)
-					// 这能有效防止在大地图路径计算频繁失败时，市民原地发呆变成卡死的僵尸
+					// 📌 [MOD: MapExt2 - 對齊原版] ------------------------------------------------------
+					// 此為「無家市民被系統刪除前的原地等待耐心上限」，與 ReachPathFailed 的「單次尋路失敗
+					// 重試耐心(250)」是兩個不同語意的獨立常數，數量級不同屬刻意設計：等家事關存亡(逾限即
+					// Deleted)故寬容，尋路失敗可重試故短。經查 1.5.10f 與 1.6.0f 原版此值【皆為 2500】，
+					// 「官方誤留/已修復為 250」的說法無任何版本佐證，故還原為原版 2500，避免大地圖找房週期
+					// 較長時無家市民撐不到重新安置就被刪除、放大居民流失(與本 Mod 大人口目標相悖)。
 					// ----------------------------------------------------------------------------------
-					bool flag = divert.m_Data <= 250;
+					bool flag = divert.m_Data <= 2500;
 					if (!flag)
 					{
 						flag = (currentLane.m_Flags & CreatureLaneFlags.Connection) == 0 ||
@@ -2581,11 +2584,9 @@ namespace EconomyEX.Systems
 				ref Game.Creatures.Resident resident, ref HumanCurrentLane currentLane, ref Target target,
 				ref Divert divert, ref PathOwner pathOwner)
 			{
+				// 尋路失敗的重試耐心上限(約 80~250 tick)，逾限即回到 Purpose.None 放棄重試。
+				// 此值 250 與 1.5.10f / 1.6.0f 原版一致，屬正確語意，保持不動。
 				divert.m_Data += random.NextInt(1, 3);
-
-				// 📌 [MOD: MapExt2 - Logic Fix] ----------------------------------------------------
-				// 此处官方最新版已修复为 250，配合上方的 ReachWaitingHome 补丁保持逻辑一致
-				// ----------------------------------------------------------------------------------
 				if (divert.m_Data <= 250)
 				{
 					FindWaitingPosition(jobIndex, entity, ref random, ref resident, ref currentLane, ref target,

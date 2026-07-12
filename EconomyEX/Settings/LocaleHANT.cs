@@ -300,6 +300,10 @@ namespace EconomyEX.Settings
                 { m_Setting.GetOptionDescLocaleID(nameof(ModSettings.EnableVehicleRescue)), "啟用後，自動偵測因停車位不足而遺失的新購車輛，將其傳送到車主住宅附近重新停放。\n關閉後系統完全不執行任何邏輯。" },
                 { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.EnableRescueDebugLog)), "• 啟用購車救援偵測日誌" },
                 { m_Setting.GetOptionDescLocaleID(nameof(ModSettings.EnableRescueDebugLog)), "開啟後，購車救援系統在每次執行救援、重試或清理放棄邏輯時會列印日誌。\n★ 建議在大城市或穩定運行後保持關閉以防止日誌檔案膨脹。" },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.GhostVehicleScanReport)), "幽靈車輛掃描報告" },
+                { m_Setting.GetOptionDescLocaleID(nameof(ModSettings.GhostVehicleScanReport)), "顯示最近一次掃描的統計結果：幽靈車總數、可救援數、孤兒車數。" },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.ScanGhostVehicles)), "掃描幽靈車輛" },
+                { m_Setting.GetOptionDescLocaleID(nameof(ModSettings.ScanGhostVehicles)), "掃描目前存檔中停放失敗的幽靈私家車並統計數量。純唯讀操作，不做任何修改；實際清理由救援系統在啟用後低頻自動完成。" },
             };
         }
 
