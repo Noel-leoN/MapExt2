@@ -133,11 +133,14 @@ namespace MapExtPDX.EcoShared
             // 使用 EntityCommandBuffer 延迟执行结构性修改，防止 ComponentLookup 在循环中失效
             using (var ecb = new EntityCommandBuffer(Allocator.Temp))
             {
-                // === 阶段 1：首次救援新车辆 ===
-                ProcessRescue(entities, ecb);
+                // === 阶段 1：对已救援但仍失败的车辆重试 ===
+                // 注意：必須先於 ProcessRescue 執行——若順序顛倒，剛入隊的新車會在同幀
+                // 被立即重複處理（ECB 尚未 playback，FixParkingLocation 檢查不到），
+                // 導致重試計數虛增與 ECB 重複指令。
+                ProcessRetry(ecb);
 
-                // === 阶段 2：对已救援但仍失败的车辆重试 ===
-                ProcessRetry(entities, ecb);
+                // === 阶段 2：首次救援新车辆 ===
+                ProcessRescue(entities, ecb);
 
                 // === 清理：移除已不在 Query 中的陈旧记录 ===
                 CleanupStaleEntries(entities);
@@ -152,11 +155,13 @@ namespace MapExtPDX.EcoShared
         #region Helpers
 
         /// <summary>
-        /// 阶段1：检测 InitializeSystem.FindParkingSpace() 失败的新购车辆，传送到住宅附近并交由原版系统重试。
+        /// 阶段：检测 InitializeSystem.FindParkingSpace() 失败的车辆（新购车与存量幽灵车），
+        /// 有家者传送到住宅附近交由原版系统重试；无家的孤兒車直接安全刪除。
         /// </summary>
         private void ProcessRescue(NativeArray<Entity> entities, EntityCommandBuffer ecb)
         {
             int rescuedCount = 0;
+            int orphanCount = 0;
 
             for (int i = 0; i < entities.Length; i++)
             {
@@ -175,7 +180,19 @@ namespace MapExtPDX.EcoShared
 
                 // 获取车主住宅
                 Entity homeProperty = GetHomeProperty(vehicle);
-                if (homeProperty == Entity.Null) continue;
+                if (homeProperty == Entity.Null)
+                {
+                    // --- 孤兒車清理（存量 bug 車輛，多見於舊存檔）---
+                    // 家庭已搬走/解散/無房（含遊民家庭），無法以住宅為中心重試，
+                    // 車輛本身已是不可用的幽靈狀態，直接安全刪除是淨收益。
+                    // 此路徑未經原版 FixParkingLocationSystem 的失敗清理，
+                    // 須自行清 CarKeeper，再走 Deleted 標記交由原版 RemovedSystem 銷毀。
+                    CleanupOwnership(vehicle);
+                    ClearCarKeeper(vehicle);
+                    ecb.AddComponent<Deleted>(vehicle);
+                    orphanCount++;
+                    continue;
+                }
 
                 // 获取住宅 Transform
                 if (!m_TransformLookup.TryGetComponent(homeProperty, out var homeTf)) continue;
@@ -199,13 +216,15 @@ namespace MapExtPDX.EcoShared
 
             if (rescuedCount > 0)
                 DebugLog($"购车救援：已将 {rescuedCount} 辆停放失败的新购车辆传送到住宅附近重新停放");
+            if (orphanCount > 0)
+                DebugLog($"孤兒車清理：已刪除 {orphanCount} 輛無家可歸的存量幽靈車輛");
         }
 
         /// <summary>
-        /// 阶段2：对已救援但住宅附近仍无车位的车辆，重新挂 FixParkingLocation 持续重试。
+        /// 阶段：对已救援但住宅附近仍无车位的车辆，重新挂 FixParkingLocation 持续重试。
         /// 超过最大重试次数后删除僵尸车辆。
         /// </summary>
-        private void ProcessRetry(NativeArray<Entity> entities, EntityCommandBuffer ecb)
+        private void ProcessRetry(EntityCommandBuffer ecb)
         {
             // 拷贝所有的追踪 Key 以免在循环中修改字典导致 Enumerator 失效
             using var keys = new NativeList<Entity>(m_RescuedVehicles.Count, Allocator.Temp);
@@ -251,6 +270,7 @@ namespace MapExtPDX.EcoShared
                 if (currentRetry >= kMaxRetries)
                 {
                     CleanupOwnership(vehicle);
+                    ClearCarKeeper(vehicle);
                     ecb.AddComponent<Deleted>(vehicle);
                     toRemove.Add(vehicle);
                     removedCount++;
@@ -270,6 +290,7 @@ namespace MapExtPDX.EcoShared
                 {
                     // 无住宅（家庭已搬走或解散）→ 直接删除
                     CleanupOwnership(vehicle);
+                    ClearCarKeeper(vehicle);
                     ecb.AddComponent<Deleted>(vehicle);
                     toRemove.Add(vehicle);
                     removedCount++;
@@ -335,6 +356,74 @@ namespace MapExtPDX.EcoShared
                 return Entity.Null;
 
             return renter.m_Property;
+        }
+
+        /// <summary>
+        /// 清理市民對車輛的持有引用（CarKeeper.m_Car）。
+        /// 原版 FixParkingLocationSystem 失敗路徑會自行清理，但孤兒車刪除路徑
+        /// 未經該系統，須在此補齊，防止市民持有指向已刪實體的懸掛引用。
+        /// 注意：CarKeeper 為 IEnableableComponent，須檢查啟用狀態。
+        /// </summary>
+        private void ClearCarKeeper(Entity vehicle)
+        {
+            if (!m_PersonalCarLookup.TryGetComponent(vehicle, out var pc))
+                return;
+
+            Entity keeper = pc.m_Keeper;
+            if (keeper == Entity.Null || !EntityManager.HasComponent<Game.Citizens.CarKeeper>(keeper))
+                return;
+
+            if (!EntityManager.IsComponentEnabled<Game.Citizens.CarKeeper>(keeper))
+                return;
+
+            var carKeeper = EntityManager.GetComponentData<Game.Citizens.CarKeeper>(keeper);
+            if (carKeeper.m_Car == vehicle)
+            {
+                carKeeper.m_Car = Entity.Null;
+                EntityManager.SetComponentData(keeper, carKeeper);
+            }
+        }
+
+        /// <summary>
+        /// 掃描當前存檔中的幽靈車輛並生成統計報告（供 Settings 按鈕呼叫）。
+        /// 純唯讀操作，不做任何修改；實際清理由本系統低頻自動完成。
+        /// </summary>
+        public string ScanGhostVehicles()
+        {
+            m_ParkedCarLookup.Update(this);
+            m_PersonalCarLookup.Update(this);
+            m_OwnerLookup.Update(this);
+            m_PropertyRenterLookup.Update(this);
+
+            using var entities = m_CandidateQuery.ToEntityArray(Allocator.Temp);
+
+            int ghostCount = 0;      // 停放失敗的幽靈車總數
+            int rescuableCount = 0;  // 有住宅可救援
+            int orphanCount = 0;     // 無家孤兒車（將被刪除）
+            int dummyCount = 0;      // 虛擬交通（不處理）
+
+            for (int i = 0; i < entities.Length; i++)
+            {
+                Entity vehicle = entities[i];
+
+                if (m_ParkedCarLookup[vehicle].m_Lane != Entity.Null) continue;
+
+                if ((m_PersonalCarLookup[vehicle].m_State & PersonalCarFlags.DummyTraffic) != 0)
+                {
+                    dummyCount++;
+                    continue;
+                }
+
+                ghostCount++;
+                if (GetHomeProperty(vehicle) != Entity.Null)
+                    rescuableCount++;
+                else
+                    orphanCount++;
+            }
+
+            bool enabled = Mod.Instance?.Settings?.EnableVehicleRescue == true;
+            return $"Ghost vehicles: {ghostCount} (rescuable: {rescuableCount}, orphan: {orphanCount}, dummy skipped: {dummyCount}, tracking: {m_RescuedVehicles.Count})"
+                + (enabled ? " | Rescue: ON, cleanup in progress." : " | Rescue: OFF, enable it to start cleanup.");
         }
 
         /// <summary>

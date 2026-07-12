@@ -59,8 +59,12 @@ namespace MapExtPDX.MapExt.Core
                     TerrainSystemPatches.ResetSessionState();
                     // PatchSet1: 级联渲染降频快照
                     TerrainSystem_RenderCascades_Patch.ResetSessionState();
+                    // PatchSet1: 建筑裁剪降频的上次裁剪区域记录
+                    TerrainSystem_CullForCascades_Throttle.ResetSessionState();
                     // PatchSet2: Water 地形欺骗资源引用
                     WaterTerrainSwap.ResetSessionState();
+                    // PatchSet2: 水模拟质量（背景水覆写记录 + StableSpeed）
+                    WaterSystemOptRuntimePatch.ResetSessionState();
                     // 诊断标志：允许二次加载重新诊断
                     _cellMapDialogShown = false;
                     ModLog.Ok(Tag, "所有 PatchSet 会话状态已重置");

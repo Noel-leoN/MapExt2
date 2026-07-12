@@ -831,8 +831,9 @@ namespace MapExtPDX
                 },
                 {
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.EnableVehicleRescue)),
-                    "Enables the vehicle purchase rescue system that detects newly purchased personal cars stuck without a parking lane (m_Lane == Null) and teleports them near the owner's home for re-parking.\n\n" +
-                    "★ Default: OFF. Enable only if you observe vehicles disappearing after purchase.\n" +
+                    "Enables the vehicle rescue system that detects personal cars stuck without a parking lane (m_Lane == Null) and teleports them near the owner's home for re-parking.\n\n" +
+                    "★ Also automatically cleans up pre-existing ghost vehicles in the save: cars with a home get rescued, orphaned cars (household gone) are safely deleted. Especially useful for older saves.\n" +
+                    "★ Default: OFF. Use the 'Scan Ghost Vehicles' button below to check how many exist in your save first.\n" +
                     "★ Pure in-memory tracking — no custom components are written to entities or save files."
                 },
                 {
@@ -842,6 +843,22 @@ namespace MapExtPDX
                 {
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.EnableRescueDebugLog)),
                     "Enable printing logs whenever the vehicle purchase rescue system performs a rescue, retry, or deletion.\n★ Keep disabled under normal gameplay to avoid log file bloat."
+                },
+                {
+                    m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.GhostVehicleScanReport)),
+                    "Ghost Vehicle Scan Report"
+                },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.GhostVehicleScanReport)),
+                    "Shows the result of the last scan: total ghost vehicles, rescuable count, and orphan count."
+                },
+                {
+                    m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.ScanGhostVehicles)),
+                    "Scan Ghost Vehicles"
+                },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.ScanGhostVehicles)),
+                    "Scans the current save for personal cars stuck without a parking lane and reports the count. Read-only — no changes are made; actual cleanup runs automatically at low frequency once the rescue system is enabled."
                 },
             };
             return entries;
