@@ -56,12 +56,6 @@ This mod modifies these vanilla core economic systems to make them more suitable
 
 * Fixes a logic defect in resident pathfinding wait-time that could cause excessive memory usage at large population scales.
 
-### 🚗 Downstream AI Systems (Beta)
-
-* Replaces PersonalCarAI, TaxiAI, LeisureSystem, and FindSchoolSystem with modded versions that use configurable MaxCost limits per travel purpose.
-* Prevents vehicles from disappearing mid-route due to pathfinding cost exceeding the vanilla hardcoded 17000 cap.
-* Default: OFF (Beta) — enable via the system toggles in settings.
-
 ### 🚲 District Policy
 
 * Bicycle usage probability now correctly respects district-level BikeProbability modifiers.
@@ -92,10 +86,6 @@ In the mod's settings panel (Options -> EconomyEX), you can adjust pathfinding c
 | Emergency Max Cost | Maximum search range for hospital/crime events | 1,000 – 17,000 | 6,000 |
 | Find Job Max Cost | Maximum search range for job seeking | 17,000 – 200,000 | 200,000 |
 | Find Home Max Cost | Maximum search range for finding a new home | 17,000 – 200,000 | 200,000 |
-| Elementary School | Maximum search range for elementary school enrollment | 1,000 – 200,000 | 10,000 |
-| High School | Maximum search range for high school enrollment | 1,000 – 200,000 | 17,000 |
-| College | Maximum search range for college enrollment | 1,000 – 200,000 | 50,000 |
-| University | Maximum search range for university enrollment | 1,000 – 200,000 | 100,000 |
 
 **Tip**: Lower values restrict citizens to nearby options, which reduces pathfinding load but may cause mismatches. Higher values allow broader searches but consume more CPU. The defaults work well for most cities.
 
@@ -184,12 +174,6 @@ Subscribe on Paradox Mods. No additional dependencies.
 
 * 修复居民寻路等待时间的逻辑缺陷，降低大规模人口下内存占用过高的风险。
 
-### 🚗 下游 AI 系统 (Beta)
-
-* 替换私家车AI、出租车AI、休闲系统和找学校系统为可配置版本，按出行目的分级设置寻路成本上限。
-* 防止载具因寻路成本超出原版硬编码上限 (17000) 而在途中消失。
-* 默认关闭 (Beta)——可在设置面板的子系统开关中启用。
-
 ### 🚲 区域政策
 
 * 自行车使用概率现在会正确响应区域级 BikeProbability 修正器。
@@ -220,10 +204,6 @@ Subscribe on Paradox Mods. No additional dependencies.
 | 急救/犯罪成本 | 生病就医或犯罪事件的最大搜索范围 | 1,000 – 17,000 | 6,000 |
 | 找工作成本 | 求职搜索的最大范围 | 17,000 – 200,000 | 200,000 |
 | 找房成本 | 搬家找房的最大搜索范围 | 17,000 – 200,000 | 200,000 |
-| 小学入学 | 小学生寻找学校的最大范围 | 1,000 – 200,000 | 10,000 |
-| 高中入学 | 高中生寻找学校的最大范围 | 1,000 – 200,000 | 17,000 |
-| 学院入学 | 大专生寻找学院的最大范围 | 1,000 – 200,000 | 50,000 |
-| 大学入学 | 大学生寻找大学的最大范围 | 1,000 – 200,000 | 100,000 |
 
 **提示**：值越小，市民活动范围越局限（寻路压力小，但可能出现匹配不上的情况）；值越大，搜索范围越广（模拟更真实，但 CPU 开销更大）。默认值适用于大多数城市。
 

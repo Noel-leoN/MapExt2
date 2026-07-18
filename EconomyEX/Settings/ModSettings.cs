@@ -155,26 +155,6 @@ namespace EconomyEX.Settings
         public float FindHomeMaxCost { get; set; } = 200000f;
 
         [SettingsUISection(kSectionGeneral, kSectionPathfinding)]
-        [SettingsUIDisableByCondition(typeof(ModSettings), nameof(IsEconomyFixDisabled))]
-        [SettingsUISlider(min = 1000f, max = 200000f, step = 1000f, scalarMultiplier = 1f, unit = Game.UI.Unit.kFloatSingleFraction)]
-        public float FindSchoolElementaryMaxCost { get; set; } = 10000f;
-
-        [SettingsUISection(kSectionGeneral, kSectionPathfinding)]
-        [SettingsUIDisableByCondition(typeof(ModSettings), nameof(IsEconomyFixDisabled))]
-        [SettingsUISlider(min = 1000f, max = 200000f, step = 1000f, scalarMultiplier = 1f, unit = Game.UI.Unit.kFloatSingleFraction)]
-        public float FindSchoolHighSchoolMaxCost { get; set; } = 17000f;
-
-        [SettingsUISection(kSectionGeneral, kSectionPathfinding)]
-        [SettingsUIDisableByCondition(typeof(ModSettings), nameof(IsEconomyFixDisabled))]
-        [SettingsUISlider(min = 1000f, max = 200000f, step = 1000f, scalarMultiplier = 1f, unit = Game.UI.Unit.kFloatSingleFraction)]
-        public float FindSchoolCollegeMaxCost { get; set; } = 50000f;
-
-        [SettingsUISection(kSectionGeneral, kSectionPathfinding)]
-        [SettingsUIDisableByCondition(typeof(ModSettings), nameof(IsEconomyFixDisabled))]
-        [SettingsUISlider(min = 1000f, max = 200000f, step = 1000f, scalarMultiplier = 1f, unit = Game.UI.Unit.kFloatSingleFraction)]
-        public float FindSchoolUniversityMaxCost { get; set; } = 100000f;
-
-        [SettingsUISection(kSectionGeneral, kSectionPathfinding)]
         [SettingsUIButton]
         [SettingsUIConfirmation]
         public bool ResetPathfinding
@@ -187,10 +167,6 @@ namespace EconomyEX.Settings
                 EmergencyMaxCost = 6000f;
                 FindJobMaxCost = 200000f;
                 FindHomeMaxCost = 200000f;
-                FindSchoolElementaryMaxCost = 10000f;
-                FindSchoolHighSchoolMaxCost = 17000f;
-                FindSchoolCollegeMaxCost = 50000f;
-                FindSchoolUniversityMaxCost = 100000f;
             }
         }
 
@@ -596,10 +572,6 @@ namespace EconomyEX.Settings
             EmergencyMaxCost = 6000f;
             FindJobMaxCost = 200000f;
             FindHomeMaxCost = 200000f;
-            FindSchoolElementaryMaxCost = 10000f;
-            FindSchoolHighSchoolMaxCost = 17000f;
-            FindSchoolCollegeMaxCost = 50000f;
-            FindSchoolUniversityMaxCost = 100000f;
             JobSeekerCap = 1000;
             PathfindRequestCap = 4000;
             ShoppingTrafficReduction = 0.0004f;

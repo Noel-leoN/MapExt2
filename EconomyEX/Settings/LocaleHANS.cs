@@ -100,31 +100,6 @@ namespace EconomyEX.Settings
                     "★ 建议值：200000"
                 },
 
-                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.FindSchoolElementaryMaxCost)), "找小学最高寻路成本" },
-                {
-                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.FindSchoolElementaryMaxCost)),
-                    "控制小学生寻找学校愿意走的最远路线开销。较小的值能强迫小学生只能就近入学。\n" +
-                    "★ 建议值：10000"
-                },
-                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.FindSchoolHighSchoolMaxCost)), "找高中最高寻路成本" },
-                {
-                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.FindSchoolHighSchoolMaxCost)),
-                    "控制中学生寻找高中能够跨越的最大路线开销。\n" +
-                    "★ 建议值：17000"
-                },
-                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.FindSchoolCollegeMaxCost)), "找学院最高寻路成本" },
-                {
-                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.FindSchoolCollegeMaxCost)),
-                    "控制寻找学院(大专)级别的最大范围。\n" +
-                    "★ 建议值：50000"
-                },
-                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.FindSchoolUniversityMaxCost)), "找大学最高寻路成本" },
-                {
-                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.FindSchoolUniversityMaxCost)),
-                    "控制寻找大学的最大范围。如果是全图唯一的大学城城邦，建议拉满以覆盖全图每个角落。\n" +
-                    "★ 建议值：100000 ~ 200000"
-                },
-
                 { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.ResetPathfinding)), "重置" },
                 { m_Setting.GetOptionDescLocaleID(nameof(ModSettings.ResetPathfinding)), "将所有寻路成本上限参数恢复为默认值。" },
                 { m_Setting.GetOptionWarningLocaleID(nameof(ModSettings.ResetPathfinding)), "确认要将所有寻路参数重置为默认值吗？" },

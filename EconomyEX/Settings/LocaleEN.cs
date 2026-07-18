@@ -100,31 +100,6 @@ namespace EconomyEX.Settings
                     "★ Recommended: 200000"
                 },
 
-                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.FindSchoolElementaryMaxCost)), "Max Elementary School Pathfind Cost" },
-                {
-                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.FindSchoolElementaryMaxCost)),
-                    "Controls the maximum search range when Elementary students look for a school. Lowering this value forces them to enroll in nearby local schools only.\n" +
-                    "★ Recommended: 10000"
-                },
-                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.FindSchoolHighSchoolMaxCost)), "Max High School Pathfind Cost" },
-                {
-                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.FindSchoolHighSchoolMaxCost)),
-                    "Controls the maximum search range when High School students look for a school.\n" +
-                    "★ Recommended: 17000"
-                },
-                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.FindSchoolCollegeMaxCost)), "Max College Pathfind Cost" },
-                {
-                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.FindSchoolCollegeMaxCost)),
-                    "Controls the maximum search distance when connecting to a College.\n" +
-                    "★ Recommended: 50000"
-                },
-                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.FindSchoolUniversityMaxCost)), "Max University Pathfind Cost" },
-                {
-                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.FindSchoolUniversityMaxCost)),
-                    "Controls the maximum search range for Universities. If there is only one University center on the map, it is recommended to max this out to cover everyone.\n" +
-                    "★ Recommended: 100000 ~ 200000"
-                },
-
                 { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.ResetPathfinding)), "Reset" },
                 { m_Setting.GetOptionDescLocaleID(nameof(ModSettings.ResetPathfinding)), "Reset all pathfinding cost limits to their default values." },
                 { m_Setting.GetOptionWarningLocaleID(nameof(ModSettings.ResetPathfinding)), "Are you sure you want to reset all pathfinding parameters to defaults?" },
