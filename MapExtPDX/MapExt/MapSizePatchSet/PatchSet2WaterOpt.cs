@@ -56,6 +56,7 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
             s_backdropOverridden = false;
             StableSpeed = 1;
             s_frameCounter = 0;
+            s_lastAppliedAsync = null; // 下次加载重新套用并记录 IsAsync
             ModLog.Info(Tag, "WaterOpt session state reset");
         }
 
@@ -71,6 +72,12 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
             {
                 StableSpeed = preSpeed;
             }
+
+            // === Async Compute（與畫質正交，須在 Vanilla 早退之前設定）===
+            // UpdateSystem.OnBeginFrame 在呼叫本方法「前」讀 IsAsync 決定 CommandBuffer 的
+            // AsyncCompute flag，「後」再讀一次決定是否 ExecuteCommandBufferAsync。
+            // 穩態下每幀在此設值 → 兩次讀取一致；僅使用者切換當幀有一次無害的瞬態不匹配。
+            ApplyAsyncCompute(__instance);
 
             var quality = ResolutionManager.WaterSimQuality;
 
@@ -115,6 +122,29 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
 
             // 始终执行原版 OnSimulateGPU，不跳帧
             return true;
+        }
+
+        // --- Async Compute Helper ---
+
+        /// <summary>上次套用的 IsAsync 值，僅用於避免每幀重複 log。</summary>
+        private static bool? s_lastAppliedAsync = null;
+
+        /// <summary>
+        /// 依 ResolutionManager.WaterAsyncCompute 設定 WaterSystem.IsAsync。
+        /// 每幀呼叫，僅在值變化時記錄日誌。
+        /// </summary>
+        private static void ApplyAsyncCompute(WaterSystem instance)
+        {
+            bool desired = ResolutionManager.WaterAsyncCompute;
+            if (instance.IsAsync != desired)
+            {
+                instance.IsAsync = desired;
+            }
+            if (s_lastAppliedAsync != desired)
+            {
+                s_lastAppliedAsync = desired;
+                ModLog.Patch(Tag, $"WaterSystem.IsAsync = {desired} (Async Compute {(desired ? "启用" : "关闭")})");
+            }
         }
 
         // --- Backdrop Helpers ---

@@ -54,6 +54,14 @@ namespace MapExtPDX.MapExt.Core
         public static WaterTextureFormatSetting WaterTextureFormat { get; private set; } = WaterTextureFormatSetting.High_RGBA32F;
 
         /// <summary>
+        /// 是否讓水系統走 Async Compute 佇列（實驗性）。
+        /// 開啟後 UpdateSystem.OnBeginFrame 會將水的 CommandBuffer 標記為 AsyncCompute 並
+        /// 以 ExecuteCommandBufferAsync 提交，讓水模擬與圖形管線在 GPU 上並行。
+        /// 主要改善 GPU-bound 場景的幀時間（非 CPU）；收益與風險高度依賴顯示卡與驅動，故預設關閉。
+        /// </summary>
+        public static bool WaterAsyncCompute { get; set; } = false;
+
+        /// <summary>
         /// 是否需要为水系统降采样地形级联纹理。
         /// 当地形分辨率 > WaterTerrainResolution(4096) 时为 true。
         /// </summary>
@@ -77,8 +85,8 @@ namespace MapExtPDX.MapExt.Core
         /// 从 ModSettings 的枚举值初始化分辨率参数。
         /// 必须在 PatchManager.Initialize() 中、任何 PatchSet 应用之前调用。
         /// </summary>
-        public static void Initialize(TerrainResolutionSetting terrain, WaterResolutionSetting water, 
-            WaterSimQualitySetting simQuality, WaterTextureFormatSetting textureFormat)
+        public static void Initialize(TerrainResolutionSetting terrain, WaterResolutionSetting water,
+            WaterSimQualitySetting simQuality, WaterTextureFormatSetting textureFormat, bool asyncCompute = false)
         {
             // 8192 暂时禁用 (水模拟不兼容)，即使旧存档持久化了该值也强制降级
             TerrainResolution = terrain switch
@@ -99,15 +107,22 @@ namespace MapExtPDX.MapExt.Core
 
             WaterSimQuality = simQuality;
             WaterTextureFormat = textureFormat;
+            WaterAsyncCompute = asyncCompute;
 
             ModLog.Ok(Tag, $"Initialized: Terrain={TerrainResolution}, Water={WaterTextureSize}, " +
-                           $"Format={WaterTextureFormat}, SimQuality={WaterSimQuality}");
+                           $"Format={WaterTextureFormat}, SimQuality={WaterSimQuality}, Async={WaterAsyncCompute}");
         }
 
         public static void UpdateWaterSimQuality(WaterSimQualitySetting quality)
         {
             WaterSimQuality = quality;
             ModLog.Ok(Tag, $"WaterSimQuality updated in real-time to {quality}");
+        }
+
+        public static void UpdateWaterAsyncCompute(bool asyncCompute)
+        {
+            WaterAsyncCompute = asyncCompute;
+            ModLog.Ok(Tag, $"WaterAsyncCompute updated in real-time to {asyncCompute}");
         }
 
         /// <summary>

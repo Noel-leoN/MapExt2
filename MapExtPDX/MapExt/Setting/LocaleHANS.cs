@@ -100,6 +100,20 @@ namespace MapExtPDX
                     " - Paused: 暂停流体：完全冻结水体流动计算（水面将静止但水位不会出现大变化）。\n\n" +
                     "★ 提示：该选项即时生效无须重启。"
                 },
+                {
+                    m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.WaterAsyncCompute)),
+                    "⚠ 水体 Async Compute（实验性）"
+                },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.WaterAsyncCompute)),
+                    "让水模拟走独立的 GPU Compute 队列，与图形渲染管线并行执行，主要改善「显卡吃紧（GPU-bound）」场景的帧时间。\n\n" +
+                    "⚠ 注意：此为原版默认关闭的实验性功能。\n" +
+                    " - 主要改善 GPU 帧时间，对「CPU 吃紧」（晚期大城市、寻路瓶颈）几乎无效。\n" +
+                    " - 收益与风险高度依赖显卡与驱动：高端独显通常有感，集显／老显卡／笔记本可能无感甚至倒退。\n" +
+                    " - 极少数驱动可能出现水面闪烁或延迟一帧，若发现异常请关闭。\n\n" +
+                    "★ 建议：默认关闭；独显玩家可自行实测开关前后的帧时间与画面正确性。\n" +
+                    "★ 提示：该选项即时生效无须重启。"
+                },
 
                 // (隐藏项 - 保留用于序列化)
                 { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.TerrainResolution)), "地形分辨率" },

@@ -232,6 +232,25 @@ namespace MapExtPDX
         // 16-bit 格式已被禁用，因为损失精度会导致流水无法蔓延
         [SettingsUIHidden] public WaterTextureFormatSetting WaterTextureFormat { get; set; }
 
+        // === 水 Async Compute（實驗性）===
+        // 讓水模擬走獨立 Compute 佇列，與圖形管線在 GPU 上並行。
+        // 主要改善 GPU-bound 場景幀時間；收益/風險依顯示卡與驅動而定，故預設關閉。
+        private bool m_waterAsyncCompute = false;
+
+        [SettingsUISection(kPerformanceToolTab, kTerrainWaterOptGroup)]
+        public bool WaterAsyncCompute
+        {
+            get => m_waterAsyncCompute;
+            set
+            {
+                if (m_waterAsyncCompute != value)
+                {
+                    m_waterAsyncCompute = value;
+                    MapExt.Core.ResolutionManager.UpdateWaterAsyncCompute(value);
+                }
+            }
+        }
+
         // 分辨率选项隐藏后，VRAM 估算也无需显示
         [SettingsUIHidden]
         public string VRAMEstimate => $"Est. VRAM: {MapExt.Core.ResolutionManager.GetVRAMEstimate()}";
@@ -974,6 +993,7 @@ namespace MapExtPDX
             WaterResolution = WaterResolutionSetting.Vanilla_2048;
             WaterSimQuality = WaterSimQualitySetting.Vanilla_EveryFrame;
             WaterTextureFormat = WaterTextureFormatSetting.High_RGBA32F;
+            WaterAsyncCompute = false; // 实验性：默认关闭，收益/风险依显卡与驱动而定
 
             ShoppingMaxCost = 8000f;
             CompanyShoppingMaxCost = 200000f;

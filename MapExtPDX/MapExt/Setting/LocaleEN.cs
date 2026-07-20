@@ -115,6 +115,21 @@ namespace MapExtPDX
                     " - Paused (No Flow): Completely freezes water flow calculations (water will remain static).\n\n" +
                     "★ Tip: Applies instantly, no restart required."
                 },
+                {
+                    m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.WaterAsyncCompute)),
+                    "⚠ Water Async Compute (Experimental)"
+                },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.WaterAsyncCompute)),
+                    "Runs the water simulation on a dedicated GPU compute queue, in parallel with the graphics rendering pipeline. " +
+                    "Primarily improves frame time in GPU-bound scenarios.\n\n" +
+                    "⚠ NOTE: This is an experimental feature that the base game leaves OFF by default.\n" +
+                    " - Improves GPU frame time only; has little to no effect when CPU-bound (late-game large cities, pathfinding bottlenecks).\n" +
+                    " - Benefit and risk depend heavily on your GPU and driver: high-end discrete GPUs usually benefit, while integrated GPUs / older cards / laptops may see no gain or even a regression.\n" +
+                    " - A few drivers may show water surface flickering or a one-frame delay; turn this off if you notice artifacts.\n\n" +
+                    "★ Recommended: OFF by default. Discrete-GPU users can benchmark frame time and visual correctness with it on vs off.\n" +
+                    "★ Tip: Applies instantly, no restart required."
+                },
 
                 // (hidden items - kept for serialization)
                 { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.TerrainResolution)), "Terrain Resolution" },

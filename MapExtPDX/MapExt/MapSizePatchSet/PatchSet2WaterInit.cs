@@ -83,6 +83,19 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
 
             // Layer 2 (级联纹理降采样) 现在由 FinalizeTerrainData Postfix 自动处理,
             // 不再需要手动初始化。
+
+            // === Async Compute（实验性）===
+            // 在此设一次，确保加载后第一帧 UpdateSystem.OnBeginFrame 读到正确的 IsAsync，
+            // 避免首帧 flag 与提交方式不匹配的瞬态。之后每帧由 PatchSet2WaterOpt.Prefix 维持。
+            try
+            {
+                waterSystem.IsAsync = ResolutionManager.WaterAsyncCompute;
+                ModLog.Ok(Tag, $"WaterSystem.IsAsync set to {ResolutionManager.WaterAsyncCompute} at reinit");
+            }
+            catch (Exception asyncEx)
+            {
+                ModLog.Warn(Tag, $"Failed to set IsAsync at reinit (non-fatal): {asyncEx.Message}");
+            }
         }
 
         // ========================================================================

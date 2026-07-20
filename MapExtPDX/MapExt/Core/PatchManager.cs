@@ -253,8 +253,8 @@ namespace MapExtPDX.MapExt.Core
             var settings = Mod.Instance?.Settings;
             if (settings != null)
             {
-                ResolutionManager.Initialize(settings.TerrainResolution, settings.WaterResolution, 
-                    settings.WaterSimQuality, settings.WaterTextureFormat);
+                ResolutionManager.Initialize(settings.TerrainResolution, settings.WaterResolution,
+                    settings.WaterSimQuality, settings.WaterTextureFormat, settings.WaterAsyncCompute);
             }
             else
             {
