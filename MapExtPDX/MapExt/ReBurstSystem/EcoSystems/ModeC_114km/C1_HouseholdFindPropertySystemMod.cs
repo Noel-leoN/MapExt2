@@ -1160,6 +1160,9 @@ namespace MapExtPDX.ModeC
 
         [ReadOnly] public Entity m_City;
 
+        // [MOD OPT] 可配置候選上限（ModSettings.FindHomeCandidateCap），排程時注入
+        [ReadOnly] public int m_MaxCandidatesToFind;
+
         public void Execute(in ArchetypeChunk chunk, int unfilteredChunkIndex, bool useEnabledMask,
             in v128 chunkEnabledMask)
         {
@@ -1193,7 +1196,8 @@ namespace MapExtPDX.ModeC
                 // 🔢 局部计数器：记录当前家庭已经成功收集了几个合格的候选房屋。
                 // 🎯 我们不再追求“全图最优解”，只要找到足够多的备选项组合，就直接抛给 A* 引擎。
                 int candidatesFound = 0;
-                const int kMaxCandidatesToFind = 5;
+                // [MOD OPT/P6] 候選上限改為可配置（ModSettings.FindHomeCandidateCap 於排程時注入）；防呆退回 5
+                int kMaxCandidatesToFind = (m_MaxCandidatesToFind >= 1) ? m_MaxCandidatesToFind : 5;
 
                 // --- 🔄 核心耗时循环：遍历本 Chunk 内的所有售/租建筑 (O(N) 全图遍历) ---
                 // [MOD OPT] 随机起始偏移：避免先创建的建筑总是被优先评估，提高新旧城区的公平性
@@ -1534,6 +1538,7 @@ namespace MapExtPDX.ModeC
                     _citizenHappinessParamQuery.GetSingleton<CitizenHappinessParameterData>(),
 
                 m_City = _citySystem.City,
+                m_MaxCandidatesToFind = Mod.Instance.Settings.FindHomeCandidateCap,
                 m_SetupData = setupData
             };
 

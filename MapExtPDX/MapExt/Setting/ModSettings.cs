@@ -441,6 +441,38 @@ namespace MapExtPDX
         [SettingsUISlider(min = 128, max = 5120, step = 128, scalarMultiplier = 1, unit = Game.UI.Unit.kInteger)]
         public int HomelessSeekerCap { get; set; } = 1280;
 
+        /// <summary>
+        /// 【P1 尋路優化】企業採購尋路（ResourceSeller）每個請求最多收集的合格候選供應商數量。
+        /// 湊滿即提前退出全城掃描（Early Exit），將 O(全城企業數) 降為 O(常數)。
+        /// 值越小效能越好但可能錯過較優貨源；值越大越貼近原版全域最優但開銷越高。
+        /// 稀缺資源自帶保護：合格候選稀少時永遠湊不滿，自然遍歷完全城，不會漏找。預設 8。
+        /// </summary>
+        [SettingsUISection(kMiscTab, kEcoBehaviorGroup)]
+        [SettingsUISlider(min = 3, max = 20, step = 1, scalarMultiplier = 1, unit = Game.UI.Unit.kInteger)]
+        public int ResourceSellerCandidateCap { get; set; } = 8;
+
+        /// <summary>
+        /// 【P2 尋路優化】休閒尋路（Leisure）每個請求最多收集的合格休閒設施候選數量。
+        /// 湊滿即提前退出全城掃描（Early Exit），將 O(全城 LeisureProvider 數) 降為 O(常數)。
+        /// 多數候選 cost=0，A* 端以實際路徑距離排序，提前退出幾乎無品質損失；
+        /// 稀缺設施自帶保護：合格候選稀少時永遠湊不滿，自然遍歷完全城，不會漏找。預設 6。
+        /// </summary>
+        [SettingsUISection(kMiscTab, kEcoBehaviorGroup)]
+        [SettingsUISlider(min = 3, max = 15, step = 1, scalarMultiplier = 1, unit = Game.UI.Unit.kInteger)]
+        public int LeisureCandidateCap { get; set; } = 6;
+
+        /// <summary>
+        /// 【P6 尋路優化】家庭找房（FindHome）每戶每次評估最多收集的合格候選房屋數量。
+        /// 湊滿即提前退出全城掃描（Early Exit）。與 P1/P2 不同：找房候選的 cost 是 GetPropertyScore
+        /// （房屋質量綜合評分，非同質 cost=0），故本 cap 直接影響「居住質量匹配度」——
+        /// 值越小效能越好，但家庭越可能住進次優房（仍付得起、可接受，但評分較低），極端偏低時可能加劇搬家頻率；
+        /// 值越大越貼近全域最優匹配，但每戶掃描開銷（含最重的 GetPropertyScore 打分）越高。
+        /// 稀缺保護：合格房源稀少時永遠湊不滿，自然遍歷完全城，不會漏找。預設 5（原版硬編碼值，零行為變化）。
+        /// </summary>
+        [SettingsUISection(kMiscTab, kEcoBehaviorGroup)]
+        [SettingsUISlider(min = 3, max = 15, step = 1, scalarMultiplier = 1, unit = Game.UI.Unit.kInteger)]
+        public int FindHomeCandidateCap { get; set; } = 5;
+
         [SettingsUISection(kMiscTab, kEcoBehaviorGroup)]
         [SettingsUIButton]
         [SettingsUIConfirmation]
@@ -454,6 +486,9 @@ namespace MapExtPDX
                 HouseholdResourceDemandMultiplier = 3.5f;
                 HomeSeekerCap = 128;
                 HomelessSeekerCap = 1280;
+                ResourceSellerCandidateCap = 8;
+                LeisureCandidateCap = 6;
+                FindHomeCandidateCap = 5;
             }
         }
 
@@ -956,6 +991,8 @@ namespace MapExtPDX
             HouseholdResourceDemandMultiplier = 3.5f;
             HomeSeekerCap = 128;
             HomelessSeekerCap = 1280;
+            ResourceSellerCandidateCap = 8;
+            LeisureCandidateCap = 6;
             LandValueEnvironmentEffect = 40;
             ServiceBonusCapMultiplier = 100;
             RentMultiplierResidential = 100;

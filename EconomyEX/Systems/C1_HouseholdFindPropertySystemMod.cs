@@ -1161,6 +1161,9 @@ namespace EconomyEX.Systems
 
         [ReadOnly] public Entity m_City;
 
+        // [MOD OPT] 可配置候選上限（ModSettings.FindHomeCandidateCap），排程時注入
+        [ReadOnly] public int m_MaxCandidatesToFind;
+
         public void Execute(in ArchetypeChunk chunk, int unfilteredChunkIndex, bool useEnabledMask,
             in v128 chunkEnabledMask)
         {

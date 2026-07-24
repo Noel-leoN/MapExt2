@@ -466,6 +466,54 @@ namespace MapExtPDX
                     "★ Indicators: If large numbers of homeless remain despite vacant housing, increase this value. " +
                     "If mass homeless influx causes frame drops, decrease it. Can be adjusted in-game."
                 },
+                {
+                    m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.ResourceSellerCandidateCap)),
+                    "Business Purchasing: Supplier Candidate Cap"
+                },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.ResourceSellerCandidateCap)),
+                    "Maximum number of qualified supplier candidates collected per business purchasing pathfind request. " +
+                    "Once the cap is reached, the citywide supplier scan exits early (Early Exit), reducing O(all businesses) to O(constant).\n" +
+                    "Lower values improve performance but may miss better-priced sources; higher values approach vanilla global-optimal sourcing at greater cost.\n\n" +
+                    "★ Scarcity is safe: when qualified candidates are rare, the cap is never filled, so the full city is scanned anyway and no supplier is missed.\n\n" +
+                    "★ Recommended:\n" +
+                    " - Under 500k pop: 8 (default)\n" +
+                    " - Over 2M pop: 5 ~ 8\n\n" +
+                    "★ Indicators: If shops or factories struggle to restock despite available supply, increase this value. " +
+                    "If large cities stutter during trade pathfinding, decrease it. Can be adjusted in-game."
+                },
+                {
+                    m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.LeisureCandidateCap)),
+                    "Leisure Search: Venue Candidate Cap"
+                },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.LeisureCandidateCap)),
+                    "Maximum number of qualified leisure venue candidates collected per leisure pathfind request. " +
+                    "Once the cap is reached, the citywide venue scan exits early (Early Exit), reducing O(all leisure providers) to O(constant).\n" +
+                    "Most candidates have cost 0, so the A* engine ranks them by actual path distance; early exit causes almost no quality loss.\n\n" +
+                    "★ Scarcity is safe: when qualified venues are rare, the cap is never filled, so the full city is scanned anyway and no venue is missed.\n\n" +
+                    "★ Recommended:\n" +
+                    " - Most cities: 6 (default)\n" +
+                    " - Sparse/rural leisure layouts: 8 ~ 10\n\n" +
+                    "★ Indicators: If citizens frequently fail to reach leisure venues in sparse areas, increase this value. " +
+                    "If large cities stutter during leisure pathfinding, decrease it. Can be adjusted in-game."
+                },
+                {
+                    m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.FindHomeCandidateCap)),
+                    "Home Search: Property Candidate Cap"
+                },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.FindHomeCandidateCap)),
+                    "Maximum number of qualified housing candidates a household collects per home-search pathfind request before exiting the citywide scan early (Early Exit). Vanilla hardcodes this at 5.\n\n" +
+                    "★ Performance vs. logic trade-off (important — differs from the Shopping/Leisure caps):\n" +
+                    "Unlike leisure (where most candidates have cost 0), each housing candidate carries a real quality score (GetPropertyScore: rent affordability, pollution, services, crime, etc.). " +
+                    "The cap decides how many scored candidates are handed to the A* engine. A LOWER cap exits sooner and costs less CPU, but the household picks from fewer options, so it may settle into a lower-scored (yet still affordable) home and is more likely to relocate again later. " +
+                    "A HIGHER cap yields housing closer to the citywide optimum at greater per-request CPU cost.\n\n" +
+                    "★ Note on map size: larger maps have MORE candidate housing, so a small cap there means choosing from a tiny fraction of the city. If anything, prefer keeping or slightly raising the cap on large maps rather than lowering it.\n\n" +
+                    "★ Scarcity is safe: when qualified housing is rare, the cap is never filled, so the full city is scanned anyway and no property is missed.\n\n" +
+                    "★ Recommended: 5 (default, matches vanilla behavior). Raise toward 8 ~ 10 for better housing-quality matching, lower toward 3 for maximum performance on weak hardware.\n\n" +
+                    "★ Note: this is a per-request candidate cap, NOT the per-frame household throughput (see Home Search: Move / Homeless Throughput). Can be adjusted in-game."
+                },
                 { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.ResetEcoBehavior)), "Reset" },
                 {
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.ResetEcoBehavior)),

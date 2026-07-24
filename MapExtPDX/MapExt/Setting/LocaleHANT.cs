@@ -389,6 +389,65 @@ namespace MapExtPDX
                     "★ 如何判斷：若城市中大量流浪漢長期無法入住空置住宅，請提高此值。" +
                     "若大量流浪同時湧入導致更新率驟降，請降低此值。可於遊戲中即時調節。"
                 },
+                {
+                    m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.ResourceSellerCandidateCap)),
+                    "採購尋路：候選供應商上限"
+                },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.ResourceSellerCandidateCap)),
+                    "企業採購尋路（ResourceSeller）每個請求最多收集的合格候選供應商數量。" +
+                    "湊滿即提前退出全城掃描（Early Exit），將 O(全城企業數) 的採購尋路降為 O(常數)，" +
+                    "大城市下顯著降低尋路 Setup 階段的 CPU 開銷。\n\n" +
+                    "★ 調節建議：\n" +
+                    " - 效能優先：3 ~ 5（更激進的提前退出）\n" +
+                    " - 平衡模式：8（預設）\n" +
+                    " - 貼近原版：15 ~ 20（更接近全域最優貨源）\n\n" +
+                    "★ 稀缺資源自帶保護：某資源全城僅少數供應商時，合格候選永遠湊不滿，" +
+                    "系統會自然遍歷完全城，不會漏找稀缺貨源。\n" +
+                    "★ 如何判斷：若商店／工廠頻繁缺貨（附近有貨源卻拿不到），請提高此值。" +
+                    "若大城市尋路卡頓，請降低此值。可於遊戲中即時調節。"
+                },
+                {
+                    m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.LeisureCandidateCap)),
+                    "休閒尋路：候選設施上限"
+                },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.LeisureCandidateCap)),
+                    "市民休閒尋路（Leisure）每個請求最多收集的合格休閒設施候選數量。" +
+                    "湊滿即提前退出全城掃描（Early Exit），將 O(全城休閒設施數) 的休閒尋路降為 O(常數)，" +
+                    "大城市下顯著降低尋路 Setup 階段的 CPU 開銷。\n\n" +
+                    "★ 調節建議：\n" +
+                    " - 效能優先：3 ~ 4（更激進的提前退出）\n" +
+                    " - 平衡模式：6（預設）\n" +
+                    " - 貼近原版：10 ~ 15（更接近全域最優）\n\n" +
+                    "★ 品質損失極低：多數休閒候選成本為 0，A* 引擎會以實際路徑距離排序挑選就近設施，" +
+                    "提前退出幾乎不影響選擇品質。\n" +
+                    "★ 稀缺設施自帶保護：某類型休閒設施稀少時，合格候選永遠湊不滿，" +
+                    "系統會自然遍歷完全城，不會漏找。\n" +
+                    "★ 如何判斷：若市民在休閒設施充足處卻頻繁找不到目標，請提高此值。" +
+                    "若大城市尋路卡頓，請降低此值。可於遊戲中即時調節。"
+                },
+                {
+                    m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.FindHomeCandidateCap)),
+                    "找房尋路：候選房產上限"
+                },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.FindHomeCandidateCap)),
+                    "家庭找房尋路（FindHome）每個請求最多收集的合格候選房產數量。" +
+                    "湊滿即提前退出全城掃描（Early Exit），將 O(全城可租建築) 的找房尋路降為 O(常數)。\n\n" +
+                    "★ 與購物／休閒的關鍵差異：找房候選的成本是「房產綜合評分」（GetPropertyScore：地段、污染、服務覆蓋、租金等），" +
+                    "並非同質的 0 值。因此本上限越小，家庭越可能住進「評分次優但仍可接受」的房產，" +
+                    "而非全城最佳匹配——這是「效能 ↔ 居住品質匹配度」的直接取捨，與購物／休閒（多為 0 成本、可由 A* 距離兜底）不同。\n\n" +
+                    "★ 效能面：此值主要影響單次找房迴圈的長度，而非整體效能量級（量級由「有無 Early Exit」決定，現有 Early Exit 已將全城掃描砍得很好）。" +
+                    "調此值的邊際效能收益偏低，主要價值在於讓你依城市規模微調品質與吞吐的平衡。\n\n" +
+                    "★ 調節建議：\n" +
+                    " - 平衡（預設）：5\n" +
+                    " - 追求居住品質／候選充足的大城市：8 ~ 12（收集更多候選，匹配更佳但單次開銷略增）\n" +
+                    " - 效能優先：3 ~ 4（更早退出，可能略增搬家頻率）\n\n" +
+                    "★ 稀缺保護：符合租金條件的房產稀少時，合格候選永遠湊不滿，系統會自然遍歷完全城，不會漏找。\n" +
+                    "★ 如何判斷：若家庭頻繁住進遠處或明顯次優房、搬家過於頻繁，請提高此值。" +
+                    "若大城市找房尋路卡頓，請降低此值。可於遊戲中即時調節。"
+                },
                 { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.ResetEcoBehavior)), "重設" },
                 {
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.ResetEcoBehavior)),

@@ -200,6 +200,10 @@ namespace EconomyEX.Settings
         public int HomelessSeekerCap { get; set; } = 1280;
 
         [SettingsUISection(kSectionGeneral, kSectionBehavior)]
+        [SettingsUISlider(min = 3, max = 15, step = 1, scalarMultiplier = 1, unit = Game.UI.Unit.kInteger)]
+        public int FindHomeCandidateCap { get; set; } = 5;
+
+        [SettingsUISection(kSectionGeneral, kSectionBehavior)]
         [SettingsUIButton]
         [SettingsUIConfirmation]
         public bool ResetEcoBehavior
@@ -212,6 +216,7 @@ namespace EconomyEX.Settings
                 HouseholdResourceDemandMultiplier = 3.5f;
                 HomeSeekerCap = 128;
                 HomelessSeekerCap = 1280;
+                FindHomeCandidateCap = 5;
             }
         }
 

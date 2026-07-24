@@ -715,6 +715,17 @@ namespace MapExtPDX.MapExt.Core
                     updateSystem.UpdateAt<EcoShared.FindJobSystemMod>(SystemUpdatePhase.GameSimulation);
                 }
 
+                // === [尋路 Setup 統一分派框架] 引導 ===
+                // dispatcher 是全 Mod 唯一掛在 PathfindSetupSystem.FindTargets 上的 Prefix，
+                // 承載 P1(ResourceSeller)/P2(Leisure) 等多個 handler。只要任一相關組開啟就掛載一次，
+                // 各 handler 的 Register 留在各自開關組內（見下）。此提取避免 P2 受 ResourceBuyer 開關牽制。
+                if (setting.EnableResourceBuyerEcoSystem || setting.EnableDownstreamAIEcoSystem)
+                {
+                    EcoShared.PathfindSetupDispatcher.Clear();
+                    globalPatcher.CreateClassProcessor(
+                        typeof(EcoShared.PathfindSetupDispatcher)).Patch();
+                }
+
                 if (setting.EnableResourceBuyerEcoSystem)
                 {
                     // 寻路优化系统
@@ -724,6 +735,12 @@ namespace MapExtPDX.MapExt.Core
 
                     // Harmony修补：拦截 Game.Tools 等外部系统对 SetupPathfindMethods 的调用
                     globalPatcher.CreateClassProcessor(typeof(EcoShared.ServiceCoverageSystem_SetupPathfindMethods_Patch)).Patch();
+
+                    // === [P1] ResourceSeller 尋路 Early Exit ===
+                    // 只接管 SetupTargetType.ResourceSeller，其餘類型放行（含 C1 各 Mode 的 FindHome patch）。
+                    EcoShared.PathfindSetupDispatcher.Register(
+                        Game.Pathfind.SetupTargetType.ResourceSeller,
+                        new EcoShared.ResourceSellerHandler());
                 }
 
                 if (setting.EnableResidentAIEcoSystem)
@@ -746,6 +763,12 @@ namespace MapExtPDX.MapExt.Core
                     updateSystem.UpdateAt<EcoShared.LeisureSystemMod>(SystemUpdatePhase.GameSimulation);
                     // F6: 找学校系统
                     updateSystem.UpdateAt<EcoShared.FindSchoolSystemMod>(SystemUpdatePhase.GameSimulation);
+
+                    // === [P2] Leisure 尋路 Early Exit ===
+                    // 掛在上方已引導的 dispatcher 上，只接管 SetupTargetType.Leisure。
+                    EcoShared.PathfindSetupDispatcher.Register(
+                        Game.Pathfind.SetupTargetType.Leisure,
+                        new EcoShared.LeisureHandler());
                 }
             }
 

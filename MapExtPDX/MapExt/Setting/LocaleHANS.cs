@@ -395,6 +395,59 @@ namespace MapExtPDX
                     "★ 如何判断：若城市中大量流浪汉长期无法入住空置住宅，请提高此值。" +
                     "若大量流浪同时涌入导致帧率骤降，请降低此值。可于游戏中实时调节。"
                 },
+                {
+                    m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.ResourceSellerCandidateCap)),
+                    "企业采购：候选供应商上限"
+                },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.ResourceSellerCandidateCap)),
+                    "【P1 寻路优化】企业采购寻路（ResourceSeller）每个请求最多收集的合格候选供应商数量。" +
+                    "凑满即提前退出全城扫描（Early Exit），将 O(全城企业数) 降为 O(常数)。\n\n" +
+                    "值越小性能越好但可能错过较优货源；值越大越贴近原版全局最优但开销越高。\n" +
+                    "★ 稀缺资源自带保护：合格候选稀少时永远凑不满，自然遍历完全城，不会漏找。\n\n" +
+                    "★ 调节建议：\n" +
+                    " - 大城市/低配：3 ~ 6\n" +
+                    " - 平衡：8（默认）\n" +
+                    " - 贴近原版：12 ~ 20\n\n" +
+                    "★ 如何判断：若商店/工厂频繁缺货，请提高此值；若采购寻路造成顿卡，请降低此值。可于游戏中实时调节。"
+                },
+                {
+                    m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.LeisureCandidateCap)),
+                    "休闲寻路：候选设施上限"
+                },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.LeisureCandidateCap)),
+                    "【P2 寻路优化】休闲寻路（Leisure）每个请求最多收集的合格候选休闲设施数量。" +
+                    "凑满即提前退出全城扫描（Early Exit），将 O(全城休闲设施数) 降为 O(常数)。\n\n" +
+                    "多数候选 cost=0，A* 端以实际路径距离排序，提前退出几乎无质量损失；\n" +
+                    "★ 稀缺设施自带保护：合格候选稀少时永远凑不满，自然遍历完全城，不会漏找。\n\n" +
+                    "★ 调节建议：\n" +
+                    " - 大城市/低配：3 ~ 5\n" +
+                    " - 平衡：6（默认）\n" +
+                    " - 贴近原版：10 ~ 15\n\n" +
+                    "★ 如何判断：若市民频繁找不到休闲去处（尤其休闲设施稀疏区域），请提高此值；若休闲寻路造成顿卡，请降低此值。可于游戏中实时调节。"
+                },
+                {
+                    m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.FindHomeCandidateCap)),
+                    "找房寻路：候选房屋上限"
+                },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.FindHomeCandidateCap)),
+                    "【P6 寻路优化】家庭找房（FindHome）每个请求最多收集的合格候选房屋数量。" +
+                    "凑满即提前退出全城扫描（Early Exit），将 O(全城住宅数) 降为 O(常数)。\n\n" +
+                    "★ 性能与逻辑的取舍（与购物/休闲不同，务必理解）：\n" +
+                    "找房候选的 cost 是 GetPropertyScore（房屋质量综合评分），并非同质的 cost=0。" +
+                    "因此本上限直接影响居住质量匹配度——值越小，家庭越可能入住评分较低（但仍可接受）的房屋，" +
+                    "可能略微增加日后搬家频率；值越大越接近全局最优选房，但单次找房 CPU 开销越高。\n\n" +
+                    "这与购物/休闲不同：后者多数候选 cost=0 由 A* 距离兜底，提前退出几乎无损失；" +
+                    "而找房提前退出损失的是「可能评分更高的房屋」，属真实的质量取舍。\n\n" +
+                    "★ 稀缺保护：合格候选稀少时永远凑不满，自然遍历完全城，不会漏找。\n\n" +
+                    "★ 调节建议：\n" +
+                    " - 平衡（默认）：5 —— 零行为变化，与原 Mod 硬编码一致\n" +
+                    " - 大城市/低配：3 ~ 4 —— 更激进，可能略降选房质量\n" +
+                    " - 重视选房质量：8 ~ 15 —— 更接近全局最优，开销略增\n\n" +
+                    "★ 如何判断：若家庭频繁搬家或入住明显劣质房屋，请提高此值；若大城市找房造成顿卡，请降低此值。可于游戏中实时调节。"
+                },
                 { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.ResetEcoBehavior)), "重置" },
                 {
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.ResetEcoBehavior)),
