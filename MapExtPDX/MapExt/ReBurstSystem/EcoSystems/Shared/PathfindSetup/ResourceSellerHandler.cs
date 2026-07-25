@@ -418,11 +418,12 @@ namespace MapExtPDX.EcoShared
 							num3 += EconomyUtils.GetTradeCost(resource, costs).m_BuyCost * (float)value * 0.01f;
 						}
 					}
-					targetSeeker.FindTargets(entity2, num3);
-
-					// === [MOD OPT] Early Exit：完成一次 FindTargets 的合格候選計入，湊滿即 break ===
-					candidatesFound++;
-					if (candidatesFound >= m_MaxCandidatesToFind)
+					// === [MOD OPT] Early Exit：僅「實際加入了 target」的候選才計數 ===
+					// FindTargets 回傳實際加入的 target 數，可能為 0（該建築無可用路網接入點：
+					// m_PathEdges 查不到、lane 不存在、access restriction 擋掉）。無條件 ++ 會讓
+					// 路網不可達的孤立建築白佔 cap 額度，極端情況湊滿 cap 卻沒有任何有效 target。
+					// 原版 PolicePathfindSetup.cs:721 亦有檢查回傳值的先例。
+					if (targetSeeker.FindTargets(entity2, num3) > 0 && ++candidatesFound >= m_MaxCandidatesToFind)
 					{
 						break;
 					}

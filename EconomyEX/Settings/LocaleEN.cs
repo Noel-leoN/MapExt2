@@ -118,6 +118,12 @@ namespace EconomyEX.Settings
                 { m_Setting.GetOptionDescLocaleID(nameof(ModSettings.HomeSeekerCap)), "Maximum households with existing homes processed per frame for relocation evaluation. Default: 128." },
                 { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.HomelessSeekerCap)), "Home Search: Homeless Throughput" },
                 { m_Setting.GetOptionDescLocaleID(nameof(ModSettings.HomelessSeekerCap)), "Maximum homeless households processed per frame for housing placement. Default: 1280." },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.FindHomeCandidateCap)), "Home Search: Property Candidate Cap" },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.FindHomeCandidateCap)),
+                    "Number of qualified housing candidates a household collects per archetype chunk before the scan exits early. Vanilla hardcodes this at 5.\n\n" +
+                    "Each candidate carries a real quality score (rent affordability, pollution, services, crime), so this is a performance vs. housing-quality trade-off: a lower cap costs less CPU but the household chooses from fewer options and may settle for a lower-scored home; a higher cap gives better matching at greater cost.\n\n" +
+                    "When qualified housing is scarce the cap is never filled, so nothing is missed. Default: 5 (matches vanilla behavior). Can be adjusted in-game." },
 
                 { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.ResetEcoBehavior)), "Reset" },
                 { m_Setting.GetOptionDescLocaleID(nameof(ModSettings.ResetEcoBehavior)), "Reset all economy behavior and throughput parameters to their default values." },

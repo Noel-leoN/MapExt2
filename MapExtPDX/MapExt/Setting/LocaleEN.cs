@@ -472,8 +472,9 @@ namespace MapExtPDX
                 },
                 {
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.ResourceSellerCandidateCap)),
-                    "Maximum number of qualified supplier candidates collected per business purchasing pathfind request. " +
-                    "Once the cap is reached, the citywide supplier scan exits early (Early Exit), reducing O(all businesses) to O(constant).\n" +
+                    "Maximum number of qualified supplier candidates a business purchasing pathfind request collects from each entity chunk. " +
+                    "Once the cap is reached, that chunk's scan exits early (Early Exit): instead of scoring every business in the chunk, it stops at this many. " +
+                    "Because the scan runs in parallel across chunks, the total candidates handed to the A* engine is roughly this cap times the number of chunks — still far fewer than a full citywide scan.\n" +
                     "Lower values improve performance but may miss better-priced sources; higher values approach vanilla global-optimal sourcing at greater cost.\n\n" +
                     "★ Scarcity is safe: when qualified candidates are rare, the cap is never filled, so the full city is scanned anyway and no supplier is missed.\n\n" +
                     "★ Recommended:\n" +
@@ -488,8 +489,9 @@ namespace MapExtPDX
                 },
                 {
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.LeisureCandidateCap)),
-                    "Maximum number of qualified leisure venue candidates collected per leisure pathfind request. " +
-                    "Once the cap is reached, the citywide venue scan exits early (Early Exit), reducing O(all leisure providers) to O(constant).\n" +
+                    "Maximum number of qualified leisure venue candidates a leisure pathfind request collects from each entity chunk. " +
+                    "Once the cap is reached, that chunk's scan exits early (Early Exit) instead of scoring every venue in it. " +
+                    "Because the scan runs in parallel across chunks, the total candidates handed to the A* engine is roughly this cap times the number of chunks.\n" +
                     "Most candidates have cost 0, so the A* engine ranks them by actual path distance; early exit causes almost no quality loss.\n\n" +
                     "★ Scarcity is safe: when qualified venues are rare, the cap is never filled, so the full city is scanned anyway and no venue is missed.\n\n" +
                     "★ Recommended:\n" +
@@ -504,7 +506,8 @@ namespace MapExtPDX
                 },
                 {
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.FindHomeCandidateCap)),
-                    "Maximum number of qualified housing candidates a household collects per home-search pathfind request before exiting the citywide scan early (Early Exit). Vanilla hardcodes this at 5.\n\n" +
+                    "Maximum number of qualified housing candidates a household collects from each entity chunk before that chunk's scan exits early (Early Exit). " +
+                    "Because the scan runs in parallel across chunks, the total candidates handed to the A* engine is roughly this cap times the number of chunks. This mod's previous hardcoded value was 5.\n\n" +
                     "★ Performance vs. logic trade-off (important — differs from the Shopping/Leisure caps):\n" +
                     "Unlike leisure (where most candidates have cost 0), each housing candidate carries a real quality score (GetPropertyScore: rent affordability, pollution, services, crime, etc.). " +
                     "The cap decides how many scored candidates are handed to the A* engine. A LOWER cap exits sooner and costs less CPU, but the household picks from fewer options, so it may settle into a lower-scored (yet still affordable) home and is more likely to relocate again later. " +

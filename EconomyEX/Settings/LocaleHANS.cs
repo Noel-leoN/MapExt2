@@ -118,6 +118,12 @@ namespace EconomyEX.Settings
                 { m_Setting.GetOptionDescLocaleID(nameof(ModSettings.HomeSeekerCap)), "每帧最多处理的已有住房但想搬家的家庭数量。默认128。" },
                 { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.HomelessSeekerCap)), "找房系统：流浪安置吞吐量" },
                 { m_Setting.GetOptionDescLocaleID(nameof(ModSettings.HomelessSeekerCap)), "每帧最多处理的无家可归家庭找房数量。默认1280。" },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.FindHomeCandidateCap)), "找房系统：候选房屋上限" },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.FindHomeCandidateCap)),
+                    "每个家庭在单个建筑区块（chunk）中收集到多少个合格候选房屋后提前结束扫描。原版硬编码为 5。\n\n" +
+                    "每个候选都带有真实的质量评分（房租负担、污染、服务、犯罪），因此这是性能与居住质量的取舍：数值越小越省 CPU，但家庭可选范围更窄，可能住进评分较低的房屋；数值越大匹配越优，但开销越高。\n\n" +
+                    "合格房源稀少时永远凑不满上限，因此不会漏找。默认 5（与原版行为一致）。可在游戏中调整。" },
 
                 { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.ResetEcoBehavior)), "重置" },
                 { m_Setting.GetOptionDescLocaleID(nameof(ModSettings.ResetEcoBehavior)), "将所有经济行为与吞吐量参数恢复为默认值。" },

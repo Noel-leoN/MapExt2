@@ -395,9 +395,10 @@ namespace MapExtPDX
                 },
                 {
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.ResourceSellerCandidateCap)),
-                    "企業採購尋路（ResourceSeller）每個請求最多收集的合格候選供應商數量。" +
-                    "湊滿即提前退出全城掃描（Early Exit），將 O(全城企業數) 的採購尋路降為 O(常數)，" +
-                    "大城市下顯著降低尋路 Setup 階段的 CPU 開銷。\n\n" +
+                    "企業採購尋路（ResourceSeller）在每個實體區塊（chunk）中最多收集的合格候選供應商數量。" +
+                    "湊滿即結束該區塊的掃描（Early Exit），不再為區塊內其餘企業逐一評分。" +
+                    "掃描是跨區塊並行的，因此交給 A* 的候選總數約為「本上限 × 區塊數」，仍遠少於全城逐一評分，" +
+                    "大城市下可降低尋路 Setup 階段的 CPU 開銷。\n\n" +
                     "★ 調節建議：\n" +
                     " - 效能優先：3 ~ 5（更激進的提前退出）\n" +
                     " - 平衡模式：8（預設）\n" +
@@ -413,9 +414,10 @@ namespace MapExtPDX
                 },
                 {
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.LeisureCandidateCap)),
-                    "市民休閒尋路（Leisure）每個請求最多收集的合格休閒設施候選數量。" +
-                    "湊滿即提前退出全城掃描（Early Exit），將 O(全城休閒設施數) 的休閒尋路降為 O(常數)，" +
-                    "大城市下顯著降低尋路 Setup 階段的 CPU 開銷。\n\n" +
+                    "市民休閒尋路（Leisure）在每個實體區塊（chunk）中最多收集的合格休閒設施候選數量。" +
+                    "湊滿即結束該區塊的掃描（Early Exit）。掃描是跨區塊並行的，" +
+                    "因此交給 A* 的候選總數約為「本上限 × 區塊數」，仍遠少於全城逐一評分，" +
+                    "大城市下可降低尋路 Setup 階段的 CPU 開銷。\n\n" +
                     "★ 調節建議：\n" +
                     " - 效能優先：3 ~ 4（更激進的提前退出）\n" +
                     " - 平衡模式：6（預設）\n" +
@@ -433,8 +435,9 @@ namespace MapExtPDX
                 },
                 {
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.FindHomeCandidateCap)),
-                    "家庭找房尋路（FindHome）每個請求最多收集的合格候選房產數量。" +
-                    "湊滿即提前退出全城掃描（Early Exit），將 O(全城可租建築) 的找房尋路降為 O(常數)。\n\n" +
+                    "家庭找房尋路（FindHome）在每個實體區塊（chunk）中最多收集的合格候選房產數量。" +
+                    "湊滿即結束該區塊的掃描（Early Exit）。掃描是跨區塊並行的，" +
+                    "因此交給 A* 的候選總數約為「本上限 × 區塊數」，仍遠少於全城逐一評分。\n\n" +
                     "★ 與購物／休閒的關鍵差異：找房候選的成本是「房產綜合評分」（GetPropertyScore：地段、污染、服務覆蓋、租金等），" +
                     "並非同質的 0 值。因此本上限越小，家庭越可能住進「評分次優但仍可接受」的房產，" +
                     "而非全城最佳匹配——這是「效能 ↔ 居住品質匹配度」的直接取捨，與購物／休閒（多為 0 成本、可由 A* 距離兜底）不同。\n\n" +

@@ -993,6 +993,7 @@ namespace MapExtPDX
             HomelessSeekerCap = 1280;
             ResourceSellerCandidateCap = 8;
             LeisureCandidateCap = 6;
+            FindHomeCandidateCap = 5;
             LandValueEnvironmentEffect = 40;
             ServiceBonusCapMultiplier = 100;
             RentMultiplierResidential = 100;

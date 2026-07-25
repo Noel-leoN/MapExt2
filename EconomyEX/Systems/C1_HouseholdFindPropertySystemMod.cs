@@ -1197,7 +1197,8 @@ namespace EconomyEX.Systems
                 // 🔢 局部计数器：记录当前家庭已经成功收集了几个合格的候选房屋。
                 // 🎯 我们不再追求“全图最优解”，只要找到足够多的备选项组合，就直接抛给 A* 引擎。
                 int candidatesFound = 0;
-                const int kMaxCandidatesToFind = 5;
+                // [MOD OPT/P6] 候選上限改為可配置（ModSettings.FindHomeCandidateCap 於排程時注入）；防呆退回 5
+                int kMaxCandidatesToFind = (m_MaxCandidatesToFind >= 1) ? m_MaxCandidatesToFind : 5;
 
                 // --- 🔄 核心耗时循环：遍历本 Chunk 内的所有售/租建筑 (O(N) 全图遍历) ---
                 // [MOD OPT] 随机起始偏移：避免先创建的建筑总是被优先评估，提高新旧城区的公平性
@@ -1228,13 +1229,17 @@ namespace EconomyEX.Systems
                             // 📈 分数越高越靠后寻找。收容所因为没有 GetPropertyScore，这部分计算远快于普通住宅
                             if (bufferAccessor[j].Length < shelterHomelessCapacity)
                             {
-                                targetSeeker.FindTargets(candidateProperty,
-                                    100f * serviceCoverage + 1000f * bufferAccessor[j].Length /
-                                    shelterHomelessCapacity + 10000f);
-
                                 // === 🏁 [Early Exit Optimization] ===
                                 // ➕ 找到一个合格收容所，计入候选
-                                candidatesFound++;
+                                // [MOD OPT/FIX] 僅「實際加入了 target」才計數：FindTargets 回傳實際加入的
+                                // target 數，可能為 0（該建築無可用路網接入點）。無條件 ++ 會讓路網不可達的
+                                // 孤立建築白佔 cap 額度。原版 PolicePathfindSetup.cs:721 亦有檢查回傳值的先例。
+                                if (targetSeeker.FindTargets(candidateProperty,
+                                        100f * serviceCoverage + 1000f * bufferAccessor[j].Length /
+                                        shelterHomelessCapacity + 10000f) > 0)
+                                {
+                                    candidatesFound++;
+                                }
                             }
                         }
 
@@ -1321,14 +1326,16 @@ namespace EconomyEX.Systems
 
                             // 🧮 转化分数为 Cost（因为 A* Pathfinding 是最小堆，Cost 越小越好）。
                             // 📉 综合分数取负后，再叠加拥挤度惩罚因子和随机抖动因子，发往寻路队列。
-                            targetSeeker.FindTargets(candidateProperty,
-                                0f - propertyScore + 1000f * bufferAccessor[j].Length /
-                                maxPropertiesInBuilding +
-                                random.NextInt(500));
-
                             // === 🏁 [Early Exit Optimization] ===
                             // 找到一套付得起且已完成计分的备选房，计入候选
-                            candidatesFound++;
+                            // [MOD OPT/FIX] 僅「實際加入了 target」才計數（理由同上方收容所分支）
+                            if (targetSeeker.FindTargets(candidateProperty,
+                                    0f - propertyScore + 1000f * bufferAccessor[j].Length /
+                                    maxPropertiesInBuilding +
+                                    random.NextInt(500)) > 0)
+                            {
+                                candidatesFound++;
+                            }
                         }
                     }
 
@@ -1538,6 +1545,8 @@ namespace EconomyEX.Systems
                     _citizenHappinessParamQuery.GetSingleton<CitizenHappinessParameterData>(),
 
                 m_City = _citySystem.City,
+                // [P6] 找房候選上限（可配置；managed 端讀 settings 注入 Burst job）
+                m_MaxCandidatesToFind = Mod.Instance.Settings.FindHomeCandidateCap,
                 m_SetupData = setupData
             };
 

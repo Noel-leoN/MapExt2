@@ -1228,13 +1228,17 @@ namespace MapExtPDX.ModeE
                             // 📈 分数越高越靠后寻找。收容所因为没有 GetPropertyScore，这部分计算远快于普通住宅
                             if (bufferAccessor[j].Length < shelterHomelessCapacity)
                             {
-                                targetSeeker.FindTargets(candidateProperty,
-                                    100f * serviceCoverage + 1000f * bufferAccessor[j].Length /
-                                    shelterHomelessCapacity + 10000f);
-
                                 // === 🏁 [Early Exit Optimization] ===
                                 // ➕ 找到一个合格收容所，计入候选
-                                candidatesFound++;
+                                // [MOD OPT/FIX] 僅「實際加入了 target」才計數：FindTargets 回傳實際加入的
+                                // target 數，可能為 0（該建築無可用路網接入點）。無條件 ++ 會讓路網不可達的
+                                // 孤立建築白佔 cap 額度。原版 PolicePathfindSetup.cs:721 亦有檢查回傳值的先例。
+                                if (targetSeeker.FindTargets(candidateProperty,
+                                        100f * serviceCoverage + 1000f * bufferAccessor[j].Length /
+                                        shelterHomelessCapacity + 10000f) > 0)
+                                {
+                                    candidatesFound++;
+                                }
                             }
                         }
 
@@ -1321,14 +1325,16 @@ namespace MapExtPDX.ModeE
 
                             // 🧮 转化分数为 Cost（因为 A* Pathfinding 是最小堆，Cost 越小越好）。
                             // 📉 综合分数取负后，再叠加拥挤度惩罚因子和随机抖动因子，发往寻路队列。
-                            targetSeeker.FindTargets(candidateProperty,
-                                0f - propertyScore + 1000f * bufferAccessor[j].Length /
-                                maxPropertiesInBuilding +
-                                random.NextInt(500));
-
                             // === 🏁 [Early Exit Optimization] ===
                             // 找到一套付得起且已完成计分的备选房，计入候选
-                            candidatesFound++;
+                            // [MOD OPT/FIX] 僅「實際加入了 target」才計數（理由同上方收容所分支）
+                            if (targetSeeker.FindTargets(candidateProperty,
+                                    0f - propertyScore + 1000f * bufferAccessor[j].Length /
+                                    maxPropertiesInBuilding +
+                                    random.NextInt(500)) > 0)
+                            {
+                                candidatesFound++;
+                            }
                         }
                     }
 

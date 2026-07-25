@@ -583,6 +583,7 @@ namespace EconomyEX.Settings
             HouseholdResourceDemandMultiplier = 3.5f;
             HomeSeekerCap = 128;
             HomelessSeekerCap = 1280;
+            FindHomeCandidateCap = 5;
             LandValueEnvironmentEffect = 40;
             ServiceBonusCapMultiplier = 100;
             RentMultiplierResidential = 100;

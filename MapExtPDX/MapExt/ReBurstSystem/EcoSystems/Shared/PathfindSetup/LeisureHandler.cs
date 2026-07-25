@@ -240,11 +240,10 @@ namespace MapExtPDX.EcoShared
 							}
 						}
 					}
-					targetSeeker.FindTargets(entity2, cost);
-
-					// === [MOD OPT] Early Exit：完成一次 FindTargets 的合格候選計入，湊滿即 break ===
-					candidatesFound++;
-					if (candidatesFound >= m_MaxCandidatesToFind)
+					// === [MOD OPT] Early Exit：僅「實際加入了 target」的候選才計數 ===
+					// FindTargets 回傳實際加入的 target 數，可能為 0（該設施無可用路網接入點）。
+					// 無條件 ++ 會讓不可達設施白佔 cap 額度。詳見 ResourceSellerHandler 同處註釋。
+					if (targetSeeker.FindTargets(entity2, cost) > 0 && ++candidatesFound >= m_MaxCandidatesToFind)
 					{
 						break;
 					}

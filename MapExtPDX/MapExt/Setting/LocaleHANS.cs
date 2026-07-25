@@ -401,8 +401,9 @@ namespace MapExtPDX
                 },
                 {
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.ResourceSellerCandidateCap)),
-                    "【P1 寻路优化】企业采购寻路（ResourceSeller）每个请求最多收集的合格候选供应商数量。" +
-                    "凑满即提前退出全城扫描（Early Exit），将 O(全城企业数) 降为 O(常数)。\n\n" +
+                    "【P1 寻路优化】企业采购寻路（ResourceSeller）在每个实体区块（chunk）中最多收集的合格候选供应商数量。" +
+                    "凑满即提前退出该区块的扫描（Early Exit），不再为区块内每家企业打分。\n" +
+                    "由于扫描按区块并行，最终交给 A* 引擎的候选总数约为「本上限 × 区块数」，仍远少于全城扫描。\n\n" +
                     "值越小性能越好但可能错过较优货源；值越大越贴近原版全局最优但开销越高。\n" +
                     "★ 稀缺资源自带保护：合格候选稀少时永远凑不满，自然遍历完全城，不会漏找。\n\n" +
                     "★ 调节建议：\n" +
@@ -417,8 +418,9 @@ namespace MapExtPDX
                 },
                 {
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.LeisureCandidateCap)),
-                    "【P2 寻路优化】休闲寻路（Leisure）每个请求最多收集的合格候选休闲设施数量。" +
-                    "凑满即提前退出全城扫描（Early Exit），将 O(全城休闲设施数) 降为 O(常数)。\n\n" +
+                    "【P2 寻路优化】休闲寻路（Leisure）在每个实体区块（chunk）中最多收集的合格候选休闲设施数量。" +
+                    "凑满即提前退出该区块的扫描（Early Exit），不再为区块内每处设施打分。\n" +
+                    "由于扫描按区块并行，最终交给 A* 引擎的候选总数约为「本上限 × 区块数」。\n\n" +
                     "多数候选 cost=0，A* 端以实际路径距离排序，提前退出几乎无质量损失；\n" +
                     "★ 稀缺设施自带保护：合格候选稀少时永远凑不满，自然遍历完全城，不会漏找。\n\n" +
                     "★ 调节建议：\n" +
@@ -433,8 +435,9 @@ namespace MapExtPDX
                 },
                 {
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.FindHomeCandidateCap)),
-                    "【P6 寻路优化】家庭找房（FindHome）每个请求最多收集的合格候选房屋数量。" +
-                    "凑满即提前退出全城扫描（Early Exit），将 O(全城住宅数) 降为 O(常数)。\n\n" +
+                    "【P6 寻路优化】家庭找房（FindHome）在每个实体区块（chunk）中最多收集的合格候选房屋数量。" +
+                    "凑满即提前退出该区块的扫描（Early Exit）。\n" +
+                    "由于扫描按区块并行，最终交给 A* 引擎的候选总数约为「本上限 × 区块数」。本 Mod 此前硬编码为 5。\n\n" +
                     "★ 性能与逻辑的取舍（与购物/休闲不同，务必理解）：\n" +
                     "找房候选的 cost 是 GetPropertyScore（房屋质量综合评分），并非同质的 cost=0。" +
                     "因此本上限直接影响居住质量匹配度——值越小，家庭越可能入住评分较低（但仍可接受）的房屋，" +
