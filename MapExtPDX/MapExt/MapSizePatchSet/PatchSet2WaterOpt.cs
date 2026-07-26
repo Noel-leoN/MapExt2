@@ -84,6 +84,9 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
             // Vanilla 模式：仅确保背景水已还原，其余零开销直通原版
             if (quality == WaterSimQualitySetting.Vanilla_EveryFrame)
             {
+                // [BUGFIX] Minimal/Paused 檔位會設 BlurFlowMap=false，切回 Vanilla 必須還原，
+                // 否則 Flow Blur 跨存檔永久關閉直到重啟遊戲（原版預設 true 且全遊戲無其他寫入點）
+                __instance.BlurFlowMap = true;
                 RestoreBackdrop(__instance);
                 return true;
             }
