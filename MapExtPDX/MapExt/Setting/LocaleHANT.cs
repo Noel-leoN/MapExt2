@@ -114,6 +114,28 @@ namespace MapExtPDX
                     "★ 建議：預設關閉；獨顯玩家可自行實測開關前後的幀時間與畫面正確性。\n" +
                     "★ 提示：該選項即時生效無須重啟。"
                 },
+                {
+                    m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.WaterPauseFreeze)),
+                    "暫停時凍結水模擬"
+                },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.WaterPauseFreeze)),
+                    "遊戲暫停時，原版仍會每幀空轉整條水模擬 GPU 管線（時間步長為 0，物理不推進，純屬浪費）。\n\n" +
+                    "開啟後暫停即凍結水模擬，取消暫停自動恢復；放置建築等地形變更期間會自動讓行，待水面適應新地形後再凍結。\n\n" +
+                    "★ 建議：保持開啟。近零風險——水面流動動畫由著色器時間驅動，不受影響。\n" +
+                    "★ 提示：該選項即時生效無須重啟。"
+                },
+                {
+                    m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.SnowSimFrozen)),
+                    "凍結雪模擬"
+                },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.SnowSimFrozen)),
+                    "雪深模擬每 4 個模擬幀對全圖做一次 GPU 計算，且沒有溫度門檻——即使夏季無雪也照常執行。\n\n" +
+                    "開啟後跳過雪模擬循環（雪面保持現狀）：降雪不再積累、積雪不再消融，直到關閉本選項。\n\n" +
+                    "★ 建議：預設關閉。無雪地圖或夏季可安全開啟。\n" +
+                    "★ 提示：該選項即時生效無須重啟。"
+                },
 
                 // (隐藏项 - 保留用于序列化)
                 { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.TerrainResolution)), "地形解析度" },

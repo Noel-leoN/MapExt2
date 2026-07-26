@@ -3,6 +3,7 @@
 
 namespace MapExtPDX.MapExt.MapSizePatchSet
 {
+    using Game; // GameModeExtensions.IsGame()
     using Game.Simulation;
     using HarmonyLib;
     using MapExtPDX.MapExt.Core;
@@ -47,6 +48,21 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
         /// </summary>
         internal static int StableSpeed = 1;
 
+        // --- 暫停凍結（Pause Freeze）---
+        // 遊戲暫停（selectedSpeed==0）時，原版 Simulate() 仍每渲染幀完整執行一步模擬
+        // （selectedSpeed 的 break 位於循環步驟之後、GetTimeStep() 僅回傳 timestep=0），
+        // 所有 compute dispatch 照發但物理不推進——純浪費。
+        // 凍結 = 在 Prefix 尾部設 WaterSimSpeed=0，讓 Simulate() 跳過模擬循環；
+        // 解凍後 speed 由既有 Postfix StableSpeed 機制自然恢復（與 Minimal 檔位同構）。
+        private static Game.Simulation.SimulationSystem s_simulationSystem;
+        private static System.Reflection.FieldInfo s_terrainCounterField;
+        private static bool s_terrainCounterResolved = false;
+        private static bool s_pauseFrozen = false;      // 僅供狀態變化日誌
+        private static int s_pauseGraceFrames = 0;      // 地形變更後的收斂寬限（渲染幀）
+
+        /// <summary>地形變更 counter 歸零後，暫停凍結讓行的收斂寬限幀數。</summary>
+        private const int kPauseFreezeGraceFrames = 30;
+
         /// <summary>
         /// [BUGFIX] 退出主菜单时重置会话状态。
         /// m_SimulateBackdrop 会在下次加载时重新反序列化，覆写记录必须作废。
@@ -57,6 +73,9 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
             StableSpeed = 1;
             s_frameCounter = 0;
             s_lastAppliedAsync = null; // 下次加载重新套用并记录 IsAsync
+            s_simulationSystem = null; // World 可能重建，下次凍結檢查時重新解析
+            s_pauseFrozen = false;
+            s_pauseGraceFrames = 0;
             ModLog.Info(Tag, "WaterOpt session state reset");
         }
 
@@ -88,6 +107,7 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
                 // 否則 Flow Blur 跨存檔永久關閉直到重啟遊戲（原版預設 true 且全遊戲無其他寫入點）
                 __instance.BlurFlowMap = true;
                 RestoreBackdrop(__instance);
+                ApplyPauseFreeze(__instance);
                 return true;
             }
 
@@ -123,8 +143,72 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
                     break;
             }
 
+            // 暫停凍結最後套用（優先於各檔位的 speed 寫入）
+            ApplyPauseFreeze(__instance);
+
             // 始终执行原版 OnSimulateGPU，不跳帧
             return true;
+        }
+
+        // --- Pause Freeze Helpers ---
+
+        /// <summary>
+        /// 遊戲暫停時凍結水模擬（WaterSimSpeed=0）。
+        /// 僅 Game 模式生效——編輯器常態 selectedSpeed=0，凍結會讓做圖者看不到水流。
+        /// 地形變更（放置建築等）的 counter 倒數期間與其後 30 幀寬限期讓行，
+        /// 由原版恢復流程完成水面對新地形的收斂後再凍結。
+        /// </summary>
+        private static void ApplyPauseFreeze(WaterSystem instance)
+        {
+            bool freeze = false;
+
+            if (ResolutionManager.WaterPauseFreeze
+                && Game.SceneFlow.GameManager.instance != null
+                && Game.SceneFlow.GameManager.instance.gameMode.IsGame())
+            {
+                if (GetTerrainChangeCounter(instance) > 0)
+                {
+                    // 地形變更倒數中：讓行，並在歸零後保留收斂寬限
+                    s_pauseGraceFrames = kPauseFreezeGraceFrames;
+                }
+                else if (s_pauseGraceFrames > 0)
+                {
+                    s_pauseGraceFrames--;
+                }
+                else
+                {
+                    s_simulationSystem ??= instance.World.GetExistingSystemManaged<SimulationSystem>();
+                    if (s_simulationSystem != null && s_simulationSystem.selectedSpeed == 0f)
+                    {
+                        freeze = true;
+                    }
+                }
+            }
+
+            if (freeze)
+            {
+                instance.WaterSimSpeed = 0;
+            }
+
+            if (s_pauseFrozen != freeze)
+            {
+                s_pauseFrozen = freeze;
+                ModLog.Patch(Tag, freeze
+                    ? "游戏暂停，水模拟已冻结 (PauseFreeze)"
+                    : "水模拟已恢复 (PauseFreeze 解除)");
+            }
+        }
+
+        private static int GetTerrainChangeCounter(WaterSystem instance)
+        {
+            if (!s_terrainCounterResolved)
+            {
+                s_terrainCounterResolved = true;
+                s_terrainCounterField = AccessTools.Field(typeof(WaterSystem), "m_terrainChangeCounter");
+                if (s_terrainCounterField == null)
+                    ModLog.Warn(Tag, "无法解析 m_terrainChangeCounter，暂停冻结将不对地形变更让行");
+            }
+            return s_terrainCounterField != null ? (int)s_terrainCounterField.GetValue(instance) : 0;
         }
 
         // --- Async Compute Helper ---

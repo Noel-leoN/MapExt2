@@ -130,6 +130,32 @@ namespace MapExtPDX
                     "★ Recommended: OFF by default. Discrete-GPU users can benchmark frame time and visual correctness with it on vs off.\n" +
                     "★ Tip: Applies instantly, no restart required."
                 },
+                {
+                    m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.WaterPauseFreeze)),
+                    "Freeze Water Simulation While Paused"
+                },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.WaterPauseFreeze)),
+                    "While the game is paused, the base game still dispatches the full water simulation GPU pipeline every rendered frame " +
+                    "(with a zero timestep — no physics progress, pure waste).\n\n" +
+                    "When enabled, the water simulation is frozen while paused and resumes automatically on unpause. " +
+                    "Terrain changes (e.g. placing buildings) temporarily lift the freeze so the water surface can adapt first.\n\n" +
+                    "★ Recommended: ON. Near-zero risk — water surface animation is driven by shader time and is not affected.\n" +
+                    "★ Tip: Applies instantly, no restart required."
+                },
+                {
+                    m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.SnowSimFrozen)),
+                    "Freeze Snow Simulation"
+                },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.SnowSimFrozen)),
+                    "The snow-depth simulation dispatches a full-map GPU pass every 4 simulation frames with no temperature gate — " +
+                    "it keeps running even in summer with zero snow on the ground.\n\n" +
+                    "When enabled, the snow simulation loop is skipped and the snow surface stays as-is: snowfall no longer accumulates " +
+                    "and existing snow no longer melts until you turn this off.\n\n" +
+                    "★ Recommended: OFF by default. Safe to enable on maps without snow, or during summer.\n" +
+                    "★ Tip: Applies instantly, no restart required."
+                },
 
                 // (hidden items - kept for serialization)
                 { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.TerrainResolution)), "Terrain Resolution" },

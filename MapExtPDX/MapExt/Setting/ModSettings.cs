@@ -251,6 +251,44 @@ namespace MapExtPDX
             }
         }
 
+        // === 暫停凍結水模擬 ===
+        // 遊戲暫停時原版仍每渲染幀空轉整條水模擬 GPU 管線（timestep=0 物理不推進）。
+        // 凍結近零風險（水面流動動畫由 shader time 驅動），預設開啟；地形變更期間自動讓行。
+        private bool m_waterPauseFreeze = true;
+
+        [SettingsUISection(kPerformanceToolTab, kTerrainWaterOptGroup)]
+        public bool WaterPauseFreeze
+        {
+            get => m_waterPauseFreeze;
+            set
+            {
+                if (m_waterPauseFreeze != value)
+                {
+                    m_waterPauseFreeze = value;
+                    MapExt.Core.ResolutionManager.UpdateWaterPauseFreeze(value);
+                }
+            }
+        }
+
+        // === 凍結雪模擬 ===
+        // 雪深模擬每 4 個模擬幀對 1024² 紋理全幅 dispatch 且無溫度門檻（夏季照常執行）。
+        // 凍結後降雪不積累、融雪不消退（雪面保持現狀），預設關閉由玩家取捨。
+        private bool m_snowSimFrozen = false;
+
+        [SettingsUISection(kPerformanceToolTab, kTerrainWaterOptGroup)]
+        public bool SnowSimFrozen
+        {
+            get => m_snowSimFrozen;
+            set
+            {
+                if (m_snowSimFrozen != value)
+                {
+                    m_snowSimFrozen = value;
+                    MapExt.Core.ResolutionManager.UpdateSnowSimFrozen(value);
+                }
+            }
+        }
+
         // 分辨率选项隐藏后，VRAM 估算也无需显示
         [SettingsUIHidden]
         public string VRAMEstimate => $"Est. VRAM: {MapExt.Core.ResolutionManager.GetVRAMEstimate()}";
@@ -994,6 +1032,8 @@ namespace MapExtPDX
             WaterSimQuality = WaterSimQualitySetting.Vanilla_EveryFrame;
             WaterTextureFormat = WaterTextureFormatSetting.High_RGBA32F;
             WaterAsyncCompute = false; // 实验性：默认关闭，收益/风险依显卡与驱动而定
+            WaterPauseFreeze = true;   // 暫停凍結：近零風險，預設開啟
+            SnowSimFrozen = false;     // 雪凍結：有可見副作用（降雪不積累），預設關閉
 
             ShoppingMaxCost = 8000f;
             CompanyShoppingMaxCost = 200000f;

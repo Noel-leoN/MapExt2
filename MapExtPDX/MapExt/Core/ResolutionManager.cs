@@ -62,6 +62,20 @@ namespace MapExtPDX.MapExt.Core
         public static bool WaterAsyncCompute { get; set; } = false;
 
         /// <summary>
+        /// 遊戲暫停時凍結水模擬。
+        /// 原版暫停時仍每渲染幀發出整條水模擬 compute dispatch（timestep=0，物理不推進，純浪費）。
+        /// 凍結近零風險（水面流動動畫由 shader time 驅動，不受模擬更新影響），故預設開啟。
+        /// </summary>
+        public static bool WaterPauseFreeze { get; set; } = true;
+
+        /// <summary>
+        /// 凍結雪模擬（SnowSimSpeed=0）。
+        /// 雪深模擬每 4 個模擬幀對 1024² 紋理全幅 dispatch 且無溫度門檻（夏季照常執行）。
+        /// 凍結後降雪不積累、融雪不消退，故預設關閉，由玩家自行取捨。
+        /// </summary>
+        public static bool SnowSimFrozen { get; set; } = false;
+
+        /// <summary>
         /// 是否需要为水系统降采样地形级联纹理。
         /// 当地形分辨率 > WaterTerrainResolution(4096) 时为 true。
         /// </summary>
@@ -86,7 +100,8 @@ namespace MapExtPDX.MapExt.Core
         /// 必须在 PatchManager.Initialize() 中、任何 PatchSet 应用之前调用。
         /// </summary>
         public static void Initialize(TerrainResolutionSetting terrain, WaterResolutionSetting water,
-            WaterSimQualitySetting simQuality, WaterTextureFormatSetting textureFormat, bool asyncCompute = false)
+            WaterSimQualitySetting simQuality, WaterTextureFormatSetting textureFormat, bool asyncCompute = false,
+            bool pauseFreeze = true, bool snowFrozen = false)
         {
             // 8192 暂时禁用 (水模拟不兼容)，即使旧存档持久化了该值也强制降级
             TerrainResolution = terrain switch
@@ -108,9 +123,12 @@ namespace MapExtPDX.MapExt.Core
             WaterSimQuality = simQuality;
             WaterTextureFormat = textureFormat;
             WaterAsyncCompute = asyncCompute;
+            WaterPauseFreeze = pauseFreeze;
+            SnowSimFrozen = snowFrozen;
 
             ModLog.Ok(Tag, $"Initialized: Terrain={TerrainResolution}, Water={WaterTextureSize}, " +
-                           $"Format={WaterTextureFormat}, SimQuality={WaterSimQuality}, Async={WaterAsyncCompute}");
+                           $"Format={WaterTextureFormat}, SimQuality={WaterSimQuality}, Async={WaterAsyncCompute}, " +
+                           $"PauseFreeze={WaterPauseFreeze}, SnowFrozen={SnowSimFrozen}");
         }
 
         public static void UpdateWaterSimQuality(WaterSimQualitySetting quality)
@@ -123,6 +141,18 @@ namespace MapExtPDX.MapExt.Core
         {
             WaterAsyncCompute = asyncCompute;
             ModLog.Ok(Tag, $"WaterAsyncCompute updated in real-time to {asyncCompute}");
+        }
+
+        public static void UpdateWaterPauseFreeze(bool pauseFreeze)
+        {
+            WaterPauseFreeze = pauseFreeze;
+            ModLog.Ok(Tag, $"WaterPauseFreeze updated in real-time to {pauseFreeze}");
+        }
+
+        public static void UpdateSnowSimFrozen(bool snowFrozen)
+        {
+            SnowSimFrozen = snowFrozen;
+            ModLog.Ok(Tag, $"SnowSimFrozen updated in real-time to {snowFrozen}");
         }
 
         /// <summary>
