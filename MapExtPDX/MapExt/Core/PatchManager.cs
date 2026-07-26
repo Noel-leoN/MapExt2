@@ -101,6 +101,8 @@ namespace MapExtPDX.MapExt.Core
                 { "WaterSystemOptRuntimePatch", (h) => h.CreateClassProcessor(typeof(WaterSystemOptRuntimePatch)).Patch() },
                 // Editor 水模拟速度横跳修复：防止 TerrainWillChange 每帧重复设 speed=0
                 { "WaterTerrainWillChangeFix", (h) => h.CreateClassProcessor(typeof(WaterSystem_TerrainWillChange_Patch)).Patch() },
+                // 雪模拟运行时冻结补丁（SnowSimSpeed=0，由 Settings 开关实时控制）
+                { "SnowOptRuntimePatch", (h) => h.CreateClassProcessor(typeof(SnowSystemOptRuntimePatch)).Patch() },
 
                 // v2.x.x新增: 地形 Backdrop 禁用补丁 (方案 A: InitializeTerrainData 源头拦截)
                 { "TerrainBackdropDisable", (h) => h.CreateClassProcessor(typeof(TerrainSystem_InitializeTerrainData_DisableBackdrop)).Patch() },
@@ -149,6 +151,7 @@ namespace MapExtPDX.MapExt.Core
                         "WaterAdapterOnUpdatePatch",
                         "WaterSystemOptRuntimePatch",
                         "WaterTerrainWillChangeFix",
+                        "SnowOptRuntimePatch",
                         "TerrainBackdropDisable",
                         "CellMapSystemValuesPatch",
                         "AirwaySystemPatch",
@@ -172,6 +175,7 @@ namespace MapExtPDX.MapExt.Core
                         "WaterAdapterOnUpdatePatch",
                         "WaterSystemOptRuntimePatch",
                         "WaterTerrainWillChangeFix",
+                        "SnowOptRuntimePatch",
                         "TerrainBackdropDisable",
                         "CellMapSystemValuesPatch",
                         "AirwaySystemPatch",
@@ -195,6 +199,7 @@ namespace MapExtPDX.MapExt.Core
                         "WaterAdapterOnUpdatePatch",
                         "WaterSystemOptRuntimePatch",
                         "WaterTerrainWillChangeFix",
+                        "SnowOptRuntimePatch",
                         "TerrainBackdropDisable",
                         "CellMapSystemValuesPatch",
                         "AirwaySystemPatch",
@@ -218,6 +223,7 @@ namespace MapExtPDX.MapExt.Core
                         "WaterAdapterOnUpdatePatch",
                         "WaterSystemOptRuntimePatch",
                         "WaterTerrainWillChangeFix",
+                        "SnowOptRuntimePatch",
                         "TerrainBackdropDisable",
                         "CellMapSystemValuesPatch",
                         "AirwaySystemPatch",
@@ -233,6 +239,7 @@ namespace MapExtPDX.MapExt.Core
                         "TerrainBackdropDisable",
                         "WaterSystemOptRuntimePatch",
                         "WaterTerrainWillChangeFix",
+                        "SnowOptRuntimePatch",
                         "TerrainBrushRoadBlock"
                     };
             }
@@ -254,7 +261,8 @@ namespace MapExtPDX.MapExt.Core
             if (settings != null)
             {
                 ResolutionManager.Initialize(settings.TerrainResolution, settings.WaterResolution,
-                    settings.WaterSimQuality, settings.WaterTextureFormat, settings.WaterAsyncCompute);
+                    settings.WaterSimQuality, settings.WaterTextureFormat, settings.WaterAsyncCompute,
+                    settings.WaterPauseFreeze, settings.SnowSimFrozen);
             }
             else
             {
