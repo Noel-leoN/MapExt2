@@ -101,7 +101,6 @@
 		<None Include="$(ModPropsFile)" Link="Properties\Mod.props" />
 		<None Include="$(ModTargetsFile)" Link="Properties\Mod.targets" />
 		<None Include="MapExt2.sln" />
-		<None Include="Properties\PublishConfiguration.csproj" />
 	</ItemGroup>
 
 	<!-- Automatically build ModAssemblyInfo.cs file. -->
@@ -136,7 +135,7 @@
 
 	<!-- PreBuild: 从源文件自动生成各 Mode 的 XCellMapSystemRe.cs -->
 	<Target Name="GenerateXCellMapSystemRe" BeforeTargets="BeforeBuild">
-		<Exec Command="powershell -ExecutionPolicy Bypass -File &quot;$(ProjectDir)MapExt\ReBurstSystem\ReBurstCore\XCellMapSystemRe.Generate.ps1&quot; -Force" />
+		<Exec Command="pwsh -NoProfile -ExecutionPolicy Bypass -File &quot;$(ProjectDir)MapExt\ReBurstSystem\ReBurstCore\XCellMapSystemRe.Generate.ps1&quot; -Force" />
 	</Target>
 
 	<!-- AfterBuild: 自动构建 UI 前端 (npm run build) -->
