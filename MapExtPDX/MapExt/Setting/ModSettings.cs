@@ -280,8 +280,9 @@ namespace MapExtPDX
 
         // === 凍結雪模擬 ===
         // 雪深模擬每 4 個模擬幀對 1024² 紋理全幅 dispatch 且無溫度門檻（夏季照常執行）。
-        // Auto 檔僅在明確無雪季節凍結（入冬前自動解凍），無可見副作用，故為預設。
-        private SnowSimFreezeSetting m_snowSimFreeze = SnowSimFreezeSetting.Auto;
+        // Auto 檔僅在明確無雪季節凍結（入冬前自動解凍），理論上無可見副作用，
+        // 但尚未經遊戲內實測，故暫維持預設關閉（與 SetDefaults 保持一致）。
+        private SnowSimFreezeSetting m_snowSimFreeze = SnowSimFreezeSetting.Off;
 
         [SettingsUISection(kPerformanceToolTab, kTerrainWaterOptGroup)]
         [SettingsUIDropdown(typeof(ModSettings), nameof(GetSnowSimFreezeItems))]
@@ -1042,7 +1043,7 @@ namespace MapExtPDX
             WaterTextureFormat = WaterTextureFormatSetting.High_RGBA32F;
             WaterAsyncCompute = false; // 实验性：默认关闭，收益/风险依显卡与驱动而定
             WaterPauseFreeze = true;   // 暫停凍結：近零風險，預設開啟
-            SnowSimFreeze = SnowSimFreezeSetting.Auto; // 雪凍結：Auto 僅在無雪季節生效，無可見副作用
+            SnowSimFreeze = SnowSimFreezeSetting.Off; // 雪凍結：Auto 檔待遊戲內實測通過後再改為預設
 
             ShoppingMaxCost = 8000f;
             CompanyShoppingMaxCost = 200000f;
