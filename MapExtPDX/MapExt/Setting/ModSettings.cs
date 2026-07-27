@@ -66,6 +66,14 @@ namespace MapExtPDX
         Low_RGBA16F, // 降级低精度 16-bit (省一半显存)
     }
 
+    /// <summary>雪模擬凍結模式</summary>
+    public enum SnowSimFreezeSetting
+    {
+        Off,    // 原版：始終模擬（無溫度門檻，夏季亦全幅 dispatch）
+        Auto,   // 自動：僅在明確無雪季節凍結，入冬前自動解凍（推薦）
+        Always, // 始終凍結：最省，但降雪不積累、融雪不消退
+    }
+
     //[FileLocation(nameof(MapExtPDX))]
     [FileLocation("ModsSettings/" + Mod.ModName + "/" + Mod.ModName)]
     [SettingsUITabOrder(kMapSizeModeTab, kMiscTab, kRentControlTab, kPerformanceToolTab, kUITab, kDebugTab)]
@@ -272,19 +280,20 @@ namespace MapExtPDX
 
         // === 凍結雪模擬 ===
         // 雪深模擬每 4 個模擬幀對 1024² 紋理全幅 dispatch 且無溫度門檻（夏季照常執行）。
-        // 凍結後降雪不積累、融雪不消退（雪面保持現狀），預設關閉由玩家取捨。
-        private bool m_snowSimFrozen = false;
+        // Auto 檔僅在明確無雪季節凍結（入冬前自動解凍），無可見副作用，故為預設。
+        private SnowSimFreezeSetting m_snowSimFreeze = SnowSimFreezeSetting.Auto;
 
         [SettingsUISection(kPerformanceToolTab, kTerrainWaterOptGroup)]
-        public bool SnowSimFrozen
+        [SettingsUIDropdown(typeof(ModSettings), nameof(GetSnowSimFreezeItems))]
+        public SnowSimFreezeSetting SnowSimFreeze
         {
-            get => m_snowSimFrozen;
+            get => m_snowSimFreeze;
             set
             {
-                if (m_snowSimFrozen != value)
+                if (m_snowSimFreeze != value)
                 {
-                    m_snowSimFrozen = value;
-                    MapExt.Core.ResolutionManager.UpdateSnowSimFrozen(value);
+                    m_snowSimFreeze = value;
+                    MapExt.Core.ResolutionManager.UpdateSnowSimFreeze(value);
                 }
             }
         }
@@ -1033,7 +1042,7 @@ namespace MapExtPDX
             WaterTextureFormat = WaterTextureFormatSetting.High_RGBA32F;
             WaterAsyncCompute = false; // 实验性：默认关闭，收益/风险依显卡与驱动而定
             WaterPauseFreeze = true;   // 暫停凍結：近零風險，預設開啟
-            SnowSimFrozen = false;     // 雪凍結：有可見副作用（降雪不積累），預設關閉
+            SnowSimFreeze = SnowSimFreezeSetting.Auto; // 雪凍結：Auto 僅在無雪季節生效，無可見副作用
 
             ShoppingMaxCost = 8000f;
             CompanyShoppingMaxCost = 200000f;
@@ -1160,6 +1169,19 @@ namespace MapExtPDX
                 },
                 new DropdownItem<int>
                     { value = (int)WaterSimQualitySetting.Paused_NoFlow, displayName = "Paused (No Flow)" },
+            };
+        }
+
+        public DropdownItem<int>[] GetSnowSimFreezeItems()
+        {
+            return new DropdownItem<int>[]
+            {
+                new DropdownItem<int>
+                    { value = (int)SnowSimFreezeSetting.Off, displayName = "Off (Vanilla)" },
+                new DropdownItem<int>
+                    { value = (int)SnowSimFreezeSetting.Auto, displayName = "Auto (Snow-free Seasons)" },
+                new DropdownItem<int>
+                    { value = (int)SnowSimFreezeSetting.Always, displayName = "Always Frozen" },
             };
         }
 

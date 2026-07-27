@@ -126,15 +126,18 @@ namespace MapExtPDX
                     "★ 提示：该选项即时生效无须重启。"
                 },
                 {
-                    m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.SnowSimFrozen)),
+                    m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.SnowSimFreeze)),
                     "冻结雪模拟"
                 },
                 {
-                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.SnowSimFrozen)),
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.SnowSimFreeze)),
                     "雪深模拟每 4 个模拟帧对全图做一次 GPU 计算，且没有温度门槛——即使夏季无雪也照常执行。\n\n" +
-                    "开启后跳过雪模拟循环（雪面保持现状）：降雪不再积累、积雪不再消融，直到关闭本选项。\n\n" +
-                    "★ 建议：默认关闭。无雪地图或夏季可安全开启。\n" +
-                    "★ 提示：该选项即时生效无须重启。"
+                    " - Off: 原版行为，始终模拟。\n" +
+                    " - Auto: 仅在明确无雪的天气下冻结（气温明显高于冰点且无降水），一旦转冷或开始降水立即自动解冻，无可见副作用。\n" +
+                    " - Always: 最省，但降雪不再积累、积雪不再消融。\n\n" +
+                    "★ 建议：Auto — 在不改变积雪表现的前提下，省掉夏季空转的全图计算。\n" +
+                    "★ 提示：该选项即时生效无须重启。Dev Debug 面板的 snow sim speed 仍然有效：" +
+                    "在那里设定的数值会在解冻时恢复。"
                 },
 
                 // (隐藏项 - 保留用于序列化)

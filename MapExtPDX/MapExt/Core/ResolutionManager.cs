@@ -69,11 +69,12 @@ namespace MapExtPDX.MapExt.Core
         public static bool WaterPauseFreeze { get; set; } = true;
 
         /// <summary>
-        /// 凍結雪模擬（SnowSimSpeed=0）。
-        /// 雪深模擬每 4 個模擬幀對 1024² 紋理全幅 dispatch 且無溫度門檻（夏季照常執行）。
-        /// 凍結後降雪不積累、融雪不消退，故預設關閉，由玩家自行取捨。
+        /// 雪模擬凍結模式（凍結 = SnowSimSpeed 設 0）。
+        /// 雪深模擬每 4 個模擬幀對 1024² 紋理全幅 dispatch 且 C# 側無任何溫度門檻
+        /// （加雪／融雪判斷全在 GPU kernel 內），夏季雪深全 0 時仍照付 dispatch 與帶寬。
+        /// Auto 檔僅在明確無雪季節凍結（入冬前自動解凍），無可見副作用，故為預設。
         /// </summary>
-        public static bool SnowSimFrozen { get; set; } = false;
+        public static SnowSimFreezeSetting SnowSimFreeze { get; set; } = SnowSimFreezeSetting.Auto;
 
         /// <summary>
         /// 是否需要为水系统降采样地形级联纹理。
@@ -101,7 +102,7 @@ namespace MapExtPDX.MapExt.Core
         /// </summary>
         public static void Initialize(TerrainResolutionSetting terrain, WaterResolutionSetting water,
             WaterSimQualitySetting simQuality, WaterTextureFormatSetting textureFormat, bool asyncCompute = false,
-            bool pauseFreeze = true, bool snowFrozen = false)
+            bool pauseFreeze = true, SnowSimFreezeSetting snowFreeze = SnowSimFreezeSetting.Auto)
         {
             // 8192 暂时禁用 (水模拟不兼容)，即使旧存档持久化了该值也强制降级
             TerrainResolution = terrain switch
@@ -124,11 +125,11 @@ namespace MapExtPDX.MapExt.Core
             WaterTextureFormat = textureFormat;
             WaterAsyncCompute = asyncCompute;
             WaterPauseFreeze = pauseFreeze;
-            SnowSimFrozen = snowFrozen;
+            SnowSimFreeze = snowFreeze;
 
             ModLog.Ok(Tag, $"Initialized: Terrain={TerrainResolution}, Water={WaterTextureSize}, " +
                            $"Format={WaterTextureFormat}, SimQuality={WaterSimQuality}, Async={WaterAsyncCompute}, " +
-                           $"PauseFreeze={WaterPauseFreeze}, SnowFrozen={SnowSimFrozen}");
+                           $"PauseFreeze={WaterPauseFreeze}, SnowFreeze={SnowSimFreeze}");
         }
 
         public static void UpdateWaterSimQuality(WaterSimQualitySetting quality)
@@ -149,10 +150,10 @@ namespace MapExtPDX.MapExt.Core
             ModLog.Ok(Tag, $"WaterPauseFreeze updated in real-time to {pauseFreeze}");
         }
 
-        public static void UpdateSnowSimFrozen(bool snowFrozen)
+        public static void UpdateSnowSimFreeze(SnowSimFreezeSetting snowFreeze)
         {
-            SnowSimFrozen = snowFrozen;
-            ModLog.Ok(Tag, $"SnowSimFrozen updated in real-time to {snowFrozen}");
+            SnowSimFreeze = snowFreeze;
+            ModLog.Ok(Tag, $"SnowSimFreeze updated in real-time to {snowFreeze}");
         }
 
         /// <summary>

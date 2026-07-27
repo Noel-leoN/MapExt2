@@ -262,7 +262,7 @@ namespace MapExtPDX.MapExt.Core
             {
                 ResolutionManager.Initialize(settings.TerrainResolution, settings.WaterResolution,
                     settings.WaterSimQuality, settings.WaterTextureFormat, settings.WaterAsyncCompute,
-                    settings.WaterPauseFreeze, settings.SnowSimFrozen);
+                    settings.WaterPauseFreeze, settings.SnowSimFreeze);
             }
             else
             {

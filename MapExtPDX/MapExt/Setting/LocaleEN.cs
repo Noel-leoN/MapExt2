@@ -144,17 +144,20 @@ namespace MapExtPDX
                     "★ Tip: Applies instantly, no restart required."
                 },
                 {
-                    m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.SnowSimFrozen)),
+                    m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.SnowSimFreeze)),
                     "Freeze Snow Simulation"
                 },
                 {
-                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.SnowSimFrozen)),
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.SnowSimFreeze)),
                     "The snow-depth simulation dispatches a full-map GPU pass every 4 simulation frames with no temperature gate — " +
                     "it keeps running even in summer with zero snow on the ground.\n\n" +
-                    "When enabled, the snow simulation loop is skipped and the snow surface stays as-is: snowfall no longer accumulates " +
-                    "and existing snow no longer melts until you turn this off.\n\n" +
-                    "★ Recommended: OFF by default. Safe to enable on maps without snow, or during summer.\n" +
-                    "★ Tip: Applies instantly, no restart required."
+                    " - Off: vanilla behaviour, always simulating.\n" +
+                    " - Auto: freezes only while the weather is clearly snow-free (well above freezing and no precipitation), " +
+                    "and thaws automatically as soon as it gets cold or precipitation starts. No visible side effects.\n" +
+                    " - Always: maximum saving, but snowfall never accumulates and existing snow never melts.\n\n" +
+                    "★ Recommended: Auto — it reclaims the wasted summer dispatches without changing how snow behaves.\n" +
+                    "★ Tip: Applies instantly, no restart required. The Dev Debug snow sim speed slider stays respected: " +
+                    "any value you set there is restored on thaw."
                 },
 
                 // (hidden items - kept for serialization)
