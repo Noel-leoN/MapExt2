@@ -122,6 +122,13 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
 
                 case WaterSimQualitySetting.Minimal_Every4Frames:
                     // 每 4 帧执行一次完整 GPU 模拟，其余帧仅维护状态；关闭背景水与 Flow Blur
+                    // [BUGFIX] 地形變更 counter 倒數期間不寫 speed：
+                    // 原版恢復流程靠 speed=0 凍結模擬循環，第 4 幀寫 1 會讓恢復與模擬並行
+                    //（與 Postfix 的讓行同一根因）。counter 歸零後原版自行設 speed=1，節奏自然恢復。
+                    if (GetTerrainChangeCounter(__instance) > 0)
+                    {
+                        break;
+                    }
                     s_frameCounter++;
                     if (s_frameCounter % 4 != 0)
                     {
@@ -302,7 +309,18 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
         static void Postfix(WaterSystem __instance)
         {
             int postSpeed = __instance.WaterSimSpeed;
-            
+
+            // [BUGFIX] 地形變更 counter 倒數期間（放置建築 counter=1、筆刷 counter=15）讓行：
+            // 原版 Simulate() 在 counter>0 時每幀跑恢復流程（RestoreHeightFromHeightmap 等），
+            // 靠 speed=0 讓模擬循環跳過、僅在 counter 歸零時才恢復 speed=1（L1424-1426）。
+            // 若此處把 speed 抬回，下一幀起恢復流程與模擬循環並行——
+            // 模擬會在尚未恢復完成的水面高度上推進，筆刷後可能產生波紋/水位異常。
+            // counter 歸零後原版自行設 speed=1，Editor 橫跳修復（下方分支）不受影響。
+            if (postSpeed == 0 && GetTerrainChangeCounter(__instance) > 0)
+            {
+                return;
+            }
+
             if (postSpeed == 0 && ResolutionManager.WaterSimQuality != WaterSimQualitySetting.Paused_NoFlow)
             {
                 // speed=0 来自 TerrainWillChange 的瞬态重置 → 恢复用户值

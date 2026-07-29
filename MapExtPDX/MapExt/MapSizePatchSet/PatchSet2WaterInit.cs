@@ -66,12 +66,22 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
                 ModLog.Ok(Tag, "WaterSystem re-initialized with Transpiler-patched values.");
 
                 // === Layer 3: 水分辨率降低 & 16-bit 显存压缩 ===
-                if (ResolutionManager.IsWaterResolutionModified || ResolutionManager.IsWaterTextureFormatModified)
+                // [FIX] 判斷與能力對齊：僅解析度變更才觸發重建。
+                // 16-bit 格式因迭代精度問題已鎖死——ApplyWaterResolutionDowngrade 內
+                // InitQuadWaterBuffer/RebuildDataReaders 均硬編碼 R32G32B32A32_SFloat，
+                // 若因 IsWaterTextureFormatModified（UI 已隱藏，僅殘留設定檔可能為 true）觸發，
+                // 只會高成本 Dispose+重建出與原版完全相同的資源。
+                if (ResolutionManager.IsWaterResolutionModified)
                 {
                     ApplyWaterResolutionDowngrade(traverse, waterSystem);
                 }
                 else
                 {
+                    if (ResolutionManager.IsWaterTextureFormatModified)
+                    {
+                        ModLog.Warn(Tag,
+                            "WaterTextureFormat 為 16-bit（殘留設定），該格式已鎖死為 32-bit，忽略並沿用原版紋理");
+                    }
                     // 原版分辨率和精度，仅验证
                     VerifyTexSize(traverse, ResolutionManager.VanillaWaterTextureSize);
                 }
