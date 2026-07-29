@@ -103,6 +103,19 @@ namespace MapExtPDX
                     "★ Tip: Applies instantly, no restart required."
                 },
                 {
+                    m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.TerrainDownsampleThrottle)),
+                    "Backdrop Terrain Downsample Throttle"
+                },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.TerrainDownsampleThrottle)),
+                    "Skips the per-frame backdrop heightmap downsample dispatch when the terrain cascade has not been redrawn.\n\n" +
+                    "The game runs this compute dispatch every frame unconditionally, but its output can only change when the cascade " +
+                    "is actually re-rendered. With a still camera and no terrain edits the result is identical every frame.\n\n" +
+                    "Only affects saves that have a background world map. If you disabled the world backdrop, this does nothing.\n\n" +
+                    "★ Recommended: ON if your save has a world backdrop. Small but consistent GPU saving.\n" +
+                    "★ Tip: Applies instantly, no restart required."
+                },
+                {
                     m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.WaterSimQuality)),
                     "► Water Simulation Quality"
                 },

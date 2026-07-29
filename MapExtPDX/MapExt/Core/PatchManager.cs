@@ -66,6 +66,14 @@ namespace MapExtPDX.MapExt.Core
                 { "WorldMapImportWarning", (h) => h.CreateClassProcessor(typeof(WorldMapImportWarningPatch)).Patch() },
                 // v2.x.x新增: 远距级联降频优化 (Phase 2.1)
                 { "TerrainCascadeThrottle", (h) => h.CreateClassProcessor(typeof(TerrainSystem_RenderCascades_Patch)).Patch() },
+                // Backdrop 高度圖降採樣事件化：cascade 未重繪時跳過每幀 dispatch
+                // 四個 patch 類必須同時註冊（門控本體 + OnUpdate 標記 + dirty latch + 載入重置）
+                { "TerrainDownsampleGate", (h) => {
+                    h.CreateClassProcessor(typeof(TerrainSystem_DownSampleHeightMap_Gate)).Patch();
+                    h.CreateClassProcessor(typeof(TerrainSystem_OnUpdate_DownsampleMarker)).Patch();
+                    h.CreateClassProcessor(typeof(TerrainSystem_RenderCascades_DirtyLatch)).Patch();
+                    h.CreateClassProcessor(typeof(TerrainSystem_FinalizeTerrainData_DownsampleReset)).Patch();
+                }},
 
                 // PatchSet2:WaterSystem
                 { "WaterSystemPatch_Static", (h) => h.CreateClassProcessor(typeof(WaterSystemMethodPatches)).Patch() },
@@ -142,6 +150,7 @@ namespace MapExtPDX.MapExt.Core
                         "TerrainToR16Patch",
                         "WorldMapImportWarning",
                         "TerrainCascadeThrottle",
+                        "TerrainDownsampleGate",
                         "WaterSystemPatch_Static",
                         "WaterSimulationPatch_Static",
                         "WaterSimulationLegacyPatch_Static",
@@ -166,6 +175,7 @@ namespace MapExtPDX.MapExt.Core
                         "TerrainToR16Patch",
                         "WorldMapImportWarning",
                         "TerrainCascadeThrottle",
+                        "TerrainDownsampleGate",
                         "WaterSystemPatch_Static",
                         "WaterSimulationPatch_Static",
                         "WaterSimulationLegacyPatch_Static",
@@ -190,6 +200,7 @@ namespace MapExtPDX.MapExt.Core
                         "TerrainToR16Patch",
                         "WorldMapImportWarning",
                         "TerrainCascadeThrottle",
+                        "TerrainDownsampleGate",
                         "WaterSystemPatch_Static",
                         "WaterSimulationPatch_Static",
                         "WaterSimulationLegacyPatch_Static",
@@ -214,6 +225,7 @@ namespace MapExtPDX.MapExt.Core
                         "TerrainToR16Patch",
                         "WorldMapImportWarning",
                         "TerrainCascadeThrottle",
+                        "TerrainDownsampleGate",
                         "WaterSystemPatch_Static",
                         "WaterSimulationPatch_Static",
                         "WaterSimulationLegacyPatch_Static",

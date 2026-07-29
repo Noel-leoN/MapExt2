@@ -87,6 +87,16 @@ namespace MapExtPDX
                     "★ 建议：除非在超大地图上遇到严重 GPU 瓶颈，否则保持关闭。\n" +
                     "★ 提示：该选项即时生效无须重启。"
                 },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.TerrainDownsampleThrottle)), "背景地形降采样事件化" },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.TerrainDownsampleThrottle)),
+                    "当地形级联未被重绘时，跳过每帧的背景高度图降采样 dispatch。\n\n" +
+                    "原版每帧无条件执行这次 compute dispatch，但其输出只在级联实际重绘时才会改变——" +
+                    "相机静止且无地形修改时，逐帧结果完全相同。\n\n" +
+                    "仅对有背景世界地图的存档有效；若已停用背景世界地图，本选项无作用。\n\n" +
+                    "★ 建议：存档有背景世界地图时开启，GPU 收益小但稳定。\n" +
+                    "★ 提示：该选项即时生效无须重启。"
+                },
                 {
                     m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.WaterSimQuality)),
                     "► 水体模拟质量"

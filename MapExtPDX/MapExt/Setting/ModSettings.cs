@@ -210,6 +210,16 @@ namespace MapExtPDX
         [SettingsUISection(kPerformanceToolTab, kTerrainWaterOptGroup)]
         public bool TerrainCascadeThrottle { get; set; } = false;
 
+        /// <summary>
+        /// 背景地形降採樣事件化。
+        /// 原版每幀無條件對 cascade 做一次降採樣 dispatch，
+        /// 但其輸出只在 cascade 被重繪時才會改變——相機靜止時逐幀結果相同。
+        /// 改為僅在 RenderCascades 實際執行過後才降採樣。
+        /// 僅對有背景世界地圖（world backdrop）的存檔有效。
+        /// </summary>
+        [SettingsUISection(kPerformanceToolTab, kTerrainWaterOptGroup)]
+        public bool TerrainDownsampleThrottle { get; set; } = false;
+
         // ==========================================
         // 分辨率设置 (部分已隐藏)
         // ==========================================
@@ -1090,6 +1100,7 @@ namespace MapExtPDX
             TerrainBufferPrealloc = true;
             TerrainCascadeThrottle = false; // 默认关闭：会导致远景级联与视口不同步→地形错位
             TerrainCullThrottle = true; // 默认开启：跳过无变化帧的建筑裁剪Job
+            TerrainDownsampleThrottle = false; // 默認關閉：待遊戲內驗證背景地形無視覺回歸後再改預設
             EnableVanillaConversion = false; // 默认关闭：实验性功能
             DisableWorldBackdrop = false; // 默认关闭：不阻止已有存档的背景世界地图
 

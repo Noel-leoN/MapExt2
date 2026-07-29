@@ -411,6 +411,203 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
     }
 
 
+    // === 優化 2.2: Backdrop 高度圖降採樣事件化 ===
+    //
+    // 原版 TerrainSystem.OnUpdate（ModificationEnd 階段）無條件呼叫 DownSampleHeightMap()，
+    // 該方法在 HasBackdrop（baseLod != 0）時對 cascade 做一次 compute dispatch，
+    // 規模 (m_DownscaledHeightmap.width / 8)²（4096 圖 → 32×32 groups），
+    // 把 cascade 降採樣 4 倍寫入 m_DownscaledHeightmap。
+    //
+    // 但 cascade 的內容只會在 RenderCascades() 真正繪製時改變，而 RenderCascades 僅在
+    // heightMapRenderRequired 為 true 時才被 TerrainRenderSystem 呼叫（PreCulling 階段）。
+    // 相機靜止、地形無變更時 cascade 逐幀不變，降採樣輸出必然與上一幀完全相同 → 純浪費。
+    //
+    // 門控設計（三個要點）：
+    //
+    // 1. 跨幀 latch，不讀 heightMapSliceUpdated。
+    //    TerrainSystem 在 ModificationEnd、TerrainRenderSystem 在 PreCulling
+    //    （SystemOrder.cs:303/641），故第 N 幀的降採樣讀到的是第 N-1 幀 RenderCascades
+    //    的產物；而同一個 OnUpdate 內 UpdateCascades 已先把 heightMapSliceUpdated 改寫成
+    //    「本幀稍後才要繪製」的狀態，直接讀它會錯一幀。
+    //    另注意 heightMapSliceUpdatedLast 不可用作上一幀快照——原版 :4207 是
+    //    `heightMapSliceUpdatedLast = heightMapSliceUpdated` 的 bool[] 引用賦值，兩者同物件。
+    //    因此改由 RenderCascades 的 Postfix 置位 latch，降採樣消費並清除。
+    //
+    // 2. 不假設 shader 只讀哪個 slice。
+    //    AdjustTerrain 是 Resources.Load<ComputeShader>（bundle 內，無 .compute 源碼），
+    //    「只讀 slice 0」無法驗證。故 latch 條件是「本幀有繪製任何 cascade」，
+    //    即使 kernel 實際讀 baseLod slice 也不會漏更新，代價是門控偏保守。
+    //
+    // 3. 只門控 OnUpdate 的呼叫點。
+    //    另三個呼叫點（OnHeightsChanged、InitializeBackdrop、WaterSimulation.PostDeserialize）
+    //    都是事件驅動的必要更新，一律放行。OnUpdate 內的順序是
+    //    DownSampleHeightMap() → UpdateGPUReadback()（後者可能經 OnHeightsChanged 再次呼叫），
+    //    故用「進入 OnUpdate 後的第一次呼叫」精確識別待門控的那一次。
+    //
+    // 載入強制放行：FinalizeTerrainData 在 :3208 呼叫 InitializeBackdrop（其內 :3269 降採樣一次），
+    // 但 world map 要到 :3219 才 CopyTexture 進 slice 0——那次一次性降採樣拿不到 slice 0 內容，
+    // 背景地形其實是靠每幀那次才正確初始化。因此載入後強制放行一段幀數。
+    //
+    // 生效範圍：僅對有 world backdrop 的存檔有意義（無 backdrop 時原方法本就是空操作）。
+    [HarmonyPatch(typeof(TerrainSystem), nameof(TerrainSystem.DownSampleHeightMap))]
+    internal static class TerrainSystem_DownSampleHeightMap_Gate
+    {
+        private const string Tag = "TerrainDownsample";
+
+        /// <summary>載入後強制放行的幀數（涵蓋 slice 0 複製與初始收斂）。</summary>
+        private const int kForcePassFrames = 16;
+
+        /// <summary>cascade 自上次降採樣後是否被重繪過。初始為 true，確保首次必定執行。</summary>
+        private static bool s_CascadeDirty = true;
+
+        /// <summary>本幀是否已進入 OnUpdate 且尚未消費那次待門控的降採樣呼叫。</summary>
+        private static bool s_PendingOnUpdateCall = false;
+
+        /// <summary>載入後剩餘的強制放行幀數。</summary>
+        private static int s_ForcePassFrames = kForcePassFrames;
+
+        // --- 統計（僅 DEBUG 日誌用） ---
+        private static int s_SkippedCount = 0;
+        private static int s_ExecutedCount = 0;
+
+        /// <summary>
+        /// [BUGFIX] 退出主菜单时重置会话状态。
+        /// 二次加载会重建 cascade 与 m_DownscaledHeightmap，dirty 记录必须作废并重新强制放行。
+        /// </summary>
+        internal static void ResetSessionState()
+        {
+            s_CascadeDirty = true;
+            s_PendingOnUpdateCall = false;
+            s_ForcePassFrames = kForcePassFrames;
+            s_SkippedCount = 0;
+            s_ExecutedCount = 0;
+            ModLog.Info(Tag, "DownsampleGate session state reset");
+        }
+
+        /// <summary>由 RenderCascades 的 Postfix 呼叫：cascade 已被重繪，下次降採樣必須執行。</summary>
+        internal static void MarkCascadeDirty() => s_CascadeDirty = true;
+
+        /// <summary>由 FinalizeTerrainData 的 Postfix 呼叫：cascade 與降採樣圖剛重建。</summary>
+        internal static void MarkTerrainReinitialized()
+        {
+            s_CascadeDirty = true;
+            s_ForcePassFrames = kForcePassFrames;
+        }
+
+        /// <summary>由 OnUpdate 的 Prefix 呼叫：標記接下來的第一次降採樣屬於例行呼叫。</summary>
+        internal static void MarkOnUpdateEntry() => s_PendingOnUpdateCall = true;
+
+        /// <summary>
+        /// 由 OnUpdate 的 Postfix 呼叫：清除未被消費的標記。
+        /// 原版 OnUpdate 在 m_Heightmap == null 時整段跳過（TerrainSystem.cs:3481），
+        /// 此時降採樣不會被呼叫，殘留標記會讓下一次事件驅動的呼叫被誤判為例行呼叫。
+        /// </summary>
+        internal static void ClearOnUpdateEntry() => s_PendingOnUpdateCall = false;
+
+        [HarmonyPrefix]
+        public static bool Prefix()
+        {
+            // 只門控 OnUpdate 的例行呼叫；事件驅動的呼叫一律放行
+            bool isRoutineCall = s_PendingOnUpdateCall;
+            s_PendingOnUpdateCall = false;
+
+            if (!isRoutineCall)
+            {
+                s_CascadeDirty = false; // 事件路徑已刷新降採樣圖
+                return true;
+            }
+
+            if (Mod.Instance?.Settings?.TerrainDownsampleThrottle != true)
+                return true;
+
+            // 載入後強制放行：slice 0 的 world map 複製發生在 InitializeBackdrop 之後
+            if (s_ForcePassFrames > 0)
+            {
+                s_ForcePassFrames--;
+                s_CascadeDirty = false;
+                return true;
+            }
+
+            if (!s_CascadeDirty)
+            {
+                s_SkippedCount++;
+                return false; // cascade 未變更 → 跳過 dispatch
+            }
+
+            s_CascadeDirty = false;
+            s_ExecutedCount++;
+
+#if DEBUG
+            if ((s_ExecutedCount & 0xFF) == 0)
+            {
+                ModLog.Debug(Tag,
+                    $"Backdrop 降採樣門控: 已跳過 {s_SkippedCount} 次 / 已執行 {s_ExecutedCount} 次");
+            }
+#endif
+            return true;
+        }
+    }
+
+
+    /// <summary>
+    /// 輔助 Patch：標記進入 TerrainSystem.OnUpdate，讓門控能識別那次例行降採樣呼叫。
+    /// 獨立成類以便與既有 <see cref="TerrainSystemPatches"/> 的 OnUpdate Postfix 分開註冊。
+    /// </summary>
+    [HarmonyPatch(typeof(TerrainSystem), "OnUpdate")]
+    internal static class TerrainSystem_OnUpdate_DownsampleMarker
+    {
+        [HarmonyPrefix]
+        public static void Prefix()
+        {
+            TerrainSystem_DownSampleHeightMap_Gate.MarkOnUpdateEntry();
+        }
+
+        /// <summary>
+        /// 清除未被消費的標記。
+        /// 原版 OnUpdate 在 <c>m_Heightmap == null</c> 時整段跳過（TerrainSystem.cs:3481），
+        /// 此時降採樣不會被呼叫，標記若殘留會讓下一次事件驅動的呼叫被誤判為例行呼叫而遭門控。
+        /// </summary>
+        [HarmonyPostfix]
+        public static void Postfix()
+        {
+            TerrainSystem_DownSampleHeightMap_Gate.ClearOnUpdateEntry();
+        }
+    }
+
+
+    /// <summary>
+    /// 輔助 Patch：RenderCascades 執行後置位 dirty latch。
+    /// 原版僅在 heightMapRenderRequired 為 true 時呼叫本方法
+    /// （<c>TerrainRenderSystem.OnUpdate</c>），故 Postfix 抵達即代表 cascade 已被重繪。
+    /// 與既有的 <see cref="TerrainSystem_RenderCascades_Patch"/>（降頻）並存，兩者互不干涉。
+    /// </summary>
+    [HarmonyPatch(typeof(TerrainSystem), nameof(TerrainSystem.RenderCascades))]
+    internal static class TerrainSystem_RenderCascades_DirtyLatch
+    {
+        [HarmonyPostfix]
+        public static void Postfix()
+        {
+            TerrainSystem_DownSampleHeightMap_Gate.MarkCascadeDirty();
+        }
+    }
+
+
+    /// <summary>
+    /// 輔助 Patch：地形資料重建（載入／匯入世界地圖）後強制放行降採樣。
+    /// FinalizeTerrainData 會重建 cascade 與 m_DownscaledHeightmap，
+    /// 且 slice 0 的 world map 複製發生在 InitializeBackdrop 的一次性降採樣之後。
+    /// </summary>
+    [HarmonyPatch(typeof(TerrainSystem), "FinalizeTerrainData")]
+    internal static class TerrainSystem_FinalizeTerrainData_DownsampleReset
+    {
+        [HarmonyPostfix]
+        public static void Postfix()
+        {
+            TerrainSystem_DownSampleHeightMap_Gate.MarkTerrainReinitialized();
+        }
+    }
+
+
     // === 优化 3.A: CullForCascades 建筑裁剪降频 ===
     // 当建筑实体未变化且无地形修改时，跳过 CullBuildingLotsJob 的全量裁剪
     // 复用上一帧缓存的 m_BuildingCullList，减少大地图下平移相机的 CPU 开销
