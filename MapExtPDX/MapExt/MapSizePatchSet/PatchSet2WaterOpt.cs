@@ -148,6 +148,15 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
                     __instance.BlurFlowMap = true;
                     DisableBackdrop(__instance);
                     break;
+
+                case WaterSimQualitySetting.Adaptive_EventDriven:
+                    // 事件驅動自適應休眠：水面收斂後凍結，偵測到擾動信號時喚醒。
+                    // 狀態機與信號監聽在 WaterAdaptiveSleep（PatchSet2WaterAdaptive.cs），
+                    // counter 由此處傳入，避免該類重複反射解析 m_terrainChangeCounter。
+                    __instance.BlurFlowMap = false;
+                    DisableBackdrop(__instance);
+                    WaterAdaptiveSleep.Apply(__instance, GetTerrainChangeCounter(__instance));
+                    break;
             }
 
             // 暫停凍結最後套用（優先於各檔位的 speed 寫入）
@@ -321,12 +330,20 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
                 return;
             }
 
-            if (postSpeed == 0 && ResolutionManager.WaterSimQuality != WaterSimQualitySetting.Paused_NoFlow)
+            // [關鍵] Paused 與 Adaptive 兩檔位的 speed=0 是**刻意寫入**，不得抬回：
+            // Paused 是使用者明示停止水流；Adaptive 的 0 來自 WaterAdaptiveSleep 的休眠決策
+            // （若在此抬回，休眠當幀即被取消 → 永遠睡不著，整個檔位失效）。
+            // 其餘檔位的 speed=0 才是 TerrainWillChange 的瞬態重置，需恢復。
+            var quality = ResolutionManager.WaterSimQuality;
+            bool zeroIsIntentional = quality == WaterSimQualitySetting.Paused_NoFlow
+                                     || quality == WaterSimQualitySetting.Adaptive_EventDriven;
+
+            if (postSpeed == 0 && !zeroIsIntentional)
             {
                 // speed=0 来自 TerrainWillChange 的瞬态重置 → 恢复用户值
                 __instance.WaterSimSpeed = StableSpeed;
             }
-            else if (postSpeed == 1 && StableSpeed > 1)
+            else if (postSpeed == 1 && StableSpeed > 1 && !zeroIsIntentional)
             {
                 // Simulate() L1430 硬编码 speed=1（counter→0），
                 // 但用户通过 Editor 面板设了更高值 → 恢复用户值

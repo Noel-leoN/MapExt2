@@ -69,6 +69,8 @@ namespace MapExtPDX.MapExt.Core
                     WaterSystemOptRuntimePatch.ResetSessionState();
                     // PatchSet2: 雪模拟冻结（SnowSimSpeed 覆写记录）
                     SnowSystemOptRuntimePatch.ResetSessionState();
+                    // PatchSet2: 事件驅動自適應休眠（狀態機 + 信號快照 + EntityQuery 快取）
+                    WaterAdaptiveSleep.ResetSessionState();
                     // 诊断标志：允许二次加载重新诊断
                     _cellMapDialogShown = false;
                     ModLog.Ok(Tag, "所有 PatchSet 会话状态已重置");

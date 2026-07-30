@@ -125,6 +125,7 @@ namespace MapExtPDX
                     " - Vanilla (Every Frame): Simulates every frame, highest quality but maximum performance cost.\n" +
                     " - Reduced (No Backdrop): Simulates every frame, but disables flow calculation in the distant backdrop.\n" +
                     " - Minimal (Every 4 Frames): Skips simulation for 3 out of 4 frames and disables visual blur. Massively reduces GPU requests, with only slightly noticeable water stuttering.\n" +
+                    " - ⚠ Adaptive (Event Driven, Experimental): Freezes the simulation once the water surface has settled, and wakes instantly when something disturbs it (terrain edits, water sources, sea level, tsunami/flood events, rainfall). Unlike Minimal this is content-adaptive: near-zero cost while static, full fidelity while flowing. A periodic heartbeat re-checks convergence so water can never stay frozen indefinitely. Disabled in the Editor.\n" +
                     " - Paused (No Flow): Completely freezes water flow calculations (water will remain static).\n\n" +
                     "★ Tip: Applies instantly, no restart required."
                 },

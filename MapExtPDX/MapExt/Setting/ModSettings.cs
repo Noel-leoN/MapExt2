@@ -57,6 +57,11 @@ namespace MapExtPDX
         Reduced_NoBackdrop, // 降低：每帧模拟，关闭背景水
         Minimal_Every4Frames, // 极简：每四帧模拟，关闭背景水、模糊和后处理
         Paused_NoFlow, // 暂停：停止水流模拟
+
+        // 自適應：水面收斂後自動休眠，有擾動時瞬間喚醒（詳見 PatchSet2WaterAdaptive.cs）
+        // 注意：列舉值會序列化進設定檔，新檔位必須附加在末尾，
+        // 插在既有項之前會使已存設定的數值漂移（3 從 Paused 變成 Adaptive）。
+        Adaptive_EventDriven,
     }
 
     /// <summary>水纹理格式精度</summary>
@@ -1178,6 +1183,12 @@ namespace MapExtPDX
                 new DropdownItem<int>
                 {
                     value = (int)WaterSimQualitySetting.Minimal_Every4Frames, displayName = "Minimal (Every 4 Frames)"
+                },
+                // 顯示順序與列舉值無關：Adaptive 語義上介於 Minimal 與 Paused 之間，故排在此處
+                new DropdownItem<int>
+                {
+                    value = (int)WaterSimQualitySetting.Adaptive_EventDriven,
+                    displayName = "Adaptive (Event-Driven Sleep)"
                 },
                 new DropdownItem<int>
                     { value = (int)WaterSimQualitySetting.Paused_NoFlow, displayName = "Paused (No Flow)" },
