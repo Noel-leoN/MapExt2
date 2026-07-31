@@ -72,9 +72,13 @@ namespace MapExtPDX.MapExt.Core
         /// 雪模擬凍結模式（凍結 = SnowSimSpeed 設 0）。
         /// 雪深模擬每 4 個模擬幀對 1024² 紋理全幅 dispatch 且 C# 側無任何溫度門檻
         /// （加雪／融雪判斷全在 GPU kernel 內），夏季雪深全 0 時仍照付 dispatch 與帶寬。
-        /// Auto 檔僅在明確無雪季節凍結（入冬前自動解凍），無可見副作用，故為預設。
+        ///
+        /// 靜態初值必須是 <see cref="SnowSimFreezeSetting.Off"/>（原版不干預）：
+        /// <c>PatchManager.Initialize</c> 只在 <c>Mod.Instance?.Settings != null</c> 時才呼叫
+        /// <see cref="Initialize"/> 覆蓋此值，settings 不可用時本欄位即為最終生效值——
+        /// 若預設為 Auto，會在使用者未同意的情況下凍結雪模擬，與 ModSettings 的預設 Off 相矛盾。
         /// </summary>
-        public static SnowSimFreezeSetting SnowSimFreeze { get; set; } = SnowSimFreezeSetting.Auto;
+        public static SnowSimFreezeSetting SnowSimFreeze { get; set; } = SnowSimFreezeSetting.Off;
 
         /// <summary>
         /// 是否需要为水系统降采样地形级联纹理。
@@ -102,7 +106,7 @@ namespace MapExtPDX.MapExt.Core
         /// </summary>
         public static void Initialize(TerrainResolutionSetting terrain, WaterResolutionSetting water,
             WaterSimQualitySetting simQuality, WaterTextureFormatSetting textureFormat, bool asyncCompute = false,
-            bool pauseFreeze = true, SnowSimFreezeSetting snowFreeze = SnowSimFreezeSetting.Auto)
+            bool pauseFreeze = true, SnowSimFreezeSetting snowFreeze = SnowSimFreezeSetting.Off)
         {
             // 8192 暂时禁用 (水模拟不兼容)，即使旧存档持久化了该值也强制降级
             TerrainResolution = terrain switch
