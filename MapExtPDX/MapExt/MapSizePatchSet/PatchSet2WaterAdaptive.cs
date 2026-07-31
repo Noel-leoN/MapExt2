@@ -12,6 +12,16 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
     /// <summary>
     /// 方案 E — 水模擬事件驅動自適應休眠（`WaterSimQuality = Adaptive_EventDriven`）。
     ///
+    /// <para>
+    /// <b>[SUSPENDED / 硬掛起]</b> 本檔位已停用：UI 不下拉、
+    /// <see cref="ResolutionManager.SanitizeWaterSimQuality"/> 強制降級為 Vanilla，
+    /// <c>PatchSet2WaterOpt</c> 不再呼叫 <see cref="Apply"/>，Postfix 的
+    /// 「意圖 speed=0」例外已收回僅保留 <c>Paused_NoFlow</c>。
+    /// 原因：跨幀持有 <c>WaterSimSpeed=0</c> 與 Editor 橫跳修復 / PauseFreeze
+    /// （依賴 Postfix 抬回 StableSpeed）結構性衝突；另 changed-filter 未設
+    /// RequiredVersion 會使休眠路徑失效。程式碼保留供日後以單一 speed 仲裁器重啟。
+    /// </para>
+    ///
     /// 動機：多數城市在多數時間水面已收斂（河流穩態、湖泊靜止），但原版每渲染幀
     /// 照樣跑完整條 GPU 模擬鏈。固定降頻（`Minimal_Every4Frames`）是時間上的粗暴切分——
     /// 靜止時仍付 1/4 成本，激烈變化時又只有 1/4 保真。本檔位改為**內容自適應**：

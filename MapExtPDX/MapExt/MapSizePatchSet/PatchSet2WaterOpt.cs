@@ -150,12 +150,12 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
                     break;
 
                 case WaterSimQualitySetting.Adaptive_EventDriven:
-                    // 事件驅動自適應休眠：水面收斂後凍結，偵測到擾動信號時喚醒。
-                    // 狀態機與信號監聽在 WaterAdaptiveSleep（PatchSet2WaterAdaptive.cs），
-                    // counter 由此處傳入，避免該類重複反射解析 m_terrainChangeCounter。
-                    __instance.BlurFlowMap = false;
-                    DisableBackdrop(__instance);
-                    WaterAdaptiveSleep.Apply(__instance, GetTerrainChangeCounter(__instance));
+                    // [SUSPENDED] 方案 E 硬掛起：不再呼叫 WaterAdaptiveSleep。
+                    // 殘留設定檔若仍為 Adaptive，行為等同 Vanilla（Blur 開、Backdrop 還原），
+                    // 避免跨幀 speed=0 與 Postfix 橫跳修復 / PauseFreeze 衝突。
+                    // 真正的降級寫回見 ResolutionManager.SanitizeWaterSimQuality。
+                    __instance.BlurFlowMap = true;
+                    RestoreBackdrop(__instance);
                     break;
             }
 
@@ -330,13 +330,13 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
                 return;
             }
 
-            // [關鍵] Paused 與 Adaptive 兩檔位的 speed=0 是**刻意寫入**，不得抬回：
-            // Paused 是使用者明示停止水流；Adaptive 的 0 來自 WaterAdaptiveSleep 的休眠決策
-            // （若在此抬回，休眠當幀即被取消 → 永遠睡不著，整個檔位失效）。
-            // 其餘檔位的 speed=0 才是 TerrainWillChange 的瞬態重置，需恢復。
-            var quality = ResolutionManager.WaterSimQuality;
-            bool zeroIsIntentional = quality == WaterSimQualitySetting.Paused_NoFlow
-                                     || quality == WaterSimQualitySetting.Adaptive_EventDriven;
+            // [關鍵] 僅 Paused_NoFlow 的 speed=0 是**跨幀刻意寫入**，不得抬回。
+            // 方案 E（Adaptive）已硬掛起：不得再佔用此例外——否則會與 Editor 橫跳修復、
+            // PauseFreeze（依賴 Postfix 抬回 StableSpeed）結構性衝突。
+            // 其餘檔位的 speed=0 才是 TerrainWillChange 瞬態 / 當幀節流，需恢復。
+            // 第二分支：Paused 時 Simulate 可能寫回 1，也不得抬成 StableSpeed（保持停水意圖）。
+            bool zeroIsIntentional =
+                ResolutionManager.WaterSimQuality == WaterSimQualitySetting.Paused_NoFlow;
 
             if (postSpeed == 0 && !zeroIsIntentional)
             {

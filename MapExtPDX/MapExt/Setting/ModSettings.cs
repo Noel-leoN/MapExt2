@@ -58,9 +58,9 @@ namespace MapExtPDX
         Minimal_Every4Frames, // 极简：每四帧模拟，关闭背景水、模糊和后处理
         Paused_NoFlow, // 暂停：停止水流模拟
 
-        // 自適應：水面收斂後自動休眠，有擾動時瞬間喚醒（詳見 PatchSet2WaterAdaptive.cs）
-        // 注意：列舉值會序列化進設定檔，新檔位必須附加在末尾，
-        // 插在既有項之前會使已存設定的數值漂移（3 從 Paused 變成 Adaptive）。
+        // [SUSPENDED] 方案 E：事件驅動自適應休眠（實作留在 PatchSet2WaterAdaptive.cs）。
+        // 列舉值必須保留在末尾以免已存設定檔序號漂移；UI 已隱藏，運行時強制降級為 Vanilla。
+        // 掛起原因：跨幀 WaterSimSpeed=0 與 Postfix 橫跳修復 / PauseFreeze 結構性衝突。
         Adaptive_EventDriven,
     }
 
@@ -241,13 +241,21 @@ namespace MapExtPDX
         [SettingsUIDropdown(typeof(ModSettings), nameof(GetWaterSimQualityItems))]
         public WaterSimQualitySetting WaterSimQuality
         {
-            get => m_waterSimQuality;
+            get
+            {
+                // 反序列化可能直接寫入掛起的 Adaptive 值：讀取時落回 Vanilla 並持久化乾淨值
+                if (m_waterSimQuality == WaterSimQualitySetting.Adaptive_EventDriven)
+                    m_waterSimQuality = WaterSimQualitySetting.Vanilla_EveryFrame;
+                return m_waterSimQuality;
+            }
             set
             {
-                if (m_waterSimQuality != value)
+                // Adaptive 已硬掛起：拒絕寫入並落回 Vanilla
+                var sanitized = MapExt.Core.ResolutionManager.SanitizeWaterSimQuality(value);
+                if (m_waterSimQuality != sanitized)
                 {
-                    m_waterSimQuality = value;
-                    MapExt.Core.ResolutionManager.UpdateWaterSimQuality(value);
+                    m_waterSimQuality = sanitized;
+                    MapExt.Core.ResolutionManager.UpdateWaterSimQuality(sanitized);
                 }
             }
         }
@@ -1184,12 +1192,7 @@ namespace MapExtPDX
                 {
                     value = (int)WaterSimQualitySetting.Minimal_Every4Frames, displayName = "Minimal (Every 4 Frames)"
                 },
-                // 顯示順序與列舉值無關：Adaptive 語義上介於 Minimal 與 Paused 之間，故排在此處
-                new DropdownItem<int>
-                {
-                    value = (int)WaterSimQualitySetting.Adaptive_EventDriven,
-                    displayName = "Adaptive (Event-Driven Sleep)"
-                },
+                // Adaptive_EventDriven 已硬掛起：不下拉展示（列舉值仍保留，見 enum 註釋）
                 new DropdownItem<int>
                     { value = (int)WaterSimQualitySetting.Paused_NoFlow, displayName = "Paused (No Flow)" },
             };

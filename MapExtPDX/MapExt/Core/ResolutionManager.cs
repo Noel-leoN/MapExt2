@@ -121,7 +121,7 @@ namespace MapExtPDX.MapExt.Core
                 _ => VanillaWaterTextureSize
             };
 
-            WaterSimQuality = simQuality;
+            WaterSimQuality = SanitizeWaterSimQuality(simQuality);
             WaterTextureFormat = textureFormat;
             WaterAsyncCompute = asyncCompute;
             WaterPauseFreeze = pauseFreeze;
@@ -132,10 +132,26 @@ namespace MapExtPDX.MapExt.Core
                            $"PauseFreeze={WaterPauseFreeze}, SnowFreeze={SnowSimFreeze}");
         }
 
+        /// <summary>
+        /// 方案 E（Adaptive_EventDriven）硬掛起：列舉值保留以免設定檔序號漂移，
+        /// 但運行時一律降級為 Vanilla，避免跨幀 speed=0 與 Postfix / PauseFreeze 衝突。
+        /// </summary>
+        public static WaterSimQualitySetting SanitizeWaterSimQuality(WaterSimQualitySetting quality)
+        {
+            if (quality == WaterSimQualitySetting.Adaptive_EventDriven)
+            {
+                ModLog.Warn(Tag,
+                    "WaterSimQuality=Adaptive_EventDriven 已掛起，降級為 Vanilla_EveryFrame " +
+                    "（與 Postfix speed 契約衝突，見 PatchSet2WaterAdaptive）");
+                return WaterSimQualitySetting.Vanilla_EveryFrame;
+            }
+            return quality;
+        }
+
         public static void UpdateWaterSimQuality(WaterSimQualitySetting quality)
         {
-            WaterSimQuality = quality;
-            ModLog.Ok(Tag, $"WaterSimQuality updated in real-time to {quality}");
+            WaterSimQuality = SanitizeWaterSimQuality(quality);
+            ModLog.Ok(Tag, $"WaterSimQuality updated in real-time to {WaterSimQuality}");
         }
 
         public static void UpdateWaterAsyncCompute(bool asyncCompute)
