@@ -34,6 +34,10 @@ namespace MapExtPDX.SaveLoadSystem
                 { "LOAD_VALIDATION.ConfirmOK", "OK" },
                 { "LOAD_VALIDATION.ConfirmContinue", "Continue" },
 
+                // === Map Size Mismatch Warning ===
+                { "MAPEXT_MAPSIZE.MismatchTitle", "⚠️ Map Size Mode Mismatch" },
+                { "MAPEXT_MAPSIZE.MismatchMessage", "This map was created in '{AUTHORED_MODE}', but MapExt is currently set to '{CURRENT_MODE}'.\n\nTerrain heights are being sampled at the wrong scale, so elevation, water and buildable areas will all be incorrect.\n\nTo fix this, quit to the main menu, set MapExt's MapSize Mode to '{AUTHORED_MODE}', then load the map again.\n\nNote: maps created in the editor carry no map-size metadata, so this can only be detected after loading has begun." },
+
                 // === WorldMap Import Warning ===
                 { "MAPEXT_WORLDMAP.WarningTitle", "⚠️ Performance Warning" },
                 { "MAPEXT_WORLDMAP.WarningMessage", "Importing a World Map introduces additional rendering overhead:\n\n• Extra cascade rendering layer (baseLod increased)\n• Per-frame DownSampleHeightMap for backdrop\n• Larger MinMaxMap (1024 vs 512)\n• Increased GPU memory usage\n\nThis may reduce FPS on large maps. Continue?" },
@@ -66,6 +70,10 @@ namespace MapExtPDX.SaveLoadSystem
                 { "LOAD_VALIDATION.ConfirmOK", "确定" },
                 { "LOAD_VALIDATION.ConfirmContinue", "继续" },
 
+                // === 地图尺寸模式不匹配警告 ===
+                { "MAPEXT_MAPSIZE.MismatchTitle", "⚠️ 地图尺寸模式不匹配" },
+                { "MAPEXT_MAPSIZE.MismatchMessage", "此地图是在「{AUTHORED_MODE}」下制作的，但 MapExt 当前设置为「{CURRENT_MODE}」。\n\n地形高度正在以错误的比例采样，海拔、水体与可建造区域都会出错。\n\n解决方法：退出到主菜单，将 MapExt 的地图尺寸模式设为「{AUTHORED_MODE}」，然后重新加载此地图。\n\n说明：编辑器导出的地图不含地图尺寸元数据，因此只能在加载开始后才检测得到。" },
+
                 // === 世界地图导入性能警告 ===
                 { "MAPEXT_WORLDMAP.WarningTitle", "⚠️ 性能警告" },
                 { "MAPEXT_WORLDMAP.WarningMessage", "导入世界地图(WorldMap)会引入额外的渲染开销：\n\n• 增加一层级联渲染层（baseLod 提升）\n• 每帧执行 DownSampleHeightMap 降采样\n• MinMaxMap 尺寸增大（1024 vs 512）\n• GPU 显存占用增加\n\n在大地图模式下可能导致帧率下降。是否继续？" },
@@ -96,6 +104,10 @@ namespace MapExtPDX.SaveLoadSystem
                 { "LOAD_VALIDATION.LegacyMismatch", "這是舊版存檔。如果是 57km 地圖，請在選項選單中將 Mod 切換為 '{LEGACY_MODE}'。其他地圖尺寸請閱讀 MapExt 的最新說明！" },
                 { "LOAD_VALIDATION.ConfirmOK", "確定" },
                 { "LOAD_VALIDATION.ConfirmContinue", "繼續" },
+
+                // === 地圖尺寸模式不符警告 ===
+                { "MAPEXT_MAPSIZE.MismatchTitle", "⚠️ 地圖尺寸模式不符" },
+                { "MAPEXT_MAPSIZE.MismatchMessage", "此地圖是在「{AUTHORED_MODE}」下製作的，但 MapExt 當前設定為「{CURRENT_MODE}」。\n\n地形高度正以錯誤的比例取樣，海拔、水體與可建造區域都會出錯。\n\n解決方法：退出至主選單，將 MapExt 的地圖尺寸模式設為「{AUTHORED_MODE}」，然後重新載入此地圖。\n\n說明：編輯器匯出的地圖不含地圖尺寸元資料，因此只能在載入開始後才偵測得到。" },
 
                 // === 世界地图导入性能警告 ===
                 { "MAPEXT_WORLDMAP.WarningTitle", "⚠️ 性能警告" },

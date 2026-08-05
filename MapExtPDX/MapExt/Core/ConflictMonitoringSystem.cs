@@ -12,6 +12,7 @@ using Game.Simulation;
 using Game.UI;
 using Game.UI.Localization;
 using MapExtPDX.MapExt.MapSizePatchSet;
+using MapExtPDX.SaveLoadSystem;
 using Unity.Entities;
 
 namespace MapExtPDX.MapExt.Core
@@ -82,6 +83,11 @@ namespace MapExtPDX.MapExt.Core
             }
             else
             {
+                // 每次載入開始前清除上一次的地圖尺寸錯配判定，
+                // 避免「遊戲中直接載入另一張地圖」時沿用舊記錄而誤報。
+                // （Cleanup 分支已透過 TerrainSystemPatches.ResetSessionState 一併清除）
+                MapSizeMismatchState.Reset();
+
                 // [BUGFIX] 在加载开始前（而非加载完成后）立即重新禁用被引擎复活的原版系统。
                 // 消除加载期间原版+替换系统双跑的窗口期，彻底解决 JobTempAlloc 警告。
                 var settings = Mod.Instance?.CurrentSettings;
@@ -110,12 +116,70 @@ namespace MapExtPDX.MapExt.Core
                     SystemReplacer.ReDisableVanillaSystems(this.World, settings);
                 }
 
+                // 地圖尺寸模式錯配提示（由 FinalizeTerrainData_Prefix 於載入中途記錄）
+                ShowMapSizeMismatchDialogIfNeeded();
+
                 RunDiagnostics();
             }
         }
 
         /// <summary>被动模式：OnUpdate 不做任何工作</summary>
         protected override void OnUpdate() { }
+
+        /// <summary>
+        /// 若本次載入偵測到地圖尺寸模式錯配，顯示提示對話框。
+        ///
+        /// <para><b>為何在此處而非偵測點</b>：偵測發生於
+        /// <c>TerrainSystem.FinalizeTerrainData</c> 的 Prefix（反序列化中途），
+        /// 該時機 UI 尚未就緒無法彈窗。此處是載入完成後最早的安全時機。</para>
+        ///
+        /// <para>沿用 <c>VanillaSaveConversionSystem</c> 的 <c>MainThreadDispatcher</c>
+        /// 延遲模式，確保排在 RoadBuilder 等其它 Mod 的載入完成對話框之後，不被覆蓋。</para>
+        /// </summary>
+        private void ShowMapSizeMismatchDialogIfNeeded()
+        {
+            if (!MapSizeMismatchState.HasMismatch || MapSizeMismatchState.DialogShown)
+                return;
+
+            // 尊重使用者關閉驗證的設定，與 LoadGameValidatorPatch 的行為一致
+            if (Mod.Instance?.CurrentSettings?.DisableLoadGameValidation == true)
+            {
+                ModLog.Info(Tag, "已停用載入驗證，略過地圖尺寸錯配提示（日誌中仍有警告記錄）");
+                return;
+            }
+
+            MapSizeMismatchState.DialogShown = true;
+
+            try
+            {
+                string authoredMode = PatchManager.GetModeNameForCoreValue(MapSizeMismatchState.AuthoredCoreValue);
+                string currentMode = PatchManager.GetModeNameForCoreValue(MapSizeMismatchState.CurrentCoreValue);
+
+                var locParams = new Dictionary<string, ILocElement>
+                {
+                    { "AUTHORED_MODE", LocalizedString.Value(authoredMode) },
+                    { "CURRENT_MODE", LocalizedString.Value(currentMode) }
+                };
+
+                var dialog = new MessageDialog(
+                    LocalizedString.Id("MAPEXT_MAPSIZE.MismatchTitle"),
+                    new LocalizedString("MAPEXT_MAPSIZE.MismatchMessage", null, locParams),
+                    LocalizedString.Id("LOAD_VALIDATION.ConfirmOK"));
+
+                Colossal.Core.MainThreadDispatcher.RegisterUpdater(() =>
+                {
+                    GameManager.instance.userInterface.appBindings.ShowMessageDialog(dialog, null);
+                    return true;
+                });
+
+                ModLog.Warn(Tag,
+                    $"已提示地圖尺寸錯配：地圖為 {authoredMode}，當前為 {currentMode}");
+            }
+            catch (Exception ex)
+            {
+                ModLog.Warn(Tag, $"顯示地圖尺寸錯配對話框失敗: {ex.Message}");
+            }
+        }
 
         /// <summary>
         /// 供 UI 按钮（RefreshStatus）或首次进入游戏时调用。

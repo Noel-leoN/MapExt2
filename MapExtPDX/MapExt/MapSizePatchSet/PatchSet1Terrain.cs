@@ -10,6 +10,7 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
     using Game.Simulation;
     using HarmonyLib;
     using MapExtPDX.MapExt.Core;
+    using MapExtPDX.SaveLoadSystem;
     using System;
     using System.Collections.Generic;
     using System.Reflection;
@@ -26,7 +27,7 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
         private const string Tag = "TerrainPatch";
 
         // FinalizeTerrainData (改变引入默认值，仅修改此处即可，不需要同时修补其他方法)
-        // 该方法调用仅在加载存档后执行一次，使用Prefix简化维护 
+        // 该方法调用仅在加载存档后执行一次，使用Prefix简化维护
         // Target the FinalizeTerrainData method
         [HarmonyPatch("FinalizeTerrainData")]
         [HarmonyPrefix]
@@ -47,6 +48,18 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
 
                 patches++;
             }
+            else
+            {
+                // === 地圖尺寸錯配偵測 ===
+                // 走到這裡代表 inMapSize 不是原版 14336，唯一來源是
+                // TerrainSystem.Deserialize 讀回的 playableArea——也就是說這張地圖／存檔
+                // 是在某個擴展模式下製作的，其 playableArea 已被寫成 CV × 14336。
+                //
+                // 此時縮放不會發生（守衛不成立），但 GetHeightData／GetTerrainBounds
+                // 的 Transpiler 仍按「當前模式」的常量換算取樣比例，
+                // 兩者對不上就是靜默的高度錯位。故在此記錄，載入完成後提示。
+                DetectAuthoredSizeMismatch(inMapSize.x, baseSize, scalefactor);
+            }
 
             if (patches != 0)
             {
@@ -54,6 +67,48 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
                     $"FinalizeTerrainData Prefix applied {patches} patch(es). (Expected value: {inMapSize} , {inMapCorner} , {inWorldSize} , {inWorldCorner})");
             }
         } // FinalizeTerrainData method
+
+        /// <summary>
+        /// 由 <c>inMapSize</c> 反推地圖製作時的 CoreValue，與當前模式比對並記錄錯配。
+        ///
+        /// <para><b>只記錄不攔截</b>：此處位於反序列化中途，UI 尚未就緒，
+        /// 且中止載入會讓引擎停在半初始化狀態。實際提示延到
+        /// <c>OnGameLoadingComplete</c>，見 <see cref="MapSizeMismatchState"/>。</para>
+        /// </summary>
+        /// <param name="actualMapSize">地圖檔中的 playableArea.x。</param>
+        /// <param name="baseSize">原版基準尺寸 14336。</param>
+        /// <param name="currentCV">當前模式的 CoreValue。</param>
+        private static void DetectAuthoredSizeMismatch(float actualMapSize, float baseSize, int currentCV)
+        {
+            // 反推製作模式：擴展模式存的 playableArea 必為 CV × 14336 的整數倍
+            int authoredCV = (int)math.round(actualMapSize / baseSize);
+
+            // 非整數倍 → 不是 MapExt 產出的地圖（可能是其他 Mod 或損壞資料），
+            // 無從判斷應有模式，僅記錄供追查，不誤報成模式錯配。
+            if (authoredCV < 1 || math.abs(actualMapSize - authoredCV * baseSize) > 1f)
+            {
+                ModLog.Warn(Tag,
+                    $"偵測到非預期的地圖尺寸 {actualMapSize}（非 {baseSize} 的整數倍），" +
+                    $"無法推斷製作模式；當前 CV={currentCV}。地形高度可能不正確。");
+                return;
+            }
+
+            if (authoredCV == currentCV)
+            {
+                // 同模式的地圖／存檔：playableArea 已是正確的目標尺寸，
+                // 不需再縮放（重複縮放反而會放大到 CV² 倍），屬正常路徑。
+                return;
+            }
+
+            // 真正的錯配：製作模式與當前模式不同，且兩邊都是有效的 MapExt 模式
+            MapSizeMismatchState.Record(authoredCV, currentCV);
+
+            ModLog.Warn(Tag,
+                $"地圖尺寸模式不符！地圖以 {PatchManager.GetModeNameForCoreValue(authoredCV)} " +
+                $"(CV={authoredCV}, playableArea={actualMapSize}) 製作，" +
+                $"但當前模式為 {PatchManager.GetModeNameForCoreValue(currentCV)} (CV={currentCV})。" +
+                $"地形高度取樣比例將錯位，載入完成後會顯示提示。");
+        }
 
 
         // Target the GetTerrainBounds method
@@ -160,11 +215,13 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
         /// [BUGFIX] 退出主菜单时重置会话状态。
         /// TerrainSystem 在 Cleanup 期间会释放 ManagedStructuredBuffers，
         /// 二次加载时必须重新执行扩容。
+        /// 同時清除地圖尺寸錯配記錄，避免上一次載入的判定殘留到下一張地圖。
         /// </summary>
         internal static void ResetSessionState()
         {
             s_BufferExpanded = false;
-            ModLog.Info(Tag, "TerrainPatch session state reset (s_BufferExpanded=false)");
+            MapSizeMismatchState.Reset();
+            ModLog.Info(Tag, "TerrainPatch session state reset (s_BufferExpanded=false, MapSizeMismatch cleared)");
         }
 
         [HarmonyPatch("OnUpdate")]
