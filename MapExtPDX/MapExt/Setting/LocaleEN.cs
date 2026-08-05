@@ -968,6 +968,38 @@ namespace MapExtPDX
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.ScanGhostVehicles)),
                     "Scans the current save for personal cars stuck without a parking lane and reports the count. Read-only — no changes are made; actual cleanup runs automatically at low frequency once the rescue system is enabled."
                 },
+                {
+                    m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.HeightmapExportDirection)),
+                    "Heightmap Export Orientation"
+                },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.HeightmapExportDirection)),
+                    "Row order transform applied to the exported PNG. The game's internal heightmap row order is the opposite of the PNG file convention, so the orientation that looks correct depends on your intended use.\n★ If unsure, pick \"All\" to write all four variants at once and compare them."
+                },
+                {
+                    m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.HeightmapExportRaw)),
+                    "Also Export RAW"
+                },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.HeightmapExportRaw)),
+                    "Additionally write a headerless 16-bit RAW file for external tooling.\n★ The Map Editor does NOT accept .raw — only the PNG can be imported back."
+                },
+                {
+                    m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.HeightmapExportReport)),
+                    "Heightmap Export Result"
+                },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.HeightmapExportReport)),
+                    "Shows the result of the last export: file count, resolution, and target folder."
+                },
+                {
+                    m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.ExportHeightmap)),
+                    "Export Heightmap"
+                },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.ExportHeightmap)),
+                    "Exports the current terrain heightmap as a 16-bit PNG into the Heightmaps folder, ready to pick in the Map Editor's Import Heightmap panel.\n★ Exports pure terrain only — buildings, roads and lot flattening are excluded, so re-importing will not bake them into the terrain.\n★ Requires a loaded map or save."
+                },
             };
             return entries;
         }

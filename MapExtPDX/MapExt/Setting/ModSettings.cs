@@ -12,6 +12,7 @@ using Game.Settings;
 using Game.UI.Widgets;
 using Unity.Entities;
 using MapExtPDX.MapExt.Core;
+using MapExtPDX.MapExt.Tools;
 
 // 保持与Mod.cs同一命名空间
 namespace MapExtPDX
@@ -1052,6 +1053,60 @@ namespace MapExtPDX
                     : "P3_VehiclePurchaseRescueSystem not found (load a game first).";
             }
         }
+
+        // === Heightmap Export ===
+
+        #region Heightmap Export
+
+        /// <summary>
+        /// 高度圖匯出方向。
+        /// 遊戲內部高度圖行序與 PNG 檔案格式的行序約定相反，
+        /// 實際所需方向以遊戲內實測為準；不確定時選 All 一次輸出四份比對。
+        /// </summary>
+        [SettingsUISection(kDebugTab, kDebugGroup)]
+        [SettingsUIDropdown(typeof(ModSettings), nameof(GetHeightmapOrientationItems))]
+        public HeightmapExportOrientation HeightmapExportDirection { get; set; }
+            = HeightmapExportOrientation.Native;
+
+        public DropdownItem<int>[] GetHeightmapOrientationItems()
+        {
+            return new DropdownItem<int>[]
+            {
+                new() { value = (int)HeightmapExportOrientation.Native, displayName = "Native (no transform)" },
+                new() { value = (int)HeightmapExportOrientation.FlipVertical, displayName = "Flip Vertical (N-S)" },
+                new() { value = (int)HeightmapExportOrientation.FlipHorizontal, displayName = "Flip Horizontal (E-W)" },
+                new() { value = (int)HeightmapExportOrientation.Rotate180, displayName = "Rotate 180" },
+                new() { value = (int)HeightmapExportOrientation.All, displayName = "All (4 files, for comparison)" },
+            };
+        }
+
+        /// <summary>是否額外輸出原始 RAW（無檔頭 16-bit，供外部程式化處理；編輯器不接受此格式）。</summary>
+        [SettingsUISection(kDebugTab, kDebugGroup)]
+        public bool HeightmapExportRaw { get; set; } = false;
+
+        /// <summary>匯出結果緩存，由 ExportHeightmap 按鈕更新</summary>
+        public string HeightmapExportData { get; set; } = "Click Export to save the current heightmap.";
+
+        /// <summary>匯出結果顯示（計算屬性，按鈕點擊後 UI 自動重新求值）</summary>
+        [SettingsUISection(kDebugTab, kDebugGroup)]
+        public string HeightmapExportReport => HeightmapExportData;
+
+        /// <summary>
+        /// 匯出當前地形高度圖為 16-bit PNG 至 <c>{UserData}/Heightmaps</c>，
+        /// 可直接在地圖編輯器「匯入高度圖」中選用。
+        /// </summary>
+        [SettingsUISection(kDebugTab, kDebugGroup)]
+        [SettingsUIButton]
+        public bool ExportHeightmap
+        {
+            set
+            {
+                HeightmapExportData = MapExtPDX.MapExt.Tools.HeightmapExporter.Export(
+                    HeightmapExportDirection, HeightmapExportRaw);
+            }
+        }
+
+        #endregion
 
         // === Defaults ===
         public override void SetDefaults()

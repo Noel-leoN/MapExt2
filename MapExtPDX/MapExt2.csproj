@@ -8,7 +8,7 @@
 		<Authors>Noel2</Authors>
 		<Copyright>Copyright (c) [2025] [Noel2/Noel-leoN/=Noel=]</Copyright>
 		<Title>MapExt: Big Map, Economy and Performance</Title>
-		<Version>4.7.0</Version>
+		<Version>4.8.0</Version>
 
 		<!--The file where mod information which is required for publishing mod on PDX mods are stored-->
 		<PublishConfigurationPath>Properties\PublishConfiguration.xml</PublishConfigurationPath>
@@ -40,6 +40,10 @@
 			<Private>false</Private>
 		</Reference>
 		<Reference Include="Colossal.IO.AssetDatabase">
+			<Private>false</Private>
+		</Reference>
+		<!-- 高度圖 PNG 編碼：TextureUtilities.SaveImage / NativeTextures.ImageFileFormat -->
+		<Reference Include="Colossal.AssetPipeline.Native">
 			<Private>false</Private>
 		</Reference>
 		<Reference Include="Colossal.UI">

@@ -802,6 +802,26 @@ namespace MapExtPDX
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.ScanGhostVehicles)),
                     "掃描目前存檔中停放失敗的幽靈私家車並統計數量。純唯讀操作，不做任何修改；實際清理由救援系統在啟用後低頻自動完成。"
                 },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.HeightmapExportDirection)), "高度圖匯出方向" },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.HeightmapExportDirection)),
+                    "匯出 PNG 時套用的行序變換。遊戲內部高度圖的行序與 PNG 檔案格式的約定相反，故正確方向取決於你的用途。\n★ 不確定時選「All」一次輸出四份變體再比對。"
+                },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.HeightmapExportRaw)), "同時匯出 RAW" },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.HeightmapExportRaw)),
+                    "額外輸出一份無檔頭的 16-bit RAW，供外部工具程式化處理。\n★ 地圖編輯器不接受 .raw 格式，只有 PNG 能匯入回遊戲。"
+                },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.HeightmapExportReport)), "高度圖匯出結果" },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.HeightmapExportReport)),
+                    "顯示最近一次匯出的結果：檔案數量、解析度與目標資料夾。"
+                },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.ExportHeightmap)), "匯出高度圖" },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.ExportHeightmap)),
+                    "將當前地形高度圖匯出為 16-bit PNG 至 Heightmaps 資料夾，可直接在地圖編輯器的「匯入高度圖」面板中選用。\n★ 僅匯出純地形，不含建築、道路與地塊壓平，重新匯入不會把這些痕跡固化進地形。\n★ 需先載入地圖或存檔。"
+                },
             };
             return entries;
         }
