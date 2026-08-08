@@ -1114,7 +1114,7 @@ namespace MapExtPDX
             // 设置默认的补丁模式
             PatchModeChoice = PatchModeSetting.ModeA;
             // 分辨率设置
-            // 地形 8192 暂时禁用 — 水模拟与 8192 级联不兼容 (见 docs/TerrainSystem/Water_Terrain_Decoupling_Research.md)
+            // 地形 8192 暂时禁用 — 水模拟与 8192 级联不兼容 (见 docs/02_TerrainWater/TerrainWater_Decoupling.md)
             TerrainResolution = TerrainResolutionSetting.Vanilla_4096;
             WaterResolution = WaterResolutionSetting.Vanilla_2048;
             WaterSimQuality = WaterSimQualitySetting.Vanilla_EveryFrame;

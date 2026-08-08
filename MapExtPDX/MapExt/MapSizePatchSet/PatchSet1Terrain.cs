@@ -829,7 +829,7 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
     // 这样 SetWorldHeightmap(null) → DestroyWorldMap() → worldHeightmap = null
     // 然后 FinalizeTerrainData 中 worldHeightmap == null → baseLod = 0 → 无 Backdrop 路径
     // 性能收益: 每帧节省 ~0.5-2ms GPU + ~37MB VRAM + CPU 阻塞消除
-    // 详见: docs/Architecture/Environment/TerrainSystem/TerrainBackdrop_Cost_Analysis.md §9
+    // 详见: docs/02_TerrainWater/Terrain_BackdropCost.md §9
     [HarmonyPatch(typeof(TerrainSystem), "InitializeTerrainData")]
     internal static class TerrainSystem_InitializeTerrainData_DisableBackdrop
     {

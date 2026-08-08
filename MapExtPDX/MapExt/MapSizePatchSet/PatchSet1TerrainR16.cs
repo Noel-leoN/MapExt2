@@ -230,7 +230,7 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
     /// <summary>
     /// 导入世界地图(WorldMap)时弹出性能警告对话框
     /// 世界地图会引入额外的级联渲染层、每帧降采样、更大的 MinMaxMap 等开销
-    /// 参见: docs/TerrainSystem/TerrainSystem_Analysis.md §5.2
+    /// 参见: docs/02_TerrainWater/Terrain_00_SystemAnalysis.md §5.2
     /// </summary>
     [HarmonyPatch]
     public static class WorldMapImportWarningPatch
