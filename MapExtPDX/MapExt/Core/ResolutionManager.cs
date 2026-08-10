@@ -54,12 +54,37 @@ namespace MapExtPDX.MapExt.Core
         public static WaterTextureFormatSetting WaterTextureFormat { get; private set; } = WaterTextureFormatSetting.High_RGBA32F;
 
         /// <summary>
-        /// 是否讓水系統走 Async Compute 佇列（實驗性）。
-        /// 開啟後 UpdateSystem.OnBeginFrame 會將水的 CommandBuffer 標記為 AsyncCompute 並
-        /// 以 ExecuteCommandBufferAsync 提交，讓水模擬與圖形管線在 GPU 上並行。
-        /// 主要改善 GPU-bound 場景的幀時間（非 CPU）；收益與風險高度依賴顯示卡與驅動，故預設關閉。
+        /// 水系統 Async Compute（<c>WaterSystem.IsAsync</c>）——<b>已硬掛起，恆為 false</b>。
+        ///
+        /// <para>原設計：<c>UpdateSystem.OnBeginFrame</c> 在 <c>IsAsync</c> 為真時給水的 CommandBuffer
+        /// 打上 <c>CommandBufferExecutionFlags.AsyncCompute</c> 並以 <c>ExecuteCommandBufferAsync</c>
+        /// 提交，讓水模擬與圖形管線在 GPU 上並行，改善 GPU-bound 場景的幀時間。</para>
+        ///
+        /// <para><b>掛起原因（兩個獨立缺陷，非驅動品質問題）</b>：</para>
+        /// <list type="number">
+        ///   <item><b>圖形指令混入 compute 佇列</b>：<c>WaterSimulation.DoTextureClear</c> 用的是
+        ///   <c>SetRenderTarget</c> + <c>ClearRenderTarget</c>（圖形指令），async compute 佇列會拒收。
+        ///   Unity 只印警告不中止，於是<b>該次清除靜默不發生</b>——
+        ///   <c>ResetSeaPropgagtion</c> 沒清就跑 <c>EvaluateSeaPropagation</c>，
+        ///   等於拿殘留的上一輪傳播資料當輸入。其兩個呼叫點正是地形變更倒數與海平面變更分支，
+        ///   也就是地圖作者用筆刷、改海平面時走的路徑，後果是靜默的水位／海岸邊界錯誤。</item>
+        ///
+        ///   <item><b>跨佇列零同步（無 Mod 側正解）</b>：原版全庫沒有任何
+        ///   <c>GraphicsFence</c> / <c>WaitOnAsyncGraphicsFence</c>，
+        ///   <c>OnBeginFrame</c> 也不查 <c>SystemInfo.supportsAsyncCompute</c>。
+        ///   而 <c>WaterTexture</c> 在圖形佇列側有三個同幀消費者
+        ///   （<c>WaterRenderSystem</c> 材質取樣、<c>SnowSystem</c> compute 讀入、
+        ///   <c>TerrainSystem</c> 走自己的 CommandBuffer 立即提交）。
+        ///   async 佇列寫、圖形佇列讀且中間無 fence，是確定性的 race，與顯示卡無關。</item>
+        /// </list>
+        ///
+        /// <para><b>恢復條件</b>：缺陷 ① 可修（原版 <c>InitShader</c> 已解析出全庫未使用的
+        /// <c>ClearTexture</c> kernel 與 <c>_ClearTarget</c>/<c>_ClearColor</c>，
+        /// 改走 <c>DispatchCompute</c> 即可）；但缺陷 ② 需同時對上述三個消費點插 fence，
+        /// 其中 TerrainSystem 那條是 hot path 且用自有 CommandBuffer，只能上 transpiler。
+        /// 兩者<b>都</b>解決前不得恢復。詳見 <c>docs/02_TerrainWater/Water_AsyncCompute_Analysis.md</c>。</para>
         /// </summary>
-        public static bool WaterAsyncCompute { get; set; } = false;
+        public static bool WaterAsyncCompute => false;
 
         /// <summary>
         /// 遊戲暫停時凍結水模擬。
@@ -127,12 +152,13 @@ namespace MapExtPDX.MapExt.Core
 
             WaterSimQuality = SanitizeWaterSimQuality(simQuality);
             WaterTextureFormat = textureFormat;
-            WaterAsyncCompute = asyncCompute;
+            // WaterAsyncCompute 已硬掛起為唯讀 false：僅核查傳入值並在殘留 true 時記錄警告
+            SanitizeWaterAsyncCompute(asyncCompute);
             WaterPauseFreeze = pauseFreeze;
             SnowSimFreeze = snowFreeze;
 
             ModLog.Ok(Tag, $"Initialized: Terrain={TerrainResolution}, Water={WaterTextureSize}, " +
-                           $"Format={WaterTextureFormat}, SimQuality={WaterSimQuality}, Async={WaterAsyncCompute}, " +
+                           $"Format={WaterTextureFormat}, SimQuality={WaterSimQuality}, Async=suspended, " +
                            $"PauseFreeze={WaterPauseFreeze}, SnowFreeze={SnowSimFreeze}");
         }
 
@@ -152,16 +178,38 @@ namespace MapExtPDX.MapExt.Core
             return quality;
         }
 
+        /// <summary>
+        /// Async Compute 硬掛起的核查閘：一律回傳 false，殘留設定檔的 true 只記錄一次警告。
+        /// 布林開關沒有「序號漂移」問題，但屬性與設定檔鍵保留，以免舊 .coc 反序列化時噴未知鍵。
+        /// 掛起原因見 <see cref="WaterAsyncCompute"/>。
+        /// </summary>
+        public static bool SanitizeWaterAsyncCompute(bool requested)
+        {
+            if (requested)
+            {
+                ModLog.Warn(Tag,
+                    "WaterAsyncCompute=true 已掛起，強制關閉。原因：DoTextureClear 的 " +
+                    "SetRenderTarget/ClearRenderTarget 在 async compute 佇列會被拒收，" +
+                    "海水傳播紋理清除靜默失效（地形筆刷／改海平面時會出現水位錯誤）；" +
+                    "且水紋理跨佇列消費點無任何 GraphicsFence。與顯示卡無關，見 " +
+                    "docs/02_TerrainWater/Water_AsyncCompute_Analysis.md");
+            }
+            return false;
+        }
+
         public static void UpdateWaterSimQuality(WaterSimQualitySetting quality)
         {
             WaterSimQuality = SanitizeWaterSimQuality(quality);
             ModLog.Ok(Tag, $"WaterSimQuality updated in real-time to {WaterSimQuality}");
         }
 
+        /// <summary>
+        /// Async Compute 已掛起：保留此方法供 ModSettings setter 呼叫，
+        /// 但只做核查與警告，不改變 <see cref="WaterAsyncCompute"/>（恆 false）。
+        /// </summary>
         public static void UpdateWaterAsyncCompute(bool asyncCompute)
         {
-            WaterAsyncCompute = asyncCompute;
-            ModLog.Ok(Tag, $"WaterAsyncCompute updated in real-time to {asyncCompute}");
+            SanitizeWaterAsyncCompute(asyncCompute);
         }
 
         public static void UpdateWaterPauseFreeze(bool pauseFreeze)

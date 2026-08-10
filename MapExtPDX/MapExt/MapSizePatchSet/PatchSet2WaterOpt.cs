@@ -92,10 +92,11 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
                 StableSpeed = preSpeed;
             }
 
-            // === Async Compute（與畫質正交，須在 Vanilla 早退之前設定）===
-            // UpdateSystem.OnBeginFrame 在呼叫本方法「前」讀 IsAsync 決定 CommandBuffer 的
-            // AsyncCompute flag，「後」再讀一次決定是否 ExecuteCommandBufferAsync。
-            // 穩態下每幀在此設值 → 兩次讀取一致；僅使用者切換當幀有一次無害的瞬態不匹配。
+            // === Async Compute 強制關閉（與畫質正交，須在 Vanilla 早退之前執行）===
+            // 該功能已硬掛起（ResolutionManager.WaterAsyncCompute 恆 false）。
+            // 此處保留每幀寫入作為兜底：原版從不寫 IsAsync，若有第三方 Mod 開啟它，
+            // 水的 CommandBuffer 會被標為 AsyncCompute，導致 DoTextureClear 的圖形指令
+            // 被佇列拒收、海水傳播紋理清除靜默失效。這裡把它按回 false。
             ApplyAsyncCompute(__instance);
 
             var quality = ResolutionManager.WaterSimQuality;
@@ -227,14 +228,15 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
             return s_terrainCounterField != null ? (int)s_terrainCounterField.GetValue(instance) : 0;
         }
 
-        // --- Async Compute Helper ---
+        // --- Async Compute Helper（掛起後僅作為強制關閉的兜底）---
 
         /// <summary>上次套用的 IsAsync 值，僅用於避免每幀重複 log。</summary>
         private static bool? s_lastAppliedAsync = null;
 
         /// <summary>
-        /// 依 ResolutionManager.WaterAsyncCompute 設定 WaterSystem.IsAsync。
-        /// 每幀呼叫，僅在值變化時記錄日誌。
+        /// 把 <c>WaterSystem.IsAsync</c> 按回 <see cref="ResolutionManager.WaterAsyncCompute"/>（恆 false）。
+        /// 每幀呼叫，僅在值變化時記錄日誌——穩態下 <c>instance.IsAsync</c> 已是 false，
+        /// 兩個 if 都不成立，等同零開銷。
         /// </summary>
         private static void ApplyAsyncCompute(WaterSystem instance)
         {
@@ -242,11 +244,13 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
             if (instance.IsAsync != desired)
             {
                 instance.IsAsync = desired;
+                ModLog.Warn(Tag,
+                    "偵測到 WaterSystem.IsAsync 被外部設為 true（原版與 MapExt 皆不啟用），已按回 false");
             }
             if (s_lastAppliedAsync != desired)
             {
                 s_lastAppliedAsync = desired;
-                ModLog.Patch(Tag, $"WaterSystem.IsAsync = {desired} (Async Compute {(desired ? "启用" : "关闭")})");
+                ModLog.Patch(Tag, "WaterSystem.IsAsync = False (Async Compute 已掛起)");
             }
         }
 

@@ -130,18 +130,19 @@ namespace MapExtPDX
                 },
                 {
                     m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.WaterAsyncCompute)),
-                    "⚠ Water Async Compute (Experimental)"
+                    "Water Async Compute (Suspended)"
                 },
                 {
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.WaterAsyncCompute)),
-                    "Runs the water simulation on a dedicated GPU compute queue, in parallel with the graphics rendering pipeline. " +
-                    "Primarily improves frame time in GPU-bound scenarios.\n\n" +
-                    "⚠ NOTE: This is an experimental feature that the base game leaves OFF by default.\n" +
-                    " - Improves GPU frame time only; has little to no effect when CPU-bound (late-game large cities, pathfinding bottlenecks).\n" +
-                    " - Benefit and risk depend heavily on your GPU and driver: high-end discrete GPUs usually benefit, while integrated GPUs / older cards / laptops may see no gain or even a regression.\n" +
-                    " - A few drivers may show water surface flickering or a one-frame delay; turn this off if you notice artifacts.\n\n" +
-                    "★ Recommended: OFF by default. Discrete-GPU users can benchmark frame time and visual correctness with it on vs off.\n" +
-                    "★ Tip: Applies instantly, no restart required."
+                    "SUSPENDED and hidden. This option would have run the water simulation on a dedicated GPU compute queue, " +
+                    "in parallel with the graphics pipeline.\n\n" +
+                    "It was removed because of two defects that are NOT driver-dependent:\n" +
+                    " - The water simulation's texture-clear step uses graphics commands, which an async compute queue rejects. " +
+                    "The clear then silently does not happen, so the sea propagation texture keeps stale data — " +
+                    "this corrupts water levels and shoreline boundaries when using the terrain brush or changing sea level.\n" +
+                    " - The water texture is consumed the same frame by the water renderer, the snow simulation and the terrain system " +
+                    "on the graphics queue, with no synchronization primitive anywhere in the base game.\n\n" +
+                    "The setting key is kept only so existing configuration files stay readable; it is always OFF."
                 },
                 {
                     m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.WaterPauseFreeze)),

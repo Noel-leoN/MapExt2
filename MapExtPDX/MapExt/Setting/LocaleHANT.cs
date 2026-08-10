@@ -112,17 +112,18 @@ namespace MapExtPDX
                 },
                 {
                     m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.WaterAsyncCompute)),
-                    "⚠ 水體 Async Compute（實驗性）"
+                    "水體 Async Compute（已掛起）"
                 },
                 {
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.WaterAsyncCompute)),
-                    "讓水模擬走獨立的 GPU Compute 佇列，與圖形渲染管線並行執行，主要改善「顯示卡吃緊（GPU-bound）」場景的幀時間。\n\n" +
-                    "⚠ 注意：此為原版預設關閉的實驗性功能。\n" +
-                    " - 主要改善 GPU 幀時間，對「CPU 吃緊」（晚期大城市、尋路瓶頸）幾乎無效。\n" +
-                    " - 收益與風險高度依賴顯示卡與驅動：高階獨顯通常有感，整合顯示晶片／老顯卡／筆電可能無感甚至倒退。\n" +
-                    " - 極少數驅動可能出現水面閃爍或延遲一幀，若發現異常請關閉。\n\n" +
-                    "★ 建議：預設關閉；獨顯玩家可自行實測開關前後的幀時間與畫面正確性。\n" +
-                    "★ 提示：該選項即時生效無須重啟。"
+                    "已掛起並隱藏。此選項原本讓水模擬走獨立的 GPU Compute 佇列，與圖形渲染管線並行執行。\n\n" +
+                    "移除原因是兩個與顯示卡／驅動無關的缺陷：\n" +
+                    " - 水模擬的紋理清除步驟用的是圖形指令，async compute 佇列會拒收。" +
+                    "該次清除於是靜默不發生，海水傳播紋理保留了上一輪的殘留資料——" +
+                    "使用地形筆刷或變更海平面時，會造成水位與海岸邊界錯誤。\n" +
+                    " - 水紋理在同一幀還會被水面渲染、雪模擬與地形系統在圖形佇列側讀取，" +
+                    "而原版全庫沒有任何跨佇列同步機制。\n\n" +
+                    "設定鍵僅為讓既有設定檔仍可讀取而保留，實際恆為關閉。"
                 },
                 {
                     m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.WaterPauseFreeze)),

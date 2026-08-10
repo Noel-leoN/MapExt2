@@ -264,23 +264,19 @@ namespace MapExtPDX
         // 16-bit 格式已被禁用，因为损失精度会导致流水无法蔓延
         [SettingsUIHidden] public WaterTextureFormatSetting WaterTextureFormat { get; set; }
 
-        // === 水 Async Compute（實驗性）===
-        // 讓水模擬走獨立 Compute 佇列，與圖形管線在 GPU 上並行。
-        // 主要改善 GPU-bound 場景幀時間；收益/風險依顯示卡與驅動而定，故預設關閉。
-        private bool m_waterAsyncCompute = false;
-
-        [SettingsUISection(kPerformanceToolTab, kTerrainWaterOptGroup)]
+        // === 水 Async Compute（已硬掛起）===
+        // 原設計讓水模擬走獨立 Compute 佇列，與圖形管線在 GPU 上並行。
+        // 掛起原因（兩個獨立缺陷，與顯示卡／驅動無關，詳見 ResolutionManager.WaterAsyncCompute）：
+        //   ① DoTextureClear 的 SetRenderTarget/ClearRenderTarget 是圖形指令，async 佇列拒收，
+        //      海水傳播紋理清除靜默失效 → 地形筆刷／改海平面時出現水位與海岸邊界錯誤；
+        //   ② 水紋理的三個跨佇列同幀消費點無任何 GraphicsFence，是確定性 race。
+        // 屬性與設定檔鍵保留（避免舊 .coc 反序列化噴未知鍵），UI 隱藏，getter 恆 false；
+        // setter 保留以吸收殘留 true 並記一次警告。
+        [SettingsUIHidden]
         public bool WaterAsyncCompute
         {
-            get => m_waterAsyncCompute;
-            set
-            {
-                if (m_waterAsyncCompute != value)
-                {
-                    m_waterAsyncCompute = value;
-                    MapExt.Core.ResolutionManager.UpdateWaterAsyncCompute(value);
-                }
-            }
+            get => false;
+            set => MapExt.Core.ResolutionManager.UpdateWaterAsyncCompute(value);
         }
 
         // === 暫停凍結水模擬 ===
@@ -1119,7 +1115,7 @@ namespace MapExtPDX
             WaterResolution = WaterResolutionSetting.Vanilla_2048;
             WaterSimQuality = WaterSimQualitySetting.Vanilla_EveryFrame;
             WaterTextureFormat = WaterTextureFormatSetting.High_RGBA32F;
-            WaterAsyncCompute = false; // 实验性：默认关闭，收益/风险依显卡与驱动而定
+            WaterAsyncCompute = false; // 已硬掛起：確定性不相容，見 ResolutionManager.WaterAsyncCompute
             WaterPauseFreeze = true;   // 暫停凍結：近零風險，預設開啟
             SnowSimFreeze = SnowSimFreezeSetting.Off; // 雪凍結：Auto 檔待遊戲內實測通過後再改為預設
 
