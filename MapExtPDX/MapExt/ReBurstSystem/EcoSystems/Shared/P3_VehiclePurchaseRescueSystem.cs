@@ -2,6 +2,7 @@
 // Licensed under the MIT License.
 // See LICENSE in the project root for full license information.
 
+using Colossal.Serialization.Entities; // Purpose（OnGamePreload 簽名）
 using Game;
 using Game.Buildings;
 using Game.Common;
@@ -30,6 +31,15 @@ namespace MapExtPDX.EcoShared
     /// 
     /// 【设计】使用纯内存 Dictionary 追踪已救援车辆，不注入任何自定义 ECS 组件到实体上，
     /// 确保存档零污染，禁用 Mod 后不留痕迹。
+    ///
+    /// 【2026-08-11 加固】三項變更，起因為某 78 萬人口舊存檔在啟用本系統時
+    /// 於 <c>Serialize</c> 階段拋 <c>NullReferenceException</c>（`EntityManager.HighestEntityIndex`），
+    /// 關閉本系統後存檔恢復正常：
+    /// ① 移除全部 <c>EntityManager</c> 同步直寫（原 <c>CleanupOwnership</c> 直改
+    ///    <c>OwnedVehicle</c> buffer、<c>ClearCarKeeper</c> 直寫 <c>CarKeeper</c>）——
+    ///    這兩件事原版 <c>Game.Vehicles.ReferencesSystem</c> 的 Deleted 分支本就會做，屬重複勞動；
+    /// ② 首次救援加單幀配額 <see cref="kMaxRescuePerRun"/>，避免載入時一次動上千輛；
+    /// ③ <c>OnGamePreload</c> 清空追蹤表，避免跨存檔的 Entity 索引重用誤傷。
     /// </summary>
     public partial class P3_VehiclePurchaseRescueSystem : GameSystemBase
     {
@@ -49,6 +59,18 @@ namespace MapExtPDX.EcoShared
         /// </summary>
         private const int kMaxRetries = 8;
 
+        /// <summary>
+        /// 單次執行的「首次救援」上限。
+        ///
+        /// 舊存檔可能累積上千輛存量幽靈車（實測某 78 萬人口存檔載入後一次性命中 1334 輛），
+        /// 若不設限則會在單幀內對它們全部下 SetComponent + AddComponent×2，
+        /// 令原版 FixParkingLocationSystem 在同一幀面對上千個搜尋請求。
+        /// 分批攤平：每 64 模擬幀處理 64 輛，1334 輛約需 21 輪（≈1344 模擬幀）完成，
+        /// 對玩家無感，但把單幀結構性變更量壓回個位數量級。
+        /// 重試路徑不受此限——它本就受 <see cref="kMaxRetries"/> 與追蹤表規模自然約束。
+        /// </summary>
+        private const int kMaxRescuePerRun = 64;
+
         // === 候选车辆 Query：检测所有可能需要救援的新购车辆 ===
         private EntityQuery m_CandidateQuery;
 
@@ -56,15 +78,21 @@ namespace MapExtPDX.EcoShared
         // 不注入任何自定义 Component，存档零污染
         private readonly Dictionary<Entity, int> m_RescuedVehicles = new();
 
+        /// <summary>首次救援被上限攔下的累計輛數，僅用於節流日誌。</summary>
+        private int m_DeferredRescueCount;
+
         // === 文件日志路径（延迟初始化） ===
         private string m_LogFilePath;
 
         // === ComponentLookup 用于高效访问 ===
+        // 全部走 lookup 而非 EntityManager：後者在 OnUpdate 內會觸發隱式 job 同步點，
+        // 且對持有中的 lookup 有失效風險（見 OnUpdate 的設計說明）。
         private ComponentLookup<ParkedCar> m_ParkedCarLookup;
         private ComponentLookup<PersonalCar> m_PersonalCarLookup;
         private ComponentLookup<Owner> m_OwnerLookup;
         private ComponentLookup<PropertyRenter> m_PropertyRenterLookup;
         private ComponentLookup<Game.Objects.Transform> m_TransformLookup;
+        private ComponentLookup<FixParkingLocation> m_FixParkingLookup;
 
         #endregion
 
@@ -110,8 +138,20 @@ namespace MapExtPDX.EcoShared
             m_OwnerLookup = GetComponentLookup<Owner>(true);
             m_PropertyRenterLookup = GetComponentLookup<PropertyRenter>(true);
             m_TransformLookup = GetComponentLookup<Game.Objects.Transform>(true);
+            m_FixParkingLookup = GetComponentLookup<FixParkingLocation>(true);
 
             ModLog.Info(Tag, "购车救援系统已创建");
+        }
+
+        /// <summary>
+        /// 存檔切換時清空追蹤表：Entity 索引會在新 World 中重用，
+        /// 殘留的鍵會讓 ProcessRetry 對新存檔的無關實體下指令。
+        /// </summary>
+        protected override void OnGamePreload(Purpose purpose, GameMode mode)
+        {
+            base.OnGamePreload(purpose, mode);
+            m_RescuedVehicles.Clear();
+            m_DeferredRescueCount = 0;
         }
 
         protected override void OnUpdate()
@@ -126,11 +166,17 @@ namespace MapExtPDX.EcoShared
             m_OwnerLookup.Update(this);
             m_PropertyRenterLookup.Update(this);
             m_TransformLookup.Update(this);
+            m_FixParkingLookup.Update(this);
 
             // 统一 Query 结果
             using var entities = m_CandidateQuery.ToEntityArray(Allocator.Temp);
 
-            // 使用 EntityCommandBuffer 延迟执行结构性修改，防止 ComponentLookup 在循环中失效
+            // === 全部結構性與元件寫入一律走 ECB ===
+            // 本方法內**不得**出現任何 EntityManager.SetComponentData / GetBuffer 之類的直寫：
+            // ① 直寫會觸發隱式 job 同步點，且會令上方已 Update 的 ComponentLookup 面臨失效風險；
+            // ② 直寫與 ECB 混用會造成「同一幀內部分生效、部分延後」的順序不確定；
+            // ③ 曾實測某 78 萬人口舊存檔在載入後累積上千輛存量幽靈車，
+            //    大量同步 buffer 改寫疑與序列化階段的 ECS 狀態損壞相關（未完全坐實，但直寫無必要）。
             using (var ecb = new EntityCommandBuffer(Allocator.Temp))
             {
                 // === 阶段 1：对已救援但仍失败的车辆重试 ===
@@ -139,7 +185,7 @@ namespace MapExtPDX.EcoShared
                 // 導致重試計數虛增與 ECB 重複指令。
                 ProcessRetry(ecb);
 
-                // === 阶段 2：首次救援新车辆 ===
+                // === 阶段 2：首次救援新车辆（受 kMaxRescuePerRun 分批）===
                 ProcessRescue(entities, ecb);
 
                 // === 清理：移除已不在 Query 中的陈旧记录 ===
@@ -157,11 +203,17 @@ namespace MapExtPDX.EcoShared
         /// <summary>
         /// 阶段：检测 InitializeSystem.FindParkingSpace() 失败的车辆（新购车与存量幽灵车），
         /// 有家者传送到住宅附近交由原版系统重试；无家的孤兒車直接安全刪除。
+        ///
+        /// 單次處理量受 <see cref="kMaxRescuePerRun"/> 限制，避免舊存檔載入時
+        /// 一次性對上千輛存量幽靈車下指令（實測曾達 1334 輛／幀）。
+        /// 未處理的會在後續每 64 模擬幀繼續消化，順序由 Query 決定，無飢餓問題
+        /// （已處理者進追蹤表後即被 <c>ContainsKey</c> 略過）。
         /// </summary>
         private void ProcessRescue(NativeArray<Entity> entities, EntityCommandBuffer ecb)
         {
             int rescuedCount = 0;
             int orphanCount = 0;
+            int deferred = 0;
 
             for (int i = 0; i < entities.Length; i++)
             {
@@ -178,6 +230,14 @@ namespace MapExtPDX.EcoShared
                 PersonalCar pc = m_PersonalCarLookup[vehicle];
                 if ((pc.m_State & PersonalCarFlags.DummyTraffic) != 0) continue;
 
+                // --- 分批閘門：本輪配額用盡後只統計、不下指令 ---
+                // 置於過濾之後，確保配額只計「真正要動手的車」，不被大量健康車輛耗盡。
+                if (rescuedCount + orphanCount >= kMaxRescuePerRun)
+                {
+                    deferred++;
+                    continue;
+                }
+
                 // 获取车主住宅
                 Entity homeProperty = GetHomeProperty(vehicle);
                 if (homeProperty == Entity.Null)
@@ -185,10 +245,15 @@ namespace MapExtPDX.EcoShared
                     // --- 孤兒車清理（存量 bug 車輛，多見於舊存檔）---
                     // 家庭已搬走/解散/無房（含遊民家庭），無法以住宅為中心重試，
                     // 車輛本身已是不可用的幽靈狀態，直接安全刪除是淨收益。
-                    // 此路徑未經原版 FixParkingLocationSystem 的失敗清理，
-                    // 須自行清 CarKeeper，再走 Deleted 標記交由原版 RemovedSystem 銷毀。
-                    CleanupOwnership(vehicle);
-                    ClearCarKeeper(vehicle);
+                    //
+                    // 只下 Deleted，不自行清 CarKeeper / OwnedVehicle：
+                    // 原版 Game.Vehicles.ReferencesSystem（Modification5）的 Deleted 分支會在
+                    // 實體真正銷毀前自動清理兩者——`m_CarKeepers[keeper].m_Car == entity` 時歸零
+                    // （ReferencesSystem.cs:532-536），並 `CollectionUtils.RemoveValue` 移除
+                    // OwnedVehicle 項（:481-484）。其 query 為 All{Vehicle} + Any{Created,Deleted}，
+                    // 而私家車 archetype 經 VehiclePrefab 必帶 Vehicle，故必被覆蓋。
+                    // 實際銷毀更晚：MainLoop 的 PrepareCleanUpSystem 收集 → Cleanup 的
+                    // CleanUpSystem.DestroyEntity，兩者都在 ReferencesSystem 之後。
                     ecb.AddComponent<Deleted>(vehicle);
                     orphanCount++;
                     continue;
@@ -218,6 +283,14 @@ namespace MapExtPDX.EcoShared
                 DebugLog($"购车救援：已将 {rescuedCount} 辆停放失败的新购车辆传送到住宅附近重新停放");
             if (orphanCount > 0)
                 DebugLog($"孤兒車清理：已刪除 {orphanCount} 輛無家可歸的存量幽靈車輛");
+
+            // 積壓量僅在數量變化時記一次，避免每輪重複刷同一行
+            if (deferred != m_DeferredRescueCount)
+            {
+                m_DeferredRescueCount = deferred;
+                if (deferred > 0)
+                    DebugLog($"购车救援分批：本轮配额 {kMaxRescuePerRun} 已用尽，尚有 {deferred} 辆待后续处理");
+            }
         }
 
         /// <summary>
@@ -246,14 +319,15 @@ namespace MapExtPDX.EcoShared
                     continue;
 
                 // 实体已被销毁或不再匹配 Query → 清理
-                if (!EntityManager.Exists(vehicle) || !m_ParkedCarLookup.HasComponent(vehicle))
+                // 存在性一律走 lookup.EntityExists，不用 EntityManager.Exists（避免隱式同步點）
+                if (!m_ParkedCarLookup.EntityExists(vehicle) || !m_ParkedCarLookup.HasComponent(vehicle))
                 {
                     toRemove.Add(vehicle);
                     continue;
                 }
 
                 // FixParkingLocation 仍挂着 → 原版系统还没处理完，跳过
-                if (EntityManager.HasComponent<FixParkingLocation>(vehicle))
+                if (m_FixParkingLookup.HasComponent(vehicle))
                     continue;
 
                 ParkedCar parkedCar = m_ParkedCarLookup[vehicle];
@@ -267,10 +341,10 @@ namespace MapExtPDX.EcoShared
                 }
 
                 // 超过最大重试次数 → 删除僵尸车辆
+                // 只下 Deleted；CarKeeper 與 OwnedVehicle 由原版 Game.Vehicles.ReferencesSystem
+                // 的 Deleted 分支自動清理（詳見 ProcessRescue 中的孤兒車註釋）
                 if (currentRetry >= kMaxRetries)
                 {
-                    CleanupOwnership(vehicle);
-                    ClearCarKeeper(vehicle);
                     ecb.AddComponent<Deleted>(vehicle);
                     toRemove.Add(vehicle);
                     removedCount++;
@@ -288,9 +362,7 @@ namespace MapExtPDX.EcoShared
                 }
                 else
                 {
-                    // 无住宅（家庭已搬走或解散）→ 直接删除
-                    CleanupOwnership(vehicle);
-                    ClearCarKeeper(vehicle);
+                    // 无住宅（家庭已搬走或解散）→ 直接删除（清理同上，交由原版）
                     ecb.AddComponent<Deleted>(vehicle);
                     toRemove.Add(vehicle);
                     removedCount++;
@@ -331,7 +403,7 @@ namespace MapExtPDX.EcoShared
             using var toRemove = new NativeList<Entity>(Allocator.Temp);
             foreach (var kvp in m_RescuedVehicles)
             {
-                if (!activeSet.Contains(kvp.Key) && !EntityManager.Exists(kvp.Key))
+                if (!activeSet.Contains(kvp.Key) && !m_ParkedCarLookup.EntityExists(kvp.Key))
                 {
                     toRemove.Add(kvp.Key);
                 }
@@ -356,32 +428,6 @@ namespace MapExtPDX.EcoShared
                 return Entity.Null;
 
             return renter.m_Property;
-        }
-
-        /// <summary>
-        /// 清理市民對車輛的持有引用（CarKeeper.m_Car）。
-        /// 原版 FixParkingLocationSystem 失敗路徑會自行清理，但孤兒車刪除路徑
-        /// 未經該系統，須在此補齊，防止市民持有指向已刪實體的懸掛引用。
-        /// 注意：CarKeeper 為 IEnableableComponent，須檢查啟用狀態。
-        /// </summary>
-        private void ClearCarKeeper(Entity vehicle)
-        {
-            if (!m_PersonalCarLookup.TryGetComponent(vehicle, out var pc))
-                return;
-
-            Entity keeper = pc.m_Keeper;
-            if (keeper == Entity.Null || !EntityManager.HasComponent<Game.Citizens.CarKeeper>(keeper))
-                return;
-
-            if (!EntityManager.IsComponentEnabled<Game.Citizens.CarKeeper>(keeper))
-                return;
-
-            var carKeeper = EntityManager.GetComponentData<Game.Citizens.CarKeeper>(keeper);
-            if (carKeeper.m_Car == vehicle)
-            {
-                carKeeper.m_Car = Entity.Null;
-                EntityManager.SetComponentData(keeper, carKeeper);
-            }
         }
 
         /// <summary>
@@ -424,30 +470,6 @@ namespace MapExtPDX.EcoShared
             bool enabled = Mod.Instance?.Settings?.EnableVehicleRescue == true;
             return $"Ghost vehicles: {ghostCount} (rescuable: {rescuableCount}, orphan: {orphanCount}, dummy skipped: {dummyCount}, tracking: {m_RescuedVehicles.Count})"
                 + (enabled ? " | Rescue: ON, cleanup in progress." : " | Rescue: OFF, enable it to start cleanup.");
-        }
-
-        /// <summary>
-        /// 清理车辆与 Household 的归属关系。
-        /// 从 Household 的 OwnedVehicle Buffer 中移除该车辆的引用，防止悬挂引用。
-        /// </summary>
-        private void CleanupOwnership(Entity vehicle)
-        {
-            if (!m_OwnerLookup.TryGetComponent(vehicle, out var owner))
-                return;
-
-            Entity household = owner.m_Owner;
-            if (!EntityManager.HasBuffer<OwnedVehicle>(household))
-                return;
-
-            var buffer = EntityManager.GetBuffer<OwnedVehicle>(household);
-            for (int i = buffer.Length - 1; i >= 0; i--)
-            {
-                if (buffer[i].m_Vehicle == vehicle)
-                {
-                    buffer.RemoveAt(i);
-                    break;
-                }
-            }
         }
 
         #endregion
