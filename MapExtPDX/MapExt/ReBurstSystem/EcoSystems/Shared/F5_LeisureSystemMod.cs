@@ -171,6 +171,10 @@ namespace MapExtPDX.EcoShared
 					m_ResidentPrefabQuery.ToArchetypeChunkListAsync(World.UpdateAllocator.ToAllocator,
 						out var outJobHandle),
 				m_PersonalCarSelectData = m_PersonalCarSelectData,
+				// [MapExt2-Spread] 原版為 GetQueue(this, 64)，即 spreadFrames=0（整批請求單幀湧入 Setup）。
+				// 補 16 讓該 tick 的請求分 16 幀出隊，攤平 SetupLeisureTargetJob 的 O(S×T) 單幀尖峰；
+				// 與 P2 LeisureHandler 的 Early Exit 正交（前者攤尖峰、後者減總量）。
+				// 本系統每 64 幀 tick 且 UpdateFrame 分 16 片，spreadFrames 16 遠小於 tick 間隔，佇列不重疊。
 				m_PathfindQueue = m_PathFindSetupSystem.GetQueue(this, 64, 16).AsParallelWriter(),
 				m_CommandBuffer = m_EndFrameBarrier.CreateCommandBuffer().AsParallelWriter(),
 				m_MeetingQueue = m_AddMeetingSystem.GetMeetingQueue(out var deps).AsParallelWriter(),

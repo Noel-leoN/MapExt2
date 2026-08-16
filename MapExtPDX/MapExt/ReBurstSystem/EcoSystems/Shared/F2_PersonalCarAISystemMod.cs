@@ -900,6 +900,9 @@ namespace MapExtPDX.EcoShared
 				m_MovingToParkedCarRemoveTypes = m_MovingToParkedCarRemoveTypes,
 				m_MovingToParkedCarAddTypes = m_MovingToParkedCarAddTypes,
 				m_CommandBuffer = m_EndFrameBarrier.CreateCommandBuffer().AsParallelWriter(),
+				// [MapExt2-Spread] 原版為 GetQueue(this, 64)，即 spreadFrames=0（整批請求單幀湧入 Setup）。
+				// 補 16 讓該 tick 的請求分 16 幀出隊，攤平 PathfindSetupSystem 的 O(S×T) 單幀尖峰。
+				// 注意：本系統每幀 tick，故穩態下會有約 16 份 active queue 並存，且重尋路最遲延後 16 模擬幀。
 				m_PathfindQueue = m_PathfindSetupSystem.GetQueue(this, 64, 16).AsParallelWriter(),
 				m_MoneyTransferQueue = m_Actions.m_MoneyTransferQueue.AsParallelWriter(),
 				m_FeeQueue = m_ServiceFeeSystem.GetFeeQueue(out deps).AsParallelWriter(),

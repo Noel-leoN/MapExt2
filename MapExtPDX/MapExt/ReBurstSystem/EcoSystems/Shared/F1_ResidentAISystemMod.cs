@@ -244,6 +244,9 @@ namespace MapExtPDX.EcoShared
 				m_ParkedToMovingTrailerAddTypes = m_ParkedToMovingTrailerAddTypes,
 				m_DeletedResidents = m_DeletedResidents,
 				m_TimeOfDay = m_TimeSystem.normalizedTime,
+				// [MapExt2-Spread] 原版為 GetQueue(this, 64)，即 spreadFrames=0 —— 該 tick 的請求整批單幀
+				// 湧入 PathfindSetupSystem.FindTargets，O(S×T) 一幀付清。補 16 讓請求分 16 幀出隊，攤平尖峰。
+				// 注意：本系統每幀 tick，故穩態下會有約 16 份 active queue 並存，且重尋路最遲延後 16 模擬幀。
 				m_PathfindQueue = m_PathfindSetupSystem.GetQueue(this, 64, 16).AsParallelWriter(),
 				m_BoardingQueue = m_Actions.m_BoardingQueue.AsParallelWriter(),
 				m_ActionQueue = m_Actions.m_ActionQueue.AsParallelWriter(),

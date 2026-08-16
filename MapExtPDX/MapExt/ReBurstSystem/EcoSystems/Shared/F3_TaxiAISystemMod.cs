@@ -153,6 +153,9 @@ namespace MapExtPDX.EcoShared
 				m_TimeOfDay = m_TimeSystem.normalizedTime,
 				m_SimulationFrameIndex = m_SimulationSystem.frameIndex,
 				m_CommandBuffer = m_EndFrameBarrier.CreateCommandBuffer().AsParallelWriter(),
+				// [MapExt2-Spread] 原版為 GetQueue(this, 64)，即 spreadFrames=0（整批請求單幀湧入 Setup）。
+				// 補 16 讓該 tick 的請求分 16 幀出隊，攤平 PathfindSetupSystem 的 O(S×T) 單幀尖峰。
+				// 本系統每 16 幀 tick，spreadFrames 等於 tick 間隔，新舊佇列不重疊。
 				m_PathfindQueue = m_PathfindSetupSystem.GetQueue(this, 64, 16).AsParallelWriter(),
 				m_RouteVehicleQueue = routeVehicleQueue.AsParallelWriter(),
 				m_FindHomeMaxCost = Mod.Instance.Settings.FindHomeMaxCost
