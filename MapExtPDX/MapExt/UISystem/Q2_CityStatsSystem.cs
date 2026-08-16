@@ -1,6 +1,7 @@
 // Copyright (c) 2024 Noel2(Noel-leoN)
 // Licensed under the MIT License.
 
+using Colossal.Collections;
 using Game;
 using Game.Agents;
 using Game.Buildings;
@@ -11,6 +12,8 @@ using Game.Simulation;
 using Game.Tools;
 using MapExtPDX.MapExt.Core;
 using System.Reflection;
+using Unity.Burst;
+using Unity.Burst.Intrinsics;
 using Unity.Collections;
 using Unity.Entities;
 using Unity.Jobs;
@@ -53,6 +56,19 @@ namespace MapExtPDX.UI
         /// <summary>反射获取的 ResidentPurposeCounterSystem.m_Results（Persistent NativeArray）</summary>
         private NativeArray<int> m_PurposeResults;
         private bool m_PurposeResultsValid;
+
+        /// <summary>
+        /// 高租金建築計數的累加器（Persistent）。
+        /// 常態路徑由 <see cref="CountHighRentJob"/> 平行寫入，OnUpdate 開頭讀上一輪結果，
+        /// 對齊原版 Count* 系統（如 CountResidentialPropertySystem）的「讀上一輪 → 清 → 排本輪」模式。
+        /// </summary>
+        private NativeAccumulator<HighRentData> m_HighRentAccumulator;
+
+        /// <summary>
+        /// OnStartRunning 剛同步算過首屏值時置位：下一次 OnUpdate 不要用剛清空的累加器覆寫它。
+        /// 沒有這個標記的話首屏值會在第一次 OnUpdate 立刻被 0 抹掉。
+        /// </summary>
+        private bool m_SkipNextHighRentRead;
 
         #endregion
 
@@ -200,6 +216,9 @@ namespace MapExtPDX.UI
                 ComponentType.Exclude<Deleted>(),
                 ComponentType.Exclude<Temp>());
 
+            // === 高租金建築計數累加器（S1：把主執行緒掃描搬進 Job） ===
+            m_HighRentAccumulator = new NativeAccumulator<HighRentData>(Allocator.Persistent);
+
             // === Phase 4: 获取游戏原生统计系统引用 ===
             m_CountResPropertySystem = World.GetOrCreateSystemManaged<CountResidentialPropertySystem>();
             m_CountCompanySystem = World.GetOrCreateSystemManaged<CountCompanyDataSystem>();
@@ -250,8 +269,26 @@ namespace MapExtPDX.UI
             SeekerHomelessCount = m_PropertySeekerHomelessQuery.CalculateEntityCount();
             PetCount = m_PetQuery.CalculateEntityCount();
 
-            // === 高租金建筑需要遍历 Chunk 检查 BuildingFlags ===
-            HighRentBuildingCount = CountHighRentBuildings();
+            // === 高租金建築：讀上一輪 Job 結果 → 清 → 排本輪（S1） ===
+            // HighRentWarning 是 BuildingFlags 的位元而非獨立 component，無法用 EntityQuery 過濾，
+            // 只能逐 entity 檢查；但沒有理由佔用主執行緒。結果延遲一輪（256 幀），
+            // 首屏由 OnStartRunning 的同步計算補上。
+            if (m_SkipNextHighRentRead)
+            {
+                // 本輪的累加器是 OnStartRunning 剛清空的，讀它只會得到 0；保留首屏同步值。
+                m_SkipNextHighRentRead = false;
+            }
+            else
+            {
+                HighRentBuildingCount = m_HighRentAccumulator.GetResult().m_Count;
+            }
+
+            m_HighRentAccumulator.Clear();
+            Dependency = new CountHighRentJob
+            {
+                m_BuildingType = SystemAPI.GetComponentTypeHandle<Building>(isReadOnly: true),
+                m_Result = m_HighRentAccumulator.AsParallelWriter(),
+            }.ScheduleParallel(m_HighRentBuildingQuery, Dependency);
 
             // === Phase 4: 通勤者（O(1) archetype 计数） ===
             CommuterCount = m_CommuterQuery.CalculateEntityCount();
@@ -275,6 +312,13 @@ namespace MapExtPDX.UI
             base.OnStartRunning();
             if (m_PurposeCounterSystem != null)
                 m_PurposeCounterSystem.Enabled = true;
+
+            // 面板剛展開時同步算一次，讓首屏就有正確值（累加器是 Persistent，
+            // 不清的話會顯示上次關閉時的 stale 值）。這是使用者主動觸發的單次操作，
+            // 與 Q1_PopulationDiagnosticSystem 的診斷按鈕同性質，可接受主執行緒成本。
+            m_HighRentAccumulator.Clear();
+            HighRentBuildingCount = CountHighRentBuildingsSync();
+            m_SkipNextHighRentRead = true;
         }
 
         protected override void OnStopRunning()
@@ -282,6 +326,64 @@ namespace MapExtPDX.UI
             base.OnStopRunning();
             if (m_PurposeCounterSystem != null)
                 m_PurposeCounterSystem.Enabled = false;
+
+            // 系統停止後 ECS 不再追蹤本系統的 Dependency，但已排程的 CountHighRentJob
+            // 仍會寫入 Persistent 累加器；若不等它結束，下次 OnStartRunning 的 Clear()
+            // 會與它競態。這是面板收起時的一次性同步，成本可忽略。
+            Dependency.Complete();
+        }
+
+        protected override void OnDestroy()
+        {
+            if (m_HighRentAccumulator.IsCreated)
+                m_HighRentAccumulator.Dispose();
+            base.OnDestroy();
+        }
+
+        #endregion
+
+        #region Jobs
+
+        /// <summary>高租金建築計數的累加載體（對齊原版 Count* 系統的 NativeAccumulator 慣例）。</summary>
+        private struct HighRentData : IAccumulable<HighRentData>
+        {
+            public int m_Count;
+
+            public void Accumulate(HighRentData other) => m_Count += other.m_Count;
+        }
+
+        /// <summary>
+        /// 統計帶 HighRentWarning 標誌的建築數（S1）。
+        /// 該標誌是 BuildingFlags 的位元而非獨立 component，無法用 EntityQuery 過濾，
+        /// 只能逐 entity 檢查——但可以平行化，不必佔用主執行緒。
+        /// </summary>
+        [BurstCompile]
+        private struct CountHighRentJob : IJobChunk
+        {
+            [ReadOnly] public ComponentTypeHandle<Building> m_BuildingType;
+
+            public NativeAccumulator<HighRentData>.ParallelWriter m_Result;
+
+            public void Execute(in ArchetypeChunk chunk, int unfilteredChunkIndex,
+                                bool useEnabledMask, in v128 chunkEnabledMask)
+            {
+                NativeArray<Building> buildings = chunk.GetNativeArray(ref m_BuildingType);
+                int count = 0;
+
+                for (int i = 0; i < buildings.Length; i++)
+                {
+                    if ((buildings[i].m_Flags & BuildingFlags.HighRentWarning) != 0)
+                    {
+                        count++;
+                    }
+                }
+
+                // 每 chunk 只彙總一次，避免 per-entity 的 accumulator 開銷
+                if (count != 0)
+                {
+                    m_Result.Accumulate(new HighRentData { m_Count = count });
+                }
+            }
         }
 
         #endregion
@@ -289,10 +391,15 @@ namespace MapExtPDX.UI
         #region Helpers
 
         /// <summary>
-        /// 统计带有 HighRentWarning 标志的建筑数量。
+        /// 统计带有 HighRentWarning 标志的建筑数量（同步版）。
         /// HighRentWarning 是 BuildingFlags 的 flag 位，无法直接用 EntityQuery 过滤。
+        /// <para>
+        /// <b>僅供 <see cref="OnStartRunning"/> 的首屏使用</b>——常態路徑走
+        /// <see cref="CountHighRentJob"/>。此處的 <c>ToArchetypeChunkArray</c> 是同步版，
+        /// 會 complete 該 query 的全部 job 依賴，不可放進 OnUpdate。
+        /// </para>
         /// </summary>
-        private int CountHighRentBuildings()
+        private int CountHighRentBuildingsSync()
         {
             int count = 0;
             var chunks = m_HighRentBuildingQuery.ToArchetypeChunkArray(Allocator.TempJob);
@@ -338,6 +445,14 @@ namespace MapExtPDX.UI
         {
             if (m_CountCompanySystem == null) return;
             var comData = m_CountCompanySystem.GetCommercialCompanyDatas(out JobHandle deps);
+
+            // S2：不阻塞主執行緒。deps 是 CountCompanyDataSystem 的
+            // CountCompanyDataJob → 單執行緒 SumJob 整條鏈，未完成就跳過本輪、保留上一輪的值
+            // （256 幀後會再試）。Q2 的 offset 由 UpdateSystem 自動分配，與 CountCompanyDataSystem
+            // 相隔幾幀無法靜態確定，因此不能假設 Complete() 一定不等待。
+            if (!deps.IsCompleted) return;
+
+            // 已完成；Unity 要求讀 NativeArray 前必須 Complete，此呼叫僅清理 safety handle，無實際等待。
             deps.Complete();
 
             int totalSvc = 0;

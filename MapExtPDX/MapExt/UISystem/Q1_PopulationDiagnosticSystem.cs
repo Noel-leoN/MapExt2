@@ -184,6 +184,12 @@ namespace MapExtPDX.UI
         /// <summary>
         /// 统计带有 HighRentWarning 标志的建筑数量。
         /// 需要遍历 Chunk 检查 BuildingFlags，因为 HighRentWarning 是 flag 而非独立 component。
+        /// <para>
+        /// <b>刻意保留同步實作，不要與 Q2_CityStatsSystem 的 CountHighRentJob 合併</b>——
+        /// 本系統是 ModSettings 按鈕觸發的一次性診斷（Enabled = false、OnUpdate 空），
+        /// 使用者要的是即時回傳值；改成非同步 Job 就拿不到結果。
+        /// 語意不同，不是重複代碼。
+        /// </para>
         /// </summary>
         private int CountHighRentBuildings()
         {
