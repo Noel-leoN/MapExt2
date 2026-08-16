@@ -133,8 +133,12 @@ using MapExtPDX.MapExt.Core;
                     if (value.m_Pollution > 0)
                     {
                         value.m_Pollution = (short)math.max(0, this.m_PollutionMap[i].m_Pollution - MathUtils.RoundToIntRandom(ref random, (float)this.m_PollutionParameters.m_GroundFade / (float)kUpdatesPerDay));
+                        // === [MOD OPT] 條件寫回（位元級等價）===
+                        // 原本寫回在 if 外，m_Pollution == 0 的格子會把讀出來的同一個值寫回去。
+                        // 大地圖上絕大多數格為 0，等於每次 tick 無謂標髒並回寫整張 1024² 貼圖（2MB）。
+                        // 只在真正變化時寫入；random 的消耗位置不變（本來就在 if 內），隨機序列不受影響。
+                        this.m_PollutionMap[i] = value;
                     }
-                    this.m_PollutionMap[i] = value;
                 }
             }
         }

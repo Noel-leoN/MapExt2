@@ -45,8 +45,16 @@ using MapExtPDX.MapExt.Core;
         public static readonly int kTextureSize = XCellMapSystemRe.GroundWaterSystemkTextureSize; // mod尺寸
         public int2 TextureSize => new int2(kTextureSize, kTextureSize);
 
-        // 系统更新周期：每128
-        public static readonly int kUpdatesPerDay = 128;
+        // === 系統更新週期 ===
+        // [MOD FIX] 原版 GroundWaterSystem.GetUpdateInterval 硬編碼 return 128，
+        // 即每 128 模擬幀一次 = 每天 262144 / 128 = 2048 次。
+        // 官方 WaterPipeParametersPrefab 的 tooltip 亦寫明 "per tick (2048 ticks per day)"。
+        // 早期版本把 interval 值（128）誤當成每日次數，套用其他 CellMap 系統的
+        // 262144 / kUpdatesPerDay 模板後得到 interval = 2048 → 每天僅 128 次，
+        // 導致 m_GroundwaterPurification / m_GroundwaterReplenish 的施加頻率只有原版 1/16：
+        // 地下水污染幾乎不消退（注入端 GroundWaterPollutionSystem 仍是每天 2048 次），
+        // 抽乾的井恢復需約兩天遊戲時間。此處修正為原版語意。
+        public static readonly int kUpdatesPerDay = 2048;
         public override int GetUpdateInterval(SystemUpdatePhase phase) => 262144 / kUpdatesPerDay;
         public override int GetUpdateOffset(SystemUpdatePhase phase) => 64;
 
@@ -134,6 +142,17 @@ using MapExtPDX.MapExt.Core;
             {
                 TargetType groundWater = this.m_GroundWaterMap[index];
                 TargetType groundWater2 = this.m_GroundWaterMap[otherIndex];
+
+                // === [MOD OPT] 零格早退（位元級等價）===
+                // 兩格的 m_Amount / m_Polluted / m_Max 全為 0 時：
+                //   num = num2 = 0 → 內層三元運算取 0 → (0 - 0) / 4 = 0
+                //   clamp 的上下界 -(0-0)/4 與 (0-0)/4 同時塌成 0 → num3 恆為 0
+                // 故本次呼叫對 tmp 沒有任何增量，可安全跳過（與 tmp 當前值無關）。
+                // 逐項 == 0 比較而非位元 OR：short 是有符號型別，OR 會觸發 CS0675 符號擴展錯誤；
+                // 語意上任何非 0（含理論上不該出現的負值）都不早退，退回原邏輯，行為安全。
+                if (groundWater.m_Amount == 0 && groundWater.m_Polluted == 0 && groundWater.m_Max == 0 &&
+                    groundWater2.m_Amount == 0 && groundWater2.m_Polluted == 0 && groundWater2.m_Max == 0) return;
+
                 ref int2 reference = ref tmp.ElementAt(index);
                 ref int2 reference2 = ref tmp.ElementAt(otherIndex);
                 int num = groundWater.m_Polluted + groundWater2.m_Polluted;
@@ -151,6 +170,16 @@ using MapExtPDX.MapExt.Core;
             {
                 TargetType groundWater = this.m_GroundWaterMap[index];
                 TargetType groundWater2 = this.m_GroundWaterMap[otherIndex];
+
+                // === [MOD OPT] 零格早退（位元級等價）===
+                // 兩格全為 0 時：num3 = 0 - 0 = 0；
+                //   num4 = clamp((0 - 0 - 0) / 4, -0/4, 0/4) = 0 → num5 = 0
+                // → reference / reference2 完全不變。
+                // 關鍵：num4 的 clamp 上下界用的是 map 值（m_Amount）而非 amount + tmp.x，
+                // 故該推導與 tmp 的當前值無關。
+                if (groundWater.m_Amount == 0 && groundWater.m_Polluted == 0 && groundWater.m_Max == 0 &&
+                    groundWater2.m_Amount == 0 && groundWater2.m_Polluted == 0 && groundWater2.m_Max == 0) return;
+
                 ref int2 reference = ref tmp.ElementAt(index);
                 ref int2 reference2 = ref tmp.ElementAt(otherIndex);
                 Assert.IsTrue(groundWater2.m_Polluted + reference2.y <= groundWater2.m_Amount + reference2.x);

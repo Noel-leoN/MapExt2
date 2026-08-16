@@ -118,6 +118,7 @@ using MapExtPDX.MapExt.Core;
         /// <summary>
         /// 扩散计算 Job：执3x3 高斯模糊加权
         /// </summary>
+        [BurstCompile]
         private struct NoisePollutionSwapJob : IJobParallelFor
         {
             // 允许并行写入，因为写入的Struct 内部字段，且每个 Index 独立
@@ -176,6 +177,10 @@ using MapExtPDX.MapExt.Core;
             public void Execute(int index)
             {
                 TargetType cell = m_PollutionMap[index];
+                // === [MOD OPT] 條件寫回（位元級等價）===
+                // 已經是 0 的格子，寫入不改變任何位元。大地圖上多數格為 0，
+                // 跳過可省下大部分 store 與 dirty cache line。
+                if (cell.m_PollutionTemp == 0) return;
                 cell.m_PollutionTemp = 0;
                 m_PollutionMap[index] = cell;
             }

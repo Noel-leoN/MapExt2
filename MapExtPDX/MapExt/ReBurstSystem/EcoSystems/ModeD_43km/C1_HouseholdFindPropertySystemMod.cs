@@ -1544,6 +1544,7 @@ namespace MapExtPDX.ModeD
                     _citizenHappinessParamQuery.GetSingleton<CitizenHappinessParameterData>(),
 
                 m_City = _citySystem.City,
+                // [P6] 找房候選上限（可配置；managed 端讀 settings 注入 Burst job）
                 m_MaxCandidatesToFind = Mod.Instance.Settings.FindHomeCandidateCap,
                 m_SetupData = setupData
             };

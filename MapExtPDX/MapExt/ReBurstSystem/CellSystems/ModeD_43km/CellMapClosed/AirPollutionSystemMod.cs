@@ -136,63 +136,113 @@ namespace MapExtPDX.ModeD
 
         protected override void OnUpdate()
         {
-            JobHandle dependencies;
             // 获取参数
             var pParams = m_PollutionParameterQuery.GetSingleton<PollutionParameterData>();
-            // 获取风力数据 (通常是只
-            var windMap = m_WindSystem.GetMap(true, out dependencies);
+            // 获取风力数据 (只读)
+            var windMap = m_WindSystem.GetMap(true, out JobHandle windDeps);
 
-            // [核心方案] 使用 Allocator.TempJob 分配临时缓冲
-            // TempJob 允许大内存分8MB+)，且Persistent 快
-            // 必须Job 完成Dispose
+            // [核心方案] 使用 Allocator.TempJob 分配临时缓冲区
+            // TempJob 允许大内存分配(8MB+)，且比 Persistent 快
+            // 必须在 Job 完成后 Dispose
             NativeArray<TargetType> scratchMap = new(m_Map.Length, Allocator.TempJob);
 
-            AirPollutionMoveJob jobData = new()
+            // 合并依赖
+            JobHandle combinedDeps = JobUtils.CombineDependencies(windDeps, m_WriteDependencies, m_ReadDependencies, Dependency);
+
+            // === [MOD OPT] 趟1 平流(Advection)：每格只讀唯讀輸入、只寫自己的 m_TempMap[i]、
+            // 無隨機數 → 執行順序不影響結果，改用 IJobParallelFor 平行化（位元級等價）。
+            // batch = kTextureSize：每個 batch 一整行，1024 個 batch 足夠 work stealing。
+            AirPollutionAdvectJob advectJob = new()
             {
                 m_PollutionMap = m_Map,
-                m_TempMap = scratchMap,      // 临时读写 (Advection 结果)
                 m_WindMap = windMap,
+                m_PollutionParameters = pParams,
+                m_TempMap = scratchMap
+            };
+            JobHandle advectHandle = advectJob.Schedule(m_Map.Length, kTextureSize, combinedDeps);
+
+            // === 趟2 擴散(Diffusion)＋衰減(Decay)：逐格消耗同一個 Random 序列，
+            // 平行化會改變數值，故保持單執行緒 IJob，隨機序列與原版逐位相同。
+            AirPollutionDiffuseJob diffuseJob = new()
+            {
+                m_PollutionMap = m_Map,
+                m_TempMap = scratchMap,
                 m_PollutionParameters = pParams,
                 m_Random = RandomSeed.Next(),
                 m_Frame = m_SimulationSystem.frameIndex
             };
+            Dependency = diffuseJob.Schedule(advectHandle);
 
-            // 合并依赖
-            JobHandle combinedDeps = JobUtils.CombineDependencies(dependencies, m_WriteDependencies, m_ReadDependencies, Dependency);
-
-            // 调度 Job
-            Dependency = jobData.Schedule(combinedDeps);
-
-            // [关键] 注册 TempJob 的自动释
-            // 这告Unity：当 Dependency (即这Job) 完成后，自动调用 scratchMap.Dispose()
-            // 无需手动管理生命周期，也不会阻塞主线程
+            // [关键] TempJob 的自动释放必须挂在最后一个 Job 上
+            // （挂在 advectHandle 上会在趟2 读取期间被释放）
             scratchMap.Dispose(Dependency);
 
-            // 注册系统读写依赖
-            m_WindSystem.AddReader(Dependency);
+            // windMap 只被趟1 读取，挂在 advectHandle 上可让 WindSystem 更早解除等待
+            m_WindSystem.AddReader(advectHandle);
             AddWriter(Dependency);
 
-            // 更新自身的句
-            m_WriteDependencies = Dependency;
+            // 与原版 AirPollutionSystem 收尾一致
+            // （旧实作漏了这一步，并多写一次 m_WriteDependencies —— AddWriter 内部即为覆盖赋值）
+            Dependency = JobHandle.CombineDependencies(m_ReadDependencies, m_WriteDependencies, Dependency);
         }
 
         #endregion
 
-        #region AirPollutionMoveJob
+        #region AirPollutionAdvectJob
+        /// <summary>
+        /// 趟1：平流(Advection) —— 模擬風把污染吹走。
+        /// <para>
+        /// 每格逆著風向回溯採樣「源頭座標」的污染值，寫入暫存圖。
+        /// 每個 index 只讀唯讀輸入（污染圖、風場）、只寫自己的 m_TempMap[index]、不使用隨機數，
+        /// 因此執行順序不影響結果 —— 與原本單執行緒版本位元級等價。
+        /// </para>
+        /// </summary>
         [BurstCompile]
-        public struct AirPollutionMoveJob : IJob
+        public struct AirPollutionAdvectJob : IJobParallelFor
+        {
+            /// <summary>只讀：污染圖。雙線性插值需要任意索引讀取，標 [ReadOnly] 即可解除 ParallelFor 的 index 限制</summary>
+            [ReadOnly] public NativeArray<TargetType> m_PollutionMap;
+
+            /// <summary>只讀：風力圖（64²，遠小於污染圖）</summary>
+            [ReadOnly] public NativeArray<Wind> m_WindMap;
+
+            /// <summary>污染相關全域參數（風力影響係數等）</summary>
+            public PollutionParameterData m_PollutionParameters;
+
+            /// <summary>只寫：平流結果。僅寫 [index]，符合 IJobParallelFor 的寫入限制</summary>
+            [WriteOnly] public NativeArray<TargetType> m_TempMap;
+
+            public void Execute(int index)
+            {
+                // 當前格子的世界座標中心點
+                float3 currentCellPos = XCellMapSystemRe.AirPollutionSystemGetCellCenter(index);
+
+                // 該位置的風速與風向
+                Wind windInfo = XCellMapSystemRe.WindSystemGetWind(currentCellPos, this.m_WindMap);
+
+                // 源頭座標：逆著風向回溯，找出污染是從哪裡吹過來的
+                float3 sourcePos = currentCellPos - this.m_PollutionParameters.m_WindAdvectionSpeed * new float3(windInfo.m_Wind.x, 0f, windInfo.m_Wind.y);
+
+                // 在原始污染圖中採樣源頭座標的污染值（雙線性插值）
+                short advectedValue = XCellMapSystemRe.AirPollutionSystemGetPollution(sourcePos, this.m_PollutionMap).m_Pollution;
+
+                m_TempMap[index] = new TargetType
+                {
+                    m_Pollution = advectedValue
+                };
+            }
+        }
+        #endregion
+
+        #region AirPollutionDiffuseJob
+        [BurstCompile]
+        public struct AirPollutionDiffuseJob : IJob
         {
             /// <summary>
-            /// 读写：空气污染数据图
-            /// 最终计算结果写回该字段
+            /// 写入：空气污染数据图
+            /// 最终计算结果写回该字段（本 Job 不读取它，只读 m_TempMap）
             /// </summary>
             public NativeArray<TargetType> m_PollutionMap;
-
-            /// <summary>
-            /// 只读：风力数据图
-            /// 用于计算污染移动的方向
-            /// </summary>
-            [ReadOnly] public NativeArray<Wind> m_WindMap;
 
             /// <summary>
             /// 污染相关的全局参数（如风力影响系数、衰减速度等）
@@ -209,7 +259,8 @@ namespace MapExtPDX.ModeD
             /// </summary>
             public uint m_Frame;
 
-            public NativeArray<TargetType> m_TempMap;
+            /// <summary>只讀：趟1(AirPollutionAdvectJob) 的平流結果</summary>
+            [ReadOnly] public NativeArray<TargetType> m_TempMap;
 
             // ============================================================
             // 执行逻辑
@@ -222,48 +273,16 @@ namespace MapExtPDX.ModeD
 
                 // 扩散系数位移量：3 表示除以 8 (2^3)
                 // 用于快速计算邻居格子的污染有多少比例扩散到了当前格子
-                // Job直接引入或系统常ECS替换模式)
-                // int kSpreadShift = 3;
 
-                // 获取纹理（网格）的边长大
-                // Job直接引入或系统常ECS替换模式)
-                // int textureSize = XCellMapSystemRe.AirPollutionSystemkTextureSize;
-
-                // 创建临时数组，用于存储第一步“平流”后的结果
-                // 必须使用临时数组，因为不能在读取 m_PollutionMap 的同时写入它，否则会导致数据污染
-                // NativeArray<AirPollution> tempAdvectedMap = new NativeArray<AirPollution>(this.m_PollutionMap.Length, Allocator.Temp);
+                // [MOD OPT] 平流(Advection)阶段已拆分为 AirPollutionAdvectJob (IJobParallelFor)，
+                // 其结果存放于 m_TempMap；本 Job 只负责扩散与衰减，并保持单执行绪以维持
+                // 与原版逐位相同的随机序列。
 
                 // 初始化随机数生成
                 Unity.Mathematics.Random rng = this.m_Random.GetRandom((int)this.m_Frame);
 
                 // --------------------------------------------------------
-                // 2. 第一阶段：平(Advection) - 模拟风吹动污
-                // --------------------------------------------------------
-                for (int i = 0; i < this.m_PollutionMap.Length; i++)
-                {
-                    // 获取当前格子的世界坐标中心点
-                    float3 currentCellPos = XCellMapSystemRe.AirPollutionSystemGetCellCenter(i);
-
-                    // 获取该位置的风速和风向
-                    Wind windInfo = XCellMapSystemRe.WindSystemGetWind(currentCellPos, this.m_WindMap);
-
-                    // 计算“源头坐标”：
-                    // 逆着风向回溯，找到上一帧污染是从哪里吹过来的
-                    // 公式：当前位- (风速系* 风向)
-                    float3 sourcePos = currentCellPos - this.m_PollutionParameters.m_WindAdvectionSpeed * new float3(windInfo.m_Wind.x, 0f, windInfo.m_Wind.y);
-
-                    // 在原始污染图中采样“源头坐标”的污染
-                    short advectedValue = XCellMapSystemRe.AirPollutionSystemGetPollution(sourcePos, this.m_PollutionMap).m_Pollution;
-
-                    // 将移动后的污染值存入临时数
-                    m_TempMap[i] = new TargetType
-                    {
-                        m_Pollution = advectedValue
-                    };
-                }
-
-                // --------------------------------------------------------
-                // 3. 第二阶段：扩(Diffusion) 衰减 (Decay)
+                // 2. 扩散(Diffusion) 与衰减 (Decay)
                 // --------------------------------------------------------
 
                 // 计算每一帧的衰减基础值
