@@ -73,6 +73,7 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
             StableSpeed = 1;
             s_frameCounter = 0;
             s_lastAppliedAsync = null; // 下次加载重新套用并记录 IsAsync
+            s_asyncOverrideWarned = false; // 下次會話若仍被外部覆寫，重新記一次警告
             s_simulationSystem = null; // World 可能重建，下次凍結檢查時重新解析
             s_pauseFrozen = false;
             s_pauseGraceFrames = 0;
@@ -234,6 +235,14 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
         private static bool? s_lastAppliedAsync = null;
 
         /// <summary>
+        /// 外部覆寫 IsAsync 的警告是否已記錄過（每次會話一次）。
+        /// 沒有這個閂的話，若第三方 Mod 每幀寫入 <c>IsAsync = true</c>，
+        /// 下方的 Warn 就會每幀刷一行——<c>s_lastAppliedAsync</c> 只節流另一條 Patch 日誌
+        /// （desired 恆 false，那條一次會話只印一次），攔不住這裡。
+        /// </summary>
+        private static bool s_asyncOverrideWarned = false;
+
+        /// <summary>
         /// 把 <c>WaterSystem.IsAsync</c> 按回 <see cref="ResolutionManager.WaterAsyncCompute"/>（恆 false）。
         /// 每幀呼叫，僅在值變化時記錄日誌——穩態下 <c>instance.IsAsync</c> 已是 false，
         /// 兩個 if 都不成立，等同零開銷。
@@ -244,8 +253,13 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
             if (instance.IsAsync != desired)
             {
                 instance.IsAsync = desired;
-                ModLog.Warn(Tag,
-                    "偵測到 WaterSystem.IsAsync 被外部設為 true（原版與 MapExt 皆不啟用），已按回 false");
+                if (!s_asyncOverrideWarned)
+                {
+                    s_asyncOverrideWarned = true;
+                    ModLog.Warn(Tag,
+                        "偵測到 WaterSystem.IsAsync 被外部設為 true（原版與 MapExt 皆不啟用），已按回 false。" +
+                        "本警告每次會話僅記一次，後續同類覆寫靜默按回，不再重複記錄。");
+                }
             }
             if (s_lastAppliedAsync != desired)
             {

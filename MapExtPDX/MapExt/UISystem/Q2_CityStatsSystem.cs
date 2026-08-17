@@ -70,6 +70,18 @@ namespace MapExtPDX.UI
         /// </summary>
         private bool m_SkipNextHighRentRead;
 
+        /// <summary>
+        /// 最近一次 <see cref="CountHighRentJob"/> 的 handle。
+        ///
+        /// <para><b>為何不用 <c>Dependency</c> 代替</b>：<c>SystemBase.Dependency</c> 的 getter 是
+        /// 由 dependency manager 依本系統的讀寫型別重算的，而該 job 對 <c>Building</c> 只是
+        /// <b>reader</b>（reader 之間互不等待），因此無法從契約層保證 getter 回傳的 handle
+        /// 一定包含剛排下去的這個 job。系統 disable 後 ECS 也不再追蹤 <c>Dependency</c>，
+        /// 而 job 仍在寫 Persistent 累加器 —— 顯式持有才能精確等它，且等待範圍從
+        /// 「本系統全部型別依賴」收窄到單一 job，比 <c>Dependency.Complete()</c> 更便宜。</para>
+        /// </summary>
+        private JobHandle m_HighRentHandle;
+
         #endregion
 
         #region Public Properties — 供 MapExtUISystem GetterValueBinding 读取
@@ -284,11 +296,12 @@ namespace MapExtPDX.UI
             }
 
             m_HighRentAccumulator.Clear();
-            Dependency = new CountHighRentJob
+            m_HighRentHandle = new CountHighRentJob
             {
                 m_BuildingType = SystemAPI.GetComponentTypeHandle<Building>(isReadOnly: true),
                 m_Result = m_HighRentAccumulator.AsParallelWriter(),
             }.ScheduleParallel(m_HighRentBuildingQuery, Dependency);
+            Dependency = m_HighRentHandle;
 
             // === Phase 4: 通勤者（O(1) archetype 计数） ===
             CommuterCount = m_CommuterQuery.CalculateEntityCount();
@@ -316,6 +329,10 @@ namespace MapExtPDX.UI
             // 面板剛展開時同步算一次，讓首屏就有正確值（累加器是 Persistent，
             // 不清的話會顯示上次關閉時的 stale 值）。這是使用者主動觸發的單次操作，
             // 與 Q1_PopulationDiagnosticSystem 的診斷按鈕同性質，可接受主執行緒成本。
+            //
+            // Clear() 之前先確保上一輪的 job 已結束：正常路徑 OnStopRunning 已等過，
+            // 但系統若在同一幀被 disable→enable，這裡是最後一道防線（已完成時為零成本）。
+            m_HighRentHandle.Complete();
             m_HighRentAccumulator.Clear();
             HighRentBuildingCount = CountHighRentBuildingsSync();
             m_SkipNextHighRentRead = true;
@@ -330,11 +347,15 @@ namespace MapExtPDX.UI
             // 系統停止後 ECS 不再追蹤本系統的 Dependency，但已排程的 CountHighRentJob
             // 仍會寫入 Persistent 累加器；若不等它結束，下次 OnStartRunning 的 Clear()
             // 會與它競態。這是面板收起時的一次性同步，成本可忽略。
-            Dependency.Complete();
+            // 等的是自己持有的 handle 而非 Dependency —— 理由見 m_HighRentHandle 的註釋。
+            m_HighRentHandle.Complete();
         }
 
         protected override void OnDestroy()
         {
+            // Dispose 之前必須等 job 結束。World.Dispose() 雖有 CompleteAllTrackedJobs()，
+            // 但單獨銷毀本系統（非整個 World）不走那條路徑，故自己等一次。
+            m_HighRentHandle.Complete();
             if (m_HighRentAccumulator.IsCreated)
                 m_HighRentAccumulator.Dispose();
             base.OnDestroy();

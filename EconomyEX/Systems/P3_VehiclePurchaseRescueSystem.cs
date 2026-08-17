@@ -261,13 +261,21 @@ namespace EconomyEX.Systems
                 }
 
                 // 获取住宅 Transform
-                if (!m_TransformLookup.TryGetComponent(homeProperty, out var homeTf)) continue;
+                //
+                // 取不到時（罕見：住宅正在建造或銷毀中）不再直接 continue——
+                // 那樣該車既不消耗配額也不進追蹤表，會每輪被重新評估且永不收斂。
+                // 改為照樣掛 FixParkingLocation 並記入追蹤表：原版
+                // FixParkingLocationSystem 會以車輛現位置為中心搜尋，
+                // 後續由 ProcessRetry 以 kMaxRetries 收尾。這與 ProcessRetry 的重試路徑
+                // 語意一致——它本來也只重掛 FixParkingLocation，不做傳送。
+                bool canTeleport = m_TransformLookup.TryGetComponent(homeProperty, out var homeTf);
 
                 // 1. 记录到内存追踪表（初始重试计数为 0）
                 m_RescuedVehicles[vehicle] = 0;
 
                 // 2. 将车辆 Transform 传送到住宅位置
-                ecb.SetComponent(vehicle, homeTf);
+                if (canTeleport)
+                    ecb.SetComponent(vehicle, homeTf);
 
                 // 3. 添加 FixParkingLocation，m_ResetLocation = homeProperty
                 //    原版 FixParkingLocationSystem 会以住宅 Transform 为搜索中心，100m 范围内查找车位
