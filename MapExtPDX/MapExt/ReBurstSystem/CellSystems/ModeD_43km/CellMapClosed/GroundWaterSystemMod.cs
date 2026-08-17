@@ -35,7 +35,7 @@ using MapExtPDX.MapExt.Core;
     /// <summary>
     /// 地下水系 地下水流动和污染扩散，并定期补充地下水资源
     /// </summary>
-    public partial class GroundWaterSystemMod : BaseCellMapSystem, IJobSerializable
+    public partial class GroundWaterSystemMod : BaseCellMapSystem, IJobSerializable, Game.Serialization.IPostDeserialize
     {
         public static ModSystem Instance { get; private set; }
 
@@ -126,6 +126,94 @@ using MapExtPDX.MapExt.Core;
             // 这告Unity：当 Dependency (即这Job) 完成后，自动调用 scratchMap.Dispose()
             // 无需手动管理生命周期，也不会阻塞主线程
             scratchMap.Dispose(Dependency);
+        }
+
+        /// <summary>
+        /// 新遊戲的地下水初始場生成。
+        ///
+        /// <para><b>本覆寫是補回移植時遺漏的原版行為。</b>原版
+        /// <c>GroundWaterSystem.SetDefaults</c>（<c>GroundWaterSystem.cs:264-283</c>）在
+        /// <c>purpose == NewGame</c> 時以 Perlin 噪聲生成 <c>m_Amount = m_Max</c>。
+        /// 而 <c>m_Max</c> 是全庫唯一「只有 SetDefaults 會寫、沒有任何重生成器」的靜態容量欄位
+        /// （<c>GroundWaterPollutionSystem</c> 只寫 m_Polluted，<c>ConsumeGroundWater</c> 只減 m_Amount）。
+        /// 早期移植沒帶上這個覆寫，於是擴展模式下整張圖恆為 0——趟3 的
+        /// <c>m_Amount = min(..., m_Max)</c> 永遠算出 0，地下水泵抽不到水。</para>
+        ///
+        /// <para><b>刻意不帶原版的版本守衛</b>：原版條件是
+        /// <c>context.version &lt; Version.timoSerializationFlow</c>，那是為了只在舊地圖檔上生成
+        /// （老檔的序列化流裡沒有 GroundWater 區段，才會走到 SetDefaults；
+        /// 見 <c>EntityDeserializer.cs:434-442</c> 的 m_SystemDefaults 收集條件）。
+        /// 本 Mod 的貼圖尺寸與原版不同，任何地圖檔的資料都會被
+        /// <see cref="DeserializeJobResetMismatch{TReader}"/> 丟棄，故每個新遊戲都必須自行生成。
+        /// 與 <c>NaturalResourceSystemMod.SetDefaults</c> 的處理一致。</para>
+        /// </summary>
+        public override JobHandle SetDefaults(Context context)
+        {
+            JobHandle result = base.SetDefaults(context); // 先清零
+            if (context.purpose == Purpose.NewGame)
+            {
+                result.Complete();
+                GenerateProceduralGroundWater();
+            }
+            return result;
+        }
+
+        /// <summary>
+        /// 反序列化後的兜底補生成。
+        ///
+        /// <para>地圖／存檔裡的 GroundWater 是原版 <c>orgTextureSize²</c> 格，與本模式的
+        /// <c>kTextureSize²</c> 不匹配，<see cref="DeserializeJobResetMismatch{TReader}"/>
+        /// 會讀完丟棄、<c>m_Map</c> 保持全 0。此時系統**存在**於序列化流中，
+        /// <see cref="SetDefaults"/> 不會被呼叫（<c>EntityDeserializer.cs:627-631</c> 只對
+        /// m_SystemDefaults 呼叫），故必須在此補。</para>
+        ///
+        /// <para>判據是「整張圖沒有任何容量」——<c>m_Max</c> 全為 0。該狀態在遊戲中不可能自然產生
+        /// （m_Max 無其他寫入者），只可能是被丟棄或舊版 Mod 存下的空場，
+        /// 因此補生成也順帶修復既有 v4.8.0 及更早的存檔。健康的場在第一個非零格就早退。</para>
+        /// </summary>
+        public void PostDeserialize(Context context)
+        {
+            m_WriteDependencies.Complete();
+
+            for (int i = 0; i < m_Map.Length; i++)
+            {
+                if (m_Map[i].m_Max != 0) return; // 場是健康的，什麼都不做
+            }
+
+            ModLog.Warn(nameof(GroundWaterSystemMod),
+                $"地下水容量場為空（{m_Map.Length} 格 m_Max 全為 0，多半是地圖檔的 " +
+                $"{orgTextureSize}² 資料與本模式 {kTextureSize}² 不匹配而被丟棄），已重新生成");
+            GenerateProceduralGroundWater();
+        }
+
+        /// <summary>
+        /// 依原版公式在本模式解析度上生成地下水場。
+        /// <para>座標先歸一化為 UV 再乘固定頻率 32（與原版 <c>GroundWaterSystem.cs:270-272</c> 相同），
+        /// 故噪聲場形狀與原版一致，只是在放大的貼圖上取樣更密——含水層區域按地圖比例放大、占比不變。
+        /// 與 <c>NaturalResourceSystemMod.GenerateProceduralResources</c> 的作法相同。</para>
+        /// <para>沿用 <c>UnityEngine.Mathf</c> 而非 <c>Unity.Mathematics</c>：
+        /// <c>PerlinNoise</c> 無對應實作，且 <c>RoundToInt</c> 的中點取整規則須與原版逐位一致。
+        /// 全限定呼叫以免引入 <c>using UnityEngine</c> 與既有型別衝突。</para>
+        /// </summary>
+        private void GenerateProceduralGroundWater()
+        {
+            int nonZero = 0;
+            for (int i = 0; i < m_Map.Length; i++)
+            {
+                float u = (float)(i % kTextureSize) / (float)kTextureSize;
+                float v = (float)(i / kTextureSize) / (float)kTextureSize;
+
+                short amount = (short)UnityEngine.Mathf.RoundToInt(10000f * math.saturate(
+                    (UnityEngine.Mathf.PerlinNoise(32f * u, 32f * v) - 0.6f) / 0.4f));
+
+                if (amount != 0) nonZero++;
+                m_Map[i] = new TargetType { m_Amount = amount, m_Max = amount };
+            }
+
+            // 含水層占比是判斷本修補是否生效的唯一可觀測訊號（全 0 即代表沒生成）
+            ModLog.Ok(nameof(GroundWaterSystemMod),
+                $"地下水初始場已生成：{kTextureSize}² = {m_Map.Length} 格，" +
+                $"含水層 {nonZero} 格（{100f * nonZero / m_Map.Length:F2}%）");
         }
         #endregion
 
