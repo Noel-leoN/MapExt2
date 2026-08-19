@@ -11,6 +11,7 @@
 * **[Fix]:** Groundwater updated at one sixteenth of the intended rate, so contamination did not decrease and depleted wells refilled slowly.
 * **[Performance]:** Air pollution spread now runs in parallel, and the groundwater and ground pollution passes skip empty cells.
 * **[Performance]:** The city statistics panel no longer counts buildings on the main thread.
+* **[Performance]:** The vehicle rescue system now scans off the main thread, so looking for stranded vehicles no longer causes a brief stall.
 
 ---
 
@@ -27,3 +28,4 @@
 * **[修復]：** 地下水的更新頻率僅為預期的十六分之一，導致污染不會下降、抽乾的水井回補緩慢。
 * **[效能]：** 空氣污染擴散改為並行運算，地下水與地面污染的處理會跳過空白格。
 * **[效能]：** 城市統計面板不再於主執行緒逐一計算建築。
+* **[效能]：** 車輛救援系統的掃描改於主執行緒外進行，尋找滯留車輛時不再造成短暫停頓。
