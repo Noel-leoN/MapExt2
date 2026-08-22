@@ -70,6 +70,9 @@ BurstDebugInformation_DoNotShip/
 .agents/
 AGENTS.md
 CLAUDE.md
+# 注意：.grok/ 刻意**不列在此**——Grok CLI 会跳过被 .gitignore 忽略的 **rules 目录**，
+# 列进来会让 .grok/rules/ 静默失效（hooks、skills 与顶层 CLAUDE.md 不受影响；实测 2026-08-21）。
+# 它改由 .git/info/exclude 本地排除，详见 CLAUDE.md「三侧规范层的接入方式」。
 
 # Internal knowledge-asset backup repo (overlay, see .agents/workflows/backup-internal.md)
 .git-internal/
