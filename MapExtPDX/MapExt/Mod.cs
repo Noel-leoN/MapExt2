@@ -264,8 +264,14 @@ namespace MapExtPDX
             IsUnloading = true;
 
             // 在Mod卸载时移除所有补丁
-            _globalPatcher?.UnpatchAll();
-            _modePatcher?.UnpatchAll();
+            // 必須傳入自己的 Harmony id：Harmony 的 UnpatchAll(null) 會對每個 patch 的
+            // owner 檢查一律放行，且它遍歷的 GetAllPatchedMethods() 作用範圍是整個
+            // appdomain——不傳 id 等於剝除進程內所有 Mod 的 patch，不只自己的。
+            // 危害路徑：ModManager 在單一 Mod 初始化失敗時只 Dispose 該 Mod，此刻其他
+            // Mod 已載入完成，其 patch 會被靜默清空。
+            // （Harmony 2.2.2 無 UnpatchSelf，傳自身 id 是唯一手段。）
+            _globalPatcher?.UnpatchAll(HarmonyIdGlobal);
+            _modePatcher?.UnpatchAll(HarmonyIdModes);
             _globalPatcher = null;
             _modePatcher = null;
             ModLog.Ok(Tag, "所有 Harmony 补丁已移除");
