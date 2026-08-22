@@ -7,8 +7,10 @@
 * **[Fix]:** The vehicle rescue system now handles stranded vehicles in batches instead of processing over a thousand of them in a single frame when loading an older save.
 * **[Fix]:** Loading a second save within the same session could make the vehicle rescue system act on unrelated vehicles.
 * **[Fix]:** Noise pollution spread was not Burst-compiled and ran on the interpreted code path.
-* **[Fix]:** Groundwater was missing entirely in the expanded map size modes, so groundwater pumps and wells had nothing to draw from. The aquifer is now generated at the expanded resolution, and existing saves are repaired when loaded.
+* **[Fix]:** Groundwater was missing entirely in the expanded map size modes, so groundwater pumps and wells had nothing to draw from. The aquifer painted by the map author is now restored at the expanded resolution on load, and saves that were left with an empty aquifer are repaired the same way. Saves that already have a working aquifer are left untouched.
 * **[Fix]:** Groundwater updated at one sixteenth of the intended rate, so contamination did not decrease and depleted wells refilled slowly.
+* **[Fix]:** Unloading the mod removed every other mod's Harmony patches instead of only its own.
+* **[Fix]:** In the vanilla map size mode, the reworked residential, commercial and industrial demand calculations were never applied.
 * **[Performance]:** Air pollution spread now runs in parallel, and the groundwater and ground pollution passes skip empty cells.
 * **[Performance]:** The city statistics panel no longer counts buildings on the main thread.
 * **[Performance]:** The vehicle rescue system now scans off the main thread, so looking for stranded vehicles no longer causes a brief stall.
@@ -24,8 +26,10 @@
 * **[修復]：** 車輛救援系統改為分批處理滯留車輛，載入舊存檔時不再於單一幀內處理上千輛。
 * **[修復]：** 同一次遊戲中載入第二個存檔時，車輛救援系統可能對無關車輛執行操作。
 * **[修復]：** 噪音污染擴散未經 Burst 編譯，執行於解譯路徑。
-* **[修復]：** 擴展地圖尺寸模式下地下水完全不存在，導致地下水泵與水井無水可抽。現在會依擴展後的解析度生成含水層，既有存檔於載入時一併修復。
+* **[修復]：** 擴展地圖尺寸模式下地下水完全不存在，導致地下水泵與水井無水可抽。現在載入時會依擴展後的解析度還原地圖作者繪製的含水層，先前存下空含水層的存檔亦以同一方式修復；含水層已正常的存檔不受影響。
 * **[修復]：** 地下水的更新頻率僅為預期的十六分之一，導致污染不會下降、抽乾的水井回補緩慢。
+* **[修復]：** 卸載本 Mod 時會一併移除其他 Mod 的 Harmony 補丁，而非僅移除自身的。
+* **[修復]：** 原版地圖尺寸模式下，改良版的住宅／商業／工業需求計算從未生效。
 * **[效能]：** 空氣污染擴散改為並行運算，地下水與地面污染的處理會跳過空白格。
 * **[效能]：** 城市統計面板不再於主執行緒逐一計算建築。
 * **[效能]：** 車輛救援系統的掃描改於主執行緒外進行，尋找滯留車輛時不再造成短暫停頓。
