@@ -181,6 +181,16 @@ namespace MapExtPDX.MapExt.ReBurstSystem.Core
 
         public static List<JobPatchTarget> GetCellSystemTargets(PatchModeSetting mode)
         {
+            // 原版尺寸（ModeE / None）不替換任何 CellMap 相關 Job：CellMap 尺寸與原版一致，
+            // 原版 Job 本身即為正確實作。
+            //
+            // 此守衛必須留在本方法內，不可下沉到 GenerateConcreteTargets 靠 pattern 字串比對區分：
+            // PatternCellSystem 與 PatternEcoSystem 的字面值相同，而 string == 是值比較，
+            // 因此 `pattern == PatternCellSystem` 形式的判斷對 Eco 目標同樣成立，
+            // 會連帶擋掉 ModeE 的 Eco Job 替換（A1/A2/A3）且全程無任何日誌。
+            if (mode == PatchModeSetting.None)
+                return new List<JobPatchTarget>();
+
             return GenerateConcreteTargets(CellSystemTargets, mode, PatternCellSystem);
         }
 
@@ -193,10 +203,6 @@ namespace MapExtPDX.MapExt.ReBurstSystem.Core
             PatchModeSetting mode, string pattern)
         {
             var results = new List<JobPatchTarget>();
-            if (mode == PatchModeSetting.None && pattern == PatternCellSystem)
-                return results; // CellSystem patches ignored in Vanilla
-
-            // Note: Eco patches might be needed even in Vanilla (ModeE) if enabled.
 
             int coreValue = PatchManager.CurrentCoreValue;
             string modeIdentifier = GetModeIdentifier(mode);

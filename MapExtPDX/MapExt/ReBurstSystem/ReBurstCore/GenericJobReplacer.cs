@@ -22,6 +22,13 @@ namespace MapExtPDX.MapExt.ReBurstSystem.Core
         {
             public Dictionary<Type, Type> JobReplacements { get; } = new Dictionary<Type, Type>();
             public Dictionary<FieldInfo, FieldInfo> FieldReplacements { get; } = new Dictionary<FieldInfo, FieldInfo>();
+
+            /// <summary>
+            /// 顯式註冊的頂層 Job 型別（不含驗證器推導出的隱式克隆結構體映射）。
+            /// Transpiler 收尾時據此核對每個 Job 是否真的在該方法 IL 中被命中，
+            /// 用來偵測「Patch 掛載成功但一處都沒替換到」的靜默失效。
+            /// </summary>
+            public HashSet<Type> PrimaryJobTypes { get; } = new HashSet<Type>();
         }
 
         private static Dictionary<MethodBase, MethodPatchContext> activePatchContexts =
@@ -32,9 +39,10 @@ namespace MapExtPDX.MapExt.ReBurstSystem.Core
         /// <summary>
         /// 注册替换规则
         /// </summary>
-        public static void AddReplacementToContext(MethodBase method, Type originalJobType, Type replacementJobType)
+        /// <returns>true 表示映射已成功登记；false 表示結構驗證未通過，該 Job 不會被替換。</returns>
+        public static bool AddReplacementToContext(MethodBase method, Type originalJobType, Type replacementJobType)
         {
-            if (method == null || originalJobType == null || replacementJobType == null) return;
+            if (method == null || originalJobType == null || replacementJobType == null) return false;
 
             // --- 步骤 0: 预验证 (v7 Feature) ---
             var validation = JobFieldValidator.ValidateJobReplacement(originalJobType, replacementJobType);
@@ -42,7 +50,7 @@ namespace MapExtPDX.MapExt.ReBurstSystem.Core
             {
                 ModLog.Error(Tag,
                     $"注册失败 | Job 结构不兼容 {originalJobType.Name} -> {replacementJobType.Name}\n{validation.GetReport()}");
-                if (validation.Errors.Count > 0) return;
+                if (validation.Errors.Count > 0) return false;
             }
             else if (validation.Warnings.Count > 0)
             {
@@ -66,6 +74,7 @@ namespace MapExtPDX.MapExt.ReBurstSystem.Core
                 }
 
                 context.JobReplacements[originalJobType] = replacementJobType;
+                context.PrimaryJobTypes.Add(originalJobType);
 
                 // 合并验证器发现的隐式类型映射 (例如 private struct 克隆体)
                 foreach (var kvp in validation.ImplicitTypeMapping)
@@ -103,6 +112,8 @@ namespace MapExtPDX.MapExt.ReBurstSystem.Core
                     RegisterFields(kvp.Key, kvp.Value);
                 }
             }
+
+            return true;
         }
 
         /// <summary>
@@ -138,6 +149,7 @@ namespace MapExtPDX.MapExt.ReBurstSystem.Core
             }
 
             MethodPatchContext context;
+            List<Type> primaryJobs = null;
             lock (_contextLock)
             {
                 if (!activePatchContexts.TryGetValue(originalMethod, out context))
@@ -150,6 +162,9 @@ namespace MapExtPDX.MapExt.ReBurstSystem.Core
                         kvp.Key.GetParameters().Length == originalParamCount);
                     if (fallbackEntry.Key != null) context = fallbackEntry.Value;
                 }
+
+                // 在鎖內取快照，供收尾核對；避免與後續註冊並發讀寫
+                if (context != null) primaryJobs = context.PrimaryJobTypes.ToList();
             }
 
             // 无需 Patch，原样返回
@@ -167,6 +182,10 @@ namespace MapExtPDX.MapExt.ReBurstSystem.Core
             Dictionary<int, LocalBuilder> localRedirects = new Dictionary<int, LocalBuilder>();
             int replacementCount = 0;
 
+            // 記錄本次真正在 IL 中被命中的型別，收尾時與 primaryJobs 比對。
+            // 只要某 Job 在任一管道（局部變數／Initobj／欄位／型別引用／泛型參數）被改寫即視為已介入。
+            var hitTypes = new HashSet<Type>();
+
             // ==========================================================================================
             // PHASE 1: 预扫描 (Pre-Scan)
             // ==========================================================================================
@@ -183,6 +202,7 @@ namespace MapExtPDX.MapExt.ReBurstSystem.Core
                         if (context.JobReplacements.TryGetValue(localVar.LocalType, out var newType))
                         {
                             localRedirects[localVar.LocalIndex] = il.DeclareLocal(newType);
+                            hitTypes.Add(localVar.LocalType);
                             ModLog.Debug(Tag,
                                 $"  发现待替换变量 [{localVar.LocalIndex}] | {localVar.LocalType.Name} -> {newType.Name}");
                         }
@@ -211,8 +231,10 @@ namespace MapExtPDX.MapExt.ReBurstSystem.Core
                 {
                     var newInst = new CodeInstruction(OpCodes.Initobj, newInitType);
                     newInst.labels = instruction.labels;
+                    newInst.blocks = instruction.blocks;
                     yield return newInst;
                     replacementCount++; // Initobj
+                    hitTypes.Add(initType);
 #if DEBUG
                     ModLog.Debug(Tag, $"    [Initobj] {initType.Name} -> {newInitType.Name}");
 #endif
@@ -253,6 +275,7 @@ namespace MapExtPDX.MapExt.ReBurstSystem.Core
 
                             var callInst = new CodeInstruction(OpCodes.Call, bitcastMethod);
                             callInst.labels = instruction.labels; // 转移跳转标签到 call 上
+                            callInst.blocks = instruction.blocks; // 例外區塊邊界一併轉移到序列首條
                             yield return callInst; // 栈: [ObjectRef, NewValue]
 
                             yield return new CodeInstruction(OpCodes.Stfld, newFieldInfo); // []
@@ -263,10 +286,12 @@ namespace MapExtPDX.MapExt.ReBurstSystem.Core
                             // 类型一致，直接替换字段引用
                             var newInst = new CodeInstruction(instruction.opcode, newFieldInfo);
                             newInst.labels = instruction.labels;
+                            newInst.blocks = instruction.blocks;
                             yield return newInst;
                             replacementCount++; // Stfld (same type)
                         }
 
+                        hitTypes.Add(oldFieldInfo.DeclaringType);
                         continue;
                     }
                 }
@@ -277,6 +302,8 @@ namespace MapExtPDX.MapExt.ReBurstSystem.Core
                 {
                     if (context.FieldReplacements.TryGetValue(fieldOp, out FieldInfo newField))
                     {
+                        hitTypes.Add(fieldOp.DeclaringType);
+
                         if (fieldOp.FieldType != newField.FieldType)
                         {
                             if (instruction.opcode == OpCodes.Ldflda)
@@ -297,7 +324,8 @@ namespace MapExtPDX.MapExt.ReBurstSystem.Core
 #endif
                                 var newInstLdfld2 = new CodeInstruction(instruction.opcode, newField)
                                 {
-                                    labels = instruction.labels
+                                    labels = instruction.labels,
+                                    blocks = instruction.blocks
                                 };
                                 yield return newInstLdfld2; // [NewValue]
 
@@ -327,6 +355,7 @@ namespace MapExtPDX.MapExt.ReBurstSystem.Core
                     {
                         finalInst = new CodeInstruction(instruction.opcode, repType);
                         replacementCount++;
+                        hitTypes.Add(opType);
 #if DEBUG
                         ModLog.Debug(Tag, $"    [TypeRef] {opType.Name} -> {repType.Name}");
 #endif
@@ -345,6 +374,14 @@ namespace MapExtPDX.MapExt.ReBurstSystem.Core
                                 var newM = method.GetGenericMethodDefinition().MakeGenericMethod(newArgs);
                                 finalInst = new CodeInstruction(instruction.opcode, newM);
                                 replacementCount++;
+
+                                // 僅在 MakeGenericMethod 成功後才計為命中：
+                                // 構造失敗時泛型呼叫仍指向原版 Job，屬未完成替換，須讓收尾核對報出
+                                for (int gi = 0; gi < args.Length; gi++)
+                                {
+                                    if (args[gi] != newArgs[gi]) hitTypes.Add(args[gi]);
+                                }
+
                                 ModLog.Debug(Tag, $"    [GenericCall] 更新泛型参数: {method.Name}");
                             }
                             catch (Exception e)
@@ -364,6 +401,33 @@ namespace MapExtPDX.MapExt.ReBurstSystem.Core
                 }
 
                 yield return instruction;
+            }
+
+            // ==========================================================================================
+            // PHASE 3: 命中核對 (Post-Verify)
+            // ==========================================================================================
+            // Transpiler 對「一處都沒替換到」是無感的：Harmony 照樣回報掛載成功，遊戲則繼續跑原版 Job。
+            // 原版一旦改變 Job 的建構方式（例如把建構抽進 helper 方法、或改用 newobj），
+            // 失效會完全靜默。故此處逐一核對顯式註冊的 Job 是否真的被改寫，Release 亦輸出。
+            if (primaryJobs != null && primaryJobs.Count > 0)
+            {
+                var missed = primaryJobs.Where(t => !hitTypes.Contains(t)).ToList();
+                if (missed.Count > 0)
+                {
+                    ModLog.Error(Tag,
+                        $"替換未命中 | {originalMethod.DeclaringType?.Name}.{originalMethod.Name} " +
+                        $"預期 {primaryJobs.Count} 個 Job，實際命中 {primaryJobs.Count - missed.Count} 個 " +
+                        $"└─ 未命中: {string.Join(", ", missed.Select(t => t.Name))} " +
+                        "（該方法的原版 Job 仍在運行；請核對原版是否已改變 Job 建構方式）");
+                }
+#if DEBUG
+                else
+                {
+                    ModLog.Ok(Tag,
+                        $"命中核對通過 | {originalMethod.DeclaringType?.Name}.{originalMethod.Name} " +
+                        $"({primaryJobs.Count} 個 Job 全部命中, {replacementCount} 處指令替換)");
+                }
+#endif
             }
 
 #if DEBUG
