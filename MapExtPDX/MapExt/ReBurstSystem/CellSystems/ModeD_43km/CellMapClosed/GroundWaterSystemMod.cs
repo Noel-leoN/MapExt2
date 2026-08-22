@@ -221,8 +221,10 @@ using MapExtPDX.SaveLoadSystem;
             // 既有存檔且場是健康的 → 玩家的即時狀態，不介入
             if (!isNewGame && nonZero != 0) return;
 
-            if (!TryGetVanillaAquifer(out NativeArray<TargetType> vanillaMap, out int srcSize) ||
-                CountAquiferCells(vanillaMap) == 0)
+            bool hasVanilla = TryGetVanillaAquifer(out NativeArray<TargetType> vanillaMap, out int srcSize);
+            int vanillaCells = hasVanilla ? CountAquiferCells(vanillaMap) : 0;
+
+            if (vanillaCells == 0)
             {
                 if (nonZero != 0)
                 {
@@ -250,11 +252,14 @@ using MapExtPDX.SaveLoadSystem;
 
             UpsampleAquifer(vanillaMap, srcSize);
 
+            // 前後占比一併輸出：等比拉伸不改變含水層占比，兩者接近即證明座標映射沒有錯位
+            // （差異只該來自邊界插值與 short 取整）。這是唯一不必進遊戲就能核對升採樣正確性的訊號。
             int filled = CountAquiferCells(m_Map);
             ModLog.Ok(nameof(GroundWaterSystemMod),
                 $"地下水場已從原版 {srcSize}² 原稿升採樣至 {kTextureSize}²（雙線性等比拉伸，與地形同比例）" +
                 (isNewGame ? "，取代程序化基線" : "，修復 v4.8.0 之前存下的空場") +
-                $"：含水層 {filled} 格（{100f * filled / m_Map.Length:F2}%）");
+                $"：含水層占比 {100f * vanillaCells / vanillaMap.Length:F2}% → {100f * filled / m_Map.Length:F2}%" +
+                $"（{vanillaCells} → {filled} 格）");
         }
 
         /// <summary>
