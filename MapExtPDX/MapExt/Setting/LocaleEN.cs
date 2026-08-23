@@ -735,7 +735,8 @@ namespace MapExtPDX
                     "★ Known Issues:\n" +
                     " - Water simulation may need manual adjustment via MapExt in-game panel\n" +
                     " - Simulation instability may occur in expanded areas\n\n" +
-                    "★ Use at your own risk. Mutually exclusive with 'Disable World Backdrop'.\n" +
+                    "★ Use at your own risk. Mutually exclusive with 'Disable World Backdrop' " +
+                    "— enabling one greys out the other.\n" +
                     "⚠ Requires game restart after enabling."
                 },
 
@@ -755,7 +756,7 @@ namespace MapExtPDX
                     " - Removes 1 cascade rendering layer (cascade[0] skipped)\n\n" +
                     "★ Side Effect: Terrain beyond the playable area becomes flat.\n\n" +
                     "⚠ [IMPORTANT]: If you SAVE with this enabled, world backdrop data will be PERMANENTLY LOST!\n" +
-                    "★ Mutually exclusive with 'Vanilla Save Conversion'.\n" +
+                    "★ Mutually exclusive with 'Vanilla Save Conversion' — enabling one greys out the other.\n" +
                     "★ Tip: Only affects saves with a world backdrop map. No restart needed — just reload the save."
                 },
 

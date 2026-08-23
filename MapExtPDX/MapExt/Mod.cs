@@ -98,6 +98,29 @@ namespace MapExtPDX
             Colossal.IO.AssetDatabase.AssetDatabase.global.LoadSettings(ModName, m_Setting, new ModSettings(this));
             ModLog.Ok(Tag, "Settings 已初始化");
 
+            // 兩個 SaveConvert 開關在 UI 上互鎖，但外部工具（Simple Mod Checker Plus 的
+            // 「啟動時恢復配置」等）可能把 .coc 寫成兩者皆 true 的非法組合，載入後歸一化一次
+            m_Setting.NormalizeSaveConvertExclusion();
+
+            // === 存檔轉換開關的持久化排查（Release 亦輸出） ===
+            // 「OptionUI 勾了、重啟又跳回未選中」要先切開兩件事：值有沒有寫進 .coc，
+            // 以及 .coc 的值有沒有被讀回運行時。這行印的是反序列化完成後的實際值，
+            // 可直接與 ModsSettings/MapExtPDX/MapExtPDX.coc 的內容離線對照：
+            //   兩邊都 true  → 持久化正常，問題在別處；
+            //   檔案 true／此處 false → 反序列化在此鍵之前中止（看同批鍵是否也丟）；
+            //   檔案 false → 值沒落盤、或落盤後被外部改回。實測後者更常見：先查
+            //                _GameLogs/SimpleModCheckerPlus.log 有無 Restoring 'MapExtSettings:…'
+            //                （它的還原跑在本 Mod OnLoad 之後，症狀是隔一次啟動才回退），
+            //                再看 ModSettings 的撞名探測警告。
+            // 設值時機另有 EnableVanillaConversion／DisableWorldBackdrop 兩個 setter 的
+            // 🔄 變更日誌可交叉比對（本行之前出現＝反序列化，之後＝使用者操作）。
+            ModLog.Info(Tag,
+                $"SaveConvert 載入值: EnableVanillaConversion={m_Setting.EnableVanillaConversion}, " +
+                $"DisableWorldBackdrop={m_Setting.DisableWorldBackdrop}");
+
+            // 此後 setter 的呼叫一律來自使用者操作而非反序列化，撞名探測才有意義
+            ModSettings.s_settingsLoaded = true;
+
 #if DEBUG
             // === 设置值验证日志（仅 DEBUG 编译有效） ===
             // 用于诊断 .coc 文件加载异常或框架缓存不一致问题

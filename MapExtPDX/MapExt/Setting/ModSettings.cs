@@ -3,7 +3,9 @@
 // See LICENSE in the project root for full license information.
 // When using this part of the code, please clearly credit [Project Name] and the author.
 
+using System;
 using System.Collections.Generic;
+using System.Reflection;
 using Colossal.IO.AssetDatabase;
 using Game;
 using Game.Modding;
@@ -692,17 +694,34 @@ namespace MapExtPDX
 
         /// <summary>
         /// ⚠ 高度实验性功能：启用原版 14km 存档转换到当前 MapExt 模式。
-        /// 与 DisableWorldBackdrop 互斥。
+        ///
+        /// <para>與 <see cref="DisableWorldBackdrop"/> 互斥，互斥由 UI 層的
+        /// <c>DisableByCondition</c> 保證（對方開啟時本項變灰不可點），setter 不再改寫對方欄位。
+        /// 舊作法是在 setter 裡靜默清除對方，但 CS2 的 OptionsUI 對每個 widget 獨立綁定、
+        /// 不會刷新另一個 checkbox 的顯示——結果是畫面上兩個都勾著、實際只有後勾的那個生效，
+        /// 使用者無從察覺就把「UI 說有、實際沒有」的狀態存進了 .coc。</para>
         /// </summary>
         [SettingsUISection(kMapSizeModeTab, kSaveConvertGroup)]
         [SettingsUIHideByCondition(typeof(ModSettings), nameof(IsNotInMainMenu))]
+        [SettingsUIDisableByCondition(typeof(ModSettings), nameof(IsVanillaConversionLocked))]
         public bool EnableVanillaConversion
         {
             get => m_EnableVanillaConversion;
             set
             {
+                // 診斷（排查設定回退）：本屬性有兩個寫入來源，靠時間戳與前後文分辨——
+                //   ① .coc 反序列化：出現在 Mod.OnLoad 的「SaveConvert 載入值」那行之前；
+                //   ② 使用者在 OptionUI 勾選：AutomaticSettings 的 ToggleField setter。
+                if (m_EnableVanillaConversion != value)
+                {
+                    ModLog.Swap(Tag, $"EnableVanillaConversion: {m_EnableVanillaConversion} → {value}");
+                }
+
                 m_EnableVanillaConversion = value;
-                if (value) DisableWorldBackdrop = false;
+
+                // 只在設定載入完畢後才探測：建構子的 SetDefaults 與 .coc 反序列化都會走這裡，
+                // 那兩個時點其它 Mod 的設定實例還沒建立，探測結果無意義且會佔掉一次性配額。
+                if (s_settingsLoaded) ProbeSaveTargetCollision();
             }
         }
 
@@ -710,17 +729,132 @@ namespace MapExtPDX
 
         /// <summary>
         /// 禁用已有存档中的背景世界地图（Backdrop）。
-        /// 与 EnableVanillaConversion 互斥。
+        /// 與 <see cref="EnableVanillaConversion"/> 互斥，機制見該屬性說明。
         /// </summary>
         [SettingsUISection(kMapSizeModeTab, kSaveConvertGroup)]
         [SettingsUIHideByCondition(typeof(ModSettings), nameof(IsNotInMainMenu))]
+        [SettingsUIDisableByCondition(typeof(ModSettings), nameof(IsWorldBackdropLocked))]
         public bool DisableWorldBackdrop
         {
             get => m_DisableWorldBackdrop;
             set
             {
+                if (m_DisableWorldBackdrop != value)
+                {
+                    ModLog.Swap(Tag, $"DisableWorldBackdrop: {m_DisableWorldBackdrop} → {value}");
+                }
+
                 m_DisableWorldBackdrop = value;
-                if (value) m_EnableVanillaConversion = false;
+            }
+        }
+
+        /// <summary>
+        /// UI 互斥條件：對方已開啟、<b>而自己未開啟</b>時鎖定本項。
+        ///
+        /// <para>條件刻意帶上「自己未開啟」這一半：若設定檔被外部工具改成兩者皆 true，
+        /// 只判斷對方的話會讓兩個 checkbox 同時變灰而無解；帶上這一半則兩項都保持可點，
+        /// 使用者關掉任一個即可解開。正常的三種組合行為不受影響。</para>
+        /// </summary>
+        public bool IsVanillaConversionLocked => m_DisableWorldBackdrop && !m_EnableVanillaConversion;
+
+        /// <inheritdoc cref="IsVanillaConversionLocked"/>
+        public bool IsWorldBackdropLocked => m_EnableVanillaConversion && !m_DisableWorldBackdrop;
+
+        /// <summary>
+        /// 載入後的互斥歸一化。setter 不再互相清除，正常路徑產生不出 (true, true)，
+        /// 但手動編輯過的 .coc、或第三方設定還原工具（如 Simple Mod Checker Plus 的
+        /// 「啟動時恢復配置」，它會在各 Mod <c>OnLoad</c> 之後按自己的備份回寫 .coc）
+        /// 可能塞回這種非法組合。此時保留「原版存檔轉換」——它是使用者主動發起的一次性流程，
+        /// 而停用背景地圖只是渲染層開關，讓路成本較低。
+        /// </summary>
+        internal void NormalizeSaveConvertExclusion()
+        {
+            if (!m_EnableVanillaConversion || !m_DisableWorldBackdrop) return;
+
+            ModLog.Warn(Tag,
+                "設定檔中「原版存檔轉換」與「停用背景世界地圖」同時開啟（互斥組合），" +
+                "已關閉後者以保留轉換流程");
+            m_DisableWorldBackdrop = false;
+        }
+
+        // === 即時保存目標撞名探測（診斷用） ===
+
+        private static bool s_saveTargetProbed;
+
+        /// <summary>
+        /// 由 <c>Mod.OnLoad</c> 在 <c>LoadSettings</c> 之後置位，用來區分
+        /// 「反序列化寫入」與「使用者在 OptionUI 操作」兩類 setter 呼叫。
+        /// </summary>
+        internal static bool s_settingsLoaded;
+
+        /// <summary>
+        /// 探測進程內是否有多個 Mod 的設定類共用同一個「短類名」。
+        ///
+        /// <para><b>為何要查這個</b>：原版 <c>Setting.ApplyAndSave()</c>（OptionUI 每次變更都會呼叫）
+        /// 走 <c>AssetDatabase.SaveSpecificSetting(GetType().Name)</c>，而
+        /// <c>AssetDatabase.GetTargetSetting</c> 只用 <b>短類名</b>（不含命名空間）比對
+        /// <c>fragment.source</c>，且<b>在第一個命中就 break</b>。本工作區四個 Mod 的設定類都叫
+        /// <c>ModSettings</c>，第三方 Mod 亦常用此名——若命中的不是自己那份 asset，
+        /// UI 上的每次變更就只寫進別人的 <c>.coc</c>，本 Mod 的值不落盤，
+        /// 只剩遊戲正常退出時 <c>GameManager</c> 的 <c>SaveAllSettings()</c> 兜底
+        /// （崩潰或強制結束即丟失）。</para>
+        ///
+        /// <para><b>已證偽為設定回退的元兇</b>：實測進程內有 8 份同名設定類，
+        /// 但 MapExtPDX 排第一、即時保存正常命中自己（受害的是另外七個）。
+        /// 「勾了重啟又跳回」的真兇是 Simple Mod Checker Plus 的「啟動時恢復配置」，
+        /// 它在各 Mod <c>OnLoad</c> 之後按自己的備份回寫 <c>.coc</c>。撞名仍然存在，
+        /// 故保留本探測作為長期監控。</para>
+        ///
+        /// <para>此處只記錄實況、不改變保存行為；每個進程只輸出一次。
+        /// 已核對 1.5.10f 與 1.6.0f 的 <c>AssetDatabase.cs</c>／<c>Setting.cs</c>，
+        /// 這段機制兩版完全相同，故它不是版本升級引入的新問題。</para>
+        /// </summary>
+        private static void ProbeSaveTargetCollision()
+        {
+            if (s_saveTargetProbed) return;
+            s_saveTargetProbed = true;
+
+            try
+            {
+                var prop = typeof(ModSetting).GetProperty("instances",
+                    BindingFlags.NonPublic | BindingFlags.Static);
+                var map = prop?.GetValue(null) as System.Collections.IDictionary;
+                if (map == null)
+                {
+                    ModLog.Warn(Tag, "無法反射 ModSetting.instances，略過即時保存撞名探測");
+                    return;
+                }
+
+                string myShortName = typeof(ModSettings).Name;
+                var sameName = new List<string>();
+                foreach (System.Collections.DictionaryEntry entry in map)
+                {
+                    if (!(entry.Value is ModSetting setting)) continue;
+                    if (setting.GetType().Name == myShortName)
+                    {
+                        sameName.Add($"{setting.GetType().FullName} (id={entry.Key})");
+                    }
+                }
+
+                if (sameName.Count > 1)
+                {
+                    ModLog.Warn(Tag,
+                        $"即時保存目標有歧義：{sameName.Count} 個設定類共用短類名 '{myShortName}' " +
+                        $"[{string.Join(" | ", sameName)}]。" +
+                        "原版 SaveSpecificSetting 只用短類名比對且取第一個命中，" +
+                        "OptionUI 的變更可能寫進別的 Mod 的 .coc；" +
+                        "本 Mod 的值將只靠遊戲正常退出時的全量保存兜底。");
+                }
+                else
+                {
+                    ModLog.Ok(Tag,
+                        $"設定類短類名 '{myShortName}' 在進程內唯一（共 {map.Count} 份 Mod 設定），" +
+                        "即時保存目標無歧義");
+                }
+            }
+            catch (Exception ex)
+            {
+                ModLog.Warn(Tag, $"即時保存撞名探測失敗（非致命）: {ex.Message}");
             }
         }
 
