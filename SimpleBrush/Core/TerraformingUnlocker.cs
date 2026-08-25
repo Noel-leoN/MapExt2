@@ -12,11 +12,19 @@ namespace SimpleBrush.Core
     /// </summary>
     public partial class TerraformingUnlocker : GameSystemBase
     {
+        #region Constants
+
+        /// <summary>等待 "Terraforming" UI 分組載入的最長帧數，逾時後記錄警告並放棄。</summary>
+        private const int kMaxGroupWaitFrames = 1800;
+
+        #endregion
+
         #region Fields
 
         private PrefabSystem m_PrefabSystem;
         private EntityQuery m_TerraformingQuery;
         private bool m_Unlocked;
+        private int m_GroupWaitFrames;
 
         #endregion
 
@@ -34,84 +42,99 @@ namespace SimpleBrush.Core
             if (m_Unlocked) return;
             if (m_TerraformingQuery.IsEmptyIgnoreFilter) return;
 
-            m_Unlocked = true;
-            Enabled = false; // 执行一次后禁用自身
-
             // === 按 PrefabID 精确查找 "Terraforming" UI 分类分组 ===
+            // 找不到時直接返回、不設 m_Unlocked：PrefabUpdate 每帧無條件驅動，下一帧會重試。
+            // 否則會做出「畫筆解鎖了、但 m_Group 仍指向舊分組或 Entity.Null」的半套結果且永不重試。
             UIAssetCategoryPrefab terraformingGroup = null;
             if (m_PrefabSystem.TryGetPrefab(
-                    new PrefabID(nameof(UIAssetCategoryPrefab), "Terraforming"), out var groupPrefab)
-                && groupPrefab is UIAssetCategoryPrefab category)
+                    new PrefabID(nameof(UIAssetCategoryPrefab), "Terraforming"), out var groupPrefab))
             {
-                terraformingGroup = category;
+                // TryGetPrefab 的泛型多載以未檢查的 as 轉型，回 true 亦可能交回 null，故一律自行判空。
+                terraformingGroup = groupPrefab as UIAssetCategoryPrefab;
             }
-            else
+
+            if (terraformingGroup == null)
             {
-                Mod.Logger.Warn("未找到原版 'Terraforming' UI 分组，资源画笔可能无法正确归类");
+                if (++m_GroupWaitFrames < kMaxGroupWaitFrames) return;
+
+                m_Unlocked = true;
+                Enabled = false;
+                Mod.Logger.Warn("未找到原版 'Terraforming' UI 分组，资源画笔无法正确归类，已放弃解锁");
+                return;
             }
 
             // === 遍历所有 TerraformingData Entity 并解锁资源类型 ===
             var entities = m_TerraformingQuery.ToEntityArray(Allocator.Temp);
             int unlockedCount = 0;
 
-            foreach (var entity in entities)
+            try
             {
-                if (!m_PrefabSystem.TryGetPrefab(entity, out TerraformingPrefab prefab)) continue;
-
-                // 仅解锁资源类型画笔（跳过地形高度和材质工具，它们已在工具栏中可见）
-                if (prefab.m_Target == TerraformingTarget.Material ||
-                    prefab.m_Target == TerraformingTarget.Height ||
-                    prefab.m_Target == TerraformingTarget.None)
+                foreach (var entity in entities)
                 {
-                    continue;
-                }
+                    if (!m_PrefabSystem.TryGetPrefab(entity, out TerraformingPrefab prefab) || prefab == null) continue;
 
-                // --- 确保 UIObject 组件存在 ---
-                var ui = prefab.GetComponent<UIObject>();
-                if (ui == null)
-                {
-                    ui = prefab.AddComponent<UIObject>();
-                }
+                    // 仅解锁资源类型画笔（跳过地形高度和材质工具，它们已在工具栏中可见）
+                    if (prefab.m_Target == TerraformingTarget.Material ||
+                        prefab.m_Target == TerraformingTarget.Height ||
+                        prefab.m_Target == TerraformingTarget.None)
+                    {
+                        continue;
+                    }
 
-                // --- 始终强制确保激活状态和属性正确 ---
-                ui.active = true;
-                ui.m_IsDebugObject = false;
-                ui.m_Icon = GetIconForTarget(prefab.m_Target);
-                ui.m_Priority = GetPriorityForTarget(prefab.m_Target);
+                    // --- 确保 UIObject 组件存在 ---
+                    var ui = prefab.GetComponent<UIObject>();
+                    if (ui == null)
+                    {
+                        ui = prefab.AddComponent<UIObject>();
+                    }
 
-                // --- 从原先的分组中移除（如果存在旧分组） ---
-                if (ui.m_Group != null)
-                {
-                    RemoveElementFromGroup(ui.m_Group, entity);
-                }
+                    // --- 始终强制确保激活状态和属性正确 ---
+                    // active 与 m_IsDebugObject 属 authoring 层，其消费者只有 UIObject 的
+                    // GetPrefabComponents 与 LateInitialize，两者在本系统运行前均已执行完毕；
+                    // 因此这两行对当次 session 无效果，仅为日后 UpdatePrefab 重建时保留。
+                    ui.active = true;
+                    ui.m_IsDebugObject = false;
+                    // m_Icon 为 authoring-only（无 *Data 对应），工具栏每次 bind 现读，必须写在这里。
+                    ui.m_Icon = GetIconForTarget(prefab.m_Target);
+                    ui.m_Priority = GetPriorityForTarget(prefab.m_Target);
 
-                // --- 归入 Terraforming 分类分组 ---
-                if (terraformingGroup != null)
-                {
+                    // --- 从原先的分组中移除（如果存在旧分组） ---
+                    if (ui.m_Group != null)
+                    {
+                        RemoveElementFromGroup(ui.m_Group, entity);
+                    }
+
+                    // --- 归入 Terraforming 分类分组 ---
                     ui.m_Group = terraformingGroup;
                     // 使用原版 UIGroupPrefab.AddElement(EntityManager, Entity)
                     terraformingGroup.AddElement(EntityManager, entity);
+
+                    // --- 将 UIObjectData 同步写入 ECS Entity ---
+                    // 内联实现 ExtraLib 的 ToComponentData() + AddOrSetComponentData()
+                    var uiData = new UIObjectData
+                    {
+                        m_Group = m_PrefabSystem.GetEntity(ui.m_Group),
+                        m_Priority = ui.m_Priority
+                    };
+
+                    if (EntityManager.HasComponent<UIObjectData>(entity))
+                        EntityManager.SetComponentData(entity, uiData);
+                    else
+                        EntityManager.AddComponentData(entity, uiData);
+
+                    unlockedCount++;
                 }
+            }
+            finally
+            {
+                entities.Dispose();
 
-                // --- 将 UIObjectData 同步写入 ECS Entity ---
-                // 内联实现 ExtraLib 的 ToComponentData() + AddOrSetComponentData()
-                var uiData = new UIObjectData
-                {
-                    m_Group = (ui.m_Group != null)
-                        ? m_PrefabSystem.GetEntity(ui.m_Group)
-                        : Entity.Null,
-                    m_Priority = ui.m_Priority
-                };
-
-                if (EntityManager.HasComponent<UIObjectData>(entity))
-                    EntityManager.SetComponentData(entity, uiData);
-                else
-                    EntityManager.AddComponentData(entity, uiData);
-
-                unlockedCount++;
+                // 不論成功或中途拋錯都自我停用：OnUpdate 拋出的例外會每帧記一次 Critical
+                // 並彈出模態錯誤框暫停模擬，重試的代價遠高於接受一次部分解鎖。
+                m_Unlocked = true;
+                Enabled = false;
             }
 
-            entities.Dispose();
             Mod.Logger.Info($"SimpleBrush 成功解锁了 {unlockedCount} 个自然资源放置画笔");
         }
 
