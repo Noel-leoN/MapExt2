@@ -10,7 +10,7 @@ namespace SimpleBrush
     public class ModAssemblyInfo
     {
         public const string Name        = "SimpleBrush";
-        public const string Version     = "1.0.0";
+        public const string Version     = "1.0.1";
         public const string Title       = "SimpleBrush";
         public const string Description = "Unlock natural resource brushes and restore depleted resources.";
     }
