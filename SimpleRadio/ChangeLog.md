@@ -1,13 +1,19 @@
-## v1.0.3 - Compatibility and Localization
+## v1.0.4 - Playback and Settings Fixes
 
-* **[Compatibility]:** Added a safeguard to automatically intercept errors from other radio mods, preventing the entire game radio system from breaking or disabling.
-* **[Compatibility]:** Optimized station loading sequence and made SimpleRadio run fully standalone regardless of whether ExtendedRadio is installed.
-* **[Localization]:** Added Traditional Chinese support and updated descriptions in the settings menu.
+* **[Playback]:** Fixed each song appearing twice in a station's play cycle.
+* **[Settings]:** Fixed mod settings not always being written to disk immediately after a change.
+* **[Stations]:** The last played station is now remembered per save game, so different cities keep their own choice.
+* **[Icons]:** Fixed a custom `icon.svg` not taking effect until the game was restarted after a fresh install.
+* **[Formats]:** MP3 and WAV toggles now apply after clicking Refresh Stations, with no restart needed.
+* **[Localization]:** The ExtendedRadio compatibility status now follows the game language.
 
 ---
 
 ### 主要變動
 
-* **[相容性]：** 新增錯誤防護機制，能自動攔截其他電台 Mod 的執行錯誤，避免遊戲內的所有電台因此失效或無法播放。
-* **[相容性]：** 優化自訂電台的載入順序，無論是否安裝了 ExtendedRadio，本 Mod 都能完全獨立且正常運作。
-* **[在地化]：** 新增繁體中文支援，並優化設定選單中的各項說明文字。
+* **[播放]：** 修正每首歌在電台的一輪播放中出現兩次的問題。
+* **[設定]：** 修正設定變更後未能即時寫入磁碟的問題。
+* **[電台]：** 上次播放的電台改為按存檔記憶，不同城市各自保留自己的選擇。
+* **[圖示]：** 修正首次安裝後自訂 `icon.svg` 需重啟遊戲才生效的問題。
+* **[格式]：** MP3 與 WAV 開關改為點擊「刷新電台」後即生效，不需重啟遊戲。
+* **[在地化]：** ExtendedRadio 相容狀態改為跟隨遊戲語言顯示。
