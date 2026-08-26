@@ -37,6 +37,15 @@ namespace SimpleRadio.Core
         /// </summary>
         public static Radio RadioInstance { get; private set; }
 
+        // === 熱刷新狀態 ===
+        // 熱刷新與讀檔的「恢復目標」不同：
+        //   讀檔／新遊戲 → 原版存檔記錄的頻道（m_LastSaveRadioChannel）
+        //   熱刷新       → 玩家刷新前正在聽的那個頻道
+        // 原版 m_LastSaveRadioChannel 在整個 session 內不會被 Reload 清掉，
+        // 若不分流，熱刷新會把電台跳回「當初讀檔時」那個，屬於回歸。
+        private static bool s_isHotReload;
+        private static string s_hotReloadChannel;
+
         /// <summary>
         /// 获取数据目录的完整路径（使用系统反斜杠，适配 explorer.exe）。
         /// </summary>
@@ -63,7 +72,21 @@ namespace SimpleRadio.Core
             try
             {
                 Mod.Logger.Info("正在热刷新电台...");
-                RadioInstance.Reload(true);
+
+                // 先記下當下正在播的頻道，注入完成後再切回去。
+                // 用 try/finally 確保 Reload 內部拋例外時旗標不會卡在 true，
+                // 否則之後正常讀檔就不會恢復電台了。
+                s_hotReloadChannel = RadioInstance.currentChannel?.name;
+                s_isHotReload = true;
+                try
+                {
+                    RadioInstance.Reload(true);
+                }
+                finally
+                {
+                    s_isHotReload = false;
+                    s_hotReloadChannel = null;
+                }
                 return true;
             }
             catch (Exception e)
@@ -161,76 +184,62 @@ namespace SimpleRadio.Core
                 Mod.Instance.Settings.UpdateLoadInfo(LoadedStations, LoadedSongs);
             }
 
-            // === 6. 订阅电台切换事件（保存当前选择） ===
-            SubscribeChannelChange(radio);
-
-            // === 7. 恢复上次选择的电台 ===
-            RestoreLastStation(radio, channels);
+            // === 6. 恢复电台选择 ===
+            RestoreChannel(radio, traverse, channels);
         }
 
         /// <summary>
-        /// 订阅 Radio.ClipChanged 事件，在用户切换到 SimpleRadio 电台时保存选择。
-        /// 使用 Delegate.Combine 模式（与游戏内部一致）。
+        /// 恢復電台選擇。
+        ///
+        /// 為何必須由本 Mod 補這一步：原版 <c>LoadRadio</c> 在自己的方法體尾端就呼叫
+        /// <c>Enable()</c>，而 <c>Enable()</c> 用存檔記錄的頻道名查 <c>m_RadioChannels</c>；
+        /// 那一刻自訂電台還沒注入（本 Postfix 尚未執行），所以查不到就退回
+        /// <c>radioChannelDescriptors[0]</c>。注入完成後在此重試即可命中。
+        ///
+        /// 恢復目標分兩種來源，見 <see cref="s_isHotReload"/> 的說明。
         /// </summary>
-        private static void SubscribeChannelChange(Radio radio)
+        private static void RestoreChannel(
+            Radio radio,
+            Traverse traverse,
+            Dictionary<string, RuntimeRadioChannel> channels)
         {
-            // Delegate.Remove(null, x) 返回 null，Delegate.Combine(null, x) 返回 x，两者均 null-safe
-            radio.ClipChanged = (OnClipChanged)Delegate.Remove(radio.ClipChanged, new OnClipChanged(OnClipChanged));
-            radio.ClipChanged = (OnClipChanged)Delegate.Combine(radio.ClipChanged, new OnClipChanged(OnClipChanged));
-        }
+            string target;
 
-        /// <summary>
-        /// ClipChanged 回调：当播放的频道属于 SimpleRadio 网络时，保存频道名到设置。
-        /// </summary>
-        private static void OnClipChanged(Radio radio, AudioAsset asset)
-        {
-            try
+            if (s_isHotReload)
             {
-                var channel = radio.currentChannel;
-                if (channel == null) return;
-
-                var settings = Mod.Instance?.Settings;
-                if (settings == null) return;
-
-                if (channel.network == NetworkKey)
+                target = s_hotReloadChannel;
+            }
+            else
+            {
+                // 原版把「存檔時正在播的頻道名」寫進城市存檔（AudioManager.Serialize），
+                // 且不區分來源 —— 自訂電台同樣被記錄，所以這就是最準的恢復依據，
+                // 而且它綁存檔而非全域設定，多存檔之間不會互相汙染。
+                target = null;
+                try
                 {
-                    // 当前频道属于 SimpleRadio → 保存
-                    if (settings.LastStation != channel.name)
-                    {
-                        settings.LastStation = channel.name;
-                    }
+                    target = traverse.Field<string>("m_LastSaveRadioChannel").Value;
                 }
-                else if (!string.IsNullOrEmpty(settings.LastStation))
+                catch (Exception e)
                 {
-                    // 用户已切换到其他电台 → 清空记忆（下次启动不强制恢复）
-                    settings.LastStation = "";
+                    // 欄位改名／型別變動時 Traverse 會拋，降級為「不恢復」而非讓注入失敗
+                    Mod.Logger.Warn(e, "无法读取原版存档电台名，跳过恢复。");
                 }
             }
-            catch { /* 保存失败不影响播放 */ }
-        }
 
-        /// <summary>
-        /// 恢复上次保存的电台选择。
-        /// 
-        /// 边缘情况处理:
-        /// - 上次电台目录已删除/改名 → channels 中不存在 → 跳过
-        /// - 设置为空/null → 跳过
-        /// - Radio 已在播放 → 切换到保存的电台
-        /// </summary>
-        private static void RestoreLastStation(Radio radio, Dictionary<string, RuntimeRadioChannel> channels)
-        {
-            var settings = Mod.Instance?.Settings;
-            if (settings == null || string.IsNullOrEmpty(settings.LastStation)) return;
+            if (string.IsNullOrEmpty(target)) return;
 
-            if (!channels.TryGetValue(settings.LastStation, out var channel))
+            // 原版 Enable() 已經選中同一個頻道時不必重設：
+            // currentChannel 的 setter 會 FinishCurrentClip + ClearQueue，白做一次會打斷播放。
+            if (radio.currentChannel != null && radio.currentChannel.name == target) return;
+
+            if (!channels.TryGetValue(target, out var channel))
             {
-                Mod.Logger.Info($"上次电台 '{settings.LastStation}' 不存在（可能已删除），跳过恢复。");
-                settings.LastStation = "";
+                Mod.Logger.Info($"电台 '{target}' 不存在（可能已删除或改名），保持当前选择。");
                 return;
             }
 
             radio.currentChannel = channel;
-            Mod.Logger.Info($"已恢复上次电台: {settings.LastStation}");
+            Mod.Logger.Info($"已恢复电台: {target}");
         }
 
         /// <summary>

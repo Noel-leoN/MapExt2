@@ -2,7 +2,6 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using Colossal.IO.AssetDatabase;
-using Colossal.PSI.Environment;
 using Game.Modding;
 using Game.Settings;
 using SimpleRadio.Core;
@@ -13,11 +12,18 @@ namespace SimpleRadio.Settings
     /// SimpleRadio 设置面板。
     /// 提供只读信息展示、打开数据目录、热刷新电台、格式开关功能。
     /// </summary>
+    /// <remarks>
+    /// 類名刻意不叫 <c>ModSettings</c>：<see cref="ModSetting.ApplyAndSave"/> 傳的是
+    /// <c>GetType().Name</c>，而 AssetDatabase 以**短類名**比對並取首個命中即 break，
+    /// 因此同工作區多個 Mod 共用 <c>ModSettings</c> 這個名字時，只有其中一個能成為寫入目標，
+    /// 其餘的按下開關時寫進的是別人的 .coc。
+    /// <c>[FileLocation]</c> 與 <c>LoadSettings</c> 的區塊名皆未變動，玩家既有 .coc 照樣載入。
+    /// </remarks>
     [FileLocation("ModsSettings/" + Mod.ModName + "/" + Mod.ModName)]
     [SettingsUITabOrder(kTabInfo, kTabFormat)]
     [SettingsUIGroupOrder(kGroupStatus, kGroupActions, kGroupFormats, kGroupCompat)]
     [SettingsUIShowGroupName(kGroupStatus, kGroupActions, kGroupFormats, kGroupCompat)]
-    public class ModSettings : ModSetting
+    public class SimpleRadioSettings : ModSetting
     {
         // === Section/Group 常量 ===
         public const string kTabInfo = "Info";
@@ -32,8 +38,12 @@ namespace SimpleRadio.Settings
         private int _songCount;
         private bool _hasLoaded;
 
-        public ModSettings(IMod mod) : base(mod)
+        public SimpleRadioSettings(IMod mod) : base(mod)
         {
+            // Setting.SetDefaults 是 abstract，而原版從不對 Mod 的設定呼叫它 —— 必須自己叫。
+            // 目前預設值恰與屬性初始化器一致所以看不出差別，但任何只在 SetDefaults 裡
+            // 賦值、不帶初始化器的欄位都會讓 LoadSettings 的 defaults diff 恆為空而靜默失效。
+            SetDefaults();
         }
 
         // ================================================================
@@ -90,7 +100,7 @@ namespace SimpleRadio.Settings
         /// </summary>
         [SettingsUISection(kTabInfo, kGroupActions)]
         [SettingsUIButton]
-        [SettingsUIDisableByCondition(typeof(ModSettings), nameof(IsRadioNotReady))]
+        [SettingsUIDisableByCondition(typeof(SimpleRadioSettings), nameof(IsRadioNotReady))]
         public bool RefreshStations
         {
             // ReSharper disable once ValueParameterNotUsed
@@ -138,16 +148,8 @@ namespace SimpleRadio.Settings
                 : "Not detected";
 
         // ================================================================
-        // 持久化设置（隐藏）
+        // 内部方法
         // ================================================================
-
-        /// <summary>
-        /// 上次退出时选择的电台名称，由设置系统自动持久化。
-        /// </summary>
-        [SettingsUIHidden]
-        public string LastStation { get; set; } = "";
-
-        // === 内部方法 ===
 
         /// <summary>
         /// 由 StationLoader 在加载完成后调用，更新统计信息。
@@ -164,7 +166,6 @@ namespace SimpleRadio.Settings
             _stationCount = 0;
             _songCount = 0;
             _hasLoaded = false;
-            LastStation = "";
             EnableMP3 = true;
             EnableWAV = true;
         }

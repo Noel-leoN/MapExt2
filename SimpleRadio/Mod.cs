@@ -22,13 +22,13 @@ namespace SimpleRadio
         public const string HarmonyId = "SimpleRadio.Patch";
 
         // === Logger ===
-        public static ILog Logger = LogManager.GetLogger(ModName).SetShowsErrorsInUI(false);
+        public static readonly ILog Logger = LogManager.GetLogger(ModName).SetShowsErrorsInUI(false);
 
         // === Singleton ===
         public static Mod Instance { get; private set; }
 
         // === Settings ===
-        public ModSettings Settings { get; private set; }
+        public SimpleRadioSettings Settings { get; private set; }
 
         // === Harmony ===
         private Harmony _harmony;
@@ -43,12 +43,12 @@ namespace SimpleRadio
             try
             {
                 // 1. 初始化设置面板
-                Settings = new ModSettings(this);
+                Settings = new SimpleRadioSettings(this);
                 Settings.RegisterInOptionsUI();
                 GameManager.instance.localizationManager.AddSource("en-US", new LocaleEN(Settings));
                 GameManager.instance.localizationManager.AddSource("zh-HANS", new LocaleHANS(Settings));
                 GameManager.instance.localizationManager.AddSource("zh-HANT", new LocaleHANT(Settings));
-                AssetDatabase.global.LoadSettings(ModName, Settings, new ModSettings(this));
+                AssetDatabase.global.LoadSettings(ModName, Settings, new SimpleRadioSettings(this));
 
                 // 2. 解析 Mod 部署目录（通过游戏官方 API，适配本地和 PDX 订阅环境）
                 string modDir = null;

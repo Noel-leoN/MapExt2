@@ -5,9 +5,9 @@ namespace SimpleRadio.Settings
 {
     public class LocaleEN : IDictionarySource
     {
-        private readonly ModSettings m_Setting;
+        private readonly SimpleRadioSettings m_Setting;
 
-        public LocaleEN(ModSettings setting)
+        public LocaleEN(SimpleRadioSettings setting)
         {
             m_Setting = setting;
         }
@@ -22,29 +22,29 @@ namespace SimpleRadio.Settings
                 { m_Setting.GetSettingsLocaleID(), "SimpleRadio" },
 
                 // === Tab ===
-                { m_Setting.GetOptionTabLocaleID(ModSettings.kTabInfo), "Info" },
-                { m_Setting.GetOptionTabLocaleID(ModSettings.kTabFormat), "Format" },
+                { m_Setting.GetOptionTabLocaleID(SimpleRadioSettings.kTabInfo), "Info" },
+                { m_Setting.GetOptionTabLocaleID(SimpleRadioSettings.kTabFormat), "Format" },
 
                 // === Group: Status ===
-                { m_Setting.GetOptionGroupLocaleID(ModSettings.kGroupStatus), "Status" },
+                { m_Setting.GetOptionGroupLocaleID(SimpleRadioSettings.kGroupStatus), "Status" },
 
-                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.StationInfo)), "Loaded Stations" },
-                { m_Setting.GetOptionDescLocaleID(nameof(ModSettings.StationInfo)),
+                { m_Setting.GetOptionLabelLocaleID(nameof(SimpleRadioSettings.StationInfo)), "Loaded Stations" },
+                { m_Setting.GetOptionDescLocaleID(nameof(SimpleRadioSettings.StationInfo)),
                     "Number of custom radio stations detected in the data folder." },
 
-                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.SongInfo)), "Loaded Songs" },
-                { m_Setting.GetOptionDescLocaleID(nameof(ModSettings.SongInfo)),
+                { m_Setting.GetOptionLabelLocaleID(nameof(SimpleRadioSettings.SongInfo)), "Loaded Songs" },
+                { m_Setting.GetOptionDescLocaleID(nameof(SimpleRadioSettings.SongInfo)),
                     "Total number of audio files loaded across all stations." },
 
-                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.DataPath)), "Data Folder" },
-                { m_Setting.GetOptionDescLocaleID(nameof(ModSettings.DataPath)),
+                { m_Setting.GetOptionLabelLocaleID(nameof(SimpleRadioSettings.DataPath)), "Data Folder" },
+                { m_Setting.GetOptionDescLocaleID(nameof(SimpleRadioSettings.DataPath)),
                     "Path to the SimpleRadio data folder. Create subfolders here with audio files (.ogg, .mp3, .wav) to add custom stations." },
 
                 // === Group: Actions ===
-                { m_Setting.GetOptionGroupLocaleID(ModSettings.kGroupActions), "Actions" },
+                { m_Setting.GetOptionGroupLocaleID(SimpleRadioSettings.kGroupActions), "Actions" },
 
-                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.OpenDataFolder)), "Open Data Folder" },
-                { m_Setting.GetOptionDescLocaleID(nameof(ModSettings.OpenDataFolder)),
+                { m_Setting.GetOptionLabelLocaleID(nameof(SimpleRadioSettings.OpenDataFolder)), "Open Data Folder" },
+                { m_Setting.GetOptionDescLocaleID(nameof(SimpleRadioSettings.OpenDataFolder)),
                     "Open the SimpleRadio data folder in Windows Explorer.\n\n" +
                     "To add a custom station:\n" +
                     "1. Create a subfolder (folder name = station name)\n" +
@@ -52,21 +52,21 @@ namespace SimpleRadio.Settings
                     "3. Optionally add an icon.svg\n" +
                     "4. Click 'Refresh Stations' or restart the game" },
 
-                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.RefreshStations)), "♫ Refresh Stations" },
-                { m_Setting.GetOptionDescLocaleID(nameof(ModSettings.RefreshStations)),
+                { m_Setting.GetOptionLabelLocaleID(nameof(SimpleRadioSettings.RefreshStations)), "♫ Refresh Stations" },
+                { m_Setting.GetOptionDescLocaleID(nameof(SimpleRadioSettings.RefreshStations)),
                     "Re-scan the data folder and reload all custom stations without restarting the game.\n\n" +
                     "Use this after adding or removing audio files from the data folder." },
 
                 // === Group: Formats ===
-                { m_Setting.GetOptionGroupLocaleID(ModSettings.kGroupFormats), "Audio Formats" },
+                { m_Setting.GetOptionGroupLocaleID(SimpleRadioSettings.kGroupFormats), "Audio Formats" },
 
-                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.EnableMP3)), "Enable MP3 Support" },
-                { m_Setting.GetOptionDescLocaleID(nameof(ModSettings.EnableMP3)),
+                { m_Setting.GetOptionLabelLocaleID(nameof(SimpleRadioSettings.EnableMP3)), "Enable MP3 Support" },
+                { m_Setting.GetOptionDescLocaleID(nameof(SimpleRadioSettings.EnableMP3)),
                     "Allow loading .mp3 audio files.\n\n" +
                     "MP3 is widely supported and works reliably. Requires game restart to take effect." },
 
-                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.EnableWAV)), "Enable WAV Support" },
-                { m_Setting.GetOptionDescLocaleID(nameof(ModSettings.EnableWAV)),
+                { m_Setting.GetOptionLabelLocaleID(nameof(SimpleRadioSettings.EnableWAV)), "Enable WAV Support" },
+                { m_Setting.GetOptionDescLocaleID(nameof(SimpleRadioSettings.EnableWAV)),
                     "Allow loading .wav audio files.\n\n" +
                     "WARNING: WAV files are uncompressed and typically 10x larger than OGG/MP3 " +
                     "(~30-50 MB per song). This may significantly increase disk usage " +
@@ -75,10 +75,10 @@ namespace SimpleRadio.Settings
                     "Requires game restart to take effect." },
 
                 // === Group: Compatibility ===
-                { m_Setting.GetOptionGroupLocaleID(ModSettings.kGroupCompat), "Compatibility" },
+                { m_Setting.GetOptionGroupLocaleID(SimpleRadioSettings.kGroupCompat), "Compatibility" },
 
-                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.ExtendedRadioStatus)), "ExtendedRadio" },
-                { m_Setting.GetOptionDescLocaleID(nameof(ModSettings.ExtendedRadioStatus)),
+                { m_Setting.GetOptionLabelLocaleID(nameof(SimpleRadioSettings.ExtendedRadioStatus)), "ExtendedRadio" },
+                { m_Setting.GetOptionDescLocaleID(nameof(SimpleRadioSettings.ExtendedRadioStatus)),
                     "Shows whether the ExtendedRadio mod is installed.\n\n" +
                     "SimpleRadio works on its own either way — you can use both mods together without conflicts.\n\n" +
                     "If another radio mod runs into an error while loading, SimpleRadio keeps the game's radio working." },
