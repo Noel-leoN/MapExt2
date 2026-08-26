@@ -113,6 +113,8 @@ namespace SimpleRadio.Core
                     Directory.CreateDirectory(basePath);
                     Mod.Logger.Info($"数据目录已创建: {basePath}");
                     Mod.Logger.Info("请将音频文件（.ogg/.mp3/.wav）放入子文件夹中，然后点击\"刷新电台\"或重启游戏。");
+                    // 目錄剛建好 → 補註冊 COUI data host，否則本場遊戲都用不到自訂 icon.svg
+                    IconManager.EnsureDataHost();
                 }
                 catch (Exception e)
                 {
@@ -120,6 +122,9 @@ namespace SimpleRadio.Core
                 }
                 return;
             }
+
+            // 目錄存在，但 Mod.OnLoad 執行時可能還不存在（首次安裝）→ 補一次
+            IconManager.EnsureDataHost();
 
             // === 2. 获取 Radio 私有字典（一次性 Traverse） ===
             var traverse = Traverse.Create(radio);

@@ -21,6 +21,12 @@ namespace SimpleRadio.Patches
     [HarmonyPatch(typeof(Radio), "GetPlaylistClips")]
     public static class PlaylistClipsPatch
     {
+        // .NET Framework 的 new Random() 以系統 tick 為種子（約 15ms 精度），
+        // 同一 tick 內建立的多個實例會產生相同序列。切台雖不頻繁，
+        // 但沒有理由每次都新建 —— 本 Prefix 只在主執行緒被 Radio.Update 呼叫，
+        // 靜態實例無執行緒安全問題。
+        private static readonly Random s_rng = new Random();
+
         [HarmonyPrefix]
         public static bool Prefix(Radio __instance, RuntimeSegment segment)
         {
@@ -47,9 +53,8 @@ namespace SimpleRadio.Patches
                 if (segment.clips != null && segment.clips.Count > 0)
                 {
                     var list = new List<AudioAsset>(segment.clips);
-                    var rnd = new Random();
                     segment.clipsCap = list.Count;
-                    segment.clips = list.OrderBy(_ => rnd.Next()).ToArray();
+                    segment.clips = list.OrderBy(_ => s_rng.Next()).ToArray();
                 }
 
                 return false; // 跳过原版 GetPlaylistClips
