@@ -63,7 +63,7 @@ namespace SimpleRadio.Settings
                 { m_Setting.GetOptionLabelLocaleID(nameof(SimpleRadioSettings.EnableMP3)), "Enable MP3 Support" },
                 { m_Setting.GetOptionDescLocaleID(nameof(SimpleRadioSettings.EnableMP3)),
                     "Allow loading .mp3 audio files.\n\n" +
-                    "MP3 is widely supported and works reliably. Requires game restart to take effect." },
+                    "MP3 is widely supported and works reliably. Click 'Refresh Stations' to apply." },
 
                 { m_Setting.GetOptionLabelLocaleID(nameof(SimpleRadioSettings.EnableWAV)), "Enable WAV Support" },
                 { m_Setting.GetOptionDescLocaleID(nameof(SimpleRadioSettings.EnableWAV)),
@@ -72,10 +72,13 @@ namespace SimpleRadio.Settings
                     "(~30-50 MB per song). This may significantly increase disk usage " +
                     "and cause brief stuttering on HDD when switching tracks.\n\n" +
                     "Recommended: Convert WAV to OGG or MP3 for better performance.\n\n" +
-                    "Requires game restart to take effect." },
+                    "Click 'Refresh Stations' to apply." },
 
                 // === Group: Compatibility ===
                 { m_Setting.GetOptionGroupLocaleID(SimpleRadioSettings.kGroupCompat), "Compatibility" },
+
+                { SimpleRadioSettings.kLocaleExtendedRadioDetected, "Detected - compatible" },
+                { SimpleRadioSettings.kLocaleExtendedRadioMissing, "Not detected" },
 
                 { m_Setting.GetOptionLabelLocaleID(nameof(SimpleRadioSettings.ExtendedRadioStatus)), "ExtendedRadio" },
                 { m_Setting.GetOptionDescLocaleID(nameof(SimpleRadioSettings.ExtendedRadioStatus)),

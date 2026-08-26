@@ -17,7 +17,17 @@ namespace SimpleRadio.Patches
     /// 安全策略：
     /// - 仅拦截 SimpleRadio 注册的 AudioAsset（通过 tags 识别）
     /// - 非 SimpleRadio 的资源放行，不影响原版和其他 mod
-    /// - 若 ExtendedRadio 已加载，此补丁不注册（由 Mod.OnLoad 控制）
+    /// - 由 <c>Mod.OnLoad</c> <b>无条件</b>注册，不再依赖 ExtendedRadio 是否存在
+    ///
+    /// 與 ExtendedRadio 併用時的實際行為（已對其源碼核實）：
+    /// 對方的 <c>AudioAssetLoadAsyncPatch.Prefix</c> 是<b>無條件 return false</b>
+    /// 的全域接管，沒有任何 network／tag 守衛。兩邊都沒有設 <c>HarmonyPriority</c>，
+    /// 所以誰先跑不保證；先 return false 的那一個會讓後面的 Prefix 全部被跳過。
+    /// 這不影響結果：對方同樣按副檔名選解碼器
+    /// （<c>MusicLoader.GetClipFormatFromFileExtension</c>），mp3／wav 仍可正常播放。
+    ///
+    /// 刻意<b>不</b>標 <c>Priority.First</c>：搶先接管會改變對方對「它自己資產」的
+    /// 解碼時序，屬於主動介入他人，而我方並無收益。
     /// </summary>
     [HarmonyPatch(typeof(AudioAsset), nameof(AudioAsset.LoadAsync))]
     public static class AudioLoadPatch

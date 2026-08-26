@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.IO;
 using Colossal.IO.AssetDatabase;
 using Game.Modding;
+using Game.SceneFlow;
 using Game.Settings;
 using SimpleRadio.Core;
 
@@ -32,6 +33,12 @@ namespace SimpleRadio.Settings
         public const string kGroupActions = "Actions";
         public const string kGroupFormats = "Formats";
         public const string kGroupCompat = "Compatibility";
+
+        // === 相容性狀態的 locale key ===
+        // 唯讀 string 屬性由引擎渲染「執行期值」而非 locale key，
+        // 所以這兩句得自己查字典，否則三語介面都會露出英文硬字串。
+        internal const string kLocaleExtendedRadioDetected = "SimpleRadio.EXTENDEDRADIO_DETECTED";
+        internal const string kLocaleExtendedRadioMissing = "SimpleRadio.EXTENDEDRADIO_NOT_DETECTED";
 
         // === 内部状态 ===
         private int _stationCount;
@@ -144,8 +151,29 @@ namespace SimpleRadio.Settings
         [SettingsUISection(kTabFormat, kGroupCompat)]
         public string ExtendedRadioStatus =>
             AudioFormatHelper.IsExtendedRadioLoaded
-                ? "Detected — compatible"
-                : "Not detected";
+                ? Localize(kLocaleExtendedRadioDetected, "Detected - compatible")
+                : Localize(kLocaleExtendedRadioMissing, "Not detected");
+
+        /// <summary>
+        /// 查活躍語言字典；查不到就回退英文字面值，不要把 key 露給玩家。
+        /// </summary>
+        private static string Localize(string key, string fallback)
+        {
+            try
+            {
+                var dict = GameManager.instance?.localizationManager?.activeDictionary;
+                if (dict != null && dict.TryGetValue(key, out var value) && !string.IsNullOrEmpty(value))
+                {
+                    return value;
+                }
+            }
+            catch
+            {
+                // 設定頁不該因為查字典失敗而壞掉
+            }
+
+            return fallback;
+        }
 
         // ================================================================
         // 内部方法

@@ -12,7 +12,7 @@ namespace SimpleRadio.Core
     ///
     /// 图标优先级：
     ///   1. 电台目录下的 icon.svg（用户自定义）→ coui://simpleradio-data/电台名/icon.svg
-    ///   2. Resources/StationIcons/station_XX.svg（hash 分配）→ coui://simpleradio/...
+    ///   2. Resources/StationIcons/station_XX.svg（每次載入隨機抽一張）→ coui://simpleradio/...
     ///   3. Resources/DefaultIcon.svg（兜底）
     /// </summary>
     public static class IconManager
@@ -137,7 +137,8 @@ namespace SimpleRadio.Core
                 }
             }
 
-            // 2. 预设图标库（随机分配，每次加载可能不同，增加趣味性）
+            // 2. 预设图标库（每次載入／熱刷新都重新隨機抽，圖示會變是預期行為；
+            //    若要「同一電台永遠同一張」須改成電台名 hash，目前刻意不做）
             if (_stationIcons.Length > 0)
             {
                 int index = _rng.Next(_stationIcons.Length);

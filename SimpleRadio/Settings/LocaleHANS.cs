@@ -63,7 +63,7 @@ namespace SimpleRadio.Settings
                 { m_Setting.GetOptionLabelLocaleID(nameof(SimpleRadioSettings.EnableMP3)), "启用 MP3 支持" },
                 { m_Setting.GetOptionDescLocaleID(nameof(SimpleRadioSettings.EnableMP3)),
                     "允许加载 .mp3 音频文件。\n\n" +
-                    "MP3 格式广泛支持，运行稳定可靠。需要重启游戏生效。" },
+                    "MP3 格式广泛支持，运行稳定可靠。点击「刷新电台」即可生效。" },
 
                 { m_Setting.GetOptionLabelLocaleID(nameof(SimpleRadioSettings.EnableWAV)), "启用 WAV 支持" },
                 { m_Setting.GetOptionDescLocaleID(nameof(SimpleRadioSettings.EnableWAV)),
@@ -71,10 +71,13 @@ namespace SimpleRadio.Settings
                     "注意：WAV 是无压缩格式，文件体积通常是 OGG/MP3 的 10 倍（每首约 30-50 MB）。" +
                     "可能显著增加磁盘占用，且在机械硬盘上切歌时可能出现短暂卡顿。\n\n" +
                     "建议：将 WAV 转换为 OGG 或 MP3 以获得更好的性能。\n\n" +
-                    "需要重启游戏生效。" },
+                    "点击「刷新电台」即可生效。" },
 
                 // === Group: Compatibility ===
                 { m_Setting.GetOptionGroupLocaleID(SimpleRadioSettings.kGroupCompat), "兼容性" },
+
+                { SimpleRadioSettings.kLocaleExtendedRadioDetected, "已检测到 — 兼容" },
+                { SimpleRadioSettings.kLocaleExtendedRadioMissing, "未检测到" },
 
                 { m_Setting.GetOptionLabelLocaleID(nameof(SimpleRadioSettings.ExtendedRadioStatus)), "ExtendedRadio" },
                 { m_Setting.GetOptionDescLocaleID(nameof(SimpleRadioSettings.ExtendedRadioStatus)),
