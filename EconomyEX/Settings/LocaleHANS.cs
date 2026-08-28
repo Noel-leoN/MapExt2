@@ -17,6 +17,11 @@ namespace EconomyEX.Settings
             return new Dictionary<string, string>
             {
                 { m_Setting.GetSettingsLocaleID(), "EconomyEX 经济扩展" },
+
+                // === 對話框文案（非設定項，由 ConflictMonitoringSystem 以 LocalizedString.Id 取用） ===
+                { "ECONOMYEX_MAPSIZE.LargeMapTitle", "⚠️ 检测到大地图存档" },
+                { "ECONOMYEX_MAPSIZE.LargeMapMessage", "此存档创建于 {MAP_SIZE}m 的地图上，需要 MapExt 模组才能正确加载。\n\nEconomyEX 只替换原版尺寸地图的经济系统，不提供地图扩容。缺少 MapExt 时，地形会以错误的比例采样，海拔、水体与可建造区域全部出错，此存档实际上无法游玩。\n\nEconomyEX 已在本次会话中停用自身。若要玩此存档，请退出到主菜单并启用 MapExt。" },
+                { "ECONOMYEX_MAPSIZE.ConfirmOK", "确定" },
                 
                 { m_Setting.GetOptionTabLocaleID(ModSettings.kSectionStatus), "运行状态" },
                 { m_Setting.GetOptionGroupLocaleID(ModSettings.kSectionStatus), "运行状态" },

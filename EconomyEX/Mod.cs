@@ -201,20 +201,27 @@ namespace EconomyEX
              // For now, we will just Disable our systems and Re-enable Vanilla ones.
              SystemRegistrar.DisableEconomySystems();
 
-             if (!IsActive) return;
-
-             Info("Deactivating Economy Fixes (Large Map Detected)...");
-             IsActive = false;
+             // IsVanillaMap 描述「當前地圖」而非 patch 狀態，每次載入都必須更新。
              IsVanillaMap = false;
-             
+
+             if (IsActive)
+             {
+                 Info("Deactivating Economy Fixes (Large Map Detected)...");
+                 IsActive = false;
+             }
+
              // Note: Transpilers (JobPatches) are hard to revert at runtime without a restart usually,
              // but since we only patch on Load, we might be stuck with them if we switch maps without restarting.
-             // However, our Job Patches are designed to be replacements. 
+             // However, our Job Patches are designed to be replacements.
              // If we are on a Large Map, we SHOULD NOT run this mod at all.
              // If the user switches from Vanilla -> Large Map in one session:
              // The MapSizeDetector run at 'FinalizeTerrainData' which happens during map load.
-             
-             Settings.UpdateStatus();
+
+             // [BUGFIX] UpdateStatus 必須無條件執行：舊版排在 if (!IsActive) return 之後，
+             // 而「首次就載入大地圖」時 IsActive 本來就是 false，於是設定頁永遠停在
+             // "IDLE: Waiting for map load..."，玩家看不到「已因大地圖停用」。
+             // 它讀 IsActive／IsVanillaMap，故排在兩者定案之後。
+             Settings?.UpdateStatus();
         }
     }
 }

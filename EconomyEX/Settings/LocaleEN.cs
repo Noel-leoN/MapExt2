@@ -17,6 +17,11 @@ namespace EconomyEX.Settings
             return new Dictionary<string, string>
             {
                 { m_Setting.GetSettingsLocaleID(), "EconomyEX" },
+
+                // === 對話框文案（非設定項，由 ConflictMonitoringSystem 以 LocalizedString.Id 取用） ===
+                { "ECONOMYEX_MAPSIZE.LargeMapTitle", "⚠️ Large Map Save Detected" },
+                { "ECONOMYEX_MAPSIZE.LargeMapMessage", "This save was created on a {MAP_SIZE}m map, which needs the MapExt mod to load correctly.\n\nEconomyEX only replaces economy systems on vanilla-sized maps — it does not provide map expansion. Without MapExt the terrain is sampled at the wrong scale, so elevation, water and buildable areas all come out wrong, and this save is effectively unplayable.\n\nEconomyEX has disabled itself for this session. To play this save, quit to the main menu and enable MapExt." },
+                { "ECONOMYEX_MAPSIZE.ConfirmOK", "OK" },
                 
                 { m_Setting.GetOptionTabLocaleID(ModSettings.kSectionStatus), "Status" },
                 { m_Setting.GetOptionGroupLocaleID(ModSettings.kSectionStatus), "Status" },

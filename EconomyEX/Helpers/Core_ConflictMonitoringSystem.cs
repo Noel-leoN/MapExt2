@@ -49,12 +49,18 @@ namespace EconomyEX.Helpers
         protected override void OnGameLoadingComplete(Purpose purpose, GameMode mode)
         {
             base.OnGameLoadingComplete(purpose, mode);
-            if (mode == GameMode.Game && !_mapExtActive && !_initialCheckDone)
-            {
-                _initialCheckDone = true;
-                ModLog.Ok(Tag, "游戏加载完成，执行首次系统状态诊断");
-                RunDiagnostics();
-            }
+            if (mode != GameMode.Game || _mapExtActive) return;
+
+            // 大地圖警示每次載入都要判斷——玩家可能先載原版尺寸存檔、再載大地圖存檔，
+            // 若沿用診斷的「僅首次」守衛，後者就拿不到提示。
+            ShowLargeMapWarningIfNeeded();
+
+            // 診斷同樣每次載入都跑：引擎在退回主菜單時會復活所有系統，二次載入後
+            // 系統 Enabled 狀態必須重新驗證（對照 MapExt 的同名系統）。
+            string loadLabel = _initialCheckDone ? "二次加载" : "首次加载";
+            _initialCheckDone = true;
+            ModLog.Ok(Tag, $"游戏加载完成（{loadLabel}），执行系统状态诊断");
+            RunDiagnostics();
         }
 
         /// <summary>被动模式：OnUpdate 不做任何工作</summary>
@@ -67,6 +73,54 @@ namespace EconomyEX.Helpers
             if (GameManager.instance.gameMode != GameMode.Game) return;
             RunDiagnostics();
         }
+
+        #region Large Map Warning
+
+        /// <summary>
+        /// 大地圖存檔警示。EconomyEX 只替換原版尺寸地圖的經濟系統，不提供地圖擴容；
+        /// 玩家若在沒有 MapExt 的環境載入大地圖存檔，地形取樣比例錯誤、存檔實質不可遊玩。
+        /// 這一側原本只有一行 log（玩家看不到），設定頁狀態也不刷新，錯誤幾乎不可發現。
+        ///
+        /// <para>偵測必須在 <c>TerrainSystem.FinalizeTerrainData</c> 的 Prefix
+        /// （見 <see cref="MapSizeDetector"/>）——只有那裡的 <c>inMapSize</c> 還是地圖檔的原始
+        /// 權威值，之後即被寫入 playableArea 而無法還原；但當時仍在反序列化中途、UI 尚未就緒，
+        /// 故延到此處彈窗。做法對照 MapExt 的 MapSizeMismatchState。</para>
+        /// </summary>
+        private void ShowLargeMapWarningIfNeeded()
+        {
+            if (!MapSizeDetector.HasLargeMapWarning || MapSizeDetector.WarningDialogShown)
+                return;
+
+            MapSizeDetector.WarningDialogShown = true;
+
+            try
+            {
+                var locParams = new Dictionary<string, ILocElement>
+                {
+                    { "MAP_SIZE", LocalizedString.Value($"{MapSizeDetector.DetectedMapSize:0}") }
+                };
+
+                var dialog = new MessageDialog(
+                    LocalizedString.Id("ECONOMYEX_MAPSIZE.LargeMapTitle"),
+                    new LocalizedString("ECONOMYEX_MAPSIZE.LargeMapMessage", null, locParams),
+                    LocalizedString.Id("ECONOMYEX_MAPSIZE.ConfirmOK"));
+
+                Colossal.Core.MainThreadDispatcher.RegisterUpdater(() =>
+                {
+                    GameManager.instance.userInterface.appBindings.ShowMessageDialog(dialog, null);
+                    return true;
+                });
+
+                ModLog.Warn(Tag,
+                    $"已提示大地圖存檔警示（尺寸 {MapSizeDetector.DetectedMapSize:0}m，此存檔需要 MapExt）");
+            }
+            catch (System.Exception ex)
+            {
+                ModLog.Warn(Tag, $"顯示大地圖警示對話框失敗: {ex.Message}");
+            }
+        }
+
+        #endregion
 
         #region Diagnostics
 
