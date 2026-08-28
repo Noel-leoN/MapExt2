@@ -151,14 +151,26 @@ namespace EconomyEX
         public void ActivateEconomyFix()
         {
             if (IsMapExtPresent) return;
-            if (IsActive) return; // Already active
+
+            // [BUGFIX] 系統 Enabled 狀態必須每次載入都重新套用——引擎在退回主菜單時會把世界內
+            // 所有系統復活成 Enabled = true。MapSizeDetector 每次 FinalizeTerrainData 都會呼叫
+            // 本方法，但舊版把 IsActive 守衛放在最前面，於是二次載入時整段被跳過，導致原版與
+            // 替換系統同時運行，且不寫任何錯誤日誌。SetSystemEnabled 為 idempotent，重複套用
+            // 安全；Harmony patch 不可重複掛載，故仍留在守衛之後。
+            // 做法對照 MapExtPDX 的 SystemReplacer.ReDisableVanillaSystems。
+            SystemRegistrar.EnableEconomySystems();
+
+            // 這兩項同樣是直接寫原版系統的 Enabled（HouseholdPetSpawnSystem /
+            // TrafficSpawnerAISystem），一併每次載入重新套用——否則二次載入後
+            // NoDogs 與 NoThroughTraffic 兩個設定會靜默回退成原版行為。
+            Settings?.UpdateNoDogsSystemStates();
+            Settings?.UpdateNoThroughTrafficSystemStates();
+
+            if (IsActive) return; // 以下僅首次啟用時執行
 
             Info("Activating Economy Fixes...");
             IsActive = true;
             IsVanillaMap = true; // Confirmed
-            
-            // Enable our custom systems and disable vanilla ones
-            SystemRegistrar.EnableEconomySystems();
             
             // Apply Job Patches (if any)
             JobPatchHelper.Apply(_harmony, JobPatchDefinitions.GetEcoSystemTargets());
@@ -167,10 +179,6 @@ namespace EconomyEX
             _harmony.CreateClassProcessor(typeof(PathfindSetupSystem_FindTargets_Patch)).Patch();
             _harmony.CreateClassProcessor(typeof(LandValueSystemMod.Patches)).Patch();
             _harmony.CreateClassProcessor(typeof(ServiceCoverageSystem_SetupPathfindMethods_Patch)).Patch();
-
-            // Apply NoDogs and NoThroughTraffic saved settings
-            Settings.UpdateNoDogsSystemStates();
-            Settings.UpdateNoThroughTrafficSystemStates();
 
             // Apply GPU optimization patches (Backdrop Disable + Water Sim Quality)
             _harmony.CreateClassProcessor(typeof(TerrainBackdropDisablePatch)).Patch();
@@ -184,16 +192,20 @@ namespace EconomyEX
         /// </summary>
         public void DeactivateEconomyFix()
         {
+             if (IsMapExtPresent) return;
+
+             // [BUGFIX] 同 ActivateEconomyFix：Mod 系統同樣會被引擎復活，大地圖上必須每次載入
+             // 都重新禁用，否則二次載入後 EconomyEX 的替換系統會在它不支援的大地圖上運行。
+             // Revert or Disable our systems?
+             // Ideally we should Unpatch, but Harmony Unpatching at runtime can be risky or complex.
+             // For now, we will just Disable our systems and Re-enable Vanilla ones.
+             SystemRegistrar.DisableEconomySystems();
+
              if (!IsActive) return;
 
              Info("Deactivating Economy Fixes (Large Map Detected)...");
              IsActive = false;
              IsVanillaMap = false;
-
-             // Revert or Disable our systems? 
-             // Ideally we should Unpatch, but Harmony Unpatching at runtime can be risky or complex.
-             // For now, we will just Disable our systems and Re-enable Vanilla ones.
-             SystemRegistrar.DisableEconomySystems();
              
              // Note: Transpilers (JobPatches) are hard to revert at runtime without a restart usually,
              // but since we only patch on Load, we might be stuck with them if we switch maps without restarting.
