@@ -85,6 +85,20 @@ namespace EconomyEX.Helpers
             // 注意: ResidentialDemandSystem/CommercialDemandSystem/IndustrialDemandSystem
             // 保持启用 — 它们的 Job 会被 Transpiler 替换
 
+            // --- 原版殘骸系統（無對應替換系統，純粹關掉白跑的死代碼） ---
+            // NetUpkeepJob 的 Execute 把 GetUpkeepCost 的結果累加到區域變數後直接丟棄，
+            // 4 個欄位全 [ReadOnly]，零產出零副作用（OnCreate 建的 m_CitySystem 在 OnUpdate
+            // 從未使用，是舊版把總額寫到 City entity 的殘留痕跡）。功能已由
+            // CityServiceBudgetSystem.NetServiceBudgetJob 接手——它的 query 條件與
+            // NetUpkeepSystem.m_UpkeepQuery 逐字相同，但把費用寫進
+            // CollectedCityServiceBudgetData.m_BaseCost 並按 service 歸屬。
+            // Job 帶 [BurstCompile] 且原版 AOT，Harmony 打不到 Execute，只能從系統層關。
+            // 掛在 Economy 總開關下；上方 11 個原版系統的禁用不讀該開關，是既有行為，此處不一併變更。
+            if (EconomyEX.Mod.Instance?.Settings?.EnableEconomyFix == true)
+            {
+                SetSystemEnabled<NetUpkeepSystem>(world, false);
+            }
+
             // 2. Enable Mod Systems
             SetSystemEnabled<HouseholdFindPropertySystemMod>(world, true);
             SetSystemEnabled<HouseholdBehaviorSystemMod>(world, true);
@@ -124,6 +138,9 @@ namespace EconomyEX.Helpers
             SetSystemEnabled<ResourceBuyerSystem>(world, true);
             SetSystemEnabled<ResidentAISystem>(world, true);
             SetSystemEnabled<ResidentAISystem.Actions>(world, true);
+
+            // 原版殘骸系統還原（對照 EnableEconomySystems 的同名段；判定理由見該處註釋）
+            SetSystemEnabled<NetUpkeepSystem>(world, true);
 
             // 2. Disable Mod Systems
             SetSystemEnabled<HouseholdFindPropertySystemMod>(world, false);

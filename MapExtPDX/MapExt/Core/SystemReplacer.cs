@@ -19,6 +19,7 @@ namespace MapExtPDX.MapExt.Core
         /// 各 Mode 重新禁用的系统须与 Apply() 中对应分支严格一致：
         /// ModeA/B/C 禁用全部 CellMap 系统 + 经济系统；
         /// ModeE (CV==1) 为 vanilla 尺寸，仅禁用 LandValueSystem + 经济系统，不碰其余 CellMap 系统。
+        /// 另有原版殘骸系統（NetUpkeepSystem）在 Economy 總開關下全 Mode 一律禁用。
         /// </summary>
         public static void ReDisableVanillaSystems(Unity.Entities.World world, ModSettings setting)
         {
@@ -78,6 +79,13 @@ namespace MapExtPDX.MapExt.Core
                 count += DisableIfEnabled<Game.Simulation.TaxiAISystem>(world);
                 count += DisableIfEnabled<Game.Simulation.LeisureSystem>(world);
                 count += DisableIfEnabled<Game.Simulation.FindSchoolSystem>(world);
+            }
+
+            // --- 原版殘骸系統（與地圖尺寸無關，全 Mode 適用） ---
+            // 對照 Apply() 的「通用经济系统注册 (EcoShared)」段開頭，判定理由見該處註釋。
+            if (setting.isEnableEconomyFix)
+            {
+                count += DisableIfEnabled<Game.Simulation.NetUpkeepSystem>(world);
             }
 
             if (count > 0)
@@ -704,6 +712,17 @@ namespace MapExtPDX.MapExt.Core
             // ======================================================
             if (setting.isEnableEconomyFix)
             {
+                // === 原版殘骸系統禁用 ===
+                // NetUpkeepJob 是舊路網維護費機制的殘骸：Execute 把 GetUpkeepCost 的結果累加到區域
+                // 變數後直接丟棄，4 個欄位全 [ReadOnly]，零產出零副作用（OnCreate 建的 m_CitySystem
+                // 在 OnUpdate 從未使用，是舊版把總額寫到 City entity 的殘留痕跡）。
+                // 功能已由 CityServiceBudgetSystem.NetServiceBudgetJob 接手——它的 query 條件與
+                // NetUpkeepSystem.m_UpkeepQuery 逐字相同（連變數名都叫 m_NetUpkeepQuery），
+                // 但把費用寫進 CollectedCityServiceBudgetData.m_BaseCost 並按 service 歸屬。
+                // 禁用省下每 512 模擬幀對 1/16 路網的白跑遍歷（量級極小，但確實是白燒）。
+                // Job 帶 [BurstCompile] 且原版 AOT，Harmony 打不到 Execute，只能從系統層關。
+                updateSystem.World.GetOrCreateSystemManaged<Game.Simulation.NetUpkeepSystem>().Enabled = false;
+
                 if (setting.EnableHouseholdPropertyEcoSystem)
                 {
                     updateSystem.UpdateAt<EcoShared.HouseholdBehaviorSystemMod>(SystemUpdatePhase.GameSimulation);
