@@ -120,6 +120,14 @@ using MapExtPDX.SaveLoadSystem;
 
             GroundWaterTickJob jobData = groundWaterTickJob;
 
+            // 診斷路徑：同步分趟計時。會阻塞主執行緒，僅在設定明確開啟時走
+            // （見 ModSettings.CellMapProfiling 的說明）。
+            if (Mod.Instance?.Settings?.CellMapProfiling == true)
+            {
+                RunProfiled(jobData, scratchMap);
+                return;
+            }
+
             Dependency = IJobExtensions.Schedule(jobData, JobHandle.CombineDependencies(m_WriteDependencies, m_ReadDependencies, Dependency));
 
             AddWriter(Dependency);
@@ -130,6 +138,57 @@ using MapExtPDX.SaveLoadSystem;
             // 这告Unity：当 Dependency (即这Job) 完成后，自动调用 scratchMap.Dispose()
             // 无需手动管理生命周期，也不会阻塞主线程
             scratchMap.Dispose(Dependency);
+        }
+
+        /// <summary>
+        /// 診斷用：在主執行緒同步跑三趟並各自計時（<b>Burst 仍生效</b>，但失去平行度）。
+        ///
+        /// <para><b>為什麼要這條路徑</b>：三趟的成本占比至今只有靜態估算
+        /// （趟1 8.1 ns/對、趟2 11.0 ns/對、趟3 3.8 ns/格），而「趟3 該不該拆 IJobParallelFor」
+        /// 與「趟1 該不該改寫成 gather」完全取決於實際比例。這是唯一缺的數據。</para>
+        ///
+        /// <para><b>數字怎麼讀</b>：絕對值會略高於實際在 worker 上的耗時（無平行、cache 狀態不同），
+        /// 但量級與三趟的相對比例可靠。含水層占比一併輸出——它是零格早退命中率的決定因素，
+        /// 沒有它就無法判斷這組數字代表哪種地圖。</para>
+        ///
+        /// <para><b>等價性</b>：三趟是三個嚴格串行的獨立迴圈，「跑三次各一趟」與「跑一次三趟」
+        /// 對 <c>m_Map</c>／<c>m_TempMap</c> 的最終狀態逐位相同，所以開著診斷不會改變模擬數值。</para>
+        /// </summary>
+        private void RunProfiled(GroundWaterTickJob jobData, NativeArray<int2> scratchMap)
+        {
+            // 同步執行前必須先讓掛起的讀寫都收斂，否則 Run() 會撞上 job safety system
+            JobHandle.CombineDependencies(m_WriteDependencies, m_ReadDependencies, Dependency).Complete();
+
+            var sw = System.Diagnostics.Stopwatch.StartNew();
+            jobData.m_Phase = 1;
+            IJobExtensions.Run(jobData);
+            double t1 = sw.Elapsed.TotalMilliseconds;
+
+            sw.Restart();
+            jobData.m_Phase = 2;
+            IJobExtensions.Run(jobData);
+            double t2 = sw.Elapsed.TotalMilliseconds;
+
+            sw.Restart();
+            jobData.m_Phase = 3;
+            IJobExtensions.Run(jobData);
+            double t3 = sw.Elapsed.TotalMilliseconds;
+            sw.Stop();
+
+            // 計時之外統計，不污染任何一趟的數字
+            int aquifer = CountAquiferCells(m_Map);
+            double total = t1 + t2 + t3;
+            double denom = total > 0 ? total : 1;
+            ModLog.Scan(nameof(GroundWaterSystemMod),
+                $"GroundWaterTickJob {kTextureSize}² 同步計時：" +
+                $"趟1 {t1:F2}ms（{100 * t1 / denom:F0}%）· " +
+                $"趟2 {t2:F2}ms（{100 * t2 / denom:F0}%）· " +
+                $"趟3 {t3:F2}ms（{100 * t3 / denom:F0}%）· " +
+                $"合計 {total:F2}ms ｜ 含水層 {aquifer} 格（{100f * aquifer / m_Map.Length:F2}%）");
+
+            Dependency = default;
+            AddWriter(default);
+            scratchMap.Dispose();
         }
 
         // === 為什麼沒有 SetDefaults 覆寫（勿再補回） ===
@@ -207,7 +266,16 @@ using MapExtPDX.SaveLoadSystem;
             int nonZero = CountAquiferCells(m_Map);
 
             // 既有存檔且場是健康的 → 玩家的即時狀態，不介入
-            if (!isNewGame && nonZero != 0) return;
+            if (!isNewGame && nonZero != 0)
+            {
+                // 這條分支原本完全靜默，於是「沒有日誌」同時可能代表「場是健康的」與
+                // 「OnGameLoaded 根本沒走到」，無從分辨。而含水層占比又是零格早退命中率
+                // 與 GroundWaterTickJob 成本的唯一決定因素，所以無條件記一行。
+                ModLog.Info(nameof(GroundWaterSystemMod),
+                    $"地下水場沿用存檔內容，不介入：{kTextureSize}² = {m_Map.Length} 格，" +
+                    $"含水層 {nonZero} 格（{100f * nonZero / m_Map.Length:F2}%）");
+                return;
+            }
 
             bool hasVanilla = TryGetVanillaAquifer(out NativeArray<TargetType> vanillaMap, out int srcSize);
             int vanillaCells = hasVanilla ? CountAquiferCells(vanillaMap) : 0;
@@ -399,45 +467,63 @@ using MapExtPDX.SaveLoadSystem;
                 Assert.IsTrue(groundWater2.m_Polluted + reference2.y <= groundWater2.m_Amount + reference2.x);
             }
 
+            /// <summary>
+            /// 0 = 三趟全跑（生產路徑）；1／2／3 = 只跑該趟（僅 <see cref="RunProfiled"/> 的診斷計時用）。
+            /// <para>三趟本來就是三個嚴格串行的獨立迴圈，所以「跑三次各一趟」與「跑一次三趟」
+            /// 結果逐位相同。生產路徑不設此欄位（<c>default</c> 即 0），只多三次迴圈外的比較。</para>
+            /// <para>本 job 不在 <c>JobPatchDefinitions</c> 內（它屬於 System Replacement 而非
+            /// job body 替換），故加欄位不受「ReBurst 欄位佈局須與原版對齊」的約束。</para>
+            /// </summary>
+            public int m_Phase;
+
             public void Execute()
             {
-                // NativeArray<int2> tmp = new NativeArray<int2>(this.m_GroundWaterMap.Length, Allocator.TempJob); // 传入的临时缓冲区，全部替换为m_TempMap
-                for (int i = 0; i < this.m_GroundWaterMap.Length; i++)
+                // 趟1：污染在鄰格之間再分配
+                if (m_Phase == 0 || m_Phase == 1)
                 {
-                    int num = i % kTextureSize;
-                    int num2 = i / kTextureSize;
-                    if (num < kTextureSize - 1)
+                    for (int i = 0; i < this.m_GroundWaterMap.Length; i++)
                     {
-                        this.HandlePollution(i, i + 1, m_TempMap);
-                    }
-                    if (num2 < kTextureSize - 1)
-                    {
-                        this.HandlePollution(i, i + kTextureSize, m_TempMap);
+                        int num = i % kTextureSize;
+                        int num2 = i / kTextureSize;
+                        if (num < kTextureSize - 1)
+                        {
+                            this.HandlePollution(i, i + 1, m_TempMap);
+                        }
+                        if (num2 < kTextureSize - 1)
+                        {
+                            this.HandlePollution(i, i + kTextureSize, m_TempMap);
+                        }
                     }
                 }
-                for (int j = 0; j < this.m_GroundWaterMap.Length; j++)
+                // 趟2：水量與污染隨水位差流動
+                if (m_Phase == 0 || m_Phase == 2)
                 {
-                    int num3 = j % kTextureSize;
-                    int num4 = j / kTextureSize;
-                    if (num3 < kTextureSize - 1)
+                    for (int j = 0; j < this.m_GroundWaterMap.Length; j++)
                     {
-                        this.HandleFlow(j, j + 1, m_TempMap);
-                    }
-                    if (num4 < kTextureSize - 1)
-                    {
-                        this.HandleFlow(j, j + kTextureSize, m_TempMap);
+                        int num3 = j % kTextureSize;
+                        int num4 = j / kTextureSize;
+                        if (num3 < kTextureSize - 1)
+                        {
+                            this.HandleFlow(j, j + 1, m_TempMap);
+                        }
+                        if (num4 < kTextureSize - 1)
+                        {
+                            this.HandleFlow(j, j + kTextureSize, m_TempMap);
+                        }
                     }
                 }
-                for (int k = 0; k < this.m_GroundWaterMap.Length; k++)
+                // 趟3：套用增量 ＋ 補充 ＋ 淨化（無早退，每格必寫）
+                if (m_Phase == 0 || m_Phase == 3)
                 {
-                    TargetType value = this.m_GroundWaterMap[k];
-                    value.m_Amount = (short)math.min(value.m_Amount + m_TempMap[k].x + math.ceil(this.m_Parameters.m_GroundwaterReplenish * (float)value.m_Max), value.m_Max); // 注意：Mathf改为Burst优化的math
-                    value.m_Polluted = (short)math.clamp(value.m_Polluted + m_TempMap[k].y - this.m_Parameters.m_GroundwaterPurification, 0, value.m_Amount);
-                    this.m_GroundWaterMap[k] = value;
+                    for (int k = 0; k < this.m_GroundWaterMap.Length; k++)
+                    {
+                        TargetType value = this.m_GroundWaterMap[k];
+                        value.m_Amount = (short)math.min(value.m_Amount + m_TempMap[k].x + math.ceil(this.m_Parameters.m_GroundwaterReplenish * (float)value.m_Max), value.m_Max); // 注意：Mathf改为Burst优化的math
+                        value.m_Polluted = (short)math.clamp(value.m_Polluted + m_TempMap[k].y - this.m_Parameters.m_GroundwaterPurification, 0, value.m_Amount);
+                        this.m_GroundWaterMap[k] = value;
+                    }
                 }
-                //tmp.Dispose();
-                // m_TempMap 由调用方分配Allocator.TempJob
-                // 无需手动释放（由 Dispose(Dependency) 管理
+                // m_TempMap 由调用方分配 Allocator.TempJob，无需手动释放（由 Dispose(Dependency) 管理）
             }
         }
         #endregion

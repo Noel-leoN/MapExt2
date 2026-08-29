@@ -793,6 +793,13 @@ namespace MapExtPDX
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.EnableRescueDebugLog)),
                     "開啟後，購車救援系統在每次執行救援、重試或清理放棄邏輯時會列印日誌。\n★ 建議在大城市或穩定執行後保持關閉以防止日誌檔案膨脹。"
                 },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.CellMapProfiling)), "啟用 CellMap 診斷計時（地下水）" },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.CellMapProfiling)),
+                    "僅供診斷。開啟後地下水的 tick job 改為在主執行緒同步執行，並對三趟各自計時，把毫秒數寫進 MapExtPDX.log。\n\n" +
+                    "★ 注意：這會讓主執行緒每個 tick 被阻塞一次（每 128 模擬幀，約 2 秒），遊戲會有可感知的週期性卡頓。量到數字就關掉。\n" +
+                    "★ Burst 仍然生效，所以三趟之間的相對比例可靠，只是絕對值會略高於實際在 worker 上的耗時。"
+                },
                 { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.GhostVehicleScanReport)), "幽靈車輛掃描報告" },
                 {
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.GhostVehicleScanReport)),

@@ -955,6 +955,16 @@ namespace MapExtPDX
                     "Enable printing logs whenever the vehicle purchase rescue system performs a rescue, retry, or deletion.\n★ Keep disabled under normal gameplay to avoid log file bloat."
                 },
                 {
+                    m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.CellMapProfiling)),
+                    "Enable CellMap Profiling (Groundwater)"
+                },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.CellMapProfiling)),
+                    "Diagnostic only. Runs the groundwater tick job synchronously on the main thread and times its three passes separately, writing the milliseconds to MapExtPDX.log.\n\n" +
+                    "★ WARNING: this blocks the main thread once per tick (every 128 simulation frames, roughly 2 seconds), so the game will stutter periodically. Turn it off once you have the numbers.\n" +
+                    "★ Burst compilation still applies, so the relative ordering of the three passes is reliable even though the absolute values run slightly high."
+                },
+                {
                     m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.GhostVehicleScanReport)),
                     "Ghost Vehicle Scan Report"
                 },
