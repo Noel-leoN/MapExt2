@@ -112,23 +112,34 @@ using MapExtPDX.SaveLoadSystem;
             // 必须Job 完成Dispose
             NativeArray<int2> scratchMap = new NativeArray<int2>(m_Map.Length, Allocator.TempJob);
 
-            GroundWaterTickJob groundWaterTickJob = default(GroundWaterTickJob);
-            groundWaterTickJob.m_GroundWaterMap = m_Map;
-            groundWaterTickJob.m_Parameters = m_ParameterQuery.GetSingleton<WaterPipeParameterData>();
-            // 增加临时缓冲区引
-            groundWaterTickJob.m_TempMap = scratchMap;
+            // === 趟1＋趟2：污染再分配與水位流動。逐格滾動讀寫 m_TempMap，
+            // 且趟2 的 num5 依賴 tmp 的當前值 → 順序即語義，維持單執行緒 IJob。
+            GroundWaterTickJob tickJob = new()
+            {
+                m_GroundWaterMap = m_Map,
+                m_TempMap = scratchMap
+            };
 
-            GroundWaterTickJob jobData = groundWaterTickJob;
+            // === [MOD OPT] 趟3 套用：每格只讀寫自己的 [k]、無隨機 → 拆成 IJobParallelFor（位元級等價）。
+            // batch = kTextureSize：每個 batch 一整行，與 AirPollutionSystemMod 趟1 的拆法一致。
+            GroundWaterApplyJob applyJob = new()
+            {
+                m_GroundWaterMap = m_Map,
+                m_TempMap = scratchMap,
+                m_Parameters = m_ParameterQuery.GetSingleton<WaterPipeParameterData>()
+            };
 
             // 診斷路徑：同步分趟計時。會阻塞主執行緒，僅在設定明確開啟時走
             // （見 ModSettings.CellMapProfiling 的說明）。
             if (Mod.Instance?.Settings?.CellMapProfiling == true)
             {
-                RunProfiled(jobData, scratchMap);
+                RunProfiled(tickJob, applyJob, scratchMap);
                 return;
             }
 
-            Dependency = IJobExtensions.Schedule(jobData, JobHandle.CombineDependencies(m_WriteDependencies, m_ReadDependencies, Dependency));
+            JobHandle tickHandle = IJobExtensions.Schedule(tickJob,
+                JobHandle.CombineDependencies(m_WriteDependencies, m_ReadDependencies, Dependency));
+            Dependency = applyJob.Schedule(m_Map.Length, kTextureSize, tickHandle);
 
             AddWriter(Dependency);
 
@@ -137,41 +148,40 @@ using MapExtPDX.SaveLoadSystem;
             // [关键] 注册 TempJob 的自动释
             // 这告Unity：当 Dependency (即这Job) 完成后，自动调用 scratchMap.Dispose()
             // 无需手动管理生命周期，也不会阻塞主线程
+            // 必須掛在最後一個 Job（趟3）上——掛在 tickHandle 上會在趟3 讀取期間被釋放。
             scratchMap.Dispose(Dependency);
         }
 
         /// <summary>
         /// 診斷用：在主執行緒同步跑三趟並各自計時（<b>Burst 仍生效</b>，但失去平行度）。
         ///
-        /// <para><b>為什麼要這條路徑</b>：三趟的成本占比至今只有靜態估算
-        /// （趟1 8.1 ns/對、趟2 11.0 ns/對、趟3 3.8 ns/格），而「趟3 該不該拆 IJobParallelFor」
-        /// 與「趟1 該不該改寫成 gather」完全取決於實際比例。這是唯一缺的數據。</para>
-        ///
         /// <para><b>數字怎麼讀</b>：絕對值會略高於實際在 worker 上的耗時（無平行、cache 狀態不同），
-        /// 但量級與三趟的相對比例可靠。含水層占比一併輸出——它是零格早退命中率的決定因素，
+        /// 但量級與三趟的相對比例可靠。**趟3 已拆成 <see cref="GroundWaterApplyJob"/>，
+        /// 這裡刻意用單執行緒 <c>Run</c> 計它**——那與改造前的 4.9ms 基準可直接對比，
+        /// 量到的是「條件早退」單獨的收益；平行化的收益疊在其上，無法用同步計時觀測。
+        /// 含水層占比一併輸出——它是零格早退命中率的決定因素，
         /// 沒有它就無法判斷這組數字代表哪種地圖。</para>
         ///
         /// <para><b>等價性</b>：三趟是三個嚴格串行的獨立迴圈，「跑三次各一趟」與「跑一次三趟」
         /// 對 <c>m_Map</c>／<c>m_TempMap</c> 的最終狀態逐位相同，所以開著診斷不會改變模擬數值。</para>
         /// </summary>
-        private void RunProfiled(GroundWaterTickJob jobData, NativeArray<int2> scratchMap)
+        private void RunProfiled(GroundWaterTickJob tickJob, GroundWaterApplyJob applyJob, NativeArray<int2> scratchMap)
         {
             // 同步執行前必須先讓掛起的讀寫都收斂，否則 Run() 會撞上 job safety system
             JobHandle.CombineDependencies(m_WriteDependencies, m_ReadDependencies, Dependency).Complete();
 
             var sw = System.Diagnostics.Stopwatch.StartNew();
-            jobData.m_Phase = 1;
-            IJobExtensions.Run(jobData);
+            tickJob.m_Phase = 1;
+            IJobExtensions.Run(tickJob);
             double t1 = sw.Elapsed.TotalMilliseconds;
 
             sw.Restart();
-            jobData.m_Phase = 2;
-            IJobExtensions.Run(jobData);
+            tickJob.m_Phase = 2;
+            IJobExtensions.Run(tickJob);
             double t2 = sw.Elapsed.TotalMilliseconds;
 
             sw.Restart();
-            jobData.m_Phase = 3;
-            IJobExtensions.Run(jobData);
+            IJobParallelForExtensions.Run(applyJob, m_Map.Length);
             double t3 = sw.Elapsed.TotalMilliseconds;
             sw.Stop();
 
@@ -183,7 +193,7 @@ using MapExtPDX.SaveLoadSystem;
                 $"GroundWaterTickJob {kTextureSize}² 同步計時：" +
                 $"趟1 {t1:F2}ms（{100 * t1 / denom:F0}%）· " +
                 $"趟2 {t2:F2}ms（{100 * t2 / denom:F0}%）· " +
-                $"趟3 {t3:F2}ms（{100 * t3 / denom:F0}%）· " +
+                $"趟3 {t3:F2}ms（{100 * t3 / denom:F0}%，單執行緒基準）· " +
                 $"合計 {total:F2}ms ｜ 含水層 {aquifer} 格（{100f * aquifer / m_Map.Length:F2}%）");
 
             Dependency = default;
@@ -386,11 +396,16 @@ using MapExtPDX.SaveLoadSystem;
         #endregion
 
         #region GroundWaterTickJob
+        /// <summary>
+        /// 趟1＋趟2：污染在鄰格間再分配、水量與污染隨水位差流動，增量累積在 <c>m_TempMap</c>。
+        /// <para><b>不平行化</b>：兩趟都對 <c>tmp[index]</c> 與 <c>tmp[otherIndex]</c> 同時寫入（scatter），
+        /// 且趟2 的 <c>num5</c> 讀 <c>reference.x</c>／<c>reference.y</c> 的滾動值——順序即語義。
+        /// 趟3 已拆到 <see cref="GroundWaterApplyJob"/>。</para>
+        /// </summary>
         [BurstCompile]
         private struct GroundWaterTickJob : IJob
         {
             public NativeArray<TargetType> m_GroundWaterMap;
-            public WaterPipeParameterData m_Parameters;
 
             public NativeArray<int2> m_TempMap;
 
@@ -468,9 +483,9 @@ using MapExtPDX.SaveLoadSystem;
             }
 
             /// <summary>
-            /// 0 = 三趟全跑（生產路徑）；1／2／3 = 只跑該趟（僅 <see cref="RunProfiled"/> 的診斷計時用）。
-            /// <para>三趟本來就是三個嚴格串行的獨立迴圈，所以「跑三次各一趟」與「跑一次三趟」
-            /// 結果逐位相同。生產路徑不設此欄位（<c>default</c> 即 0），只多三次迴圈外的比較。</para>
+            /// 0 = 兩趟全跑（生產路徑）；1／2 = 只跑該趟（僅 <see cref="RunProfiled"/> 的診斷計時用）。
+            /// <para>兩趟本來就是兩個嚴格串行的獨立迴圈，所以「跑兩次各一趟」與「跑一次兩趟」
+            /// 結果逐位相同。生產路徑不設此欄位（<c>default</c> 即 0），只多兩次迴圈外的比較。</para>
             /// <para>本 job 不在 <c>JobPatchDefinitions</c> 內（它屬於 System Replacement 而非
             /// job body 替換），故加欄位不受「ReBurst 欄位佈局須與原版對齊」的約束。</para>
             /// </summary>
@@ -512,18 +527,50 @@ using MapExtPDX.SaveLoadSystem;
                         }
                     }
                 }
-                // 趟3：套用增量 ＋ 補充 ＋ 淨化（無早退，每格必寫）
-                if (m_Phase == 0 || m_Phase == 3)
-                {
-                    for (int k = 0; k < this.m_GroundWaterMap.Length; k++)
-                    {
-                        TargetType value = this.m_GroundWaterMap[k];
-                        value.m_Amount = (short)math.min(value.m_Amount + m_TempMap[k].x + math.ceil(this.m_Parameters.m_GroundwaterReplenish * (float)value.m_Max), value.m_Max); // 注意：Mathf改为Burst优化的math
-                        value.m_Polluted = (short)math.clamp(value.m_Polluted + m_TempMap[k].y - this.m_Parameters.m_GroundwaterPurification, 0, value.m_Amount);
-                        this.m_GroundWaterMap[k] = value;
-                    }
-                }
+                // 趟3（套用增量＋補充＋淨化）已拆成 GroundWaterApplyJob，由 OnUpdate 掛在本 job 之後。
                 // m_TempMap 由调用方分配 Allocator.TempJob，无需手动释放（由 Dispose(Dependency) 管理）
+            }
+        }
+        #endregion
+
+        #region GroundWaterApplyJob
+        /// <summary>
+        /// 趟3：把前兩趟累積在 <c>m_TempMap</c> 的增量套用回主圖，並施加每 tick 的補充與淨化。
+        ///
+        /// <para><b>為何可以平行</b>：每個 index 只讀寫 <c>m_GroundWaterMap[k]</c> 與唯讀的
+        /// <c>m_TempMap[k]</c>，格與格之間無耦合、無隨機數 → 逐位等價，
+        /// 且每個 index 只寫自己那格，不需要 <c>[NativeDisableParallelForRestriction]</c>。</para>
+        ///
+        /// <para><b>為何同時加早退</b>：改造前這一趟是三趟中唯一沒有早退的，實測在 0.10%／0.34%／
+        /// 10.62% 三種含水層覆蓋率下固定 4.86–4.91ms（浮動 &lt; 1%），是最大的一趟、也是每張地圖的
+        /// 固定底價。原本判「早退的分支會破壞 SIMD，與平行化須擇一」，但實測即使在 10.62% 覆蓋率下
+        /// 仍有 89% 的格子命中早退，該顧慮不成立，故兩者合併。</para>
+        /// </summary>
+        [BurstCompile]
+        private struct GroundWaterApplyJob : IJobParallelFor
+        {
+            public NativeArray<TargetType> m_GroundWaterMap;
+            [ReadOnly] public NativeArray<int2> m_TempMap;
+            public WaterPipeParameterData m_Parameters;
+
+            public void Execute(int k)
+            {
+                TargetType value = this.m_GroundWaterMap[k];
+                int2 delta = this.m_TempMap[k];
+
+                // === [MOD OPT] 零格早退（位元級等價）===
+                // 五個量全為 0 時：
+                //   m_Amount   = min(0 + 0 + ceil(replenish × 0), 0) = 0（不變）
+                //   m_Polluted = clamp(0 + 0 - purification, 0, 0) = 0（不變；purification 正負皆然）
+                // → 寫回的是同一個值，跳過即位元級等價。
+                // 必須連 delta 一起判斷：趟1／趟2 的早退條件是「兩格全零才跳」，
+                // 所以緊鄰含水層的零格仍可能收到增量，只看 map 值會漏掉它們。
+                if (value.m_Amount == 0 && value.m_Polluted == 0 && value.m_Max == 0 &&
+                    delta.x == 0 && delta.y == 0) return;
+
+                value.m_Amount = (short)math.min(value.m_Amount + delta.x + math.ceil(this.m_Parameters.m_GroundwaterReplenish * (float)value.m_Max), value.m_Max); // 注意：Mathf改为Burst优化的math
+                value.m_Polluted = (short)math.clamp(value.m_Polluted + delta.y - this.m_Parameters.m_GroundwaterPurification, 0, value.m_Amount);
+                this.m_GroundWaterMap[k] = value;
             }
         }
         #endregion
