@@ -1,14 +1,16 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
-  <!-- 中間分隔線 (保留) -->
+  <!-- 外層圓角框 -->
+  <rect x="2" y="2" width="20" height="20" rx="3.5" stroke-width="1.8" />
+  <!-- 中間細分隔線 -->
   <line x1="3.5" y1="12" x2="20.5" y2="12" stroke-width="1.2" opacity="0.65" />
   
-  <!-- 上行 MAP (保持原尺寸與加粗筆畫) -->
+  <!-- 上行 MAP -->
   <path d="M4.2 10V4.5L6.8 8.5L9.4 4.5V10" />
   <path d="M10.6 10L12.7 4.5L14.8 10" />
   <line x1="11.3" y1="8.3" x2="14.1" y2="8.3" stroke-width="1.4" />
   <path d="M16.2 10V4.5H18.3C19.4 4.5 19.8 5.3 19.8 6.5C19.8 7.7 19.4 8.5 18.3 8.5H16.2" />
 
-  <!-- 下行 EXT (保持原尺寸與加粗筆畫) -->
+  <!-- 下行 EXT -->
   <path d="M8.0 14H4.4V19.5H8.0" />
   <line x1="4.4" y1="16.75" x2="7.5" y2="16.75" stroke-width="1.5" />
   <path d="M10.1 14L14.1 19.5" />

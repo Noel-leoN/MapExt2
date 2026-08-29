@@ -20,7 +20,7 @@ import { PathfindingSection } from "../sections/PathfindingSection";
 import { WaterToolsSection } from "../sections/WaterToolsSection";
 import { ResizeHandle } from "./ResizeHandle";
 import styles from "../mapext.module.scss";
-import mapIcon from "../assets/map-icon-M.svg";
+import mapIcon from "../assets/map-icon.svg";
 import { useTranslation } from "../locales";
 
 type DetailId = "rent" | "pathfinding" | "waterTools" | null;
