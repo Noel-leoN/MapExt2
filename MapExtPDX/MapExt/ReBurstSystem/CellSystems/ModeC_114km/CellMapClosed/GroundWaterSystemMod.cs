@@ -132,43 +132,30 @@ using MapExtPDX.SaveLoadSystem;
             scratchMap.Dispose(Dependency);
         }
 
-        /// <summary>
-        /// 新遊戲的地下水初始場生成（<b>基線</b>；地圖作者實際畫過的含水層由
-        /// <see cref="OnGameLoaded"/> 以原版資料升採樣覆蓋）。
-        ///
-        /// <para><b>本覆寫是補回移植時遺漏的原版行為。</b>原版
-        /// <c>GroundWaterSystem.SetDefaults</c>（<c>GroundWaterSystem.cs:264-283</c>）在
-        /// <c>purpose == NewGame</c> 時以 Perlin 噪聲生成 <c>m_Amount = m_Max</c>。
-        /// 而 <c>m_Max</c> 是全庫唯一「只有 SetDefaults 會寫、沒有任何重生成器」的靜態容量欄位
-        /// （<c>GroundWaterPollutionSystem</c> 只寫 m_Polluted，<c>ConsumeGroundWater</c> 只減 m_Amount）。
-        /// 早期移植沒帶上這個覆寫，於是擴展模式下整張圖恆為 0——趟3 的
-        /// <c>m_Amount = min(..., m_Max)</c> 永遠算出 0，地下水泵抽不到水。</para>
-        ///
-        /// <para><b>為何本覆寫必定被呼叫、而 <see cref="Deserialize"/> 反而不會</b>：序列化流裡記的是系統的
-        /// <c>AssemblyQualifiedName</c>（<c>SystemSerializer.SerializeType</c>），而
-        /// <c>MapExtPDX.ModeC.GroundWaterSystemMod</c> 這個型別名不可能出現在任何原版地圖檔或存檔裡。
-        /// 流中找不到的系統會被收進 <c>m_SystemDefaults</c> 改走 SetDefaults
-        /// （<c>EntityDeserializer.cs:434-442</c> 收集 → <c>:627-631</c> 呼叫），
-        /// 所以開新城一定走到這裡。原版的版本守衛
-        /// （<c>context.version &lt; Version.timoSerializationFlow</c>）是為了只在「流裡沒有
-        /// GroundWater 區段」的舊地圖檔上生成，對本 Mod 沒有意義，故刻意不帶。
-        /// 與 <c>NaturalResourceSystemMod.SetDefaults</c> 的處理一致。</para>
-        ///
-        /// <para><b>為何無條件生成而不先探測原版資料</b>：這樣「新遊戲場必定非空」就不依賴
-        /// <see cref="OnGameLoaded"/> 是否成功執行——後者若拋異常會被
-        /// <c>GameSystemBase.GameLoaded</c> 吞掉並順手 <c>Enabled = false</c> 停用本系統。
-        /// 代價是有作者資料的地圖會多算一次 Perlin 場後被覆蓋，以載入時間換取兜底確定性。</para>
-        /// </summary>
-        public override JobHandle SetDefaults(Context context)
-        {
-            JobHandle result = base.SetDefaults(context); // 先清零
-            if (context.purpose == Purpose.NewGame)
-            {
-                result.Complete();
-                GenerateProceduralGroundWater();
-            }
-            return result;
-        }
+        // === 為什麼沒有 SetDefaults 覆寫（勿再補回） ===
+        // v4.8.0 開發期間曾有一版覆寫，在 purpose == NewGame 時以原版的 Perlin 公式生成
+        // 程序化含水層。2026-08-28 遊戲內實測後移除，兩個理由：
+        //
+        //   1. 它從未生效。載入地圖檔時，SerializerSystem 只在「什麼都讀不到」時才把
+        //      LoadGame/LoadMap 改寫成 NewGame/NewMap（SerializerSystem.cs:127-141），
+        //      而地圖檔是讀得到的 → SetDefaults 收到的 purpose 是 LoadMap/LoadGame，條件恆不成立。
+        //      purpose 變成 NewGame 是在那之後，只有 OnGameLoaded 拿到的 context 才是 NewGame。
+        //      實測日誌可證：開新城時「初始場已生成」是印在 OnGameLoaded 的兜底 Warn 之後。
+        //
+        //   2. 原版同樣不生成。原版 GroundWaterSystem.SetDefaults（GroundWaterSystem.cs:266）
+        //      的守衛比這裡更嚴——多一個 context.version < Version.timoSerializationFlow，
+        //      那是為了只補償「還沒有 GroundWater 序列化區段」的舊年代地圖檔。較寬的條件都不
+        //      成立，更嚴的必然也不成立。原版的地下水一律來自地圖作者畫在地圖檔裡的資料，
+        //      而原版 GroundWaterSystem 連 OnGameLoaded 覆寫都沒有，沒有任何兜底生成路徑。
+        //
+        // 所以本 Mod 也不生成：作者沒畫就是沒有，與原版語意一致。作者畫過的含水層由
+        // OnGameLoaded 以原版原稿升採樣還原——那才是 v4.8.0 真正要修的缺陷（65536 ≠ 1048576
+        // 導致原稿被 DeserializeJobResetMismatch 丟棄）。
+        //
+        // 副作用是正面的：Perlin 場覆蓋率約 22.7%，會讓零格早退命中率從近 100% 掉到 60–72%，
+        // GroundWaterTickJob 單次成本約從 12ms 升到 20–25ms（每 128 幀一次）。不生成即省下這筆。
+        //
+        // 基類 CellMapSystem<T>.SetDefaults 會把場清零，這正是需要的行為，故不覆寫。
 
         /// <summary>
         /// 載入後把地圖作者實際繪製的含水層補進本模式的擴展貼圖。
@@ -196,10 +183,11 @@ using MapExtPDX.SaveLoadSystem;
         /// 而 <c>LoadGameSystem.OnUpdate</c> 是跑完整個 Deserialize 階段才 Invoke，
         /// 此時讀原版 m_Map 才安全。</para>
         ///
-        /// <para><b>三條路徑的處置</b>：開新城一律以作者原稿覆蓋 <see cref="SetDefaults"/> 的程序化基線；
+        /// <para><b>三條路徑的處置</b>：有作者原稿就升採樣還原（開新城與空場存檔都走這條）；
         /// 載入既有存檔只在整張圖沒有任何容量（<c>m_Max</c> 全 0，即 v4.8.0 之前存下的空場）時才修復，
         /// 場只要非空就絕不動它——那是玩家已經在抽用、已累積污染的即時狀態；
-        /// 而新城市既無原稿又無基線時（purpose 被事後改寫的邊角情形）補生成一次程序化場。</para>
+        /// 作者沒畫地下水時<b>不生成任何替代場</b>，只記一行提示（理由見本方法上方的
+        /// 「為什麼沒有 SetDefaults 覆寫」註釋段）。</para>
         /// </summary>
         protected override void OnGameLoaded(Context serializationContext)
         {
@@ -226,27 +214,11 @@ using MapExtPDX.SaveLoadSystem;
 
             if (vanillaCells == 0)
             {
-                if (nonZero != 0)
-                {
-                    ModLog.Info(nameof(GroundWaterSystemMod),
-                        "原版系統無含水層原稿（地圖作者未繪製地下水），沿用 SetDefaults 生成的程序化基線場");
-                }
-                else if (isNewGame)
-                {
-                    // 新城市卻連基線都沒有：SetDefaults 當時收到的 purpose 未必是 NewGame，
-                    // 因為 SerializerSystem 是在反序列化「讀不到任何資料」之後才把 LoadGame 改寫成
-                    // NewGame（SerializerSystem.cs:130-142），而 SetDefaults 早在那之前就跑完了。
-                    // 這裡補生成一次，保證新城市不會無水可抽。
-                    ModLog.Warn(nameof(GroundWaterSystemMod),
-                        "新城市的地下水場為空且原版無原稿（存檔／地圖檔沒有任何可反序列化的資料），補生成程序化場");
-                    GenerateProceduralGroundWater();
-                }
-                else
-                {
-                    ModLog.Warn(nameof(GroundWaterSystemMod),
-                        $"地下水容量場為空（{m_Map.Length} 格 m_Max 全為 0），且原版系統沒有可還原的含水層原稿" +
-                        $"——地圖作者未繪製地下水，或原稿在本次載入中缺失。地下水泵在本存檔中不會出水。");
-                }
+                // 與原版一致：地圖作者沒畫地下水就是沒有，不生成任何替代場。
+                // 這不是缺陷，所以用 Info 而非 Warn——它在無地下水的地圖上每次載入都會出現。
+                ModLog.Info(nameof(GroundWaterSystemMod),
+                    $"本地圖沒有含水層（{m_Map.Length} 格 m_Max 全為 0，原版系統亦無可用的作者原稿），" +
+                    $"與原版行為一致。地下水泵在此不會出水；需要地下水請用地圖編輯器或地下水畫筆繪製。");
                 return;
             }
 
@@ -257,45 +229,17 @@ using MapExtPDX.SaveLoadSystem;
             int filled = CountAquiferCells(m_Map);
             ModLog.Ok(nameof(GroundWaterSystemMod),
                 $"地下水場已從原版 {srcSize}² 原稿升採樣至 {kTextureSize}²（雙線性等比拉伸，與地形同比例）" +
-                (isNewGame ? "，取代程序化基線" : "，修復 v4.8.0 之前存下的空場") +
+                (isNewGame ? "" : "，修復 v4.8.0 之前存下的空場") +
                 $"：含水層占比 {100f * vanillaCells / vanillaMap.Length:F2}% → {100f * filled / m_Map.Length:F2}%" +
                 $"（{vanillaCells} → {filled} 格）");
         }
 
         /// <summary>
-        /// 依原版公式在本模式解析度上生成地下水場。
-        /// <para>座標先歸一化為 UV 再乘固定頻率 32（與原版 <c>GroundWaterSystem.cs:270-272</c> 相同），
-        /// 故噪聲場形狀與原版一致，只是在放大的貼圖上取樣更密——含水層區域按地圖比例放大、占比不變。
-        /// 與 <c>NaturalResourceSystemMod.GenerateProceduralResources</c> 的作法相同。</para>
-        /// <para>沿用 <c>UnityEngine.Mathf</c> 而非 <c>Unity.Mathematics</c>：
-        /// <c>PerlinNoise</c> 無對應實作，且 <c>RoundToInt</c> 的中點取整規則須與原版逐位一致。
-        /// 全限定呼叫以免引入 <c>using UnityEngine</c> 與既有型別衝突。</para>
-        /// </summary>
-        private void GenerateProceduralGroundWater()
-        {
-            int nonZero = 0;
-            for (int i = 0; i < m_Map.Length; i++)
-            {
-                float u = (float)(i % kTextureSize) / (float)kTextureSize;
-                float v = (float)(i / kTextureSize) / (float)kTextureSize;
-
-                short amount = (short)UnityEngine.Mathf.RoundToInt(10000f * math.saturate(
-                    (UnityEngine.Mathf.PerlinNoise(32f * u, 32f * v) - 0.6f) / 0.4f));
-
-                if (amount != 0) nonZero++;
-                m_Map[i] = new TargetType { m_Amount = amount, m_Max = amount };
-            }
-
-            // 含水層占比是判斷本修補是否生效的唯一可觀測訊號（全 0 即代表沒生成）
-            ModLog.Ok(nameof(GroundWaterSystemMod),
-                $"地下水初始場已生成：{kTextureSize}² = {m_Map.Length} 格，" +
-                $"含水層 {nonZero} 格（{100f * nonZero / m_Map.Length:F2}%）");
-        }
-
-        /// <summary>
         /// 統計整張圖有多少格具備含水層容量（<c>m_Max != 0</c>）。
-        /// <para><c>m_Max</c> 是唯一「只有 SetDefaults／本次升採樣會寫、沒有任何執行期重生成器」的
-        /// 靜態容量欄位，所以它全為 0 等價於「這張圖從來沒有含水層」，而不是「水被抽乾了」。</para>
+        /// <para><c>m_Max</c> 是唯一「只有反序列化與本次升採樣會寫、沒有任何執行期重生成器」的
+        /// 靜態容量欄位（<c>GroundWaterPollutionSystem</c> 只寫 m_Polluted，<c>ConsumeGroundWater</c>
+        /// 只減 m_Amount；唯一的例外是地圖編輯器的地下水畫筆 <c>ApplyBrushesSystem</c>），
+        /// 所以它全為 0 等價於「這張圖從來沒有含水層」，而不是「水被抽乾了」。</para>
         /// </summary>
         private static int CountAquiferCells(NativeArray<TargetType> map)
         {
