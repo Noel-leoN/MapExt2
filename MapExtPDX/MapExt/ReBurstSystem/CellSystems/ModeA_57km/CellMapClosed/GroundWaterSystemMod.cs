@@ -129,14 +129,6 @@ using MapExtPDX.SaveLoadSystem;
                 m_Parameters = m_ParameterQuery.GetSingleton<WaterPipeParameterData>()
             };
 
-            // 診斷路徑：同步分趟計時。會阻塞主執行緒，僅在設定明確開啟時走
-            // （見 ModSettings.CellMapProfiling 的說明）。
-            if (Mod.Instance?.Settings?.CellMapProfiling == true)
-            {
-                RunProfiled(tickJob, applyJob, scratchMap);
-                return;
-            }
-
             JobHandle tickHandle = IJobExtensions.Schedule(tickJob,
                 JobHandle.CombineDependencies(m_WriteDependencies, m_ReadDependencies, Dependency));
             Dependency = applyJob.Schedule(m_Map.Length, kTextureSize, tickHandle);
@@ -150,55 +142,6 @@ using MapExtPDX.SaveLoadSystem;
             // 无需手动管理生命周期，也不会阻塞主线程
             // 必須掛在最後一個 Job（趟3）上——掛在 tickHandle 上會在趟3 讀取期間被釋放。
             scratchMap.Dispose(Dependency);
-        }
-
-        /// <summary>
-        /// 診斷用：在主執行緒同步跑三趟並各自計時（<b>Burst 仍生效</b>，但失去平行度）。
-        ///
-        /// <para><b>數字怎麼讀</b>：絕對值會略高於實際在 worker 上的耗時（無平行、cache 狀態不同），
-        /// 但量級與三趟的相對比例可靠。**趟3 已拆成 <see cref="GroundWaterApplyJob"/>，
-        /// 這裡刻意用單執行緒 <c>Run</c> 計它**——那與改造前的 4.9ms 基準可直接對比，
-        /// 量到的是「條件早退」單獨的收益；平行化的收益疊在其上，無法用同步計時觀測。
-        /// 含水層占比一併輸出——它是零格早退命中率的決定因素，
-        /// 沒有它就無法判斷這組數字代表哪種地圖。</para>
-        ///
-        /// <para><b>等價性</b>：三趟是三個嚴格串行的獨立迴圈，「跑三次各一趟」與「跑一次三趟」
-        /// 對 <c>m_Map</c>／<c>m_TempMap</c> 的最終狀態逐位相同，所以開著診斷不會改變模擬數值。</para>
-        /// </summary>
-        private void RunProfiled(GroundWaterTickJob tickJob, GroundWaterApplyJob applyJob, NativeArray<int2> scratchMap)
-        {
-            // 同步執行前必須先讓掛起的讀寫都收斂，否則 Run() 會撞上 job safety system
-            JobHandle.CombineDependencies(m_WriteDependencies, m_ReadDependencies, Dependency).Complete();
-
-            var sw = System.Diagnostics.Stopwatch.StartNew();
-            tickJob.m_Phase = 1;
-            IJobExtensions.Run(tickJob);
-            double t1 = sw.Elapsed.TotalMilliseconds;
-
-            sw.Restart();
-            tickJob.m_Phase = 2;
-            IJobExtensions.Run(tickJob);
-            double t2 = sw.Elapsed.TotalMilliseconds;
-
-            sw.Restart();
-            IJobParallelForExtensions.Run(applyJob, m_Map.Length);
-            double t3 = sw.Elapsed.TotalMilliseconds;
-            sw.Stop();
-
-            // 計時之外統計，不污染任何一趟的數字
-            int aquifer = CountAquiferCells(m_Map);
-            double total = t1 + t2 + t3;
-            double denom = total > 0 ? total : 1;
-            ModLog.Scan(nameof(GroundWaterSystemMod),
-                $"GroundWaterTickJob {kTextureSize}² 同步計時：" +
-                $"趟1 {t1:F2}ms（{100 * t1 / denom:F0}%）· " +
-                $"趟2 {t2:F2}ms（{100 * t2 / denom:F0}%）· " +
-                $"趟3 {t3:F2}ms（{100 * t3 / denom:F0}%，單執行緒基準）· " +
-                $"合計 {total:F2}ms ｜ 含水層 {aquifer} 格（{100f * aquifer / m_Map.Length:F2}%）");
-
-            Dependency = default;
-            AddWriter(default);
-            scratchMap.Dispose();
         }
 
         // === 為什麼沒有 SetDefaults 覆寫（勿再補回） ===
@@ -492,49 +435,34 @@ using MapExtPDX.SaveLoadSystem;
                 Assert.IsTrue(groundWater2.m_Polluted + reference2.y <= groundWater2.m_Amount + reference2.x);
             }
 
-            /// <summary>
-            /// 0 = 兩趟全跑（生產路徑）；1／2 = 只跑該趟（僅 <see cref="RunProfiled"/> 的診斷計時用）。
-            /// <para>兩趟本來就是兩個嚴格串行的獨立迴圈，所以「跑兩次各一趟」與「跑一次兩趟」
-            /// 結果逐位相同。生產路徑不設此欄位（<c>default</c> 即 0），只多兩次迴圈外的比較。</para>
-            /// <para>本 job 不在 <c>JobPatchDefinitions</c> 內（它屬於 System Replacement 而非
-            /// job body 替換），故加欄位不受「ReBurst 欄位佈局須與原版對齊」的約束。</para>
-            /// </summary>
-            public int m_Phase;
-
             public void Execute()
             {
                 // 趟1：污染在鄰格之間再分配
-                if (m_Phase == 0 || m_Phase == 1)
+                for (int i = 0; i < this.m_GroundWaterMap.Length; i++)
                 {
-                    for (int i = 0; i < this.m_GroundWaterMap.Length; i++)
+                    int num = i % kTextureSize;
+                    int num2 = i / kTextureSize;
+                    if (num < kTextureSize - 1)
                     {
-                        int num = i % kTextureSize;
-                        int num2 = i / kTextureSize;
-                        if (num < kTextureSize - 1)
-                        {
-                            this.HandlePollution(i, i + 1, m_TempMap);
-                        }
-                        if (num2 < kTextureSize - 1)
-                        {
-                            this.HandlePollution(i, i + kTextureSize, m_TempMap);
-                        }
+                        this.HandlePollution(i, i + 1, m_TempMap);
+                    }
+                    if (num2 < kTextureSize - 1)
+                    {
+                        this.HandlePollution(i, i + kTextureSize, m_TempMap);
                     }
                 }
                 // 趟2：水量與污染隨水位差流動
-                if (m_Phase == 0 || m_Phase == 2)
+                for (int j = 0; j < this.m_GroundWaterMap.Length; j++)
                 {
-                    for (int j = 0; j < this.m_GroundWaterMap.Length; j++)
+                    int num3 = j % kTextureSize;
+                    int num4 = j / kTextureSize;
+                    if (num3 < kTextureSize - 1)
                     {
-                        int num3 = j % kTextureSize;
-                        int num4 = j / kTextureSize;
-                        if (num3 < kTextureSize - 1)
-                        {
-                            this.HandleFlow(j, j + 1, m_TempMap);
-                        }
-                        if (num4 < kTextureSize - 1)
-                        {
-                            this.HandleFlow(j, j + kTextureSize, m_TempMap);
-                        }
+                        this.HandleFlow(j, j + 1, m_TempMap);
+                    }
+                    if (num4 < kTextureSize - 1)
+                    {
+                        this.HandleFlow(j, j + kTextureSize, m_TempMap);
                     }
                 }
                 // 趟3（套用增量＋補充＋淨化）已拆成 GroundWaterApplyJob，由 OnUpdate 掛在本 job 之後。

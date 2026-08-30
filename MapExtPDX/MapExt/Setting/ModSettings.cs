@@ -1162,18 +1162,6 @@ namespace MapExtPDX
 
         public bool IsVehicleRescueDisabled => !EnableVehicleRescue;
 
-        /// <summary>
-        /// CellMap 三趟診斷計時（僅診斷，預設關閉）。
-        /// <para>開啟後 <c>GroundWaterSystemMod</c> 改為在主執行緒<b>同步</b>執行
-        /// <c>GroundWaterTickJob</c> 的三趟並各自計時（Burst 仍生效），把毫秒數寫進
-        /// <c>MapExtPDX.log</c>。代價是每個 tick（interval 128，約 2 秒）主執行緒會被阻塞
-        /// 一次，遊戲會有可感知的週期性卡頓——**量完就關**。</para>
-        /// <para>用途：三趟的成本占比至今只有靜態估算，這是決定「趟3 該不該拆平行」
-        /// 與「趟1 該不該改 gather」的唯一依據。</para>
-        /// </summary>
-        [SettingsUISection(kDebugTab, kDebugGroup)]
-        public bool CellMapProfiling { get; set; } = false;
-
         /// <summary>幽靈車掃描報告緩存，由 ScanGhostVehicles 按鈕更新</summary>
         public string GhostVehicleScanData { get; set; } = "Click Scan to count ghost vehicles.";
 
@@ -1305,7 +1293,6 @@ namespace MapExtPDX
             EnableDownstreamAIEcoSystem = false;
             EnableVehicleRescue = false;
             EnableRescueDebugLog = false;
-            CellMapProfiling = false;
 
             // 地形优化
             TerrainBufferPrealloc = true;
