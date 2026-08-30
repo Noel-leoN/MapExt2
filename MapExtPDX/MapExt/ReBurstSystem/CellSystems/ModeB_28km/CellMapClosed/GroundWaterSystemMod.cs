@@ -275,6 +275,15 @@ using MapExtPDX.SaveLoadSystem;
             bool isNewGame = serializationContext.purpose == Purpose.NewGame;
             int nonZero = CountAquiferCells(m_Map);
 
+            // 原稿無條件先讀一次（唯讀，只多一次反射與一趟 orgTextureSize² 計數）：它是下面兩條
+            // 分支唯一的資料來源，而「修復 v4.8.0 之前存下的空場」那條至今從未在日誌裡出現過。
+            // 城市存檔的 GroundWater 由本 Mod 寫成 kTextureSize²，原版系統反序列化時長度與自身的
+            // orgTextureSize² 不符會保持全零 → 原稿可能根本活不到城市存檔裡，那樣「空場修復」
+            // 就是一條走不到的路（對外 ChangeLog 有承諾，見 CellMap_GroundWaterZeroField §5.1）。
+            // 健康場早退分支一併記下原稿格數即可判定：讀到約源圖格數 = 前提成立；0 格 = 入口不可達。
+            bool hasVanilla = TryGetVanillaAquifer(out NativeArray<TargetType> vanillaMap, out int srcSize);
+            int vanillaCells = hasVanilla ? CountAquiferCells(vanillaMap) : 0;
+
             // 既有存檔且場是健康的 → 玩家的即時狀態，不介入
             if (!isNewGame && nonZero != 0)
             {
@@ -283,12 +292,10 @@ using MapExtPDX.SaveLoadSystem;
                 // 與 GroundWaterTickJob 成本的唯一決定因素，所以無條件記一行。
                 ModLog.Info(nameof(GroundWaterSystemMod),
                     $"地下水場沿用存檔內容，不介入：{kTextureSize}² = {m_Map.Length} 格，" +
-                    $"含水層 {nonZero} 格（{100f * nonZero / m_Map.Length:F2}%）");
+                    $"含水層 {nonZero} 格（{100f * nonZero / m_Map.Length:F2}%）；" +
+                    $"原版原稿 {(hasVanilla ? $"{srcSize}²：含水層 {vanillaCells} 格" : "不可讀取")}");
                 return;
             }
-
-            bool hasVanilla = TryGetVanillaAquifer(out NativeArray<TargetType> vanillaMap, out int srcSize);
-            int vanillaCells = hasVanilla ? CountAquiferCells(vanillaMap) : 0;
 
             if (vanillaCells == 0)
             {
@@ -331,9 +338,12 @@ using MapExtPDX.SaveLoadSystem;
 
         /// <summary>
         /// 反射取原版 <c>GroundWaterSystem</c> 的 <c>m_Map</c>（作者原稿），並先完成它的掛起依賴。
-        /// <para>任何一步失敗都回 <c>false</c> 讓呼叫方降級到程序化基線，絕不讓異常逸出——
-        /// 本方法在 <c>OnGameLoaded</c> 內執行，逸出的異常會被 <c>GameSystemBase.GameLoaded</c>
-        /// 捕獲並順手 <c>Enabled = false</c>，代價是整個地下水模擬被停用。</para>
+        /// <para>任何一步失敗都回 <c>false</c>，呼叫方據此視為「沒有原稿」（不生成任何替代場），
+        /// 絕不讓異常逸出——本方法在 <c>OnGameLoaded</c> 內執行，逸出的異常會被
+        /// <c>GameSystemBase.GameLoaded</c> 捕獲並順手 <c>Enabled = false</c>，
+        /// 代價是整個地下水模擬被停用。</para>
+        /// <para>三條分支都會呼叫它（含只用來記錄原稿格數的健康場早退），所以訊息措辭保持
+        /// 與「是否真的要升採樣」無關。</para>
         /// </summary>
         private bool TryGetVanillaAquifer(out NativeArray<TargetType> map, out int size)
         {
@@ -361,7 +371,7 @@ using MapExtPDX.SaveLoadSystem;
                 if (size <= 0 || size * size != map.Length)
                 {
                     ModLog.Warn(nameof(GroundWaterSystemMod),
-                        $"原版 GroundWater m_Map 長度 {map.Length} 不是完全平方數，無從對應座標，跳過升採樣");
+                        $"原版 GroundWater m_Map 長度 {map.Length} 不是完全平方數，無從對應座標，視為無原稿");
                     return false;
                 }
                 if (size != orgTextureSize)
@@ -370,14 +380,14 @@ using MapExtPDX.SaveLoadSystem;
                     // InitializeModManager），照理打不中那句 CreateTextures(kTextureSize)。
                     // 真的變了不影響正確性（升採樣會退化為等比縮放），但值得留痕。
                     ModLog.Warn(nameof(GroundWaterSystemMod),
-                        $"原版 GroundWater 貼圖為 {size}² 而非預期的 {orgTextureSize}²，仍按 {size}² 升採樣");
+                        $"原版 GroundWater 貼圖為 {size}² 而非預期的 {orgTextureSize}²，仍按 {size}² 換算");
                 }
                 return true;
             }
             catch (System.Exception ex)
             {
                 ModLog.Warn(nameof(GroundWaterSystemMod),
-                    $"取原版 GroundWater m_Map 失敗，跳過升採樣: {ex.Message}");
+                    $"取原版 GroundWater m_Map 失敗，視為無原稿: {ex.Message}");
                 return false;
             }
         }
