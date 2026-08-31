@@ -199,7 +199,8 @@ using MapExtPDX.SaveLoadSystem;
         /// 載入既有存檔只在整張圖沒有任何容量（<c>m_Max</c> 全 0，即 v4.8.0 之前存下的空場）時才修復，
         /// 場只要非空就絕不動它——那是玩家已經在抽用、已累積污染的即時狀態；
         /// 作者沒畫地下水時<b>不生成任何替代場</b>，只記一行提示（理由見本方法上方的
-        /// 「為什麼沒有 SetDefaults 覆寫」註釋段）。</para>
+        /// 「為什麼沒有 SetDefaults 覆寫」註釋段）。三條路徑之前另有一道會話白名單，
+        /// 把退出主菜單那輪 <c>Purpose.Cleanup</c> 擋在外面。</para>
         /// </summary>
         protected override void OnGameLoaded(Context serializationContext)
         {
@@ -212,10 +213,21 @@ using MapExtPDX.SaveLoadSystem;
             // 本方法後跑，下面「場非空就不動」的判據也會讓嵌入結果原樣保留。
             if (VanillaConversionState.PendingConversion) return;
 
+            // 只在真正的遊戲／地圖編輯器會話介入。退出到主菜單時引擎會跑一輪 Purpose.Cleanup 的
+            // 反序列化（`ConflictMonitoringSystem.OnGamePreload` 就是靠這個 purpose 重置 PatchSet
+            // 會話狀態），本方法會被一併呼叫，然後對一張正在拆掉的全零場報「本地圖沒有含水層」
+            // ——純噪音，實測每次退出主菜單重現一次。白名單與 PatchSet4AirwaySystemPatch 一致。
+            Purpose purpose = serializationContext.purpose;
+            if (purpose != Purpose.NewGame && purpose != Purpose.LoadGame &&
+                purpose != Purpose.NewMap && purpose != Purpose.LoadMap)
+            {
+                return;
+            }
+
             if (!m_Map.IsCreated) return;
             m_WriteDependencies.Complete();
 
-            bool isNewGame = serializationContext.purpose == Purpose.NewGame;
+            bool isNewGame = purpose == Purpose.NewGame;
             int nonZero = CountAquiferCells(m_Map);
 
             // 原稿無條件先讀一次（唯讀，只多一次反射與一趟 orgTextureSize² 計數）：它是下面兩條
