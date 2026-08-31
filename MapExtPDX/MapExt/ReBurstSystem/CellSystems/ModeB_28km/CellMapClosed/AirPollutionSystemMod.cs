@@ -103,14 +103,14 @@ namespace MapExtPDX.ModeB
             {
                 originalSystem.Enabled = false;
                 //#if DEBUG
-                Mod.Info($"[{typeof(ModSystem).Name}] 禁用原系�? {typeof(TargetSystem).Name}");
+                Mod.Info($"[{typeof(ModSystem).Name}] 禁用原系统: {typeof(TargetSystem).Name}");
                 //#endif
             }
             else
             {
                 // 仅在调试时提示，原版系统可能已被其他Mod移除或尚未加
 #if DEBUG
-                Mod.Error($"[{typeof(ModSystem).Name}] 无法找到可禁用的原系�?尚未加载或可能被其他Mod移除): {typeof(TargetSystem).Name}");
+                Mod.Error($"[{typeof(ModSystem).Name}] 无法找到可禁用的原系统(尚未加载或可能被其他Mod移除): {typeof(TargetSystem).Name}");
 #endif
             }
 
