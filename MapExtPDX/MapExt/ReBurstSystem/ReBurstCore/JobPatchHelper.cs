@@ -100,13 +100,13 @@ namespace MapExtPDX.MapExt.ReBurstSystem.Core
             {
                 rb.Stat("成功", successMethods);
                 rb.Stat("失败", failMethods);
-                rb.Stat("跳过", skipped.Count);
+                rb.Stat("跳過", skipped.Count);
                 rb.Stat("註冊被拒", rejected.Count);
 #if DEBUG
                 foreach (var name in succeededNames)
                     rb.Item(name);
                 foreach (var s in skipped)
-                    rb.Item($"[跳过] {s.Target.TargetTypeName}.{s.Target.TargetMethodName} → {s.SkipReason}");
+                    rb.Item($"[跳過] {s.Target.TargetTypeName}.{s.Target.TargetMethodName} → {s.SkipReason}");
 #endif
             });
 
@@ -118,16 +118,16 @@ namespace MapExtPDX.MapExt.ReBurstSystem.Core
                                   $"其所在方法已掛載 Transpiler，可能形成部分替換：{string.Join("、", rejected)}");
             }
 
-            // 跳过项在 Release 也必须可见：ModLog.Debug 带 [Conditional("DEBUG")]，
-            // 正式版看不到逐条明细，故在此补一条聚合 Warn 指向 /check-upgrade 的执行期验证。
+            // 跳過項在 Release 也必須可見：ModLog.Debug 帶 [Conditional("DEBUG")]，
+            // 正式版看不到逐條明細，故在此補一條聚合 Warn 指向 /check-upgrade 的執行期驗證。
             if (skipped.Count > 0)
             {
                 var preview = string.Join("、", skipped
                     .Take(3)
                     .Select(s => $"{s.Target.TargetTypeName}.{s.Target.TargetMethodName}"));
-                if (skipped.Count > 3) preview += $" 等 {skipped.Count} 项";
-                ModLog.Warn(Tag, $"有 {skipped.Count} 个 Job 目标解析失败，已退回原版行为：{preview}" +
-                                 "（多为游戏版本升级导致的类型／方法改名，参见 /check-upgrade）");
+                if (skipped.Count > 3) preview += $" 等 {skipped.Count} 項";
+                ModLog.Warn(Tag, $"有 {skipped.Count} 個 Job 目標解析失敗，已退回原版行為：{preview}" +
+                                 "（多為遊戲版本升級導致的類型／方法改名，參見 /check-upgrade）");
             }
         }
 
@@ -163,11 +163,11 @@ namespace MapExtPDX.MapExt.ReBurstSystem.Core
             if (!valid)
             {
                 // 构建详细错误信息，方便排查
-                if (targetType == null) skipReason = $"[类型未找到 {t.TargetTypeName}]";
+                if (targetType == null) skipReason = $"[類型未找到 {t.TargetTypeName}]";
                 else if (method == null) skipReason = $"[方法未找到 {t.TargetMethodName}]";
                 else if (oldJob == null) skipReason = $"[原Job未找到 {t.OriginalJobFullName}]";
                 else skipReason = $"[新Job未找到 {t.ReplacementJobFullName}]";
-                ModLog.Debug(Tag, $"跳过无效目标: {t.TargetTypeName}.{t.TargetMethodName} -> 原因: {skipReason}");
+                ModLog.Debug(Tag, $"跳過無效目標: {t.TargetTypeName}.{t.TargetMethodName} -> 原因: {skipReason}");
             }
 
             return new ResolvedTargetContext

@@ -195,10 +195,12 @@ using MapExtPDX.SaveLoadSystem;
         /// 而 <c>LoadGameSystem.OnUpdate</c> 是跑完整個 Deserialize 階段才 Invoke，
         /// 此時讀原版 m_Map 才安全。</para>
         ///
-        /// <para><b>三條路徑的處置</b>：有作者原稿就升採樣還原（開新城與空場存檔都走這條）；
-        /// 載入既有存檔只在整張圖沒有任何容量（<c>m_Max</c> 全 0，即 v4.8.0 之前存下的空場）時才修復，
-        /// 場只要非空就絕不動它——那是玩家已經在抽用、已累積污染的即時狀態；
-        /// 作者沒畫地下水時<b>不生成任何替代場</b>，只記一行提示（理由見本方法上方的
+        /// <para><b>三條路徑的處置</b>：本模式解析度的場只要非空就一律沿用、不分 purpose——
+        /// 既有存檔裡那是玩家已經在抽用、已累積污染的即時狀態；MapExt 編輯器製作的地圖檔裡
+        /// 那是作者直接畫在 <c>kTextureSize²</c> 上的原稿（筆刷經 GetData 重定向寫進本實例，
+        /// 原版 256² 區段從未被寫入）。場為空而原版原稿非空才升採樣還原（原版地圖開新城、
+        /// 編輯器載入原版地圖、v4.8.0 之前存下的空場存檔都走這條）；兩者皆空時
+        /// <b>不生成任何替代場</b>，只記一行提示（理由見本方法上方的
         /// 「為什麼沒有 SetDefaults 覆寫」註釋段）。三條路徑之前另有一道會話白名單，
         /// 把退出主菜單那輪 <c>Purpose.Cleanup</c> 擋在外面。</para>
         /// </summary>
@@ -225,9 +227,10 @@ using MapExtPDX.SaveLoadSystem;
             }
 
             if (!m_Map.IsCreated) return;
-            m_WriteDependencies.Complete();
+            // 下面既讀 m_Map 也可能整張改寫：讀寫兩側的掛起 job 都要收斂。
+            // 只等 m_WriteDependencies 擋得住寫入者，擋不住仍在讀本場的 job。
+            JobHandle.CombineDependencies(m_WriteDependencies, m_ReadDependencies).Complete();
 
-            bool isNewGame = purpose == Purpose.NewGame;
             int nonZero = CountAquiferCells(m_Map);
 
             // 原稿無條件先讀一次（唯讀，只多一次反射與一趟 orgTextureSize² 計數）：它是下面兩條
@@ -239,14 +242,20 @@ using MapExtPDX.SaveLoadSystem;
             bool hasVanilla = TryGetVanillaAquifer(out NativeArray<TargetType> vanillaMap, out int srcSize);
             int vanillaCells = hasVanilla ? CountAquiferCells(vanillaMap) : 0;
 
-            // 既有存檔且場是健康的 → 玩家的即時狀態，不介入
-            if (!isNewGame && nonZero != 0)
+            // 本模式解析度的場非空 → 不分 purpose 一律沿用。兩種來源都不能動：
+            //   · 既有存檔：玩家已在抽用、已累積污染的即時狀態；
+            //   · MapExt 編輯器製作的地圖檔：作者用地下水筆刷直接畫在 kTextureSize² 上
+            //     （GetData 被重定向到本實例，原版 256² 區段從未被寫入）。
+            // 開新城若不認這條，前者會被誤報成「本地圖沒有含水層」；而地圖源自原版、
+            // 在編輯器升採樣後又修改過的場，還會被原版 256² 原稿重新升採樣覆蓋回去。
+            if (nonZero != 0)
             {
                 // 這條分支原本完全靜默，於是「沒有日誌」同時可能代表「場是健康的」與
                 // 「OnGameLoaded 根本沒走到」，無從分辨。而含水層占比又是零格早退命中率
                 // 與 GroundWaterTickJob 成本的唯一決定因素，所以無條件記一行。
+                string source = purpose == Purpose.LoadGame ? "存檔" : "地圖檔";
                 ModLog.Info(nameof(GroundWaterSystemMod),
-                    $"地下水場沿用存檔內容，不介入：{kTextureSize}² = {m_Map.Length} 格，" +
+                    $"地下水場沿用{source}內容，不介入：{kTextureSize}² = {m_Map.Length} 格，" +
                     $"含水層 {nonZero} 格（{100f * nonZero / m_Map.Length:F2}%）；" +
                     $"原版原稿 {(hasVanilla ? $"{srcSize}²：含水層 {vanillaCells} 格" : "不可讀取")}");
                 return;
@@ -267,9 +276,11 @@ using MapExtPDX.SaveLoadSystem;
             // 前後占比一併輸出：等比拉伸不改變含水層占比，兩者接近即證明座標映射沒有錯位
             // （差異只該來自邊界插值與 short 取整）。這是唯一不必進遊戲就能核對升採樣正確性的訊號。
             int filled = CountAquiferCells(m_Map);
+            // 只有載入既有存檔時走到這裡才是「修復空場」：v4.8.0 之後存下的場非空會在上面早退。
+            // 開新城與編輯器載入地圖走到這裡是正常的首次還原，不是修復。
             ModLog.Ok(nameof(GroundWaterSystemMod),
                 $"地下水場已從原版 {srcSize}² 原稿升採樣至 {kTextureSize}²（雙線性等比拉伸，與地形同比例）" +
-                (isNewGame ? "" : "，修復 v4.8.0 之前存下的空場") +
+                (purpose == Purpose.LoadGame ? "，修復 v4.8.0 之前存下的空場" : "") +
                 $"：含水層占比 {100f * vanillaCells / vanillaMap.Length:F2}% → {100f * filled / m_Map.Length:F2}%" +
                 $"（{vanillaCells} → {filled} 格）");
         }

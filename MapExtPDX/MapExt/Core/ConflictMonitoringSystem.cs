@@ -121,6 +121,12 @@ namespace MapExtPDX.MapExt.Core
 
                 RunDiagnostics();
             }
+            else if (mode == GameMode.Editor)
+            {
+                // 地圖作者在編輯器載入別的模式製作的地圖，地形取樣同樣錯位，而且比遊戲內更常發生；
+                // 原版系統重禁用與狀態診斷屬遊戲會話專用，編輯器只做錯配提示。
+                ShowMapSizeMismatchDialogIfNeeded();
+            }
         }
 
         /// <summary>被动模式：OnUpdate 不做任何工作</summary>

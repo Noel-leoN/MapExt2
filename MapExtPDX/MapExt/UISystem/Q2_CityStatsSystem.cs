@@ -34,6 +34,12 @@ namespace MapExtPDX.UI
 
         private const string Tag = "CityStats";
 
+        /// <summary>
+        /// <see cref="ReadCommercialData"/> 連續因 job 未完成而跳過的上限，達到即退回一次同步等待。
+        /// 4 輪約 17 秒，只在相位關係出乎預期時才會走到。
+        /// </summary>
+        private const int kMaxCommercialSkips = 4;
+
         #endregion
 
         #region Fields
@@ -81,6 +87,9 @@ namespace MapExtPDX.UI
         /// 「本系統全部型別依賴」收窄到單一 job，比 <c>Dependency.Complete()</c> 更便宜。</para>
         /// </summary>
         private JobHandle m_HighRentHandle;
+
+        /// <summary><see cref="ReadCommercialData"/> 連續跳過的輪數，見 <see cref="kMaxCommercialSkips"/>。</summary>
+        private int m_CommercialSkips;
 
         #endregion
 
@@ -270,6 +279,18 @@ namespace MapExtPDX.UI
         public override int GetUpdateInterval(SystemUpdatePhase phase)
             => 256;
 
+        /// <summary>
+        /// 固定相位，避開 <c>CountCompanyDataSystem</c>（interval 16、offset 1，同在 GameSimulation）。
+        /// <para><c>UpdateSystem</c> 的判定是 <c>updateIndex &amp; (interval-1) == offset</c>；
+        /// 256 是 16 的倍數，所以兩系統是否同幀由 offset 一次決定、之後永不改變。
+        /// 若交給自動分配而低 4 位恰為 1，本系統每輪都會在對方剛排完 job 的同一幀執行，
+        /// <see cref="ReadCommercialData"/> 的 <c>IsCompleted</c> 門檻永遠不成立，
+        /// 商業兩項數值就靜默凍結在初值。取 8：低 4 位不為 1，且落在對方兩次執行的中點，
+        /// 對方 7 幀前排下的 job 此時早已完成。</para>
+        /// </summary>
+        public override int GetUpdateOffset(SystemUpdatePhase phase)
+            => 8;
+
         protected override void OnUpdate()
         {
             // === 快速计数（O(1) archetype 统计） ===
@@ -285,6 +306,9 @@ namespace MapExtPDX.UI
             // HighRentWarning 是 BuildingFlags 的位元而非獨立 component，無法用 EntityQuery 過濾，
             // 只能逐 entity 檢查；但沒有理由佔用主執行緒。結果延遲一輪（256 幀），
             // 首屏由 OnStartRunning 的同步計算補上。
+            // 讀結果與 Clear() 之前先等上一輪的 job：它 256 幀前就排下去，此刻早該結束，
+            // Complete() 只清 safety handle；但不能依賴 Dependency 含有它（理由見 m_HighRentHandle）。
+            m_HighRentHandle.Complete();
             if (m_SkipNextHighRentRead)
             {
                 // 本輪的累加器是 OnStartRunning 剛清空的，讀它只會得到 0；保留首屏同步值。
@@ -469,11 +493,13 @@ namespace MapExtPDX.UI
 
             // S2：不阻塞主執行緒。deps 是 CountCompanyDataSystem 的
             // CountCompanyDataJob → 單執行緒 SumJob 整條鏈，未完成就跳過本輪、保留上一輪的值
-            // （256 幀後會再試）。Q2 的 offset 由 UpdateSystem 自動分配，與 CountCompanyDataSystem
-            // 相隔幾幀無法靜態確定，因此不能假設 Complete() 一定不等待。
-            if (!deps.IsCompleted) return;
+            // （256 幀後會再試）。GetUpdateOffset 已把本系統固定在對方排 job 之後 7 幀，
+            // 常態下這裡總是已完成；連續跳過上限是防止任何未預期的相位關係讓數值永久凍結的保險，
+            // 觸發時退回一次同步等待（即改造前的行為），不會靜默失效。
+            if (!deps.IsCompleted && ++m_CommercialSkips < kMaxCommercialSkips) return;
+            m_CommercialSkips = 0;
 
-            // 已完成；Unity 要求讀 NativeArray 前必須 Complete，此呼叫僅清理 safety handle，無實際等待。
+            // 已完成時 Complete() 僅清理 safety handle，無實際等待；Unity 要求讀 NativeArray 前必須呼叫。
             deps.Complete();
 
             int totalSvc = 0;
