@@ -192,7 +192,7 @@ namespace MapExtPDX.MapExt.Core
                     "SetRenderTarget/ClearRenderTarget 在 async compute 佇列會被拒收，" +
                     "海水傳播紋理清除靜默失效（地形筆刷／改海平面時會出現水位錯誤）；" +
                     "且水紋理跨佇列消費點無任何 GraphicsFence。與顯示卡無關，見 " +
-                    "docs/02_TerrainWater/Water_AsyncCompute_Analysis.md");
+                    "docs/20_systems/02_terrain_water/Water_AsyncCompute_Analysis.md");
             }
             return false;
         }
