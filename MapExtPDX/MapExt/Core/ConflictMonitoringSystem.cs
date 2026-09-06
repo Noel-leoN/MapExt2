@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using Colossal.Serialization.Entities;
 using Game;
 using Game.Areas;
+using Game.PSI;
 using Game.Rendering;
 using Game.SceneFlow;
 using Game.Simulation;
@@ -177,6 +178,19 @@ namespace MapExtPDX.MapExt.Core
                     GameManager.instance.userInterface.appBindings.ShowMessageDialog(dialog, null);
                     return true;
                 });
+
+                // === 通知條（與彈窗並存，不是備援）===
+                // 延後一帧只能跳出「同帧其它 Mod 也彈對話框」那種覆蓋；擋不住跨帧的 UI 重建
+                // ——2026-09-06 實測 RoadBuilder 在本彈窗顯示後仍在刷新 UI，把它整個沖掉。
+                // 通知條由 PSI 層管理、不屬於場景 UI，重建沖不掉它，且玩家事後回頭仍看得到。
+                // 兩者各自解決不同的失敗模式，所以都留著。
+                NotificationSystem.Push(
+                    identifier: "mapext.mapsize_mismatch",
+                    title: LocalizedString.Id("MAPEXT_MAPSIZE.MismatchTitle"),
+                    text: new LocalizedString("MAPEXT_MAPSIZE.MismatchNotify", null, locParams),
+                    progressState: Colossal.PSI.Common.ProgressState.Warning,
+                    progress: 100
+                );
 
                 ModLog.Warn(Tag,
                     $"已提示地圖尺寸錯配：地圖為 {authoredMode}，當前為 {currentMode}");

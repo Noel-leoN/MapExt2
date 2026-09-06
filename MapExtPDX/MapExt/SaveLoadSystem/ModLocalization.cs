@@ -4,6 +4,7 @@
 // When using this part of the code, please clearly credit [Project Name] and the author.
 
 
+using Colossal;
 using Colossal.Localization;
 using System.Collections.Generic;
 
@@ -13,8 +14,19 @@ namespace MapExtPDX.SaveLoadSystem
     {
         private const string Tag = "SaveLoad";
 
-        // Mod 加载时注册 fallback 本地化
-        public static void Initialize(LocalizationManager localizationManager)
+        /// <summary>
+        /// 產出三語的對話框文本來源，<b>不自行註冊</b>。
+        ///
+        /// <para>註冊統一由 <c>Mod.RegisterLocalization</c> 執行：它把這裡的對話框文本與
+        /// 設定 UI 文本（<c>LocaleEN</c> 等）併成一個 <c>CompositeLocaleSource</c>，
+        /// 讓每個語言只呼叫一次 <c>AddSource</c>。原本這裡各自呼叫一次、
+        /// 設定那邊再各自呼叫一次，共 6 次，其中 2 次落在 en-US——
+        /// 而 en-US 每次註冊都會觸發一趟無鎖的全字典 <c>MergeFrom</c>，
+        /// 那是 2026-09-05 那次 <c>Mod.OnLoad</c> 中斷的競爭窗口。
+        /// 完整論證見 <see cref="MapExtPDX.MapExt.Core.CompositeLocaleSource"/>。</para>
+        /// </summary>
+        public static void GetSources(
+            out IDictionarySource en, out IDictionarySource hans, out IDictionarySource hant)
         {
             var fallback = new Dictionary<string, string>
             {
@@ -37,6 +49,8 @@ namespace MapExtPDX.SaveLoadSystem
                 // === Map Size Mismatch Warning ===
                 { "MAPEXT_MAPSIZE.MismatchTitle", "⚠️ Map Size Mode Mismatch" },
                 { "MAPEXT_MAPSIZE.MismatchMessage", "This map was created in '{AUTHORED_MODE}', but MapExt is currently set to '{CURRENT_MODE}'.\n\nTerrain heights are being sampled at the wrong scale, so elevation, water and buildable areas will all be incorrect.\n\nTo fix this, quit to the main menu, set MapExt's MapSize Mode to '{AUTHORED_MODE}', then load the map again.\n\nNote: maps created in the editor carry no map-size metadata, so this can only be detected after loading has begun." },
+                // 通知條版本（短文案）：對話框可能被其它 Mod 的 UI 重建沖掉，這條留在通知區
+                { "MAPEXT_MAPSIZE.MismatchNotify", "This map was made for '{AUTHORED_MODE}' but MapExt is set to '{CURRENT_MODE}'. Terrain height is sampled at the wrong scale. Quit to the main menu, switch MapExt's MapSize Mode to '{AUTHORED_MODE}', then reload." },
 
                 // === WorldMap Import Warning ===
                 { "MAPEXT_WORLDMAP.WarningTitle", "⚠️ Performance Warning" },
@@ -51,11 +65,13 @@ namespace MapExtPDX.SaveLoadSystem
                 { "VANILLA_CONVERT.Cancel", "Cancel" },
                 { "VANILLA_CONVERT.Complete", "Extension Complete" },
                 { "VANILLA_CONVERT.CompleteMessage", "Vanilla map has been extended to {TARGET_MODE}.\nNew save: {SAVE_NAME}\n\n✅ Terrain heightmap synthesized\n✅ Original natural resources and ground water preserved\n✅ All vehicle and resident entities cleared\n✅ All outside connections removed\n✅ Water sources upgraded and sea level reset\n⚠ All 529 map tiles unlocked\n\n⚠ RESTART REQUIRED\nYou MUST quit to desktop and reload the new save.\nFailure to restart will cause water simulation glitches or crashes!\n\n📋 AFTER RESTART - TODO LIST:\n\n1. Rebuild Outside Connections at new map edges:\n   • Roads (highway connections)\n   • Railways (train lines)\n   • Shipping Lanes (cargo and passenger ships)\n   • Airline Routes (airport flight paths)\n   • Electricity (power line connections)\n   • Water Supply (water pipe connections)\n\n2. Place new Water Sources and Adjust Sea Level:\n   • Original water sources have been cleared\n   • You MUST use the Water Features mod to place river/sea sources (no other mods have this feature)\n   • ⚠ Note: Water levels might not be perfectly accurate. Use Water Tools (M button) or Water Features mod to adjust and fill naturally." },
+                // 通知條版本（短文案）：完成對話框可能被其它 Mod 的 UI 重建沖掉，這條留在通知區
+                { "VANILLA_CONVERT.CompleteNotify", "Conversion finished - saved as '{SAVE_NAME}'. You must restart the game before playing it." },
                 { "VANILLA_CONVERT.QuitConfirm", "Quit Game" },
                 { "VANILLA_CONVERT.QuitCancel", "Stay" }
             };
 
-            localizationManager.AddSource("en-US", new MemorySource(fallback));
+            en = new MemorySource(fallback);
 
             // 中文简体本地化
             var zhHans = new Dictionary<string, string>
@@ -73,6 +89,8 @@ namespace MapExtPDX.SaveLoadSystem
                 // === 地图尺寸模式不匹配警告 ===
                 { "MAPEXT_MAPSIZE.MismatchTitle", "⚠️ 地图尺寸模式不匹配" },
                 { "MAPEXT_MAPSIZE.MismatchMessage", "此地图是在「{AUTHORED_MODE}」下制作的，但 MapExt 当前设置为「{CURRENT_MODE}」。\n\n地形高度正在以错误的比例采样，海拔、水体与可建造区域都会出错。\n\n解决方法：退出到主菜单，将 MapExt 的地图尺寸模式设为「{AUTHORED_MODE}」，然后重新加载此地图。\n\n说明：编辑器导出的地图不含地图尺寸元数据，因此只能在加载开始后才检测得到。" },
+                // 通知条版本（短文案）
+                { "MAPEXT_MAPSIZE.MismatchNotify", "此地图为「{AUTHORED_MODE}」制作，但 MapExt 当前为「{CURRENT_MODE}」，地形高度采样比例错误。请退出到主菜单，将地图尺寸模式改为「{AUTHORED_MODE}」后重新加载。" },
 
                 // === 世界地图导入性能警告 ===
                 { "MAPEXT_WORLDMAP.WarningTitle", "⚠️ 性能警告" },
@@ -87,10 +105,12 @@ namespace MapExtPDX.SaveLoadSystem
                 { "VANILLA_CONVERT.Cancel", "取消" },
                 { "VANILLA_CONVERT.Complete", "扩展完成" },
                 { "VANILLA_CONVERT.CompleteMessage", "原版地图已成功扩展至 {TARGET_MODE}。\n新存档：{SAVE_NAME}\n\n✅ 地形高度图已合成\n✅ 原版自然资源与地下水已完美保留\n✅ 所有车辆与居民实体已清除\n✅ 全部外部连接已拆除\n✅ 水源已升级并重置海平面\n⚠ 全部 529 格地图分块已解锁\n\n⚠ 必须重启游戏\n请立即退出到桌面并重新加载新存档。\n不重启直接游玩会导致水体异常或游戏崩溃！\n\n📋 重启后待办事项：\n\n1. 在新的地图边界重建对外连接：\n   • 道路（高速公路连接）\n   • 铁路（火车线路）\n   • 航道（货运与客运轮船航线）\n   • 航线（机场飞行航线）\n   • 电力（输电线路连接）\n   • 供水（供水管道连接）\n\n2. 重新设置水源与海平面：\n   • 原有水源已被清除，必须使用 Water Features 模组在所需位置重新放置河流/海洋水源（目前无其他模组具备此功能）\n   • ⚠ 提示：转换后水位可能不够准确。建议使用内建水体工具（M按钮）或 Water Features 模组手动调整海平面并加速注水。" },
+                // 通知条版本（短文案）
+                { "VANILLA_CONVERT.CompleteNotify", "转换完成，已存为「{SAVE_NAME}」。开始游玩前必须重启游戏。" },
                 { "VANILLA_CONVERT.QuitConfirm", "退出游戏" },
                 { "VANILLA_CONVERT.QuitCancel", "留在游戏" },
             };
-            localizationManager.AddSource("zh-HANS", new MemorySource(zhHans));
+            hans = new MemorySource(zhHans);
 
             // 中文繁体本地化
             var zhHant = new Dictionary<string, string>
@@ -108,6 +128,8 @@ namespace MapExtPDX.SaveLoadSystem
                 // === 地圖尺寸模式不符警告 ===
                 { "MAPEXT_MAPSIZE.MismatchTitle", "⚠️ 地圖尺寸模式不符" },
                 { "MAPEXT_MAPSIZE.MismatchMessage", "此地圖是在「{AUTHORED_MODE}」下製作的，但 MapExt 當前設定為「{CURRENT_MODE}」。\n\n地形高度正以錯誤的比例取樣，海拔、水體與可建造區域都會出錯。\n\n解決方法：退出至主選單，將 MapExt 的地圖尺寸模式設為「{AUTHORED_MODE}」，然後重新載入此地圖。\n\n說明：編輯器匯出的地圖不含地圖尺寸元資料，因此只能在載入開始後才偵測得到。" },
+                // 通知條版本（短文案）
+                { "MAPEXT_MAPSIZE.MismatchNotify", "此地圖為「{AUTHORED_MODE}」製作，但 MapExt 當前為「{CURRENT_MODE}」，地形高度取樣比例錯誤。請退出至主選單，將地圖尺寸模式改為「{AUTHORED_MODE}」後重新載入。" },
 
                 // === 世界地图导入性能警告 ===
                 { "MAPEXT_WORLDMAP.WarningTitle", "⚠️ 性能警告" },
@@ -122,12 +144,12 @@ namespace MapExtPDX.SaveLoadSystem
                 { "VANILLA_CONVERT.Cancel", "取消" },
                 { "VANILLA_CONVERT.Complete", "擴展完成" },
                 { "VANILLA_CONVERT.CompleteMessage", "原版地圖已成功擴展至 {TARGET_MODE}。\n新存檔：{SAVE_NAME}\n\n✅ 地形高度圖已合成\n✅ 原版自然資源與地下水已完美保留\n✅ 所有車輛與居民實體已清除\n✅ 全部外部連接已拆除\n✅ 水源已升級並重置海平面\n⚠ 全部 529 格地圖分塊已解鎖\n\n⚠ 必須重啟遊戲\n請立即退出到桌面並重新載入新存檔。\n不重啟直接遊玩會導致水體異常或遊戲崩潰！\n\n📋 重啟後待辦事項：\n\n1. 在新的地圖邊界重建對外連接：\n   • 道路（高速公路連接）\n   • 鐵路（火車線路）\n   • 航道（貨運與客運輪船航線）\n   • 航線（機場飛行航線）\n   • 電力（輸電線路連接）\n   • 供水（供水管道連接）\n\n2. 重新設置水源與海平面：\n   • 原有水源已被清除，必須使用 Water Features 模組在所需位置重新放置河流/海洋水源（目前無其他模組具備此功能）\n   • ⚠ 提示：轉換後水位可能不夠準確。建議使用內建水體工具（M按鈕）或 Water Features 模組手動調整海平面並加速注水。" },
+                // 通知條版本（短文案）
+                { "VANILLA_CONVERT.CompleteNotify", "轉換完成，已存為「{SAVE_NAME}」。開始遊玩前必須重啟遊戲。" },
                 { "VANILLA_CONVERT.QuitConfirm", "退出遊戲" },
                 { "VANILLA_CONVERT.QuitCancel", "留在遊戲" }
             };
-            localizationManager.AddSource("zh-HANT", new MemorySource(zhHant));
-
-            MapExtPDX.MapExt.Core.ModLog.Ok(Tag, "存档验证与WorldMap警告本地化文本已注册 (en-US, zh-HANS, zh-HANT)");
+            hant = new MemorySource(zhHant);
         }
     }
 }

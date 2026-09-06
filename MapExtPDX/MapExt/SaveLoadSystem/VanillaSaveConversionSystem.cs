@@ -10,6 +10,7 @@ using Game;
 using Game.Areas;
 using Game.Common;
 using Game.Objects;
+using Game.PSI;
 using Game.SceneFlow;
 using Game.Simulation;
 using Game.Tools;
@@ -1548,6 +1549,19 @@ namespace MapExtPDX.SaveLoadSystem
                     });
                     return true;
                 });
+
+                // === 通知條（與對話框並存）===
+                // 對話框延後一帧只擋得住「同帧其它 Mod 也彈對話框」；擋不住跨帧的 UI 重建
+                // （實測 RoadBuilder 會沖掉錯配彈窗，本對話框走同一條路徑、風險相同）。
+                // 這一則尤其不能丟——它是玩家唯一得知「必須重啟才能玩轉換後的城市」的途徑，
+                // 沖掉的話玩家會在水體未穩的狀態下繼續玩。
+                NotificationSystem.Push(
+                    identifier: "mapext.convert_complete",
+                    title: LocalizedString.Id("VANILLA_CONVERT.Complete"),
+                    text: new LocalizedString("VANILLA_CONVERT.CompleteNotify", null, locParams),
+                    progressState: Colossal.PSI.Common.ProgressState.Complete,
+                    progress: 100
+                );
             }
             catch (Exception ex)
             {

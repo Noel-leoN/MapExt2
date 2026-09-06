@@ -33,7 +33,34 @@ namespace EconomyEX
         public static bool IsVanillaMap { get; private set; } = false; // Set by MapSizeDetector
         public static bool IsActive { get; private set; } = false; // Effective Active State
 
+        /// <summary>
+        /// <see cref="OnLoad"/> 是否中斷過。中斷後本 Mod 處於半初始化狀態。
+        /// </summary>
+        public static bool InitializationFailed { get; private set; }
+
+        /// <summary>
+        /// Mod 載入入口。本方法只負責兜底，實際初始化在 <see cref="OnLoadCore"/>。
+        ///
+        /// <para><b>為什麼需要兜底</b>：<c>ModManager.InitializeMods</c> 對逸出的異常只寫一行
+        /// <c>[Modding] [ERROR]</c> 就繼續，<b>不彈窗</b>，於是「整個 Mod 沒生效」會靜默發生。
+        /// MapExtPDX 於 2026-09-05 實測到一次（本地化註冊撞上引擎無鎖的字典），
+        /// 本 Mod 的 <c>AddSource</c> 走同一條引擎路徑，暴露面相同，故一併加固。</para>
+        /// </summary>
         public void OnLoad(UpdateSystem updateSystem)
+        {
+            try
+            {
+                OnLoadCore(updateSystem);
+            }
+            catch (Exception ex)
+            {
+                InitializationFailed = true;
+                Error(ex, "OnLoad 中斷，本次遊戲 EconomyEX 未完整生效");
+                PushInitFailureNotification(ex);
+            }
+        }
+
+        private void OnLoadCore(UpdateSystem updateSystem)
         {
             Instance = this;
 
@@ -50,9 +77,10 @@ namespace EconomyEX
             // 2. Initialize Settings
             Settings = new ModSettings(this);
             Settings.RegisterInOptionsUI();
-            GameManager.instance.localizationManager.AddSource("en-US", new LocaleEN(Settings));
-            GameManager.instance.localizationManager.AddSource("zh-HANS", new LocaleHANS(Settings));
-            GameManager.instance.localizationManager.AddSource("zh-HANT", new LocaleHANT(Settings));
+            var lm = GameManager.instance.localizationManager;
+            AddSourceSafe(lm, "en-US", new LocaleEN(Settings));
+            AddSourceSafe(lm, "zh-HANS", new LocaleHANS(Settings));
+            AddSourceSafe(lm, "zh-HANT", new LocaleHANT(Settings));
             Colossal.IO.AssetDatabase.AssetDatabase.global.LoadSettings(ModName, Settings, new ModSettings(this));
             Settings.UpdateStatus();
 
@@ -112,6 +140,51 @@ namespace EconomyEX
                         optionsUI?.OpenPage(pageId, sectionId, false);
                     }
                 );
+            }
+        }
+
+        /// <summary>
+        /// 包一層 try-catch 的 <c>AddSource</c>。
+        /// <para>引擎的 <c>LocalizationDictionary</c> 是無鎖的裸 <c>Dictionary</c>：註冊
+        /// fallback 語言（en-US）時會觸發一趟遍歷整個字典的 <c>MergeFrom</c>，
+        /// 期間若有別的執行流寫入就拋 <c>Collection was modified</c>。那是引擎缺陷、
+        /// Mod 無從預防；本地化失敗的實際影響只是「該語言文字顯示為 key」，
+        /// 不該擴散成整個 OnLoad 中斷。</para>
+        /// </summary>
+        private static void AddSourceSafe(
+            Colossal.Localization.LocalizationManager lm, string localeId, Colossal.IDictionarySource source)
+        {
+            try
+            {
+                lm.AddSource(localeId, source);
+            }
+            catch (Exception ex)
+            {
+                Warn($"註冊 {localeId} 本地化失敗（引擎本地化字典無鎖，疑撞上並發寫入），該語言文字將顯示為 key: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// 初始化中斷時推一則主菜單通知。文案硬編碼英文並用 <c>LocalizedString.Value</c>
+        /// （字面值、不查表）——中斷點有可能正是本地化註冊本身。
+        /// </summary>
+        private static void PushInitFailureNotification(Exception ex)
+        {
+            try
+            {
+                NotificationSystem.Push(
+                    identifier: "economyex.init_failed",
+                    title: LocalizedString.Value("EconomyEX: INITIALIZATION FAILED"),
+                    text: LocalizedString.Value(
+                        "EconomyEX did not finish loading, so the economy system replacements are NOT active " +
+                        $"this session. Restart the game; if it repeats, report Logs/EconomyEX.log ({ex.GetType().Name})."),
+                    progressState: Colossal.PSI.Common.ProgressState.Failed,
+                    progress: 100
+                );
+            }
+            catch (Exception pushEx)
+            {
+                Warn($"初始化失敗通知推送失敗: {pushEx.Message}");
             }
         }
 

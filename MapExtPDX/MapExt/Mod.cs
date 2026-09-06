@@ -69,8 +69,38 @@ namespace MapExtPDX
         // --- unpatch标志位，用于ReBurst安全卸载 ---
         public static bool IsUnloading { get; private set; } = false;
 
-        // Mod加载入口;首次进入游戏主菜单加载执行一次；
+        /// <summary>
+        /// <see cref="OnLoad"/> 是否中斷過。中斷後本 Mod 處於<b>半初始化</b>狀態——
+        /// 補丁可能只套用了一部分，不等於「乾淨地沒生效」。
+        /// </summary>
+        public static bool InitializationFailed { get; private set; }
+
+        /// <summary>
+        /// Mod 載入入口（首次進入主菜單時執行一次）。本方法只負責兜底，
+        /// 實際初始化全在 <see cref="OnLoadCore"/>。
+        ///
+        /// <para><b>為什麼需要自己兜底</b>：<c>ModManager.InitializeMods</c> 對逸出的異常
+        /// 只寫一行 <c>[Modding] [ERROR]</c> 就繼續，<b>不彈窗</b>。於是「整個 Mod 沒生效」
+        /// 會完全靜默地發生——2026-09-05 實測過一次（第一次 <c>AddSource</c> 撞上引擎無鎖的
+        /// 本地化字典，見 <see cref="MapExt.Core.CompositeLocaleSource"/>），
+        /// 20 個 patchset、SystemReplacer、71 個 UI binding 全部沒跑，而使用者只看到卡頓與
+        /// 滑鼠縮放失效，只能反推。這裡捕獲後推一則主菜單通知，讓失效變成可見事件。</para>
+        /// </summary>
         public void OnLoad(UpdateSystem updateSystem)
+        {
+            try
+            {
+                OnLoadCore(updateSystem);
+            }
+            catch (Exception ex)
+            {
+                InitializationFailed = true;
+                ModLog.Error(Tag, $"OnLoad 中斷，本次遊戲 MapExt 未完整生效: {ex}");
+                PushInitFailureNotification(ex);
+            }
+        }
+
+        private void OnLoadCore(UpdateSystem updateSystem)
         {
             // === 0. 加载模组执行asset ===
             ModLog.Info(Tag, $"OnLoad, version:{ModVersion}");
@@ -90,10 +120,9 @@ namespace MapExtPDX
             // Initialize settings
             m_Setting = new ModSettings(this);
             m_Setting.RegisterInOptionsUI();
-            // 读取settings本地化语言库
-            GameManager.instance.localizationManager.AddSource("en-US", new LocaleEN(m_Setting));
-            GameManager.instance.localizationManager.AddSource("zh-HANS", new LocaleHANS(m_Setting));
-            GameManager.instance.localizationManager.AddSource("zh-HANT", new LocaleHANT(m_Setting));
+            // 讀取本地化語言庫：設定 UI 文本與對話框文本合併為「每語言一次註冊」，
+            // 且每次註冊獨立 try-catch。理由見 RegisterLocalization。
+            RegisterLocalization();
             // 读取已保存设置
             Colossal.IO.AssetDatabase.AssetDatabase.global.LoadSettings(ModName, m_Setting, new ModSettings(this));
             ModLog.Ok(Tag, "Settings 已初始化");
@@ -170,9 +199,7 @@ namespace MapExtPDX
 
             // 其他并行的选项补丁，也在这里添加
             // _globalPatcher.CreateClassProcessor(typeof(ParallelOptionPatch)).Patch();
-            // 加载SaveLoadSystem的弹窗本地化语言库
-            ModLocalization.Initialize(GameManager.instance.localizationManager);
-            ModLog.Ok(Tag, $"{nameof(ModLocalization)} 本地化文本已加载");
+            // 對話框本地化已隨設定文本在 RegisterLocalization 一併註冊（合併為每語言一次）
 
             // 4.2 注册原版存档转换系统
             updateSystem.UpdateAt<VanillaSaveConversionSystem>(SystemUpdatePhase.LoadSimulation);
@@ -260,6 +287,88 @@ namespace MapExtPDX
                     progress: 100
                 );
                 ModLog.Error(Tag, "RPF 与 MapExt2 存在不可调和的 ECS 管线冲突（UpdateGroupSystem 跨阶段注册），请禁用其中之一。");
+            }
+        }
+
+        /// <summary>
+        /// 註冊三語本地化：每個語言只呼叫一次 <c>AddSource</c>，且各自獨立 try-catch。
+        ///
+        /// <para><b>為什麼要合併</b>：原本設定文本（<c>LocaleEN</c>／HANS／HANT）與對話框文本
+        /// （<c>ModLocalization</c>）各註冊三次、共 6 次，其中 <b>2 次落在 en-US</b>。
+        /// en-US 是引擎的 fallback 語言，每次註冊都會多觸發一趟 <c>MergeFrom</c>
+        /// 遍歷整個 fallback 字典，而那個字典無鎖——正是 2026-09-05 那次 OnLoad 中斷的
+        /// 競爭窗口。合併後 en-US 只註冊一次，窗口減半。</para>
+        ///
+        /// <para><b>為什麼要 try-catch</b>：本地化註冊失敗的實際影響只是「該語言的文字顯示成
+        /// key」，不該讓整個 Mod 失效。完整論證見
+        /// <see cref="MapExt.Core.CompositeLocaleSource"/>。</para>
+        /// </summary>
+        private void RegisterLocalization()
+        {
+            ModLocalization.GetSources(out var dialogEn, out var dialogHans, out var dialogHant);
+            var lm = GameManager.instance.localizationManager;
+
+            int ok = 0;
+            if (AddSourceSafe(lm, "en-US", new CompositeLocaleSource(new LocaleEN(m_Setting), dialogEn))) ok++;
+            if (AddSourceSafe(lm, "zh-HANS", new CompositeLocaleSource(new LocaleHANS(m_Setting), dialogHans))) ok++;
+            if (AddSourceSafe(lm, "zh-HANT", new CompositeLocaleSource(new LocaleHANT(m_Setting), dialogHant))) ok++;
+
+            if (ok == 3)
+            {
+                ModLog.Ok(Tag, "本地化已註冊 (en-US, zh-HANS, zh-HANT；設定文本與對話框文本已合併為每語言一份)");
+            }
+            else
+            {
+                ModLog.Warn(Tag, $"本地化僅 {ok}/3 個語言註冊成功；未成功者其文字會顯示為 key，功能不受影響");
+            }
+        }
+
+        /// <summary>
+        /// 包一層 try-catch 的 <c>AddSource</c>，回傳是否成功。
+        /// <para>引擎的 <c>LocalizationDictionary</c> 是無鎖的裸 <c>Dictionary</c>，
+        /// <c>AddSource</c> 可能因別的執行流同時寫入 fallback 字典而拋
+        /// <c>Collection was modified</c>。那是引擎缺陷、Mod 無從預防，
+        /// 這裡只確保它不擴散成整個 OnLoad 中斷。</para>
+        /// </summary>
+        private static bool AddSourceSafe(
+            Colossal.Localization.LocalizationManager lm, string localeId, Colossal.IDictionarySource source)
+        {
+            try
+            {
+                lm.AddSource(localeId, source);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                ModLog.Warn(Tag, $"註冊 {localeId} 本地化失敗（引擎本地化字典無鎖，疑撞上並發寫入）: {ex.Message}");
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// 初始化中斷時推一則主菜單通知，讓「Mod 沒生效」變成可見事件。
+        /// <para>文案<b>硬編碼英文</b>並用 <c>LocalizedString.Value</c>（字面值、不查表）：
+        /// 中斷點有可能正是本地化註冊本身，那時查表必然拿不到譯文。</para>
+        /// </summary>
+        private static void PushInitFailureNotification(Exception ex)
+        {
+            try
+            {
+                NotificationSystem.Push(
+                    identifier: "mapext.init_failed",
+                    title: LocalizedString.Value("MapExt2: INITIALIZATION FAILED"),
+                    text: LocalizedString.Value(
+                        "MapExt2 did not finish loading, so map extension is NOT fully active this session. " +
+                        "Do NOT load or save an extended-size city now - save corruption is possible. " +
+                        $"Restart the game; if it repeats, report Logs/MapExtPDX.log ({ex.GetType().Name})."),
+                    progressState: Colossal.PSI.Common.ProgressState.Failed,
+                    progress: 100
+                );
+            }
+            catch (Exception pushEx)
+            {
+                // 連通知都推不出去（UI 尚未就緒等），至少讓日誌留痕
+                ModLog.Warn(Tag, $"初始化失敗通知推送失敗: {pushEx.Message}");
             }
         }
 
