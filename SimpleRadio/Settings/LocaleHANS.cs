@@ -57,6 +57,13 @@ namespace SimpleRadio.Settings
                     "重新扫描数据目录并加载所有自定义电台，无需重启游戏。\n\n" +
                     "在数据目录中添加或删除音频文件后，点击此按钮即可刷新。" },
 
+                // === 播放設定 ===
+                { m_Setting.GetOptionGroupLocaleID(SimpleRadioSettings.kGroupPlayback), "播放" },
+                { m_Setting.GetOptionLabelLocaleID(nameof(SimpleRadioSettings.RestoreLastStation)), "恢复上次使用的电台" },
+                { m_Setting.GetOptionDescLocaleID(nameof(SimpleRadioSettings.RestoreLastStation)),
+                    "延续上次使用的电台，跨城市共用。关闭后，各城市使用存档记录的电台。" +
+                    "下次进入城市时生效。" },
+
                 // === Group: Formats ===
                 { m_Setting.GetOptionGroupLocaleID(SimpleRadioSettings.kGroupFormats), "音频格式" },
 

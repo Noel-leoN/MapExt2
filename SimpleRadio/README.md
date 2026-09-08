@@ -7,7 +7,7 @@ Drop your music files into a folder and they appear as a radio station in-game. 
 - **Zero Configuration**: Just create a folder and drop audio files
 - **Multi-Format**: Supports OGG, MP3, and WAV with per-format toggles
 - **Auto Metadata**: Reads song title and artist from audio file tags
-- **Remember Last Station**: Resumes the station you were listening to, remembered per save game
+- **Remember Last Station**: Resumes your last used station across cities by default; optionally restore each city's saved station
 - **Custom Icons**: Place `icon.svg` in any station folder, or use the built-in icon library
 - **Hot Reload**: Refresh stations from the settings panel without restarting the game
 - **Lightweight**: Zero runtime overhead during playback
@@ -56,6 +56,7 @@ Open **Options > SimpleRadio** to access:
 - Data folder path
 - **Open Data Folder** - opens the data directory in Explorer
 - **Refresh Stations** - hot reload without restarting (available after entering a map)
+- **Restore Last Used Station** - enabled by default under Info > Playback; disable to restore each city's saved station the next time you enter a city
 - **Format toggles** - enable/disable MP3 and WAV support (click **Refresh Stations** to apply)
 - **ExtendedRadio status** - compatibility detection
 
@@ -86,7 +87,7 @@ SimpleRadio runs fully standalone — its audio format support only applies to i
 - **零配置**：创建文件夹并放入音频文件即可
 - **多格式**：支持 OGG、MP3、WAV，每种格式可独立开关
 - **自动元数据**：自动读取音频文件中的歌曲名和艺术家信息
-- **记住上次电台**：恢复该存档上次播放的电台（按存档记忆，多存档互不干扰）
+- **記住上次電台**：預設跨城市恢復上次使用的電台，也可改為恢復各城市存檔記錄的電台
 - **自定义图标**：在电台文件夹中放置 `icon.svg` 自定义图标，或使用内置图标库
 - **热刷新**：在设置面板中刷新电台，无需重启游戏
 - **轻量级**：播放时零运行时开销
@@ -135,6 +136,7 @@ SimpleRadio runs fully standalone — its audio format support only applies to i
 - 数据目录路径
 - **打开数据目录** - 在资源管理器中打开数据目录
 - **刷新电台** - 热刷新电台，无需重启（进入存档后可用）
+- **恢復上次使用的電台** - 位於「資訊 > 播放」，預設開啟；關閉後，下次進入城市改用存檔記錄的電台
 - **格式开关** - 启用/禁用 MP3 和 WAV 支持（点击**刷新电台**即可生效）
 - **ExtendedRadio 状态** - 兼容性检测
 

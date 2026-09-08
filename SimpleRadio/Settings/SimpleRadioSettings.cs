@@ -22,8 +22,8 @@ namespace SimpleRadio.Settings
     /// </remarks>
     [FileLocation("ModsSettings/" + Mod.ModName + "/" + Mod.ModName)]
     [SettingsUITabOrder(kTabInfo, kTabFormat)]
-    [SettingsUIGroupOrder(kGroupStatus, kGroupActions, kGroupFormats, kGroupCompat)]
-    [SettingsUIShowGroupName(kGroupStatus, kGroupActions, kGroupFormats, kGroupCompat)]
+    [SettingsUIGroupOrder(kGroupStatus, kGroupActions, kGroupPlayback, kGroupFormats, kGroupCompat)]
+    [SettingsUIShowGroupName(kGroupStatus, kGroupActions, kGroupPlayback, kGroupFormats, kGroupCompat)]
     public class SimpleRadioSettings : ModSetting
     {
         // === Section/Group 常量 ===
@@ -31,6 +31,7 @@ namespace SimpleRadio.Settings
         public const string kTabFormat = "Format";
         public const string kGroupStatus = "Status";
         public const string kGroupActions = "Actions";
+        public const string kGroupPlayback = "Playback";
         public const string kGroupFormats = "Formats";
         public const string kGroupCompat = "Compatibility";
 
@@ -121,9 +122,15 @@ namespace SimpleRadio.Settings
         }
 
         /// <summary>
-        /// 禁用条件：Radio 实例未初始化时返回 true，禁用刷新按钮。
+        /// 城市尚未就緒或正在載入時，停用刷新按鈕。
         /// </summary>
-        public bool IsRadioNotReady => StationLoader.RadioInstance == null;
+        public bool IsRadioNotReady => !StationSelection.CanRefresh;
+
+        [SettingsUISection(kTabInfo, kGroupPlayback)]
+        public bool RestoreLastStation { get; set; } = true;
+
+        [SettingsUIHidden]
+        public string LastStation { get; set; } = string.Empty;
 
         // ================================================================
         // Format Tab
@@ -196,6 +203,8 @@ namespace SimpleRadio.Settings
             _hasLoaded = false;
             EnableMP3 = true;
             EnableWAV = true;
+            RestoreLastStation = true;
+            LastStation = string.Empty;
         }
     }
 }

@@ -10,7 +10,7 @@ namespace SimpleRadio
     public class ModAssemblyInfo
     {
         public const string Name        = "SimpleRadio";
-        public const string Version     = "1.0.4";
+        public const string Version     = "1.0.5";
         public const string Title       = "SimpleRadio";
         public const string Description = "Simple Custom Radio - Drop OGG/MP3/WAV files and play";
     }

@@ -37,14 +37,10 @@ namespace SimpleRadio.Core
         /// </summary>
         public static Radio RadioInstance { get; private set; }
 
-        // === 熱刷新狀態 ===
-        // 熱刷新與讀檔的「恢復目標」不同：
-        //   讀檔／新遊戲 → 原版存檔記錄的頻道（m_LastSaveRadioChannel）
-        //   熱刷新       → 玩家刷新前正在聽的那個頻道
-        // 原版 m_LastSaveRadioChannel 在整個 session 內不會被 Reload 清掉，
-        // 若不分流，熱刷新會把電台跳回「當初讀檔時」那個，屬於回歸。
-        private static bool s_isHotReload;
-        private static string s_hotReloadChannel;
+        internal static void ClearRadioInstance()
+        {
+            RadioInstance = null;
+        }
 
         /// <summary>
         /// 获取数据目录的完整路径（使用系统反斜杠，适配 explorer.exe）。
@@ -63,9 +59,9 @@ namespace SimpleRadio.Core
         /// </summary>
         public static bool ReloadRadio()
         {
-            if (RadioInstance == null)
+            if (!StationSelection.CanRefresh)
             {
-                Mod.Logger.Warn("Radio 实例尚未初始化（需先进入游戏地图），无法刷新。");
+                Mod.Logger.Warn("城市尚未就緒，無法刷新電台。");
                 return false;
             }
 
@@ -73,21 +69,19 @@ namespace SimpleRadio.Core
             {
                 Mod.Logger.Info("正在热刷新电台...");
 
-                // 先記下當下正在播的頻道，注入完成後再切回去。
-                // 用 try/finally 確保 Reload 內部拋例外時旗標不會卡在 true，
-                // 否則之後正常讀檔就不會恢復電台了。
-                s_hotReloadChannel = RadioInstance.currentChannel?.name;
-                s_isHotReload = true;
+                bool completed = false;
+                bool succeeded;
+                StationSelection.BeginRefresh();
                 try
                 {
                     RadioInstance.Reload(true);
+                    completed = true;
                 }
                 finally
                 {
-                    s_isHotReload = false;
-                    s_hotReloadChannel = null;
+                    succeeded = StationSelection.EndRefresh(completed);
                 }
-                return true;
+                return succeeded;
             }
             catch (Exception e)
             {
@@ -99,7 +93,7 @@ namespace SimpleRadio.Core
         /// <summary>
         /// 在 Radio.LoadRadio Postfix 中调用，将自定义电台注入游戏。
         /// </summary>
-        public static void InjectCustomStations(Radio radio)
+        public static bool InjectCustomStations(Radio radio)
         {
             // 保存引用供热刷新使用
             RadioInstance = radio;
@@ -113,14 +107,12 @@ namespace SimpleRadio.Core
                     Directory.CreateDirectory(basePath);
                     Mod.Logger.Info($"数据目录已创建: {basePath}");
                     Mod.Logger.Info("请将音频文件（.ogg/.mp3/.wav）放入子文件夹中，然后点击\"刷新电台\"或重启游戏。");
-                    // 目錄剛建好 → 補註冊 COUI data host，否則本場遊戲都用不到自訂 icon.svg
-                    IconManager.EnsureDataHost();
                 }
                 catch (Exception e)
                 {
                     Mod.Logger.Error(e, $"无法创建数据目录: {basePath}");
+                    return false;
                 }
-                return;
             }
 
             // 目錄存在，但 Mod.OnLoad 執行時可能還不存在（首次安裝）→ 補一次
@@ -134,7 +126,7 @@ namespace SimpleRadio.Core
             if (networks == null || channels == null)
             {
                 Mod.Logger.Error("无法访问 Radio 内部字典，跳过加载。");
-                return;
+                return false;
             }
 
             // === 3. 注册自定义网络 ===
@@ -163,18 +155,20 @@ namespace SimpleRadio.Core
             catch (Exception e)
             {
                 Mod.Logger.Error(e, $"无法读取数据目录: {basePath}");
-                return;
+                return false;
             }
 
+            bool succeeded = true;
             foreach (var stationDir in stationDirs)
             {
                 try
                 {
-                    LoadStation(stationDir, networks, channels);
+                    succeeded &= LoadStation(stationDir, networks, channels);
                 }
                 catch (Exception e)
                 {
                     Mod.Logger.Error(e, $"加载电台失败: {Path.GetFileName(stationDir)}");
+                    succeeded = false;
                 }
             }
 
@@ -189,68 +183,14 @@ namespace SimpleRadio.Core
                 Mod.Instance.Settings.UpdateLoadInfo(LoadedStations, LoadedSongs);
             }
 
-            // === 6. 恢复电台选择 ===
-            RestoreChannel(radio, traverse, channels);
-        }
-
-        /// <summary>
-        /// 恢復電台選擇。
-        ///
-        /// 為何必須由本 Mod 補這一步：原版 <c>LoadRadio</c> 在自己的方法體尾端就呼叫
-        /// <c>Enable()</c>，而 <c>Enable()</c> 用存檔記錄的頻道名查 <c>m_RadioChannels</c>；
-        /// 那一刻自訂電台還沒注入（本 Postfix 尚未執行），所以查不到就退回
-        /// <c>radioChannelDescriptors[0]</c>。注入完成後在此重試即可命中。
-        ///
-        /// 恢復目標分兩種來源，見 <see cref="s_isHotReload"/> 的說明。
-        /// </summary>
-        private static void RestoreChannel(
-            Radio radio,
-            Traverse traverse,
-            Dictionary<string, RuntimeRadioChannel> channels)
-        {
-            string target;
-
-            if (s_isHotReload)
-            {
-                target = s_hotReloadChannel;
-            }
-            else
-            {
-                // 原版把「存檔時正在播的頻道名」寫進城市存檔（AudioManager.Serialize），
-                // 且不區分來源 —— 自訂電台同樣被記錄，所以這就是最準的恢復依據，
-                // 而且它綁存檔而非全域設定，多存檔之間不會互相汙染。
-                target = null;
-                try
-                {
-                    target = traverse.Field<string>("m_LastSaveRadioChannel").Value;
-                }
-                catch (Exception e)
-                {
-                    // 欄位改名／型別變動時 Traverse 會拋，降級為「不恢復」而非讓注入失敗
-                    Mod.Logger.Warn(e, "无法读取原版存档电台名，跳过恢复。");
-                }
-            }
-
-            if (string.IsNullOrEmpty(target)) return;
-
-            // 原版 Enable() 已經選中同一個頻道時不必重設：
-            // currentChannel 的 setter 會 FinishCurrentClip + ClearQueue，白做一次會打斷播放。
-            if (radio.currentChannel != null && radio.currentChannel.name == target) return;
-
-            if (!channels.TryGetValue(target, out var channel))
-            {
-                Mod.Logger.Info($"电台 '{target}' 不存在（可能已删除或改名），保持当前选择。");
-                return;
-            }
-
-            radio.currentChannel = channel;
-            Mod.Logger.Info($"已恢复电台: {target}");
+            // 恢復由 RadioLoadPatch 的 Finalizer 執行，等完整 Postfix 鏈注入完成。
+            return succeeded;
         }
 
         /// <summary>
         /// 加载单个电台目录。
         /// </summary>
-        private static void LoadStation(
+        private static bool LoadStation(
             string stationDir,
             Dictionary<string, RadioNetwork> networks,
             Dictionary<string, RuntimeRadioChannel> channels)
@@ -263,7 +203,7 @@ namespace SimpleRadio.Core
             if (channels.ContainsKey(channelKey))
             {
                 Mod.Logger.Warn($"电台键名冲突，跳过: {channelKey}");
-                return;
+                return true;
             }
 
             // --- 扫描所有启用格式的音频文件 ---
@@ -277,7 +217,7 @@ namespace SimpleRadio.Core
             if (audioFiles.Count == 0)
             {
                 Mod.Logger.Warn($"电台 '{stationName}' 没有支持的音频文件，跳过。");
-                return;
+                return true;
             }
 
             // 使用 List 收集，避免 AddToArray 的 O(N²) 问题
@@ -295,7 +235,7 @@ namespace SimpleRadio.Core
             if (clips.Count == 0)
             {
                 Mod.Logger.Warn($"电台 '{stationName}' 没有成功加载的音频，跳过。");
-                return;
+                return false;
             }
 
             // --- 构建 Segment ---
@@ -341,6 +281,7 @@ namespace SimpleRadio.Core
             LoadedSongs += clips.Count;
 
             Mod.Logger.Info($"  ✓ 电台 '{stationName}': {clips.Count} 首歌曲");
+            return clips.Count == audioFiles.Count;
         }
     }
 }

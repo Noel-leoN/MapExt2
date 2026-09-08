@@ -57,6 +57,13 @@ namespace SimpleRadio.Settings
                     "Re-scan the data folder and reload all custom stations without restarting the game.\n\n" +
                     "Use this after adding or removing audio files from the data folder." },
 
+                // === 播放設定 ===
+                { m_Setting.GetOptionGroupLocaleID(SimpleRadioSettings.kGroupPlayback), "Playback" },
+                { m_Setting.GetOptionLabelLocaleID(nameof(SimpleRadioSettings.RestoreLastStation)), "Restore Last Used Station" },
+                { m_Setting.GetOptionDescLocaleID(nameof(SimpleRadioSettings.RestoreLastStation)),
+                    "Resume the last station used across cities. When disabled, each city uses the station in its save. " +
+                    "Applies the next time you enter a city." },
+
                 // === Group: Formats ===
                 { m_Setting.GetOptionGroupLocaleID(SimpleRadioSettings.kGroupFormats), "Audio Formats" },
 

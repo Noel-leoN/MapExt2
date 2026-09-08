@@ -21,12 +21,20 @@ namespace SimpleRadio.Patches
     public static class RadioLoadPatch
     {
         [HarmonyPriority(Priority.First)]
+        [HarmonyPrefix]
+        private static void Prefix(Radio __instance, bool enable, out StationSelection.LoadState __state)
+        {
+            __state = StationSelection.BeginLoad(__instance, enable);
+        }
+
+        [HarmonyPriority(Priority.First)]
         [HarmonyPostfix]
-        public static void Postfix(Radio __instance)
+        private static void Postfix(Radio __instance, StationSelection.LoadState __state)
         {
             try
             {
-                StationLoader.InjectCustomStations(__instance);
+                bool succeeded = StationLoader.InjectCustomStations(__instance);
+                if (__state != null) __state.InjectionSucceeded = succeeded;
             }
             catch (Exception e)
             {
@@ -39,8 +47,12 @@ namespace SimpleRadio.Patches
         /// 任一環節（含第三方 Mod 的 Postfix）拋出的例外都會進到此處。
         /// 回傳 null 即吞掉例外，阻止它上傳到 AudioManager.OnGameLoaded 而停用整個音訊系統。
         /// </summary>
-        public static Exception Finalizer(Exception __exception)
+        [HarmonyPriority(Priority.Last)]
+        private static Exception Finalizer(Exception __exception, StationSelection.LoadState __state)
         {
+            // 完整 Postfix 鏈結束後才查目標，讓其他 Mod 的同步注入有機會完成。
+            StationSelection.CompleteLoad(__state, __exception);
+
             if (__exception != null)
             {
                 Mod.Logger.Warn(

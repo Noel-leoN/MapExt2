@@ -49,6 +49,7 @@ namespace SimpleRadio
                 GameManager.instance.localizationManager.AddSource("zh-HANS", new LocaleHANS(Settings));
                 GameManager.instance.localizationManager.AddSource("zh-HANT", new LocaleHANT(Settings));
                 AssetDatabase.global.LoadSettings(ModName, Settings, new SimpleRadioSettings(this));
+                StationSelection.Initialize(Settings);
 
                 // 2. 解析 Mod 部署目录（通过游戏官方 API，适配本地和 PDX 订阅环境）
                 string modDir = null;
@@ -70,7 +71,8 @@ namespace SimpleRadio
 
                 // 5. 註冊 Harmony 補丁
                 _harmony = new Harmony(HarmonyId);
-                _harmony.CreateClassProcessor(typeof(RadioLoadPatch)).Patch();       // Postfix + Finalizer: 注入電台並中和第三方崩潰
+                _harmony.CreateClassProcessor(typeof(RadioLoadPatch)).Patch();       // 載入保護、注入及恢復電台
+                _harmony.CreateClassProcessor(typeof(RadioChannelPatch)).Patch();    // 記錄實際切台
                 _harmony.CreateClassProcessor(typeof(PlaylistClipsPatch)).Patch();   // Prefix: 攔截執行期 clip 刷新
 
                 // 獨立模式：無條件註冊 AudioLoadPatch（多格式解碼器選擇）。
@@ -91,6 +93,9 @@ namespace SimpleRadio
         {
             Logger.Info($"Disposing {ModName}...");
 
+            StationSelection.Dispose();
+            StationLoader.ClearRadioInstance();
+
             if (Settings != null)
             {
                 Settings.UnregisterInOptionsUI();
@@ -104,6 +109,8 @@ namespace SimpleRadio
                 _harmony.UnpatchAll(HarmonyId);
                 _harmony = null;
             }
+
+            Instance = null;
         }
 
         #endregion
