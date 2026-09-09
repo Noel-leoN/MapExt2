@@ -19,13 +19,13 @@ namespace SimpleBrush
         public const string ModName = "SimpleBrush";
 
         // === Logger ===
-        public static ILog Logger = LogManager.GetLogger(ModName).SetShowsErrorsInUI(false);
+        public static readonly ILog Logger = LogManager.GetLogger(ModName).SetShowsErrorsInUI(false);
 
         // === Singleton ===
         public static Mod Instance { get; private set; }
 
         // === Settings ===
-        public ModSettings Settings { get; private set; }
+        public SimpleBrushSettings Settings { get; private set; }
 
         #region IMod 接口
 
@@ -62,13 +62,13 @@ namespace SimpleBrush
             Logger.Info($"Loading {ModName} v{ModAssemblyInfo.Version}...");
 
             // 1. 初始化设置面板与本地化
-            Settings = new ModSettings(this);
+            Settings = new SimpleBrushSettings(this);
             Settings.RegisterInOptionsUI();
             var lm = GameManager.instance.localizationManager;
             AddSourceSafe(lm, "en-US", new LocaleEN(Settings));
             AddSourceSafe(lm, "zh-HANS", new LocaleHANS(Settings));
             AddSourceSafe(lm, "zh-HANT", new LocaleHANT(Settings));
-            AssetDatabase.global.LoadSettings(ModName, Settings, new ModSettings(this));
+            AssetDatabase.global.LoadSettings(ModName, Settings, new SimpleBrushSettings(this));
 
             // 2. 注册资源画笔解锁系统（PrefabUpdate 阶段执行一次后自动禁用）
             updateSystem.UpdateAt<TerraformingUnlocker>(SystemUpdatePhase.PrefabUpdate);

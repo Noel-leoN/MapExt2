@@ -1,3 +1,5 @@
+using Game;
+using Game.SceneFlow;
 using Game.Simulation;
 using Unity.Entities;
 
@@ -20,6 +22,14 @@ namespace SimpleBrush.Core
         /// <param name="type">要恢复的资源类型</param>
         public static void ClearUsed(World world, ResourceType type)
         {
+            // 設定面板在主菜單也能開啟，而 NaturalResourceSystem 在 App 啟動時就已建立並配置好緩衝區，
+            // 因此不加守衛的話按鈕會對一個沒有存檔的緩衝區寫滿一輪，還回報一句「已重置」誤導使用者。
+            if (GameManager.instance == null || !GameManager.instance.gameMode.IsGame())
+            {
+                Mod.Logger.Warn("未在遊戲中，無法執行資源恢復");
+                return;
+            }
+
             if (world == null)
             {
                 Mod.Logger.Warn("World 实例为空，无法执行恢复");

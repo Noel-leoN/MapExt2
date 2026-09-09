@@ -17,6 +17,9 @@ namespace SimpleRadio.Core
             typeof(AudioAsset).GetField("m_Metatags",
                 System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
 
+        // 反射失敗只警告一次，避免每首歌都刷一行
+        private static bool _metatagsWarned;
+
         /// <summary>
         /// 加载音频文件并注册到 AssetDatabase.user，注入元数据。
         /// 若 asset 已注册则跳过注册步骤，但仍会强制设置元数据。
@@ -113,13 +116,38 @@ namespace SimpleRadio.Core
 
             MetatagsField?.SetValue(audioAsset, metatags);
 
+            if (MetatagsField == null && !_metatagsWarned)
+            {
+                _metatagsWarned = true;
+                Mod.Logger.Warn(
+                    "AudioAsset.m_Metatags 反射失敗（欄位可能已改名）：Type 無法設為 \"Music\"，" +
+                    "RadioUISystem.GetClipInfo 會顯示電台名而非歌曲標題。");
+            }
+
             // --- 搜索标签（供 GetSegmentAudioClip tag-based 查找使用） ---
-            audioAsset.AddTag(title);
-            if (!string.IsNullOrEmpty(artist)) audioAsset.AddTag(artist);
-            audioAsset.AddTag("Music");
-            audioAsset.AddTag("type:Music");
-            audioAsset.AddTag($"radio channel:{stationName}");
-            audioAsset.AddTag($"radio station:{networkName}");
+            AddTagOnce(audioAsset, title);
+            AddTagOnce(audioAsset, artist);
+            AddTagOnce(audioAsset, "Music");
+            AddTagOnce(audioAsset, "type:Music");
+            AddTagOnce(audioAsset, $"radio channel:{stationName}");
+            AddTagOnce(audioAsset, $"radio station:{networkName}");
+        }
+
+        /// <summary>
+        /// 去重版 AddTag。
+        ///
+        /// 原版 <c>AssetData.AddTag</c> 是無條件 <c>m_Tags.Add(tag)</c>，不做去重；
+        /// 而本類每次注入（含每次熱刷新）都會對「已註冊」的資產重設元數據，
+        /// 直接呼叫會讓 tag 列表隨刷新次數線性膨脹，並拖慢原版所有
+        /// <c>ContainsTag</c>（List.Contains，O(n)）的標籤搜尋。
+        /// <c>ClearTags()</c> 是 protected 無法從外部呼叫，故改為寫入前先查。
+        /// </summary>
+        private static void AddTagOnce(AudioAsset asset, string tag)
+        {
+            if (!string.IsNullOrEmpty(tag) && !asset.ContainsTag(tag))
+            {
+                asset.AddTag(tag);
+            }
         }
     }
 }

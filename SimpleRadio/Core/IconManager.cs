@@ -12,7 +12,7 @@ namespace SimpleRadio.Core
     ///
     /// 图标优先级：
     ///   1. 电台目录下的 icon.svg（用户自定义）→ coui://simpleradio-data/电台名/icon.svg
-    ///   2. Resources/StationIcons/station_XX.svg（hash 分配）→ coui://simpleradio/...
+    ///   2. Resources/StationIcons/station_XX.svg（每次載入隨機抽一張）→ coui://simpleradio/...
     ///   3. Resources/DefaultIcon.svg（兜底）
     /// </summary>
     public static class IconManager
@@ -34,7 +34,13 @@ namespace SimpleRadio.Core
         private const string StationIconPrefix = "station_";
 
         private static string _modDir;
-        private static bool _registered;
+        private static string _dataDir;
+
+        /// <summary>Register 只跑一次的守衛（與「哪個 host 註冊成功」分開記）</summary>
+        private static bool _initialized;
+        /// <summary>部署目錄 host 是否註冊成功</summary>
+        private static bool _resourceHostRegistered;
+        /// <summary>ModsData 目錄 host 是否註冊成功</summary>
         private static bool _dataHostRegistered;
 
         /// <summary>已发现的电台图标 COUI 路径列表</summary>
@@ -49,7 +55,8 @@ namespace SimpleRadio.Core
         /// <param name="modDir">Mod 部署目录（由 Mod.OnLoad 通过 TryGetExecutableAsset 解析）</param>
         public static void Register(string modDir)
         {
-            if (_registered) return;
+            if (_initialized) return;
+            _initialized = true;
 
             try
             {
@@ -62,24 +69,51 @@ namespace SimpleRadio.Core
                 {
                     _modDir = modDir.Replace('\\', '/');
                     UIManager.defaultUISystem.AddHostLocation(kResourceKey, _modDir, false);
-                    _registered = true;
+                    _resourceHostRegistered = true;
                     Mod.Logger.Info($"COUI host 已注册: {kResourceKey} -> {_modDir}");
                 }
 
                 // 2. 注册 ModsData 目录（用户自定义 icon.svg）
-                string dataDir = StationLoader.GetDataPath().Replace('\\', '/');
-                if (Directory.Exists(dataDir))
-                {
-                    UIManager.defaultUISystem.AddHostLocation(kDataKey, dataDir, false);
-                    _dataHostRegistered = true;
-                }
+                //    首次安裝時該目錄還不存在，此處會註冊不到；
+                //    目錄由 StationLoader 建立後會再呼叫 EnsureDataHost() 補上。
+                EnsureDataHost();
 
                 // 3. 扫描预设图标库
-                if (_registered) ScanStationIcons();
+                if (_resourceHostRegistered) ScanStationIcons();
             }
             catch (Exception e)
             {
                 Mod.Logger.Warn(e, "COUI host 注册失败，图标将不可用");
+            }
+        }
+
+        /// <summary>
+        /// 補註冊 ModsData 目錄的 COUI host。
+        ///
+        /// 首次安裝時 <see cref="Register"/> 執行於 <c>Mod.OnLoad</c>，那一刻
+        /// <c>ModsData/SimpleRadio/</c> 尚未建立，host 註冊不上；而該目錄是
+        /// <c>StationLoader.InjectCustomStations</c> 才建的。若不補這一步，
+        /// 玩家整場遊戲都用不到自訂 <c>icon.svg</c>，必須重開遊戲。
+        ///
+        /// <c>AddHostLocation</c> 內部對相同 path 會直接忽略，重複呼叫安全。
+        /// </summary>
+        internal static void EnsureDataHost()
+        {
+            if (_dataHostRegistered) return;
+
+            try
+            {
+                string dataDir = StationLoader.GetDataPath().Replace('\\', '/');
+                if (!Directory.Exists(dataDir)) return;
+
+                UIManager.defaultUISystem.AddHostLocation(kDataKey, dataDir, false);
+                _dataDir = dataDir;
+                _dataHostRegistered = true;
+                Mod.Logger.Info($"COUI host 已注册: {kDataKey} -> {dataDir}");
+            }
+            catch (Exception e)
+            {
+                Mod.Logger.Warn(e, "ModsData COUI host 注册失败，自定义图标将不可用");
             }
         }
 
@@ -103,7 +137,8 @@ namespace SimpleRadio.Core
                 }
             }
 
-            // 2. 预设图标库（随机分配，每次加载可能不同，增加趣味性）
+            // 2. 预设图标库（每次載入／熱刷新都重新隨機抽，圖示會變是預期行為；
+            //    若要「同一電台永遠同一張」須改成電台名 hash，目前刻意不做）
             if (_stationIcons.Length > 0)
             {
                 int index = _rng.Next(_stationIcons.Length);
@@ -141,12 +176,37 @@ namespace SimpleRadio.Core
         }
 
         /// <summary>
-        /// 取消注册（游戏退出时调用，进程终止后资源自动释放）。
+        /// 解除 COUI host 註冊（<c>Mod.OnDispose</c> 呼叫）。
+        ///
+        /// host location 是註冊在自己 world 之外的狀態，必須主動撤銷。
+        /// <b>只能用雙參數版 <c>RemoveHostLocation(host, path)</c></b>：
+        /// 單參數版會 Remove 整個 host key，連帶砍掉其他 Mod 註冊在同一 host
+        /// 名下的所有路徑。
         /// </summary>
         public static void Unregister()
         {
-            _registered = false;
+            try
+            {
+                if (_resourceHostRegistered && !string.IsNullOrEmpty(_modDir))
+                {
+                    UIManager.defaultUISystem.RemoveHostLocation(kResourceKey, _modDir);
+                }
+
+                if (_dataHostRegistered && !string.IsNullOrEmpty(_dataDir))
+                {
+                    UIManager.defaultUISystem.RemoveHostLocation(kDataKey, _dataDir);
+                }
+            }
+            catch (Exception e)
+            {
+                Mod.Logger.Warn(e, "COUI host 解除注册失败");
+            }
+
+            _initialized = false;
+            _resourceHostRegistered = false;
             _dataHostRegistered = false;
+            _modDir = null;
+            _dataDir = null;
             _stationIcons = Array.Empty<string>();
         }
     }

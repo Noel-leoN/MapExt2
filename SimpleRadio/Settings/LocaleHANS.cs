@@ -5,9 +5,9 @@ namespace SimpleRadio.Settings
 {
     public class LocaleHANS : IDictionarySource
     {
-        private readonly ModSettings m_Setting;
+        private readonly SimpleRadioSettings m_Setting;
 
-        public LocaleHANS(ModSettings setting)
+        public LocaleHANS(SimpleRadioSettings setting)
         {
             m_Setting = setting;
         }
@@ -22,29 +22,29 @@ namespace SimpleRadio.Settings
                 { m_Setting.GetSettingsLocaleID(), "SimpleRadio 简易电台" },
 
                 // === Tab ===
-                { m_Setting.GetOptionTabLocaleID(ModSettings.kTabInfo), "信息" },
-                { m_Setting.GetOptionTabLocaleID(ModSettings.kTabFormat), "格式" },
+                { m_Setting.GetOptionTabLocaleID(SimpleRadioSettings.kTabInfo), "信息" },
+                { m_Setting.GetOptionTabLocaleID(SimpleRadioSettings.kTabFormat), "格式" },
 
                 // === Group: Status ===
-                { m_Setting.GetOptionGroupLocaleID(ModSettings.kGroupStatus), "状态" },
+                { m_Setting.GetOptionGroupLocaleID(SimpleRadioSettings.kGroupStatus), "状态" },
 
-                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.StationInfo)), "已加载电台数" },
-                { m_Setting.GetOptionDescLocaleID(nameof(ModSettings.StationInfo)),
+                { m_Setting.GetOptionLabelLocaleID(nameof(SimpleRadioSettings.StationInfo)), "已加载电台数" },
+                { m_Setting.GetOptionDescLocaleID(nameof(SimpleRadioSettings.StationInfo)),
                     "在数据目录中检测到的自定义电台数量。" },
 
-                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.SongInfo)), "已加载歌曲数" },
-                { m_Setting.GetOptionDescLocaleID(nameof(ModSettings.SongInfo)),
+                { m_Setting.GetOptionLabelLocaleID(nameof(SimpleRadioSettings.SongInfo)), "已加载歌曲数" },
+                { m_Setting.GetOptionDescLocaleID(nameof(SimpleRadioSettings.SongInfo)),
                     "所有电台中加载的音频文件总数。" },
 
-                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.DataPath)), "数据目录" },
-                { m_Setting.GetOptionDescLocaleID(nameof(ModSettings.DataPath)),
+                { m_Setting.GetOptionLabelLocaleID(nameof(SimpleRadioSettings.DataPath)), "数据目录" },
+                { m_Setting.GetOptionDescLocaleID(nameof(SimpleRadioSettings.DataPath)),
                     "SimpleRadio 数据目录路径。在此处创建子文件夹并放入音频文件（.ogg、.mp3、.wav）即可添加自定义电台。" },
 
                 // === Group: Actions ===
-                { m_Setting.GetOptionGroupLocaleID(ModSettings.kGroupActions), "操作" },
+                { m_Setting.GetOptionGroupLocaleID(SimpleRadioSettings.kGroupActions), "操作" },
 
-                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.OpenDataFolder)), "打开数据目录" },
-                { m_Setting.GetOptionDescLocaleID(nameof(ModSettings.OpenDataFolder)),
+                { m_Setting.GetOptionLabelLocaleID(nameof(SimpleRadioSettings.OpenDataFolder)), "打开数据目录" },
+                { m_Setting.GetOptionDescLocaleID(nameof(SimpleRadioSettings.OpenDataFolder)),
                     "在 Windows 资源管理器中打开 SimpleRadio 数据目录。\n\n" +
                     "添加自定义电台的步骤：\n" +
                     "1. 创建一个子文件夹（文件夹名即为电台名）\n" +
@@ -52,32 +52,42 @@ namespace SimpleRadio.Settings
                     "3. 可选：添加 icon.svg 作为电台图标\n" +
                     "4. 点击「刷新电台」或重启游戏即可生效" },
 
-                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.RefreshStations)), "♫ 刷新电台" },
-                { m_Setting.GetOptionDescLocaleID(nameof(ModSettings.RefreshStations)),
+                { m_Setting.GetOptionLabelLocaleID(nameof(SimpleRadioSettings.RefreshStations)), "♫ 刷新电台" },
+                { m_Setting.GetOptionDescLocaleID(nameof(SimpleRadioSettings.RefreshStations)),
                     "重新扫描数据目录并加载所有自定义电台，无需重启游戏。\n\n" +
                     "在数据目录中添加或删除音频文件后，点击此按钮即可刷新。" },
 
+                // === 播放設定 ===
+                { m_Setting.GetOptionGroupLocaleID(SimpleRadioSettings.kGroupPlayback), "播放" },
+                { m_Setting.GetOptionLabelLocaleID(nameof(SimpleRadioSettings.RestoreLastStation)), "恢复上次使用的电台" },
+                { m_Setting.GetOptionDescLocaleID(nameof(SimpleRadioSettings.RestoreLastStation)),
+                    "延续上次使用的电台，跨城市共用。关闭后，各城市使用存档记录的电台。" +
+                    "下次进入城市时生效。" },
+
                 // === Group: Formats ===
-                { m_Setting.GetOptionGroupLocaleID(ModSettings.kGroupFormats), "音频格式" },
+                { m_Setting.GetOptionGroupLocaleID(SimpleRadioSettings.kGroupFormats), "音频格式" },
 
-                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.EnableMP3)), "启用 MP3 支持" },
-                { m_Setting.GetOptionDescLocaleID(nameof(ModSettings.EnableMP3)),
+                { m_Setting.GetOptionLabelLocaleID(nameof(SimpleRadioSettings.EnableMP3)), "启用 MP3 支持" },
+                { m_Setting.GetOptionDescLocaleID(nameof(SimpleRadioSettings.EnableMP3)),
                     "允许加载 .mp3 音频文件。\n\n" +
-                    "MP3 格式广泛支持，运行稳定可靠。需要重启游戏生效。" },
+                    "MP3 格式广泛支持，运行稳定可靠。点击「刷新电台」即可生效。" },
 
-                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.EnableWAV)), "启用 WAV 支持" },
-                { m_Setting.GetOptionDescLocaleID(nameof(ModSettings.EnableWAV)),
+                { m_Setting.GetOptionLabelLocaleID(nameof(SimpleRadioSettings.EnableWAV)), "启用 WAV 支持" },
+                { m_Setting.GetOptionDescLocaleID(nameof(SimpleRadioSettings.EnableWAV)),
                     "允许加载 .wav 音频文件。\n\n" +
                     "注意：WAV 是无压缩格式，文件体积通常是 OGG/MP3 的 10 倍（每首约 30-50 MB）。" +
                     "可能显著增加磁盘占用，且在机械硬盘上切歌时可能出现短暂卡顿。\n\n" +
                     "建议：将 WAV 转换为 OGG 或 MP3 以获得更好的性能。\n\n" +
-                    "需要重启游戏生效。" },
+                    "点击「刷新电台」即可生效。" },
 
                 // === Group: Compatibility ===
-                { m_Setting.GetOptionGroupLocaleID(ModSettings.kGroupCompat), "兼容性" },
+                { m_Setting.GetOptionGroupLocaleID(SimpleRadioSettings.kGroupCompat), "兼容性" },
 
-                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.ExtendedRadioStatus)), "ExtendedRadio" },
-                { m_Setting.GetOptionDescLocaleID(nameof(ModSettings.ExtendedRadioStatus)),
+                { SimpleRadioSettings.kLocaleExtendedRadioDetected, "已检测到 — 兼容" },
+                { SimpleRadioSettings.kLocaleExtendedRadioMissing, "未检测到" },
+
+                { m_Setting.GetOptionLabelLocaleID(nameof(SimpleRadioSettings.ExtendedRadioStatus)), "ExtendedRadio" },
+                { m_Setting.GetOptionDescLocaleID(nameof(SimpleRadioSettings.ExtendedRadioStatus)),
                     "显示是否检测到 ExtendedRadio。\n\n" +
                     "无论是否安装 ExtendedRadio，SimpleRadio 都可独立运行，两者可同时使用、互不冲突。\n\n" +
                     "若其他电台 Mod 在加载时出错，SimpleRadio 会自动拦截，确保游戏电台正常可用。" },
