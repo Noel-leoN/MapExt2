@@ -4,16 +4,16 @@ Welcome to the **MapExt** mod. This repository contains a suite of advanced simu
 
 ## 📦 Project Structure
 
-This workspace is divided into two main components:
+This workspace contains the following mods:
 
 ### 1. [MapExtPDX](./MapExtPDX) (Main Mod)
 
-The core mod responsible for map size expansion (up to 114km) and foundational simulation overrides.
+The core mod responsible for map size expansion (up to 57km) and foundational simulation overrides.
 
 - **Key Features**: 
-  - Map size scaling (28km / 57km / 114km) and terrain handling.
-  - Integrated performance tweaks.
-  - **In-Game Dashboard**: Features real-time city statistics monitoring, ECS system performance diagnostics, and dynamic tuning of Rent Formula parameters.
+  - Map size scaling (28km / 43km / 57km) and terrain handling.
+  - Integrated performance tweaks and vanilla save expansion.
+  - **In-Game Dashboard**: Real-time city statistics monitoring, key economic metrics, and dynamic tuning of rent and pathfinding parameters.
 - **Documentation**: [MapExtPDX/README.md](./MapExtPDX/README.md)
 
 ### 2. [EconomyEX](./EconomyEX) (Sub-Mod)
@@ -57,16 +57,16 @@ A lightweight resource brush tool that unlocks hidden natural resource brushes a
 
 ## 📦 项目结构
 
-本工作区分为两个主要组件：
+本工作区包含以下模组：
 
 ### 1. [MapExtPDX](./MapExtPDX) (主模组)
 
-负责地图尺寸扩展（最大支持 114km）和基础模拟系统重写的核心模组。
+负责地图尺寸扩展（最大支持 57km）和基础模拟系统重写的核心模组。
 
 - **核心功能**：
-  - 地图尺寸扩展（支持 28km / 57km / 114km 等模式）与地形处理。
-  - 集成性能优化。
-  - **游戏内控制面板 (In-Game Dashboard)**：包含实时城市统计数据监控、ECS 系统性能诊断，以及扩展的租金公式 (Rent Formula) 参数动态调节功能。
+  - 地图尺寸扩展（支持 28km / 43km / 57km 等模式）与地形处理。
+  - 集成性能优化与原版存档扩展功能。
+  - **游戏内控制面板 (In-Game Dashboard)**：包含实时城市统计数据监控、关键经济指标快查，以及租金与寻路参数动态调节功能。
 - **文档**：[MapExtPDX/README.md](./MapExtPDX/README.md)
 
 ### 2. [EconomyEX](./EconomyEX) (子模组)
