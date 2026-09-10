@@ -71,11 +71,6 @@ SimpleRadio runs fully standalone — its audio format support only applies to i
 
 - No additional dependencies
 
-## Credits
-
-- **Author**: Noel2
-- **License**: MIT
-
 ---
 
 # 极简自定义音乐播放器
@@ -87,7 +82,7 @@ SimpleRadio runs fully standalone — its audio format support only applies to i
 - **零配置**：创建文件夹并放入音频文件即可
 - **多格式**：支持 OGG、MP3、WAV，每种格式可独立开关
 - **自动元数据**：自动读取音频文件中的歌曲名和艺术家信息
-- **記住上次電台**：預設跨城市恢復上次使用的電台，也可改為恢復各城市存檔記錄的電台
+- **记住上次电台**：默认跨城市恢复上次使用的电台，也可改为恢复各城市存档记录的电台
 - **自定义图标**：在电台文件夹中放置 `icon.svg` 自定义图标，或使用内置图标库
 - **热刷新**：在设置面板中刷新电台，无需重启游戏
 - **轻量级**：播放时零运行时开销
@@ -136,22 +131,18 @@ SimpleRadio runs fully standalone — its audio format support only applies to i
 - 数据目录路径
 - **打开数据目录** - 在资源管理器中打开数据目录
 - **刷新电台** - 热刷新电台，无需重启（进入存档后可用）
-- **恢復上次使用的電台** - 位於「資訊 > 播放」，預設開啟；關閉後，下次進入城市改用存檔記錄的電台
+- **恢复上次使用的电台** - 位于“信息 > 播放”，默认开启；关闭后，下次进入城市改用存档记录的电台
 - **格式开关** - 启用/禁用 MP3 和 WAV 支持（点击**刷新电台**即可生效）
 - **ExtendedRadio 状态** - 兼容性检测
 
 ## 兼容性
 
-- **ExtendedRadio** — ✅ 相容，可同時使用（電台名稱避免與其他 Mod 重複即可）
-- **其他 mod** — ✅ 無已知衝突
+- **ExtendedRadio** — ✅ 兼容，可同时使用（电台名称避免与其他 Mod 重复即可）
+- **其他 Mod** — ✅ 无已知冲突
 
-SimpleRadio 完全獨立運行——其音訊格式支援僅作用於自身電台，無論是否安裝 ExtendedRadio，行為都完全一致。此外還有一層保險：若其他電台 Mod 在載入電台時出錯，SimpleRadio 會自動攔截該錯誤，確保遊戲電台持續正常運作。
+SimpleRadio 完全独立运行——其音频格式支持仅作用于自身电台，无论是否安装 ExtendedRadio，行为均完全一致。此外还有一层保护：若其他电台 Mod 在加载电台时出错，SimpleRadio 会自动捕获该异常，确保游戏电台功能持续正常运行。
 
 ## 系统要求
 
 - 无额外依赖
 
-## 致谢
-
-- **作者**: Noel2
-- **许可**: MIT

@@ -1,45 +1,45 @@
 # 🏢 EconomyEX — Metropolis Economy Fix and Performance Boost
 
-**For**: Cities: Skylines 2 · **Map Size**: Standard / Vanilla (14 km) only
+**Map Size**: Standard / Vanilla (14 km) only
 
-> This mod is a **standalone subset** of the economy module from [MapExt (MapExtPDX)](https://mods.paradoxplaza.com/mods/87463/Windows). If you need extended map sizes (28/57/114 km), use MapExt instead — it already includes everything in EconomyEX plus map-scaling features. **When both mods are installed, EconomyEX will automatically disable itself.**
+> This mod is a **standalone subset** of the economy adjustments and selected system performance tools from [MapExt (MapExtPDX)](https://mods.paradoxplaza.com/mods/107939/Windows). You may also directly use MapExt, which includes more comprehensive economy patches and system optimizations while supporting standard vanilla-size maps.
 
-## ⚠️ Compatibility (Read First)
+## ⚠️ Compatibility
 
-This mod replaces multiple vanilla economic simulation systems. It features a **built-in Conflict Monitoring System** that uses a double-check mechanism to automatically detect and auto-disable conflicting subsystem groups at runtime.
+This mod modifies several core vanilla simulation systems and includes a **Conflict Monitoring System** that detects conflicts at runtime and automatically disables conflicting subsystems when necessary.
 
-* **MapExt (MapExtPDX):** Do NOT install both. MapExt already includes this economy module built-in (and usually updates faster). If both are subscribed, EconomyEX will automatically disable itself.
+* **MapExt (MapExtPDX):** No need to install both. If both are active, EconomyEX will automatically disable itself.
 
-* **Realistic PathFinding:** **CRITICAL INCOMPATIBILITY.** Do NOT subscribe to Realistic PathFinding simultaneously. This is a hard architectural conflict that **cannot be resolved or auto-mitigated by the conflict detection system.** You must only subscribe to one of them.
+* **Realistic PathFinding:** Completely incompatible. Due to architectural conflicts that cannot be automatically resolved, running both mods together should be avoided.
 
-* **Realistic JobSearch / Realistic Trips:** These mods can coexist — the Conflict Monitoring System will automatically detect and yield conflicting system groups to avoid crashes. However, if both mods modify the same underlying data, subtle simulation anomalies may still occur. You can check the current conflict status in the **Status** tab of the Option UI. If you prefer manual control, you can also disable specific system groups individually in EconomyEX's settings panel.
+* **Realistic JobSearch / Realistic Trips:** Technically compatible (the Conflict Monitoring System will automatically yield overlapping subsystems to prevent crashes), but simulation anomalies may still occur. Running them together is not recommended.
 
-* **Extended Maps (28 km+):** This mod auto-detects map size and only activates on vanilla (14km) maps. For extended maps, use MapExt instead.
+* **Extended Maps (28 km+):** Active only on vanilla 14km maps. For larger map sizes (28/43/57 km), please use MapExt.
 
-* **Asset / Visual Mods:** No conflict expected.
+* **Asset / Visual Mods:** Fully compatible.
 
 ---
 
 ## 📋 Overview
 
-Several core economic systems in the vanilla game are only tuned for cities with smaller populations (200k–500k). When a city's population reaches the million-level, the following issues may occur:
+Several core economic simulation systems in the vanilla game are primarily tuned for small to medium-sized cities. As a city grows into a large metropolis (several hundred thousand to over a million residents), the simulation may experience:
 
 1. Imbalanced demand, housing vacancies, and job mismatches;
-2. Systems such as resident housing searches, consumption behavior, and service coverage consuming excessive performance;
-3. Land value and rent calculations producing unreasonable results.
+2. High performance consumption from resident housing searches, shopping trips, and service coverage;
+3. Oversimplified and distorted land value and rent calculations.
 
-This mod modifies these vanilla core economic systems to make them more suitable for simulating million-plus metropolis cities, and reduces unnecessary calculations while preserving the original logic as much as possible. For specific code modifications, please refer to GitHub.
+This mod adjusts these core systems to better accommodate large-scale metropolitan simulation, reducing redundant calculations while preserving vanilla mechanics as much as possible.
 
 ## 🔧 What This Mod Changes
 
 ### 📈 Demand Calculation
 
-* The vanilla RCI demand calculation uses absolute values, which cause demand to permanently lock at zero in large cities. This mod converts them to percentage-based, so demand remains responsive regardless of population size.
-* Commercial demand now scales linearly with consumer count; industrial labor metrics are normalized.
+* Vanilla RCI demand calculations rely on absolute values, which can lead to inaccurate demand meters in large cities. This mod converts them to a percentage-based approach, keeping demand responsive across varying population scales.
+* Commercial demand now scales linearly with consumer count; industrial labor metrics are normalized; fixes a bug causing excessive gas station demand.
 
 ### ⚡ Job Search and Shopping Trips
 
-* Reduces the frequency of job search and shopping trip pathfinding at high population, to lower CPU load.
+* Reduces the frequency of job search and shopping trip pathfinding at high population, lowering CPU load.
 * Limits the number of simultaneous homeless pathfinding requests per frame to prevent sudden lag spikes.
 
 ### 🗺️ Land Value
@@ -49,16 +49,12 @@ This mod modifies these vanilla core economic systems to make them more suitable
 
 ### 🏘️ Rent
 
-* In vanilla, household eviction decisions are overly aggressive. This mod restores the calculation of `Income + Savings` as the baseline for determining whether a household can afford rent, preventing mass eviction cascades.
+* Restores the calculation of `Income + Savings` as the baseline for determining whether a household can afford rent, preventing high-savings, low-income households from being unreasonably evicted.
 * Households with very low rent-to-income ratios will only occasionally seek better housing, rather than all moving at once. This reduces unnecessary pathfinding load.
 
 ### 🕹️ Resident AI
 
-* Fixes a logic defect in resident pathfinding wait-time that could cause excessive memory usage at large population scales.
-
-### 🚲 District Policy
-
-* Bicycle usage probability now correctly respects district-level BikeProbability modifiers.
+* Fixes a logic defect in resident pathfinding wait-time.
 
 ---
 
@@ -66,11 +62,11 @@ This mod modifies these vanilla core economic systems to make them more suitable
 
 In addition to economy patches, this mod includes several performance tools accessible via the **Perf. Tools** tab in the settings panel:
 
-* **🐕 NoDogs 2.0:** An enhanced pet control suite with three operating modes — **Disable OnStreet** (prevents pets from appearing on streets), **Prevent New Generation** (blocks new pet spawning for incoming households), and **Purge All Existing** (removes all pet entities from the save for maximum performance gain). Includes a live pet count display. Each option must be explicitly applied via the Apply button.
+* **🐕 NoDogs 2.0:** Enhanced pet control tool with three modes — **Disable OnStreet** (prevents pets from appearing on streets, disabling spawning, rendering, and pathfinding), **Prevent New Generation** (blocks new pet spawning for incoming households), and **Purge All Existing** (removes existing pet entities from the save to reduce simulation overhead). Includes a live pet count display. All options must be applied via the Apply button to take effect.
 
 * **🚗 No Through-Traffic:** Disables all through-traffic vehicle spawning, reducing pathfinding calculations and traffic congestion.
 
-* **🏗️ Editor Collision Override:** Bypass collision validation checks when placing objects in the Map Editor — supports three modes (Off / Trees Only / All Objects). Greatly speeds up tree planting.
+* **🏗️ Editor Collision Override:** Bypass collision validation checks when placing objects in the Map Editor — supports three modes (Off / Trees Only / All Objects), improving tree planting performance.
 
 ---
 
@@ -118,42 +114,42 @@ Subscribe on Paradox Mods. No additional dependencies.
 
 # 🏢 EconomyEX — 大型都市经济修复与性能优化
 
-**适用**: Cities: Skylines 2 · **地图**：仅标准/原版地图（14 km）
+**地图支持**：仅标准 / 原版地图（14 km）
 
-> 本模组是 [MapExt (MapExtPDX)](https://mods.paradoxplaza.com/mods/87463/Windows) 经济模块的 **独立子集**。如果您需要扩展地图尺寸（28/57/114 km），请直接使用 MapExt——它已包含 EconomyEX 的全部功能以及地图扩展特性。**当两者同时安装时，EconomyEX 将自动休眠。**
+> 本模组是 [MapExt (MapExtPDX)](https://mods.paradoxplaza.com/mods/107939/Windows) 中的经济调整与部分系统性能优化 **独立子集**。建议可直接使用 MapExt大地图扩展包含更全面的经济补丁、系统优化，并支持原版标准尺寸地图。
 
-## ⚠️ 兼容性（请先阅读）
+## ⚠️ 兼容性
 
-本模组替换了多个原版经济模拟系统。已内置 **冲突监控系统 (Conflict Monitoring System)**，采用"二次确认"机制，可在运行时自动检测并禁用冲突的子系统组。
+本模组修改了部分原版核心模拟系统，内置 **冲突监控系统 (Conflict Monitoring System)**，可在运行时检测并在必要时主动禁用冲突子系统。
 
-* **MapExt (MapExtPDX)**：请勿同时安装。MapExt 已经内置了完全相同的经济模块（一般会比这个独立版本优先更新）。如果同时订阅，EconomyEX 会自动休眠。
+* **MapExt (MapExtPDX)**：无需重复安装。若同时启用，EconomyEX 将自动休眠。
 
-* **Realistic PathFinding（真实寻路）**：**严重不兼容，严禁同时订阅！** 这种底层的架构冲突**无法被冲突检测系统自动修复或规避。** 您必须且只能在两者中选择订阅一个。
+* **Realistic PathFinding（真实寻路）**：完全不兼容。由于两者存在架构级冲突且无法自动协调，建议避免同时使用。
 
-* **Realistic JobSearch / Realistic Trips**：可以共存——冲突监控系统会自动检测并让出冲突的系统组以避免崩溃。但若双方修改了相同的底层数据，仍可能出现细微的模拟异常。您可以在选项面板的 **Status** 标签页中查看当前冲突状态。如需手动控制，也可在设置面板中单独关闭特定的子系统组。
+* **Realistic JobSearch / Realistic Trips**：技术上可共存（冲突监控系统会自动让出重叠子系统以避免程序崩溃），但仍可能引发模拟异常，不建议同时搭配使用。
 
-* **大地图（28 km 以上）**：本模组会自动检测地图大小，仅在原版尺寸地图上生效。如需大地图，请使用 MapExt。
+* **大地图（28 km 以上）**：本模组仅在原版 14km 地图生效。如需游玩或转换大地图（28/43/57 km），请使用 MapExt。
 
-* **资产/视觉类 Mod**：无冲突。
+* **资产与视觉模组**：完全兼容。
 
 ---
 
 ## 📋 简介
 
-原版游戏若干核心经济系统的算法和参数仅适合中小城市（20万–50万人口）。当城市人口达到百万级时，可能出现以下问题：
+原版游戏若干核心经济系统的算法与参数主要面向中小规模城市。当城市人口成长为数十万乃至百万级大都市时，模拟中可能出现以下情况：
 
 1. 需求失衡、住房空置与岗位错配；
-2. 居民找房、消费出行、服务覆盖等系统消耗过多性能；
-3. 地价和租金计算产生不合理的结果。
+2. 居民找房、消费出行及服务覆盖等系统消耗较多性能；
+3. 地价与租金计算过于简化而失真。
 
-本模组修改了这些原版核心经济系统，使其更适用于百万级大都市的模拟，并在尽量保留原版逻辑的前提下减少不必要的计算。具体代码修改请参阅 GitHub。
+本模组对这些核心系统进行了针对性调优，使其更契合大都市的运行规律，在尽可能贴合原版机制的同时减少冗余运算。
 
 ## 🔧 具体修改内容
 
 ### 📈 需求计算
 
-* 原版 RCI 需求计算使用绝对数值，导致大城市需求条永远为零。本模组将其改为百分比制，使需求响应不受人口规模影响。
-* 商业需求随消费者数量线性增长；工业劳动力指标做了标准化处理。
+* 原版 RCI 需求计算使用绝对数值，容易导致大城市需求条不准确。本模组将其改为百分比制，使需求响应在不同人口规模下保持灵敏。
+* 商业需求随消费者数量线性增长；工业劳动力指标做了标准化处理；修复加油站需求过多的 Bug。
 
 ### ⚡ 求职与购物出行
 
@@ -167,16 +163,12 @@ Subscribe on Paradox Mods. No additional dependencies.
 
 ### 🏘️ 租金
 
-* 原版的家庭驱逐判定过于激进。本模组恢复以"收入 + 存款"作为家庭能否负担租金的判定基准，防止因存款不合理导致大规模连锁驱逐。
+* 恢复以“收入 + 存款”作为家庭能否负担租金的判定基准，避免因高存款低收入家庭被不合理驱逐。
 * 租金占收入比极低的家庭仅有一定概率寻求改善住房，而非全部同时搬迁，减少不必要的寻路开销。
 
 ### 🕹️ 居民 AI
 
-* 修复居民寻路等待时间的逻辑缺陷，降低大规模人口下内存占用过高的风险。
-
-### 🚲 区域政策
-
-* 自行车使用概率现在会正确响应区域级 BikeProbability 修正器。
+* 修复居民寻路等待时间的逻辑缺陷。
 
 ---
 
@@ -184,11 +176,11 @@ Subscribe on Paradox Mods. No additional dependencies.
 
 除经济补丁外，本模组还提供以下性能工具，可在选项面板的 **性能工具** 标签页中使用：
 
-* **🐕 NoDogs 2.0：** 增强版宠物控制套件，三种操作模式——**禁止外出**（阻止宠物上街，关闭生成、渲染与寻路）、**阻止新生成**（将新移民的宠物生成概率归零）、**清除所有存量**（移除存档中全部宠物实体，最大化性能提升）。含实时宠物数量统计。所有选项需点击"应用"按钮方可生效。
+* **🐕 NoDogs 2.0：** 增强版宠物控制工具，提供三种模式——**禁止外出**（阻止宠物上街，关闭生成、渲染与寻路）、**阻止新生成**（将新移民的宠物生成概率归零）、**清除所有存量**（移除存档中现存宠物实体，减少模拟开销）。包含实时宠物数量统计。所有选项需点击“应用”按钮生效。
 
 * **🚗 过境交通控制：** 禁止所有过境交通工具出现，降低寻路计算量与交通拥堵。
 
-* **🏗️ 编辑器碰撞跳过：** 在地图编辑器放置物体时跳过碰撞验证——支持三档模式（关闭 / 仅树木 / 所有物体），极大提升种树效率。
+* **🏗️ 编辑器碰撞跳过：** 在地图编辑器放置物体时跳过碰撞验证——支持三档模式（关闭 / 仅树木 / 所有物体），提高种树性能。
 
 ---
 
