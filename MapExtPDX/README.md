@@ -1,21 +1,42 @@
 # Map Extended Mod (28/43/57 km + vanilla) — Economy Rework, In-Game Tools and Performance
 
 * **Extended Map Sizes:** Provides 28km and 57km map size modes, plus 43km as an experimental option. Tile count stays at the vanilla 529 — tiles scale up with the map instead of multiplying in number.
-* **Vanilla Save Expansion:** Converts existing 14km vanilla saves to 28km or 57km maps, preserving buildings, terrain, and city layout (43km conversion is not supported).
 * **Economy and Pathfinding Adjustments:** Reworks RCI demand, job and home search, and consumption mechanics to reduce pathfinding bottlenecks and CPU load at large populations. Details can be fine-tuned in the in-game UI.
 * **Economic Data Dashboard:** In-game HUD dashboard provides a real-time overview of key economic metrics and population health.
 * **In-Game Tools:** Includes sea level and water simulation speed control, through-traffic and pet management, editor collision override, and heightmap export.
 * **Conflict Monitoring and Safeguards:** Runtime detection of incompatible mods, plus a load-time warning when a save's map size does not match the selected mode, avoiding terrain sampled at the wrong scale. Applies to both gameplay and Map Editor.
+* **Vanilla Save Expansion (Optional):** Converts existing 14km vanilla saves to 28km or 57km maps, preserving buildings, terrain, and city layout (43km conversion is not supported).
 
 ---
 
-## 🗺️ Vanilla Map Extension
+## 🚀 Getting Started
+
+The normal way to play is to start a new city on a large map built for your chosen size — either one you make yourself or one another player published.
+
+**Staying on 57km (the default):** nothing to configure. Just load a 57km map and start building.
+
+**Switching to another size** (28km, 43km, or vanilla 14km):
+
+1. In the **Main Menu**, open Options -> MapExt -> **MapSize** tab, and pick the size under **"► Select MapSize Mode"**.
+2. Click **"► Apply Changes"**.
+3. **Completely restart the game.** Hot-switching is not supported — loading a save before restarting will corrupt the simulation.
+4. After restarting, load a map built for that size and start your city.
+
+Maps for each size can be made yourself (see "Making a 1:1 Map" below) or subscribed from other players.
+
+> **⚠️ Sizes must match**: if the map does not match the selected mode, terrain is sampled at the wrong scale. The mod warns you before loading — follow the prompt and switch to the correct mode.
+
+---
+
+## 🗺️ Vanilla Map Extension (Optional)
+
+An **optional extra** for players who already have a 14km vanilla city and want to move it onto a larger map. You do not need this to start a new city — see "Getting Started" above for that.
 
 Converts existing 14km vanilla saves to 28km or 57km maps without starting over. Terrain, city layout, and placed buildings are preserved. The original save file is never modified.
 
 ### 🛠️ Steps to Extend an Existing Vanilla Save
 
-1. In the **Main Menu**, open Options -> MapExt, navigate to the MapSize tab, and select the target mode (28km or 57km).
+1. In the **Main Menu**, open Options -> MapExt -> MapSize tab, select the target mode (28km or 57km), click **"► Apply Changes"**, and **restart the game**.
 2. Enable **"Vanilla Map Extension"** in the MapSize tab.
 3. **Load** an existing vanilla (14km) save file.
 4. Click **"Extend and Load"** in the confirmation dialog. The mod unlocks 529 tiles, clears active vehicles and residents, removes outside connections, synthesizes extended terrain, preserves resources and groundwater, resets water simulation, and saves as `{SaveName}_MapExt{Mode}`.
@@ -24,7 +45,7 @@ Converts existing 14km vanilla saves to 28km or 57km maps without starting over.
    * **Rebuild Outside Connections** at the new map borders: Roads, Railways, Shipping Lanes, Airline Routes, Electricity, Water Supply.
    * **Place Water Sources and Adjust Sea Level**: Original water sources are cleared during conversion. Use the **Water Features** mod to place river/sea sources, and adjust sea level using the built-in Water Tools (MAP/EXT button on HUD) or Water Features.
 
-> **⚠️ Important Notice**: This conversion is **strictly for existing vanilla saves**. Starting a new game on a vanilla map shows a warning but is not converted — automatic conversion at city creation is not supported yet. To start a new city on an extended map, select the desired MapSize mode in the main menu and load a custom map made for that size.
+> **⚠️ Important Notice**: This conversion is **strictly for existing vanilla saves**. Starting a new game on a vanilla map shows a warning but is not converted — automatic conversion at city creation is not supported yet. To start a new city on an extended map, follow **Getting Started** above instead.
 
 ### 🔗 Other Mods by the Author
 * **[EconomyEX](https://mods.paradoxplaza.com/mods/137149/Windows):** Standalone economy and performance subset for vanilla-size (14km) maps. Automatically disables itself when MapExt is also installed.
@@ -126,25 +147,46 @@ Import heightmaps and worldmaps corresponding to your chosen mode in the Map Edi
 # 地图尺寸扩展模组（28/43/57 km 及原版尺寸）— 经济改良、游戏内工具与性能优化
 
 * **地图尺寸扩展**：提供 28km 与 57km 地图尺寸模式，另有 43km 作为实验性选项。瓦片数量维持原版 529 块——瓦片随地图等比放大，而非按数量增殖。
-* **原版存档扩展**：支持将 14km 原版存档扩展至 28km 或 57km 地图，保留既有建筑、地形与路网（不支持 43km 扩展）。
 * **经济与寻路调整**：重写 RCI 需求、求职找房与消费逻辑，缓解大人口规模下的寻路积压与 CPU 开销。可在游戏内 UI 调整细节。
 * **城市经济数据快查**：游戏内 HUD 仪表盘提供关键经济指标与人口健康状态的实时速查。
 * **游戏内工具**：提供海平面调节、水体模拟加速、过境交通与宠物控制、编辑器碰撞跳过，以及地形高度图导出。
 * **冲突监控与防错**：内置运行时冲突检测；当存档尺寸与所选模式不符时于加载前警告，避免地形按错误比例采样。常规游戏与地图编辑器均生效。
+* **原版存档扩展（可选）**：支持将 14km 原版存档扩展至 28km 或 57km 地图，保留既有建筑、地形与路网（不支持 43km 扩展）。
 
 ---
 
-## 🗺️ 原版地图扩展
+## 🚀 开始使用
+
+本模组的主线用法是**在大地图上从零建城**：载入一张对应尺寸的地图即可开始。
+
+**沿用 57km（默认模式）**：无需任何设置，直接载入 57km 地图开始建城。
+
+**改用其他尺寸**（28km / 43km / 原版 14km）：
+
+1. 在**主菜单**打开 选项 -> MapExt -> **MapSize** 标签页，用 **“► Select MapSize Mode”** 选择目标尺寸。
+2. 点击 **“► Apply Changes”** 应用。
+3. **完全重启游戏。** 本模组不支持热切换——未重启就载入存档会造成模拟逻辑冲突并可能损坏存档。
+4. 重启后载入一张**与所选尺寸相符**的地图，即可开始建城。
+
+各尺寸的地图可以自己制作（见下方“制作 1:1 地图”），也可以订阅其他玩家发布的对应尺寸地图。
+
+> **⚠️ 尺寸必须匹配**：地图与所选模式的尺寸不一致时，地形会按错误比例采样。模组会在载入前弹出警告，请依提示切换到正确的模式。
+
+---
+
+## 🗺️ 原版地图扩展（可选）
+
+这是一项**可选的附加功能**，供已有 14km 原版城市、希望迁往大地图继续经营的玩家使用。从零开新城不需要它——见上方“开始使用”。
 
 支持将现有的 14km 原版城市存档扩展至 28km 或 57km 地图，无需从零建城。原有地形、城市布局与已放置建筑均会保留。原始存档不会被修改。
 
 ### 🛠️ 扩展原版城市游戏存档的操作步骤
 
-1. 在**主菜单**的 Options 中打开 MapExt 选项，并在 MapSize 界面中选择目标模式（28km 或 57km）。
-2. 在 MapSize 标签页中开启**“原版地图扩展”**。
+1. 在**主菜单**的 Options 中打开 MapExt 选项，在 MapSize 界面中选择目标模式（28km 或 57km），点击 **“► Apply Changes”** 应用，然后**完全重启游戏**。
+2. 重启后回到 MapSize 标签页，开启**“原版地图扩展”**。
 3. **加载**已有原版（14km）存档。
 4. 在确认对话框中点击**“扩展并加载”**。模组将自动解锁 529 瓦片、清除活跃车辆与居民、拆除旧外部连接、合成扩展高程、保留自然资源与地下水、重置水体，并另存为 `{存档名}_MapExt{模式}`。
-5. **必须完全重启游戏**，以便水体物理与模拟边界重新初始化。
+5. **再次完全重启游戏**，以便水体物理与模拟边界重新初始化。
 6. 重启后完成必要重建：
    * **重建外部连接**：在新的地图边界连接道路、铁路、航道、航线、电力与供水。
    * **放置水源与调节海平面**：原版水源已被清除。需使用 **Water Features** 模组放置河流/海洋水源，并使用内置水体工具（HUD 上的 MAP/EXT 按钮）或 Water Features 调整海平面。
