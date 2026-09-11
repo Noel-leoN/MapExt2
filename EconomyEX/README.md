@@ -76,14 +76,12 @@ In addition to economy patches, this mod includes several performance tools acce
 
 In the mod's settings panel (Options -> EconomyEX), you can adjust pathfinding cost limits in real time per travel purpose. These values cap how far citizens and companies are willing to search. **Changes take effect immediately, no restart required.**
 
-| Slider | What it controls | Range | Default |
-|--------|-----------------|-------|---------:|
-| Shopping Max Cost | Maximum travel cost for citizen shopping trips | 1,000 – 200,000 | 8,000 |
-| Company Shopping Max Cost | Maximum search range for companies restocking goods | 1,000 – 200,000 | 200,000 |
-| Leisure Max Cost | Maximum travel cost for leisure trips (parks, landmarks) | 1,000 – 200,000 | 12,000 |
-| Emergency Max Cost | Maximum search range for hospital/crime events | 1,000 – 17,000 | 6,000 |
-| Find Job Max Cost | Maximum search range for job seeking | 17,000 – 200,000 | 200,000 |
-| Find Home Max Cost | Maximum search range for finding a new home | 17,000 – 200,000 | 200,000 |
+* **Shopping Max Cost** (Default: `8,000`, Range: `1,000 – 200,000`): Maximum travel cost for citizen shopping trips.
+* **Company Shopping Max Cost** (Default: `200,000`, Range: `1,000 – 200,000`): Maximum search range for companies restocking goods.
+* **Leisure Max Cost** (Default: `12,000`, Range: `1,000 – 200,000`): Maximum travel cost for leisure trips (parks, landmarks).
+* **Emergency Max Cost** (Default: `6,000`, Range: `1,000 – 17,000`): Maximum search range for hospital/crime events.
+* **Find Job Max Cost** (Default: `200,000`, Range: `17,000 – 200,000`): Maximum search range for job seeking.
+* **Find Home Max Cost** (Default: `200,000`, Range: `17,000 – 200,000`): Maximum search range for finding a new home.
 
 **Tip**: Lower values restrict citizens to nearby options, which reduces pathfinding load but may cause mismatches. Higher values allow broader searches but consume more CPU. The defaults work well for most cities.
 
@@ -93,15 +91,13 @@ In the mod's settings panel (Options -> EconomyEX), you can adjust pathfinding c
 
 Fine-tune the economic simulation throughput and behavior in the settings panel. **Changes take effect immediately.**
 
-| Slider | What it controls | Range | Default |
-|--------|-----------------|-------|---------:|
-| Job Seeker Throughput | Max job seekers created per system update | 200 – 5,000 | 1,000 |
-| Pathfind Request Throughput | Max pathfinding requests processed per update | 500 – 10,000 | 4,000 |
-| Shopping Traffic Reduction | Population-based shopping probability suppression (x0.0001) | 1 – 20 | 4 |
-| Household Resource Demand Multiplier | Per-trip purchase amount multiplier | 1.0 – 8.0 | 3.5 |
-| Home Search: Move Throughput | Max housed households evaluated per frame for relocation | 32 – 512 | 128 |
-| Home Search: Homeless Throughput | Max homeless households processed per frame | 128 – 5,120 | 1,280 |
-| Home Search: Candidate Cap | Max qualifying homes collected per household evaluation | 3 – 15 | 5 |
+* **Job Seeker Throughput** (Default: `1,000`, Range: `200 – 5,000`): Max job seekers created per system update.
+* **Pathfind Request Throughput** (Default: `4,000`, Range: `500 – 10,000`): Max pathfinding requests processed per update.
+* **Shopping Traffic Reduction** (Default: `4`, Range: `1 – 20`): Population-based shopping probability suppression (x0.0001).
+* **Household Resource Demand Multiplier** (Default: `3.5`, Range: `1.0 – 8.0`): Per-trip purchase amount multiplier.
+* **Home Search: Move Throughput** (Default: `128`, Range: `32 – 512`): Max housed households evaluated per frame for relocation.
+* **Home Search: Homeless Throughput** (Default: `1,280`, Range: `128 – 5,120`): Max homeless households processed per frame.
+* **Home Search: Candidate Cap** (Default: `5`, Range: `3 – 15`): Max qualifying homes collected per household evaluation.
 
 ---
 
@@ -109,19 +105,17 @@ Fine-tune the economic simulation throughput and behavior in the settings panel.
 
 The **Rent Control** tab exposes the land value and rent formulas as percentage multipliers, so you can tune the economy without touching code. 100% means vanilla-equivalent behaviour for that term. **Changes take effect immediately.**
 
-| Slider | What it controls | Range | Default |
-|--------|-----------------|-------|---------:|
-| Land Value: Environment Effect | Weight of environment quality in land value | 0 – 100% | 40% |
-| Land Value: Service Bonus Cap | Upper limit multiplier on the service coverage bonus | 0 – 200% | 100% |
-| Rent Multiplier (Residential) | Overall rent scaling for residential buildings | 0 – 200% | 100% |
-| Rent Multiplier (Commercial) | Overall rent scaling for commercial buildings | 0 – 200% | 100% |
-| Rent Multiplier (Industrial) | Overall rent scaling for industrial buildings | 0 – 200% | 100% |
-| Land Value Factor (Residential) | How strongly land value feeds into residential rent | 0 – 200% | 100% |
-| Land Value Factor (Commercial) | How strongly land value feeds into commercial rent | 0 – 200% | 100% |
-| Land Value Factor (Industrial) | How strongly land value feeds into industrial rent | 0 – 200% | 100% |
-| Level Factor (Residential) | How strongly building level feeds into residential rent | 0 – 200% | 100% |
-| Level Factor (Commercial) | How strongly building level feeds into commercial rent | 0 – 200% | 100% |
-| Level Factor (Industrial) | How strongly building level feeds into industrial rent | 0 – 200% | 100% |
+* **Land Value: Environment Effect** (Default: `40%`, Range: `0 – 100%`): Weight of environment quality in land value.
+* **Land Value: Service Bonus Cap** (Default: `100%`, Range: `0 – 200%`): Upper limit multiplier on the service coverage bonus.
+* **Rent Multiplier (Residential)** (Default: `100%`, Range: `0 – 200%`): Overall rent scaling for residential buildings.
+* **Rent Multiplier (Commercial)** (Default: `100%`, Range: `0 – 200%`): Overall rent scaling for commercial buildings.
+* **Rent Multiplier (Industrial)** (Default: `100%`, Range: `0 – 200%`): Overall rent scaling for industrial buildings.
+* **Land Value Factor (Residential)** (Default: `100%`, Range: `0 – 200%`): How strongly land value feeds into residential rent.
+* **Land Value Factor (Commercial)** (Default: `100%`, Range: `0 – 200%`): How strongly land value feeds into commercial rent.
+* **Land Value Factor (Industrial)** (Default: `100%`, Range: `0 – 200%`): How strongly land value feeds into industrial rent.
+* **Level Factor (Residential)** (Default: `100%`, Range: `0 – 200%`): How strongly building level feeds into residential rent.
+* **Level Factor (Commercial)** (Default: `100%`, Range: `0 – 200%`): How strongly building level feeds into commercial rent.
+* **Level Factor (Industrial)** (Default: `100%`, Range: `0 – 200%`): How strongly building level feeds into industrial rent.
 
 **Tip**: Lowering the rent multipliers eases affordability pressure across the city; lowering the land value and level factors flattens the rent gap between prime and outlying districts. A Reset button restores every value in this tab.
 
@@ -223,14 +217,12 @@ Subscribe on Paradox Mods. No additional dependencies.
 
 在模组设置面板（选项 -> EconomyEX）中，可以针对每种出行目的分别实时调节寻路成本上限。这些值决定了市民和公司愿意搜索的最大范围。**修改后立即生效，无需重启。**
 
-| 滑块 | 含义 | 范围 | 默认值 |
-|------|------|------|-------:|
-| 购物最大成本 | 市民购物出行的最大寻路成本 | 1,000 – 200,000 | 8,000 |
-| 公司采购成本 | 工厂/商店补货的最大搜索范围 | 1,000 – 200,000 | 200,000 |
-| 休闲最大成本 | 休闲出行（公园、地标等）的最大成本 | 1,000 – 200,000 | 12,000 |
-| 急救/犯罪成本 | 生病就医或犯罪事件的最大搜索范围 | 1,000 – 17,000 | 6,000 |
-| 找工作成本 | 求职搜索的最大范围 | 17,000 – 200,000 | 200,000 |
-| 找房成本 | 搬家找房的最大搜索范围 | 17,000 – 200,000 | 200,000 |
+* **购物最大成本**（默认值：`8,000`，范围：`1,000 – 200,000`）：市民购物出行的最大寻路成本。
+* **公司采购成本**（默认值：`200,000`，范围：`1,000 – 200,000`）：工厂/商店补货的最大搜索范围。
+* **休闲最大成本**（默认值：`12,000`，范围：`1,000 – 200,000`）：休闲出行（公园、地标等）的最大成本。
+* **急救/犯罪成本**（默认值：`6,000`，范围：`1,000 – 17,000`）：生病就医或犯罪事件的最大搜索范围。
+* **找工作成本**（默认值：`200,000`，范围：`17,000 – 200,000`）：求职搜索的最大范围。
+* **找房成本**（默认值：`200,000`，范围：`17,000 – 200,000`）：搬家找房的最大搜索范围。
 
 **提示**：值越小，市民活动范围越局限（寻路压力小，但可能出现匹配不上的情况）；值越大，搜索范围越广（模拟更真实，但 CPU 开销更大）。默认值适用于大多数城市。
 
@@ -240,15 +232,13 @@ Subscribe on Paradox Mods. No additional dependencies.
 
 在设置面板中精细调节经济模拟的吞吐量与行为参数。**修改后立即生效。**
 
-| 滑块 | 含义 | 范围 | 默认值 |
-|------|------|------|-------:|
-| 求职吞吐量 | 每次系统更新最多创建的求职者数量 | 200 – 5,000 | 1,000 |
-| 寻路吞吐量 | 每次更新最多处理的寻路请求数量 | 500 – 10,000 | 4,000 |
-| 购物概率压制系数 | 人口对购物概率的衰减影响 (x0.0001) | 1 – 20 | 4 |
-| 家庭购物需求倍率 | 单次购买资源量倍率 | 1.0 – 8.0 | 3.5 |
-| 搬家吞吐量 | 每帧评估搬家的已有住房家庭上限 | 32 – 512 | 128 |
-| 流浪安置吞吐量 | 每帧处理的无家可归家庭上限 | 128 – 5,120 | 1,280 |
-| 找房候选上限 | 每户每次评估最多收集的合格房屋数量 | 3 – 15 | 5 |
+* **求职吞吐量**（默认值：`1,000`，范围：`200 – 5,000`）：每次系统更新最多创建的求职者数量。
+* **寻路吞吐量**（默认值：`4,000`，范围：`500 – 10,000`）：每次更新最多处理的寻路请求数量。
+* **购物概率压制系数**（默认值：`4`，范围：`1 – 20`）：人口对购物概率的衰减影响 (x0.0001)。
+* **家庭购物需求倍率**（默认值：`3.5`，范围：`1.0 – 8.0`）：单次购买资源量倍率。
+* **搬家吞吐量**（默认值：`128`，范围：`32 – 512`）：每帧评估搬家的已有住房家庭上限。
+* **流浪安置吞吐量**（默认值：`1,280`，范围：`128 – 5,120`）：每帧处理的无家可归家庭上限。
+* **找房候选上限**（默认值：`5`，范围：`3 – 15`）：每户每次评估最多收集的合格房屋数量。
 
 ---
 
@@ -256,19 +246,17 @@ Subscribe on Paradox Mods. No additional dependencies.
 
 **租金调控**标签页将地价与租金公式中的各项权重开放为百分比乘数，无需改动代码即可调节经济表现。该项为 100% 时等同原版行为。**修改后立即生效。**
 
-| 滑块 | 含义 | 范围 | 默认值 |
-|------|------|------|-------:|
-| 地价：环境影响 | 环境质量在地价中的权重 | 0 – 100% | 40% |
-| 地价：服务加成上限 | 服务覆盖加成的上限乘数 | 0 – 200% | 100% |
-| 租金乘数（住宅） | 住宅建筑租金的整体缩放 | 0 – 200% | 100% |
-| 租金乘数（商业） | 商业建筑租金的整体缩放 | 0 – 200% | 100% |
-| 租金乘数（工业） | 工业建筑租金的整体缩放 | 0 – 200% | 100% |
-| 地价因子（住宅） | 地价对住宅租金的影响强度 | 0 – 200% | 100% |
-| 地价因子（商业） | 地价对商业租金的影响强度 | 0 – 200% | 100% |
-| 地价因子（工业） | 地价对工业租金的影响强度 | 0 – 200% | 100% |
-| 等级因子（住宅） | 建筑等级对住宅租金的影响强度 | 0 – 200% | 100% |
-| 等级因子（商业） | 建筑等级对商业租金的影响强度 | 0 – 200% | 100% |
-| 等级因子（工业） | 建筑等级对工业租金的影响强度 | 0 – 200% | 100% |
+* **地价：环境影响**（默认值：`40%`，范围：`0 – 100%`）：环境质量在地价中的权重。
+* **地价：服务加成上限**（默认值：`100%`，范围：`0 – 200%`）：服务覆盖加成的上限乘数。
+* **租金乘数（住宅）**（默认值：`100%`，范围：`0 – 200%`）：住宅建筑租金的整体缩放。
+* **租金乘数（商业）**（默认值：`100%`，范围：`0 – 200%`）：商业建筑租金的整体缩放。
+* **租金乘数（工业）**（默认值：`100%`，范围：`0 – 200%`）：工业建筑租金的整体缩放。
+* **地价因子（住宅）**（默认值：`100%`，范围：`0 – 200%`）：地价对住宅租金的影响强度。
+* **地价因子（商业）**（默认值：`100%`，范围：`0 – 200%`）：地价对商业租金的影响强度。
+* **地价因子（工业）**（默认值：`100%`，范围：`0 – 200%`）：地价对工业租金的影响强度。
+* **等级因子（住宅）**（默认值：`100%`，范围：`0 – 200%`）：建筑等级对住宅租金的影响强度。
+* **等级因子（商业）**（默认值：`100%`，范围：`0 – 200%`）：建筑等级对商业租金的影响强度。
+* **等级因子（工业）**（默认值：`100%`，范围：`0 – 200%`）：建筑等级对工业租金的影响强度。
 
 **提示**：调低租金乘数可整体缓解全城的租金压力；调低地价因子与等级因子会压平核心区与边缘区之间的租金差距。本标签页提供重置按钮，可一键恢复全部默认值。
 
