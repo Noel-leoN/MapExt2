@@ -1,17 +1,17 @@
 # Map Extended Mod (28/43/57/vanilla)
 
-* **Extended Map Sizes:** Provides 28km, 43km, and 57km map size modes (tile count remains the vanilla 529 tiles).
+* **Extended Map Sizes:** Provides 28km and 57km map size modes, plus 43km as an experimental option. Tile count stays at the vanilla 529 — tiles scale up with the map instead of multiplying in number.
 * **Vanilla Save Expansion:** Converts existing 14km vanilla saves to 28km or 57km maps, preserving buildings, terrain, and city layout (43km conversion is not supported).
 * **Economy and Pathfinding Adjustments:** Reworks RCI demand, job and home search, and consumption mechanics to reduce pathfinding bottlenecks and CPU load at large populations. Details can be fine-tuned in the in-game UI.
-* **Economic Data Dashboard:** In-game HUD dashboard provides a real-time overview of key economic metrics and population health with zero performance overhead.
+* **Economic Data Dashboard:** In-game HUD dashboard provides a real-time overview of key economic metrics and population health.
 * **In-Game Tools:** Includes sea level and water simulation speed control, through-traffic and pet management, editor collision override, and heightmap export.
-* **Conflict Monitoring and Safeguards:** Runtime detection of incompatible mods and automatic failsafes for mismatched map sizes across game and editor modes.
+* **Conflict Monitoring and Safeguards:** Runtime detection of incompatible mods, plus a load-time warning when a save's map size does not match the selected mode, avoiding terrain sampled at the wrong scale. Applies to both gameplay and Map Editor.
 
 ---
 
 ## 🗺️ Vanilla Map Extension
 
-Converts existing 14km vanilla saves to 28km or 57km maps without starting over. Terrain, city layout, and placed buildings are preserved. The original save file is never modified (note: currently only existing game saves can be converted; new game creation does not support conversion).
+Converts existing 14km vanilla saves to 28km or 57km maps without starting over. Terrain, city layout, and placed buildings are preserved. The original save file is never modified.
 
 ### 🛠️ Steps to Extend an Existing Vanilla Save
 
@@ -24,7 +24,7 @@ Converts existing 14km vanilla saves to 28km or 57km maps without starting over.
    * **Rebuild Outside Connections** at the new map borders: Roads, Railways, Shipping Lanes, Airline Routes, Electricity, Water Supply.
    * **Place Water Sources and Adjust Sea Level**: Original water sources are cleared during conversion. Use the **Water Features** mod to place river/sea sources, and adjust sea level using the built-in Water Tools (MAP/EXT button on HUD) or Water Features.
 
-> **⚠️ Important Notice**: This conversion is **strictly for existing vanilla saves**. Directly starting a new game on a vanilla map for conversion is currently not supported. To start a new city on an extended map, select the desired MapSize mode in the main menu and load a custom map made for that size.
+> **⚠️ Important Notice**: This conversion is **strictly for existing vanilla saves**. Starting a new game on a vanilla map shows a warning but is not converted — automatic conversion at city creation is not supported yet. To start a new city on an extended map, select the desired MapSize mode in the main menu and load a custom map made for that size.
 
 ### 🔗 Standalone Version
 * **[EconomyEX](https://mods.paradoxplaza.com/mods/137149/Windows):** Standalone economy and performance subset for vanilla-size (14km) maps. Automatically disables itself when MapExt is also installed.
@@ -45,21 +45,22 @@ Converts existing 14km vanilla saves to 28km or 57km maps without starting over.
 
 ### 📏 Map Size Modes
 * **57km (Default):** 4x4 vanilla size (DEM-14m)
-* **43km:** 3x3 (DEM-10.5m)
+* **43km (Experimental):** 3x3 (DEM-10.5m)
 * **28km:** 2x2 (DEM-7m)
 * **14km:** Vanilla 1x1 (DEM-3.5m)
-* **Map Tiles:** Fixed at 529 unlockable tiles.
+* **Map Tiles:** Fixed at the vanilla 529-tile grid — each tile scales up with the map size rather than the tile count multiplying.
 * **Terrain Precision:** Terrain sampling resolution decreases as map size increases. Coastlines on larger sizes exhibit noticeable jagged edges.
 
 ### 💡 Economy and Simulation
 * **Demand Algorithm Rework:** Converts vanilla RCI demand to percentage-based scaling, normalizes industrial labor metrics, and stabilizes household rent affordability evaluations.
-* **Pathfinding Distance Control:** Configurable maximum pathfinding cost limits per travel purpose (shopping, leisure, job search, home search) to reduce CPU load.
+* **Pathfinding Distance Control:** Configurable maximum pathfinding cost per travel purpose (shopping, company procurement, leisure, job search, home search, emergency, and four school levels), plus candidate and seeker caps for home and leisure searches, to reduce CPU load.
 * **NoDogs 2.0:** Three pet control modes (Disable OnStreet, Prevent New Generation, Purge All) with live pet statistics.
 * **No Through-Traffic:** Disables through-traffic vehicle spawning to reduce transit routing pressure.
+* **Ghost Vehicle Cleanup:** The base game leaves a car bought with no parking space nearby stranded without a parking lane, turning it into a permanent "ghost". Vehicle Purchase Rescue (Debug tab, default off) re-parks these near the owner's home, deletes orphans whose household is gone, and works through the backlog in existing saves in batches. Use the "Scan Ghost Vehicles" button to check your save first.
 
 ### 🛠️ In-Game Tools and Performance
 * **HUD Dashboard:** Click the **MAP/EXT** button on the in-game HUD to open the dashboard, featuring city statistics, rent control, and pathfinding sliders. Zero overhead when closed.
-* **Heightmap Export:** Export the current city terrain from the Debug tab as a 16-bit grayscale PNG (Native orientation), mapped 1:1 for direct import into the Map Editor.
+* **Heightmap Export:** Export the current city terrain from the Debug tab as a 16-bit grayscale PNG, mapped 1:1 for direct import into the Map Editor. Five orientations (Native, flip vertical, flip horizontal, rotate 180, or all four at once) plus optional raw output.
 * **Water Tools:** Sea level control (0.1m precision), sea level apply, water simulation reset, and simulation speed control (0x-128x).
 * **Editor Collision Override:** Bypass collision validation checks when placing objects in the Map Editor (Off / Trees Only / All Objects).
 * **Disable World Backdrop:** Disables background terrain heightmap loading to reduce GPU and VRAM overhead.
@@ -93,7 +94,7 @@ Import heightmaps and worldmaps corresponding to your chosen mode in the Map Edi
 * **Image Overlay** — Overlay real-world maps for 1:1 city recreation.
 * **Free Range Camera** — Unlock camera distance.
 * **Water Features** — Water source placement for large maps.
-* **529 Tiles** — Unlock all map tiles.
+* **529 Tiles** — Unlock all 529 tiles (the base game only permits 441) plus extra tile features.
 * **Anarchy** — Remove placement restrictions.
 
 ---
@@ -118,26 +119,27 @@ Import heightmaps and worldmaps corresponding to your chosen mode in the Map Edi
 
 # 地图尺寸扩展模组 (28/43/57/原版)
 
-* **地图尺寸扩展**：提供 28km、43km、57km 地图尺寸模式（瓦片数量维持原版 529 块）。
-* **原版存档扩展**：支持将 14km 原版存档扩展至 28km 或 57km 地图，保留既有建筑、地形与路网。(不支持43km扩展)
-* **经济与寻路调整**：重写 RCI 需求、求职找房与消费逻辑，缓解大人口规模下的寻路积压与 CPU 开销。可在游戏内UI调整细节。
-* **城市经济数据快查**：游戏内 HUD 仪表盘提供关键经济指标与人口健康状态的实时速查，零性能开销。
+* **地图尺寸扩展**：提供 28km 与 57km 地图尺寸模式，另有 43km 作为实验性选项。瓦片数量维持原版 529 块——瓦片随地图等比放大，而非按数量增殖。
+* **原版存档扩展**：支持将 14km 原版存档扩展至 28km 或 57km 地图，保留既有建筑、地形与路网（不支持 43km 扩展）。
+* **经济与寻路调整**：重写 RCI 需求、求职找房与消费逻辑，缓解大人口规模下的寻路积压与 CPU 开销。可在游戏内 UI 调整细节。
+* **城市经济数据快查**：游戏内 HUD 仪表盘提供关键经济指标与人口健康状态的实时速查。
 * **游戏内工具**：提供海平面调节、水体模拟加速、过境交通与宠物控制、编辑器碰撞跳过，以及地形高度图导出。
-* **冲突监控与防错**：内置运行时冲突检测，跨模式载入自动拦截提示，防止存档损坏或取样错位。
+* **冲突监控与防错**：内置运行时冲突检测；当存档尺寸与所选模式不符时于加载前警告，避免地形按错误比例采样。常规游戏与地图编辑器均生效。
 
 ---
 
 ## 🗺️ 原版地图扩展
 
-支持将现有的 14km 原版城市存档扩展至 28km 或 57km 地图，无需从零建城。原有地形、城市布局与已放置建筑均会保留。原始存档不会被修改。(注意当前仅支持游戏存档扩展，不支持新建游戏扩展)
+支持将现有的 14km 原版城市存档扩展至 28km 或 57km 地图，无需从零建城。原有地形、城市布局与已放置建筑均会保留。原始存档不会被修改。
 
 ### 🛠️ 扩展原版城市游戏存档的操作步骤
 
-1. 在**主菜单** 的Option中打开 MapExt 选项，并在MapSize界面中，选择目标模式（28km 或 57km）。
+1. 在**主菜单**的 Options 中打开 MapExt 选项，并在 MapSize 界面中选择目标模式（28km 或 57km）。
 2. 在 MapSize 标签页中开启**“原版地图扩展”**。
-3. 加载已有原版（14km）存档，在确认对话框中点击**“扩展并加载”**。模组将自动解锁 529 瓦片、清除活跃车辆与居民、拆除旧外部连接、合成扩展高程、保留自然资源与地下水、重置水体，并另存为 `{存档名}_MapExt{模式}`。
-4. **必须完全重启游戏**，以便水体物理与模拟边界重新初始化。
-5. 重启后完成必要重建：
+3. **加载**已有原版（14km）存档。
+4. 在确认对话框中点击**“扩展并加载”**。模组将自动解锁 529 瓦片、清除活跃车辆与居民、拆除旧外部连接、合成扩展高程、保留自然资源与地下水、重置水体，并另存为 `{存档名}_MapExt{模式}`。
+5. **必须完全重启游戏**，以便水体物理与模拟边界重新初始化。
+6. 重启后完成必要重建：
    * **重建外部连接**：在新的地图边界连接道路、铁路、航道、航线、电力与供水。
    * **放置水源与调节海平面**：原版水源已被清除。需使用 **Water Features** 模组放置河流/海洋水源，并使用内置水体工具（HUD 上的 MAP/EXT 按钮）或 Water Features 调整海平面。
 
@@ -162,21 +164,22 @@ Import heightmaps and worldmaps corresponding to your chosen mode in the Map Edi
 
 ### 📏 地图尺寸模式
 * **57km（默认）**：4x4 原版尺寸（DEM-14m）
-* **43km**：3x3（DEM-10.5m）
+* **43km（实验性）**：3x3（DEM-10.5m）
 * **28km**：2x2（DEM-7m）
 * **14km**：原版 1x1（DEM-3.5m）
-* **地图瓦片**：固定为原版 529 块可解锁瓦片。
+* **地图瓦片**：固定为原版 529 块可解锁瓦片——每块瓦片随地图尺寸等比放大，而非瓦片数量增殖。
 * **地形精度**：地图尺寸越大，地形采样精度相对降低。大尺寸边缘海岸线存在较多锯齿。
 
 ### 💡 经济与模拟
 * **需求算法调整**：将原版 RCI 需求改为百分比制，标准化工业劳动力指标，并调整家庭租金承受力评估机制。
-* **寻路距离控制**：按出行目的（购物、休闲、求职、找房）分别配置最大寻路成本上限，降低 CPU 寻路负载。
+* **寻路距离控制**：按出行目的（购物、企业采购、休闲、求职、找房、急救及四级就学）分别配置最大寻路成本上限，并可限制找房与休闲的候选数量，降低 CPU 寻路负载。
 * **NoDogs 2.0**：三档宠物控制模式（禁止外出、阻止新生成、清除全部），提供实时宠物统计。
 * **过境交通控制**：禁止过境交通车辆生成，降低道路寻路计算量。
+* **幽灵车清理**：原版在购车时若附近无停车位，车辆不会被分配车道，从此成为永久“幽灵车”。购车救援（调试面板，默认关闭）将其移至车主住宅附近重新停放，家庭已消失的孤儿车则直接删除；存档中的存量幽灵车分批处理。可先用“扫描幽灵车”按钮查看存档内数量。
 
 ### 🛠️ 游戏内工具与性能
 * **HUD 仪表盘**：点击游戏内 HUD 的 **MAP/EXT** 按钮可展开面板，包含城市统计、租金调控与寻路参数。面板关闭时零开销。
-* **高度图导出**：在调试面板中可将当前城市地形导出为 16-bit 灰度 PNG 高度图（原生 Native 方位），地图像素与高度 1:1 映射，可直接导入游戏地图编辑器。
+* **高度图导出**：在调试面板中可将当前城市地形导出为 16-bit 灰度 PNG 高度图，地图像素与高度 1:1 映射，可直接导入游戏地图编辑器。提供五种方位（Native、垂直翻转、水平翻转、旋转 180、一次输出全部四份），并可另存原始 RAW。
 * **水体工具**：海平面调节（0.1m 精度）、应用海平面、水体重置与模拟速度控制（0x-128x）。
 * **编辑器碰撞跳过**：在地图编辑器中跳过物体放置碰撞检查（关闭 / 仅树木 / 所有物体）。
 * **禁用背景世界地图**：阻止背景地形（Backdrop）加载，降低 GPU 与显存开销。
@@ -210,7 +213,7 @@ Import heightmaps and worldmaps corresponding to your chosen mode in the Map Edi
 * **Image Overlay** — 叠加真实地图参考。
 * **Free Range Camera** — 解除相机视角限制。
 * **Water Features** — 大地图水源放置。
-* **529 Tiles** — 解锁全部地图瓦片。
+* **529 Tiles** — 解锁全部 529 块瓦片（原版仅允许 441 块）并提供额外瓦片功能。
 * **Anarchy** — 无碰撞建造。
 
 ---
