@@ -68,6 +68,8 @@ In addition to economy patches, this mod includes several performance tools acce
 
 * **🏗️ Editor Collision Override:** Bypass collision validation checks when placing objects in the Map Editor — supports three modes (Off / Trees Only / All Objects), improving tree planting performance.
 
+* **👻 Ghost Vehicle Cleanup:** The base game leaves a car bought with no parking space nearby stranded without a parking lane, turning it into a permanent "ghost". Vehicle Purchase Rescue (Debug tab, default off) re-parks these near the owner's home, deletes orphans whose household is gone, and works through the backlog in existing saves in batches. Use the "Scan Ghost Vehicles" button to check your save first.
+
 ---
 
 ## 🎚️ Pathfinding Max-Distance Control (In-Game)
@@ -99,6 +101,29 @@ Fine-tune the economic simulation throughput and behavior in the settings panel.
 | Household Resource Demand Multiplier | Per-trip purchase amount multiplier | 1.0 – 8.0 | 3.5 |
 | Home Search: Move Throughput | Max housed households evaluated per frame for relocation | 32 – 512 | 128 |
 | Home Search: Homeless Throughput | Max homeless households processed per frame | 128 – 5,120 | 1,280 |
+| Home Search: Candidate Cap | Max qualifying homes collected per household evaluation | 3 – 15 | 5 |
+
+---
+
+## 🏦 Rent and Land Value Control (In-Game)
+
+The **Rent Control** tab exposes the land value and rent formulas as percentage multipliers, so you can tune the economy without touching code. 100% means vanilla-equivalent behaviour for that term. **Changes take effect immediately.**
+
+| Slider | What it controls | Range | Default |
+|--------|-----------------|-------|---------:|
+| Land Value: Environment Effect | Weight of environment quality in land value | 0 – 100% | 40% |
+| Land Value: Service Bonus Cap | Upper limit multiplier on the service coverage bonus | 0 – 200% | 100% |
+| Rent Multiplier (Residential) | Overall rent scaling for residential buildings | 0 – 200% | 100% |
+| Rent Multiplier (Commercial) | Overall rent scaling for commercial buildings | 0 – 200% | 100% |
+| Rent Multiplier (Industrial) | Overall rent scaling for industrial buildings | 0 – 200% | 100% |
+| Land Value Factor (Residential) | How strongly land value feeds into residential rent | 0 – 200% | 100% |
+| Land Value Factor (Commercial) | How strongly land value feeds into commercial rent | 0 – 200% | 100% |
+| Land Value Factor (Industrial) | How strongly land value feeds into industrial rent | 0 – 200% | 100% |
+| Level Factor (Residential) | How strongly building level feeds into residential rent | 0 – 200% | 100% |
+| Level Factor (Commercial) | How strongly building level feeds into commercial rent | 0 – 200% | 100% |
+| Level Factor (Industrial) | How strongly building level feeds into industrial rent | 0 – 200% | 100% |
+
+**Tip**: Lowering the rent multipliers eases affordability pressure across the city; lowering the land value and level factors flattens the rent gap between prime and outlying districts. A Reset button restores every value in this tab.
 
 ---
 
@@ -109,6 +134,14 @@ The **Debug** tab provides a **Population Diagnostics** panel that shows real-ti
 ## 📦 Installation
 
 Subscribe on Paradox Mods. No additional dependencies.
+
+---
+
+## 🔗 Other Mods by the Author
+
+* **[MapExt (MapExtPDX)](https://mods.paradoxplaza.com/mods/107939/Windows)** — Extended map sizes (28/43/57 km) and vanilla save expansion. Includes this mod's economy patches, so there is no need to run both.
+* **[SimpleRadio](https://mods.paradoxplaza.com/mods/145663/Windows)** — Drop music files into a folder and they show up as an in-game radio station. No configuration needed.
+* **[SimpleBrush](https://mods.paradoxplaza.com/mods/145932/Windows)** — Unlocks the hidden natural resource brushes and restores depleted resources with one click.
 
 ---
 
@@ -182,6 +215,8 @@ Subscribe on Paradox Mods. No additional dependencies.
 
 * **🏗️ 编辑器碰撞跳过：** 在地图编辑器放置物体时跳过碰撞验证——支持三档模式（关闭 / 仅树木 / 所有物体），提高种树性能。
 
+* **🚙 幽灵车清理：** 原版在购车时若附近无停车位，车辆不会被分配车道，从此成为永久“幽灵车”。购车救援（默认关闭）将其移至车主住宅附近重新停放，家庭已消失的孤儿车则直接删除；存档中的存量幽灵车分批处理。可先用调试面板的“扫描幽灵车辆”按钮查看存档内数量。
+
 ---
 
 ## 🎚️ 寻路最远距离控制（游戏内实时调节）
@@ -213,6 +248,29 @@ Subscribe on Paradox Mods. No additional dependencies.
 | 家庭购物需求倍率 | 单次购买资源量倍率 | 1.0 – 8.0 | 3.5 |
 | 搬家吞吐量 | 每帧评估搬家的已有住房家庭上限 | 32 – 512 | 128 |
 | 流浪安置吞吐量 | 每帧处理的无家可归家庭上限 | 128 – 5,120 | 1,280 |
+| 找房候选上限 | 每户每次评估最多收集的合格房屋数量 | 3 – 15 | 5 |
+
+---
+
+## 🏦 租金与地价调控（游戏内实时调节）
+
+**租金调控**标签页将地价与租金公式中的各项权重开放为百分比乘数，无需改动代码即可调节经济表现。该项为 100% 时等同原版行为。**修改后立即生效。**
+
+| 滑块 | 含义 | 范围 | 默认值 |
+|------|------|------|-------:|
+| 地价：环境影响 | 环境质量在地价中的权重 | 0 – 100% | 40% |
+| 地价：服务加成上限 | 服务覆盖加成的上限乘数 | 0 – 200% | 100% |
+| 租金乘数（住宅） | 住宅建筑租金的整体缩放 | 0 – 200% | 100% |
+| 租金乘数（商业） | 商业建筑租金的整体缩放 | 0 – 200% | 100% |
+| 租金乘数（工业） | 工业建筑租金的整体缩放 | 0 – 200% | 100% |
+| 地价因子（住宅） | 地价对住宅租金的影响强度 | 0 – 200% | 100% |
+| 地价因子（商业） | 地价对商业租金的影响强度 | 0 – 200% | 100% |
+| 地价因子（工业） | 地价对工业租金的影响强度 | 0 – 200% | 100% |
+| 等级因子（住宅） | 建筑等级对住宅租金的影响强度 | 0 – 200% | 100% |
+| 等级因子（商业） | 建筑等级对商业租金的影响强度 | 0 – 200% | 100% |
+| 等级因子（工业） | 建筑等级对工业租金的影响强度 | 0 – 200% | 100% |
+
+**提示**：调低租金乘数可整体缓解全城的租金压力；调低地价因子与等级因子会压平核心区与边缘区之间的租金差距。本标签页提供重置按钮，可一键恢复全部默认值。
 
 ---
 
@@ -223,3 +281,11 @@ Subscribe on Paradox Mods. No additional dependencies.
 ## 📦 安装
 
 在 Paradox Mods 订阅即可，无需任何前置依赖。
+
+---
+
+## 🔗 作者的其他模组
+
+* **[MapExt (MapExtPDX)](https://mods.paradoxplaza.com/mods/107939/Windows)** — 大地图尺寸扩展（28/43/57 km）与原版存档扩展。已包含本模组的经济补丁，无需重复安装。
+* **[SimpleRadio](https://mods.paradoxplaza.com/mods/145663/Windows)** — 将音乐文件放入文件夹即可成为游戏内电台，无需任何配置。
+* **[SimpleBrush](https://mods.paradoxplaza.com/mods/145932/Windows)** — 解锁游戏内置的自然资源笔刷，并可一键恢复已耗尽的资源。

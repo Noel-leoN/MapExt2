@@ -29,6 +29,12 @@ A lightweight mod that unlocks natural resource brushes in-game and lets you res
 
 Subscribe on [Paradox Mods](https://mods.paradoxplaza.com/) or place the DLL in your local Mods folder.
 
+## Other Mods by the Author
+
+* **[MapExt](https://mods.paradoxplaza.com/mods/107939/Windows):** Extended map sizes (28/43/57 km) with economy and pathfinding rework for large cities.
+* **[EconomyEX](https://mods.paradoxplaza.com/mods/137149/Windows):** Standalone economy and performance subset for vanilla-size (14 km) maps.
+* **[SimpleRadio](https://mods.paradoxplaza.com/mods/145663/Windows):** Drop music files into a folder and they show up as an in-game radio station.
+
 
 ---
 
@@ -61,4 +67,10 @@ Subscribe on [Paradox Mods](https://mods.paradoxplaza.com/) or place the DLL in 
 ## 安装
 
 在 Paradox Mods 订阅，或将编译后的 DLL 放入本地 Mods 目录。
+
+## 作者的其他模组
+
+* **[MapExt](https://mods.paradoxplaza.com/mods/107939/Windows)：** 地图尺寸扩展（28/43/57 km），并针对大城市重写经济与寻路逻辑。
+* **[EconomyEX](https://mods.paradoxplaza.com/mods/137149/Windows)：** 适用于原版尺寸（14 km）地图的独立经济与性能子集。
+* **[SimpleRadio](https://mods.paradoxplaza.com/mods/145663/Windows)：** 将音乐文件放入文件夹即可成为游戏内电台。
 

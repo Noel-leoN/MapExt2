@@ -16,7 +16,7 @@ Drop your music files into a folder and they appear as a radio station in-game. 
 ## How to Use
 
 1. Navigate to your game's user data folder:
-   `%LOCALAPPDATA%Low\Colossal Order\Cities Skylines II\ModsData\SimpleRadio\`
+   `%USERPROFILE%\AppData\LocalLow\Colossal Order\Cities Skylines II\ModsData\SimpleRadio\`
 2. Create a subfolder - the folder name becomes the station name
 3. Place your audio files inside (`.ogg`, `.mp3`, `.wav`)
 4. Start or restart the game
@@ -71,6 +71,12 @@ SimpleRadio runs fully standalone — its audio format support only applies to i
 
 - No additional dependencies
 
+## Other Mods by the Author
+
+- **[MapExt](https://mods.paradoxplaza.com/mods/107939/Windows)** — 28/43/57km map size expansion, plus economy and pathfinding rework for large cities.
+- **[EconomyEX](https://mods.paradoxplaza.com/mods/137149/Windows)** — The economy and performance subset of MapExt, for vanilla-size (14km) maps.
+- **[SimpleBrush](https://mods.paradoxplaza.com/mods/145932/Windows)** — Unlocks the hidden natural resource brushes and restores depleted resources with one click.
+
 ---
 
 # 极简自定义音乐播放器
@@ -91,7 +97,7 @@ SimpleRadio runs fully standalone — its audio format support only applies to i
 ## 使用方法
 
 1. 打开游戏用户数据目录：
-   `%LOCALAPPDATA%Low\Colossal Order\Cities Skylines II\ModsData\SimpleRadio\`
+   `%USERPROFILE%\AppData\LocalLow\Colossal Order\Cities Skylines II\ModsData\SimpleRadio\`
 2. 创建子文件夹——文件夹名即为电台名
 3. 将音频文件（`.ogg`、`.mp3`、`.wav`）放入其中
 4. 启动或重启游戏
@@ -145,4 +151,10 @@ SimpleRadio 完全独立运行——其音频格式支持仅作用于自身电�
 ## 系统要求
 
 - 无额外依赖
+
+## 作者的其他模组
+
+- **[MapExt](https://mods.paradoxplaza.com/mods/107939/Windows)** — 28/43/57km 地图尺寸扩展，附带面向大城市的经济与寻路改良。
+- **[EconomyEX](https://mods.paradoxplaza.com/mods/137149/Windows)** — MapExt 的经济与性能子集，适用于原版尺寸（14km）地图。
+- **[SimpleBrush](https://mods.paradoxplaza.com/mods/145932/Windows)** — 解锁游戏内置的自然资源笔刷，并可一键恢复已耗尽的资源。
 

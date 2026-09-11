@@ -26,8 +26,12 @@ Converts existing 14km vanilla saves to 28km or 57km maps without starting over.
 
 > **⚠️ Important Notice**: This conversion is **strictly for existing vanilla saves**. Starting a new game on a vanilla map shows a warning but is not converted — automatic conversion at city creation is not supported yet. To start a new city on an extended map, select the desired MapSize mode in the main menu and load a custom map made for that size.
 
-### 🔗 Standalone Version
+### 🔗 Other Mods by the Author
 * **[EconomyEX](https://mods.paradoxplaza.com/mods/137149/Windows):** Standalone economy and performance subset for vanilla-size (14km) maps. Automatically disables itself when MapExt is also installed.
+* **[SimpleRadio](https://mods.paradoxplaza.com/mods/145663/Windows):** Drop music files into a folder and they show up as an in-game radio station. No configuration needed.
+* **[SimpleBrush](https://mods.paradoxplaza.com/mods/145932/Windows):** Unlocks the hidden natural resource brushes and restores depleted resources with one click.
+
+> The author's Paradox Mods page also hosts sample maps and save files you can use as a reference.
 
 ---
 
@@ -57,6 +61,8 @@ Converts existing 14km vanilla saves to 28km or 57km maps without starting over.
 * **NoDogs 2.0:** Three pet control modes (Disable OnStreet, Prevent New Generation, Purge All) with live pet statistics.
 * **No Through-Traffic:** Disables through-traffic vehicle spawning to reduce transit routing pressure.
 * **Ghost Vehicle Cleanup:** The base game leaves a car bought with no parking space nearby stranded without a parking lane, turning it into a permanent "ghost". Vehicle Purchase Rescue (Debug tab, default off) re-parks these near the owner's home, deletes orphans whose household is gone, and works through the backlog in existing saves in batches. Use the "Scan Ghost Vehicles" button to check your save first.
+
+> **📖 More detail on the economy patches:** MapExt shares its economy and land value rework with [EconomyEX](https://mods.paradoxplaza.com/mods/137149/Windows), whose description documents each system change and every tunable slider (range and default) in full. Refer to it for details — the sliders live in MapExt's own settings panel, no need to install EconomyEX.
 
 ### 🛠️ In-Game Tools and Performance
 * **HUD Dashboard:** Click the **MAP/EXT** button on the in-game HUD to open the dashboard, featuring city statistics, rent control, and pathfinding sliders. Zero overhead when closed.
@@ -145,8 +151,12 @@ Import heightmaps and worldmaps corresponding to your chosen mode in the Map Edi
 
 > **⚠️ 注意事项与限制**：本功能**仅支持转换既有的原版存档**。目前不支持直接新建原版地图进行游玩或转换（开新城若选择原版地图虽有警告提示，但底层尚未支持自动转换）；若要建立新城市，请在主菜单切换至对应大地图模式后，直接载入该尺寸的地图。
 
-### 🔗 独立经济子集
+### 🔗 作者的其他模组
 * **[EconomyEX](https://mods.paradoxplaza.com/mods/137149/Windows)：** 适用于原版地图（14km）的独立经济与性能子集。两者同时安装时 EconomyEX 会自动休眠。
+* **[SimpleRadio](https://mods.paradoxplaza.com/mods/145663/Windows)：** 将音乐文件放入文件夹即可成为游戏内电台，无需任何配置。
+* **[SimpleBrush](https://mods.paradoxplaza.com/mods/145932/Windows)：** 解锁游戏内置的自然资源笔刷，并可一键恢复已耗尽的资源。
+
+> 作者的 Paradox Mods 主页另有示范地图与存档，可供参考。
 
 ---
 
@@ -176,6 +186,8 @@ Import heightmaps and worldmaps corresponding to your chosen mode in the Map Edi
 * **NoDogs 2.0**：三档宠物控制模式（禁止外出、阻止新生成、清除全部），提供实时宠物统计。
 * **过境交通控制**：禁止过境交通车辆生成，降低道路寻路计算量。
 * **幽灵车清理**：原版在购车时若附近无停车位，车辆不会被分配车道，从此成为永久“幽灵车”。购车救援（调试面板，默认关闭）将其移至车主住宅附近重新停放，家庭已消失的孤儿车则直接删除；存档中的存量幽灵车分批处理。可先用“扫描幽灵车”按钮查看存档内数量。
+
+> **📖 经济补丁的详细说明**：MapExt 的经济与地价改动与 [EconomyEX](https://mods.paradoxplaza.com/mods/137149/Windows) 同源，后者的说明页逐项记录了各系统的改动内容，以及每个可调滑块的范围与默认值。需要细节时可参阅该页——滑块本身就在 MapExt 的设置面板中，无需安装 EconomyEX。
 
 ### 🛠️ 游戏内工具与性能
 * **HUD 仪表盘**：点击游戏内 HUD 的 **MAP/EXT** 按钮可展开面板，包含城市统计、租金调控与寻路参数。面板关闭时零开销。
