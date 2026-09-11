@@ -1,4 +1,4 @@
-# Map Extended Mod (28/43/57/vanilla)
+# Map Extended Mod (28/43/57 km + vanilla) — Economy Rework, In-Game Tools and Performance
 
 * **Extended Map Sizes:** Provides 28km and 57km map size modes, plus 43km as an experimental option. Tile count stays at the vanilla 529 — tiles scale up with the map instead of multiplying in number.
 * **Vanilla Save Expansion:** Converts existing 14km vanilla saves to 28km or 57km maps, preserving buildings, terrain, and city layout (43km conversion is not supported).
@@ -123,7 +123,7 @@ Import heightmaps and worldmaps corresponding to your chosen mode in the Map Edi
 
 ---
 
-# 地图尺寸扩展模组 (28/43/57/原版)
+# 地图尺寸扩展模组（28/43/57 km 及原版尺寸）— 经济改良、游戏内工具与性能优化
 
 * **地图尺寸扩展**：提供 28km 与 57km 地图尺寸模式，另有 43km 作为实验性选项。瓦片数量维持原版 529 块——瓦片随地图等比放大，而非按数量增殖。
 * **原版存档扩展**：支持将 14km 原版存档扩展至 28km 或 57km 地图，保留既有建筑、地形与路网（不支持 43km 扩展）。
