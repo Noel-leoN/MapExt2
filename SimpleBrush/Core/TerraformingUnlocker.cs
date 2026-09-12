@@ -110,7 +110,9 @@ namespace SimpleBrush.Core
                     terraformingGroup.AddElement(EntityManager, entity);
 
                     // --- 将 UIObjectData 同步写入 ECS Entity ---
-                    // 内联实现 ExtraLib 的 ToComponentData() + AddOrSetComponentData()
+                    // UIObjectData 只有 m_Group／m_Priority 两个字段，构造与「Has 则 Set、否则 Add」
+                    // 的分支均无第二种写法；就地内联以免为这几行引入 ExtraLib 依赖
+                    //（该库有同功能的扩展方法）。
                     var uiData = new UIObjectData
                     {
                         m_Group = m_PrefabSystem.GetEntity(ui.m_Group),
@@ -175,7 +177,9 @@ namespace SimpleBrush.Core
 
         /// <summary>
         /// 从 UIGroupPrefab 的 ECS Buffer 中移除指定 Entity。
-        /// 等价于 ExtraLib 的 UIGroupPrefab.RemoveElement() 扩展方法。
+        /// <para>原版 <see cref="UIGroupPrefab"/> 只提供 <c>AddElement</c>，且它同时写入
+        /// <c>UIGroupElement</c> 与 <c>UnlockRequirement</c> 两个 buffer，因此撤销只能自行遍历
+        /// 这两处逐一移除。ExtraLib 也补过同一个缺口（<c>RemoveElement</c> 扩展方法）。</para>
         /// </summary>
         private void RemoveElementFromGroup(UIGroupPrefab group, Entity entity)
         {
