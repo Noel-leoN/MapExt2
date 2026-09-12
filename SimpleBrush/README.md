@@ -22,12 +22,16 @@ A lightweight mod that unlocks natural resource brushes in-game and lets you res
 
 ## Compatibility
 
-- **ExtraLandscapingTools**: Functional overlap but no conflicts.
-- **No dependencies**
+- **ExtraLandscapingTools (ELT)**: Overlapping features, no conflicts, and the two can be installed together. Both re-parent the same vanilla brush prefabs, so no duplicate toolbar entries appear, but the brush icons depend on mod load order.
+- **Self-contained**: nothing else to install.
 
 ## Installation
 
 Subscribe on [Paradox Mods](https://mods.paradoxplaza.com/) or place the DLL in your local Mods folder.
+
+## Acknowledgements
+
+Thanks to Triton Supreme, author of ExtraLandscapingTools and ExtraLib, for being first to surface these hidden vanilla brushes. Reading that work confirmed the approach was viable. SimpleBrush is an independent implementation.
 
 ## Other Mods by the Author
 
@@ -61,12 +65,16 @@ Subscribe on [Paradox Mods](https://mods.paradoxplaza.com/) or place the DLL in 
 
 ## 兼容性
 
-- **ExtraLandscapingTools**：功能有重叠但互不冲突
-- **无额外依赖**
+- **ExtraLandscapingTools（ELT）**：功能有重叠但互不冲突，可同时安装。两者改写的是同一批原版笔刷 prefab，工具栏不会出现重复条目；但笔刷图标取决于模组加载顺序。
+- **自包含**：无需安装其他前置。
 
 ## 安装
 
 在 Paradox Mods 订阅，或将编译后的 DLL 放入本地 Mods 目录。
+
+## 致谢
+
+感谢 ExtraLandscapingTools 与 ExtraLib 的作者 Triton Supreme 最早在游戏中暴露出这些隐藏的原版笔刷，本模组的可行性判断参考了这项工作。SimpleBrush 为独立实现。
 
 ## 作者的其他模组
 
