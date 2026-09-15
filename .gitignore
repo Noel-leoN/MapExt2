@@ -60,6 +60,7 @@ BurstDebugInformation_DoNotShip/
 **/docs/
 
 # Temporary Files
+.scratch/
 *.log
 *.binlog
 
