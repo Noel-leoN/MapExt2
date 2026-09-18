@@ -67,8 +67,9 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
 
                 // === Layer 3: 水分辨率降低 & 16-bit 显存压缩 ===
                 // [FIX] 判斷與能力對齊：僅解析度變更才觸發重建。
-                // 16-bit 格式因迭代精度問題已鎖死——ApplyWaterResolutionDowngrade 內
-                // InitQuadWaterBuffer/RebuildDataReaders 均硬編碼 R32G32B32A32_SFloat，
+                // 深度/傳播（waterTextures、m_depthsReader）因迭代精度鎖 R32；
+                // 流速（downdScaledFlowTextures、m_velocitiesReader）與原版一致為 R16，
+                // 兩類格式不可混用。InitQuadWaterBuffer / RebuildDataReaders 已按紋理類型分流。
                 // 若因 IsWaterTextureFormatModified（UI 已隱藏，僅殘留設定檔可能為 true）觸發，
                 // 只會高成本 Dispose+重建出與原版完全相同的資源。
                 if (ResolutionManager.IsWaterResolutionModified)
@@ -252,7 +253,8 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
         private static void RebuildDataReaders(Traverse traverse, WaterSystem waterSystem, int targetTexSize)
         {
             int mapSize = PatchManager.CurrentMapSize;
-            // Force 32-bit format because 16-bit lacks precision and breaks water propagation 
+            // depths Reader：與原版 WaterSystem 一致，深度/傳播用 R32。
+            // 16-bit 精度不足會截斷水流傳播；此 32-bit 鎖只約束 m_depthsReader，不含流速。
             GraphicsFormat targetFormat = GraphicsFormat.R32G32B32A32_SFloat;
 
             // === m_depthsReader (SurfaceDataReader) ===
@@ -279,6 +281,8 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
 
             if (surfaceReaderType != null)
             {
+                // velocities Reader：讀 FlowDownScaled(0)。原版 1.6.2f 改為 R16G16B16A16_SFloat，
+                // 讀取端必須與 downdScaledFlowTextures 一致，不可跟 depths 共用 R32。
                 var newVelocities = Activator.CreateInstance(surfaceReaderType,
                     waterSystem.FlowDownScaled(0), mapSize, GraphicsFormat.R16G16B16A16_SFloat);
                 traverse.Field("m_velocitiesReader").SetValue(newVelocities);
@@ -375,8 +379,9 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
 
         private static WaterSystem.QuadWaterBuffer InitQuadWaterBuffer(int2 size)
         {
-            // 16-bit 精度实测导致水流传播截断，固定使用 32-bit
-            // 如需恢复 16-bit 选项，需先解决迭代精度累积问题 (见 Water_System_Analysis.md §12)
+            // waterTextures / waterBackdropTextures：深度與水面傳播鎖 R32
+            // （16-bit 會截斷迭代精度，見 Water_System_Analysis.md §12）
+            // 下方 flow / seaPropagation 仍按原版用 R16 系格式，不要把這把 32-bit 鎖套過去
             GraphicsFormat targetFormat = GraphicsFormat.R32G32B32A32_SFloat;
             
             var buffer = new WaterSystem.QuadWaterBuffer();
