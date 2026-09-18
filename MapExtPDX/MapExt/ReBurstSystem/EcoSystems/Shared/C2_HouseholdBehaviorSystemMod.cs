@@ -468,7 +468,8 @@ namespace MapExtPDX.EcoShared
 
             // 极速版的权重计算 (不再遍历 Member，仅使用 int4 乘法)
             // 移除多余的 IsLeisure 传入,调用前已做判断
-            private int GetWeightOptimized(int spendableMoney, ResourceData data, HouseholdCache cache)
+            // 1.6.2f 收入模型迁移：disposableIncome / affluenceIncome
+            private int GetWeightOptimized(int disposableIncome, int affluenceIncome, ResourceData data, HouseholdCache cache)
             {
                 // 基础消耗
                 float baseConsumption = data.m_BaseConsumption;
@@ -491,8 +492,8 @@ namespace MapExtPDX.EcoShared
                     data.m_AdultWeight * cache.AgeCounts.z +
                     data.m_ElderlyWeight * cache.AgeCounts.w;
 
-                // 最终公式
-                float wealthFactor = math.smoothstep(wealthMod, 1f, math.max(0.01f, (spendableMoney + 5000f) / 10000f));
+                // 最终公式（1.6.2f 新模型）
+                float wealthFactor = math.smoothstep(wealthMod, 1f, math.max(0.01f, (float)disposableIncome / (float)math.max(1, affluenceIncome)));
 
                 return (int)math.round(100f * ageWeight * baseConsumption * wealthFactor);
             }
@@ -592,8 +593,8 @@ namespace MapExtPDX.EcoShared
                     HouseholdCache basecache =
                         PrecalculateHouseholdData(householdEntity, household, citizens, resources);
 
-                    // 更新昨日收入
-                    household.m_SalaryLastDay = basecache.LastDayIncome;
+                    // 更新昨日收入（1.6.2f 字段改名）
+                    household.m_Income = basecache.LastDayIncome;
 
                     // =========================================================
                     // --- 4. 幸福度搬离 ---
@@ -853,6 +854,10 @@ namespace MapExtPDX.EcoShared
                     return;
                 }
 
+                // 1.6.2f 收入模型：计算可支配收入与参考收入（替代旧的积蓄驱动）
+                int disposableIncome = EconomyUtils.GetHouseholdDisposableIncome(household, renter);
+                int affluenceIncome = EconomyUtils.GetAffluenceReferenceIncome(m_EconomyParameters) * cache.AliveCount;
+
                 // =========================================================
                 // 阶段 C: 购买资源选择 (Reservoir Sampling 单遍优化)
                 // =========================================================
@@ -868,7 +873,7 @@ namespace MapExtPDX.EcoShared
                     ResourceData resData = m_ResourceDatas[m_ResourcePrefabs[iterator.resource]];
                     if (resData.m_IsLeisure) continue; // 仅计算非娱乐资源
 
-                    int weight = GetWeightOptimized(spendableMoney, resData, cache);
+                    int weight = GetWeightOptimized(disposableIncome, affluenceIncome, resData, cache);
                     if (weight <= 0) continue;
 
                     totalWeight += weight;

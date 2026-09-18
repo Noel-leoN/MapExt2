@@ -280,7 +280,7 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
             if (surfaceReaderType != null)
             {
                 var newVelocities = Activator.CreateInstance(surfaceReaderType,
-                    waterSystem.FlowDownScaled(0), mapSize, GraphicsFormat.R32G32B32A32_SFloat);
+                    waterSystem.FlowDownScaled(0), mapSize, GraphicsFormat.R16G16B16A16_SFloat);
                 traverse.Field("m_velocitiesReader").SetValue(newVelocities);
                 ModLog.Ok(Tag, $"Rebuilt m_velocitiesReader: mapSize={mapSize}");
             }

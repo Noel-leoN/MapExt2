@@ -152,8 +152,6 @@ namespace MapExtPDX.EcoShared
 				m_ServiceAvailables = SystemAPI.GetComponentLookup<ServiceAvailable>(isReadOnly: true),
 				m_PopulationData = SystemAPI.GetComponentLookup<Population>(isReadOnly: true),
 				m_HouseholdCitizens = SystemAPI.GetBufferLookup<HouseholdCitizen>(isReadOnly: true),
-				m_RenterBufs = SystemAPI.GetBufferLookup<Renter>(isReadOnly: true),
-				m_ConsumptionDatas = SystemAPI.GetComponentLookup<ConsumptionData>(isReadOnly: true),
 				m_CurrentDistrictData = SystemAPI.GetComponentLookup<CurrentDistrict>(isReadOnly: true),
 				m_DistrictModifiers = SystemAPI.GetBufferLookup<DistrictModifier>(isReadOnly: true),
 				m_EconomyParameters = m_EconomyParameterQuery.GetSingleton<EconomyParameterData>(),
@@ -342,8 +340,6 @@ namespace MapExtPDX.EcoShared
 			[ReadOnly] public ComponentLookup<IndustrialProcessData> m_IndustrialProcesses;
 			[ReadOnly] public ComponentLookup<ServiceAvailable> m_ServiceAvailables;
 			[ReadOnly] public ComponentLookup<Population> m_PopulationData;
-			[ReadOnly] public BufferLookup<Renter> m_RenterBufs;
-			[ReadOnly] public ComponentLookup<ConsumptionData> m_ConsumptionDatas;
 			[ReadOnly] public ComponentLookup<CurrentDistrict> m_CurrentDistrictData;
 			[ReadOnly] public BufferLookup<DistrictModifier> m_DistrictModifiers;
 			[ReadOnly] public RandomSeed m_RandomSeed;
@@ -553,7 +549,7 @@ namespace MapExtPDX.EcoShared
 				}
 			}
 
-			private float GetWeight(LeisureType type, int wealth, CitizenAge age)
+			private float GetWeight(LeisureType type, int disposableIncome, int affluenceIncome, CitizenAge age)
 			{
 				float num = 1f;
 				float num2;
@@ -631,7 +627,7 @@ namespace MapExtPDX.EcoShared
 						break;
 				}
 
-				return num3 * num * num2 * math.smoothstep(xMin, 1f, (wealth + 5000f) / 10000f);
+				return num3 * num * num2 * math.smoothstep(xMin, 1f, math.max(0.01f, (float)disposableIncome / (float)affluenceIncome));
 			}
 
 			private LeisureType SelectLeisureType(Entity household, bool tourist, Citizen citizenData,
@@ -647,21 +643,29 @@ namespace MapExtPDX.EcoShared
 				if (m_Households.HasComponent(household) && m_Resources.HasBuffer(household) &&
 				    m_HouseholdCitizens.HasBuffer(household))
 				{
-					int wealth = ((!tourist)
-						? EconomyUtils.GetHouseholdSpendableMoney(m_Households[household], m_Resources[household],
-							ref m_RenterBufs, ref m_ConsumptionDatas, ref m_PrefabRefs, propertyRenter)
-						: EconomyUtils.GetResources(Resource.Money, m_Resources[household]));
+					int disposableIncome;
+					int affluenceIncome;
+					if (tourist)
+					{
+						disposableIncome = EconomyUtils.GetTouristDisposableIncome(citizenData, m_EconomyParameters, m_EconomyParameters.m_TouristTravelSpendMultiplier);
+						affluenceIncome = EconomyUtils.GetAffluenceReferenceIncome(m_EconomyParameters);
+					}
+					else
+					{
+						disposableIncome = EconomyUtils.GetHouseholdDisposableIncome(m_Households[household], propertyRenter);
+						affluenceIncome = EconomyUtils.GetAffluenceReferenceIncome(m_EconomyParameters) * m_HouseholdCitizens[household].Length;
+					}
 					float num = 0f;
 					CitizenAge age = citizenData.GetAge();
 					for (int i = 0; i < 10; i++)
 					{
-						num += GetWeight((LeisureType)i, wealth, age);
+						num += GetWeight((LeisureType)i, disposableIncome, affluenceIncome, age);
 					}
 
 					float num2 = num * random.NextFloat();
 					for (int j = 0; j < 10; j++)
 					{
-						num2 -= GetWeight((LeisureType)j, wealth, age);
+						num2 -= GetWeight((LeisureType)j, disposableIncome, affluenceIncome, age);
 						if (num2 <= 0.001f)
 						{
 							return (LeisureType)j;

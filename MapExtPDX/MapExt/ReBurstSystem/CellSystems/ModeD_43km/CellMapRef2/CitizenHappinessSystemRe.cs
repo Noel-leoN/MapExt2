@@ -92,9 +92,6 @@ namespace MapExtPDX.ModeD
         public ComponentTypeHandle<HealthProblem> m_HealthProblemType;
 
         [ReadOnly]
-        public BufferLookup<Game.Economy.Resources> m_Resources;
-
-        [ReadOnly]
         public ComponentLookup<PropertyRenter> m_Properties;
 
         [ReadOnly]
@@ -162,9 +159,6 @@ namespace MapExtPDX.ModeD
 
         [ReadOnly]
         public ComponentLookup<Game.Buildings.School> m_Schools;
-
-        [ReadOnly]
-        public ComponentLookup<HomelessHousehold> m_HomelessHouseholds;
 
         [ReadOnly]
         public NativeArray<GroundPollution> m_PollutionMap;
@@ -275,10 +269,6 @@ namespace MapExtPDX.ModeD
             {
                 _ = nativeArray[i];
                 Entity household = nativeArray3[i].m_Household;
-                if (!this.m_Resources.HasBuffer(household))
-                {
-                    return;
-                }
                 Citizen citizen = nativeArray2[i];
                 if ((CollectionUtils.TryGet(nativeArray8, i, out var value27) && CitizenUtils.IsDead(value27)) || ((this.m_Households[household].m_Flags & HouseholdFlags.MovedIn) == 0 && (citizen.m_State & CitizenFlags.Tourist) == 0))
                 {
@@ -296,6 +286,7 @@ namespace MapExtPDX.ModeD
                 }
                 DynamicBuffer<HouseholdCitizen> householdCitizens = this.m_HouseholdCitizens[household];
                 int num3 = 0;
+                int familySize = householdCitizens.Length;
                 for (int j = 0; j < householdCitizens.Length; j++)
                 {
                     if (citizen.GetAge() == CitizenAge.Child)
@@ -303,8 +294,14 @@ namespace MapExtPDX.ModeD
                         num3++;
                     }
                 }
-                int shoppedValueLastDay = (int)this.m_Households[household].m_ShoppedValueLastDay;
-                int2 @int = ((shoppedValueLastDay > 0) ? new int2(0, math.min(15, shoppedValueLastDay / 50)) : default(int2));
+                // 1.6.2f 财富幸福度迁移：使用 GetWealthWellbeing 方法
+                Household householdData = this.m_Households[household];
+                int rent = (entity != Entity.Null && this.m_Properties.HasComponent(household))
+                    ? this.m_Properties[household].m_Rent
+                    : 0;
+                int2 @int = ((citizen.m_State & CitizenFlags.Tourist) != CitizenFlags.None)
+                    ? default(int2)
+                    : new int2(0, CitizenHappinessSystem.GetWealthWellbeing(householdData.m_Income, rent, familySize, in this.m_CitizenHappinessParameters));
                 value22.x += @int.x + @int.y;
                 value22.y++;
                 value22.z += @int.x;
@@ -363,32 +360,37 @@ namespace MapExtPDX.ModeD
                         entity3 = building.m_RoadEdge;
                         curvePosition = building.m_CurvePosition;
                     }
-                    int4 = CitizenHappinessSystem.GetElectricitySupplyBonuses(property, ref this.m_ElectricityConsumers, in this.m_CitizenHappinessParameters);
+                    bool hasElec = this.m_ElectricityConsumers.HasComponent(property);
+                    ElectricityConsumer elecConsumer = hasElec ? this.m_ElectricityConsumers[property] : default(ElectricityConsumer);
+                    bool hasWater = this.m_WaterConsumers.HasComponent(property);
+                    WaterConsumer waterConsumer = hasWater ? this.m_WaterConsumers[property] : default(WaterConsumer);
+
+                    int4 = CitizenHappinessSystem.GetElectricitySupplyBonuses(hasElec, elecConsumer, in this.m_CitizenHappinessParameters);
                     value5.x += int4.x + int4.y;
                     value5.z += int4.x;
                     value5.w += int4.y;
                     value5.y++;
-                    int5 = CitizenHappinessSystem.GetElectricityFeeBonuses(property, ref this.m_ElectricityConsumers, relativeFee, in this.m_CitizenHappinessParameters);
+                    int5 = CitizenHappinessSystem.GetElectricityFeeBonuses(hasElec, elecConsumer, relativeFee, in this.m_CitizenHappinessParameters);
                     value6.x += int5.x + int5.y;
                     value6.z += int5.x;
                     value6.w += int5.y;
                     value6.y++;
-                    int10 = CitizenHappinessSystem.GetWaterSupplyBonuses(property, ref this.m_WaterConsumers, in this.m_CitizenHappinessParameters);
+                    int10 = CitizenHappinessSystem.GetWaterSupplyBonuses(hasWater, waterConsumer, in this.m_CitizenHappinessParameters);
                     value10.x += int10.x + int10.y;
                     value10.z += int10.x;
                     value10.w += int10.y;
                     value10.y++;
-                    int11 = CitizenHappinessSystem.GetWaterFeeBonuses(property, ref this.m_WaterConsumers, relativeFee2, in this.m_CitizenHappinessParameters);
+                    int11 = CitizenHappinessSystem.GetWaterFeeBonuses(hasWater, waterConsumer, relativeFee2, in this.m_CitizenHappinessParameters);
                     value11.x += int11.x + int11.y;
                     value11.z += int11.x;
                     value11.w += int11.y;
                     value11.y++;
-                    int12 = CitizenHappinessSystem.GetWaterPollutionBonuses(property, ref this.m_WaterConsumers, cityModifiers, in this.m_CitizenHappinessParameters);
+                    int12 = CitizenHappinessSystem.GetWaterPollutionBonuses(hasWater, waterConsumer, cityModifiers, in this.m_CitizenHappinessParameters);
                     value12.x += int12.x + int12.y;
                     value12.z += int12.x;
                     value12.w += int12.y;
                     value12.y++;
-                    int13 = CitizenHappinessSystem.GetSewageBonuses(property, ref this.m_WaterConsumers, in this.m_CitizenHappinessParameters);
+                    int13 = CitizenHappinessSystem.GetSewageBonuses(hasWater, waterConsumer, in this.m_CitizenHappinessParameters);
                     value13.x += int13.x + int13.y;
                     value13.z += int13.x;
                     value13.w += int13.y;
@@ -396,17 +398,18 @@ namespace MapExtPDX.ModeD
                     if (this.m_ServiceCoverages.HasBuffer(entity3))
                     {
                         DynamicBuffer<Game.Net.ServiceCoverage> serviceCoverage = this.m_ServiceCoverages[entity3];
-                        int6 = CitizenHappinessSystem.GetHealthcareBonuses(curvePosition, serviceCoverage, ref this.m_Locked, healthcareServicePrefab, in this.m_CitizenHappinessParameters);
+                        bool isLocked = this.m_Locked.HasComponent(property);
+                        int6 = CitizenHappinessSystem.GetHealthcareBonuses(curvePosition, serviceCoverage, isLocked, in this.m_CitizenHappinessParameters);
                         value7.x += int6.x + int6.y;
                         value7.z += int6.x;
                         value7.w += int6.y;
                         value7.y++;
-                        int16 = CitizenHappinessSystem.GetEntertainmentBonuses(curvePosition, serviceCoverage, cityModifiers, ref this.m_Locked, parkServicePrefab, in this.m_CitizenHappinessParameters);
+                        int16 = CitizenHappinessSystem.GetEntertainmentBonuses(curvePosition, serviceCoverage, cityModifiers, isLocked, in this.m_CitizenHappinessParameters);
                         value15.x += int16.x + int16.y;
                         value15.z += int16.x;
                         value15.w += int16.y;
                         value15.y++;
-                        int17 = CitizenHappinessSystem.GetEducationBonuses(curvePosition, serviceCoverage, ref this.m_Locked, educationServicePrefab, in this.m_CitizenHappinessParameters, num3);
+                        int17 = CitizenHappinessSystem.GetEducationBonuses(curvePosition, serviceCoverage, isLocked, in this.m_CitizenHappinessParameters, num3);
                         value16.x += int17.x + int17.y;
                         value16.z += int17.x;
                         value16.w += int17.y;
@@ -436,22 +439,25 @@ namespace MapExtPDX.ModeD
                     value9.y++;
                     // mod end;
 
-                    int14 = CitizenHappinessSystem.GetGarbageBonuses(property, ref this.m_Garbages, ref this.m_Locked, garbageServicePrefab, in this.m_GarbageParameters);
+                    bool isLocked2 = this.m_Locked.HasComponent(property);
+                    int14 = CitizenHappinessSystem.GetGarbageBonuses(property, ref this.m_Garbages, isLocked2, in this.m_GarbageParameters);
                     value14.x += int14.x + int14.y;
                     value14.z += int14.x;
                     value14.w += int14.y;
                     value14.y++;
-                    int15 = CitizenHappinessSystem.GetCrimeBonuses(crimeVictim, property, ref this.m_CrimeProducers, ref this.m_Locked, policeServicePrefab, in this.m_CitizenHappinessParameters);
+                    int15 = CitizenHappinessSystem.GetCrimeBonuses(crimeVictim, property, ref this.m_CrimeProducers, isLocked2, in this.m_CitizenHappinessParameters);
                     value.x += int15.x + int15.y;
                     value.z += int15.x;
                     value.w += int15.y;
                     value.y++;
-                    int18 = CitizenHappinessSystem.GetMailBonuses(property, ref this.m_MailProducers, ref this.m_Locked, telecomServicePrefab, in this.m_CitizenHappinessParameters);
+                    int18 = CitizenHappinessSystem.GetMailBonuses(property, ref this.m_MailProducers, isLocked2, in this.m_CitizenHappinessParameters);
                     value17.x += int18.x + int18.y;
                     value17.z += int18.x;
                     value17.w += int18.y;
                     value17.y++;
-                    int19 = CitizenHappinessSystem.GetTelecomBonuses(property, ref this.m_Transforms, this.m_TelecomCoverage, ref this.m_Locked, telecomServicePrefab, in this.m_CitizenHappinessParameters);
+                    bool hasTransform = this.m_Transforms.HasComponent(property);
+                    float3 position = hasTransform ? this.m_Transforms[property].m_Position : default(float3);
+                    int19 = CitizenHappinessSystem.GetTelecomBonuses(hasTransform, position, this.m_TelecomCoverage, isLocked2, in this.m_CitizenHappinessParameters);
                     value2.x += int19.x + int19.y;
                     value2.z += int19.x;
                     value2.w += int19.y;
@@ -462,7 +468,7 @@ namespace MapExtPDX.ModeD
                     value26.w += int23.y;
                     value26.y++;
                     value25.y++;
-                    if (this.m_SpawnableBuildings.HasComponent(prefab) && this.m_BuildingDatas.HasComponent(prefab) && this.m_BuildingPropertyDatas.HasComponent(prefab) && !this.m_HomelessHouseholds.HasComponent(household))
+                    if ((citizen.m_State & CitizenFlags.Homeless) == 0 && this.m_SpawnableBuildings.HasComponent(prefab) && this.m_BuildingDatas.HasComponent(prefab) && this.m_BuildingPropertyDatas.HasComponent(prefab))
                     {
                         SpawnableBuildingData spawnableBuildingData = this.m_SpawnableBuildings[prefab];
                         BuildingData buildingData = this.m_BuildingDatas[prefab];
@@ -525,7 +531,9 @@ namespace MapExtPDX.ModeD
                 num7 += math.select(0, 1, (citizen.m_State & CitizenFlags.BicycleUser) != 0);
                 float wellbeing = num6;
                 float health = num7;
-                CitizenHappinessSystem.GetLocalEffectBonuses(ref wellbeing, ref health, ref this.m_LocalEffectData, ref this.m_Transforms, entity);
+                bool hasTransformForEffect = this.m_Transforms.HasComponent(entity);
+                float3 positionForEffect = hasTransformForEffect ? this.m_Transforms[entity].m_Position : default(float3);
+                CitizenHappinessSystem.GetLocalEffectBonuses(ref wellbeing, ref health, ref this.m_LocalEffectData, hasTransformForEffect, positionForEffect);
                 if (this.m_DistrictModifiers.HasBuffer(entity2))
                 {
                     DynamicBuffer<DistrictModifier> modifiers = this.m_DistrictModifiers[entity2];

@@ -30,6 +30,9 @@ namespace MapExtPDX.ModeD
         public bool m_EditorMode;
 
         [ReadOnly]
+        public PlacementOverrides m_Overrides;
+
+        [ReadOnly]
         public Mode m_Mode;
 
         [ReadOnly]
@@ -530,6 +533,10 @@ namespace MapExtPDX.ModeD
                             {
                                 num22 = math.select(m_ControlPoints[num21].m_ElementIndex.x, num20, num20 != -1);
                                 num23 = math.select(num23, m_ControlPoints[num21].m_Position.y - num19, num19 != float.MinValue);
+                            }
+                            if (m_Overrides.m_OverrideParentMesh)
+                            {
+                                num22 = m_Overrides.m_ParentMesh;
                             }
                             if (num22 != -1)
                             {

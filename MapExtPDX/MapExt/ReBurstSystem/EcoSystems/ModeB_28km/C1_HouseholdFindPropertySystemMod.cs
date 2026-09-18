@@ -833,9 +833,9 @@ namespace MapExtPDX.ModeB
                     propertySeeker.m_LastPropertySeekFrame +
                     kFindPropertyCoolDown > m_SimulationFrame)
                 {
-                    // 若彻底找不到家且冷却结束，同时如果城市中几乎没有可用空房子 (<10)，此人直接搬离城市
+                    // 若彻底找不到家且冷却结束，同时如果城市中几乎没有可用空房子 (<MinFreeResidentialProperties)，此人直接搬离城市
                     if (m_PathInformations[householdEntity].m_State != PathFlags.Pending &&
-                        math.csum(m_ResidentialPropertyData.m_FreeProperties) < 10)
+                        math.csum(m_ResidentialPropertyData.m_FreeProperties) < m_EconomyParameters.m_MinFreeResidentialProperties)
                     {
                         m_DebugMoveAwayNoPropertyCounter.Increment();
                         CitizenUtils.HouseholdMoveAway(m_CommandBuffer, householdEntity);

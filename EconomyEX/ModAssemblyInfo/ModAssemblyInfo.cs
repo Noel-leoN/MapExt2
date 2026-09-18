@@ -10,7 +10,7 @@ namespace EconomyEX
     public class ModAssemblyInfo
     {
         public const string Name        = "EconomyEX";
-        public const string Version     = "4.8.0";
+        public const string Version     = "4.9.0";
         public const string Title       = "EconomyEX";
         public const string Description = "Economy Extra Fix and Performance Boost";
     }

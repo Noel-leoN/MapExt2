@@ -831,8 +831,10 @@ namespace MapExtPDX.ModeB
                 Entity telecomServicePrefab = telecomParameters.m_TelecomServicePrefab;
                 if (!locked.HasEnabledComponent(happinessFactorParameters[4].m_LockedEntity))
                 {
-                    int2 electricitySupplyBonuses = CitizenHappinessSystem.GetElectricitySupplyBonuses(property,
-                        ref electricityConsumers, in citizenHappinessParameters);
+                    bool hasElectricityConsumer = electricityConsumers.HasComponent(property);
+                    ElectricityConsumer consumer = hasElectricityConsumer ? electricityConsumers[property] : default(ElectricityConsumer);
+                    int2 electricitySupplyBonuses = CitizenHappinessSystem.GetElectricitySupplyBonuses(hasElectricityConsumer,
+                        consumer, in citizenHappinessParameters);
                     int2 value = factors[3];
                     value.x++;
                     value.y += (electricitySupplyBonuses.x + electricitySupplyBonuses.y) / 2 -
@@ -842,8 +844,10 @@ namespace MapExtPDX.ModeB
 
                 if (!locked.HasEnabledComponent(happinessFactorParameters[23].m_LockedEntity))
                 {
-                    int2 electricityFeeBonuses = CitizenHappinessSystem.GetElectricityFeeBonuses(property,
-                        ref electricityConsumers, relativeElectricityFee, in citizenHappinessParameters);
+                    bool hasElectricityConsumer = electricityConsumers.HasComponent(property);
+                    ElectricityConsumer consumer = hasElectricityConsumer ? electricityConsumers[property] : default(ElectricityConsumer);
+                    int2 electricityFeeBonuses = CitizenHappinessSystem.GetElectricityFeeBonuses(hasElectricityConsumer,
+                        consumer, relativeElectricityFee, in citizenHappinessParameters);
                     int2 value2 = factors[26];
                     value2.x++;
                     value2.y += (electricityFeeBonuses.x + electricityFeeBonuses.y) / 2 -
@@ -853,8 +857,10 @@ namespace MapExtPDX.ModeB
 
                 if (!locked.HasEnabledComponent(happinessFactorParameters[8].m_LockedEntity))
                 {
+                    bool hasWaterConsumer = waterConsumers.HasComponent(property);
+                    WaterConsumer waterConsumer = hasWaterConsumer ? waterConsumers[property] : default(WaterConsumer);
                     int2 waterSupplyBonuses =
-                        CitizenHappinessSystem.GetWaterSupplyBonuses(property, ref waterConsumers,
+                        CitizenHappinessSystem.GetWaterSupplyBonuses(hasWaterConsumer, waterConsumer,
                             in citizenHappinessParameters);
                     int2 value3 = factors[7];
                     value3.x++;
@@ -865,7 +871,9 @@ namespace MapExtPDX.ModeB
 
                 if (!locked.HasEnabledComponent(happinessFactorParameters[24].m_LockedEntity))
                 {
-                    int2 waterFeeBonuses = CitizenHappinessSystem.GetWaterFeeBonuses(property, ref waterConsumers,
+                    bool hasWaterConsumer = waterConsumers.HasComponent(property);
+                    WaterConsumer waterConsumer = hasWaterConsumer ? waterConsumers[property] : default(WaterConsumer);
+                    int2 waterFeeBonuses = CitizenHappinessSystem.GetWaterFeeBonuses(hasWaterConsumer, waterConsumer,
                         relativeWaterFee, in citizenHappinessParameters);
                     int2 value4 = factors[27];
                     value4.x++;
@@ -875,8 +883,10 @@ namespace MapExtPDX.ModeB
 
                 if (!locked.HasEnabledComponent(happinessFactorParameters[9].m_LockedEntity))
                 {
-                    int2 waterPollutionBonuses = CitizenHappinessSystem.GetWaterPollutionBonuses(property,
-                        ref waterConsumers, cityModifiers2, in citizenHappinessParameters);
+                    bool hasWaterConsumer = waterConsumers.HasComponent(property);
+                    WaterConsumer waterConsumer = hasWaterConsumer ? waterConsumers[property] : default(WaterConsumer);
+                    int2 waterPollutionBonuses = CitizenHappinessSystem.GetWaterPollutionBonuses(hasWaterConsumer,
+                        waterConsumer, cityModifiers2, in citizenHappinessParameters);
                     int2 value5 = factors[8];
                     value5.x++;
                     value5.y += (waterPollutionBonuses.x + waterPollutionBonuses.y) / 2 -
@@ -886,8 +896,10 @@ namespace MapExtPDX.ModeB
 
                 if (!locked.HasEnabledComponent(happinessFactorParameters[10].m_LockedEntity))
                 {
+                    bool hasWaterConsumer = waterConsumers.HasComponent(property);
+                    WaterConsumer waterConsumer = hasWaterConsumer ? waterConsumers[property] : default(WaterConsumer);
                     int2 sewageBonuses =
-                        CitizenHappinessSystem.GetSewageBonuses(property, ref waterConsumers,
+                        CitizenHappinessSystem.GetSewageBonuses(hasWaterConsumer, waterConsumer,
                             in citizenHappinessParameters);
                     int2 value6 = factors[9];
                     value6.x++;
@@ -902,7 +914,7 @@ namespace MapExtPDX.ModeB
                     {
                         int2 healthcareBonuses = CitizenHappinessSystem.GetHealthcareBonuses(curvePosition,
                             serviceCoverage,
-                            ref locked, healthcareServicePrefab, in citizenHappinessParameters);
+                            locked.HasEnabledComponent(happinessFactorParameters[5].m_LockedEntity), in citizenHappinessParameters);
                         int2 value7 = factors[4];
                         value7.x++;
                         value7.y += (healthcareBonuses.x + healthcareBonuses.y) / 2 -
@@ -913,7 +925,8 @@ namespace MapExtPDX.ModeB
                     if (!locked.HasEnabledComponent(happinessFactorParameters[12].m_LockedEntity))
                     {
                         int2 entertainmentBonuses = CitizenHappinessSystem.GetEntertainmentBonuses(curvePosition,
-                            serviceCoverage, cityModifiers2, ref locked, parkServicePrefab,
+                            serviceCoverage, cityModifiers2,
+                            locked.HasEnabledComponent(happinessFactorParameters[12].m_LockedEntity),
                             in citizenHappinessParameters);
                         int2 value8 = factors[11];
                         value8.x++;
@@ -926,7 +939,7 @@ namespace MapExtPDX.ModeB
                     {
                         int2 educationBonuses = CitizenHappinessSystem.GetEducationBonuses(curvePosition,
                             serviceCoverage,
-                            ref locked, educationServicePrefab, in citizenHappinessParameters, 1);
+                            locked.HasEnabledComponent(happinessFactorParameters[13].m_LockedEntity), in citizenHappinessParameters, 1);
                         int2 value9 = factors[12];
                         value9.x++;
                         value9.y += Mathf.RoundToInt(num2 * (float)(educationBonuses.x + educationBonuses.y) / 2f) -
@@ -981,7 +994,7 @@ namespace MapExtPDX.ModeB
                 if (!locked.HasEnabledComponent(happinessFactorParameters[11].m_LockedEntity))
                 {
                     int2 garbageBonuses = CitizenHappinessSystem.GetGarbageBonuses(property, ref garbageProducers,
-                        ref locked, happinessFactorParameters[11].m_LockedEntity, in garbageParameters);
+                        locked.HasEnabledComponent(happinessFactorParameters[11].m_LockedEntity), in garbageParameters);
                     int2 value14 = factors[10];
                     value14.x++;
                     value14.y += (garbageBonuses.x + garbageBonuses.y) / 2 - happinessFactorParameters[11].m_BaseLevel;
@@ -991,7 +1004,7 @@ namespace MapExtPDX.ModeB
                 if (!locked.HasEnabledComponent(happinessFactorParameters[1].m_LockedEntity))
                 {
                     int2 crimeBonuses = CitizenHappinessSystem.GetCrimeBonuses(default(CrimeVictim), property,
-                        ref crimeProducers, ref locked, happinessFactorParameters[1].m_LockedEntity,
+                        ref crimeProducers, locked.HasEnabledComponent(happinessFactorParameters[1].m_LockedEntity),
                         in citizenHappinessParameters);
                     int2 value15 = factors[1];
                     value15.x++;
@@ -1001,8 +1014,8 @@ namespace MapExtPDX.ModeB
 
                 if (!locked.HasEnabledComponent(happinessFactorParameters[14].m_LockedEntity))
                 {
-                    int2 mailBonuses = CitizenHappinessSystem.GetMailBonuses(property, ref mailProducers, ref locked,
-                        telecomServicePrefab, in citizenHappinessParameters);
+                    int2 mailBonuses = CitizenHappinessSystem.GetMailBonuses(property, ref mailProducers,
+                        locked.HasEnabledComponent(happinessFactorParameters[14].m_LockedEntity), in citizenHappinessParameters);
                     int2 value16 = factors[13];
                     value16.x++;
                     value16.y += (mailBonuses.x + mailBonuses.y) / 2 - happinessFactorParameters[14].m_BaseLevel;
@@ -1011,8 +1024,10 @@ namespace MapExtPDX.ModeB
 
                 if (!locked.HasEnabledComponent(happinessFactorParameters[0].m_LockedEntity))
                 {
-                    int2 telecomBonuses = CitizenHappinessSystem.GetTelecomBonuses(property, ref transforms,
-                        telecomCoverage, ref locked, telecomServicePrefab, in citizenHappinessParameters);
+                    bool hasTransform = transforms.HasComponent(property);
+                    float3 position = hasTransform ? transforms[property].m_Position : default(float3);
+                    int2 telecomBonuses = CitizenHappinessSystem.GetTelecomBonuses(hasTransform, position,
+                        telecomCoverage, locked.HasEnabledComponent(happinessFactorParameters[0].m_LockedEntity), in citizenHappinessParameters);
                     int2 value17 = factors[0];
                     value17.x++;
                     value17.y += (telecomBonuses.x + telecomBonuses.y) / 2 - happinessFactorParameters[0].m_BaseLevel;
@@ -1066,9 +1081,10 @@ namespace MapExtPDX.ModeB
 
                 float wellbeing = 50f;
                 float health = 50f;
+                bool hasTransformLocal = transforms.HasComponent(property);
+                float3 positionLocal = hasTransformLocal ? transforms[property].m_Position : default(float3);
                 float2 float3 = CitizenHappinessSystem.GetLocalEffectBonuses(ref wellbeing, ref health,
-                    ref localEffectData,
-                    ref transforms, property);
+                    ref localEffectData, hasTransformLocal, positionLocal);
                 int2 value21 = factors[28];
                 value21.x++;
                 value21.y += Mathf.RoundToInt(float3.x + float3.y) / 2;
@@ -1341,23 +1357,24 @@ namespace MapExtPDX.ModeB
                     buildingData2.m_LotSize.y / math.max(1f, buildingPropertyData.m_ResidentialProperties)));
             result.level = spawnableBuildingData.m_Level;
             int2 int5 = default(int2);
+            bool isLocked = locked.HasComponent(building);
             if (serviceCoverages.HasBuffer(buildingData.m_RoadEdge))
             {
                 DynamicBuffer<Game.Net.ServiceCoverage> serviceCoverage = serviceCoverages[buildingData.m_RoadEdge];
                 int2 healthcareBonuses = CitizenHappinessSystem.GetHealthcareBonuses(buildingData.m_CurvePosition,
-                    serviceCoverage, ref locked, healthcareService, in happinessParameterData);
+                    serviceCoverage, isLocked, in happinessParameterData);
                 int5 += healthcareBonuses;
                 healthcareBonuses = CitizenHappinessSystem.GetEntertainmentBonuses(buildingData.m_CurvePosition,
-                    serviceCoverage, cityModifiers, ref locked, entertainmentService, in happinessParameterData);
+                    serviceCoverage, cityModifiers, isLocked, in happinessParameterData);
                 int5 += healthcareBonuses;
                 result.welfareBonus = CitizenHappinessSystem.GetWelfareValue(buildingData.m_CurvePosition,
                     serviceCoverage, in happinessParameterData);
                 result.educationBonus = CitizenHappinessSystem.GetEducationBonuses(buildingData.m_CurvePosition,
-                    serviceCoverage, ref locked, educationService, in happinessParameterData, 1);
+                    serviceCoverage, isLocked, in happinessParameterData, 1);
             }
 
             int2 crimeBonuses = CitizenHappinessSystem.GetCrimeBonuses(default(CrimeVictim), building, ref crimes,
-                ref locked, policeService, in happinessParameterData);
+                isLocked, in happinessParameterData);
             unchecked
             {
                 int2 healthcareBonuses =
@@ -1373,8 +1390,10 @@ namespace MapExtPDX.ModeB
                     GetNoiseBonuses(building, ref transforms, noiseMap,
                         in happinessParameterData);
                 int5 += healthcareBonuses;
-                healthcareBonuses = CitizenHappinessSystem.GetTelecomBonuses(building, ref transforms, telecomCoverages,
-                    ref locked, telecomService, in happinessParameterData);
+                bool hasTransform = transforms.HasComponent(building);
+                float3 position = hasTransform ? transforms[building].m_Position : default(float3);
+                healthcareBonuses = CitizenHappinessSystem.GetTelecomBonuses(hasTransform, position, telecomCoverages,
+                    isLocked, in happinessParameterData);
                 int5 += healthcareBonuses;
                 healthcareBonuses = PropertyUtils.GetElectricityBonusForApartmentQuality(building,
                     ref electricityConsumers, in happinessParameterData);
@@ -1387,14 +1406,16 @@ namespace MapExtPDX.ModeB
                     PropertyUtils.GetSewageBonusForApartmentQuality(building, ref waterConsumers,
                         in happinessParameterData);
                 int5 += healthcareBonuses;
-                healthcareBonuses = CitizenHappinessSystem.GetWaterPollutionBonuses(building, ref waterConsumers,
+                bool hasWaterForPollution = waterConsumers.HasComponent(building);
+                WaterConsumer waterForPollution = hasWaterForPollution ? waterConsumers[building] : default(WaterConsumer);
+                healthcareBonuses = CitizenHappinessSystem.GetWaterPollutionBonuses(hasWaterForPollution, waterForPollution,
                     cityModifiers, in happinessParameterData);
                 int5 += healthcareBonuses;
-                healthcareBonuses = CitizenHappinessSystem.GetGarbageBonuses(building, ref garbageProducers, ref locked,
-                    garbageService, in garbageParameterData);
+                healthcareBonuses = CitizenHappinessSystem.GetGarbageBonuses(building, ref garbageProducers, isLocked,
+                    in garbageParameterData);
                 int5 += healthcareBonuses;
-                healthcareBonuses = CitizenHappinessSystem.GetMailBonuses(building, ref mailProducers, ref locked,
-                    telecomService, in happinessParameterData);
+                healthcareBonuses = CitizenHappinessSystem.GetMailBonuses(building, ref mailProducers, isLocked,
+                    in happinessParameterData);
                 int5 += healthcareBonuses;
                 if (flag)
                 {

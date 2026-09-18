@@ -12,6 +12,7 @@ namespace MapExtPDX.ModeB
     [BurstCompile]
     public struct UpdateWindVelocityJob : IJobFor
     {
+        [NativeDisableParallelForRestriction]
         public NativeArray<WindSimulationSystem.WindCell> m_Cells;
 
         [ReadOnly]
@@ -48,9 +49,13 @@ namespace MapExtPDX.ModeB
                 int3 position2 = new int3(@int.x + 1, @int.y, @int.z);
                 float3 cellCenter = XCellMapSystemRe.WindSimulationSystemGetCellCenter(index);
                 cellCenter.y = math.lerp(m_TerrainRange.x, m_TerrainRange.y, (@int.z + 0.5f) / kResolution.z);
+                float3 cellCenter2 = XCellMapSystemRe.WindSimulationSystemGetCellCenter(position.x + position.y * kResolution.x + position.z * kResolution.x * kResolution.y);
+                float3 cellCenter3 = XCellMapSystemRe.WindSimulationSystemGetCellCenter(position2.x + position2.y * kResolution.x + position2.z * kResolution.x * kResolution.y);
+                cellCenter2.y = cellCenter.y;
+                cellCenter3.y = cellCenter.y;
                 float num = WaterUtils.SampleHeight(ref m_WaterSurfaceData, ref m_TerrainHeightData, cellCenter);
-                float num2 = WaterUtils.SampleHeight(ref m_WaterSurfaceData, ref m_TerrainHeightData, cellCenter);
-                float num3 = WaterUtils.SampleHeight(ref m_WaterSurfaceData, ref m_TerrainHeightData, cellCenter);
+                float num2 = WaterUtils.SampleHeight(ref m_WaterSurfaceData, ref m_TerrainHeightData, cellCenter2);
+                float num3 = WaterUtils.SampleHeight(ref m_WaterSurfaceData, ref m_TerrainHeightData, cellCenter3);
                 float num4 = 65535f / (m_TerrainHeightData.scale.y * kResolution.z);
                 float num5 = math.saturate((0.5f * (num4 + num + num2) - cellCenter.y) / num4);
                 float num6 = math.saturate((0.5f * (num4 + num + num3) - cellCenter.y) / num4);
@@ -74,6 +79,7 @@ namespace MapExtPDX.ModeB
     [BurstCompile]
     public struct UpdatePressureJob : IJobFor
     {
+        [NativeDisableParallelForRestriction]
         public NativeArray<WindSimulationSystem.WindCell> m_Cells;
 
         public float2 m_Wind;

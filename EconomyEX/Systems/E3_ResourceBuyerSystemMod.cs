@@ -362,7 +362,8 @@ namespace EconomyEX.Systems
 						}
 					}
 
-					if (m_Resources.HasBuffer(item.m_Seller) &&
+					// 1.6.2f 外连导入保护：外连进口商品无需检查实体库存
+					if ((item.m_Flags & SaleFlags.ImportFromOC) == 0 && m_Resources.HasBuffer(item.m_Seller) &&
 					    EconomyUtils.GetResources(item.m_Resource, m_Resources[item.m_Seller]) <= 0)
 					{
 						continue;
