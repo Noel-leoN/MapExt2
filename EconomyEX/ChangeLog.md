@@ -1,21 +1,17 @@
-## v4.8.0 - Vehicle Rescue Reliability, Large Map Warning and Second Load Fixes
+## v4.9.0 - Game 1.6.2f Compatibility and Economy Simulation Adaptation
 
-* **[Map Size]:** Loading a large map save without MapExt installed now shows a warning dialog instead of only writing a line to the log.
-* **[Fix]:** Reworked how the vehicle rescue system cleans up stranded vehicles, addressing an autosave failure reported on a large save with the system enabled.
-* **[Fix]:** The vehicle rescue system now handles stranded vehicles in batches instead of processing over a thousand of them in a single frame when loading an older save.
-* **[Fix]:** Loading a second save within the same session could make the vehicle rescue system act on unrelated vehicles.
-* **[Fix]:** After loading a second save in the same session, the vanilla economy systems ran alongside the replaced ones, and the pet spawning and through-traffic settings reverted to vanilla behaviour.
-* **[Fix]:** The settings page stayed on "IDLE: Waiting for map load..." when the first map loaded in a session was a large map.
-* **[Performance]:** The vehicle rescue system now scans off the main thread, so looking for stranded vehicles no longer causes a brief stall.
+* **[Compatibility]:** Updated for game version 1.6.2f. Note that the official patch introduced adjustments to the underlying economy simulation, which may lead to demographic or economic fluctuations in existing saves; please report any unexpected behaviour.
+* **[Economy]:** Synchronized the new disposable income model, calculating household shopping and leisure preferences based on income after rent.
+* **[Economy]:** Synchronized the revised wealth wellbeing calculation, reflecting household income and rent burdens in citizen welfare.
+* **[Economy]:** The minimum free property threshold for residential searches is now read from economy configuration parameters.
+* **[Economy]:** Resource buyers no longer import goods flagged with outside connections when external connections are active.
 
 ---
 
 ### 主要变动
 
-* **[地图尺寸]：** 在未安装 MapExt 的情况下加载大地图存档时会显示警告对话框，不再只在日志写入一行。
-* **[修复]：** 重写车辆救援系统清理滞留车辆的方式，处理某大型存档在启用该系统时自动保存失败的问题。
-* **[修复]：** 车辆救援系统改为分批处理滞留车辆，加载旧存档时不再于单一帧内处理上千辆。
-* **[修复]：** 同一游戏会话中加载第二个存档时，车辆救援系统可能对无关车辆执行操作。
-* **[修复]：** 同一游戏会话中加载第二个存档后，原版经济系统会与替换版同时运行，且宠物生成与过境交通两项设置回退成原版行为。
-* **[修复]：** 同一游戏会话中首个加载的地图为大地图时，设置页状态永远停在“IDLE: Waiting for map load...”。
-* **[性能]：** 车辆救援系统的扫描改于主线程外进行，寻找滞留车辆时不再造成短暂卡顿。
+* **[兼容性]：** 适配游戏 1.6.2f 版本。由于官方在本次补丁中对底层经济模拟机制进行了较多调整，既有存档在适应新机制时可能出现人口流动或经济指标波动，如遇未知异常欢迎反馈。
+* **[经济系统]：** 同步官方基于可支配收入的消费与休闲决策模型，家庭购物偏好改为由扣除租金后的净收入驱动。
+* **[经济系统]：** 同步官方重构后的财富福利计算算法，市民幸福度动态反映家庭收入与租金负担水平。
+* **[经济系统]：** 家庭找房的最低空置房产阈值改为读取经济参数配置。
+* **[经济系统]：** 外部连接启用时，资源采购系统不再购买带有外连标记的货物。
