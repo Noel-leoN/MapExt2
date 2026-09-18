@@ -178,28 +178,40 @@ namespace MapExtPDX.ModeA
         [ReadOnly]
         public NativeArray<int> m_TaxRates;
 
+        [ReadOnly]
         public HealthcareParameterData m_HealthcareParameters;
 
+        [ReadOnly]
         public ParkParameterData m_ParkParameters;
 
+        [ReadOnly]
         public EducationParameterData m_EducationParameters;
 
+        [ReadOnly]
         public TelecomParameterData m_TelecomParameters;
 
+        [ReadOnly]
         public GarbageParameterData m_GarbageParameters;
 
+        [ReadOnly]
         public PoliceConfigurationData m_PoliceParameters;
 
+        [ReadOnly]
         public CitizenHappinessParameterData m_CitizenHappinessParameters;
 
+        [ReadOnly]
         public LeisureParametersData m_LeisureParameters;
 
+        [ReadOnly]
         public TimeSettingsData m_TimeSettings;
 
+        [ReadOnly]
         public ServiceFeeParameterData m_FeeParameters;
 
+        [ReadOnly]
         public TimeData m_TimeData;
 
+        [ReadOnly]
         public Entity m_City;
 
         [ReadOnly]
