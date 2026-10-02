@@ -1,4 +1,5 @@
 using Colossal.Collections;
+using Colossal.Entities;
 using Game.Areas;
 using Game.Buildings;
 using Game.Citizens;
@@ -235,6 +236,20 @@ namespace MapExtPDX.ModeD
 
         public void Execute(in ArchetypeChunk chunk, int unfilteredChunkIndex, bool useEnabledMask, in v128 chunkEnabledMask)
         {
+            // === 服务锁按预制体独立读取，每个 chunk 计算一次 ===
+            Entity healthcareServicePrefab = this.m_HealthcareParameters.m_HealthcareServicePrefab;
+            Entity parkServicePrefab = this.m_ParkParameters.m_ParkServicePrefab;
+            Entity educationServicePrefab = this.m_EducationParameters.m_EducationServicePrefab;
+            Entity telecomServicePrefab = this.m_TelecomParameters.m_TelecomServicePrefab;
+            Entity garbageServicePrefab = this.m_GarbageParameters.m_GarbageServicePrefab;
+            Entity policeServicePrefab = this.m_PoliceParameters.m_PoliceServicePrefab;
+            bool isHealthcareLocked = this.m_Locked.HasEnabledComponent(healthcareServicePrefab);
+            bool isEntertainmentLocked = this.m_Locked.HasEnabledComponent(parkServicePrefab);
+            bool isEducationLocked = this.m_Locked.HasEnabledComponent(educationServicePrefab);
+            bool isTelecomLocked = this.m_Locked.HasEnabledComponent(telecomServicePrefab);
+            bool isGarbageLocked = this.m_Locked.HasEnabledComponent(garbageServicePrefab);
+            bool isPoliceLocked = this.m_Locked.HasEnabledComponent(policeServicePrefab);
+
             NativeArray<Entity> nativeArray = chunk.GetNativeArray(this.m_EntityType);
             NativeArray<Citizen> nativeArray2 = chunk.GetNativeArray(ref this.m_CitizenType);
             NativeArray<HouseholdMember> nativeArray3 = chunk.GetNativeArray(ref this.m_HouseholdMemberType);
@@ -358,12 +373,6 @@ namespace MapExtPDX.ModeD
                 {
                     Entity prefab = componentData4.m_Prefab;
                     Entity property = componentData3.m_Property;
-                    Entity healthcareServicePrefab = this.m_HealthcareParameters.m_HealthcareServicePrefab;
-                    Entity parkServicePrefab = this.m_ParkParameters.m_ParkServicePrefab;
-                    Entity educationServicePrefab = this.m_EducationParameters.m_EducationServicePrefab;
-                    Entity telecomServicePrefab = this.m_TelecomParameters.m_TelecomServicePrefab;
-                    Entity garbageServicePrefab = this.m_GarbageParameters.m_GarbageServicePrefab;
-                    Entity policeServicePrefab = this.m_PoliceParameters.m_PoliceServicePrefab;
                     Entity entity3 = Entity.Null;
                     float curvePosition = 0f;
                     if (this.m_Buildings.HasComponent(property))
@@ -410,18 +419,17 @@ namespace MapExtPDX.ModeD
                     if (this.m_ServiceCoverages.HasBuffer(entity3))
                     {
                         DynamicBuffer<Game.Net.ServiceCoverage> serviceCoverage = this.m_ServiceCoverages[entity3];
-                        bool isLocked = this.m_Locked.HasComponent(property);
-                        int6 = CitizenHappinessSystem.GetHealthcareBonuses(curvePosition, serviceCoverage, isLocked, in this.m_CitizenHappinessParameters);
+                        int6 = CitizenHappinessSystem.GetHealthcareBonuses(curvePosition, serviceCoverage, isHealthcareLocked, in this.m_CitizenHappinessParameters);
                         value7.x += int6.x + int6.y;
                         value7.z += int6.x;
                         value7.w += int6.y;
                         value7.y++;
-                        int16 = CitizenHappinessSystem.GetEntertainmentBonuses(curvePosition, serviceCoverage, cityModifiers, isLocked, in this.m_CitizenHappinessParameters);
+                        int16 = CitizenHappinessSystem.GetEntertainmentBonuses(curvePosition, serviceCoverage, cityModifiers, isEntertainmentLocked, in this.m_CitizenHappinessParameters);
                         value15.x += int16.x + int16.y;
                         value15.z += int16.x;
                         value15.w += int16.y;
                         value15.y++;
-                        int17 = CitizenHappinessSystem.GetEducationBonuses(curvePosition, serviceCoverage, isLocked, in this.m_CitizenHappinessParameters, num3);
+                        int17 = CitizenHappinessSystem.GetEducationBonuses(curvePosition, serviceCoverage, isEducationLocked, in this.m_CitizenHappinessParameters, num3);
                         value16.x += int17.x + int17.y;
                         value16.z += int17.x;
                         value16.w += int17.y;
@@ -451,25 +459,24 @@ namespace MapExtPDX.ModeD
                     value9.y++;
                     // mod end;
 
-                    bool isLocked2 = this.m_Locked.HasComponent(property);
-                    int14 = CitizenHappinessSystem.GetGarbageBonuses(property, ref this.m_Garbages, isLocked2, in this.m_GarbageParameters);
+                    int14 = CitizenHappinessSystem.GetGarbageBonuses(property, ref this.m_Garbages, isGarbageLocked, in this.m_GarbageParameters);
                     value14.x += int14.x + int14.y;
                     value14.z += int14.x;
                     value14.w += int14.y;
                     value14.y++;
-                    int15 = CitizenHappinessSystem.GetCrimeBonuses(crimeVictim, property, ref this.m_CrimeProducers, isLocked2, in this.m_CitizenHappinessParameters);
+                    int15 = CitizenHappinessSystem.GetCrimeBonuses(crimeVictim, property, ref this.m_CrimeProducers, isPoliceLocked, in this.m_CitizenHappinessParameters);
                     value.x += int15.x + int15.y;
                     value.z += int15.x;
                     value.w += int15.y;
                     value.y++;
-                    int18 = CitizenHappinessSystem.GetMailBonuses(property, ref this.m_MailProducers, isLocked2, in this.m_CitizenHappinessParameters);
+                    int18 = CitizenHappinessSystem.GetMailBonuses(property, ref this.m_MailProducers, isTelecomLocked, in this.m_CitizenHappinessParameters);
                     value17.x += int18.x + int18.y;
                     value17.z += int18.x;
                     value17.w += int18.y;
                     value17.y++;
                     bool hasTransform = this.m_Transforms.HasComponent(property);
                     float3 position = hasTransform ? this.m_Transforms[property].m_Position : default(float3);
-                    int19 = CitizenHappinessSystem.GetTelecomBonuses(hasTransform, position, this.m_TelecomCoverage, isLocked2, in this.m_CitizenHappinessParameters);
+                    int19 = CitizenHappinessSystem.GetTelecomBonuses(hasTransform, position, this.m_TelecomCoverage, isTelecomLocked, in this.m_CitizenHappinessParameters);
                     value2.x += int19.x + int19.y;
                     value2.z += int19.x;
                     value2.w += int19.y;
@@ -738,5 +745,4 @@ namespace MapExtPDX.ModeD
 
     }
 }
-
 
