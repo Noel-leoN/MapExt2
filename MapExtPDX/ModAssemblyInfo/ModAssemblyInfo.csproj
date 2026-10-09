@@ -1,4 +1,25 @@
 <Project>
+    <!-- 以 LF 换行写出生成文件：WriteLinesToFile 会在末尾追加系统换行符（Windows 上为 CRLF），
+         与仓库 .gitattributes / .editorconfig 的 eol=lf 不一致，每次建置后 git status 都会误报已修改。
+         行为与原 WriteLinesToFile 一致：裁掉首尾空白，内容不变时不写入。 -->
+    <UsingTask TaskName="WriteGeneratedFileLF" TaskFactory="RoslynCodeTaskFactory" AssemblyFile="$(MSBuildToolsPath)\Microsoft.Build.Tasks.Core.dll">
+        <ParameterGroup>
+            <TargetPath ParameterType="System.String" Required="true" />
+            <Content ParameterType="System.String" Required="true" />
+        </ParameterGroup>
+        <Task>
+            <Code Type="Fragment" Language="cs">
+                <![CDATA[
+                string text = Content.Trim().Replace("\r\n", "\n") + "\n";
+                if (!System.IO.File.Exists(TargetPath) || System.IO.File.ReadAllText(TargetPath) != text)
+                {
+                    System.IO.File.WriteAllText(TargetPath, text, new System.Text.UTF8Encoding(false));
+                }
+                ]]>
+            </Code>
+        </Task>
+    </UsingTask>
+
     <!-- Create an C# class file with assembly information. -->
     <Target Name="AddAssemblyInformation" BeforeTargets="BeforeCompile;CoreCompile" Inputs="$(MSBuildAllProjects)" Outputs="$(IntermediateOutputPath)GeneratedFile.xml">
         <PropertyGroup>
@@ -30,6 +51,6 @@ namespace $(AssemblyName)
             <FileWrites Include="$(GeneratedFilePath)" />
         </ItemGroup>
 
-        <WriteLinesToFile Lines="$(GeneratedText)" File="$(GeneratedFilePath)" WriteOnlyWhenDifferent="true" Overwrite="true" />
+        <WriteGeneratedFileLF TargetPath="$(GeneratedFilePath)" Content="$(GeneratedText)" />
     </Target>
 </Project>

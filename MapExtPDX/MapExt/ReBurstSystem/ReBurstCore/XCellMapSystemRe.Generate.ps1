@@ -73,9 +73,9 @@ foreach ($mode in $modes) {
         '(public const int kMapSize\s*=\s*)\d+(;)', `
         "`${1}$($mode.MapSize)`${2}"
     
-    # Normalize line endings to CRLF
+    # 换行统一为 LF，与 .gitattributes / .editorconfig 的 eol=lf 一致；
+    # 写成 CRLF 会让每次建置后 git status 把这些生成文件误报为已修改
     $content = $content -replace "`r`n", "`n"
-    $content = $content -replace "`n", "`r`n"
     
     [System.IO.File]::WriteAllText($targetPath, $content, [System.Text.Encoding]::UTF8)
     $generatedCount++
