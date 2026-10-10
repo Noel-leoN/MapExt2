@@ -118,12 +118,14 @@ namespace MapExtPDX.MapExt.Core
             SafeLog(() => Mod.Logger.Error(e, text), text);
         }
 
-        /// <summary>DEBUG 级别（仅 Debug 构建输出）</summary>
+        /// <summary>
+        /// 调试明细（仅 Debug 构建编译）。以 Info 级写出：Colossal 日志默认级别为 Info，Debug 级不会写盘。
+        /// </summary>
         [System.Diagnostics.Conditional("DEBUG")]
         public static void Debug(string tag, string msg)
         {
             var text = Fmt(tag, IconDebug, msg);
-            SafeLog(() => Mod.Logger.Debug(text), text);
+            SafeLog(() => Mod.Logger.Info(text), text);
         }
 
         #endregion

@@ -43,6 +43,8 @@ namespace MapExtPDX.EcoShared
 	/// </summary>
 	public sealed class ResourceSellerHandler : IFindTargetsHandler
 	{
+		private const string Tag = nameof(ResourceSellerHandler);
+
 		#region Enabled
 
 		// 綁 ResourceBuyer EcoSystem 開關（與原版 ResourceBuyerSystem 替換同組，語義一致）。
@@ -154,7 +156,7 @@ namespace MapExtPDX.EcoShared
 			_guestVehicleBufs = system.GetBufferLookup<GuestVehicle>(true);
 			_layoutElementBufs = system.GetBufferLookup<LayoutElement>(true);
 
-			ModLog.Ok("ResourceSellerHandler", $"已初始化（World={currentWorld.Name}）");
+			ModLog.Ok(Tag, $"已初始化（World={currentWorld.Name}）");
 		}
 
 		#endregion

@@ -26,7 +26,7 @@ namespace MapExtPDX.MapExt.Core
     /// </summary>
     public partial class ConflictMonitoringSystem : GameSystemBase
     {
-        private const string Tag = "ConflictMonitor";
+        private const string Tag = nameof(ConflictMonitoringSystem);
 
         #region Fields
 
@@ -151,7 +151,7 @@ namespace MapExtPDX.MapExt.Core
             // 尊重使用者關閉驗證的設定，與 LoadGameValidatorPatch 的行為一致
             if (Mod.Instance?.CurrentSettings?.DisableLoadGameValidation == true)
             {
-                ModLog.Info(Tag, "已停用載入驗證，略過地圖尺寸錯配提示（日誌中仍有警告記錄）");
+                ModLog.Info(Tag, "已停用加载验证，略过地图尺寸错配提示（日志中仍有警告记录）");
                 return;
             }
 
@@ -193,11 +193,11 @@ namespace MapExtPDX.MapExt.Core
                 );
 
                 ModLog.Warn(Tag,
-                    $"已提示地圖尺寸錯配：地圖為 {authoredMode}，當前為 {currentMode}");
+                    $"已提示地图尺寸错配：地图为 {authoredMode}，当前为 {currentMode}");
             }
             catch (Exception ex)
             {
-                ModLog.Warn(Tag, $"顯示地圖尺寸錯配對話框失敗: {ex.Message}");
+                ModLog.Warn(Tag, $"显示地图尺寸错配对话框失败: {ex.Message}");
             }
         }
 

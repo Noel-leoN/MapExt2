@@ -16,6 +16,7 @@ using Game.Serialization;
 using Game.Simulation;
 using Game.Tools;
 using HarmonyLib;
+using MapExtPDX.MapExt.Core;
 using Unity.Burst;
 using Unity.Collections;
 using Unity.Entities;
@@ -49,6 +50,8 @@ namespace MapExtPDX.ModeB
     /// </summary>
     public partial class NaturalResourceSystemMod : BaseCellMapSystem, IJobSerializable, IPostDeserialize
     {
+        private const string Tag = nameof(NaturalResourceSystemMod);
+
         #region Constants & Configuration
 
         // 单例引用，便于Harmony补丁调用
@@ -120,22 +123,22 @@ namespace MapExtPDX.ModeB
             {
                 originalSystem.Enabled = false;
                 // #if DEBUG
-                Mod.Info($"[{typeof(ModSystem).Name}] 禁用原系统: {typeof(TargetSystem).Name}");
+                ModLog.Swap(Tag, $"禁用原系统: {typeof(TargetSystem).Name}");
                 // #endif
             }
             else
             {
                 // 仅在调试时提示，原版系统可能已被其他Mod移除或尚未加载
 #if DEBUG
-                Mod.Error($"[{typeof(ModSystem).Name}] 无法找到可禁用的原系统(尚未加载或可能被其他Mod移除): {typeof(TargetSystem).Name}");
+                ModLog.Error(Tag, $"无法找到可禁用的原系统(尚未加载或可能被其他Mod移除): {typeof(TargetSystem).Name}");
 #endif
             }
 
             // 2. 创建自定义大小纹理
             CreateTextures(kTextureSize);
             // #if DEBUG
-            Mod.Info(
-                $"[{typeof(ModSystem).Name}] 创建自定义纹理: {typeof(TargetSystem).Name} kTextureSize 从 原值{TargetSystem.kTextureSize} 变更为 目标值{this.m_TextureSize.x}");
+            ModLog.Swap(Tag,
+                $"创建自定义纹理: {typeof(TargetSystem).Name} kTextureSize 从 原值{TargetSystem.kTextureSize} 变更为 目标值{this.m_TextureSize.x}");
             // #endif
 
             // 3. 获取其他依赖和查询

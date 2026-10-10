@@ -13,7 +13,7 @@ namespace MapExtPDX.MapExt.Core
     /// </summary>
     public static class ResolutionManager
     {
-        private const string Tag = "Resolution";
+        private const string Tag = nameof(ResolutionManager);
 
         #region Constants & Fields
 
@@ -171,8 +171,8 @@ namespace MapExtPDX.MapExt.Core
             if (quality == WaterSimQualitySetting.Adaptive_EventDriven)
             {
                 ModLog.Warn(Tag,
-                    "WaterSimQuality=Adaptive_EventDriven 已掛起，降級為 Vanilla_EveryFrame " +
-                    "（與 Postfix speed 契約衝突，見 PatchSet2WaterAdaptive）");
+                    "WaterSimQuality=Adaptive_EventDriven 已挂起，降级为 Vanilla_EveryFrame " +
+                    "（与 Postfix speed 契约冲突，见 PatchSet2WaterAdaptive）");
                 return WaterSimQualitySetting.Vanilla_EveryFrame;
             }
             return quality;
@@ -188,10 +188,10 @@ namespace MapExtPDX.MapExt.Core
             if (requested)
             {
                 ModLog.Warn(Tag,
-                    "WaterAsyncCompute=true 已掛起，強制關閉。原因：DoTextureClear 的 " +
-                    "SetRenderTarget/ClearRenderTarget 在 async compute 佇列會被拒收，" +
-                    "海水傳播紋理清除靜默失效（地形筆刷／改海平面時會出現水位錯誤）；" +
-                    "且水紋理跨佇列消費點無任何 GraphicsFence。與顯示卡無關，見 " +
+                    "WaterAsyncCompute=true 已挂起，强制关闭。原因：DoTextureClear 的 " +
+                    "SetRenderTarget/ClearRenderTarget 在 async compute 队列会被拒收，" +
+                    "海水传播纹理清除静默失效（地形笔刷／改海平面时会出现水位错误）；" +
+                    "且水纹理跨队列消费点无任何 GraphicsFence。与显卡无关，见 " +
                     "docs/20_systems/02_terrain_water/Water_AsyncCompute_Analysis.md");
             }
             return false;

@@ -97,7 +97,7 @@ namespace MapExtPDX
         kNoDogsGroup, kNoTrafficGroup, kEditorToolGroup, kInGameUIGroup, kPopDiagGroup, kDebugGroup)]
     public class ModSettings : ModSetting
     {
-        private const string Tag = "Settings";
+        private const string Tag = nameof(ModSettings);
 
         // === Tab 常量 ===
         public const string kMapSizeModeTab = "MapSize Mode";
@@ -772,8 +772,8 @@ namespace MapExtPDX
             if (!m_EnableVanillaConversion || !m_DisableWorldBackdrop) return;
 
             ModLog.Warn(Tag,
-                "設定檔中「原版存檔轉換」與「停用背景世界地圖」同時開啟（互斥組合），" +
-                "已關閉後者以保留轉換流程");
+                "配置文件中「原版存档转换」与「停用背景世界地图」同时开启（互斥组合），" +
+                "已关闭后者以保留转换流程");
             m_DisableWorldBackdrop = false;
         }
 
@@ -821,7 +821,7 @@ namespace MapExtPDX
                 var map = prop?.GetValue(null) as System.Collections.IDictionary;
                 if (map == null)
                 {
-                    ModLog.Warn(Tag, "無法反射 ModSetting.instances，略過即時保存撞名探測");
+                    ModLog.Warn(Tag, "无法反射 ModSetting.instances，略过实时保存撞名探测");
                     return;
                 }
 
@@ -839,22 +839,22 @@ namespace MapExtPDX
                 if (sameName.Count > 1)
                 {
                     ModLog.Warn(Tag,
-                        $"即時保存目標有歧義：{sameName.Count} 個設定類共用短類名 '{myShortName}' " +
+                        $"实时保存目标有歧义：{sameName.Count} 个设置类共用短类名 '{myShortName}' " +
                         $"[{string.Join(" | ", sameName)}]。" +
-                        "原版 SaveSpecificSetting 只用短類名比對且取第一個命中，" +
-                        "OptionUI 的變更可能寫進別的 Mod 的 .coc；" +
-                        "本 Mod 的值將只靠遊戲正常退出時的全量保存兜底。");
+                        "原版 SaveSpecificSetting 只用短类名比对且取第一个命中，" +
+                        "OptionUI 的变更可能写进别的 Mod 的 .coc；" +
+                        "本 Mod 的值将只靠游戏正常退出时的全量保存兜底。");
                 }
                 else
                 {
                     ModLog.Ok(Tag,
-                        $"設定類短類名 '{myShortName}' 在進程內唯一（共 {map.Count} 份 Mod 設定），" +
-                        "即時保存目標無歧義");
+                        $"设置类短类名 '{myShortName}' 在进程内唯一（共 {map.Count} 份 Mod 设置），" +
+                        "实时保存目标无歧义");
                 }
             }
             catch (Exception ex)
             {
-                ModLog.Warn(Tag, $"即時保存撞名探測失敗（非致命）: {ex.Message}");
+                ModLog.Warn(Tag, $"实时保存撞名探测失败（非致命）: {ex.Message}");
             }
         }
 

@@ -19,7 +19,7 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
     [HarmonyPatch(typeof(WaterSystem))]
     static class WaterSystemMethodPatches
     {
-        private const string Tag = "WaterPatch";
+        private const string Tag = nameof(WaterSystemMethodPatches);
 
         // v2.1.1重新启用
         // Essential for initializing SurfaceDataReaders correctly
@@ -127,7 +127,7 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
     [HarmonyPatch(typeof(WaterSimulation))]
     static class WaterSimulationMethodPatches
     {
-        private const string Tag = "WaterSimPatch";
+        private const string Tag = nameof(WaterSimulationMethodPatches);
 
         // v1.3.6f版本变动
         [HarmonyPatch(nameof(WaterSimulation.ResetToLevel))]
@@ -190,7 +190,7 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
     [HarmonyPatch(typeof(WaterSimulationLegacy))]
     static class WaterSimulationLegacyMethodPatches
     {
-        private const string Tag = "WaterSimLegPatch";
+        private const string Tag = nameof(WaterSimulationLegacyMethodPatches);
 
         // v1.3.6f版本变动      
 
@@ -254,7 +254,7 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
     [HarmonyPatch(typeof(WaterLevelChangeSystem))]
     static class WaterLevelChangeSystemMethodPatches
     {
-        private const string Tag = "WaterLevelPatch";
+        private const string Tag = nameof(WaterLevelChangeSystemMethodPatches);
 
         // Properties are compiled to get_ / set_ methods
         [HarmonyPatch("get_TsunamiEndDelay")]
@@ -289,7 +289,7 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
     /// </summary>
     static class WaterSystemPatcherHelper
     {
-        private const string Tag = "WaterHelper";
+        private const string Tag = nameof(WaterSystemPatcherHelper);
 
         // --- Reflection Info (cached for performance) ---
         private static readonly FieldInfo _kMapSizeField = AccessTools.Field(typeof(WaterSystem), "kMapSize");

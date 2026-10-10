@@ -19,7 +19,7 @@ namespace MapExtPDX
 {
     public class Mod : IMod
     {
-        private const string Tag = "Mod";
+        private const string Tag = nameof(Mod);
 
         public const string ModName = "MapExtPDX"; // 保持与BepInEx版本一致
 
@@ -42,12 +42,8 @@ namespace MapExtPDX
 
         // 日志初始化
         // 日志归结到Logs\ModName.log，不要放在Player.log
+        // 只供 ModLog 内部使用，业务代码一律经 ModLog 输出
         public static ILog Logger = LogManager.GetLogger($"{ModName}").SetShowsErrorsInUI(false);
-        public static void Info(string text) => Logger.Info(text);
-        public static void Debug(string text) => Logger.Debug(text);
-        public static void Warn(string text) => Logger.Warn(text);
-        public static void Error(string text) => Logger.Error(text);
-        public static void Error(Exception e, string text) => Logger.Error(e, text);
 
         // 定义Harmony
         public static readonly string HarmonyId = ModName; // 弃用
@@ -95,7 +91,7 @@ namespace MapExtPDX
             catch (Exception ex)
             {
                 InitializationFailed = true;
-                ModLog.Error(Tag, $"OnLoad 中斷，本次遊戲 MapExt 未完整生效: {ex}");
+                ModLog.Error(Tag, $"OnLoad 中断，本次游戏 MapExt 未完整生效: {ex}");
                 PushInitFailureNotification(ex);
             }
         }
@@ -144,7 +140,7 @@ namespace MapExtPDX
             // 設值時機另有 EnableVanillaConversion／DisableWorldBackdrop 兩個 setter 的
             // 🔄 變更日誌可交叉比對（本行之前出現＝反序列化，之後＝使用者操作）。
             ModLog.Info(Tag,
-                $"SaveConvert 載入值: EnableVanillaConversion={m_Setting.EnableVanillaConversion}, " +
+                $"SaveConvert 加载值: EnableVanillaConversion={m_Setting.EnableVanillaConversion}, " +
                 $"DisableWorldBackdrop={m_Setting.DisableWorldBackdrop}");
 
             // 此後 setter 的呼叫一律來自使用者操作而非反序列化，撞名探測才有意義
@@ -315,11 +311,11 @@ namespace MapExtPDX
 
             if (ok == 3)
             {
-                ModLog.Ok(Tag, "本地化已註冊 (en-US, zh-HANS, zh-HANT；設定文本與對話框文本已合併為每語言一份)");
+                ModLog.Ok(Tag, "本地化已注册 (en-US, zh-HANS, zh-HANT；设置文本与对话框文本已合并为每语言一份)");
             }
             else
             {
-                ModLog.Warn(Tag, $"本地化僅 {ok}/3 個語言註冊成功；未成功者其文字會顯示為 key，功能不受影響");
+                ModLog.Warn(Tag, $"本地化仅 {ok}/3 个语言注册成功；未成功者其文字会显示为 key，功能不受影响");
             }
         }
 
@@ -340,7 +336,7 @@ namespace MapExtPDX
             }
             catch (Exception ex)
             {
-                ModLog.Warn(Tag, $"註冊 {localeId} 本地化失敗（引擎本地化字典無鎖，疑撞上並發寫入）: {ex.Message}");
+                ModLog.Warn(Tag, $"注册 {localeId} 本地化失败（引擎本地化字典无锁，疑撞上并发写入）: {ex.Message}");
                 return false;
             }
         }
@@ -368,7 +364,7 @@ namespace MapExtPDX
             catch (Exception pushEx)
             {
                 // 連通知都推不出去（UI 尚未就緒等），至少讓日誌留痕
-                ModLog.Warn(Tag, $"初始化失敗通知推送失敗: {pushEx.Message}");
+                ModLog.Warn(Tag, $"初始化失败通知推送失败: {pushEx.Message}");
             }
         }
 

@@ -21,7 +21,7 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
     /// </summary>
     public static class WaterSystemReinitializer
     {
-        private const string Tag = "WaterInit";
+        private const string Tag = nameof(WaterSystemReinitializer);
 
         // ========================================================================
         // 核心重置逻辑
@@ -81,7 +81,7 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
                     if (ResolutionManager.IsWaterTextureFormatModified)
                     {
                         ModLog.Warn(Tag,
-                            "WaterTextureFormat 為 16-bit（殘留設定），該格式已鎖死為 32-bit，忽略並沿用原版紋理");
+                            "WaterTextureFormat 为 16-bit（残留设置），该格式已锁死为 32-bit，忽略并沿用原版纹理");
                     }
                     // 原版分辨率和精度，仅验证
                     VerifyTexSize(traverse, ResolutionManager.VanillaWaterTextureSize);
@@ -102,7 +102,7 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
             try
             {
                 waterSystem.IsAsync = ResolutionManager.WaterAsyncCompute;
-                ModLog.Ok(Tag, "WaterSystem.IsAsync set to False at reinit (Async Compute 已掛起)");
+                ModLog.Ok(Tag, "WaterSystem.IsAsync set to False at reinit (Async Compute 已挂起)");
             }
             catch (Exception asyncEx)
             {

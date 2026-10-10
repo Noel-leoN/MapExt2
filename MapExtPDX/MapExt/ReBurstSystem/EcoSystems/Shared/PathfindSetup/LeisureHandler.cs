@@ -42,6 +42,8 @@ namespace MapExtPDX.EcoShared
 	/// </summary>
 	public sealed class LeisureHandler : IFindTargetsHandler
 	{
+		private const string Tag = nameof(LeisureHandler);
+
 		#region Enabled
 
 		// 綁 DownstreamAI EcoSystem 開關（F5 LeisureSystem 屬該組，語義一致）。
@@ -111,7 +113,7 @@ namespace MapExtPDX.EcoShared
 			_buildingDatas = system.GetComponentLookup<Building>(true);
 			_resources = system.GetBufferLookup<Game.Economy.Resources>(true);
 
-			ModLog.Ok("LeisureHandler", $"已初始化（World={currentWorld.Name}）");
+			ModLog.Ok(Tag, $"已初始化（World={currentWorld.Name}）");
 		}
 
 		#endregion

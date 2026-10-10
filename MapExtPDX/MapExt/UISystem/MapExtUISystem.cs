@@ -30,7 +30,7 @@ namespace MapExtPDX.UI
     {
         #region Constants
 
-        private const string Tag = "UISystem";
+        private const string Tag = nameof(MapExtUISystem);
         private const string kGroup = "mapext";
 
         /// <summary>WaterSourceData.m_ConstantDepth == 2 表示海水源（Sea Water Source，反編譯 WaterSourceData 語意）。</summary>

@@ -26,7 +26,7 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
     [HarmonyPatch(typeof(WaterSystem), "OnSimulateGPU")]
     internal static class WaterSystemOptRuntimePatch
     {
-        private const string Tag = "WaterOpt";
+        private const string Tag = nameof(WaterSystemOptRuntimePatch);
 
         private static int s_frameCounter = 0;
 
@@ -257,14 +257,14 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
                 {
                     s_asyncOverrideWarned = true;
                     ModLog.Warn(Tag,
-                        "偵測到 WaterSystem.IsAsync 被外部設為 true（原版與 MapExt 皆不啟用），已按回 false。" +
-                        "本警告每次會話僅記一次，後續同類覆寫靜默按回，不再重複記錄。");
+                        "检测到 WaterSystem.IsAsync 被外部设为 true（原版与 MapExt 皆不启用），已改回 false。" +
+                        "本警告每次会话仅记一次，后续同类覆写静默改回，不再重复记录。");
                 }
             }
             if (s_lastAppliedAsync != desired)
             {
                 s_lastAppliedAsync = desired;
-                ModLog.Patch(Tag, "WaterSystem.IsAsync = False (Async Compute 已掛起)");
+                ModLog.Patch(Tag, "WaterSystem.IsAsync = False (Async Compute 已挂起)");
             }
         }
 

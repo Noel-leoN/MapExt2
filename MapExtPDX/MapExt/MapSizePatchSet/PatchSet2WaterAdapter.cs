@@ -29,7 +29,7 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
     /// </summary>
     internal static class WaterTerrainSwap
     {
-        private const string Tag = "WaterTerrainSwap";
+        private const string Tag = nameof(WaterTerrainSwap);
 
         #region Fields
 
@@ -68,7 +68,7 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
             s_LastCascadeUpdateCount = uint.MaxValue;
             s_LogCount = 0;
             // 注意：不 Dispose s_DownsampledCascade 等 GPU 资源 — 它们在下次调用时按需检测重建
-            ModLog.Info("WaterTerrainSwap", "Session state reset");
+            ModLog.Ok(Tag, "会话状态已重置");
         }
 
         #endregion

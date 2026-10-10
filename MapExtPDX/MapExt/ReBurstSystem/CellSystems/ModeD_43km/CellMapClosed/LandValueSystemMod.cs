@@ -52,6 +52,8 @@ using MapExtPDX.MapExt.Core;
 
     public partial class LandValueSystemMod : BaseCellMapSystem, IJobSerializable
     {
+        private const string Tag = nameof(LandValueSystemMod);
+
         #region LandValue特定逻辑配置
         // --- 蔓延与辐(热力图生 ---
         // 地价从道路向周围辐射的物理距离（米）
@@ -117,14 +119,14 @@ using MapExtPDX.MapExt.Core;
             {
                 originalSystem.Enabled = false;
                 // #if DEBUG
-                Mod.Info($"[{typeof(ModSystem).Name}] 禁用原系统: {typeof(TargetSystem).Name}");
+                ModLog.Swap(Tag, $"禁用原系统: {typeof(TargetSystem).Name}");
                 // #endif
             }
             else
             {
                 // 仅在调试时提示，原版系统可能已被其他Mod移除或尚未加
 #if DEBUG
-                Mod.Error($"[{typeof(ModSystem).Name}] 无法找到可禁用的原系统(尚未加载或可能被其他Mod移除): {typeof(TargetSystem).Name}");
+                ModLog.Error(Tag, $"无法找到可禁用的原系统(尚未加载或可能被其他Mod移除): {typeof(TargetSystem).Name}");
 #endif
             }
 

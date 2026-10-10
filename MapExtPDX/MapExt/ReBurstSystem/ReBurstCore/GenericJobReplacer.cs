@@ -14,7 +14,7 @@ namespace MapExtPDX.MapExt.ReBurstSystem.Core
 {
     public static class GenericJobReplacePatch
     {
-        private const string Tag = "ReBurst";
+        private const string Tag = nameof(GenericJobReplacePatch);
 
 
         // --- 上下文管理 ---
@@ -415,17 +415,17 @@ namespace MapExtPDX.MapExt.ReBurstSystem.Core
                 if (missed.Count > 0)
                 {
                     ModLog.Error(Tag,
-                        $"替換未命中 | {originalMethod.DeclaringType?.Name}.{originalMethod.Name} " +
-                        $"預期 {primaryJobs.Count} 個 Job，實際命中 {primaryJobs.Count - missed.Count} 個 " +
+                        $"替换未命中 | {originalMethod.DeclaringType?.Name}.{originalMethod.Name} " +
+                        $"预期 {primaryJobs.Count} 个 Job，实际命中 {primaryJobs.Count - missed.Count} 个 " +
                         $"└─ 未命中: {string.Join(", ", missed.Select(t => t.Name))} " +
-                        "（該方法的原版 Job 仍在運行；請核對原版是否已改變 Job 建構方式）");
+                        "（该方法的原版 Job 仍在运行；请核对原版是否已改变 Job 构建方式）");
                 }
 #if DEBUG
                 else
                 {
                     ModLog.Ok(Tag,
-                        $"命中核對通過 | {originalMethod.DeclaringType?.Name}.{originalMethod.Name} " +
-                        $"({primaryJobs.Count} 個 Job 全部命中, {replacementCount} 處指令替換)");
+                        $"命中核对通过 | {originalMethod.DeclaringType?.Name}.{originalMethod.Name} " +
+                        $"({primaryJobs.Count} 个 Job 全部命中, {replacementCount} 处指令替换)");
                 }
 #endif
             }

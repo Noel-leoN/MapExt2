@@ -32,7 +32,7 @@ namespace MapExtPDX.UI
     {
         #region Constants
 
-        private const string Tag = "CityStats";
+        private const string Tag = nameof(Q2_CityStatsSystem);
 
         /// <summary>
         /// <see cref="ReadCommercialData"/> 連續因 job 未完成而跳過的上限，達到即退回一次同步等待。

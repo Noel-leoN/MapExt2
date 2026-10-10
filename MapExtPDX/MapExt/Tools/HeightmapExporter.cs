@@ -57,7 +57,7 @@ namespace MapExtPDX.MapExt.Tools
     /// </summary>
     public static class HeightmapExporter
     {
-        private const string Tag = "HeightmapExport";
+        private const string Tag = nameof(HeightmapExporter);
 
         // === Constants and Fields ===
 
@@ -92,14 +92,14 @@ namespace MapExtPDX.MapExt.Tools
                     ?.GetExistingSystemManaged<TerrainSystem>();
                 if (terrainSystem == null)
                 {
-                    ModLog.Warn(Tag, "TerrainSystem 不存在，請先載入地圖或存檔。");
+                    ModLog.Warn(Tag, "TerrainSystem 不存在，请先加载地图或存档。");
                     return "TerrainSystem not found — load a map or save first.";
                 }
 
                 RenderTexture heightmap = GetHeightmap(terrainSystem);
                 if (heightmap == null)
                 {
-                    ModLog.Warn(Tag, "m_Heightmap 尚未建立，請先載入地圖或存檔。");
+                    ModLog.Warn(Tag, "m_Heightmap 尚未创建，请先加载地图或存档。");
                     return "Heightmap not ready — load a map or save first.";
                 }
 
@@ -114,7 +114,7 @@ namespace MapExtPDX.MapExt.Tools
                     request.WaitForCompletion();
                     if (request.hasError)
                     {
-                        ModLog.Error(Tag, "AsyncGPUReadback 失敗，無法讀取高度圖。");
+                        ModLog.Error(Tag, "AsyncGPUReadback 失败，无法读取高度图。");
                         return "GPU readback failed.";
                     }
 
@@ -127,7 +127,7 @@ namespace MapExtPDX.MapExt.Tools
             }
             catch (Exception ex)
             {
-                ModLog.Error(Tag, ex, "高度圖匯出失敗。");
+                ModLog.Error(Tag, ex, "高度图导出失败。");
                 return $"Export failed: {ex.Message}";
             }
         }
@@ -204,10 +204,10 @@ namespace MapExtPDX.MapExt.Tools
             catch (Exception ex)
             {
                 // 非致命：檔案已寫出，只是選擇器預設路徑沒更新
-                ModLog.Warn(Tag, $"更新 lastHeightMapDirectory 失敗（不影響匯出）: {ex.Message}");
+                ModLog.Warn(Tag, $"更新 lastHeightMapDirectory 失败（不影响导出）: {ex.Message}");
             }
 
-            ModLog.Ok(Tag, $"已匯出 {written} 個檔案至 {dir}（{width}×{height}, 16-bit）");
+            ModLog.Ok(Tag, $"已导出 {written} 个文件至 {dir}（{width}×{height}, 16-bit）");
             return $"Exported {written} file(s) — {width}x{height} 16-bit → {dir}";
         }
 
@@ -286,7 +286,7 @@ namespace MapExtPDX.MapExt.Tools
 
             if (png == null)
             {
-                ModLog.Error(Tag, $"PNG 編碼失敗: {Path.GetFileName(path)}");
+                ModLog.Error(Tag, $"PNG 编码失败: {Path.GetFileName(path)}");
                 return false;
             }
 
@@ -304,7 +304,7 @@ namespace MapExtPDX.MapExt.Tools
                 s_HeightmapField = AccessTools.Field(typeof(TerrainSystem), "m_Heightmap");
                 if (s_HeightmapField == null)
                 {
-                    ModLog.Error(Tag, "無法取得 TerrainSystem.m_Heightmap 欄位");
+                    ModLog.Error(Tag, "无法获取 TerrainSystem.m_Heightmap 字段");
                     return null;
                 }
             }

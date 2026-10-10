@@ -24,7 +24,7 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
     [HarmonyPatch(typeof(AirwaySystem))]
     public static class AirwaySystem_OnUpdate_Patch
     {
-        private const string Tag = "AirwayPatch";
+        private const string Tag = nameof(AirwaySystem_OnUpdate_Patch);
 
         // 会话锁：确保每次加载/新建游戏仅执行一次
         private static bool s_HasRunThisSession = false;

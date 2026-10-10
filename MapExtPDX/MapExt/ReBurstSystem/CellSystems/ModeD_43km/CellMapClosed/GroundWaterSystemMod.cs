@@ -38,6 +38,8 @@ using MapExtPDX.SaveLoadSystem;
     /// </summary>
     public partial class GroundWaterSystemMod : BaseCellMapSystem, IJobSerializable
     {
+        private const string Tag = nameof(GroundWaterSystemMod);
+
         public static ModSystem Instance { get; private set; }
 
         #region 常量和静态字配置
@@ -84,14 +86,14 @@ using MapExtPDX.SaveLoadSystem;
             {
                 originalSystem.Enabled = false;
                 // #if DEBUG
-                Mod.Info($"[{typeof(ModSystem).Name}] 禁用原系统: {typeof(TargetSystem).Name}");
+                ModLog.Swap(Tag, $"禁用原系统: {typeof(TargetSystem).Name}");
                 // #endif
             }
             else
             {
                 // 仅在调试时提示，原版系统可能已被其他Mod移除或尚未加
 #if DEBUG
-                Mod.Error($"[{typeof(ModSystem).Name}] 无法找到可禁用的原系统(尚未加载或可能被其他Mod移除): {typeof(TargetSystem).Name}");
+                ModLog.Error(Tag, $"无法找到可禁用的原系统(尚未加载或可能被其他Mod移除): {typeof(TargetSystem).Name}");
 #endif
             }
 
@@ -253,11 +255,11 @@ using MapExtPDX.SaveLoadSystem;
                 // 這條分支原本完全靜默，於是「沒有日誌」同時可能代表「場是健康的」與
                 // 「OnGameLoaded 根本沒走到」，無從分辨。而含水層占比又是零格早退命中率
                 // 與 GroundWaterTickJob 成本的唯一決定因素，所以無條件記一行。
-                string source = purpose == Purpose.LoadGame ? "存檔" : "地圖檔";
-                ModLog.Info(nameof(GroundWaterSystemMod),
-                    $"地下水場沿用{source}內容，不介入：{kTextureSize}² = {m_Map.Length} 格，" +
-                    $"含水層 {nonZero} 格（{100f * nonZero / m_Map.Length:F2}%）；" +
-                    $"原版原稿 {(hasVanilla ? $"{srcSize}²：含水層 {vanillaCells} 格" : "不可讀取")}");
+                string source = purpose == Purpose.LoadGame ? "存档" : "地图文件";
+                ModLog.Info(Tag,
+                    $"地下水场沿用{source}内容，不介入：{kTextureSize}² = {m_Map.Length} 格，" +
+                    $"含水层 {nonZero} 格（{100f * nonZero / m_Map.Length:F2}%）；" +
+                    $"原版原稿 {(hasVanilla ? $"{srcSize}²：含水层 {vanillaCells} 格" : "不可读取")}");
                 return;
             }
 
@@ -265,9 +267,9 @@ using MapExtPDX.SaveLoadSystem;
             {
                 // 與原版一致：地圖作者沒畫地下水就是沒有，不生成任何替代場。
                 // 這不是缺陷，所以用 Info 而非 Warn——它在無地下水的地圖上每次載入都會出現。
-                ModLog.Info(nameof(GroundWaterSystemMod),
-                    $"本地圖沒有含水層（{m_Map.Length} 格 m_Max 全為 0，原版系統亦無可用的作者原稿），" +
-                    $"與原版行為一致。地下水泵在此不會出水；需要地下水請用地圖編輯器或地下水畫筆繪製。");
+                ModLog.Info(Tag,
+                    $"本地图没有含水层（{m_Map.Length} 格 m_Max 全为 0，原版系统亦无可用的作者原稿），" +
+                    $"与原版行为一致。地下水泵在此不会出水；需要地下水请用地图编辑器或地下水画笔绘制。");
                 return;
             }
 
@@ -278,10 +280,10 @@ using MapExtPDX.SaveLoadSystem;
             int filled = CountAquiferCells(m_Map);
             // 只有載入既有存檔時走到這裡才是「修復空場」：v4.8.0 之後存下的場非空會在上面早退。
             // 開新城與編輯器載入地圖走到這裡是正常的首次還原，不是修復。
-            ModLog.Ok(nameof(GroundWaterSystemMod),
-                $"地下水場已從原版 {srcSize}² 原稿升採樣至 {kTextureSize}²（雙線性等比拉伸，與地形同比例）" +
-                (purpose == Purpose.LoadGame ? "，修復 v4.8.0 之前存下的空場" : "") +
-                $"：含水層占比 {100f * vanillaCells / vanillaMap.Length:F2}% → {100f * filled / m_Map.Length:F2}%" +
+            ModLog.Ok(Tag,
+                $"地下水场已从原版 {srcSize}² 原稿升采样至 {kTextureSize}²（双线性等比拉伸，与地形同比例）" +
+                (purpose == Purpose.LoadGame ? "，修复 v4.8.0 之前存下的空场" : "") +
+                $"：含水层占比 {100f * vanillaCells / vanillaMap.Length:F2}% → {100f * filled / m_Map.Length:F2}%" +
                 $"（{vanillaCells} → {filled} 格）");
         }
 
@@ -336,8 +338,8 @@ using MapExtPDX.SaveLoadSystem;
                 size = (int)math.round(math.sqrt(map.Length));
                 if (size <= 0 || size * size != map.Length)
                 {
-                    ModLog.Warn(nameof(GroundWaterSystemMod),
-                        $"原版 GroundWater m_Map 長度 {map.Length} 不是完全平方數，無從對應座標，視為無原稿");
+                    ModLog.Warn(Tag,
+                        $"原版 GroundWater m_Map 长度 {map.Length} 不是完全平方数，无从对应坐标，视为无原稿");
                     return false;
                 }
                 if (size != orgTextureSize)
@@ -345,15 +347,15 @@ using MapExtPDX.SaveLoadSystem;
                     // PatchSet3CellMapFields 掛在原版系統 OnCreate 之後（CreateSystems 先於
                     // InitializeModManager），照理打不中那句 CreateTextures(kTextureSize)。
                     // 真的變了不影響正確性（升採樣會退化為等比縮放），但值得留痕。
-                    ModLog.Warn(nameof(GroundWaterSystemMod),
-                        $"原版 GroundWater 貼圖為 {size}² 而非預期的 {orgTextureSize}²，仍按 {size}² 換算");
+                    ModLog.Warn(Tag,
+                        $"原版 GroundWater 纹理为 {size}² 而非预期的 {orgTextureSize}²，仍按 {size}² 换算");
                 }
                 return true;
             }
             catch (System.Exception ex)
             {
-                ModLog.Warn(nameof(GroundWaterSystemMod),
-                    $"取原版 GroundWater m_Map 失敗，視為無原稿: {ex.Message}");
+                ModLog.Warn(Tag,
+                    $"取原版 GroundWater m_Map 失败，视为无原稿: {ex.Message}");
                 return false;
             }
         }

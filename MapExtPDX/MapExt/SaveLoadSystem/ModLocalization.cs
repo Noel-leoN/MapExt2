@@ -12,7 +12,7 @@ namespace MapExtPDX.SaveLoadSystem
 {
     public static class ModLocalization
     {
-        private const string Tag = "SaveLoad";
+        private const string Tag = nameof(ModLocalization);
 
         /// <summary>
         /// 產出三語的對話框文本來源，<b>不自行註冊</b>。

@@ -77,7 +77,7 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
     /// </summary>
     internal static class WaterAdaptiveSleep
     {
-        private const string Tag = "WaterAdaptive";
+        private const string Tag = nameof(WaterAdaptiveSleep);
 
         #region Config
 
@@ -188,7 +188,7 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
             // 地形變更恢復窗口：讓行原版恢復流程，且視為擾動 → 回 Awake
             if (terrainChangeCounter > 0)
             {
-                WakeUp(instance, "地形變更中");
+                WakeUp(instance, "地形变更中");
                 return;
             }
 
@@ -222,7 +222,7 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
                 s_savedSpeed = current;
                 if (s_state == SleepState.Sleeping)
                 {
-                    WakeUp(instance, $"speed 被外力改為 {current}");
+                    WakeUp(instance, $"speed 被外力改为 {current}");
                     return;
                 }
             }

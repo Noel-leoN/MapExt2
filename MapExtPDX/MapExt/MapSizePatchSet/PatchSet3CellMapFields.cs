@@ -33,7 +33,7 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
     public static class CellMapSystemPatchManager
     {
         // === 日志 Tag ===
-        private const string Tag = "CellMapPatch";
+        private const string Tag = nameof(CellMapSystemPatchManager);
 
         // 日志输出：方法名 -> 修改记录列表
         private static readonly ConcurrentDictionary<string, List<string>> _patchLog =

@@ -44,6 +44,8 @@ namespace MapExtPDX.EcoShared
 	[HarmonyPatch]
 	public static class PathfindSetupDispatcher
 	{
+		private const string Tag = nameof(PathfindSetupDispatcher);
+
 		#region Registry
 
 		// --- SetupTargetType → handler 註冊表 ---
@@ -57,7 +59,7 @@ namespace MapExtPDX.EcoShared
 		public static void Register(SetupTargetType type, IFindTargetsHandler handler)
 		{
 			s_Handlers[type] = handler;
-			ModLog.Ok("PathfindSetupDispatcher", $"已註冊 handler: {type} -> {handler.GetType().Name}");
+			ModLog.Ok(Tag, $"已注册 handler: {type} -> {handler.GetType().Name}");
 		}
 
 		/// <summary>清空所有 handler（World 重建 / 模式切換時避免懸掛舊 World 的靜態快取）。</summary>

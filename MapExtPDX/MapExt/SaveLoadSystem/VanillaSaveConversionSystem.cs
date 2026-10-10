@@ -43,7 +43,7 @@ namespace MapExtPDX.SaveLoadSystem
     /// </summary>
     public partial class VanillaSaveConversionSystem : GameSystemBase
     {
-        private const string Tag = "VanillaConvert";
+        private const string Tag = nameof(VanillaSaveConversionSystem);
 
         #region Constants and Fields
 
@@ -818,7 +818,7 @@ namespace MapExtPDX.SaveLoadSystem
             }
             catch (Exception ex)
             {
-                ModLog.Warn("VanillaConvert", $"CompleteDependencies 失败: {ex.Message}");
+                ModLog.Warn(Tag, $"CompleteDependencies 失败: {ex.Message}");
             }
         }
 
@@ -1416,18 +1416,18 @@ namespace MapExtPDX.SaveLoadSystem
                         }
                         catch (Exception ex)
                         {
-                            ModLog.Warn("VanillaConvert", $"ResetActive 调用失败 (非致命): {ex.Message}");
+                            ModLog.Warn(Tag, $"ResetActive 调用失败 (非致命): {ex.Message}");
                         }
                     }
 
                     Graphics.ExecuteCommandBuffer(cmdBuf);
                     cmdBuf.Clear();
 
-                    ModLog.Info("VanillaConvert", "已清除陈旧 GPU 流速/传播/活跃格子纹理");
+                    ModLog.Info(Tag, "已清除陈旧 GPU 流速/传播/活跃格子纹理");
                 }
                 else
                 {
-                    ModLog.Warn("VanillaConvert", "无法获取 m_CommandBuffer，跳过 GPU 纹理清除");
+                    ModLog.Warn(Tag, "无法获取 m_CommandBuffer，跳过 GPU 纹理清除");
                 }
 
                 // --- 清除水源缓存 ---
@@ -1441,12 +1441,12 @@ namespace MapExtPDX.SaveLoadSystem
                 }
                 catch (Exception ex)
                 {
-                    ModLog.Warn("VanillaConvert", $"BindTextures 调用失败 (非致命): {ex.Message}");
+                    ModLog.Warn(Tag, $"BindTextures 调用失败 (非致命): {ex.Message}");
                 }
             }
             catch (Exception ex)
             {
-                ModLog.Warn("VanillaConvert", $"GPU 状态清除部分失败: {ex.Message}");
+                ModLog.Warn(Tag, $"GPU 状态清除部分失败: {ex.Message}");
             }
         }
 
@@ -1462,11 +1462,11 @@ namespace MapExtPDX.SaveLoadSystem
                 var cache2 = waterTraverse.Field("m_SourceCache2").GetValue();
                 if (cache1 != null) Traverse.Create(cache1).Method("Clear").GetValue();
                 if (cache2 != null) Traverse.Create(cache2).Method("Clear").GetValue();
-                ModLog.Info("VanillaConvert", "已清除水源缓存 (m_SourceCache1/2)");
+                ModLog.Info(Tag, "已清除水源缓存 (m_SourceCache1/2)");
             }
             catch (Exception ex)
             {
-                ModLog.Warn("VanillaConvert", $"清除水源缓存失败 (非致命): {ex.Message}");
+                ModLog.Warn(Tag, $"清除水源缓存失败 (非致命): {ex.Message}");
             }
         }
 

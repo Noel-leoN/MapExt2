@@ -32,7 +32,7 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
     [HarmonyPatch(typeof(SnowSystem), "OnUpdate")]
     internal static class SnowSystemOptRuntimePatch
     {
-        private const string Tag = "SnowOpt";
+        private const string Tag = nameof(SnowSystemOptRuntimePatch);
 
         /// <summary>
         /// Auto 檔的解凍安全邊際（°C）。

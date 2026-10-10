@@ -15,7 +15,7 @@ namespace MapExtPDX.MapExt.Core
     /// </summary>
     public static class PatchManager
     {
-        private const string Tag = "PatchManager";
+        private const string Tag = nameof(PatchManager);
 
         // 定义PatchManager的Harmony实例引用字段
         private static Harmony _modePatcher;
@@ -98,7 +98,7 @@ namespace MapExtPDX.MapExt.Core
                 { "WaterAdapterOnUpdatePatch", (h) => {
                     if (!ResolutionManager.NeedsDownsampleForWater)
                     {
-                        ModLog.Info("PatchManager", "Terrain ≤ 4096, skipping water adapter patches");
+                        ModLog.Info(Tag, "Terrain ≤ 4096, skipping water adapter patches");
                         return;
                     }
                     h.CreateClassProcessor(typeof(WaterSystem_OnSimulateGPU_Patch)).Patch();
@@ -408,7 +408,7 @@ namespace MapExtPDX.MapExt.Core
     /// </summary>
     internal static class PatchHelpers
     {
-        private const string Tag = "PatchHelpers";
+        private const string Tag = nameof(PatchHelpers);
 
         /// <summary>
         /// 扫描 patchType 中所有带有 [HarmonyPatch] 属性的方法，

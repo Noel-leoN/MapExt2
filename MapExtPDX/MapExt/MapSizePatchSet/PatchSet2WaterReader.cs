@@ -19,7 +19,7 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
     /// </summary>
     public static class WaterSystem_BaseDataReader_Patch
     {
-        private const string Tag = "WaterReader";
+        private const string Tag = nameof(WaterSystem_BaseDataReader_Patch);
 
         // --- 应用补丁 ---
         public static void Apply(Harmony harmony)

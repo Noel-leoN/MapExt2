@@ -70,7 +70,7 @@ namespace MapExtPDX.EcoShared
     {
         #region Constants and Fields
 
-        private const string Tag = "P3_VehiclePurchaseRescue";
+        private const string Tag = nameof(P3_VehiclePurchaseRescueSystem);
 
         /// <summary>
         /// 低频更新间隔：每 64 模拟帧执行一次。
@@ -603,7 +603,7 @@ namespace MapExtPDX.EcoShared
             if (rescued > 0)
                 DebugLog($"购车救援：已将 {rescued} 辆停放失败的新购车辆传送到住宅附近重新停放");
             if (orphan > 0)
-                DebugLog($"孤兒車清理：已刪除 {orphan} 輛無家可歸的存量幽靈車輛");
+                DebugLog($"孤儿车清理：已删除 {orphan} 辆无家可归的存量幽灵车辆");
 
             // 積壓量僅在數量變化時記一次，避免每輪重複刷同一行
             if (deferred != m_DeferredRescueCount)

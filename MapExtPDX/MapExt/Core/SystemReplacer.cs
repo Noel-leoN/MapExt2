@@ -10,6 +10,8 @@ namespace MapExtPDX.MapExt.Core
 {
     public static class SystemReplacer
     {
+        private const string Tag = nameof(SystemReplacer);
+
         /// <summary>
         /// [BUGFIX] 重新禁用被引擎重新启用的原版系统。
         /// 退出主菜单后 CS2 引擎会重置所有系统的 Enabled 状态为 true，
@@ -89,9 +91,9 @@ namespace MapExtPDX.MapExt.Core
             }
 
             if (count > 0)
-                ModLog.Warn("SystemReplacer", $"[BUGFIX] 重新禁用了 {count} 个被引擎重新启用的原版系统");
+                ModLog.Warn(Tag, $"[BUGFIX] 重新禁用了 {count} 个被引擎重新启用的原版系统");
             else
-                ModLog.Info("SystemReplacer", "所有原版系统已正确禁用，无需修复");
+                ModLog.Ok(Tag, "所有原版系统已正确禁用，无需修复");
         }
 
         private static int DisableIfEnabled<T>(Unity.Entities.World world) where T : GameSystemBase
@@ -100,7 +102,7 @@ namespace MapExtPDX.MapExt.Core
             if (system != null && system.Enabled)
             {
                 system.Enabled = false;
-                ModLog.Info("SystemReplacer", $"  重新禁用: {typeof(T).Name}");
+                ModLog.Info(Tag, $"  重新禁用: {typeof(T).Name}");
                 return 1;
             }
             return 0;
@@ -109,7 +111,7 @@ namespace MapExtPDX.MapExt.Core
         public static void Apply(UpdateSystem updateSystem, Harmony globalPatcher, ModSettings setting)
         {
             // === 设置快照日志（Release 级别，用于诊断 .coc 缓存不一致） ===
-            ModLog.Info("SystemReplacer",
+            ModLog.Info(Tag,
                 $"Apply: CV={PatchManager.CurrentCoreValue}, EcoFix={setting.isEnableEconomyFix}, " +
                 $"Household={setting.EnableHouseholdPropertyEcoSystem}, Job={setting.EnableJobSearchEcoSystem}, " +
                 $"ResBuyer={setting.EnableResourceBuyerEcoSystem}, ResidentAI={setting.EnableResidentAIEcoSystem}, " +

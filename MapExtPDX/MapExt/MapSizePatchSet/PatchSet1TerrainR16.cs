@@ -26,7 +26,7 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
     /// </summary>
     public static class TerrainToR16Patch
     {
-        private const string Tag = "TerrainR16";
+        private const string Tag = nameof(TerrainToR16Patch);
 
         // 从 ResolutionManager 动态读取，支持 4096/8192 可配置
         private static int TARGET_WIDTH => ResolutionManager.TerrainResolution;
@@ -235,7 +235,7 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
     [HarmonyPatch]
     public static class WorldMapImportWarningPatch
     {
-        private const string Tag = "TerrainR16";
+        private const string Tag = nameof(WorldMapImportWarningPatch);
 
         // 旁路标志: 用户确认后设为 true，允许原方法执行
         private static bool _bypassWarning = false;

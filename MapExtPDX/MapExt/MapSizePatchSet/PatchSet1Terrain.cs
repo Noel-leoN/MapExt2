@@ -24,7 +24,7 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
     [HarmonyPatch(typeof(TerrainSystem))]
     public static class TerrainSystemPatches
     {
-        private const string Tag = "TerrainPatch";
+        private const string Tag = nameof(TerrainSystemPatches);
 
         // FinalizeTerrainData (改变引入默认值，仅修改此处即可，不需要同时修补其他方法)
         // 该方法调用仅在加载存档后执行一次，使用Prefix简化维护
@@ -88,8 +88,8 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
             if (authoredCV < 1 || math.abs(actualMapSize - authoredCV * baseSize) > 1f)
             {
                 ModLog.Warn(Tag,
-                    $"偵測到非預期的地圖尺寸 {actualMapSize}（非 {baseSize} 的整數倍），" +
-                    $"無法推斷製作模式；當前 CV={currentCV}。地形高度可能不正確。");
+                    $"检测到非预期的地图尺寸 {actualMapSize}（非 {baseSize} 的整数倍），" +
+                    $"无法推断制作模式；当前 CV={currentCV}。地形高度可能不正确。");
                 return;
             }
 
@@ -104,10 +104,10 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
             MapSizeMismatchState.Record(authoredCV, currentCV);
 
             ModLog.Warn(Tag,
-                $"地圖尺寸模式不符！地圖以 {PatchManager.GetModeNameForCoreValue(authoredCV)} " +
-                $"(CV={authoredCV}, playableArea={actualMapSize}) 製作，" +
-                $"但當前模式為 {PatchManager.GetModeNameForCoreValue(currentCV)} (CV={currentCV})。" +
-                $"地形高度取樣比例將錯位，載入完成後會顯示提示。");
+                $"地图尺寸模式不符！地图以 {PatchManager.GetModeNameForCoreValue(authoredCV)} " +
+                $"(CV={authoredCV}, playableArea={actualMapSize}) 制作，" +
+                $"但当前模式为 {PatchManager.GetModeNameForCoreValue(currentCV)} (CV={currentCV})。" +
+                $"地形高度采样比例将错位，加载完成后会显示提示。");
         }
 
 
@@ -350,7 +350,7 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
     [HarmonyPatch(typeof(TerrainSystem), nameof(TerrainSystem.RenderCascades))]
     internal static class TerrainSystem_RenderCascades_Patch
     {
-        private const string Tag = "TerrainCascade";
+        private const string Tag = nameof(TerrainSystem_RenderCascades_Patch);
         private const int FarCascadeUpdateInterval = 4;
 
         // --- 每帧状态 ---
@@ -509,7 +509,7 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
     [HarmonyPatch(typeof(TerrainSystem), nameof(TerrainSystem.DownSampleHeightMap))]
     internal static class TerrainSystem_DownSampleHeightMap_Gate
     {
-        private const string Tag = "TerrainDownsample";
+        private const string Tag = nameof(TerrainSystem_DownSampleHeightMap_Gate);
 
         /// <summary>載入後強制放行的幀數（涵蓋 slice 0 複製與初始收斂）。</summary>
         private const int kForcePassFrames = 16;
@@ -598,7 +598,7 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
             if ((s_ExecutedCount & 0xFF) == 0)
             {
                 ModLog.Debug(Tag,
-                    $"Backdrop 降採樣門控: 已跳過 {s_SkippedCount} 次 / 已執行 {s_ExecutedCount} 次");
+                    $"Backdrop 降采样门控: 已跳过 {s_SkippedCount} 次 / 已执行 {s_ExecutedCount} 次");
             }
 #endif
             return true;
@@ -681,7 +681,7 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
     [HarmonyPatch(typeof(TerrainSystem), "UpdateCascades")]
     internal static class TerrainSystem_UpdateCascades_TrackState
     {
-        private const string Tag = "TerrainCullOpt";
+        private const string Tag = nameof(TerrainSystem_UpdateCascades_TrackState);
 
         // 状态传递给 CullForCascades Prefix
         internal static bool s_NeedFullBuildingCull = true;
@@ -747,7 +747,7 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
     [HarmonyPatch(typeof(TerrainSystem), "CullForCascades")]
     internal static class TerrainSystem_CullForCascades_Throttle
     {
-        private const string Tag = "TerrainCullOpt";
+        private const string Tag = nameof(TerrainSystem_CullForCascades_Throttle);
         private const float kAreaEpsilon = 0.5f;
 
         // --- 上次實際執行 CullBuildingLotsJob 時的裁剪區域 ---
@@ -833,7 +833,7 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
     [HarmonyPatch(typeof(TerrainSystem), "InitializeTerrainData")]
     internal static class TerrainSystem_InitializeTerrainData_DisableBackdrop
     {
-        private const string Tag = "TerrainBackdrop";
+        private const string Tag = nameof(TerrainSystem_InitializeTerrainData_DisableBackdrop);
 
         [HarmonyPrefix]
         public static void Prefix(

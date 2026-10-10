@@ -35,6 +35,8 @@ using MapExtPDX.MapExt.Core;
     /// </summary>
     public partial class GroundPollutionSystemMod : BaseCellMapSystem, IJobSerializable
     {
+        private const string Tag = nameof(GroundPollutionSystemMod);
+
         public static ModSystem Instance { get; private set; }
 
         #region 常量和静态字配置
@@ -68,14 +70,14 @@ using MapExtPDX.MapExt.Core;
             {
                 originalSystem.Enabled = false;
                 // #if DEBUG
-                Mod.Info($"[{typeof(ModSystem).Name}] 禁用原系统: {typeof(TargetSystem).Name}");
+                ModLog.Swap(Tag, $"禁用原系统: {typeof(TargetSystem).Name}");
                 // #endif
             }
             else
             {
                 // 仅在调试时提示，原版系统可能已被其他Mod移除或尚未加
 #if DEBUG
-                Mod.Error($"[{typeof(ModSystem).Name}] 无法找到可禁用的原系统(尚未加载或可能被其他Mod移除): {typeof(TargetSystem).Name}");
+                ModLog.Error(Tag, $"无法找到可禁用的原系统(尚未加载或可能被其他Mod移除): {typeof(TargetSystem).Name}");
 #endif
             }
 

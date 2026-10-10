@@ -19,6 +19,7 @@ using Game.Prefabs.Modes;
 using Game.Simulation;
 using Game.Tools;
 using Game.Vehicles;
+using MapExtPDX.MapExt.Core;
 using Unity.Burst;
 using Unity.Burst.Intrinsics;
 using Unity.Collections;
@@ -47,6 +48,8 @@ namespace MapExtPDX.EcoShared
     /// </summary>
     public partial class HouseholdBehaviorSystemMod : GameSystemBase
     {
+        private const string Tag = nameof(HouseholdBehaviorSystemMod);
+
         #region 静态常量 - 游戏规则参数
 
         // === 配置中心(自定义) ===
@@ -105,14 +108,14 @@ namespace MapExtPDX.EcoShared
             {
                 originalSystem.Enabled = false;
                 //#if DEBUG
-                Mod.Info($"[{typeof(ModSystem).Name}] 禁用原系统: {typeof(TargetSystem).Name}");
+                ModLog.Swap(Tag, $"禁用原系统: {typeof(TargetSystem).Name}");
                 //#endif
             }
             else
             {
                 // 仅在调试时提示，原版系统可能已被其他Mod移除或尚未加载
 #if DEBUG
-                Mod.Error($"[{typeof(ModSystem).Name}] 无法找到可禁用的原系统(尚未加载或可能被其他Mod移除): {typeof(TargetSystem).Name}");
+                ModLog.Error(Tag, $"无法找到可禁用的原系统(尚未加载或可能被其他Mod移除): {typeof(TargetSystem).Name}");
 #endif
             }
 

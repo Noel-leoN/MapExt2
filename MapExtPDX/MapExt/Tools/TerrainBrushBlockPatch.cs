@@ -22,7 +22,7 @@ namespace MapExtPDX.MapExt.Tools
     [HarmonyPatch(typeof(TerrainSystem), "ApplyBrush")]
     public static class TerrainBrushBlockPatch
     {
-        private const string Tag = "BrushRoadBlock";
+        private const string Tag = nameof(TerrainBrushBlockPatch);
 
         // === Constants and Fields ===
 

@@ -23,7 +23,7 @@ namespace MapExtPDX.EcoShared
     [UpdateAfter(typeof(ValidationSystem))]
     public partial class P2_EditorCollisionOverrideSystem : GameSystemBase
     {
-        private const string Tag = "P2_CollisionSys";
+        private const string Tag = nameof(P2_EditorCollisionOverrideSystem);
         private ToolSystem m_ToolSystem;
         private EntityQuery m_ErrorQuery;
         private ToolOutputBarrier m_ToolOutputBarrier;

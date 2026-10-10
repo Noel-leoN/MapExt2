@@ -33,7 +33,7 @@ namespace MapExtPDX.SaveLoadSystem
     [HarmonyPatch(typeof(MenuUISystem), "SafeLoadGame")]
     public static class LoadGameValidatorPatch
     {
-        private const string Tag = "SaveLoad";
+        private const string Tag = nameof(LoadGameValidatorPatch);
 
         // 定义遗留存档应被视为的 CoreValue;通常为4；其他mapsize需手动修改存档metadata
         public const int LegacySaveCoreValue = 4;

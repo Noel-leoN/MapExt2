@@ -15,7 +15,7 @@ namespace MapExtPDX.SaveLoadSystem
     [HarmonyPatch(typeof(MenuUISystem), nameof(MenuUISystem.GetSaveInfo))]
     public static class MetaDataExtenderPatch
     {
-        private const string Tag = "SaveLoad";
+        private const string Tag = nameof(MetaDataExtenderPatch);
 
         // CV在SaveInfo中的前缀
         public const string CoreValueKeyPrefix = "MapEXT_CoreValue=";
