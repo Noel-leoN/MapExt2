@@ -20,7 +20,7 @@ namespace EconomyEX.Helpers
     /// </summary>
     public partial class ConflictMonitoringSystem : GameSystemBase
     {
-        private const string Tag = "ConflictMonitor";
+        private const string Tag = nameof(ConflictMonitoringSystem);
 
         #region Fields
 
@@ -112,11 +112,11 @@ namespace EconomyEX.Helpers
                 });
 
                 ModLog.Warn(Tag,
-                    $"已提示大地圖存檔警示（尺寸 {MapSizeDetector.DetectedMapSize:0}m，此存檔需要 MapExt）");
+                    $"已提示大地图存档警示（尺寸 {MapSizeDetector.DetectedMapSize:0}m，此存档需要 MapExt）");
             }
             catch (System.Exception ex)
             {
-                ModLog.Warn(Tag, $"顯示大地圖警示對話框失敗: {ex.Message}");
+                ModLog.Warn(Tag, $"显示大地图警示对话框失败: {ex.Message}");
             }
         }
 

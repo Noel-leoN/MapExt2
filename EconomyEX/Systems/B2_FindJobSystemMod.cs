@@ -40,6 +40,8 @@ namespace EconomyEX.Systems
     /// </summary>
     public partial class FindJobSystemMod : GameSystemBase
     {
+        private const string Tag = nameof(FindJobSystemMod);
+
         #region Constants
         private const int UPDATE_INTERVAL = 16; // 系统更新频率（每16帧一次）
         public override int GetUpdateInterval(SystemUpdatePhase phase) => UPDATE_INTERVAL;
@@ -116,14 +118,14 @@ namespace EconomyEX.Systems
             {
                 originalSystem.Enabled = false;
                 //#if DEBUG
-                Mod.Info($"[{typeof(ModSystem).Name}] 禁用原系统: {typeof(TargetSystem).Name}");
+                ModLog.Swap(Tag, $"禁用原系统: {typeof(TargetSystem).Name}");
                 //#endif
             }
             else
             {
                 // 仅在调试时提示，原版系统可能已被其他Mod移除或尚未加载
 #if DEBUG
-                Mod.Error($"[{typeof(ModSystem).Name}] 无法找到可禁用的原系统(尚未加载或可能被其他Mod移除): {typeof(TargetSystem).Name}");
+                ModLog.Error(Tag, $"无法找到可禁用的原系统(尚未加载或可能被其他Mod移除): {typeof(TargetSystem).Name}");
 #endif
             }
 
@@ -368,7 +370,7 @@ namespace EconomyEX.Systems
 
             log.Append($"  > Global Hired Total: {m_GlobalHiredCounter.value}");
 
-            Mod.Debug(log.ToString());
+            ModLog.Debug(Tag, log.ToString());
         }
 #endif
 

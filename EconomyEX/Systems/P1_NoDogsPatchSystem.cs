@@ -5,11 +5,14 @@ using Game.Prefabs;
 using Game.Citizens;
 using Game.Common;
 using Game.Tools;
+using EconomyEX.Helpers;
 
 namespace EconomyEX.Systems
 {
     public partial class P1_NoDogsPatchSystem : GameSystemBase
     {
+        private const string Tag = nameof(P1_NoDogsPatchSystem);
+
         private EntityQuery m_HouseholdDataQuery;
         private EntityQuery m_HouseholdPetQuery;
         private bool m_HasInitializedPrefabs = false;
@@ -79,7 +82,7 @@ namespace EconomyEX.Systems
 
             if (m_HouseholdDataQuery.IsEmptyIgnoreFilter)
             {
-                Mod.Info("P1_NoDogsPatchSystem: HouseholdData prefabs not loaded yet or query is empty.");
+                ModLog.Info(Tag, "HouseholdData 预制体尚未加载或查询为空");
                 return;
             }
 
@@ -101,14 +104,14 @@ namespace EconomyEX.Systems
                     }
                 }
             }
-            Mod.Info($"P1_NoDogsPatchSystem: Updated {count} HouseholdData prefabs. FirstPet={targetFirst}%, NextPet={targetNext}%");
+            ModLog.Ok(Tag, $"已更新 {count} 个 HouseholdData 预制体：FirstPet={targetFirst}%，NextPet={targetNext}%");
         }
 
         private void PurgeAllPets()
         {
             if (m_HouseholdPetQuery.IsEmptyIgnoreFilter)
             {
-                Mod.Info("P1_NoDogsPatchSystem: No logical pets found to purge.");
+                ModLog.Info(Tag, "没有需要清除的逻辑宠物");
                 return;
             }
 
@@ -133,7 +136,7 @@ namespace EconomyEX.Systems
                 }
             }
 
-            Mod.Info($"P1_NoDogsPatchSystem: Successfully queued {count} logical pets for deletion tracking (!Purge!).");
+            ModLog.Ok(Tag, $"已将 {count} 只逻辑宠物加入删除队列（Purge）");
         }
     }
 }

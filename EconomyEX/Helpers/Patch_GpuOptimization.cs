@@ -17,7 +17,7 @@ namespace EconomyEX.Helpers
     [HarmonyPatch(typeof(TerrainSystem), "InitializeTerrainData")]
     internal static class TerrainBackdropDisablePatch
     {
-        private const string Tag = "GpuOpt";
+        private const string Tag = nameof(TerrainBackdropDisablePatch);
 
         [HarmonyPrefix]
         public static void Prefix(

@@ -19,6 +19,8 @@ namespace EconomyEX.Helpers
     /// </summary>
     public static class SystemRegistrar
     {
+        private const string Tag = nameof(SystemRegistrar);
+
         public static void RegisterSystems(UpdateSystem updateSystem)
         {
             // Register Mod Systems to the Game Update Loop
@@ -113,7 +115,7 @@ namespace EconomyEX.Helpers
             SetSystemEnabled<ResidentAISystemMod.Actions>(world, true);
             SetSystemEnabled<P3_VehiclePurchaseRescueSystem>(world, true);
 
-            Mod.Info("EconomyEX Systems ENABLED. Vanilla Systems DISABLED.");
+            ModLog.Ok(Tag, "EconomyEX 系统已启用，原版系统已停用");
         }
 
         /// <summary>
@@ -157,9 +159,9 @@ namespace EconomyEX.Helpers
             SetSystemEnabled<P3_VehiclePurchaseRescueSystem>(world, false);
 
             if (isInitialStandby)
-                Mod.Info("EconomyEX Systems registered (STANDBY). Awaiting map size verification...");
+                ModLog.Info(Tag, "EconomyEX 系统已注册（待机），等待地图尺寸确认");
             else
-                Mod.Info("EconomyEX Systems DISABLED. Framework restored to Vanilla.");
+                ModLog.Info(Tag, "EconomyEX 系统已停用，已恢复原版系统");
         }
 
         private static void SetSystemEnabled<T>(World world, bool enabled) where T : GameSystemBase

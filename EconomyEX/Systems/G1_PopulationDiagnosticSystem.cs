@@ -26,7 +26,7 @@ namespace EconomyEX.Systems
     {
         #region Constants
 
-        private const string Tag = "PopDiag";
+        private const string Tag = nameof(PopulationDiagnosticSystem);
 
         #endregion
 

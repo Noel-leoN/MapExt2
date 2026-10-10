@@ -37,6 +37,8 @@ namespace EconomyEX.Settings
         kNoDogsGroup, kNoTrafficGroup, kEditorToolGroup, kGpuOptGroup, kPopDiagGroup, kDebugGroup)]
     public class ModSettings : ModSetting
     {
+        private const string Tag = nameof(ModSettings);
+
         public const string kSectionGeneral = "General";
         public const string kSectionStatus = "Status";
 
@@ -337,7 +339,7 @@ namespace EconomyEX.Settings
 
         public void UpdateNoDogsSystemStates()
         {
-            ModLog.Info("Settings", $"NoDogs 2.0: OnStreet={m_NoDogsOnStreet}, Generation={m_NoDogsGeneration}, Purge={m_NoDogsPurge}");
+            ModLog.Info(Tag, $"NoDogs 2.0: OnStreet={m_NoDogsOnStreet}, Generation={m_NoDogsGeneration}, Purge={m_NoDogsPurge}");
 
             // 禁止外出：关闭 HouseholdPetSpawnSystem
             World.DefaultGameObjectInjectionWorld.GetOrCreateSystemManaged<Game.Simulation.HouseholdPetSpawnSystem>()
@@ -356,7 +358,7 @@ namespace EconomyEX.Settings
                 m_NoDogsPurge = false;
             }
 
-            ModLog.Patch("Settings", "NoDogs 2.0 补丁已应用");
+            ModLog.Patch(Tag, "NoDogs 2.0 补丁已应用");
         }
 
         public int CurrentPetCount { get; set; } = 0;
@@ -402,12 +404,12 @@ namespace EconomyEX.Settings
 
         public void UpdateNoThroughTrafficSystemStates()
         {
-            ModLog.Info("Settings",
+            ModLog.Info(Tag,
                 $"TrafficSpawnerAISystem Enabled={!m_NoThroughTrafficSystem}");
             World.DefaultGameObjectInjectionWorld.GetOrCreateSystemManaged<Game.Simulation.TrafficSpawnerAISystem>()
                 .Enabled = !m_NoThroughTrafficSystem;
 
-            ModLog.Patch("Settings", "NoThroughTraffic 补丁已应用");
+            ModLog.Patch(Tag, "NoThroughTraffic 补丁已应用");
         }
 
         #endregion

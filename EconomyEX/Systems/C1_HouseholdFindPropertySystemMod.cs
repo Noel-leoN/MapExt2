@@ -1357,6 +1357,8 @@ namespace EconomyEX.Systems
     [HarmonyPatch]
     public static class PathfindSetupSystem_FindTargets_Patch
     {
+        private const string Tag = nameof(PathfindSetupSystem_FindTargets_Patch);
+
 #if DEBUG
         private static int _callCount = 0;
         private static bool _hasLoggedSuccess = false; 
@@ -1482,7 +1484,7 @@ namespace EconomyEX.Systems
             _callCount++;
             if (!_hasLoggedSuccess || _callCount % 600 == 0)
             {
-                Mod.Logger.Info($"[SetupFindHomeJob] FindHome Patch Triggered! Count: {_callCount}");
+                ModLog.Debug(Tag, $"FindHome 补丁已触发，累计 {_callCount} 次");
                 _hasLoggedSuccess = true;
             } 
 #endif

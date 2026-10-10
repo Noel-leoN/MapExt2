@@ -13,7 +13,7 @@ namespace EconomyEX.Helpers
     /// </summary>
     public static class ModConflictDetector
     {
-        private const string Tag = "ConflictDetector";
+        private const string Tag = nameof(ModConflictDetector);
 
         // === 检测结果缓存 ===
 

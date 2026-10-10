@@ -6,6 +6,8 @@ namespace EconomyEX.Helpers
 {
     public static class MapSizeDetector
     {
+        private const string Tag = nameof(MapSizeDetector);
+
         public static bool HasCheckedMapSize { get; private set; } = false;
         private const float VanillaMapSize = 14336f;
 
@@ -49,18 +51,18 @@ namespace EconomyEX.Helpers
                 ResetState();
 
                 HasCheckedMapSize = true;
-                Mod.Info($"Map Load Detected. Size: {inMapSize.x}x{inMapSize.y}");
+                ModLog.Scan(Tag, $"检测到地图加载，尺寸 {inMapSize.x}x{inMapSize.y}");
 
                 // Check if map is basically vanilla size (allow small float error)
                 // 14336 is the standard size.
                 if (inMapSize.x <= VanillaMapSize + 1.0f)
                 {
-                    Mod.Info("Vanilla Map Size verified.");
+                    ModLog.Ok(Tag, "已确认为原版地图尺寸");
                     Mod.Instance?.ActivateEconomyFix();
                 }
                 else
                 {
-                    Mod.Warn($"Large Map Detected ({inMapSize.x}). EconomyEX will remain inactive.");
+                    ModLog.Warn(Tag, $"检测到大地图（{inMapSize.x}），EconomyEX 保持停用");
 
                     // 記錄供 OnGameLoadingComplete 彈窗：此存檔需要 MapExt 才能正確載入，
                     // 缺 MapExt 時地形取樣比例錯誤、存檔實質不可遊玩，而這一側原本只寫 log，

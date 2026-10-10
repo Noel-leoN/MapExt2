@@ -14,13 +14,11 @@ namespace EconomyEX
 {
     public class Mod : IMod
     {
+        private const string Tag = nameof(Mod);
+
         public const string ModName = "EconomyEX";
+        // 只供 ModLog 内部使用，业务代码一律经 ModLog 输出
         public static ILog Logger = LogManager.GetLogger($"{ModName}").SetShowsErrorsInUI(false);
-        public static void Info(string text) => Logger.Info(text);
-        public static void Warn(string text) => Logger.Warn(text);
-        public static void Error(string text) => Logger.Error(text);
-        public static void Error(Exception e, string text) => Logger.Error(e, text);
-        public static void Debug(string text) => Logger.Info(text);
 
         public static Mod Instance { get; private set; }
         public ModSettings Settings { get; private set; }
@@ -55,7 +53,7 @@ namespace EconomyEX
             catch (Exception ex)
             {
                 InitializationFailed = true;
-                Error(ex, "OnLoad 中斷，本次遊戲 EconomyEX 未完整生效");
+                ModLog.Error(Tag, ex, "OnLoad 中断，本次游戏 EconomyEX 未完整生效");
                 PushInitFailureNotification(ex);
             }
         }
@@ -68,11 +66,11 @@ namespace EconomyEX
             if (CheckMapExtPresence())
             {
                 IsMapExtPresent = true;
-                Logger.Warn("MapExtPDX detected. EconomyEX will NOT initialize (fully dormant). No conflicts.");
+                ModLog.Warn(Tag, "检测到 MapExtPDX，EconomyEX 不初始化（完全休眠，无冲突）");
                 return; // 完全跳过：不注册 Settings/UI/Harmony/Systems
             }
 
-            Info($"Loading {ModName}...");
+            ModLog.Info(Tag, $"Loading {ModName}...");
 
             // 2. Initialize Settings
             Settings = new ModSettings(this);
@@ -91,7 +89,7 @@ namespace EconomyEX
             if (conflictReport != "None")
             {
                 Settings._conflictWarning = $"[Startup] {conflictReport}";
-                Warn($"启动冲突报告: {conflictReport}");
+                ModLog.Warn(Tag, $"启动冲突报告: {conflictReport}");
             }
 
             // 3. Initialize Harmony
@@ -100,7 +98,7 @@ namespace EconomyEX
             // 4. Install Map Size Detector
             // This patch checks the map size when a map is loaded.
             MapSizeDetector.Install(_harmony);
-            Info("MapSizeDetector installed.");
+            ModLog.Patch(Tag, "MapSizeDetector installed.");
 
             // 5. Auto-disable conflicting groups BEFORE system registration
             var disabledGroups = ModConflictDetector.AutoDisableConflictGroups(Settings);
@@ -160,7 +158,7 @@ namespace EconomyEX
             }
             catch (Exception ex)
             {
-                Warn($"註冊 {localeId} 本地化失敗（引擎本地化字典無鎖，疑撞上並發寫入），該語言文字將顯示為 key: {ex.Message}");
+                ModLog.Warn(Tag, $"注册 {localeId} 本地化失败（引擎本地化字典无锁，疑撞上并发写入），该语言文字将显示为 key: {ex.Message}");
             }
         }
 
@@ -184,13 +182,13 @@ namespace EconomyEX
             }
             catch (Exception pushEx)
             {
-                Warn($"初始化失敗通知推送失敗: {pushEx.Message}");
+                ModLog.Warn(Tag, $"初始化失败通知推送失败: {pushEx.Message}");
             }
         }
 
         public void OnDispose()
         {
-            Info("Disposing...");
+            ModLog.Info(Tag, "Disposing...");
             if (Settings != null)
             {
                 Settings.UnregisterInOptionsUI();
@@ -241,7 +239,7 @@ namespace EconomyEX
 
             if (IsActive) return; // 以下僅首次啟用時執行
 
-            Info("Activating Economy Fixes...");
+            ModLog.Info(Tag, "Activating Economy Fixes...");
             IsActive = true;
             IsVanillaMap = true; // Confirmed
             
@@ -279,7 +277,7 @@ namespace EconomyEX
 
              if (IsActive)
              {
-                 Info("Deactivating Economy Fixes (Large Map Detected)...");
+                 ModLog.Info(Tag, "Deactivating Economy Fixes (Large Map Detected)...");
                  IsActive = false;
              }
 

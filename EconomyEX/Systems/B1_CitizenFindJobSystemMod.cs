@@ -11,6 +11,7 @@ using Game.Companies;
 using Game.Prefabs;
 using Game.Simulation;
 using Game.Tools;
+using EconomyEX.Helpers;
 using Unity.Burst;
 using Unity.Burst.Intrinsics;
 using Unity.Collections;
@@ -29,6 +30,8 @@ namespace EconomyEX.Systems
 
     public partial class CitizenFindJobSystemMod : GameSystemBase
     {
+        private const string Tag = nameof(CitizenFindJobSystemMod);
+
         #region Constants
         /// <summary>
         /// 每天更新次数，16分片 → 每帧处理 1/16 的实体
@@ -93,12 +96,12 @@ namespace EconomyEX.Systems
             if (originalSystem != null)
             {
                 originalSystem.Enabled = false;
-                Mod.Info($"[{typeof(ModSystem).Name}] 禁用原系统: {typeof(TargetSystem).Name}");
+                ModLog.Swap(Tag, $"禁用原系统: {typeof(TargetSystem).Name}");
             }
 #if DEBUG
             else
             {
-                Mod.Error($"[{typeof(ModSystem).Name}] 无法找到可禁用的原系统: {typeof(TargetSystem).Name}");
+                ModLog.Error(Tag, $"无法找到可禁用的原系统: {typeof(TargetSystem).Name}");
             }
 #endif
 
@@ -312,7 +315,7 @@ namespace EconomyEX.Systems
             if (unempScan > 0) AppendLogSection(sb, "Unemployed", DBG_Offset_Unemployed);
             if (empScan > 0) AppendLogSection(sb, "Employed  ", DBG_Offset_Employed);
 
-            Mod.Debug(sb.ToString());
+            ModLog.Debug(Tag, sb.ToString());
         }
 
         private void AppendLogSection(System.Text.StringBuilder sb, string label, int offset)
