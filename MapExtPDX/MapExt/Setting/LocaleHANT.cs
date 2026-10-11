@@ -823,6 +823,16 @@ namespace MapExtPDX
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.ExportHeightmap)),
                     "將當前地形高度圖匯出為 16-bit PNG 至 Heightmaps 資料夾，可直接在地圖編輯器的「匯入高度圖」面板中選用。\n★ 僅匯出純地形，不含建築、道路與地塊壓平，重新匯入不會把這些痕跡固化進地形。\n★ 需先載入地圖或存檔。"
                 },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.CellMapChecksumReport)), "CellMap 校驗和結果" },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.CellMapChecksumReport)),
+                    "顯示最近一次匯出的結果：計算了多少張 CellMap、處於哪個模擬幀。各圖的長度與雜湊寫入 MapExtPDX.log。"
+                },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.ExportCellMapChecksums)), "匯出 CellMap 校驗和" },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.ExportCellMapChecksums)),
+                    "開發者工具：把全部 CellMap（原版與 MapExt）的長度與雜湊寫入 MapExtPDX.log，用於確認同一存檔在不同 Mod 版本下讀出的 CellMap 資料一致。\n★ 先開啟遊戲的「載入後暫停」選項，在模擬推進前匯出。\n★ 需先載入存檔。"
+                },
             };
             return entries;
         }

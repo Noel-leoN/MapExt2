@@ -1002,6 +1002,22 @@ namespace MapExtPDX
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.ExportHeightmap)),
                     "Exports the current terrain heightmap as a 16-bit PNG into the Heightmaps folder, ready to pick in the Map Editor's Import Heightmap panel.\n★ Exports pure terrain only — buildings, roads and lot flattening are excluded, so re-importing will not bake them into the terrain.\n★ Requires a loaded map or save."
                 },
+                {
+                    m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.CellMapChecksumReport)),
+                    "CellMap Checksum Result"
+                },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.CellMapChecksumReport)),
+                    "Shows the result of the last export: how many CellMaps were hashed and at which simulation frame. The per-map lengths and hashes are written to MapExtPDX.log."
+                },
+                {
+                    m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.ExportCellMapChecksums)),
+                    "Export CellMap Checksums"
+                },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.ExportCellMapChecksums)),
+                    "Developer tool: writes the length and hash of every CellMap (vanilla and MapExt) to MapExtPDX.log, to check that the same save loads identical CellMap data across mod versions.\n★ Turn on the game's pause-after-loading option first, and export before the simulation advances.\n★ Requires a loaded save."
+                },
             };
             return entries;
         }

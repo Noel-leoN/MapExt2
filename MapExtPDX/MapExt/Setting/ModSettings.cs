@@ -1238,6 +1238,30 @@ namespace MapExtPDX
 
         #endregion
 
+        // === CellMap Checksum ===
+
+        #region CellMap Checksum
+
+        /// <summary>CellMap 校验和导出结果，由 ExportCellMapChecksums 按钮更新；只存于内存，不写入设定文件</summary>
+        private string m_CellMapChecksumData = "Click Export to log CellMap checksums.";
+
+        /// <summary>CellMap 校验和导出结果显示（计算属性，按钮点击后 UI 自动重新求值）</summary>
+        [SettingsUISection(kDebugTab, kDebugGroup)]
+        public string CellMapChecksumReport => m_CellMapChecksumData;
+
+        /// <summary>
+        /// 把全部 CellMap（原版与 MapExt）的长度与哈希写入 MapExtPDX.log，
+        /// 用于在不同 Mod 版本间比对同一存档的 CellMap 数据。
+        /// </summary>
+        [SettingsUISection(kDebugTab, kDebugGroup)]
+        [SettingsUIButton]
+        public bool ExportCellMapChecksums
+        {
+            set => m_CellMapChecksumData = MapExtPDX.MapExt.Tools.CellMapChecksumExporter.Export();
+        }
+
+        #endregion
+
         // === Defaults ===
         public override void SetDefaults()
         {
