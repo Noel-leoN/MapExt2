@@ -42,6 +42,8 @@ using MapExtPDX.MapExt.Core;
     /// 继承CellMapSystem 用于处理网格数据
     /// 该系统是否有存在的必要？？？
     /// </summary>
+    // 降级保护（重构二 0.4）：合并版存档里本类的类型名是 MapExtPDX.CellMap.SoilWaterSystemMod，退回本版本时靠此别名读回，勿删
+    [Colossal.Serialization.Entities.FormerlySerializedAs("MapExtPDX.CellMap.SoilWaterSystemMod")]
     public partial class SoilWaterSystemMod : BaseCellMapSystem, IJobSerializable, IPostDeserialize
     {
         private const string Tag = nameof(SoilWaterSystemMod);

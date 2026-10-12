@@ -18,7 +18,7 @@ using Unity.Mathematics;
 // using UnityEngine; // 使用 Unity.Mathematics 代替以符合 Burst
 
 
-namespace MapExtPDX.ModeB
+namespace MapExtPDX.EcoShared
 {
     /// <summary>
     /// ResidentialDemandSystem 居民需求系統

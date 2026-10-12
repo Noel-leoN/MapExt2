@@ -28,6 +28,8 @@ namespace MapExtPDX.ModeB
 using MapExtPDX.MapExt.Core;
     // =========================================================================================
 
+    // 降级保护（重构二 0.4）：合并版存档里本类的类型名是 MapExtPDX.CellMap.NoisePollutionSystemMod，退回本版本时靠此别名读回，勿删
+    [Colossal.Serialization.Entities.FormerlySerializedAs("MapExtPDX.CellMap.NoisePollutionSystemMod")]
     public partial class NoisePollutionSystemMod : BaseCellMapSystem, IJobSerializable
     {
         private const string Tag = nameof(NoisePollutionSystemMod);

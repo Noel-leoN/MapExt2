@@ -35,6 +35,8 @@ using MapExtPDX.MapExt.Core;
     /// 主要功能包括定期更新网格数据（将累积值应用到当前值），以及提供查询特定位置氛围值的工具方法
     /// </para>
     /// </summary>
+    // 降级保护（重构二 0.4）：合并版存档里本类的类型名是 MapExtPDX.CellMap.ZoneAmbienceSystemMod，退回本版本时靠此别名读回，勿删
+    [Colossal.Serialization.Entities.FormerlySerializedAs("MapExtPDX.CellMap.ZoneAmbienceSystemMod")]
     public partial class ZoneAmbienceSystemMod : BaseCellMapSystem, IJobSerializable
     {
         private const string Tag = nameof(ZoneAmbienceSystemMod);

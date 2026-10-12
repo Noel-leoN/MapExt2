@@ -50,6 +50,8 @@ using MapExtPDX.MapExt.Core;
     // 3. 重构目标：Edge地价直接计算最终值，包含所有加成和扣除因素。CellMap热力图加权采样Edge地价生成，确保UI显示与经济模拟一致
     // 注意：早期版本根据道路边建筑属性计算地价方式对性能影响大，参照中日韩等地基准地价体地价公告现路线价，不再区分建筑用途对地价的影响。建筑地价影响由RentSystem体现
 
+    // 降级保护（重构二 0.4）：合并版存档里本类的类型名是 MapExtPDX.CellMap.LandValueSystemMod，退回本版本时靠此别名读回，勿删
+    [Colossal.Serialization.Entities.FormerlySerializedAs("MapExtPDX.CellMap.LandValueSystemMod")]
     public partial class LandValueSystemMod : BaseCellMapSystem, IJobSerializable
     {
         private const string Tag = nameof(LandValueSystemMod);

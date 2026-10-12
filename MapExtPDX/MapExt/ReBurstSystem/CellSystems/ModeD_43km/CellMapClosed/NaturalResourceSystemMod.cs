@@ -48,6 +48,8 @@ namespace MapExtPDX.ModeD
     /// 负责管理地图上的肥力、矿产、石油和鱼类资源。
     /// 处理资源的再生、污染带来的损耗以及资源变化对区域（Area）的影响。
     /// </summary>
+    // 降级保护（重构二 0.4）：合并版存档里本类的类型名是 MapExtPDX.CellMap.NaturalResourceSystemMod，退回本版本时靠此别名读回，勿删
+    [Colossal.Serialization.Entities.FormerlySerializedAs("MapExtPDX.CellMap.NaturalResourceSystemMod")]
     public partial class NaturalResourceSystemMod : BaseCellMapSystem, IJobSerializable, IPostDeserialize
     {
         private const string Tag = nameof(NaturalResourceSystemMod);

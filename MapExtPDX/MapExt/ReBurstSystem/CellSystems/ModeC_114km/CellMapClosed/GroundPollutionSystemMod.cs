@@ -33,6 +33,8 @@ using MapExtPDX.MapExt.Core;
     /// <summary>
     /// 地表污染系统：用于计算和存储地面污染数据
     /// </summary>
+    // 降级保护（重构二 0.4）：合并版存档里本类的类型名是 MapExtPDX.CellMap.GroundPollutionSystemMod，退回本版本时靠此别名读回，勿删
+    [Colossal.Serialization.Entities.FormerlySerializedAs("MapExtPDX.CellMap.GroundPollutionSystemMod")]
     public partial class GroundPollutionSystemMod : BaseCellMapSystem, IJobSerializable
     {
         private const string Tag = nameof(GroundPollutionSystemMod);

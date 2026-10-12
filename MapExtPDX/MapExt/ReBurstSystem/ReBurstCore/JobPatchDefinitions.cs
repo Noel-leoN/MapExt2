@@ -53,7 +53,9 @@ namespace MapExtPDX.MapExt.ReBurstSystem.Core
     {
         // Name Patterns
         private const string PatternCellSystem = "MapExtPDX.Mode{MODE_PLACEHOLDER}";
-        private const string PatternEcoSystem = "MapExtPDX.Mode{MODE_PLACEHOLDER}";
+
+        // 需求 Job 与地图尺寸无关，各模式共用 EcoSystems/Shared 中的同一份
+        private const string PatternEcoSystem = "MapExtPDX.EcoShared";
 
         private class BaseJobTargetInfo
         {
@@ -181,13 +183,11 @@ namespace MapExtPDX.MapExt.ReBurstSystem.Core
 
         public static List<JobPatchTarget> GetCellSystemTargets(PatchModeSetting mode)
         {
-            // 原版尺寸（ModeE / None）不替換任何 CellMap 相關 Job：CellMap 尺寸與原版一致，
-            // 原版 Job 本身即為正確實作。
+            // 原版尺寸（ModeE / None）不替换任何 CellMap 相关 Job：CellMap 尺寸与原版一致，
+            // 原版 Job 本身就是正确实现。
             //
-            // 此守衛必須留在本方法內，不可下沉到 GenerateConcreteTargets 靠 pattern 字串比對區分：
-            // PatternCellSystem 與 PatternEcoSystem 的字面值相同，而 string == 是值比較，
-            // 因此 `pattern == PatternCellSystem` 形式的判斷對 Eco 目標同樣成立，
-            // 會連帶擋掉 ModeE 的 Eco Job 替換（A1/A2/A3）且全程無任何日誌。
+            // 此守卫留在本方法内，不要改成在 GenerateConcreteTargets 里比较 pattern 字符串：
+            // 两个 pattern 曾经字面值相同，按值比较会连带挡掉 ModeE 的需求 Job 替换，且没有任何日志。
             if (mode == PatchModeSetting.None)
                 return new List<JobPatchTarget>();
 
@@ -196,6 +196,7 @@ namespace MapExtPDX.MapExt.ReBurstSystem.Core
 
         public static List<JobPatchTarget> GetEcoSystemTargets(PatchModeSetting mode)
         {
+            // PatternEcoSystem 不含占位符，mode 已不影响替换 Job 的全名；保留参数是为了不改调用方
             return GenerateConcreteTargets(EcoSystemTargets, mode, PatternEcoSystem);
         }
 

@@ -38,6 +38,8 @@ using MapExtPDX.MapExt.Core;
     /// 系统继承CellMapSystem，以网格形式存储数据
     /// </para>
     /// </summary>
+    // 降级保护（重构二 0.4）：合并版存档里本类的类型名是 MapExtPDX.CellMap.TerrainAttractivenessSystemMod，退回本版本时靠此别名读回，勿删
+    [Colossal.Serialization.Entities.FormerlySerializedAs("MapExtPDX.CellMap.TerrainAttractivenessSystemMod")]
     public partial class TerrainAttractivenessSystemMod : BaseCellMapSystem, IJobSerializable
     {
         private const string Tag = nameof(TerrainAttractivenessSystemMod);

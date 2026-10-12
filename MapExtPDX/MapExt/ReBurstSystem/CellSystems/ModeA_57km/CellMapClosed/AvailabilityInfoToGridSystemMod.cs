@@ -43,6 +43,8 @@ using MapExtPDX.MapExt.Core;
     /// <summary>
     /// 网格Heatmap，将网络（道管线）上的资源可用性数据（如吸引力、服务、就业机会）映射到一个二维网格Grid
     /// </summary>
+    // 降级保护（重构二 0.4）：合并版存档里本类的类型名是 MapExtPDX.CellMap.AvailabilityInfoToGridSystemMod，退回本版本时靠此别名读回，勿删
+    [Colossal.Serialization.Entities.FormerlySerializedAs("MapExtPDX.CellMap.AvailabilityInfoToGridSystemMod")]
     public partial class AvailabilityInfoToGridSystemMod : BaseCellMapSystem, IJobSerializable
     {
         private const string Tag = nameof(AvailabilityInfoToGridSystemMod);
