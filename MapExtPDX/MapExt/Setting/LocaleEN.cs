@@ -1018,6 +1018,22 @@ namespace MapExtPDX
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.ExportCellMapChecksums)),
                     "Developer tool: writes the length and hash of every CellMap (vanilla and MapExt) to MapExtPDX.log, to check that the same save loads identical CellMap data across mod versions.\n★ Turn on the game's pause-after-loading option first, and export before the simulation advances.\n★ Requires a loaded save."
                 },
+                {
+                    m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.RegistrationDumpReport)),
+                    "System Registry Result"
+                },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.RegistrationDumpReport)),
+                    "Shows the result of the last export: how many update-order, enabled-state and patch lines were written. The full registry is written to MapExtPDX.log."
+                },
+                {
+                    m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.ExportRegistrationDump)),
+                    "Export System Registry"
+                },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.ExportRegistrationDump)),
+                    "Developer tool: writes the update order of MapExt systems in each phase, the enabled state of MapExt systems and of disabled vanilla systems, and every Harmony patch MapExt has applied to MapExtPDX.log, to compare registration behaviour across mod versions under the same settings.\n★ Export after entering a city — vanilla systems are re-disabled while a save loads.\n★ A copy is also saved to ModsData/MapExt2/RegistrationDump, which survives the log being overwritten on the next launch."
+                },
             };
             return entries;
         }

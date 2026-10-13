@@ -1262,6 +1262,30 @@ namespace MapExtPDX
 
         #endregion
 
+        // === Registration Dump ===
+
+        #region Registration Dump
+
+        /// <summary>系统注册表导出结果，由 ExportRegistrationDump 按钮更新；只存于内存，不写入设定文件</summary>
+        private string m_RegistrationDumpData = "Click Export to log the system registry.";
+
+        /// <summary>系统注册表导出结果显示（计算属性，按钮点击后 UI 自动重新求值）</summary>
+        [SettingsUISection(kDebugTab, kDebugGroup)]
+        public string RegistrationDumpReport => m_RegistrationDumpData;
+
+        /// <summary>
+        /// 把 MapExt 系统的更新次序、启用状态与补丁清单写入 MapExtPDX.log，
+        /// 用于重构前后在同一配置下逐行比对注册行为。
+        /// </summary>
+        [SettingsUISection(kDebugTab, kDebugGroup)]
+        [SettingsUIButton]
+        public bool ExportRegistrationDump
+        {
+            set => m_RegistrationDumpData = MapExtPDX.MapExt.Core.RegistrationDump.Export();
+        }
+
+        #endregion
+
         // === Defaults ===
         public override void SetDefaults()
         {

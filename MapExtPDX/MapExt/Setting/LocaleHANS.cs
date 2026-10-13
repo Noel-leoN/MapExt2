@@ -834,6 +834,16 @@ namespace MapExtPDX
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.ExportCellMapChecksums)),
                     "开发者工具：把全部 CellMap（原版与 MapExt）的长度与哈希写入 MapExtPDX.log，用于确认同一存档在不同 Mod 版本下读出的 CellMap 数据一致。\n★ 先开启游戏的「加载后暂停」选项，在模拟推进前导出。\n★ 需先加载存档。"
                 },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.RegistrationDumpReport)), "系统注册表结果" },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.RegistrationDumpReport)),
+                    "显示最近一次导出的结果：写出了多少行更新次序、启用状态和补丁。完整注册表写入 MapExtPDX.log。"
+                },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.ExportRegistrationDump)), "导出系统注册表" },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.ExportRegistrationDump)),
+                    "开发者工具：把 MapExt 系统在各更新阶段中的次序、MapExt 系统与被禁用原版系统的启用状态，以及 MapExt 挂上的全部 Harmony 补丁写入 MapExtPDX.log，用于在相同设定下比对不同 Mod 版本的注册行为。\n★ 进入城市后再导出：原版系统在读档过程中才会被重新禁用。\n★ 同时另存到 ModsData/MapExt2/RegistrationDump，下次启动游戏覆盖日志后仍可取用。"
+                },
             };
             return entries;
         }
