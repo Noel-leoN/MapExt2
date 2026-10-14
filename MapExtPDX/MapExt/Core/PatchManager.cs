@@ -34,9 +34,6 @@ namespace MapExtPDX.MapExt.Core
         // 供 BaseDataReader.GetReadbackBounds 等需要实际世界尺寸的场景使用
         public static int CurrentMapSize => CurrentCoreValue * OriginalMapSize;
 
-        // CellMapSystem<T>当前kTextureSize倍率
-        public static int CurrentCoreValueTex { get; private set; }
-
         // 调用当前模式状态
         public static PatchModeSetting CurrentMode => _currentMode;
 

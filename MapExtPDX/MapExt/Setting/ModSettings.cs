@@ -202,12 +202,10 @@ namespace MapExtPDX
         [SettingsUISection(kPerformanceToolTab, kTerrainWaterOptGroup)]
         public bool TerrainBufferPrealloc { get; set; } = true;
 
-        /// <summary>
-        /// 建筑裁剪降频。
-        /// 相机平移时若无建筑/地形变化，跳过 CullBuildingLotsJob 全量裁剪，
-        /// 复用上一帧缓存列表。
-        /// </summary>
-        [SettingsUISection(kPerformanceToolTab, kTerrainWaterOptGroup)]
+        // === 建筑裁剪降频（已移除）===
+        // 对应的两个补丁类从未注册，这项优化从未生效，重构一已删除；需要时按性能计划重新引入并做游戏内验证。
+        // 属性与设定文件键保留（避免旧 .coc 反序列化报未知键），UI 隐藏，任何代码都不再读取。
+        [SettingsUIHidden]
         public bool TerrainCullThrottle { get; set; } = true;
 
         /// <summary>
@@ -1345,7 +1343,6 @@ namespace MapExtPDX
             // 地形优化
             TerrainBufferPrealloc = true;
             TerrainCascadeThrottle = false; // 默认关闭：会导致远景级联与视口不同步→地形错位
-            TerrainCullThrottle = true; // 默认开启：跳过无变化帧的建筑裁剪Job
             TerrainDownsampleThrottle = false; // 默認關閉：待遊戲內驗證背景地形無視覺回歸後再改預設
             EnableVanillaConversion = false; // 默认关闭：实验性功能
             DisableWorldBackdrop = false; // 默认关闭：不阻止已有存档的背景世界地图

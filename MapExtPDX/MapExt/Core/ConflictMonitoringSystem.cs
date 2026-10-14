@@ -61,8 +61,6 @@ namespace MapExtPDX.MapExt.Core
                     TerrainSystemPatches.ResetSessionState();
                     // PatchSet1: 级联渲染降频快照
                     TerrainSystem_RenderCascades_Patch.ResetSessionState();
-                    // PatchSet1: 建筑裁剪降频的上次裁剪区域记录
-                    TerrainSystem_CullForCascades_Throttle.ResetSessionState();
                     // PatchSet1: 背景地形降採樣門控（dirty latch + 載入強制放行計數）
                     TerrainSystem_DownSampleHeightMap_Gate.ResetSessionState();
                     // PatchSet2: Water 地形欺骗资源引用

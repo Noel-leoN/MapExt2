@@ -25,7 +25,6 @@
 // 5.序列化泛型ReSample方法的逻辑结构
 // 其他直接套用
 
-using System.Reflection;
 using System.Runtime.CompilerServices;
 using Colossal.Entities;
 using Colossal.Mathematics;
@@ -611,74 +610,6 @@ namespace MapExtPDX.ModeC
                     return false;
                 }
                 return true;
-            }
-
-            // =================================================================
-            // [新增] 拦截原版反序列化，防止尺寸不匹配报错
-            // =================================================================
-
-            // 注意：Deserialize 是泛型方法，Harmony 必须使用特殊方式 Patch
-            // 目标方法：CellMapSystem<GroundPollution>.Deserialize<TReader>(EntityReaderData, JobHandle)
-            [HarmonyPatch]
-            public static class DeserializePatch
-            {
-                // 动态获取目标方(泛型 Patch 需TargetMethod)
-                static MethodBase TargetMethod()
-                {
-                    // 获取基类 CellMapSystem<T> Deserialize 方法
-                    var type = typeof(BaseCellMapSystem);
-                    // 注意：因为是泛型方法，Harmony 可能需要你指定具体的泛型实例，或Patch 所有实
-                    // 但在这里，存档加载时通常具体化为 BinaryReader
-                    // 简便方法：Patch 包含该方法的类，并使用名字匹配，Harmony 处理泛型
-                    return AccessTools.Method(type, "Deserialize");
-                }
-
-                // 前缀拦截
-                [HarmonyPrefix]
-                public static bool Prefix(object __instance, object readerData, JobHandle inputDeps, ref JobHandle __result)
-                {
-                    // 1. 只拦截原版系统实(例如Game.Simulation.GroundPollutionSystem)
-                    // Mod 自己的实例调Deserialize 不应被拦截（虽然 Mod 调用的是 override，也不受Patch 影响
-                    if (__instance.GetType() == typeof(TargetSystem))
-                    {
-                        // 2. 强制转换参数类型
-                        // 由于 Harmony 对于泛型方法的参数传递比较复杂，我们这里手动构Job
-                        // 但由TReader Patch 签名中无法直接写出，我们需要利用泛型方法的技
-                        // 或者，更简单的：直接在此处手动调度 Job，跳过原版逻辑
-
-                        // 这里readerData 实际上是 EntityReaderData，但Harmony 参数中如果是 object 需要强
-                        var rData = (EntityReaderData)readerData;
-
-                        // 3. 调用我们写好Helper 方法来处理泛型调
-                        // 我们需要知TReader 具体是什么。通常Colossal.Serialization.Entities.BinaryReader
-                        // 但为了稳健，我们使用反射调用泛型 Helper
-
-                        // 获取当前TReader 类型
-                        // 这是一个黑科技：通过 StackFrame 或__originalMethod 获取 TReader 类型有点
-                        // 但我们可以观察到，EntityReaderData 内部其实封装Reader
-
-                        // *** 简化策***
-                        // 既然此时很难直接构建泛型 Job (因为不知TReader)
-                        // 我们最直接的方案是：直接调Mod 实例Deserialize 方法
-                        // 因为 Mod 实例Deserialize 方法已经是我们重写过的“安全版”了
-
-                        if (Instance != null)
-                        {
-                            // 调用 ModSystem.Instance.Deserialize<TReader>(rData, inputDeps)
-                            // 利用 MakeGenericMethod 动态调
-                            var method = typeof(ModSystem).GetMethod("Deserialize", BindingFlags.Instance | BindingFlags.Public);
-                            var genericMethod = method.MakeGenericMethod(MethodBase.GetCurrentMethod().GetGenericArguments());
-
-                            // 反射调用：这会返JobHandle
-                            __result = (JobHandle)genericMethod.Invoke(Instance, new object[] { rData, inputDeps });
-
-                            // 返回 false 阻止原版方法执行
-                            return false;
-                        }
-                    }
-
-                    return true;
-                }
             }
         }
 

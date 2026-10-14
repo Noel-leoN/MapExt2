@@ -45,9 +45,6 @@ namespace MapExtPDX
         // 只供 ModLog 内部使用，业务代码一律经 ModLog 输出
         public static ILog Logger = LogManager.GetLogger($"{ModName}").SetShowsErrorsInUI(false);
 
-        // 定义Harmony
-        public static readonly string HarmonyId = ModName; // 弃用
-
         /// <summary>
         /// 双Harmony实例模式
         /// </summary>
@@ -155,8 +152,7 @@ namespace MapExtPDX
             ModLog.Debug(Tag,
                 $"  WaterSimQuality={m_Setting.WaterSimQuality}, WaterTexFmt={m_Setting.WaterTextureFormat}");
             ModLog.Debug(Tag, $"  TerrainBufferPrealloc={m_Setting.TerrainBufferPrealloc}");
-            ModLog.Debug(Tag,
-                $"  TerrainCascadeThrottle={m_Setting.TerrainCascadeThrottle}, TerrainCullThrottle={m_Setting.TerrainCullThrottle}");
+            ModLog.Debug(Tag, $"  TerrainCascadeThrottle={m_Setting.TerrainCascadeThrottle}");
             ModLog.Debug(Tag,
                 $"  EnableVanillaConversion={m_Setting.EnableVanillaConversion}, DisableWorldBackdrop={m_Setting.DisableWorldBackdrop}");
             ModLog.Debug(Tag, $"  EconomyFix={m_Setting.isEnableEconomyFix}");
@@ -379,12 +375,6 @@ namespace MapExtPDX
             //m_Setting?.RefreshModSettingInfo(); // Update status display
         }
 
-        public void ApplyPatchChangesFromSettings(PatchModeSetting modeToApply)
-        {
-            PatchManager.SetPatchMode(modeToApply);
-            ModLog.Ok(Tag, $"已应用 MapSize Mode: {modeToApply}");
-        }
-
         public void OnDispose()
         {
             ModLog.Info(Tag, nameof(OnDispose));
@@ -410,17 +400,6 @@ namespace MapExtPDX
                 m_Setting.UnregisterInOptionsUI();
                 m_Setting = null;
             }
-        }
-
-        /// <summary>
-        /// Gets the current game mode.
-        /// This method can be called by ModSettings.IsVisibleInMainMenu.
-        /// </summary>
-        public GameMode GetCurrentGameMode()
-        {
-            var gameMode = GameManager.instance.gameMode;
-            ModLog.Info(Tag, $"当前游戏模式为 {gameMode}");
-            return gameMode;
         }
     } // class Mod
 } // namespace MapExtPDX

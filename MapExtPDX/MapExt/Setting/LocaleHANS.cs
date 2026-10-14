@@ -69,15 +69,6 @@ namespace MapExtPDX
                     "★ 建议：大地图全部开启，无视觉副作用。\n" +
                     "★ 提示：该选项即时生效无须重启。"
                 },
-                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.TerrainCullThrottle)), "建筑裁剪降频" },
-                {
-                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.TerrainCullThrottle)),
-                    "相机平移时，若建筑和地形均无实际变化，跳过 CullBuildingLotsJob 全量裁剪，" +
-                    "复用上一帧的缓存列表。\n\n" +
-                    "大地图下该 Job 遍历所有建筑实体，开销随建筑数量线性增长。该优化可显著降低平移相机时的 CPU 占用。\n\n" +
-                    "★ 建议：大地图全部开启，无视觉副作用。\n" +
-                    "★ 提示：该选项即时生效无须重启。"
-                },
                 { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.TerrainCascadeThrottle)), "⚠ 地形级联降频 (实验性)" },
                 {
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.TerrainCascadeThrottle)),

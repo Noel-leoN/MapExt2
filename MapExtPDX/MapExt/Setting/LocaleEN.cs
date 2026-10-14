@@ -78,19 +78,6 @@ namespace MapExtPDX
                     "★ Tip: Applies instantly, no restart required."
                 },
                 {
-                    m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.TerrainCullThrottle)),
-                    "Terrain Building Cull Throttle"
-                },
-                {
-                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.TerrainCullThrottle)),
-                    "Skips redundant building re-culling during camera panning when no buildings or terrain have actually changed: " +
-                    "the cached building list from the previous frame is reused instead.\n\n" +
-                    "This eliminates unnecessary CPU work from CullBuildingLotsJob, which iterates over all building entities every frame " +
-                    "on large maps even if nothing has changed.\n\n" +
-                    "★ Recommended: ON for all large maps. No visual side effects.\n" +
-                    "★ Tip: Applies instantly, no restart required."
-                },
-                {
                     m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.TerrainCascadeThrottle)),
                     "⚠ Terrain Cascade Throttle (Experimental)"
                 },
