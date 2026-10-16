@@ -36,7 +36,10 @@ namespace MapExtPDX.MapExt.Core
 
         #region Constants
 
-        /// <summary>CellMap 替换（含 CellOnly 路径）：随地图尺寸决定，不受经济开关约束。</summary>
+        /// <summary>
+        /// CellMap 替换（含 CellOnly 路径）：随地图尺寸决定，不受经济开关约束。
+        /// 本组声明失败一律按关键处理，让本会话进入降级状态（见 <see cref="MapExtHealth"/>）。
+        /// </summary>
         public const string GroupCellMap = "CellMap";
 
         /// <summary>只受经济总开关约束、不属于任何分组的声明（如 NetUpkeep 禁用）。</summary>
@@ -55,7 +58,7 @@ namespace MapExtPDX.MapExt.Core
         /// <summary>已登记的声明数。</summary>
         public int Count => m_Declarations.Count;
 
-        /// <summary>Apply 中执行失败的声明（"分组/名称: 原因"），供健康状态使用。</summary>
+        /// <summary>Apply 中执行失败的声明（"分组/名称: 原因"），供诊断与注册表导出显示；CellMap 组的失败另记入健康状态。</summary>
         public IReadOnlyList<string> Failures => m_Failures;
 
         #endregion
@@ -78,7 +81,10 @@ namespace MapExtPDX.MapExt.Core
             m_Declarations.Add(new Declaration(group, ShortName(vanilla[0]), vanilla, null));
         }
 
-        /// <summary>需求 Job 置换：委托给 <see cref="JobPatchHelper"/>。原版需求系统保持启用，作为 Transpiler 宿主。</summary>
+        /// <summary>
+        /// 需求 Job 置换：委托给 <see cref="JobPatchHelper"/>。原版需求系统保持启用，作为 Transpiler 宿主。
+        /// 挂载不完整时 JobPatchHelper 汇总抛出，记为本声明失败（Demand 组，不降级）。
+        /// </summary>
         public void DemandJobs(IEnumerable<JobPatchTarget> targets)
         {
             var declaration = new Declaration(AppliedConfig.GroupDemand, "DemandJobs", Array.Empty<Type>(), null);
@@ -115,7 +121,7 @@ namespace MapExtPDX.MapExt.Core
 
         /// <summary>
         /// 按声明顺序执行：先禁用该声明取代的原版系统，再按顺序执行它的注册步骤。
-        /// 单条声明失败只记录并继续，结果见 <see cref="Failures"/>。
+        /// 单条声明失败只记录并继续，结果见 <see cref="Failures"/>；CellMap 组的失败让本会话进入降级状态。
         /// </summary>
         public void Apply(UpdateSystem updateSystem, Harmony harmony)
         {
@@ -123,18 +129,29 @@ namespace MapExtPDX.MapExt.Core
             int applied = 0;
             foreach (Declaration declaration in m_Declarations)
             {
+                string component = $"{declaration.Group}/{declaration.Name}";
                 try
                 {
                     foreach (Type vanilla in declaration.Vanilla)
                         world.GetOrCreateSystemManaged(vanilla).Enabled = false;
                     foreach (var step in declaration.Steps)
                         step(updateSystem, harmony);
+#if DEBUG
+                    // 故障注入：步骤照常执行完再抛出，只验证降级信号
+                    if (MapExtHealth.IsFaultInjected(component))
+                        throw new InvalidOperationException("故障注入（DEBUG 自检）");
+#endif
                     applied++;
                 }
                 catch (Exception ex)
                 {
-                    m_Failures.Add($"{declaration.Group}/{declaration.Name}: {ex.Message}");
-                    ModLog.Error(Tag, ex, $"替换声明执行失败：{declaration.Group}/{declaration.Name}");
+                    m_Failures.Add($"{component}: {ex.Message}");
+                    ModLog.Error(Tag, ex, $"替换声明执行失败：{component}");
+
+                    // 原版系统在步骤之前已禁用：步骤失败时替换系统可能没注册或缺补丁，
+                    // 对应的 CellMap 数据既没有原版也没有替换系统在正确维护
+                    if (declaration.Group == GroupCellMap)
+                        MapExtHealth.MarkDegraded(component, ex.Message);
                 }
             }
 

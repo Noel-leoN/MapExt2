@@ -103,6 +103,7 @@ namespace MapExtPDX.MapExt.Core
                     $"设定（实时值）: {settings}",
                     $"生效配置（快照）: {AppliedConfig.Current?.ToString() ?? "—"}",
                     $"替换声明: {DescribeRegistrar()}",
+                    $"健康状态: {DescribeHealth()}",
                     $"诊断状态: {s?.SystemStatusReport ?? "—"}",
                     $"更新次序: {order.Count}",
                     $"启用状态: {states.Count}",
@@ -270,6 +271,16 @@ namespace MapExtPDX.MapExt.Core
             return registrar.Failures.Count == 0
                 ? $"{registrar.Count} 条，全部成功"
                 : $"{registrar.Count} 条，失败 {registrar.Failures.Count} 条：{string.Join("; ", registrar.Failures)}";
+        }
+
+        /// <summary>正常，或降级明细：关键失败逐条列出，OnLoad 中断另列一项。</summary>
+        private static string DescribeHealth()
+        {
+            if (!MapExtHealth.IsDegraded) return "正常";
+
+            var items = new List<string>(MapExtHealth.Reasons);
+            if (Mod.InitializationFailed) items.Add("OnLoad 中断");
+            return $"降级（{items.Count} 项）：{string.Join("; ", items)}";
         }
 
         /// <summary>类型本身或其泛型参数来自 MapExt 程序集，如 PostDeserialize&lt;ModeA.SoilWaterSystemMod&gt;。</summary>

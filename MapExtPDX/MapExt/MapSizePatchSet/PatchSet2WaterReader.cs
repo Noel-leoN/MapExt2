@@ -22,76 +22,68 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
         private const string Tag = nameof(WaterSystem_BaseDataReader_Patch);
 
         // --- 应用补丁 ---
+        // 找不到类型、基类或目标方法都抛出，由 PatchManager 按关键补丁集处理（记日志并进入降级状态）；
+        // 两个 reader 互不依赖，先各自尝试，缺了哪个最后汇总抛出
         public static void Apply(Harmony harmony)
         {
-            try
+            ModLog.Patch(Tag, "Starting to patch BaseDataReader.GetReadbackBounds...");
+
+            // 1. 使用字符串名称反射获取 Internal 类型
+            // 注意：字符串必须包含完整的命名空间
+            Type surfaceType = AccessTools.TypeByName("Game.Simulation.SurfaceDataReader");
+            Type heightType = AccessTools.TypeByName("Game.Simulation.HeightDataReader");
+
+            if (surfaceType == null)
+                throw new InvalidOperationException("Failed to find type: Game.Simulation.SurfaceDataReader. It might be renamed or moved.");
+            if (heightType == null)
+                throw new InvalidOperationException("Failed to find type: Game.Simulation.HeightDataReader. It might be renamed or moved.");
+
+            // 2. 获取它们的基类 (即 BaseDataReader<T,V> 的具体实例)
+            Type surfaceBaseType = surfaceType.BaseType;
+            Type heightBaseType = heightType.BaseType;
+
+            if (surfaceBaseType == null || heightBaseType == null)
+                throw new InvalidOperationException("Failed to resolve BaseDataReader generic types from subclasses.");
+
+            ModLog.Scan(Tag, $"Resolved types. SurfaceBase: {surfaceBaseType.Name}, HeightBase: {heightBaseType.Name}");
+
+            // 3. 定义目标方法的参数签名: (out int2 pos, out int2 size)
+            // 注意：Unity.Mathematics.int2 是 struct，所以需要 MakeByRefType
+            Type[] paramTypes = new Type[] { typeof(Unity.Mathematics.int2).MakeByRefType(), typeof(Unity.Mathematics.int2).MakeByRefType() };
+
+            // 4. 获取 Internal 基类中的 Internal 方法
+            MethodInfo targetSurfaceMethod = AccessTools.Method(surfaceBaseType, "GetReadbackBounds", paramTypes);
+            MethodInfo targetHeightMethod = AccessTools.Method(heightBaseType, "GetReadbackBounds", paramTypes);
+
+            // 5. 获取 Transpiler
+            var transpiler = new HarmonyMethod(typeof(WaterSystem_BaseDataReader_Patch), nameof(TargetTranspiler));
+
+            // 6. 执行修补
+            int missing = 0;
+            if (targetSurfaceMethod != null)
             {
-                ModLog.Patch(Tag, "Starting to patch BaseDataReader.GetReadbackBounds...");
-
-                // 1. 使用字符串名称反射获取 Internal 类型
-                // 注意：字符串必须包含完整的命名空间
-                Type surfaceType = AccessTools.TypeByName("Game.Simulation.SurfaceDataReader");
-                Type heightType = AccessTools.TypeByName("Game.Simulation.HeightDataReader");
-
-                if (surfaceType == null)
-                {
-                    ModLog.Error(Tag, "Failed to find type: Game.Simulation.SurfaceDataReader. It might be renamed or moved.");
-                    return;
-                }
-                if (heightType == null)
-                {
-                    ModLog.Error(Tag, "Failed to find type: Game.Simulation.HeightDataReader. It might be renamed or moved.");
-                    return;
-                }
-
-                // 2. 获取它们的基类 (即 BaseDataReader<T,V> 的具体实例)
-                Type surfaceBaseType = surfaceType.BaseType;
-                Type heightBaseType = heightType.BaseType;
-
-                if (surfaceBaseType == null || heightBaseType == null)
-                {
-                    ModLog.Error(Tag, "Failed to resolve BaseDataReader generic types from subclasses.");
-                    return;
-                }
-
-                ModLog.Scan(Tag, $"Resolved types. SurfaceBase: {surfaceBaseType.Name}, HeightBase: {heightBaseType.Name}");
-
-                // 3. 定义目标方法的参数签名: (out int2 pos, out int2 size)
-                // 注意：Unity.Mathematics.int2 是 struct，所以需要 MakeByRefType
-                Type[] paramTypes = new Type[] { typeof(Unity.Mathematics.int2).MakeByRefType(), typeof(Unity.Mathematics.int2).MakeByRefType() };
-
-                // 4. 获取 Internal 基类中的 Internal 方法
-                MethodInfo targetSurfaceMethod = AccessTools.Method(surfaceBaseType, "GetReadbackBounds", paramTypes);
-                MethodInfo targetHeightMethod = AccessTools.Method(heightBaseType, "GetReadbackBounds", paramTypes);
-
-                // 5. 获取 Transpiler
-                var transpiler = new HarmonyMethod(typeof(WaterSystem_BaseDataReader_Patch), nameof(TargetTranspiler));
-
-                // 6. 执行修补
-                if (targetSurfaceMethod != null)
-                {
-                    harmony.Patch(targetSurfaceMethod, transpiler: transpiler);
-                    ModLog.Ok(Tag, $"Patched {surfaceBaseType.Name}.GetReadbackBounds successfully.");
-                }
-                else
-                {
-                    ModLog.Error(Tag, $"Could not find GetReadbackBounds in {surfaceBaseType.Name}.");
-                }
-
-                if (targetHeightMethod != null)
-                {
-                    harmony.Patch(targetHeightMethod, transpiler: transpiler);
-                    ModLog.Ok(Tag, $"Patched {heightBaseType.Name}.GetReadbackBounds successfully.");
-                }
-                else
-                {
-                    ModLog.Error(Tag, $"Could not find GetReadbackBounds in {heightBaseType.Name}.");
-                }
+                harmony.Patch(targetSurfaceMethod, transpiler: transpiler);
+                ModLog.Ok(Tag, $"Patched {surfaceBaseType.Name}.GetReadbackBounds successfully.");
             }
-            catch (Exception e)
+            else
             {
-                ModLog.Error(Tag, e, "Critical error while applying WaterSystem patches.");
+                ModLog.Error(Tag, $"Could not find GetReadbackBounds in {surfaceBaseType.Name}.");
+                missing++;
             }
+
+            if (targetHeightMethod != null)
+            {
+                harmony.Patch(targetHeightMethod, transpiler: transpiler);
+                ModLog.Ok(Tag, $"Patched {heightBaseType.Name}.GetReadbackBounds successfully.");
+            }
+            else
+            {
+                ModLog.Error(Tag, $"Could not find GetReadbackBounds in {heightBaseType.Name}.");
+                missing++;
+            }
+
+            if (missing > 0)
+                throw new InvalidOperationException($"GetReadbackBounds 有 {missing} 处找不到，未修补");
         }
 
         // --- Transpiler 逻辑 ---

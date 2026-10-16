@@ -29,21 +29,21 @@ namespace MapExtPDX.MapExt.ReBurstSystem.Core
 
         /// <summary>
         /// 核心入口：应用一组补丁目标
+        /// <para>逐个方法尽力挂载，已挂上的保留；结束时若有挂载失败、解析跳过或注册被拒，
+        /// 汇总抛出 <see cref="InvalidOperationException"/>——部分成功也算失败。
+        /// 是否降级由调用方决定：地图尺寸 Job（PatchManager 的关键补丁集）会让本会话降级，
+        /// 需求 Job（替换声明 DemandJobs）只记入注册表的失败清单。</para>
         /// </summary>
         public static void Apply(Harmony harmonyInstance, IEnumerable<JobPatchTarget> targets)
         {
             if (harmonyInstance == null)
-            {
-                ModLog.Error(Tag, "Harmony 实例为空，无法应用补丁");
-                return;
-            }
+                throw new ArgumentNullException(nameof(harmonyInstance), "Harmony 实例为空，无法应用补丁");
 
             if (targets == null || !targets.Any())
             {
                 // 不可靜默返回：目標列表為空意味著整批 Job 替換完全不掛載，
                 // 而下游沒有任何其他信號會反映這件事——ModeE 的 Eco 替換就曾因此長期無聲失效。
-                ModLog.Warn(Tag, "未提供任何 Job 替换目标，本批次不挂载 Transpiler — 若非预期，请检查目标生成条件");
-                return;
+                throw new InvalidOperationException("未提供任何 Job 替换目标，本批次不挂载 Transpiler — 请检查目标生成条件");
             }
 
             var targetList = targets.ToList();
@@ -128,6 +128,12 @@ namespace MapExtPDX.MapExt.ReBurstSystem.Core
                 if (skipped.Count > 3) preview += $" 等 {skipped.Count} 项";
                 ModLog.Warn(Tag, $"有 {skipped.Count} 个 Job 目标解析失败，已退回原版行为：{preview}" +
                                  "（多为游戏版本升级导致的类型／方法改名，参见 /check-upgrade）");
+            }
+
+            if (failMethods > 0 || skipped.Count > 0 || rejected.Count > 0)
+            {
+                throw new InvalidOperationException(
+                    $"Job 替换不完整：挂载失败 {failMethods}、解析跳过 {skipped.Count}、注册被拒 {rejected.Count}");
             }
         }
 

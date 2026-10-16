@@ -1087,15 +1087,20 @@ namespace MapExtPDX
 
         /// <summary>
         /// 系统状态报告概要。模式或经济分组已改动、要重启才生效时，前面加上"待重启"与差异摘要
-        /// （对照 <see cref="AppliedConfig"/>：本会话按 OnLoad 时的配置运行）。
+        /// （对照 <see cref="AppliedConfig"/>：本会话按 OnLoad 时的配置运行）；
+        /// 本会话处于降级状态时，最前面再加上降级标签（见 <see cref="MapExtHealth"/>）。
         /// </summary>
         [SettingsUISection(kMiscTab, kEcoSystemEnableGroup)]
         public string SystemStatusReport
         {
             get
             {
+                string status = _systemStatusReport;
                 string pending = AppliedConfig.Current?.DescribePendingRestart(this);
-                return pending == null ? _systemStatusReport : $"Restart pending ({pending}) | {_systemStatusReport}";
+                if (pending != null) status = $"Restart pending ({pending}) | {status}";
+
+                string health = MapExtHealth.StatusLabel;
+                return health == null ? status : $"{health} | {status}";
             }
         }
         internal string _systemStatusReport = "Waiting...";

@@ -26,21 +26,24 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
         // ========================================================================
         // 核心重置逻辑
         // ========================================================================
+        // 重建失败时先把能做的做完（IsAsync 初值），最后汇总抛出，由 PatchManager 按关键补丁集处理
         public static void Execute()
         {
             var world = World.DefaultGameObjectInjectionWorld;
             var waterSystem = world.GetExistingSystemManaged<WaterSystem>();
 
             if (waterSystem == null)
-            {
-                ModLog.Error(Tag, "WaterSystem managed instance not found! Initialization aborted.");
-                return;
-            }
+                throw new InvalidOperationException("WaterSystem managed instance not found! Initialization aborted.");
 
             ModLog.Patch(Tag, "WaterSystem instance found. Starting safe re-initialization...");
 
             // 获取 Traverse 对象以便访问私有成员
             var traverse = Traverse.Create(waterSystem);
+
+            // Traverse 调用不存在的方法不会报错、只会静默返回，必须在释放纹理之前确认，
+            // 否则现有水体纹理被释放后无法重建
+            if (!traverse.Method("InitTextures").MethodExists())
+                throw new InvalidOperationException("找不到 WaterSystem.InitTextures（游戏版本可能已改名），未做重新初始化");
 
             // 1. 清理 m_Water (RenderTextures)
             DisposeQuadWaterBuffer(traverse);
@@ -57,6 +60,7 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
             DisposeHelper(traverse.Field("m_waterBackdropSimActiveTilesHelper").GetValue());
 
             // 3. 调用 InitTextures 重建系统 (此时 Transpiler 已生效，kMapSize/kCellSize 被正确替换)
+            Exception failure = null;
             try
             {
 #if DEBUG
@@ -74,7 +78,9 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
                 // 只會高成本 Dispose+重建出與原版完全相同的資源。
                 if (ResolutionManager.IsWaterResolutionModified)
                 {
-                    ApplyWaterResolutionDowngrade(traverse, waterSystem);
+                    // 降级失败但回退到原版 2048 成功不算失败：尺寸常量已正确，只是没降分辨率
+                    if (!ApplyWaterResolutionDowngrade(traverse, waterSystem))
+                        failure = new InvalidOperationException("水分辨率降级失败，回退到原版 2048 也失败");
                 }
                 else
                 {
@@ -90,6 +96,7 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
             catch (Exception e)
             {
                 ModLog.Error(Tag, $"CRITICAL: Failed to invoke InitTextures. Exception: {e}");
+                failure = e;
             }
 
             // Layer 2 (级联纹理降采样) 现在由 FinalizeTerrainData Postfix 自动处理,
@@ -108,6 +115,9 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
             {
                 ModLog.Warn(Tag, $"Failed to set IsAsync at reinit (non-fatal): {asyncEx.Message}");
             }
+
+            if (failure != null)
+                throw new InvalidOperationException("WaterSystem 重新初始化失败，水体纹理可能仍是补丁前的尺寸或已被释放", failure);
         }
 
         // ========================================================================
@@ -121,7 +131,8 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
         /// 在 InitTextures() 创建标准 2048 纹理后，以用户配置的分辨率重建所有水体组件。
         /// 步骤: Dispose 旧 2048 资源 → 设置 m_TexSize → 重建 m_Water/Helpers/Readers。
         /// </summary>
-        private static void ApplyWaterResolutionDowngrade(Traverse traverse, WaterSystem waterSystem)
+        /// <returns>false＝降级与回退到原版 2048 都失败。</returns>
+        private static bool ApplyWaterResolutionDowngrade(Traverse traverse, WaterSystem waterSystem)
         {
             int targetTexSize = ResolutionManager.WaterTextureSize;
             ModLog.Patch(Tag, $"Layer 3: Applying water resolution downgrade 2048 → {targetTexSize}");
@@ -167,6 +178,7 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
                 ModLog.Ok(Tag, $"Layer 3 complete: water={targetTexSize}x{targetTexSize}, " +
                     $"cellSize={actualCellSize:F1}, cellSize×texSize={computedMapSize:F0}, " +
                     $"expectedMapSize={PatchManager.CurrentMapSize}");
+                return true;
             }
             catch (Exception e)
             {
@@ -178,10 +190,12 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
                 {
                     traverse.Method("InitTextures").GetValue();
                     ModLog.Warn(Tag, "Fallback succeeded. Water at 2048 (vanilla).");
+                    return true;
                 }
                 catch (Exception fallbackEx)
                 {
                     ModLog.Error(Tag, $"Fallback also failed: {fallbackEx.Message}");
+                    return false;
                 }
             }
         }

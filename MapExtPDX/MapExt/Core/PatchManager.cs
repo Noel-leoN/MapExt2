@@ -40,56 +40,66 @@ namespace MapExtPDX.MapExt.Core
         /// <summary>
         /// 补丁集注册表系统
         /// </summary>
-        // 补丁集注册表: string是名称, Action是应用补丁的委托
-        private static readonly Dictionary<string, Action<Harmony>> s_AllPatchSets;
+        // 补丁集注册表: string是名称, PatchSet是分级与应用补丁的委托
+        // 初始化保持 { "Key", new PatchSet(...) } 写法：Check-SurfaceMapCoverage.ps1 按此解析键名
+        private static readonly Dictionary<string, PatchSet> s_AllPatchSets;
+
+        // 补丁集分级（让注册表条目一眼可读）
+        // 关键：失败会让地形、水或 CellMap 按错误尺寸运行并写进存档，本会话进入降级状态（见 MapExtHealth）
+        // 可选：性能、编辑器与工具类补丁，失败只影响该功能本身
+        private const bool Critical = true;
+        private const bool Optional = false;
 
         // 静态构造函数，用于初始化注册表
         static PatchManager()
         {
             ModLog.Info(Tag, "Initializing MapSize Mode PatchSet Registry...");
 
-            s_AllPatchSets = new Dictionary<string, Action<Harmony>>
+            s_AllPatchSets = new Dictionary<string, PatchSet>
             {
                 // string Key: 补丁集名称
-                // action Value: 应用该补丁集方式(传统注释调用，集中方式调用)
+                // PatchSet Value: 分级＋应用该补丁集的委托(传统注释调用，集中方式调用)
+                // 判定失败＝委托有异常逸出；内部逐项执行的辅助方法做完能做的部分后汇总抛出
 
                 // PatchSet1:TerrainSystem
-                { "TerrainSystemPatch", (h) => h.CreateClassProcessor(typeof(TerrainSystemPatches)).Patch() },
-                { "TerrainToR16Patch", (h) => PatchHelpers.PatchAllMethodsInType(h, typeof(TerrainToR16Patch)) },
+                { "TerrainSystemPatch", new PatchSet(Critical, (h) => h.CreateClassProcessor(typeof(TerrainSystemPatches)).Patch()) },
+                // 只作用于编辑器导入高度图；读档用的是存档里的高度图，不经过这里
+                { "TerrainToR16Patch", new PatchSet(Optional, (h) => PatchHelpers.PatchAllMethodsInType(h, typeof(TerrainToR16Patch))) },
                 // WorldMap 导入性能警告对话框
-                { "WorldMapImportWarning", (h) => h.CreateClassProcessor(typeof(WorldMapImportWarningPatch)).Patch() },
+                { "WorldMapImportWarning", new PatchSet(Optional, (h) => h.CreateClassProcessor(typeof(WorldMapImportWarningPatch)).Patch()) },
                 // v2.x.x新增: 远距级联降频优化 (Phase 2.1)
-                { "TerrainCascadeThrottle", (h) => h.CreateClassProcessor(typeof(TerrainSystem_RenderCascades_Patch)).Patch() },
+                { "TerrainCascadeThrottle", new PatchSet(Optional, (h) => h.CreateClassProcessor(typeof(TerrainSystem_RenderCascades_Patch)).Patch()) },
                 // Backdrop 高度圖降採樣事件化：cascade 未重繪時跳過每幀 dispatch
                 // 四個 patch 類必須同時註冊（門控本體 + OnUpdate 標記 + dirty latch + 載入重置）
-                { "TerrainDownsampleGate", (h) => {
+                { "TerrainDownsampleGate", new PatchSet(Optional, (h) => {
                     h.CreateClassProcessor(typeof(TerrainSystem_DownSampleHeightMap_Gate)).Patch();
                     h.CreateClassProcessor(typeof(TerrainSystem_OnUpdate_DownsampleMarker)).Patch();
                     h.CreateClassProcessor(typeof(TerrainSystem_RenderCascades_DirtyLatch)).Patch();
                     h.CreateClassProcessor(typeof(TerrainSystem_FinalizeTerrainData_DownsampleReset)).Patch();
-                }},
+                })},
 
                 // PatchSet2:WaterSystem
-                { "WaterSystemPatch_Static", (h) => h.CreateClassProcessor(typeof(WaterSystemMethodPatches)).Patch() },
+                { "WaterSystemPatch_Static", new PatchSet(Critical, (h) => h.CreateClassProcessor(typeof(WaterSystemMethodPatches)).Patch()) },
                 {
                     "WaterSimulationPatch_Static",
-                    (h) => h.CreateClassProcessor(typeof(WaterSimulationMethodPatches)).Patch()
+                    new PatchSet(Critical, (h) => h.CreateClassProcessor(typeof(WaterSimulationMethodPatches)).Patch())
                 },
                 {
                     "WaterSimulationLegacyPatch_Static",
-                    (h) => h.CreateClassProcessor(typeof(WaterSimulationLegacyMethodPatches)).Patch()
+                    new PatchSet(Critical, (h) => h.CreateClassProcessor(typeof(WaterSimulationLegacyMethodPatches)).Patch())
                 },
                 {
                     "WaterLevelChangeSystemMethodPatches_Static",
-                    (h) => h.CreateClassProcessor(typeof(WaterLevelChangeSystemMethodPatches)).Patch()
+                    new PatchSet(Critical, (h) => h.CreateClassProcessor(typeof(WaterLevelChangeSystemMethodPatches)).Patch())
                 },
-                { "WaterSystem_BaseDataReader_Patch", (h) => WaterSystem_BaseDataReader_Patch.Apply(h) },
+                { "WaterSystem_BaseDataReader_Patch", new PatchSet(Critical, (h) => WaterSystem_BaseDataReader_Patch.Apply(h)) },
                 // v2.1.1新增: WaterSystem.InitTextures()重置
-                { "WaterSystemInitFix", (_) => WaterSystemReinitializer.Execute() },
+                { "WaterSystemInitFix", new PatchSet(Critical, (_) => WaterSystemReinitializer.Execute()) },
 
                 // v2.x.x新增: Layer 2 水模拟地形欺骗 (方法拦截 + 全局变量双通道)
                 // 仅当地形分辨率 > 4096 时才注册 Harmony Patch，避免每帧 detour 开销
-                { "WaterAdapterOnUpdatePatch", (h) => {
+                // 列为关键：注册了却失败，水模拟会读错纹理；跳过时不算失败
+                { "WaterAdapterOnUpdatePatch", new PatchSet(Critical, (h) => {
                     if (!ResolutionManager.NeedsDownsampleForWater)
                     {
                         ModLog.Info(Tag, "Terrain ≤ 4096, skipping water adapter patches");
@@ -97,159 +107,82 @@ namespace MapExtPDX.MapExt.Core
                     }
                     h.CreateClassProcessor(typeof(WaterSystem_OnSimulateGPU_Patch)).Patch();
                     h.CreateClassProcessor(typeof(TerrainSystem_GetCascadeTexture_Patch)).Patch();
-                }},
-                
+                })},
+
                 // 水模拟运行时频率优化补丁
-                { "WaterSystemOptRuntimePatch", (h) => h.CreateClassProcessor(typeof(WaterSystemOptRuntimePatch)).Patch() },
+                { "WaterSystemOptRuntimePatch", new PatchSet(Optional, (h) => h.CreateClassProcessor(typeof(WaterSystemOptRuntimePatch)).Patch()) },
                 // Editor 水模拟速度横跳修复：防止 TerrainWillChange 每帧重复设 speed=0
-                { "WaterTerrainWillChangeFix", (h) => h.CreateClassProcessor(typeof(WaterSystem_TerrainWillChange_Patch)).Patch() },
+                { "WaterTerrainWillChangeFix", new PatchSet(Optional, (h) => h.CreateClassProcessor(typeof(WaterSystem_TerrainWillChange_Patch)).Patch()) },
                 // 雪模拟运行时冻结补丁（SnowSimSpeed=0，由 Settings 开关实时控制）
-                { "SnowOptRuntimePatch", (h) => h.CreateClassProcessor(typeof(SnowSystemOptRuntimePatch)).Patch() },
+                { "SnowOptRuntimePatch", new PatchSet(Optional, (h) => h.CreateClassProcessor(typeof(SnowSystemOptRuntimePatch)).Patch()) },
 
                 // v2.x.x新增: 地形 Backdrop 禁用补丁 (方案 A: InitializeTerrainData 源头拦截)
-                { "TerrainBackdropDisable", (h) => h.CreateClassProcessor(typeof(TerrainSystem_InitializeTerrainData_DisableBackdrop)).Patch() },
+                { "TerrainBackdropDisable", new PatchSet(Optional, (h) => h.CreateClassProcessor(typeof(TerrainSystem_InitializeTerrainData_DisableBackdrop)).Patch()) },
 
                 // v2.2.0改动
                 // PatchSet3:CellMapSystem<T>托管代码部分
-                { "CellMapSystemValuesPatch", (h) => CellMapSystemPatchManager.ApplyPatches(h) },
+                { "CellMapSystemValuesPatch", new PatchSet(Critical, (h) => CellMapSystemPatchManager.ApplyPatches(h)) },
 
                 // PatchSet4:AirWaySystem
-                { "AirwaySystemPatch", (h) => h.CreateClassProcessor(typeof(AirwaySystem_OnUpdate_Patch)).Patch() },
+                // 列为可选：失败时本会话空中交通按 14km 网格运行，但不涉及地形、水与 CellMap 数据
+                { "AirwaySystemPatch", new PatchSet(Optional, (h) => h.CreateClassProcessor(typeof(AirwaySystem_OnUpdate_Patch)).Patch()) },
 
                 // PatchSet5:Tools — 地形笔刷道路阻挡
                 // 始终注册，由 Prefix 内部 Settings 开关控制启停，实现实时切换
-                { "TerrainBrushRoadBlock", (h) => h.CreateClassProcessor(typeof(Tools.TerrainBrushBlockPatch)).Patch() },
+                { "TerrainBrushRoadBlock", new PatchSet(Optional, (h) => h.CreateClassProcessor(typeof(Tools.TerrainBrushBlockPatch)).Patch()) },
 
                 // PatchSetFinal:ReBurstJobSystems
                 // 集中调用方式
                 {
                     "ReBurstSystemsPatches",
-                    (h) => ReBurstSystem.Core.JobPatchHelper.Apply(h,
-                        ReBurstSystem.Core.JobPatchDefinitions.GetCellSystemTargets(CurrentMode))
+                    new PatchSet(Critical, (h) => ReBurstSystem.Core.JobPatchHelper.Apply(h,
+                        ReBurstSystem.Core.JobPatchDefinitions.GetCellSystemTargets(CurrentMode)))
                 },
             };
             ModLog.Ok(Tag, $"Registry initialized with {s_AllPatchSets.Count} patch sets.");
         }
 
-        // 定义每个模式的“配方”
-        private static List<string> GetRecipeForMode(PatchModeSetting mode)
+        // 定义每个模式的“配方”：按顺序应用的补丁集
+
+        // 扩展模式（ModeA–D）共用一份：四个模式原先各写一份，内容逐项相同
+        private static readonly string[] ExpandedRecipe =
         {
-            switch (mode)
-            {
-                case PatchModeSetting.ModeA: // 模式57km
-                default:
-                    return new List<string>
-                    {
-                        "TerrainSystemPatch",
-                        "TerrainToR16Patch",
-                        "WorldMapImportWarning",
-                        "TerrainCascadeThrottle",
-                        "TerrainDownsampleGate",
-                        "WaterSystemPatch_Static",
-                        "WaterSimulationPatch_Static",
-                        "WaterSimulationLegacyPatch_Static",
-                        "WaterLevelChangeSystemMethodPatches_Static",
-                        "WaterSystem_BaseDataReader_Patch",
-                        "WaterSystemInitFix",
-                        "WaterAdapterOnUpdatePatch",
-                        "WaterSystemOptRuntimePatch",
-                        "WaterTerrainWillChangeFix",
-                        "SnowOptRuntimePatch",
-                        "TerrainBackdropDisable",
-                        "CellMapSystemValuesPatch",
-                        "AirwaySystemPatch",
-                        "TerrainBrushRoadBlock",
-                        "ReBurstSystemsPatches",
-                    };
+            "TerrainSystemPatch",
+            "TerrainToR16Patch",
+            "WorldMapImportWarning",
+            "TerrainCascadeThrottle",
+            "TerrainDownsampleGate",
+            "WaterSystemPatch_Static",
+            "WaterSimulationPatch_Static",
+            "WaterSimulationLegacyPatch_Static",
+            "WaterLevelChangeSystemMethodPatches_Static",
+            "WaterSystem_BaseDataReader_Patch",
+            "WaterSystemInitFix",
+            "WaterAdapterOnUpdatePatch",
+            "WaterSystemOptRuntimePatch",
+            "WaterTerrainWillChangeFix",
+            "SnowOptRuntimePatch",
+            "TerrainBackdropDisable",
+            "CellMapSystemValuesPatch",
+            "AirwaySystemPatch",
+            "TerrainBrushRoadBlock",
+            "ReBurstSystemsPatches",
+        };
 
-                case PatchModeSetting.ModeB: // 模式28km
-                    return new List<string>
-                    {
-                        "TerrainSystemPatch",
-                        "TerrainToR16Patch",
-                        "WorldMapImportWarning",
-                        "TerrainCascadeThrottle",
-                        "TerrainDownsampleGate",
-                        "WaterSystemPatch_Static",
-                        "WaterSimulationPatch_Static",
-                        "WaterSimulationLegacyPatch_Static",
-                        "WaterLevelChangeSystemMethodPatches_Static",
-                        "WaterSystem_BaseDataReader_Patch",
-                        "WaterSystemInitFix",
-                        "WaterAdapterOnUpdatePatch",
-                        "WaterSystemOptRuntimePatch",
-                        "WaterTerrainWillChangeFix",
-                        "SnowOptRuntimePatch",
-                        "TerrainBackdropDisable",
-                        "CellMapSystemValuesPatch",
-                        "AirwaySystemPatch",
-                        "TerrainBrushRoadBlock",
-                        "ReBurstSystemsPatches",
-                    };
+        // 14km vanilla模式：不含地图尺寸补丁，只有编辑器、性能与工具类
+        private static readonly string[] VanillaRecipe =
+        {
+            "TerrainToR16Patch",
+            "WorldMapImportWarning",
+            "TerrainBackdropDisable",
+            "WaterSystemOptRuntimePatch",
+            "WaterTerrainWillChangeFix",
+            "SnowOptRuntimePatch",
+            "TerrainBrushRoadBlock",
+        };
 
-                case PatchModeSetting.ModeC: // 模式114km
-                    return new List<string>
-                    {
-                        "TerrainSystemPatch",
-                        "TerrainToR16Patch",
-                        "WorldMapImportWarning",
-                        "TerrainCascadeThrottle",
-                        "TerrainDownsampleGate",
-                        "WaterSystemPatch_Static",
-                        "WaterSimulationPatch_Static",
-                        "WaterSimulationLegacyPatch_Static",
-                        "WaterLevelChangeSystemMethodPatches_Static",
-                        "WaterSystem_BaseDataReader_Patch",
-                        "WaterSystemInitFix",
-                        "WaterAdapterOnUpdatePatch",
-                        "WaterSystemOptRuntimePatch",
-                        "WaterTerrainWillChangeFix",
-                        "SnowOptRuntimePatch",
-                        "TerrainBackdropDisable",
-                        "CellMapSystemValuesPatch",
-                        "AirwaySystemPatch",
-                        "TerrainBrushRoadBlock",
-                        "ReBurstSystemsPatches",
-                    };
-
-                case PatchModeSetting.ModeD: // 模式43km (3倍)
-                    return new List<string>
-                    {
-                        "TerrainSystemPatch",
-                        "TerrainToR16Patch",
-                        "WorldMapImportWarning",
-                        "TerrainCascadeThrottle",
-                        "TerrainDownsampleGate",
-                        "WaterSystemPatch_Static",
-                        "WaterSimulationPatch_Static",
-                        "WaterSimulationLegacyPatch_Static",
-                        "WaterLevelChangeSystemMethodPatches_Static",
-                        "WaterSystem_BaseDataReader_Patch",
-                        "WaterSystemInitFix",
-                        "WaterAdapterOnUpdatePatch",
-                        "WaterSystemOptRuntimePatch",
-                        "WaterTerrainWillChangeFix",
-                        "SnowOptRuntimePatch",
-                        "TerrainBackdropDisable",
-                        "CellMapSystemValuesPatch",
-                        "AirwaySystemPatch",
-                        "TerrainBrushRoadBlock",
-                        "ReBurstSystemsPatches",
-                    };
-
-                case PatchModeSetting.None: // 14km vanilla模式
-                    return new List<string>
-                    {
-                        "TerrainToR16Patch",
-                        "WorldMapImportWarning",
-                        "TerrainBackdropDisable",
-                        "WaterSystemOptRuntimePatch",
-                        "WaterTerrainWillChangeFix",
-                        "SnowOptRuntimePatch",
-                        "TerrainBrushRoadBlock"
-                    };
-            }
-        }
+        private static IReadOnlyList<string> GetRecipeForMode(PatchModeSetting mode) =>
+            mode == PatchModeSetting.None ? VanillaRecipe : ExpandedRecipe;
 
         // Mod主入口调用执行
         public static void Initialize(Harmony harmony, PatchModeSetting initialModeFromSettings)
@@ -305,6 +238,7 @@ namespace MapExtPDX.MapExt.Core
         }
 
         // 核心方法：应用PatchSet's Recipe
+        // 单个补丁集失败只记录并继续；关键补丁集失败让本会话进入降级状态
         private static void ApplyPatchesForMode(PatchModeSetting mode)
         {
             // 获取当前模式的“配方”
@@ -313,17 +247,24 @@ namespace MapExtPDX.MapExt.Core
 
             foreach (var setName in recipe)
             {
-                if (s_AllPatchSets.TryGetValue(setName, out var applyAction))
+                if (s_AllPatchSets.TryGetValue(setName, out var patchSet))
                 {
                     try
                     {
-                        // 执行注册表中对应的Action来应用补丁
-                        applyAction(_modePatcher);
+                        // 执行注册表中对应的委托来应用补丁
+                        patchSet.Apply(_modePatcher);
+#if DEBUG
+                        // 故障注入：补丁照常挂上后再抛出，只验证降级信号
+                        if (MapExtHealth.IsFaultInjected(setName))
+                            throw new InvalidOperationException("故障注入（DEBUG 自检）");
+#endif
                         ModLog.Ok(Tag, $"Applied patchset: {setName}");
                     }
                     catch (Exception e)
                     {
                         ModLog.Error(Tag, e, $"Failed to apply patchset '{setName}'.");
+                        if (patchSet.IsCritical)
+                            MapExtHealth.MarkDegraded(setName, e.Message);
                     }
                 }
                 else
@@ -353,6 +294,21 @@ namespace MapExtPDX.MapExt.Core
                 // 防止意外传入未知CV
                 default:
                     return $"Unknown Mode (ID: {coreValue})";
+            }
+        }
+
+        /// <summary>
+        /// 补丁集：分级＋应用委托。关键补丁集失败会让本会话进入降级状态（见 <see cref="MapExtHealth"/>）。
+        /// </summary>
+        private sealed class PatchSet
+        {
+            public bool IsCritical { get; }
+            public Action<Harmony> Apply { get; }
+
+            public PatchSet(bool critical, Action<Harmony> apply)
+            {
+                IsCritical = critical;
+                Apply = apply;
             }
         }
     }

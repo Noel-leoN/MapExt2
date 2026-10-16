@@ -86,6 +86,11 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
 
             ModLog.Ok(Tag, $"已注册 {_replacementMap.Count} 个字段映射 (mapMult={mapMult}, texMult={texMult})");
 
+            // 扩展模式下 kMapSize 倍率必大于 1，一个字段都没登记只可能是字段找不到（游戏版本改名），
+            // 不能当作"无需修补"静默返回
+            if (mapMult > 1 && _replacementMap.Count == 0)
+                throw new InvalidOperationException("未找到任何 CellMap 尺寸字段（kMapSize／kTextureSize），可能是游戏版本改名");
+
             // --- 执行修补 ---
             ApplyAllPatches(harmony);
         }
@@ -284,11 +289,16 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
 
             // --- 5. 关键系统修补验证 ---
             // 验证噪声/污染写入者系统是否被成功修补，这些系统使用 m_MapSize/m_TextureSize 写入 CellMap
-            VerifyCriticalSystems();
+            int unverified = VerifyCriticalSystems();
 
             // 6. 输出结构化报告
             PrintSummary(totalTypesScanned, totalMethodsScanned, distinctMethodsToPatch.Count, scanTime,
                 sw.ElapsedMilliseconds, patchFailed);
+
+            // 7. 部分成功也算失败：已挂上的保留，汇总抛出，由 PatchManager 按关键补丁集处理
+            if (patchFailed > 0 || unverified > 0)
+                throw new InvalidOperationException(
+                    $"CellMap 字段修补不完整：{patchFailed} 个方法修补失败，{unverified} 个关键写入系统未确认挂上 transpiler");
         }
 
         #endregion
@@ -300,7 +310,8 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
         /// BuildingPollutionAddSystem 和 NetPollutionSystem 直接使用 kMapSize/kTextureSize 写入 CellMap buffer
         /// 若修补失败，建筑和道路噪声数据将写入错误坐标，导致建筑效果与 Infoview 不一致
         /// </summary>
-        private static void VerifyCriticalSystems()
+        /// <returns>未能确认已挂上 transpiler 的系统数（含找不到方法的）。</returns>
+        private static int VerifyCriticalSystems()
         {
             var criticalTypes = new[]
             {
@@ -308,6 +319,7 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
                 (typeof(Game.Simulation.NetPollutionSystem),         "OnUpdate"),
             };
 
+            int unverified = 0;
             foreach (var (type, methodName) in criticalTypes)
             {
                 var method = type.GetMethod(methodName,
@@ -316,6 +328,7 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
                 if (method == null)
                 {
                     ModLog.Warn(Tag, $"[关键系统验证] 未找到方法: {type.Name}::{methodName}");
+                    unverified++;
                     continue;
                 }
 
@@ -325,12 +338,19 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
                                  patches.Transpilers.Any(p => p.owner == Mod.HarmonyIdModes);
 
                 if (isPatched)
+                {
                     ModLog.Ok(Tag, $"[关键系统验证] ✓ {type.Name}::{methodName} — transpiler 已应用");
+                }
                 else
+                {
                     ModLog.Warn(Tag,
                         $"[关键系统验证] ✗ {type.Name}::{methodName} — transpiler 未应用！" +
                         $" 噪声/污染写入坐标将使用原版 kMapSize=14336，建筑效果可能与 Infoview 不一致。");
+                    unverified++;
+                }
             }
+
+            return unverified;
         }
 
         /// <summary>
