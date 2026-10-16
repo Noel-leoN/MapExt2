@@ -102,6 +102,8 @@ namespace MapExtPDX.MapExt.Core
                     $"模式: {PatchManager.CurrentMode} (CV={PatchManager.CurrentCoreValue})",
                     $"设定（实时值）: {settings}",
                     $"生效配置（快照）: {AppliedConfig.Current?.ToString() ?? "—"}",
+                    $"替换声明: {DescribeRegistrar()}",
+                    $"诊断状态: {s?.SystemStatusReport ?? "—"}",
                     $"更新次序: {order.Count}",
                     $"启用状态: {states.Count}",
                     $"补丁: {patches.Count}",
@@ -258,6 +260,16 @@ namespace MapExtPDX.MapExt.Core
                 ModLog.Warn(Tag, $"另存文件失败：{ex.Message}");
                 return null;
             }
+        }
+
+        /// <summary>本会话替换注册表的条数与失败情况。</summary>
+        private static string DescribeRegistrar()
+        {
+            ReplacementRegistrar registrar = SystemReplacer.Registrar;
+            if (registrar == null) return "—";
+            return registrar.Failures.Count == 0
+                ? $"{registrar.Count} 条，全部成功"
+                : $"{registrar.Count} 条，失败 {registrar.Failures.Count} 条：{string.Join("; ", registrar.Failures)}";
         }
 
         /// <summary>类型本身或其泛型参数来自 MapExt 程序集，如 PostDeserialize&lt;ModeA.SoilWaterSystemMod&gt;。</summary>

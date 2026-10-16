@@ -2,110 +2,50 @@
 // Licensed under the MIT License.
 
 using Game;
-using Game.Serialization;
 using HarmonyLib;
 using MapExtPDX.MapExt.ReBurstSystem.Core;
 
 namespace MapExtPDX.MapExt.Core
 {
+    /// <summary>
+    /// 系统替换的编排器：按模式登记替换声明，交给 <see cref="ReplacementRegistrar"/> 按顺序执行，最后注册工具与 UI 系统。
+    ///
+    /// <para>扩展模式（ModeA–D）的声明在各模式的 <c>ModeSystems.Declare</c>
+    /// （在 CellSystems/ModeA_57km 编写，同步到 B/C/D）；原版尺寸模式与各模式共用的经济系统声明在本文件。
+    /// 新增或调整系统替换一律改声明，读档重新禁用与诊断会随之同步。</para>
+    /// </summary>
     public static class SystemReplacer
     {
         private const string Tag = nameof(SystemReplacer);
+
+        // === Fields ===
+
+        #region Fields
+
+        /// <summary>本会话的替换注册表；Apply 之前为 null。读档时的重新禁用与诊断都从它派生。</summary>
+        internal static ReplacementRegistrar Registrar { get; private set; }
+
+        #endregion
+
+        // === Public API ===
+
+        #region Public API
 
         /// <summary>
         /// [BUGFIX] 重新禁用被引擎重新启用的原版系统。
         /// 退出主菜单后 CS2 引擎会重置所有系统的 Enabled 状态为 true，
         /// 但 Apply() 只在 Mod.OnLoad() 中调用一次。
-        /// 此方法在每次 OnGameLoadingComplete 时调用，确保原版系统保持禁用。
-        ///
-        /// 各 Mode 重新禁用的系统须与 Apply() 中对应分支严格一致：
-        /// ModeA/B/C 禁用全部 CellMap 系统 + 经济系统；
-        /// ModeE (CV==1) 为 vanilla 尺寸，仅禁用 LandValueSystem + 经济系统，不碰其余 CellMap 系统。
-        /// 另有原版殘骸系統（NetUpkeepSystem）在 Economy 總開關下全 Mode 一律禁用。
+        /// 此方法在读档开始与完成时调用；要禁用的正是本会话各条替换声明取代的原版系统。
         /// </summary>
-        public static void ReDisableVanillaSystems(Unity.Entities.World world, AppliedConfig config)
+        public static void ReDisableVanillaSystems(Unity.Entities.World world)
         {
-            if (world == null || !world.IsCreated) return;
+            if (world == null || !world.IsCreated || Registrar == null) return;
 
-            int count = 0;
-
-            // --- LandValue 替换系统（所有 Mode 含 ModeE 均替换，须重新禁用） ---
-            // 对照 Apply()：ModeA/B/C 在 CellMap 段禁用，ModeE 在其专属分支 (CV==1) 禁用。
-            count += DisableIfEnabled<Game.Simulation.LandValueSystem>(world);
-
-            // --- 其余 CellMap 替换系统（仅 ModeA/B/C） ---
-            // ModeE 为 vanilla 尺寸，不替换这些系统，因此跳过——
-            // 否则会错误禁用 ModeE 下仍由原版负责的污染/资源/网格系统，引入新 bug。
-            if (PatchManager.CurrentCoreValue != 1)
-            {
-                count += DisableIfEnabled<Game.Simulation.AirPollutionSystem>(world);
-                count += DisableIfEnabled<Game.Simulation.AvailabilityInfoToGridSystem>(world);
-                count += DisableIfEnabled<Game.Simulation.GroundPollutionSystem>(world);
-                count += DisableIfEnabled<Game.Simulation.GroundWaterSystem>(world);
-                count += DisableIfEnabled<Game.Simulation.NaturalResourceSystem>(world);
-                count += DisableIfEnabled<Game.Simulation.NoisePollutionSystem>(world);
-                count += DisableIfEnabled<Game.Simulation.PopulationToGridSystem>(world);
-                count += DisableIfEnabled<Game.Simulation.SoilWaterSystem>(world);
-                count += DisableIfEnabled<Game.Simulation.TerrainAttractivenessSystem>(world);
-                count += DisableIfEnabled<Game.Simulation.TrafficAmbienceSystem>(world);
-                count += DisableIfEnabled<Game.Simulation.ZoneAmbienceSystem>(world);
-            }
-
-            // --- Economy 替换系统 ---
-            if (config.EconomyFix && config.HouseholdProperty)
-            {
-                count += DisableIfEnabled<Game.Simulation.RentAdjustSystem>(world);
-                count += DisableIfEnabled<Game.Simulation.HouseholdFindPropertySystem>(world);
-                count += DisableIfEnabled<Game.Simulation.HouseholdBehaviorSystem>(world);
-            }
-            if (config.EconomyFix && config.JobSearch)
-            {
-                count += DisableIfEnabled<Game.Simulation.CitizenFindJobSystem>(world);
-                count += DisableIfEnabled<Game.Simulation.FindJobSystem>(world);
-            }
-            if (config.EconomyFix && config.ResourceBuyer)
-            {
-                count += DisableIfEnabled<Game.Simulation.TripNeededSystem>(world);
-                count += DisableIfEnabled<Game.Simulation.ServiceCoverageSystem>(world);
-                count += DisableIfEnabled<Game.Simulation.ResourceBuyerSystem>(world);
-            }
-            if (config.EconomyFix && config.ResidentAI)
-            {
-                count += DisableIfEnabled<Game.Simulation.ResidentAISystem>(world);
-                count += DisableIfEnabled<Game.Simulation.ResidentAISystem.Actions>(world);
-            }
-            if (config.EconomyFix && config.DownstreamAI)
-            {
-                count += DisableIfEnabled<Game.Simulation.PersonalCarAISystem>(world);
-                count += DisableIfEnabled<Game.Simulation.PersonalCarAISystem.Actions>(world);
-                count += DisableIfEnabled<Game.Simulation.TaxiAISystem>(world);
-                count += DisableIfEnabled<Game.Simulation.LeisureSystem>(world);
-                count += DisableIfEnabled<Game.Simulation.FindSchoolSystem>(world);
-            }
-
-            // --- 原版殘骸系統（與地圖尺寸無關，全 Mode 適用） ---
-            // 對照 Apply() 的「通用经济系统注册 (EcoShared)」段開頭，判定理由見該處註釋。
-            if (config.EconomyFix)
-            {
-                count += DisableIfEnabled<Game.Simulation.NetUpkeepSystem>(world);
-            }
-
+            int count = Registrar.ReDisable(world);
             if (count > 0)
                 ModLog.Warn(Tag, $"[BUGFIX] 重新禁用了 {count} 个被引擎重新启用的原版系统");
             else
                 ModLog.Ok(Tag, "所有原版系统已正确禁用，无需修复");
-        }
-
-        private static int DisableIfEnabled<T>(Unity.Entities.World world) where T : GameSystemBase
-        {
-            var system = world.GetExistingSystemManaged<T>();
-            if (system != null && system.Enabled)
-            {
-                system.Enabled = false;
-                ModLog.Info(Tag, $"  重新禁用: {typeof(T).Name}");
-                return 1;
-            }
-            return 0;
         }
 
         public static void Apply(UpdateSystem updateSystem, Harmony globalPatcher, AppliedConfig config)
@@ -117,681 +57,21 @@ namespace MapExtPDX.MapExt.Core
                 $"ResBuyer={config.ResourceBuyer}, ResidentAI={config.ResidentAI}, " +
                 $"DownAI={config.DownstreamAI}, Demand={config.Demand}");
 
-            // Part 1:
-            // --- CellMapSystem<T> ECS替换 ---
-            // Telecom/Wind 等系统暂不替换
-
-            // Part 2:
-            // --- 找房/购物/找工作系统优化替换 ---
-            // ECS替换HouseholdSpawnSystem
-            // ECS替换HouseholdFindPropertySystem
-            // ECS替换HouseholdBehaviorSystem
-            // ECS替换FindJobSystem
-            // ECS替换CitizenFindJobSystem
-
-            // --- 住工商需求和租金系统优化替换 ---
-            // Job通用替换修补ResidentialDemandSystemRe
-            // Job通用替换修补CommerialDemandSystemRe
-            // Job通用替换修补IndustrialDemandSystemRe
-            // Job通用替换修补RentAdjustSystemRe
-
-            // ModeA/B/C 共用禁用原系统逻辑
-            if (PatchManager.CurrentCoreValue != 1)
+            // === 替换声明：先模式部分，再各模式共用的经济系统；声明顺序即同一 phase 内的更新顺序 ===
+            var registrar = new ReplacementRegistrar();
+            switch (config.CoreValue)
             {
-                // CellMapSystem<T> ECS替换
-                updateSystem.World.GetOrCreateSystemManaged<Game.Simulation.AirPollutionSystem>().Enabled = false;
-                updateSystem.World.GetOrCreateSystemManaged<Game.Simulation.AvailabilityInfoToGridSystem>().Enabled =
-                    false;
-                updateSystem.World.GetOrCreateSystemManaged<Game.Simulation.GroundPollutionSystem>().Enabled = false;
-                updateSystem.World.GetOrCreateSystemManaged<Game.Simulation.GroundWaterSystem>().Enabled = false;
-                updateSystem.World.GetOrCreateSystemManaged<Game.Simulation.LandValueSystem>().Enabled = false;
-                updateSystem.World.GetOrCreateSystemManaged<Game.Simulation.NaturalResourceSystem>().Enabled = false;
-                updateSystem.World.GetOrCreateSystemManaged<Game.Simulation.NoisePollutionSystem>().Enabled = false;
-                updateSystem.World.GetOrCreateSystemManaged<Game.Simulation.PopulationToGridSystem>().Enabled = false;
-                updateSystem.World.GetOrCreateSystemManaged<Game.Simulation.SoilWaterSystem>().Enabled = false;
-                updateSystem.World.GetOrCreateSystemManaged<Game.Simulation.TerrainAttractivenessSystem>().Enabled =
-                    false;
-                updateSystem.World.GetOrCreateSystemManaged<Game.Simulation.TrafficAmbienceSystem>().Enabled = false;
-                updateSystem.World.GetOrCreateSystemManaged<Game.Simulation.ZoneAmbienceSystem>().Enabled = false;
-
-                // v2.2.1版本起强制替换
-                // 经济系统 ECS替换
-                // if (config.EconomyFix == true) // For Large Maps, enforcement is required
-                {
-                    // ResidentialDemand/CommercialDemandSystem/IndustrialDemand/RentAdjust 采用Job通用替换修补，无需禁用原系统
-
-                    if (config.EconomyFix && config.HouseholdProperty)
-                    {
-                        // updateSystem.World.GetOrCreateSystemManaged<Game.Simulation.HouseholdSpawnSystem>().Enabled = false;
-                        updateSystem.World.GetOrCreateSystemManaged<Game.Simulation.RentAdjustSystem>().Enabled = false;
-                        updateSystem.World.GetOrCreateSystemManaged<Game.Simulation.HouseholdFindPropertySystem>().Enabled = false;
-                        updateSystem.World.GetOrCreateSystemManaged<Game.Simulation.HouseholdBehaviorSystem>().Enabled = false;
-                    }
-
-                    if (config.EconomyFix && config.JobSearch)
-                    {
-                        updateSystem.World.GetOrCreateSystemManaged<Game.Simulation.CitizenFindJobSystem>().Enabled = false;
-                        updateSystem.World.GetOrCreateSystemManaged<Game.Simulation.FindJobSystem>().Enabled = false;
-                    }
-
-                    if (config.EconomyFix && config.ResourceBuyer)
-                    {
-                        // 寻路优化系统 ECS替换
-                        updateSystem.World.GetOrCreateSystemManaged<Game.Simulation.TripNeededSystem>().Enabled = false;
-                        updateSystem.World.GetOrCreateSystemManaged<Game.Simulation.ServiceCoverageSystem>().Enabled = false;
-                        updateSystem.World.GetOrCreateSystemManaged<Game.Simulation.ResourceBuyerSystem>().Enabled = false;
-
-                        // Harmony修补：拦截 Game.Tools 等外部系统对 SetupPathfindMethods 的调用
-                        // Harmony修补已移至 EcoShared 通用段
-                    }
-
-                    if (config.EconomyFix && config.ResidentAI)
-                    {
-                        updateSystem.World.GetOrCreateSystemManaged<Game.Simulation.ResidentAISystem>().Enabled = false;
-                        updateSystem.World.GetOrCreateSystemManaged<Game.Simulation.ResidentAISystem.Actions>().Enabled = false;
-                    }
-
-                    if (config.EconomyFix && config.DownstreamAI)
-                    {
-                        // F2: PersonalCarAISystem
-                        updateSystem.World.GetOrCreateSystemManaged<Game.Simulation.PersonalCarAISystem>().Enabled = false;
-                        updateSystem.World.GetOrCreateSystemManaged<Game.Simulation.PersonalCarAISystem.Actions>().Enabled = false;
-                        // F3: TaxiAISystem
-                        updateSystem.World.GetOrCreateSystemManaged<Game.Simulation.TaxiAISystem>().Enabled = false;
-                        // F5: LeisureSystem
-                        updateSystem.World.GetOrCreateSystemManaged<Game.Simulation.LeisureSystem>().Enabled = false;
-                        // F6: FindSchoolSystem
-                        updateSystem.World.GetOrCreateSystemManaged<Game.Simulation.FindSchoolSystem>().Enabled = false;
-                    }
-                }
+                case 4: ModeA.ModeSystems.Declare(registrar, config); break; // 57km
+                case 2: ModeB.ModeSystems.Declare(registrar, config); break; // 28km
+                case 8: ModeC.ModeSystems.Declare(registrar, config); break; // 114km
+                case 3: ModeD.ModeSystems.Declare(registrar, config); break; // 43km
+                case 1: DeclareVanillaMode(registrar, config); break;        // 原版尺寸 ModeE (None)
             }
 
-            // 57km ModeA
-            if (PatchManager.CurrentCoreValue == 4)
-            {
-                // ==================================================
-                // --- CellMapSystem<T> ECS替换 ---
-                // ==================================================
-                updateSystem.UpdateAt<ModeA.AirPollutionSystemMod>(SystemUpdatePhase
-                    .GameSimulation);
-                globalPatcher.CreateClassProcessor(typeof(ModeA.AirPollutionSystemMod.Patches))
-                    .Patch();
+            DeclareShared(registrar, config);
 
-                updateSystem.UpdateAt<ModeA.AvailabilityInfoToGridSystemMod>(SystemUpdatePhase
-                    .GameSimulation);
-                globalPatcher
-                    .CreateClassProcessor(typeof(ModeA.AvailabilityInfoToGridSystemMod.Patches))
-                    .Patch();
-
-                updateSystem.UpdateAt<ModeA.GroundPollutionSystemMod>(SystemUpdatePhase
-                    .GameSimulation);
-                globalPatcher.CreateClassProcessor(typeof(ModeA.GroundPollutionSystemMod.Patches))
-                    .Patch();
-
-                updateSystem.UpdateAt<ModeA.GroundWaterSystemMod>(SystemUpdatePhase.GameSimulation);
-                globalPatcher.CreateClassProcessor(typeof(ModeA.GroundWaterSystemMod.Patches))
-                    .Patch();
-
-
-                updateSystem.UpdateAt<ModeA.NaturalResourceSystemMod>(SystemUpdatePhase
-                    .GameSimulation);
-                updateSystem.UpdateAt<ModeA.NaturalResourceSystemMod>(SystemUpdatePhase
-                    .EditorSimulation);
-                updateSystem.UpdateAfter<PostDeserialize<ModeA.NaturalResourceSystemMod>>(
-                    SystemUpdatePhase.Deserialize);
-                globalPatcher.CreateClassProcessor(typeof(ModeA.NaturalResourceSystemMod.Patches))
-                    .Patch();
-
-                updateSystem.UpdateAt<ModeA.NoisePollutionSystemMod>(SystemUpdatePhase
-                    .GameSimulation);
-                globalPatcher.CreateClassProcessor(typeof(ModeA.NoisePollutionSystemMod.Patches))
-                    .Patch();
-
-                updateSystem.UpdateAt<ModeA.PopulationToGridSystemMod>(SystemUpdatePhase
-                    .GameSimulation);
-                globalPatcher.CreateClassProcessor(typeof(ModeA.PopulationToGridSystemMod.Patches))
-                    .Patch();
-
-                // 原版未注册 GameSimulation（无下游消费者），仅保留 Deserialize + Harmony 以确保 CellMap 扩容
-                // updateSystem.UpdateAt<ModeA.SoilWaterSystemMod>(SystemUpdatePhase.GameSimulation);
-                updateSystem.UpdateAfter<PostDeserialize<ModeA.SoilWaterSystemMod>>(SystemUpdatePhase.Deserialize);
-                globalPatcher.CreateClassProcessor(typeof(ModeA.SoilWaterSystemMod.Patches))
-                    .Patch();
-
-                updateSystem.UpdateAt<ModeA.TerrainAttractivenessSystemMod>(SystemUpdatePhase
-                    .GameSimulation);
-                globalPatcher
-                    .CreateClassProcessor(typeof(ModeA.TerrainAttractivenessSystemMod.Patches))
-                    .Patch();
-
-                updateSystem.UpdateAt<ModeA.TrafficAmbienceSystemMod>(SystemUpdatePhase
-                    .GameSimulation);
-                globalPatcher.CreateClassProcessor(typeof(ModeA.TrafficAmbienceSystemMod.Patches))
-                    .Patch();
-
-                updateSystem.UpdateAt<ModeA.ZoneAmbienceSystemMod>(SystemUpdatePhase
-                    .GameSimulation);
-                globalPatcher.CreateClassProcessor(typeof(ModeA.ZoneAmbienceSystemMod.Patches))
-                    .Patch();
-
-                // --- LandValueSystemRemake + UI设置 ---
-                updateSystem.UpdateAt<ModeA.LandValueSystemMod>(SystemUpdatePhase.GameSimulation);
-                globalPatcher.CreateClassProcessor(typeof(ModeA.LandValueSystemMod.Patches))
-                    .Patch();
-                // updateSystem.UpdateAt<LandValueConfigSyncSystem>(SystemUpdatePhase.GameSimulation);
-                // ======================================================
-
-                // ============================================
-                // --- Mode-specific 经济系统 (C1/D1) ---
-                // ============================================
-
-                if (config.EconomyFix)
-                {
-                    if (config.HouseholdProperty)
-                    {
-                        // HarmonyPrefix修补CitizenPathfindSetup.SetupFindHomeJob(HouseholdFindPropertySystem关联)
-                        globalPatcher.CreateClassProcessor(typeof(ModeA.PathfindSetupSystem_FindTargets_Patch)).Patch();
-                        updateSystem.UpdateAt<ModeA.HouseholdFindPropertySystemMod>(SystemUpdatePhase.GameSimulation);
-                        updateSystem.UpdateAt<ModeA.RentAdjustSystemMod>(SystemUpdatePhase.GameSimulation);
-                    }
-                    else
-                    {
-                        updateSystem.UpdateAt<ModeA.HouseholdFindPropertySystemMod_CellOnly>(SystemUpdatePhase.GameSimulation);
-                        updateSystem.UpdateAt<ModeA.RentAdjustSystemMod_CellOnly>(SystemUpdatePhase.GameSimulation);
-                    }
-                }
-                else
-                {
-                    updateSystem.UpdateAt<ModeA.HouseholdFindPropertySystemMod_CellOnly>(SystemUpdatePhase.GameSimulation);
-                    updateSystem.UpdateAt<ModeA.RentAdjustSystemMod_CellOnly>(SystemUpdatePhase.GameSimulation);
-                }
-
-                if (config.EconomyFix && config.Demand)
-                {
-                    // Job通用替换修补ResidentialDemand/IndustrialDemand/RentAdjust
-                    JobPatchHelper.Apply(globalPatcher, JobPatchDefinitions.GetEcoSystemTargets(PatchModeSetting.ModeA));
-                }
-            }
-
-            // 28km ModeB
-            if (PatchManager.CurrentCoreValue == 2)
-            {
-                // ==================================================
-                // --- CellMapSystem<T> ECS替换 ---
-                // ==================================================
-                updateSystem.UpdateAt<ModeB.AirPollutionSystemMod>(SystemUpdatePhase
-                    .GameSimulation);
-                globalPatcher.CreateClassProcessor(typeof(ModeB.AirPollutionSystemMod.Patches))
-                    .Patch();
-
-                updateSystem.UpdateAt<ModeB.AvailabilityInfoToGridSystemMod>(SystemUpdatePhase
-                    .GameSimulation);
-                globalPatcher
-                    .CreateClassProcessor(typeof(ModeB.AvailabilityInfoToGridSystemMod.Patches))
-                    .Patch();
-
-                updateSystem.UpdateAt<ModeB.GroundPollutionSystemMod>(SystemUpdatePhase
-                    .GameSimulation);
-                globalPatcher.CreateClassProcessor(typeof(ModeB.GroundPollutionSystemMod.Patches))
-                    .Patch();
-
-                updateSystem.UpdateAt<ModeB.GroundWaterSystemMod>(SystemUpdatePhase.GameSimulation);
-                globalPatcher.CreateClassProcessor(typeof(ModeB.GroundWaterSystemMod.Patches))
-                    .Patch();
-
-
-                updateSystem.UpdateAt<ModeB.NaturalResourceSystemMod>(SystemUpdatePhase
-                    .GameSimulation);
-                updateSystem.UpdateAt<ModeB.NaturalResourceSystemMod>(SystemUpdatePhase
-                    .EditorSimulation);
-                updateSystem.UpdateAfter<PostDeserialize<ModeB.NaturalResourceSystemMod>>(
-                    SystemUpdatePhase.Deserialize);
-                globalPatcher.CreateClassProcessor(typeof(ModeB.NaturalResourceSystemMod.Patches))
-                    .Patch();
-
-                updateSystem.UpdateAt<ModeB.NoisePollutionSystemMod>(SystemUpdatePhase
-                    .GameSimulation);
-                globalPatcher.CreateClassProcessor(typeof(ModeB.NoisePollutionSystemMod.Patches))
-                    .Patch();
-
-                updateSystem.UpdateAt<ModeB.PopulationToGridSystemMod>(SystemUpdatePhase
-                    .GameSimulation);
-                globalPatcher.CreateClassProcessor(typeof(ModeB.PopulationToGridSystemMod.Patches))
-                    .Patch();
-
-                // 原版未注册 GameSimulation（无下游消费者），仅保留 Deserialize + Harmony 以确保 CellMap 扩容
-                // updateSystem.UpdateAt<ModeB.SoilWaterSystemMod>(SystemUpdatePhase.GameSimulation);
-                updateSystem.UpdateAfter<PostDeserialize<ModeB.SoilWaterSystemMod>>(SystemUpdatePhase.Deserialize);
-                globalPatcher.CreateClassProcessor(typeof(ModeB.SoilWaterSystemMod.Patches))
-                    .Patch();
-
-                updateSystem.UpdateAt<ModeB.TerrainAttractivenessSystemMod>(SystemUpdatePhase
-                    .GameSimulation);
-                globalPatcher
-                    .CreateClassProcessor(typeof(ModeB.TerrainAttractivenessSystemMod.Patches))
-                    .Patch();
-
-                updateSystem.UpdateAt<ModeB.TrafficAmbienceSystemMod>(SystemUpdatePhase
-                    .GameSimulation);
-                globalPatcher.CreateClassProcessor(typeof(ModeB.TrafficAmbienceSystemMod.Patches))
-                    .Patch();
-
-                updateSystem.UpdateAt<ModeB.ZoneAmbienceSystemMod>(SystemUpdatePhase
-                    .GameSimulation);
-                globalPatcher.CreateClassProcessor(typeof(ModeB.ZoneAmbienceSystemMod.Patches))
-                    .Patch();
-
-                // --- LandValueSystemRemake + UI设置 ---
-                updateSystem.UpdateAt<ModeB.LandValueSystemMod>(SystemUpdatePhase.GameSimulation);
-                globalPatcher.CreateClassProcessor(typeof(ModeB.LandValueSystemMod.Patches))
-                    .Patch();
-                // updateSystem.UpdateAt<LandValueConfigSyncSystem>(SystemUpdatePhase.GameSimulation);
-                // ======================================================
-
-                // ============================================
-                // --- Mode-specific 经济系统 (C1/D1) ---
-                // ============================================
-
-                if (config.EconomyFix)
-                {
-                    if (config.HouseholdProperty)
-                    {
-                        // HarmonyPrefix修补CitizenPathfindSetup.SetupFindHomeJob(HouseholdFindPropertySystem关联)
-                        globalPatcher.CreateClassProcessor(typeof(ModeB.PathfindSetupSystem_FindTargets_Patch)).Patch();
-                        updateSystem.UpdateAt<ModeB.HouseholdFindPropertySystemMod>(SystemUpdatePhase.GameSimulation);
-                        updateSystem.UpdateAt<ModeB.RentAdjustSystemMod>(SystemUpdatePhase.GameSimulation);
-                    }
-                    else
-                    {
-                        updateSystem.UpdateAt<ModeB.HouseholdFindPropertySystemMod_CellOnly>(SystemUpdatePhase.GameSimulation);
-                        updateSystem.UpdateAt<ModeB.RentAdjustSystemMod_CellOnly>(SystemUpdatePhase.GameSimulation);
-                    }
-                }
-                else
-                {
-                    updateSystem.UpdateAt<ModeB.HouseholdFindPropertySystemMod_CellOnly>(SystemUpdatePhase.GameSimulation);
-                    updateSystem.UpdateAt<ModeB.RentAdjustSystemMod_CellOnly>(SystemUpdatePhase.GameSimulation);
-                }
-
-                if (config.EconomyFix && config.Demand)
-                {
-                    // Job通用替换修补ResidentialDemand/IndustrialDemand/RentAdjust
-                    JobPatchHelper.Apply(globalPatcher, JobPatchDefinitions.GetEcoSystemTargets(PatchModeSetting.ModeB));
-                }
-            }
-
-            // 114km ModeC
-            if (PatchManager.CurrentCoreValue == 8)
-            {
-                // ==================================================
-                // --- CellMapSystem<T> ECS替换 ---
-                // ==================================================
-                updateSystem.UpdateAt<ModeC.AirPollutionSystemMod>(SystemUpdatePhase
-                    .GameSimulation);
-                globalPatcher.CreateClassProcessor(typeof(ModeC.AirPollutionSystemMod.Patches))
-                    .Patch();
-
-                updateSystem.UpdateAt<ModeC.AvailabilityInfoToGridSystemMod>(SystemUpdatePhase
-                    .GameSimulation);
-                globalPatcher
-                    .CreateClassProcessor(typeof(ModeC.AvailabilityInfoToGridSystemMod.Patches))
-                    .Patch();
-
-                updateSystem.UpdateAt<ModeC.GroundPollutionSystemMod>(SystemUpdatePhase
-                    .GameSimulation);
-                globalPatcher.CreateClassProcessor(typeof(ModeC.GroundPollutionSystemMod.Patches))
-                    .Patch();
-
-                updateSystem.UpdateAt<ModeC.GroundWaterSystemMod>(SystemUpdatePhase.GameSimulation);
-                globalPatcher.CreateClassProcessor(typeof(ModeC.GroundWaterSystemMod.Patches))
-                    .Patch();
-
-
-                updateSystem.UpdateAt<ModeC.NaturalResourceSystemMod>(SystemUpdatePhase
-                    .GameSimulation);
-                updateSystem.UpdateAt<ModeC.NaturalResourceSystemMod>(SystemUpdatePhase
-                    .EditorSimulation);
-                updateSystem.UpdateAfter<PostDeserialize<ModeC.NaturalResourceSystemMod>>(
-                    SystemUpdatePhase.Deserialize);
-                globalPatcher.CreateClassProcessor(typeof(ModeC.NaturalResourceSystemMod.Patches))
-                    .Patch();
-
-                updateSystem.UpdateAt<ModeC.NoisePollutionSystemMod>(SystemUpdatePhase
-                    .GameSimulation);
-                globalPatcher.CreateClassProcessor(typeof(ModeC.NoisePollutionSystemMod.Patches))
-                    .Patch();
-
-                updateSystem.UpdateAt<ModeC.PopulationToGridSystemMod>(SystemUpdatePhase
-                    .GameSimulation);
-                globalPatcher.CreateClassProcessor(typeof(ModeC.PopulationToGridSystemMod.Patches))
-                    .Patch();
-
-                // 原版未注册 GameSimulation（无下游消费者），仅保留 Deserialize + Harmony 以确保 CellMap 扩容
-                // updateSystem.UpdateAt<ModeC.SoilWaterSystemMod>(SystemUpdatePhase.GameSimulation);
-                updateSystem.UpdateAfter<PostDeserialize<ModeC.SoilWaterSystemMod>>(SystemUpdatePhase.Deserialize);
-                globalPatcher.CreateClassProcessor(typeof(ModeC.SoilWaterSystemMod.Patches))
-                    .Patch();
-
-                updateSystem.UpdateAt<ModeC.TerrainAttractivenessSystemMod>(SystemUpdatePhase
-                    .GameSimulation);
-                globalPatcher
-                    .CreateClassProcessor(typeof(ModeC.TerrainAttractivenessSystemMod.Patches))
-                    .Patch();
-
-                updateSystem.UpdateAt<ModeC.TrafficAmbienceSystemMod>(SystemUpdatePhase
-                    .GameSimulation);
-                globalPatcher.CreateClassProcessor(typeof(ModeC.TrafficAmbienceSystemMod.Patches))
-                    .Patch();
-
-                updateSystem.UpdateAt<ModeC.ZoneAmbienceSystemMod>(SystemUpdatePhase
-                    .GameSimulation);
-                globalPatcher.CreateClassProcessor(typeof(ModeC.ZoneAmbienceSystemMod.Patches))
-                    .Patch();
-
-                // --- LandValueSystemRemake + UI设置 ---
-                updateSystem.UpdateAt<ModeC.LandValueSystemMod>(SystemUpdatePhase.GameSimulation);
-                globalPatcher.CreateClassProcessor(typeof(ModeC.LandValueSystemMod.Patches))
-                    .Patch();
-                // updateSystem.UpdateAt<LandValueConfigSyncSystem>(SystemUpdatePhase.GameSimulation);
-                // ======================================================
-
-
-                // ============================================
-                // --- Mode-specific 经济系统 (C1/D1) ---
-                // ============================================
-
-                if (config.EconomyFix)
-                {
-                    if (config.HouseholdProperty)
-                    {
-                        // HarmonyPrefix修补CitizenPathfindSetup.SetupFindHomeJob(HouseholdFindPropertySystem关联)
-                        globalPatcher.CreateClassProcessor(typeof(ModeC.PathfindSetupSystem_FindTargets_Patch)).Patch();
-                        updateSystem.UpdateAt<ModeC.HouseholdFindPropertySystemMod>(SystemUpdatePhase.GameSimulation);
-                        updateSystem.UpdateAt<ModeC.RentAdjustSystemMod>(SystemUpdatePhase.GameSimulation);
-                    }
-                    else
-                    {
-                        updateSystem.UpdateAt<ModeC.HouseholdFindPropertySystemMod_CellOnly>(SystemUpdatePhase.GameSimulation);
-                        updateSystem.UpdateAt<ModeC.RentAdjustSystemMod_CellOnly>(SystemUpdatePhase.GameSimulation);
-                    }
-                }
-                else
-                {
-                    updateSystem.UpdateAt<ModeC.HouseholdFindPropertySystemMod_CellOnly>(SystemUpdatePhase.GameSimulation);
-                    updateSystem.UpdateAt<ModeC.RentAdjustSystemMod_CellOnly>(SystemUpdatePhase.GameSimulation);
-                }
-
-                if (config.EconomyFix && config.Demand)
-                {
-                    // Job通用替换修补ResidentialDemand/IndustrialDemand/RentAdjust
-                    JobPatchHelper.Apply(globalPatcher, JobPatchDefinitions.GetEcoSystemTargets(PatchModeSetting.ModeC));
-                }
-            }
-
-            // 43km ModeD (3x)
-            if (PatchManager.CurrentCoreValue == 3)
-            {
-                // ==================================================
-                // --- CellMapSystem<T> ECS替换 ---
-                // ==================================================
-                updateSystem.UpdateAt<ModeD.AirPollutionSystemMod>(SystemUpdatePhase
-                    .GameSimulation);
-                globalPatcher.CreateClassProcessor(typeof(ModeD.AirPollutionSystemMod.Patches))
-                    .Patch();
-
-                updateSystem.UpdateAt<ModeD.AvailabilityInfoToGridSystemMod>(SystemUpdatePhase
-                    .GameSimulation);
-                globalPatcher
-                    .CreateClassProcessor(typeof(ModeD.AvailabilityInfoToGridSystemMod.Patches))
-                    .Patch();
-
-                updateSystem.UpdateAt<ModeD.GroundPollutionSystemMod>(SystemUpdatePhase
-                    .GameSimulation);
-                globalPatcher.CreateClassProcessor(typeof(ModeD.GroundPollutionSystemMod.Patches))
-                    .Patch();
-
-                updateSystem.UpdateAt<ModeD.GroundWaterSystemMod>(SystemUpdatePhase.GameSimulation);
-                globalPatcher.CreateClassProcessor(typeof(ModeD.GroundWaterSystemMod.Patches))
-                    .Patch();
-
-
-                updateSystem.UpdateAt<ModeD.NaturalResourceSystemMod>(SystemUpdatePhase
-                    .GameSimulation);
-                updateSystem.UpdateAt<ModeD.NaturalResourceSystemMod>(SystemUpdatePhase
-                    .EditorSimulation);
-                updateSystem.UpdateAfter<PostDeserialize<ModeD.NaturalResourceSystemMod>>(
-                    SystemUpdatePhase.Deserialize);
-                globalPatcher.CreateClassProcessor(typeof(ModeD.NaturalResourceSystemMod.Patches))
-                    .Patch();
-
-                updateSystem.UpdateAt<ModeD.NoisePollutionSystemMod>(SystemUpdatePhase
-                    .GameSimulation);
-                globalPatcher.CreateClassProcessor(typeof(ModeD.NoisePollutionSystemMod.Patches))
-                    .Patch();
-
-                updateSystem.UpdateAt<ModeD.PopulationToGridSystemMod>(SystemUpdatePhase
-                    .GameSimulation);
-                globalPatcher.CreateClassProcessor(typeof(ModeD.PopulationToGridSystemMod.Patches))
-                    .Patch();
-
-                // 原版未注册 GameSimulation（无下游消费者），仅保留 Deserialize + Harmony 以确保 CellMap 扩容
-                // updateSystem.UpdateAt<ModeD.SoilWaterSystemMod>(SystemUpdatePhase.GameSimulation);
-                updateSystem.UpdateAfter<PostDeserialize<ModeD.SoilWaterSystemMod>>(SystemUpdatePhase.Deserialize);
-                globalPatcher.CreateClassProcessor(typeof(ModeD.SoilWaterSystemMod.Patches))
-                    .Patch();
-
-                updateSystem.UpdateAt<ModeD.TerrainAttractivenessSystemMod>(SystemUpdatePhase
-                    .GameSimulation);
-                globalPatcher
-                    .CreateClassProcessor(typeof(ModeD.TerrainAttractivenessSystemMod.Patches))
-                    .Patch();
-
-                updateSystem.UpdateAt<ModeD.TrafficAmbienceSystemMod>(SystemUpdatePhase
-                    .GameSimulation);
-                globalPatcher.CreateClassProcessor(typeof(ModeD.TrafficAmbienceSystemMod.Patches))
-                    .Patch();
-
-                updateSystem.UpdateAt<ModeD.ZoneAmbienceSystemMod>(SystemUpdatePhase
-                    .GameSimulation);
-                globalPatcher.CreateClassProcessor(typeof(ModeD.ZoneAmbienceSystemMod.Patches))
-                    .Patch();
-
-                // --- LandValueSystemRemake + UI设置 ---
-                updateSystem.UpdateAt<ModeD.LandValueSystemMod>(SystemUpdatePhase.GameSimulation);
-                globalPatcher.CreateClassProcessor(typeof(ModeD.LandValueSystemMod.Patches))
-                    .Patch();
-                // updateSystem.UpdateAt<LandValueConfigSyncSystem>(SystemUpdatePhase.GameSimulation);
-                // ======================================================
-
-                // ============================================
-                // --- Mode-specific 经济系统 (C1/D1) ---
-                // ============================================
-
-                if (config.EconomyFix)
-                {
-                    if (config.HouseholdProperty)
-                    {
-                        // HarmonyPrefix修补CitizenPathfindSetup.SetupFindHomeJob(HouseholdFindPropertySystem关联)
-                        globalPatcher.CreateClassProcessor(typeof(ModeD.PathfindSetupSystem_FindTargets_Patch)).Patch();
-                        updateSystem.UpdateAt<ModeD.HouseholdFindPropertySystemMod>(SystemUpdatePhase.GameSimulation);
-                        updateSystem.UpdateAt<ModeD.RentAdjustSystemMod>(SystemUpdatePhase.GameSimulation);
-                    }
-                    else
-                    {
-                        updateSystem.UpdateAt<ModeD.HouseholdFindPropertySystemMod_CellOnly>(SystemUpdatePhase.GameSimulation);
-                        updateSystem.UpdateAt<ModeD.RentAdjustSystemMod_CellOnly>(SystemUpdatePhase.GameSimulation);
-                    }
-                }
-                else
-                {
-                    updateSystem.UpdateAt<ModeD.HouseholdFindPropertySystemMod_CellOnly>(SystemUpdatePhase.GameSimulation);
-                    updateSystem.UpdateAt<ModeD.RentAdjustSystemMod_CellOnly>(SystemUpdatePhase.GameSimulation);
-                }
-
-                if (config.EconomyFix && config.Demand)
-                {
-                    // Job通用替换修补ResidentialDemand/IndustrialDemand/RentAdjust
-                    JobPatchHelper.Apply(globalPatcher, JobPatchDefinitions.GetEcoSystemTargets(PatchModeSetting.ModeD));
-                }
-            }
-
-            // vanilla ModeE (None)
-            if (PatchManager.CurrentCoreValue == 1)
-            {
-                // === 原系统禁用 ===
-                updateSystem.World.GetOrCreateSystemManaged<Game.Simulation.LandValueSystem>().Enabled = false;
-
-                // === 自定义系统启用 ===
-                // --- LandValueSystemRemake + UI设置 ---
-                updateSystem.UpdateAt<ModeE.LandValueSystemMod>(SystemUpdatePhase
-                    .GameSimulation);
-                globalPatcher.CreateClassProcessor(typeof(ModeE.LandValueSystemMod.Patches))
-                    .Patch();
-
-                if (config.EconomyFix)
-                {
-                    // ============================================
-                    // --- Mode-specific 经济系统 (C1/D1) ---
-                    // ============================================
-                    if (config.HouseholdProperty)
-                    {
-                        // === 原系统禁用 === (Economy)
-                        updateSystem.World.GetOrCreateSystemManaged<Game.Simulation.RentAdjustSystem>().Enabled = false;
-                        updateSystem.World.GetOrCreateSystemManaged<Game.Simulation.HouseholdFindPropertySystem>().Enabled = false;
-                        updateSystem.World.GetOrCreateSystemManaged<Game.Simulation.HouseholdBehaviorSystem>().Enabled = false;
-
-                        // HarmonyPrefix修补CitizenPathfindSetup.SetupFindHomeJob(HouseholdFindPropertySystem关联)
-                        globalPatcher.CreateClassProcessor(typeof(ModeE.PathfindSetupSystem_FindTargets_Patch)).Patch();
-
-                        updateSystem.UpdateAt<ModeE.HouseholdFindPropertySystemMod>(SystemUpdatePhase.GameSimulation);
-                        updateSystem.UpdateAt<ModeE.RentAdjustSystemMod>(SystemUpdatePhase.GameSimulation);
-                    }
-
-                    // --- ModeE 原版系统禁用（通用系统部分） ---
-                    if (config.JobSearch)
-                    {
-                        updateSystem.World.GetOrCreateSystemManaged<Game.Simulation.CitizenFindJobSystem>().Enabled = false;
-                        updateSystem.World.GetOrCreateSystemManaged<Game.Simulation.FindJobSystem>().Enabled = false;
-                    }
-
-                    if (config.ResourceBuyer)
-                    {
-                        updateSystem.World.GetOrCreateSystemManaged<Game.Simulation.TripNeededSystem>().Enabled = false;
-                        updateSystem.World.GetOrCreateSystemManaged<Game.Simulation.ServiceCoverageSystem>().Enabled = false;
-                        updateSystem.World.GetOrCreateSystemManaged<Game.Simulation.ResourceBuyerSystem>().Enabled = false;
-                    }
-
-                    if (config.ResidentAI)
-                    {
-                        updateSystem.World.GetOrCreateSystemManaged<Game.Simulation.ResidentAISystem>().Enabled = false;
-                        updateSystem.World.GetOrCreateSystemManaged<Game.Simulation.ResidentAISystem.Actions>().Enabled = false;
-                    }
-
-                    if (config.DownstreamAI)
-                    {
-                        // F2: PersonalCarAISystem
-                        updateSystem.World.GetOrCreateSystemManaged<Game.Simulation.PersonalCarAISystem>().Enabled = false;
-                        updateSystem.World.GetOrCreateSystemManaged<Game.Simulation.PersonalCarAISystem.Actions>().Enabled = false;
-                        // F3: TaxiAISystem
-                        updateSystem.World.GetOrCreateSystemManaged<Game.Simulation.TaxiAISystem>().Enabled = false;
-                        // F5: LeisureSystem
-                        updateSystem.World.GetOrCreateSystemManaged<Game.Simulation.LeisureSystem>().Enabled = false;
-                        // F6: FindSchoolSystem
-                        updateSystem.World.GetOrCreateSystemManaged<Game.Simulation.FindSchoolSystem>().Enabled = false;
-                    }
-                }
-
-                if (config.EconomyFix && config.Demand)
-                {
-                    // Job通用替换修补ResidentialDemand/CommerialDemand/IndustrialDemand/RentAdjust
-                    JobPatchHelper.Apply(globalPatcher, JobPatchDefinitions.GetEcoSystemTargets(PatchModeSetting.None));
-                }
-            }
-
-            // ======================================================
-            // === 通用经济系统注册 (EcoShared) ===
-            // 以下系统与地图尺寸无关，所有 Mode 共用，仅注册一次
-            // ======================================================
-            if (config.EconomyFix)
-            {
-                // === 原版殘骸系統禁用 ===
-                // NetUpkeepJob 是舊路網維護費機制的殘骸：Execute 把 GetUpkeepCost 的結果累加到區域
-                // 變數後直接丟棄，4 個欄位全 [ReadOnly]，零產出零副作用（OnCreate 建的 m_CitySystem
-                // 在 OnUpdate 從未使用，是舊版把總額寫到 City entity 的殘留痕跡）。
-                // 功能已由 CityServiceBudgetSystem.NetServiceBudgetJob 接手——它的 query 條件與
-                // NetUpkeepSystem.m_UpkeepQuery 逐字相同（連變數名都叫 m_NetUpkeepQuery），
-                // 但把費用寫進 CollectedCityServiceBudgetData.m_BaseCost 並按 service 歸屬。
-                // 禁用省下每 512 模擬幀對 1/16 路網的白跑遍歷（量級極小，但確實是白燒）。
-                // Job 帶 [BurstCompile] 且原版 AOT，Harmony 打不到 Execute，只能從系統層關。
-                updateSystem.World.GetOrCreateSystemManaged<Game.Simulation.NetUpkeepSystem>().Enabled = false;
-
-                if (config.HouseholdProperty)
-                {
-                    updateSystem.UpdateAt<EcoShared.HouseholdBehaviorSystemMod>(SystemUpdatePhase.GameSimulation);
-                }
-
-                if (config.JobSearch)
-                {
-                    updateSystem.UpdateAt<EcoShared.CitizenFindJobSystemMod>(SystemUpdatePhase.GameSimulation);
-                    updateSystem.UpdateAt<EcoShared.FindJobSystemMod>(SystemUpdatePhase.GameSimulation);
-                }
-
-                // === [尋路 Setup 統一分派框架] 引導 ===
-                // dispatcher 是全 Mod 唯一掛在 PathfindSetupSystem.FindTargets 上的 Prefix，
-                // 承載 P1(ResourceSeller)/P2(Leisure) 等多個 handler。只要任一相關組開啟就掛載一次，
-                // 各 handler 的 Register 留在各自開關組內（見下）。此提取避免 P2 受 ResourceBuyer 開關牽制。
-                if (config.ResourceBuyer || config.DownstreamAI)
-                {
-                    EcoShared.PathfindSetupDispatcher.Clear();
-                    globalPatcher.CreateClassProcessor(
-                        typeof(EcoShared.PathfindSetupDispatcher)).Patch();
-                }
-
-                if (config.ResourceBuyer)
-                {
-                    // 寻路优化系统
-                    updateSystem.UpdateAt<EcoShared.TripNeededSystemMod>(SystemUpdatePhase.GameSimulation);
-                    updateSystem.UpdateAt<EcoShared.ServiceCoverageSystemMod>(SystemUpdatePhase.GameSimulation);
-                    updateSystem.UpdateAt<EcoShared.ResourceBuyerSystemMod>(SystemUpdatePhase.GameSimulation);
-
-                    // Harmony修补：拦截 Game.Tools 等外部系统对 SetupPathfindMethods 的调用
-                    globalPatcher.CreateClassProcessor(typeof(EcoShared.ServiceCoverageSystem_SetupPathfindMethods_Patch)).Patch();
-
-                    // === [P1] ResourceSeller 尋路 Early Exit ===
-                    // 只接管 SetupTargetType.ResourceSeller，其餘類型放行（含 C1 各 Mode 的 FindHome patch）。
-                    EcoShared.PathfindSetupDispatcher.Register(
-                        Game.Pathfind.SetupTargetType.ResourceSeller,
-                        new EcoShared.ResourceSellerHandler());
-                }
-
-                if (config.ResidentAI)
-                {
-                    updateSystem.UpdateAt<EcoShared.ResidentAISystemMod>(SystemUpdatePhase.GameSimulation);
-                    updateSystem.UpdateAfter<EcoShared.ResidentAISystemMod.Actions, EcoShared.ResidentAISystemMod>(SystemUpdatePhase.GameSimulation);
-                }
-
-                if (config.DownstreamAI)
-                {
-                    // F2: 私家车AI（含 Actions 子系统）
-                    updateSystem.UpdateAt<EcoShared.PersonalCarAISystemMod>(SystemUpdatePhase.GameSimulation);
-                    updateSystem.UpdateAfter<EcoShared.PersonalCarAISystemMod.ActionsMod, EcoShared.PersonalCarAISystemMod>(SystemUpdatePhase.GameSimulation);
-                    // F2b: 私家车AI 存档加载阶段（对齐原版 SystemOrder.cs L620-621）
-                    updateSystem.UpdateAt<EcoShared.PersonalCarAISystemMod>(SystemUpdatePhase.LoadSimulation);
-                    updateSystem.UpdateAfter<EcoShared.PersonalCarAISystemMod.ActionsMod, EcoShared.PersonalCarAISystemMod>(SystemUpdatePhase.LoadSimulation);
-                    // F3: 出租车AI
-                    updateSystem.UpdateAt<EcoShared.TaxiAISystemMod>(SystemUpdatePhase.GameSimulation);
-                    // F5: 休闲系统
-                    updateSystem.UpdateAt<EcoShared.LeisureSystemMod>(SystemUpdatePhase.GameSimulation);
-                    // F6: 找学校系统
-                    updateSystem.UpdateAt<EcoShared.FindSchoolSystemMod>(SystemUpdatePhase.GameSimulation);
-
-                    // === [P2] Leisure 尋路 Early Exit ===
-                    // 掛在上方已引導的 dispatcher 上，只接管 SetupTargetType.Leisure。
-                    EcoShared.PathfindSetupDispatcher.Register(
-                        Game.Pathfind.SetupTargetType.Leisure,
-                        new EcoShared.LeisureHandler());
-                }
-            }
+            Registrar = registrar;
+            registrar.Apply(updateSystem, globalPatcher);
 
             // --- NoDogs 2.0 性能工具系统 ---
             updateSystem.UpdateAt<EcoShared.P1_NoDogsPatchSystem>(SystemUpdatePhase.GameSimulation);
@@ -806,5 +86,115 @@ namespace MapExtPDX.MapExt.Core
             updateSystem.UpdateAt<MapExtPDX.MapExt.Core.ConflictMonitoringSystem>(SystemUpdatePhase.MainLoop);
             updateSystem.UpdateAt<MapExtPDX.UI.Q2_CityStatsSystem>(SystemUpdatePhase.GameSimulation);
         }
+
+        #endregion
+
+        // === Declarations ===
+
+        #region Declarations
+
+        /// <summary>原版尺寸模式（ModeE / None）：只替换地价系统，其余 CellMap 尺寸与原版一致、仍由原版负责。</summary>
+        private static void DeclareVanillaMode(ReplacementRegistrar r, AppliedConfig c)
+        {
+            const string household = AppliedConfig.GroupHouseholdProperty;
+            const SystemUpdatePhase sim = SystemUpdatePhase.GameSimulation;
+
+            // --- LandValueSystemRemake + UI设置 ---
+            r.Replace<ModeE.LandValueSystemMod>(ReplacementRegistrar.GroupCellMap, typeof(Game.Simulation.LandValueSystem))
+                .At(sim).WithPatches(typeof(ModeE.LandValueSystemMod.Patches));
+
+            // --- Mode-specific 经济系统 (C1/D1) ---
+            if (c.EconomyFix && c.HouseholdProperty)
+            {
+                // FindTargets 补丁先于两个系统注册，保持原有顺序
+                r.Replace<ModeE.HouseholdFindPropertySystemMod>(household, typeof(Game.Simulation.HouseholdFindPropertySystem))
+                    .WithPatches(typeof(ModeE.PathfindSetupSystem_FindTargets_Patch)).At(sim);
+                r.Replace<ModeE.RentAdjustSystemMod>(household, typeof(Game.Simulation.RentAdjustSystem))
+                    .At(sim);
+            }
+
+            // Job通用替换修补ResidentialDemand/CommerialDemand/IndustrialDemand
+            if (c.EconomyFix && c.Demand)
+                r.DemandJobs(JobPatchDefinitions.GetEcoSystemTargets(c.Mode));
+        }
+
+        /// <summary>各模式共用的经济系统：与地图尺寸无关，只登记一次。</summary>
+        private static void DeclareShared(ReplacementRegistrar r, AppliedConfig c)
+        {
+            if (!c.EconomyFix) return;
+
+            const SystemUpdatePhase sim = SystemUpdatePhase.GameSimulation;
+
+            // === 原版殘骸系統禁用 ===
+            // NetUpkeepJob 是舊路網維護費機制的殘骸：Execute 把 GetUpkeepCost 的結果累加到區域
+            // 變數後直接丟棄，4 個欄位全 [ReadOnly]，零產出零副作用（OnCreate 建的 m_CitySystem
+            // 在 OnUpdate 從未使用，是舊版把總額寫到 City entity 的殘留痕跡）。
+            // 功能已由 CityServiceBudgetSystem.NetServiceBudgetJob 接手——它的 query 條件與
+            // NetUpkeepSystem.m_UpkeepQuery 逐字相同（連變數名都叫 m_NetUpkeepQuery），
+            // 但把費用寫進 CollectedCityServiceBudgetData.m_BaseCost 並按 service 歸屬。
+            // 禁用省下每 512 模擬幀對 1/16 路網的白跑遍歷（量級極小，但確實是白燒）。
+            // Job 帶 [BurstCompile] 且原版 AOT，Harmony 打不到 Execute，只能從系統層關。
+            r.DisableOnly(ReplacementRegistrar.GroupEconomy, typeof(Game.Simulation.NetUpkeepSystem));
+
+            if (c.HouseholdProperty)
+            {
+                r.Replace<EcoShared.HouseholdBehaviorSystemMod>(AppliedConfig.GroupHouseholdProperty,
+                    typeof(Game.Simulation.HouseholdBehaviorSystem)).At(sim);
+            }
+
+            if (c.JobSearch)
+            {
+                const string job = AppliedConfig.GroupJobSearch;
+                r.Replace<EcoShared.CitizenFindJobSystemMod>(job, typeof(Game.Simulation.CitizenFindJobSystem)).At(sim);
+                r.Replace<EcoShared.FindJobSystemMod>(job, typeof(Game.Simulation.FindJobSystem)).At(sim);
+            }
+
+            if (c.ResourceBuyer)
+            {
+                const string resourceBuyer = AppliedConfig.GroupResourceBuyer;
+                // 寻路优化系统
+                r.Replace<EcoShared.TripNeededSystemMod>(resourceBuyer, typeof(Game.Simulation.TripNeededSystem)).At(sim);
+                // 补丁拦截 Game.Tools 等外部系统对 SetupPathfindMethods 的调用，只作用于该方法、与系统注册先后无关
+                r.Replace<EcoShared.ServiceCoverageSystemMod>(resourceBuyer, typeof(Game.Simulation.ServiceCoverageSystem))
+                    .At(sim).WithPatches(typeof(EcoShared.ServiceCoverageSystem_SetupPathfindMethods_Patch));
+                r.Replace<EcoShared.ResourceBuyerSystemMod>(resourceBuyer, typeof(Game.Simulation.ResourceBuyerSystem)).At(sim);
+
+                // === [P1] ResourceSeller 尋路 Early Exit ===
+                // 只接管 SetupTargetType.ResourceSeller，其餘類型放行（含 C1 各 Mode 的 FindHome patch）。
+                r.FindTargetsHandler(resourceBuyer, Game.Pathfind.SetupTargetType.ResourceSeller,
+                    new EcoShared.ResourceSellerHandler());
+            }
+
+            if (c.ResidentAI)
+            {
+                r.Replace<EcoShared.ResidentAISystemMod>(AppliedConfig.GroupResidentAI,
+                        typeof(Game.Simulation.ResidentAISystem), typeof(Game.Simulation.ResidentAISystem.Actions))
+                    .At(sim).WithActions<EcoShared.ResidentAISystemMod.Actions>(sim);
+            }
+
+            if (c.DownstreamAI)
+            {
+                const string downstream = AppliedConfig.GroupDownstreamAI;
+                const SystemUpdatePhase load = SystemUpdatePhase.LoadSimulation;
+
+                // F2: 私家车AI（含 Actions 子系统）；存档加载阶段另注册一份（对齐原版 SystemOrder.cs L620-621）
+                r.Replace<EcoShared.PersonalCarAISystemMod>(downstream,
+                        typeof(Game.Simulation.PersonalCarAISystem), typeof(Game.Simulation.PersonalCarAISystem.Actions))
+                    .At(sim).WithActions<EcoShared.PersonalCarAISystemMod.ActionsMod>(sim)
+                    .At(load).WithActions<EcoShared.PersonalCarAISystemMod.ActionsMod>(load);
+                // F3: 出租车AI
+                r.Replace<EcoShared.TaxiAISystemMod>(downstream, typeof(Game.Simulation.TaxiAISystem)).At(sim);
+                // F5: 休闲系统
+                r.Replace<EcoShared.LeisureSystemMod>(downstream, typeof(Game.Simulation.LeisureSystem)).At(sim);
+                // F6: 找学校系统
+                r.Replace<EcoShared.FindSchoolSystemMod>(downstream, typeof(Game.Simulation.FindSchoolSystem)).At(sim);
+
+                // === [P2] Leisure 尋路 Early Exit ===
+                // 掛在 dispatcher 上，只接管 SetupTargetType.Leisure。
+                r.FindTargetsHandler(downstream, Game.Pathfind.SetupTargetType.Leisure, new EcoShared.LeisureHandler());
+            }
+        }
+
+        #endregion
     }
 }

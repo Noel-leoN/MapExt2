@@ -89,12 +89,8 @@ namespace MapExtPDX.MapExt.Core
 
                 // [BUGFIX] 在加载开始前（而非加载完成后）立即重新禁用被引擎复活的原版系统。
                 // 消除加载期间原版+替换系统双跑的窗口期，彻底解决 JobTempAlloc 警告。
-                // 读本会话快照：要重新禁用的正是 OnLoad 时替换掉的那些，与实时设定无关
-                var config = AppliedConfig.Current;
-                if (config != null)
-                {
-                    SystemReplacer.ReDisableVanillaSystems(this.World, config);
-                }
+                // 要重新禁用的正是 OnLoad 时各条替换声明取代的那些，与实时设定无关
+                SystemReplacer.ReDisableVanillaSystems(this.World);
             }
         }
 
@@ -110,11 +106,7 @@ namespace MapExtPDX.MapExt.Core
                 ModLog.Ok(Tag, $"游戏加载完成（{loadLabel}），执行系统状态诊断");
 
                 // [BUGFIX] 退出主菜单后引擎会重新启用所有系统，必须在诊断前重新禁用
-                var config = AppliedConfig.Current;
-                if (config != null)
-                {
-                    SystemReplacer.ReDisableVanillaSystems(this.World, config);
-                }
+                SystemReplacer.ReDisableVanillaSystems(this.World);
 
                 // 地圖尺寸模式錯配提示（由 FinalizeTerrainData_Prefix 於載入中途記錄）
                 ShowMapSizeMismatchDialogIfNeeded();
@@ -226,43 +218,16 @@ namespace MapExtPDX.MapExt.Core
             int okCount = 0;
             int totalChecked = 0;
 
-            // === Economy 系统状态验证（仅在对应组已启用时检查）===
-            if (config.EconomyFix)
+            // === 替换声明验证：取代的原版系统已禁用、替换系统仍启用 ===
+            // 由 ReplacementRegistrar 的声明派生，覆盖全部替换（含 CellMap 与 CellOnly），与注册、重新禁用共用同一份清单
+            SystemReplacer.Registrar?.Diagnose(world, conflicts, ref okCount, ref totalChecked);
+
+            // === Demand Job 宿主（Transpiler 宿主，须保持启用）===
+            if (config.EconomyFix && config.Demand)
             {
-                if (config.JobSearch)
-                {
-                    CheckVanillaDisabled<CitizenFindJobSystem>(world, "JobSearch", conflicts, ref okCount, ref totalChecked);
-                    CheckVanillaDisabled<FindJobSystem>(world, "JobSearch", conflicts, ref okCount, ref totalChecked);
-                }
-                if (config.HouseholdProperty)
-                {
-                    CheckVanillaDisabled<HouseholdFindPropertySystem>(world, "HouseholdProperty", conflicts, ref okCount, ref totalChecked);
-                    CheckVanillaDisabled<HouseholdBehaviorSystem>(world, "HouseholdProperty", conflicts, ref okCount, ref totalChecked);
-                    CheckVanillaDisabled<RentAdjustSystem>(world, "HouseholdProperty", conflicts, ref okCount, ref totalChecked);
-                }
-                if (config.ResourceBuyer)
-                {
-                    CheckVanillaDisabled<TripNeededSystem>(world, "ResourceBuyer", conflicts, ref okCount, ref totalChecked);
-                    CheckVanillaDisabled<ServiceCoverageSystem>(world, "ResourceBuyer", conflicts, ref okCount, ref totalChecked);
-                    CheckVanillaDisabled<ResourceBuyerSystem>(world, "ResourceBuyer", conflicts, ref okCount, ref totalChecked);
-                }
-                if (config.ResidentAI)
-                {
-                    CheckVanillaDisabled<ResidentAISystem>(world, "ResidentAI", conflicts, ref okCount, ref totalChecked);
-                }
-                if (config.DownstreamAI)
-                {
-                    CheckVanillaDisabled<PersonalCarAISystem>(world, "DownstreamAI", conflicts, ref okCount, ref totalChecked);
-                    CheckVanillaDisabled<TaxiAISystem>(world, "DownstreamAI", conflicts, ref okCount, ref totalChecked);
-                    CheckVanillaDisabled<LeisureSystem>(world, "DownstreamAI", conflicts, ref okCount, ref totalChecked);
-                    CheckVanillaDisabled<FindSchoolSystem>(world, "DownstreamAI", conflicts, ref okCount, ref totalChecked);
-                }
-                if (config.Demand)
-                {
-                    CheckModEnabled<ResidentialDemandSystem>(world, "Demand", conflicts, ref okCount, ref totalChecked);
-                    CheckModEnabled<IndustrialDemandSystem>(world, "Demand", conflicts, ref okCount, ref totalChecked);
-                    CheckModEnabled<CommercialDemandSystem>(world, "Demand", conflicts, ref okCount, ref totalChecked);
-                }
+                CheckModEnabled<ResidentialDemandSystem>(world, "Demand", conflicts, ref okCount, ref totalChecked);
+                CheckModEnabled<IndustrialDemandSystem>(world, "Demand", conflicts, ref okCount, ref totalChecked);
+                CheckModEnabled<CommercialDemandSystem>(world, "Demand", conflicts, ref okCount, ref totalChecked);
             }
 
             // === CellMap 系统状态验证（严重级别：可能导致崩溃/存档损坏）===
@@ -340,27 +305,6 @@ namespace MapExtPDX.MapExt.Core
         #endregion
 
         #region Helpers
-
-        /// <summary>
-        /// 检查原版系统是否已正确禁用（期望 Enabled == false）。
-        /// 用于 Economy 系统验证。
-        /// </summary>
-        private static void CheckVanillaDisabled<T>(World world, string group,
-            List<string> conflicts, ref int okCount, ref int totalChecked) where T : GameSystemBase
-        {
-            totalChecked++;
-            var system = world.GetExistingSystemManaged<T>();
-            if (system == null) { okCount++; return; }
-
-            if (system.Enabled)
-            {
-                conflicts.Add($"{typeof(T).Name} [{group}]");
-            }
-            else
-            {
-                okCount++;
-            }
-        }
 
         /// <summary>
         /// 检查 MapExt 替换系统或宿主系统是否仍然启用（期望 Enabled == true）。
