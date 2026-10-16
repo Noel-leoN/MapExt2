@@ -999,7 +999,7 @@ namespace MapExtPDX
                 },
                 {
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.ExportCellMapChecksums)),
-                    "Developer tool: writes the length and hash of every CellMap (vanilla and MapExt) to MapExtPDX.log, to check that the same save loads identical CellMap data across mod versions.\n★ Turn on the game's pause-after-loading option first, and export before the simulation advances.\n★ Requires a loaded save."
+                    "Developer tool: writes the length and hash of every CellMap (vanilla and MapExt) to MapExtPDX.log, to check that the same save loads identical CellMap data across mod versions.\n★ Turn on the game's pause-after-loading option first, and export before the simulation advances.\n★ Requires a loaded save.\n★ A copy is also saved to ModsData/MapExt2/CellMapChecksum, which survives the log being overwritten on the next launch."
                 },
                 {
                     m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.RegistrationDumpReport)),

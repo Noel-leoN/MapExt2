@@ -819,7 +819,7 @@ namespace MapExtPDX
                 { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.ExportCellMapChecksums)), "导出 CellMap 校验和" },
                 {
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.ExportCellMapChecksums)),
-                    "开发者工具：把全部 CellMap（原版与 MapExt）的长度与哈希写入 MapExtPDX.log，用于确认同一存档在不同 Mod 版本下读出的 CellMap 数据一致。\n★ 先开启游戏的「加载后暂停」选项，在模拟推进前导出。\n★ 需先加载存档。"
+                    "开发者工具：把全部 CellMap（原版与 MapExt）的长度与哈希写入 MapExtPDX.log，用于确认同一存档在不同 Mod 版本下读出的 CellMap 数据一致。\n★ 先开启游戏的「加载后暂停」选项，在模拟推进前导出。\n★ 需先加载存档。\n★ 同时另存到 ModsData/MapExt2/CellMapChecksum，下次启动游戏覆盖日志后仍可取用。"
                 },
                 { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.RegistrationDumpReport)), "系统注册表结果" },
                 {

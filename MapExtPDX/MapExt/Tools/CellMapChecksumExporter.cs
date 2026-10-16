@@ -5,7 +5,10 @@
 
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Reflection;
+using System.Text;
+using Colossal.PSI.Environment;
 using Colossal.Serialization.Entities;
 using Game.Simulation;
 using HarmonyLib;
@@ -30,10 +33,21 @@ namespace MapExtPDX.MapExt.Tools
     ///
     /// <para><b>时机</b>：先开启游戏的「加载后暂停」，加载存档后在模拟推进前导出；
     /// 报告里的模拟帧号用来确认两次导出处于同一时点。</para>
+    ///
+    /// <para><b>输出</b>：写入 MapExtPDX.log，并另存到 {UserData}/ModsData/MapExt2/CellMapChecksum。</para>
     /// </summary>
     public static class CellMapChecksumExporter
     {
         private const string Tag = nameof(CellMapChecksumExporter);
+
+        // === Constants ===
+
+        #region Constants
+
+        /// <summary>另存目录名，位于 {UserData}/ModsData/MapExt2 下。</summary>
+        private const string kReportFolder = "CellMapChecksum";
+
+        #endregion
 
         // === Fields ===
 
@@ -78,15 +92,23 @@ namespace MapExtPDX.MapExt.Tools
                 lines.Sort(StringComparer.Ordinal);
 
                 uint frame = world.GetExistingSystemManaged<SimulationSystem>()?.frameIndex ?? 0;
+                var report = new List<string>
+                {
+                    $"模式: {PatchManager.CurrentMode} (CV={PatchManager.CurrentCoreValue})",
+                    $"模拟帧: {frame}",
+                    $"CellMap 数量: {lines.Count}",
+                };
+                report.AddRange(lines);
+
                 ModLog.Report(Tag, "CellMap 校验和", rb =>
                 {
-                    rb.Stat("模式", $"{PatchManager.CurrentMode} (CV={PatchManager.CurrentCoreValue})");
-                    rb.Stat("模拟帧", frame);
-                    rb.Stat("CellMap 数量", lines.Count);
-                    foreach (string line in lines) rb.Add(line);
+                    foreach (string line in report) rb.Add(line);
                 });
 
-                return $"Hashed {lines.Count} CellMaps at frame {frame} — see MapExtPDX.log";
+                string file = WriteReportFile(report, frame);
+                return file == null
+                    ? $"Hashed {lines.Count} CellMaps at frame {frame} — see MapExtPDX.log (file copy failed)"
+                    : $"Hashed {lines.Count} CellMaps at frame {frame} — ModsData/MapExt2/{kReportFolder}/{file}";
             }
             catch (Exception ex)
             {
@@ -135,6 +157,29 @@ namespace MapExtPDX.MapExt.Tools
             int stride = UnsafeUtility.SizeOf<T>();
             uint2 hash = xxHash3.Hash64(NativeArrayUnsafeUtility.GetUnsafeReadOnlyPtr(map), (long)map.Length * stride);
             return $"{head} | len={map.Length} | elem={stride}B | {hash.y:X8}{hash.x:X8}";
+        }
+
+        /// <summary>
+        /// 另存一份到 {UserData}/ModsData/MapExt2/CellMapChecksum。日志在每次启动游戏时被覆盖，
+        /// 轮流切换模式、重启采集基线时靠这份文件保留每次的结果。失败只记警告，日志中的报告不受影响。
+        /// </summary>
+        /// <returns>写出的文件名；失败时返回 null。</returns>
+        private static string WriteReportFile(List<string> lines, uint frame)
+        {
+            try
+            {
+                string dir = Path.Combine(EnvPath.kUserDataPath, "ModsData", "MapExt2", kReportFolder);
+                Directory.CreateDirectory(dir);
+                string name = $"checksum-{DateTime.Now:yyyyMMdd-HHmmss}-{PatchManager.CurrentMode}-f{frame}.txt";
+                File.WriteAllLines(Path.Combine(dir, name), lines, new UTF8Encoding(false));
+                ModLog.Ok(Tag, $"已另存：{Path.Combine(dir, name)}");
+                return name;
+            }
+            catch (Exception ex)
+            {
+                ModLog.Warn(Tag, $"另存文件失败：{ex.Message}");
+                return null;
+            }
         }
 
         #endregion
