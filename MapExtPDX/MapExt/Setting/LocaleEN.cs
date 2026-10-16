@@ -54,11 +54,7 @@ namespace MapExtPDX
                 { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.ApplyPatchChanges)), "► Apply Changes" },
                 {
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.ApplyPatchChanges)),
-                    "Applies the selected patch mode.\n\n⚠️ [CRITICAL]: This Mod does not support hot-switching. You MUST RESTART THE GAME after applying changes and before loading any save. Loading a save directly will cause simulation corruption!"
-                },
-                {
-                    m_Setting.GetOptionWarningLocaleID(nameof(ModSettings.ApplyPatchChanges)),
-                    "Applying MapSize Mode, please be patient until completion.\n\n⚠️ Please completely RESTART THE GAME after completion. Do not load any save immediately!"
+                    "Saves the selected map size mode. The new mode takes effect after a full restart of the game — MapExt applies the map size only once, at startup.\n\nUntil you restart, this session keeps running in the current mode, and saves made for the new mode cannot be loaded."
                 },
 
                 // --- Group: Terrain-Water Optimization (Beta) ---

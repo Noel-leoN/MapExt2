@@ -68,7 +68,15 @@ namespace MapExtPDX.SaveLoadSystem
                 // 通知條版本（短文案）：完成對話框可能被其它 Mod 的 UI 重建沖掉，這條留在通知區
                 { "VANILLA_CONVERT.CompleteNotify", "Conversion finished - saved as '{SAVE_NAME}'. You must restart the game before playing it." },
                 { "VANILLA_CONVERT.QuitConfirm", "Quit Game" },
-                { "VANILLA_CONVERT.QuitCancel", "Stay" }
+                { "VANILLA_CONVERT.QuitCancel", "Stay" },
+
+                // === Map size mode apply (restart required) ===
+                { "MODE_APPLY.Title", "Map Size Mode Saved" },
+                { "MODE_APPLY.Message", "MapExt will run in '{NEW_MODE}' after a full restart of the game.\n\nUntil then this session keeps running in '{CURRENT_MODE}', and saves made for '{NEW_MODE}' cannot be loaded." },
+                { "MODE_APPLY.Unchanged", "MapExt is already running in '{CURRENT_MODE}'. No restart is needed." },
+                { "MODE_APPLY.Quit", "Quit Game" },
+                { "MODE_APPLY.Later", "Later" },
+                { "MODE_APPLY.OK", "OK" }
             };
 
             en = new MemorySource(fallback);
@@ -109,6 +117,14 @@ namespace MapExtPDX.SaveLoadSystem
                 { "VANILLA_CONVERT.CompleteNotify", "转换完成，已存为「{SAVE_NAME}」。开始游玩前必须重启游戏。" },
                 { "VANILLA_CONVERT.QuitConfirm", "退出游戏" },
                 { "VANILLA_CONVERT.QuitCancel", "留在游戏" },
+
+                // === 应用地图尺寸模式（需重启） ===
+                { "MODE_APPLY.Title", "地图尺寸模式已保存" },
+                { "MODE_APPLY.Message", "完全重启游戏后，MapExt 将以「{NEW_MODE}」运行。\n\n在此之前，本次游戏仍按「{CURRENT_MODE}」运行，为「{NEW_MODE}」制作的存档也无法加载。" },
+                { "MODE_APPLY.Unchanged", "MapExt 当前已在「{CURRENT_MODE}」下运行，无需重启。" },
+                { "MODE_APPLY.Quit", "退出游戏" },
+                { "MODE_APPLY.Later", "稍后" },
+                { "MODE_APPLY.OK", "确定" },
             };
             hans = new MemorySource(zhHans);
 
@@ -147,7 +163,15 @@ namespace MapExtPDX.SaveLoadSystem
                 // 通知條版本（短文案）
                 { "VANILLA_CONVERT.CompleteNotify", "轉換完成，已存為「{SAVE_NAME}」。開始遊玩前必須重啟遊戲。" },
                 { "VANILLA_CONVERT.QuitConfirm", "退出遊戲" },
-                { "VANILLA_CONVERT.QuitCancel", "留在遊戲" }
+                { "VANILLA_CONVERT.QuitCancel", "留在遊戲" },
+
+                // === 套用地圖尺寸模式（需重啟） ===
+                { "MODE_APPLY.Title", "地圖尺寸模式已儲存" },
+                { "MODE_APPLY.Message", "完全重啟遊戲後，MapExt 將以「{NEW_MODE}」運行。\n\n在此之前，本次遊戲仍按「{CURRENT_MODE}」運行，為「{NEW_MODE}」製作的存檔也無法載入。" },
+                { "MODE_APPLY.Unchanged", "MapExt 目前已在「{CURRENT_MODE}」下運行，無需重啟。" },
+                { "MODE_APPLY.Quit", "退出遊戲" },
+                { "MODE_APPLY.Later", "稍後" },
+                { "MODE_APPLY.OK", "確定" }
             };
             hant = new MemorySource(zhHant);
         }

@@ -37,9 +37,6 @@ namespace MapExtPDX.MapExt.Core
         // 调用当前模式状态
         public static PatchModeSetting CurrentMode => _currentMode;
 
-        // 从当前已应用保存设置中读取MapSize CoreValue;用于UI Info显示.
-        public static int? LoadedSaveCoreValue { get; set; } = null;
-
         /// <summary>
         /// 补丁集注册表系统
         /// </summary>
@@ -286,45 +283,6 @@ namespace MapExtPDX.MapExt.Core
             ApplyPatchesForMode(_currentMode);
 
             ModLog.Ok(Tag, "初始化完成! (Transpiler已烘焙; Pre/Postfix将在方法调用时执行)");
-        }
-
-        // 核心功能方法
-        // 切换设置新的模式 - Mod已正确初始化，进入UI设置选择并点击Apply
-        public static void SetPatchMode(PatchModeSetting newMode)
-        {
-            // 安全验证，是否已正确创建harmony实例
-            if (_modePatcher == null)
-            {
-                ModLog.Error(Tag, "Harmony instance is null in SetPatchMode. Aborting.");
-                return;
-            }
-
-            // 避免点击Apply后重复修补；LoadedSaveCoreValue字段当前方案中无效，备用；
-            if (_currentMode == newMode && LoadedSaveCoreValue == null)
-            {
-                ModLog.Info(Tag, $"Patch mode {newMode} is already active. No changes applied.");
-                return;
-            }
-
-            ModLog.Swap(Tag, $"Switching patch mode from {_currentMode} (CV: {CurrentCoreValue}) to {newMode}");
-
-            // 1. 移除所有旧补丁，确保干净的状态
-            ModLog.Info(Tag, "Unpatching all previous MapSize patchsets...");
-            _modePatcher.UnpatchAll(Mod.HarmonyIdModes);
-
-            // 2. 根据新模式设置CV
-            _currentMode = newMode; // Set new mode first
-            CurrentCoreValue = GetCoreValueForMode(_currentMode); // Then update CV based on it
-            ModLog.Info(Tag, $"CV set to: {CurrentCoreValue} for mode {_currentMode}");
-
-            // 3. 根据新模式应用所需的补丁集
-            //if (_currentMode != PatchModeSetting.None)
-            //{
-            ApplyPatchesForMode(_currentMode);
-            //}
-
-            ModLog.Ok(Tag, $"Successfully switched to patch mode: {_currentMode}");
-            LoadedSaveCoreValue = null; // Reset after applying changes prompted by save load // 当前方案并未启用该字段
         }
 
         /// <summary>

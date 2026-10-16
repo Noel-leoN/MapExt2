@@ -46,9 +46,9 @@ namespace MapExtPDX
         public static ILog Logger = LogManager.GetLogger($"{ModName}").SetShowsErrorsInUI(false);
 
         /// <summary>
-        /// 双Harmony实例模式
+        /// 双 Harmony 实例：按来源分别管理补丁，卸载时各按自己的 id 移除。
+        /// 地图尺寸模式只在启动时应用一次，不支持运行中切换（重构一移除了热切换）。
         /// </summary>
-        //  双Harmony实例名称定义
         public static readonly string HarmonyIdGlobal = $"{ModName}_global";
 
         public static readonly string HarmonyIdModes = $"{ModName}_modes";
@@ -369,17 +369,6 @@ namespace MapExtPDX
                 // 連通知都推不出去（UI 尚未就緒等），至少讓日誌留痕
                 ModLog.Warn(Tag, $"初始化失败通知推送失败: {pushEx.Message}");
             }
-        }
-
-        // 被Settings中的Apply按钮调用
-        public void OnPatchModeChanged(PatchModeSetting newModeFromSettings)
-        {
-            if (m_Setting == null) return;
-            // 通知PatchManager使用设置中当前选定的新模式
-            ModLog.Swap(Tag, $"MapSize Mode 在设置UI中改变为: {newModeFromSettings}");
-            // 关键方法，切换应用补丁模式集
-            PatchManager.SetPatchMode(newModeFromSettings);
-            //m_Setting?.RefreshModSettingInfo(); // Update status display
         }
 
         public void OnDispose()

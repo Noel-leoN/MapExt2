@@ -52,11 +52,7 @@ namespace MapExtPDX
                 { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.ApplyPatchChanges)), "► 应用设置" },
                 {
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.ApplyPatchChanges)),
-                    "点击以应用所选的地图尺寸模式。\n\n⚠️ 【重要】：本 Mod 核心逻辑不支持热切换。在应用新设置后，【必须重启游戏】才能安全读取存档，否则系统逻辑将会错乱并导致坏档风险！"
-                },
-                {
-                    m_Setting.GetOptionWarningLocaleID(nameof(ModSettings.ApplyPatchChanges)),
-                    "正在应用地图尺寸模式，请耐心等待完成。\n\n⚠️ 完成后，请务必【重启游戏】以确保设置完全生效，切勿直接读取存档！"
+                    "保存所选的地图尺寸模式，完全重启游戏后生效——MapExt 只在启动时应用一次地图尺寸。\n\n重启之前，本次游戏仍按当前模式运行，为新模式制作的存档也无法加载。"
                 },
 
                 // --- Group: 地形-水体优化 (Beta) ---

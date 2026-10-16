@@ -172,20 +172,21 @@ namespace MapExtPDX
         public string ModSettingCoreValue => (PatchManager.CurrentCoreValue * 14336).ToString();
 
         /// <summary>
-        /// 核心关键功能，ModSetting实例中调用执行
+        /// 保存所选的地图尺寸模式，并提示完全重启。
+        /// <para>模式只在启动时应用一次：模式补丁、CellMap 替换系统与 Burst Job 置换都在 OnLoad 时按模式决定，
+        /// 运行中切换会让它们分属不同模式，所以不再热切换。</para>
         /// </summary>
         [SettingsUISection(kMapSizeModeTab, kApplyModeGroup)]
         [SettingsUIButton]
-        [SettingsUIConfirmation]
         [SettingsUIHideByCondition(typeof(ModSettings), nameof(IsNotInMainMenu))]
         public bool ApplyPatchChanges
         {
             set
             {
-                ModLog.Info(Tag, $"ApplyPatchChanges 点击, 新选择的模式: {PatchModeChoice}");
-                // 传递用户在UI中选择的 PatchModeChoice
-                Mod.Instance?.OnPatchModeChanged(PatchModeChoice);
-                ModLog.Ok(Tag, $"已通过按钮应用模式: {PatchModeChoice}");
+                // 下拉框改动时设定页已自动保存；这里再存一次，确保选择退出游戏前一定落盘
+                ApplyAndSave();
+                ModLog.Info(Tag, $"Apply 点击：地图尺寸模式已保存为 {PatchModeChoice}，本会话仍为 {PatchManager.CurrentMode}");
+                ModeRestartPrompt.Show(PatchModeChoice);
             }
         }
 
