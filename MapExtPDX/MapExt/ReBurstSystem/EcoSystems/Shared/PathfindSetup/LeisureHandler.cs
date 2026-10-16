@@ -47,10 +47,8 @@ namespace MapExtPDX.EcoShared
 		#region Enabled
 
 		// 綁 DownstreamAI EcoSystem 開關（F5 LeisureSystem 屬該組，語義一致）。
-		public bool Enabled => Mod.Instance != null
-			&& Mod.Instance.Settings != null
-			&& Mod.Instance.Settings.isEnableEconomyFix
-			&& Mod.Instance.Settings.EnableDownstreamAIEcoSystem;
+		// 读本会话快照，与替换系统的注册同源：中途改设定不会让两者脱节，重启后才生效。
+		public bool Enabled => AppliedConfig.Current is { EconomyFix: true, DownstreamAI: true };
 
 		#endregion
 

@@ -1084,9 +1084,19 @@ namespace MapExtPDX
         public string ConflictWarning => _conflictWarning;
         internal string _conflictWarning = "None";
 
-        /// <summary>系统状态报告概要</summary>
+        /// <summary>
+        /// 系统状态报告概要。模式或经济分组已改动、要重启才生效时，前面加上"待重启"与差异摘要
+        /// （对照 <see cref="AppliedConfig"/>：本会话按 OnLoad 时的配置运行）。
+        /// </summary>
         [SettingsUISection(kMiscTab, kEcoSystemEnableGroup)]
-        public string SystemStatusReport => _systemStatusReport;
+        public string SystemStatusReport
+        {
+            get
+            {
+                string pending = AppliedConfig.Current?.DescribePendingRestart(this);
+                return pending == null ? _systemStatusReport : $"Restart pending ({pending}) | {_systemStatusReport}";
+            }
+        }
         internal string _systemStatusReport = "Waiting...";
 
         /// <summary>InGame UI 悬停提示：列出已禁用/启用的系统组详情</summary>

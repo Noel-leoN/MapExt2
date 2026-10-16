@@ -173,9 +173,10 @@ namespace MapExtPDX.MapExt.Core
 
         /// <summary>
         /// 在 Mod.OnLoad 阶段、SystemReplacer.Apply 之前调用。
-        /// 根据已检测到的冲突 Mod 指纹，自动禁用对应的 Economy 系统组设置。
-        /// 这确保 SystemReplacer.Apply 不会注册与其他 Mod 冲突的系统替换。
-        /// 返回被禁用的组名列表（用于 UI 提示）。
+        /// 根据已检测到的冲突 Mod 指纹，算出本会话要自动停用的经济分组，交给 <see cref="AppliedConfig.Capture"/>，
+        /// 确保 SystemReplacer.Apply 不会注册与其他 Mod 冲突的系统替换。
+        /// <para>不改写设定对象：改写的话，玩家之后调任何选项触发保存，自动停用就会被永久写进 .coc。</para>
+        /// 返回被停用的组名列表（与 AppliedConfig.Group* 一致，用于 UI 提示）。
         /// 同时填充 settings._systemStatusTooltip 供 InGame UI 悬停显示。
         /// </summary>
         public static List<string> AutoDisableConflictGroups(ModSettings settings)
@@ -190,15 +191,13 @@ namespace MapExtPDX.MapExt.Core
             {
                 if (settings.EnableResidentAIEcoSystem)
                 {
-                    settings.EnableResidentAIEcoSystem = false;
-                    disabled.Add("ResidentAI");
+                    disabled.Add(AppliedConfig.GroupResidentAI);
                     reasons.Add("ResidentAI (RealisticPathFinding)");
                     ModLog.Warn(Tag, "Auto-disabled ResidentAI group (conflict: RealisticPathFinding)");
                 }
                 if (settings.EnableResourceBuyerEcoSystem)
                 {
-                    settings.EnableResourceBuyerEcoSystem = false;
-                    disabled.Add("ResourceBuyer");
+                    disabled.Add(AppliedConfig.GroupResourceBuyer);
                     reasons.Add("ResourceBuyer (RealisticPathFinding)");
                     ModLog.Warn(Tag, "Auto-disabled ResourceBuyer group (conflict: RealisticPathFinding)");
                 }
@@ -207,29 +206,25 @@ namespace MapExtPDX.MapExt.Core
             // Time2Work 替换 LeisureSystem（属于 DownstreamAI 组）
             if (HasTime2Work && settings.EnableDownstreamAIEcoSystem)
             {
-                settings.EnableDownstreamAIEcoSystem = false;
-                disabled.Add("DownstreamAI");
+                disabled.Add(AppliedConfig.GroupDownstreamAI);
                 reasons.Add("DownstreamAI (Time2Work)");
                 ModLog.Warn(Tag, "Auto-disabled DownstreamAI group (conflict: Time2Work -> LeisureSystem)");
             }
 
-            // RealisticParking 替换 PersonalCarAISystem（也属于 DownstreamAI 组）
-            if (HasRealisticParking && settings.EnableDownstreamAIEcoSystem)
+            // RealisticParking 替换 PersonalCarAISystem（也属于 DownstreamAI 组）；
+            // 已被 Time2Work 停用时不再重复处理，与原先改写设定后的行为一致
+            if (HasRealisticParking && settings.EnableDownstreamAIEcoSystem &&
+                !disabled.Contains(AppliedConfig.GroupDownstreamAI))
             {
-                settings.EnableDownstreamAIEcoSystem = false;
-                if (!disabled.Contains("DownstreamAI"))
-                {
-                    disabled.Add("DownstreamAI");
-                    reasons.Add("DownstreamAI (RealisticParking)");
-                }
+                disabled.Add(AppliedConfig.GroupDownstreamAI);
+                reasons.Add("DownstreamAI (RealisticParking)");
                 ModLog.Warn(Tag, "Auto-disabled DownstreamAI group (conflict: RealisticParking -> PersonalCarAI)");
             }
 
             // RWH 修改 BuildingPropertyData（影响 HouseholdProperty 组）
             if (HasRWH && settings.EnableHouseholdPropertyEcoSystem)
             {
-                settings.EnableHouseholdPropertyEcoSystem = false;
-                disabled.Add("HouseholdProperty");
+                disabled.Add(AppliedConfig.GroupHouseholdProperty);
                 reasons.Add("HouseholdProperty (RWH)");
                 ModLog.Warn(Tag, "Auto-disabled HouseholdProperty group (conflict: RWH -> BuildingPropertyData)");
             }
@@ -237,13 +232,15 @@ namespace MapExtPDX.MapExt.Core
             // 填充 tooltip
             if (disabled.Count > 0)
             {
+                bool Active(bool enabledInSettings, string group) => enabledInSettings && !disabled.Contains(group);
+
                 var activeGroups = new List<string>();
-                if (settings.EnableDemandEcoSystem) activeGroups.Add("Demand");
-                if (settings.EnableJobSearchEcoSystem) activeGroups.Add("JobSearch");
-                if (settings.EnableHouseholdPropertyEcoSystem) activeGroups.Add("HouseholdProperty");
-                if (settings.EnableResourceBuyerEcoSystem) activeGroups.Add("ResourceBuyer");
-                if (settings.EnableResidentAIEcoSystem) activeGroups.Add("ResidentAI");
-                if (settings.EnableDownstreamAIEcoSystem) activeGroups.Add("DownstreamAI");
+                if (Active(settings.EnableDemandEcoSystem, AppliedConfig.GroupDemand)) activeGroups.Add("Demand");
+                if (Active(settings.EnableJobSearchEcoSystem, AppliedConfig.GroupJobSearch)) activeGroups.Add("JobSearch");
+                if (Active(settings.EnableHouseholdPropertyEcoSystem, AppliedConfig.GroupHouseholdProperty)) activeGroups.Add("HouseholdProperty");
+                if (Active(settings.EnableResourceBuyerEcoSystem, AppliedConfig.GroupResourceBuyer)) activeGroups.Add("ResourceBuyer");
+                if (Active(settings.EnableResidentAIEcoSystem, AppliedConfig.GroupResidentAI)) activeGroups.Add("ResidentAI");
+                if (Active(settings.EnableDownstreamAIEcoSystem, AppliedConfig.GroupDownstreamAI)) activeGroups.Add("DownstreamAI");
 
                 settings._systemStatusTooltip =
                     $"Disabled: {string.Join(", ", reasons)}\n" +

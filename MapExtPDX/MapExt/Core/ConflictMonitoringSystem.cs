@@ -89,10 +89,11 @@ namespace MapExtPDX.MapExt.Core
 
                 // [BUGFIX] 在加载开始前（而非加载完成后）立即重新禁用被引擎复活的原版系统。
                 // 消除加载期间原版+替换系统双跑的窗口期，彻底解决 JobTempAlloc 警告。
-                var settings = Mod.Instance?.CurrentSettings;
-                if (settings != null)
+                // 读本会话快照：要重新禁用的正是 OnLoad 时替换掉的那些，与实时设定无关
+                var config = AppliedConfig.Current;
+                if (config != null)
                 {
-                    SystemReplacer.ReDisableVanillaSystems(this.World, settings);
+                    SystemReplacer.ReDisableVanillaSystems(this.World, config);
                 }
             }
         }
@@ -109,10 +110,10 @@ namespace MapExtPDX.MapExt.Core
                 ModLog.Ok(Tag, $"游戏加载完成（{loadLabel}），执行系统状态诊断");
 
                 // [BUGFIX] 退出主菜单后引擎会重新启用所有系统，必须在诊断前重新禁用
-                var settings = Mod.Instance?.CurrentSettings;
-                if (settings != null)
+                var config = AppliedConfig.Current;
+                if (config != null)
                 {
-                    SystemReplacer.ReDisableVanillaSystems(this.World, settings);
+                    SystemReplacer.ReDisableVanillaSystems(this.World, config);
                 }
 
                 // 地圖尺寸模式錯配提示（由 FinalizeTerrainData_Prefix 於載入中途記錄）
@@ -216,45 +217,47 @@ namespace MapExtPDX.MapExt.Core
             var world = this.World;
             if (world == null || !world.IsCreated) return;
 
+            // 检查范围按本会话快照决定（OnLoad 时实际替换了哪些）；结果仍写入设定对象供 UI 显示
             var settings = Mod.Instance?.CurrentSettings;
-            if (settings == null) return;
+            var config = AppliedConfig.Current;
+            if (settings == null || config == null) return;
 
             var conflicts = new List<string>();
             int okCount = 0;
             int totalChecked = 0;
 
             // === Economy 系统状态验证（仅在对应组已启用时检查）===
-            if (settings.isEnableEconomyFix)
+            if (config.EconomyFix)
             {
-                if (settings.EnableJobSearchEcoSystem)
+                if (config.JobSearch)
                 {
                     CheckVanillaDisabled<CitizenFindJobSystem>(world, "JobSearch", conflicts, ref okCount, ref totalChecked);
                     CheckVanillaDisabled<FindJobSystem>(world, "JobSearch", conflicts, ref okCount, ref totalChecked);
                 }
-                if (settings.EnableHouseholdPropertyEcoSystem)
+                if (config.HouseholdProperty)
                 {
                     CheckVanillaDisabled<HouseholdFindPropertySystem>(world, "HouseholdProperty", conflicts, ref okCount, ref totalChecked);
                     CheckVanillaDisabled<HouseholdBehaviorSystem>(world, "HouseholdProperty", conflicts, ref okCount, ref totalChecked);
                     CheckVanillaDisabled<RentAdjustSystem>(world, "HouseholdProperty", conflicts, ref okCount, ref totalChecked);
                 }
-                if (settings.EnableResourceBuyerEcoSystem)
+                if (config.ResourceBuyer)
                 {
                     CheckVanillaDisabled<TripNeededSystem>(world, "ResourceBuyer", conflicts, ref okCount, ref totalChecked);
                     CheckVanillaDisabled<ServiceCoverageSystem>(world, "ResourceBuyer", conflicts, ref okCount, ref totalChecked);
                     CheckVanillaDisabled<ResourceBuyerSystem>(world, "ResourceBuyer", conflicts, ref okCount, ref totalChecked);
                 }
-                if (settings.EnableResidentAIEcoSystem)
+                if (config.ResidentAI)
                 {
                     CheckVanillaDisabled<ResidentAISystem>(world, "ResidentAI", conflicts, ref okCount, ref totalChecked);
                 }
-                if (settings.EnableDownstreamAIEcoSystem)
+                if (config.DownstreamAI)
                 {
                     CheckVanillaDisabled<PersonalCarAISystem>(world, "DownstreamAI", conflicts, ref okCount, ref totalChecked);
                     CheckVanillaDisabled<TaxiAISystem>(world, "DownstreamAI", conflicts, ref okCount, ref totalChecked);
                     CheckVanillaDisabled<LeisureSystem>(world, "DownstreamAI", conflicts, ref okCount, ref totalChecked);
                     CheckVanillaDisabled<FindSchoolSystem>(world, "DownstreamAI", conflicts, ref okCount, ref totalChecked);
                 }
-                if (settings.EnableDemandEcoSystem)
+                if (config.Demand)
                 {
                     CheckModEnabled<ResidentialDemandSystem>(world, "Demand", conflicts, ref okCount, ref totalChecked);
                     CheckModEnabled<IndustrialDemandSystem>(world, "Demand", conflicts, ref okCount, ref totalChecked);

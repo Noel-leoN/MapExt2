@@ -101,6 +101,7 @@ namespace MapExtPDX.MapExt.Core
                 {
                     $"模式: {PatchManager.CurrentMode} (CV={PatchManager.CurrentCoreValue})",
                     $"设定（实时值）: {settings}",
+                    $"生效配置（快照）: {AppliedConfig.Current?.ToString() ?? "—"}",
                     $"更新次序: {order.Count}",
                     $"启用状态: {states.Count}",
                     $"补丁: {patches.Count}",

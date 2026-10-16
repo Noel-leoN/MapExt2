@@ -23,7 +23,7 @@ namespace MapExtPDX.MapExt.Core
         /// ModeE (CV==1) 为 vanilla 尺寸，仅禁用 LandValueSystem + 经济系统，不碰其余 CellMap 系统。
         /// 另有原版殘骸系統（NetUpkeepSystem）在 Economy 總開關下全 Mode 一律禁用。
         /// </summary>
-        public static void ReDisableVanillaSystems(Unity.Entities.World world, ModSettings setting)
+        public static void ReDisableVanillaSystems(Unity.Entities.World world, AppliedConfig config)
         {
             if (world == null || !world.IsCreated) return;
 
@@ -52,29 +52,29 @@ namespace MapExtPDX.MapExt.Core
             }
 
             // --- Economy 替换系统 ---
-            if (setting.isEnableEconomyFix && setting.EnableHouseholdPropertyEcoSystem)
+            if (config.EconomyFix && config.HouseholdProperty)
             {
                 count += DisableIfEnabled<Game.Simulation.RentAdjustSystem>(world);
                 count += DisableIfEnabled<Game.Simulation.HouseholdFindPropertySystem>(world);
                 count += DisableIfEnabled<Game.Simulation.HouseholdBehaviorSystem>(world);
             }
-            if (setting.isEnableEconomyFix && setting.EnableJobSearchEcoSystem)
+            if (config.EconomyFix && config.JobSearch)
             {
                 count += DisableIfEnabled<Game.Simulation.CitizenFindJobSystem>(world);
                 count += DisableIfEnabled<Game.Simulation.FindJobSystem>(world);
             }
-            if (setting.isEnableEconomyFix && setting.EnableResourceBuyerEcoSystem)
+            if (config.EconomyFix && config.ResourceBuyer)
             {
                 count += DisableIfEnabled<Game.Simulation.TripNeededSystem>(world);
                 count += DisableIfEnabled<Game.Simulation.ServiceCoverageSystem>(world);
                 count += DisableIfEnabled<Game.Simulation.ResourceBuyerSystem>(world);
             }
-            if (setting.isEnableEconomyFix && setting.EnableResidentAIEcoSystem)
+            if (config.EconomyFix && config.ResidentAI)
             {
                 count += DisableIfEnabled<Game.Simulation.ResidentAISystem>(world);
                 count += DisableIfEnabled<Game.Simulation.ResidentAISystem.Actions>(world);
             }
-            if (setting.isEnableEconomyFix && setting.EnableDownstreamAIEcoSystem)
+            if (config.EconomyFix && config.DownstreamAI)
             {
                 count += DisableIfEnabled<Game.Simulation.PersonalCarAISystem>(world);
                 count += DisableIfEnabled<Game.Simulation.PersonalCarAISystem.Actions>(world);
@@ -85,7 +85,7 @@ namespace MapExtPDX.MapExt.Core
 
             // --- 原版殘骸系統（與地圖尺寸無關，全 Mode 適用） ---
             // 對照 Apply() 的「通用经济系统注册 (EcoShared)」段開頭，判定理由見該處註釋。
-            if (setting.isEnableEconomyFix)
+            if (config.EconomyFix)
             {
                 count += DisableIfEnabled<Game.Simulation.NetUpkeepSystem>(world);
             }
@@ -108,14 +108,14 @@ namespace MapExtPDX.MapExt.Core
             return 0;
         }
 
-        public static void Apply(UpdateSystem updateSystem, Harmony globalPatcher, ModSettings setting)
+        public static void Apply(UpdateSystem updateSystem, Harmony globalPatcher, AppliedConfig config)
         {
             // === 设置快照日志（Release 级别，用于诊断 .coc 缓存不一致） ===
             ModLog.Info(Tag,
-                $"Apply: CV={PatchManager.CurrentCoreValue}, EcoFix={setting.isEnableEconomyFix}, " +
-                $"Household={setting.EnableHouseholdPropertyEcoSystem}, Job={setting.EnableJobSearchEcoSystem}, " +
-                $"ResBuyer={setting.EnableResourceBuyerEcoSystem}, ResidentAI={setting.EnableResidentAIEcoSystem}, " +
-                $"DownAI={setting.EnableDownstreamAIEcoSystem}, Demand={setting.EnableDemandEcoSystem}");
+                $"Apply: CV={PatchManager.CurrentCoreValue}, EcoFix={config.EconomyFix}, " +
+                $"Household={config.HouseholdProperty}, Job={config.JobSearch}, " +
+                $"ResBuyer={config.ResourceBuyer}, ResidentAI={config.ResidentAI}, " +
+                $"DownAI={config.DownstreamAI}, Demand={config.Demand}");
 
             // Part 1:
             // --- CellMapSystem<T> ECS替换 ---
@@ -156,11 +156,11 @@ namespace MapExtPDX.MapExt.Core
 
                 // v2.2.1版本起强制替换
                 // 经济系统 ECS替换
-                // if (setting.isEnableEconomyFix == true) // For Large Maps, enforcement is required
+                // if (config.EconomyFix == true) // For Large Maps, enforcement is required
                 {
                     // ResidentialDemand/CommercialDemandSystem/IndustrialDemand/RentAdjust 采用Job通用替换修补，无需禁用原系统
 
-                    if (setting.isEnableEconomyFix && setting.EnableHouseholdPropertyEcoSystem)
+                    if (config.EconomyFix && config.HouseholdProperty)
                     {
                         // updateSystem.World.GetOrCreateSystemManaged<Game.Simulation.HouseholdSpawnSystem>().Enabled = false;
                         updateSystem.World.GetOrCreateSystemManaged<Game.Simulation.RentAdjustSystem>().Enabled = false;
@@ -168,13 +168,13 @@ namespace MapExtPDX.MapExt.Core
                         updateSystem.World.GetOrCreateSystemManaged<Game.Simulation.HouseholdBehaviorSystem>().Enabled = false;
                     }
 
-                    if (setting.isEnableEconomyFix && setting.EnableJobSearchEcoSystem)
+                    if (config.EconomyFix && config.JobSearch)
                     {
                         updateSystem.World.GetOrCreateSystemManaged<Game.Simulation.CitizenFindJobSystem>().Enabled = false;
                         updateSystem.World.GetOrCreateSystemManaged<Game.Simulation.FindJobSystem>().Enabled = false;
                     }
 
-                    if (setting.isEnableEconomyFix && setting.EnableResourceBuyerEcoSystem)
+                    if (config.EconomyFix && config.ResourceBuyer)
                     {
                         // 寻路优化系统 ECS替换
                         updateSystem.World.GetOrCreateSystemManaged<Game.Simulation.TripNeededSystem>().Enabled = false;
@@ -185,13 +185,13 @@ namespace MapExtPDX.MapExt.Core
                         // Harmony修补已移至 EcoShared 通用段
                     }
 
-                    if (setting.isEnableEconomyFix && setting.EnableResidentAIEcoSystem)
+                    if (config.EconomyFix && config.ResidentAI)
                     {
                         updateSystem.World.GetOrCreateSystemManaged<Game.Simulation.ResidentAISystem>().Enabled = false;
                         updateSystem.World.GetOrCreateSystemManaged<Game.Simulation.ResidentAISystem.Actions>().Enabled = false;
                     }
 
-                    if (setting.isEnableEconomyFix && setting.EnableDownstreamAIEcoSystem)
+                    if (config.EconomyFix && config.DownstreamAI)
                     {
                         // F2: PersonalCarAISystem
                         updateSystem.World.GetOrCreateSystemManaged<Game.Simulation.PersonalCarAISystem>().Enabled = false;
@@ -285,9 +285,9 @@ namespace MapExtPDX.MapExt.Core
                 // --- Mode-specific 经济系统 (C1/D1) ---
                 // ============================================
 
-                if (setting.isEnableEconomyFix)
+                if (config.EconomyFix)
                 {
-                    if (setting.EnableHouseholdPropertyEcoSystem)
+                    if (config.HouseholdProperty)
                     {
                         // HarmonyPrefix修补CitizenPathfindSetup.SetupFindHomeJob(HouseholdFindPropertySystem关联)
                         globalPatcher.CreateClassProcessor(typeof(ModeA.PathfindSetupSystem_FindTargets_Patch)).Patch();
@@ -306,7 +306,7 @@ namespace MapExtPDX.MapExt.Core
                     updateSystem.UpdateAt<ModeA.RentAdjustSystemMod_CellOnly>(SystemUpdatePhase.GameSimulation);
                 }
 
-                if (setting.isEnableEconomyFix && setting.EnableDemandEcoSystem)
+                if (config.EconomyFix && config.Demand)
                 {
                     // Job通用替换修补ResidentialDemand/IndustrialDemand/RentAdjust
                     JobPatchHelper.Apply(globalPatcher, JobPatchDefinitions.GetEcoSystemTargets(PatchModeSetting.ModeA));
@@ -392,9 +392,9 @@ namespace MapExtPDX.MapExt.Core
                 // --- Mode-specific 经济系统 (C1/D1) ---
                 // ============================================
 
-                if (setting.isEnableEconomyFix)
+                if (config.EconomyFix)
                 {
-                    if (setting.EnableHouseholdPropertyEcoSystem)
+                    if (config.HouseholdProperty)
                     {
                         // HarmonyPrefix修补CitizenPathfindSetup.SetupFindHomeJob(HouseholdFindPropertySystem关联)
                         globalPatcher.CreateClassProcessor(typeof(ModeB.PathfindSetupSystem_FindTargets_Patch)).Patch();
@@ -413,7 +413,7 @@ namespace MapExtPDX.MapExt.Core
                     updateSystem.UpdateAt<ModeB.RentAdjustSystemMod_CellOnly>(SystemUpdatePhase.GameSimulation);
                 }
 
-                if (setting.isEnableEconomyFix && setting.EnableDemandEcoSystem)
+                if (config.EconomyFix && config.Demand)
                 {
                     // Job通用替换修补ResidentialDemand/IndustrialDemand/RentAdjust
                     JobPatchHelper.Apply(globalPatcher, JobPatchDefinitions.GetEcoSystemTargets(PatchModeSetting.ModeB));
@@ -500,9 +500,9 @@ namespace MapExtPDX.MapExt.Core
                 // --- Mode-specific 经济系统 (C1/D1) ---
                 // ============================================
 
-                if (setting.isEnableEconomyFix)
+                if (config.EconomyFix)
                 {
-                    if (setting.EnableHouseholdPropertyEcoSystem)
+                    if (config.HouseholdProperty)
                     {
                         // HarmonyPrefix修补CitizenPathfindSetup.SetupFindHomeJob(HouseholdFindPropertySystem关联)
                         globalPatcher.CreateClassProcessor(typeof(ModeC.PathfindSetupSystem_FindTargets_Patch)).Patch();
@@ -521,7 +521,7 @@ namespace MapExtPDX.MapExt.Core
                     updateSystem.UpdateAt<ModeC.RentAdjustSystemMod_CellOnly>(SystemUpdatePhase.GameSimulation);
                 }
 
-                if (setting.isEnableEconomyFix && setting.EnableDemandEcoSystem)
+                if (config.EconomyFix && config.Demand)
                 {
                     // Job通用替换修补ResidentialDemand/IndustrialDemand/RentAdjust
                     JobPatchHelper.Apply(globalPatcher, JobPatchDefinitions.GetEcoSystemTargets(PatchModeSetting.ModeC));
@@ -607,9 +607,9 @@ namespace MapExtPDX.MapExt.Core
                 // --- Mode-specific 经济系统 (C1/D1) ---
                 // ============================================
 
-                if (setting.isEnableEconomyFix)
+                if (config.EconomyFix)
                 {
-                    if (setting.EnableHouseholdPropertyEcoSystem)
+                    if (config.HouseholdProperty)
                     {
                         // HarmonyPrefix修补CitizenPathfindSetup.SetupFindHomeJob(HouseholdFindPropertySystem关联)
                         globalPatcher.CreateClassProcessor(typeof(ModeD.PathfindSetupSystem_FindTargets_Patch)).Patch();
@@ -628,7 +628,7 @@ namespace MapExtPDX.MapExt.Core
                     updateSystem.UpdateAt<ModeD.RentAdjustSystemMod_CellOnly>(SystemUpdatePhase.GameSimulation);
                 }
 
-                if (setting.isEnableEconomyFix && setting.EnableDemandEcoSystem)
+                if (config.EconomyFix && config.Demand)
                 {
                     // Job通用替换修补ResidentialDemand/IndustrialDemand/RentAdjust
                     JobPatchHelper.Apply(globalPatcher, JobPatchDefinitions.GetEcoSystemTargets(PatchModeSetting.ModeD));
@@ -648,12 +648,12 @@ namespace MapExtPDX.MapExt.Core
                 globalPatcher.CreateClassProcessor(typeof(ModeE.LandValueSystemMod.Patches))
                     .Patch();
 
-                if (setting.isEnableEconomyFix)
+                if (config.EconomyFix)
                 {
                     // ============================================
                     // --- Mode-specific 经济系统 (C1/D1) ---
                     // ============================================
-                    if (setting.EnableHouseholdPropertyEcoSystem)
+                    if (config.HouseholdProperty)
                     {
                         // === 原系统禁用 === (Economy)
                         updateSystem.World.GetOrCreateSystemManaged<Game.Simulation.RentAdjustSystem>().Enabled = false;
@@ -668,26 +668,26 @@ namespace MapExtPDX.MapExt.Core
                     }
 
                     // --- ModeE 原版系统禁用（通用系统部分） ---
-                    if (setting.EnableJobSearchEcoSystem)
+                    if (config.JobSearch)
                     {
                         updateSystem.World.GetOrCreateSystemManaged<Game.Simulation.CitizenFindJobSystem>().Enabled = false;
                         updateSystem.World.GetOrCreateSystemManaged<Game.Simulation.FindJobSystem>().Enabled = false;
                     }
 
-                    if (setting.EnableResourceBuyerEcoSystem)
+                    if (config.ResourceBuyer)
                     {
                         updateSystem.World.GetOrCreateSystemManaged<Game.Simulation.TripNeededSystem>().Enabled = false;
                         updateSystem.World.GetOrCreateSystemManaged<Game.Simulation.ServiceCoverageSystem>().Enabled = false;
                         updateSystem.World.GetOrCreateSystemManaged<Game.Simulation.ResourceBuyerSystem>().Enabled = false;
                     }
 
-                    if (setting.EnableResidentAIEcoSystem)
+                    if (config.ResidentAI)
                     {
                         updateSystem.World.GetOrCreateSystemManaged<Game.Simulation.ResidentAISystem>().Enabled = false;
                         updateSystem.World.GetOrCreateSystemManaged<Game.Simulation.ResidentAISystem.Actions>().Enabled = false;
                     }
 
-                    if (setting.EnableDownstreamAIEcoSystem)
+                    if (config.DownstreamAI)
                     {
                         // F2: PersonalCarAISystem
                         updateSystem.World.GetOrCreateSystemManaged<Game.Simulation.PersonalCarAISystem>().Enabled = false;
@@ -701,7 +701,7 @@ namespace MapExtPDX.MapExt.Core
                     }
                 }
 
-                if (setting.isEnableEconomyFix && setting.EnableDemandEcoSystem)
+                if (config.EconomyFix && config.Demand)
                 {
                     // Job通用替换修补ResidentialDemand/CommerialDemand/IndustrialDemand/RentAdjust
                     JobPatchHelper.Apply(globalPatcher, JobPatchDefinitions.GetEcoSystemTargets(PatchModeSetting.None));
@@ -712,7 +712,7 @@ namespace MapExtPDX.MapExt.Core
             // === 通用经济系统注册 (EcoShared) ===
             // 以下系统与地图尺寸无关，所有 Mode 共用，仅注册一次
             // ======================================================
-            if (setting.isEnableEconomyFix)
+            if (config.EconomyFix)
             {
                 // === 原版殘骸系統禁用 ===
                 // NetUpkeepJob 是舊路網維護費機制的殘骸：Execute 把 GetUpkeepCost 的結果累加到區域
@@ -725,12 +725,12 @@ namespace MapExtPDX.MapExt.Core
                 // Job 帶 [BurstCompile] 且原版 AOT，Harmony 打不到 Execute，只能從系統層關。
                 updateSystem.World.GetOrCreateSystemManaged<Game.Simulation.NetUpkeepSystem>().Enabled = false;
 
-                if (setting.EnableHouseholdPropertyEcoSystem)
+                if (config.HouseholdProperty)
                 {
                     updateSystem.UpdateAt<EcoShared.HouseholdBehaviorSystemMod>(SystemUpdatePhase.GameSimulation);
                 }
 
-                if (setting.EnableJobSearchEcoSystem)
+                if (config.JobSearch)
                 {
                     updateSystem.UpdateAt<EcoShared.CitizenFindJobSystemMod>(SystemUpdatePhase.GameSimulation);
                     updateSystem.UpdateAt<EcoShared.FindJobSystemMod>(SystemUpdatePhase.GameSimulation);
@@ -740,14 +740,14 @@ namespace MapExtPDX.MapExt.Core
                 // dispatcher 是全 Mod 唯一掛在 PathfindSetupSystem.FindTargets 上的 Prefix，
                 // 承載 P1(ResourceSeller)/P2(Leisure) 等多個 handler。只要任一相關組開啟就掛載一次，
                 // 各 handler 的 Register 留在各自開關組內（見下）。此提取避免 P2 受 ResourceBuyer 開關牽制。
-                if (setting.EnableResourceBuyerEcoSystem || setting.EnableDownstreamAIEcoSystem)
+                if (config.ResourceBuyer || config.DownstreamAI)
                 {
                     EcoShared.PathfindSetupDispatcher.Clear();
                     globalPatcher.CreateClassProcessor(
                         typeof(EcoShared.PathfindSetupDispatcher)).Patch();
                 }
 
-                if (setting.EnableResourceBuyerEcoSystem)
+                if (config.ResourceBuyer)
                 {
                     // 寻路优化系统
                     updateSystem.UpdateAt<EcoShared.TripNeededSystemMod>(SystemUpdatePhase.GameSimulation);
@@ -764,13 +764,13 @@ namespace MapExtPDX.MapExt.Core
                         new EcoShared.ResourceSellerHandler());
                 }
 
-                if (setting.EnableResidentAIEcoSystem)
+                if (config.ResidentAI)
                 {
                     updateSystem.UpdateAt<EcoShared.ResidentAISystemMod>(SystemUpdatePhase.GameSimulation);
                     updateSystem.UpdateAfter<EcoShared.ResidentAISystemMod.Actions, EcoShared.ResidentAISystemMod>(SystemUpdatePhase.GameSimulation);
                 }
 
-                if (setting.EnableDownstreamAIEcoSystem)
+                if (config.DownstreamAI)
                 {
                     // F2: 私家车AI（含 Actions 子系统）
                     updateSystem.UpdateAt<EcoShared.PersonalCarAISystemMod>(SystemUpdatePhase.GameSimulation);

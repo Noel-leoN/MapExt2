@@ -229,6 +229,7 @@ namespace MapExtPDX
             }
 
             // 自动禁用与冲突 Mod 重叠的系统组（在 SystemReplacer.Apply 之前执行！）
+            // 只记入本会话的快照，不改写设定
             var disabledGroups = ModConflictDetector.AutoDisableConflictGroups(m_Setting);
             if (disabledGroups.Count > 0)
             {
@@ -236,9 +237,14 @@ namespace MapExtPDX
                 m_Setting._systemStatusReport = $"Auto-disabled {disabledGroups.Count} group(s) due to conflicts";
             }
 
+            // === G2. 本会话生效配置快照 ===
+            // 此后注册、重新禁用、诊断与寻路 handler 都只读快照；中途改设定要重启才生效
+            AppliedConfig config = AppliedConfig.Capture(m_Setting, disabledGroups);
+            ModLog.Info(Tag, $"本会话生效配置: {config}");
+
             // === H. ECS替换系统补丁 ===
             // CellMapSystem<T> 和 经济系统 的ECS替换补丁
-            SystemReplacer.Apply(updateSystem, _globalPatcher, m_Setting);
+            SystemReplacer.Apply(updateSystem, _globalPatcher, config);
 
             // === I. 主菜单通知（冲突提醒） ===
             if (disabledGroups.Count > 0)
@@ -247,12 +253,13 @@ namespace MapExtPDX
                 const string pageId = "MapExt2.MapExtPDX.Mod";
                 const string sectionId = "MapExt2.MapExtPDX.Mod.EconomyEX";
 
+                // 分组在注册前就已停用，本会话即时生效、无需重启；设定本身未被改动
                 NotificationSystem.Push(
                     identifier: "mapext.conflict",
-                    title: LocalizedString.Value("RESTART REQUIRED!!!"),
+                    title: LocalizedString.Value("MapExt2: Conflicting groups disabled"),
                     text: LocalizedString.Value(
-                        $"[MapExt2] Disabled {disabledGroups.Count} group(s) " +
-                        $"due to mod conflicts: {string.Join(", ", disabledGroups)}"),
+                        $"[MapExt2] Disabled {disabledGroups.Count} group(s) for this session " +
+                        $"due to mod conflicts: {string.Join(", ", disabledGroups)}. Your saved settings are unchanged."),
                     progressState: Colossal.PSI.Common.ProgressState.Failed,
                     progress: 100,
                     onClicked: () =>
