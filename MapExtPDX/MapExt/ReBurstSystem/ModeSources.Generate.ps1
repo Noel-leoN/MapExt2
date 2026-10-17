@@ -11,7 +11,8 @@
       CellSystems/ModeA_57km/CellMapClosed/LandValueSystemMod.cs → EcoSystems/ModeE_vanilla/D2_LandValueSystemMod.cs
       ReBurstCore/XCellMapSystemRe.cs（模板，自身也参与编译） → ReBurstCore/XCellMapSystemRe_Mode{A-E}.cs
 
-    转换规则逐字节沿用此前的 sync_internal_modes.ps1 与 XCellMapSystemRe.Generate.ps1，输出与当时受版控的副本完全相同。
+    转换规则逐字节沿用此前的 sync_internal_modes.ps1 与 XCellMapSystemRe.Generate.ps1，输出与当时受版控的副本完全相同；
+    唯一的例外是 XCellMapSystemRe 的第一行头注释：完成等价验证后，改为指向本脚本。
     PDB 记录每个源文件的校验和，差一个 BOM，DLL 就不再逐字节一致：
       - 副本与 D2：保留源文件的 BOM 与换行，严格 UTF-8 解码，MapExtPDX.ModeA 换成目标命名空间；
       - XCellMapSystemRe：替换三行头注释、命名空间与 kMapSize，换行统一为 LF，写成带 BOM 的 UTF-8。
@@ -162,7 +163,7 @@ try {
         $name = "Mode$mode"
         $size = $modes[$mode].MapSize
         $text = $templateText
-        $text = Invoke-ReplaceOnce $text '(?m)^// \[SOURCE\].*$' '// [AUTO-GENERATED] 由 XCellMapSystemRe.Generate.ps1 从 XCellMapSystemRe.cs 自动生成，请勿手动编辑'
+        $text = Invoke-ReplaceOnce $text '(?m)^// \[SOURCE\].*$' '// [AUTO-GENERATED] 由 ReBurstSystem/ModeSources.Generate.ps1 从 XCellMapSystemRe.cs 生成，不入版控；请改模板，勿手动编辑'
         $text = Invoke-ReplaceOnce $text '(?m)^// 构建时由.*$' "// Mode: $name, kMapSize: $size"
         $text = Invoke-ReplaceOnce $text '(?m)^// 注意: 本文件.*$' '// kTextureSize 倍率由 CellMapTextureSizeMultiplier 在编译时自动计算'
         $text = Invoke-ReplaceOnce $text 'namespace MapExtPDX\.MapExt\.ReBurstSystemCore' "namespace MapExtPDX.$name"
