@@ -52,6 +52,16 @@ BurstDebugInformation_DoNotShip/
 # Auto-generated publish config (built from .csproj)
 **/PublishConfiguration.xml
 
+# 模式副本：建置时由 MapExtPDX/MapExt/ReBurstSystem/ModeSources.Generate.ps1 从 ModeA 生成（重构二 D3），勿手改
+MapExtPDX/MapExt/ReBurstSystem/CellSystems/ModeB_28km/
+MapExtPDX/MapExt/ReBurstSystem/CellSystems/ModeC_114km/
+MapExtPDX/MapExt/ReBurstSystem/CellSystems/ModeD_43km/
+MapExtPDX/MapExt/ReBurstSystem/EcoSystems/ModeB_28km/
+MapExtPDX/MapExt/ReBurstSystem/EcoSystems/ModeC_114km/
+MapExtPDX/MapExt/ReBurstSystem/EcoSystems/ModeD_43km/
+MapExtPDX/MapExt/ReBurstSystem/EcoSystems/ModeE_vanilla/
+MapExtPDX/MapExt/ReBurstSystem/ReBurstCore/XCellMapSystemRe_Mode?.cs
+
 # Backup & draft files
 *.bak
 *.TestVersion
