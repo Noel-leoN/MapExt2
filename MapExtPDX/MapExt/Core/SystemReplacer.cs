@@ -11,7 +11,7 @@ namespace MapExtPDX.MapExt.Core
     /// 系统替换的编排器：按模式登记替换声明，交给 <see cref="ReplacementRegistrar"/> 按顺序执行，最后注册工具与 UI 系统。
     ///
     /// <para>扩展模式（ModeA–D）的声明在各模式的 <c>ModeSystems.Declare</c>
-    /// （在 CellSystems/ModeA_57km 编写，同步到 B/C/D）；原版尺寸模式与各模式共用的经济系统声明在本文件。
+    /// （在 CellSystems/ModeA_57km 编写，建置时生成到 B/C/D）；原版尺寸模式与各模式共用的经济系统声明在本文件。
     /// 新增或调整系统替换一律改声明，读档重新禁用与诊断会随之同步。</para>
     /// </summary>
     public static class SystemReplacer

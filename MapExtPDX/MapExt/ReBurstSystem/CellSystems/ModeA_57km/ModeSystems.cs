@@ -10,7 +10,7 @@ using MapExtPDX.MapExt.ReBurstSystem.Core;
 namespace MapExtPDX.ModeA
 {
     /// <summary>
-    /// 本扩展模式的替换声明：在 ModeA 编写，由 sync-internal-modes 同步到 B/C/D（类型名不加限定，在各模式命名空间内解析）。
+    /// 本扩展模式的替换声明：在 ModeA 编写，建置时由 ModeSources.Generate.ps1 生成到 B/C/D（类型名不加限定，在各模式命名空间内解析）。
     ///
     /// <para><b>声明顺序即同一 phase 内的更新顺序</b>，须与重构前 SystemReplacer 的注册顺序一致；
     /// 每条声明自带它取代的原版系统，注册、读档重新禁用与诊断共用这份清单。</para>
