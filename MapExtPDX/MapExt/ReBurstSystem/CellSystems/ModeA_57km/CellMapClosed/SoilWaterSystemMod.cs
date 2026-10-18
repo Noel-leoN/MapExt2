@@ -107,7 +107,7 @@ namespace MapExtPDX.ModeA
             CreateFloodCounter();
 
             // 初始化纹理和Map数据
-            CreateTextures(kTextureSize);
+            // m_Map 已由基类的 CreateTextures 分配，不要再调一次：每次调用都会新分配 Persistent 数组，前一份不会释放
             m_SoilWaterTexture = new Texture2D(kTextureSize, kTextureSize, TextureFormat.RFloat, false, true)
             {
                 name = "SoilWaterTexture",
