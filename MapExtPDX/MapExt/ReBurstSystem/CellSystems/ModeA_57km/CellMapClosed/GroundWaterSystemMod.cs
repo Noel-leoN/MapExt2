@@ -1,12 +1,12 @@
 // Game.Simulation.GroundWaterSystem : CellMapSystem<GroundWater>, IJobSerializable
 
-using System.Runtime.CompilerServices;
 using Colossal.Collections;
 using Colossal.Serialization.Entities;
 using Game;
 using Game.Prefabs;
 using Game.Simulation;
 using HarmonyLib;
+using MapExtPDX.CellShared;
 using Unity.Assertions;
 using Unity.Burst;
 using Unity.Collections;
@@ -21,13 +21,11 @@ namespace MapExtPDX.ModeA
     // =========================================================================================
     // 1. 基类泛型
     using BaseCellMapSystem = CellMapSystem<GroundWater>;
-    // 2. Mod 自定义系统类(当前
-    using ModSystem = GroundWaterSystemMod;
-    // 3. 数据包泛(用于 GetData)
+    // 2. 数据包泛型 (用于 GetData)
     using TargetCellMapData = CellMapData<GroundWater>;
-    // 4. 原版系统类型 (用于禁用和定
+    // 3. 原版系统类型 (用于禁用和定位)
     using TargetSystem = GroundWaterSystem;
-    // 5. T struct
+    // 4. T struct
     using TargetType = GroundWater;
 using MapExtPDX.MapExt.Core;
 using MapExtPDX.SaveLoadSystem;
@@ -38,11 +36,9 @@ using MapExtPDX.SaveLoadSystem;
     /// </summary>
     // 降级保护（重构二 0.4）：合并版存档里本类的类型名是 MapExtPDX.CellMap.GroundWaterSystemMod，退回本版本时靠此别名读回，勿删
     [Colossal.Serialization.Entities.FormerlySerializedAs("MapExtPDX.CellMap.GroundWaterSystemMod")]
-    public partial class GroundWaterSystemMod : BaseCellMapSystem, IJobSerializable
+    public partial class GroundWaterSystemMod : CellMapReplacementSystem<TargetType, TargetSystem>
     {
         private const string Tag = nameof(GroundWaterSystemMod);
-
-        public static ModSystem Instance { get; private set; }
 
         #region 常量和静态字配置
         // 纹理尺寸(vanilla=256)
@@ -51,7 +47,11 @@ using MapExtPDX.SaveLoadSystem;
         // 可用來核對 OnGameLoaded 從原版系統取到的來源尺寸是否如預期。
         public static readonly int orgTextureSize = TargetSystem.kTextureSize; // 原版尺寸
         public static readonly int kTextureSize = XCellMapSystemRe.GroundWaterSystemkTextureSize; // mod尺寸
-        public int2 TextureSize => new int2(kTextureSize, kTextureSize);
+
+        // 基类参数：日志 Tag、本模式的贴图边长与地图边长（XCellMapSystemRe 按模式命名空间解析）
+        protected override string LogTag => Tag;
+        protected override int ModTextureSize => kTextureSize;
+        protected override int MapSize => XCellMapSystemRe.kMapSize;
 
         // === 系統更新週期 ===
         // [MOD FIX] 原版 GroundWaterSystem.GetUpdateInterval 硬編碼 return 128，
@@ -78,32 +78,8 @@ using MapExtPDX.SaveLoadSystem;
         #region System Loop
         protected override void OnCreate()
         {
+            // 1–2. 禁用原版系统、登记 Instance、创建自定义大小纹理由基类完成
             base.OnCreate();
-            Instance = this;
-
-            // 1.禁用原版系统并获取原版系统引
-            // 使用 GetExistingSystemManaged 避免意外创建未初始化的系
-            var originalSystem = World.GetExistingSystemManaged<TargetSystem>();
-            if (originalSystem != null)
-            {
-                originalSystem.Enabled = false;
-                // #if DEBUG
-                ModLog.Swap(Tag, $"禁用原系统: {typeof(TargetSystem).Name}");
-                // #endif
-            }
-            else
-            {
-                // 仅在调试时提示，原版系统可能已被其他Mod移除或尚未加
-#if DEBUG
-                ModLog.Error(Tag, $"无法找到可禁用的原系统(尚未加载或可能被其他Mod移除): {typeof(TargetSystem).Name}");
-#endif
-            }
-
-            // 2. 创建自定义大小纹
-            CreateTextures(kTextureSize);
-            // #if DEBUG
-// [ENCODING_FIX]             Mod.Info($"[{typeof(ModSystem).Name}] 创建自定义纹 {typeof(TargetSystem).Name} kTextureSize 原值{TargetSystem.kTextureSize} 变更目标值{this.m_TextureSize.x}");
-            // #endif
 
             // 3. 获取其他依赖和查
             this.m_ParameterQuery = GetEntityQuery(ComponentType.ReadOnly<WaterPipeParameterData>());
@@ -166,7 +142,7 @@ using MapExtPDX.SaveLoadSystem;
         //
         // 所以本 Mod 也不生成：作者沒畫就是沒有，與原版語意一致。作者畫過的含水層由
         // OnGameLoaded 以原版原稿升採樣還原——那才是 v4.8.0 真正要修的缺陷（65536 ≠ 1048576
-        // 導致原稿被 DeserializeJobResetMismatch 丟棄）。
+        // 導致原稿在 CellMapReplacementSystem.Deserialize 中被丟棄）。
         //
         // 副作用是正面的：Perlin 場覆蓋率約 22.7%，會讓零格早退命中率從近 100% 掉到 60–72%，
         // GroundWaterTickJob 單次成本約從 12ms 升到 20–25ms（每 128 幀一次）。不生成即省下這筆。
@@ -605,211 +581,14 @@ using MapExtPDX.SaveLoadSystem;
         }
         #endregion
 
-        #region 序列化自适应
-        // ==============================================================================
-        // 序列化修(泛型
-        // ==============================================================================
-        // 重写 Serialize 以处理大数据 (使用 TempJob)
-        public new JobHandle Serialize<TWriter>(EntityWriterData writerData, JobHandle inputDeps) where TWriter : struct, IWriter
-        {
-            // 获取 Stride (数据步长)
-            int stride = 0;
-            if ((object)default(TargetType) is IStrideSerializable strideSerializable)
-            {
-                stride = strideSerializable.GetStride(writerData.GetWriter<TWriter>().context);
-            }
-
-            // 调度自定义的序列Job
-            JobHandle jobHandle = new SerializeJobMod<TWriter>
-            {
-                m_Stride = stride,
-                m_Map = this.m_Map,
-                m_WriterData = writerData
-            }.Schedule(JobHandle.CombineDependencies(inputDeps, m_WriteDependencies));
-
-            m_ReadDependencies = JobHandle.CombineDependencies(m_ReadDependencies, jobHandle);
-            return jobHandle;
-        }
-
-        // 重写 Deserialize (无需迁移旧存档，Job会重新计
-        public override JobHandle Deserialize<TReader>(EntityReaderData readerData, JobHandle inputDeps)
-        {
-            int stride = 0;
-            if ((object)default(TargetType) is IStrideSerializable strideSerializable)
-            {
-                stride = strideSerializable.GetStride(readerData.GetReader<TReader>().context);
-            }
-
-            // 簡化版 Job：尺寸不匹配就讀完丟棄（該分支不可達，理由見 job 內註釋）
-            DeserializeJobResetMismatch<TReader> jobData = new()
-            {
-                m_Stride = stride,
-                m_Map = this.m_Map,
-                m_ReaderData = readerData
-            };
-            m_WriteDependencies = jobData.Schedule(JobHandle.CombineDependencies(inputDeps, m_ReadDependencies, m_WriteDependencies));
-            return m_WriteDependencies;
-        }
-
-        [BurstCompile]
-        private struct SerializeJobMod<TWriter> : IJob where TWriter : struct, IWriter
-        {
-            [ReadOnly] public int m_Stride;
-            [ReadOnly] public NativeArray<TargetType> m_Map;
-            public EntityWriterData m_WriterData;
-
-            public void Execute()
-            {
-                TWriter writer = this.m_WriterData.GetWriter<TWriter>();
-                if (m_Stride != 0 && m_Map.Length != 0)
-                {
-                    // 必须TempJob 防止 1024+ 尺寸导致内存溢出
-                    NativeList<byte> buffer = new NativeList<byte>(m_Map.Length * 2, Allocator.TempJob);
-                    try
-                    {
-                        m_WriterData.GetWriter<TWriter>(buffer).Write(m_Map);
-                        writer.Write(-m_Map.Length);
-                        writer.Write(buffer.Length);
-                        writer.Write(buffer.AsArray(), m_Stride);
-                    }
-                    finally { buffer.Dispose(); }
-                }
-                else
-                {
-                    writer.Write(m_Map.Length);
-                    writer.Write(m_Map);
-                }
-            }
-        }
-
-        /// <summary>
-        /// 尺寸相符就讀入，不符就讀完丟棄（<b>必須讀完</b>，否則
-        /// <c>JobSystemSerializer.DeserializeEndJob</c> 的長度校驗會拋
-        /// "Data size mismatch when deserializing system"）。
-        ///
-        /// <para><b>「不符」這條分支在實際流程中到不了</b>：序列化流裡帶本型別名的存檔必定是同模式
-        /// MapExt 自己存的，而 <c>kTextureSize</c> 是 per-Mode 的 <c>const</c>
-        /// （<c>XCellMapSystemRe</c>），尺寸必然相符；跨模式載入時型別名根本不同
-        /// （各模式的 GroundWaterSystemMod 分屬不同 namespace，是不同型別），
-        /// 本系統會被收進 <c>m_SystemDefaults</c> 改走
-        /// <see cref="SetDefaults"/> 而根本不進這裡。所以這裡刻意<b>不</b>做重採樣——
-        /// 地圖作者的原稿在原版 <c>GroundWaterSystem</c> 的 m_Map 裡，由
-        /// <see cref="OnGameLoaded"/> 取用。</para>
-        /// </summary>
-        [BurstCompile]
-        private struct DeserializeJobResetMismatch<TReader> : IJob where TReader : struct, IReader
-        {
-            [ReadOnly] public int m_Stride;
-            public NativeArray<TargetType> m_Map;
-            public EntityReaderData m_ReaderData;
-
-            public void Execute()
-            {
-                TReader reader = m_ReaderData.GetReader<TReader>();
-                if (!(reader.context.version > Version.stormWater)) return;
-
-                // 默认0
-                // m_Map 已经SetDefaults 中被清零了，如果这里不写入，就是重置状
-
-                if (reader.context.version > Version.cellMapLengths)
-                {
-                    reader.Read(out int storedCount);
-
-                    // 1. 判断是否匹配
-                    bool sizeMatches = (math.abs(storedCount) == m_Map.Length);
-
-                    // 2. 如果是原始数(Length > 0)
-                    if (storedCount > 0)
-                    {
-                        if (sizeMatches)
-                        {
-                            reader.Read(m_Map);
-                        }
-                        else
-                        {
-                            // 尺寸不匹配：读取到临时数组并丢弃 (必须读取以推进流位置)
-                            var dummy = new NativeArray<TargetType>(storedCount, Allocator.TempJob);
-                            reader.Read(dummy);
-                            dummy.Dispose();
-                            // m_Map 保持0
-                        }
-                    }
-                    // 3. 如果是压缩数(Length < 0)
-                    else if (storedCount < 0)
-                    {
-                        int actualCount = -storedCount;
-                        reader.Read(out int byteLength);
-
-                        // 必须读出来以清空
-                        NativeArray<byte> compressedBuffer = new NativeArray<byte>(byteLength, Allocator.TempJob);
-                        try
-                        {
-                            reader.Read(compressedBuffer, m_Stride);
-
-                            if (actualCount == m_Map.Length)
-                            {
-                                // 尺寸匹配：正常解压到 Map
-                                NativeReference<int> pos = new NativeReference<int>(0, Allocator.Temp);
-                                m_ReaderData.GetReader<TReader>(compressedBuffer, pos).Read(m_Map);
-                                pos.Dispose();
-                            }
-                            // 否则：compressedBuffer 已读完（流位置已推进），不解压，m_Map 保持0
-                        }
-                        finally
-                        {
-                            compressedBuffer.Dispose();
-                        }
-                    }
-                }
-                else
-                {
-                    // 旧版本数据(version <= cellMapLengths)：流里没有长度前缀，只能整片读。
-                    // 注意这个条件恒真——CreateTextures(kTextureSize) 保证 m_Map.Length 必等于
-                    // kTextureSize²，所以原版那句「运气好匹配了」在本 Mod 里不成立：真走到这里会
-                    // 按本模式尺寸读取，而流里只有原版 orgTextureSize² 的份量，必然读越界。
-                    // 但该版本的存档不可能带有本 Mod 的型别名（那时 MapExt 还不存在），
-                    // 与上面的尺寸不匹配分支一样到不了；保留原版形状以便日后比对。
-                    if (m_Map.Length == kTextureSize * kTextureSize)
-                        reader.Read(m_Map);
-                }
-            }
-
-        }
-
-        #endregion
-
-        #region GetData修正
-        // 重写/重定向的 GetData
-        public new TargetCellMapData GetData(bool readOnly, out JobHandle dependencies)
-        {
-            // 获取依赖
-            dependencies = (readOnly ? m_WriteDependencies : JobHandle.CombineDependencies(m_ReadDependencies, m_WriteDependencies));
-
-            float2 mapSize = new float2(XCellMapSystemRe.kMapSize, XCellMapSystemRe.kMapSize);
-
-            return new TargetCellMapData
-            {
-                m_Buffer = m_Map,
-                m_CellSize = mapSize / (float2)m_TextureSize,
-                m_TextureSize = m_TextureSize
-            };
-        }
-        #endregion
-
         #region HarmonyPatch
         // ==============================================================================
-        // Harmony 补丁 (全自动适配)
+        // Harmony 补丁：非泛型薄壳，判断与转发在基类的 Redirect
+        // （Harmony 2.2.2 按元数据令牌还原补丁方法，补丁方法不能声明在泛型类里）
         // ==============================================================================
         [HarmonyPatch]
         public static class Patches
         {
-            // 辅助判断：只拦截对应的原版系统实
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            private static bool ShouldRedirect(object instance)
-            {
-                return Instance != null && instance.GetType() == typeof(TargetSystem);
-            }
-
             // Patch: GetMap
             [HarmonyPatch(typeof(BaseCellMapSystem), "GetMap")]
             [HarmonyPrefix]
@@ -817,15 +596,7 @@ using MapExtPDX.SaveLoadSystem;
                                       ref NativeArray<TargetType> __result,
                                       bool readOnly,
                                       ref JobHandle dependencies)
-            {
-                if (ShouldRedirect(__instance))
-                {
-                    __result = Instance.GetMap(readOnly, out var deps);
-                    dependencies = deps;
-                    return false;
-                }
-                return true;
-            }
+                => Redirect.GetMap(__instance, ref __result, readOnly, ref dependencies);
 
             // Patch: GetData
             [HarmonyPatch(typeof(BaseCellMapSystem), "GetData")]
@@ -834,41 +605,19 @@ using MapExtPDX.SaveLoadSystem;
                                       ref TargetCellMapData __result,
                                       bool readOnly,
                                       ref JobHandle dependencies)
-            {
-                if (ShouldRedirect(__instance))
-                {
-                    __result = Instance.GetData(readOnly, out var deps);
-                    dependencies = deps;
-                    return false;
-                }
-                return true;
-            }
+                => Redirect.GetData(__instance, ref __result, readOnly, ref dependencies);
 
             // Patch: AddReader
             [HarmonyPatch(typeof(BaseCellMapSystem), "AddReader")]
             [HarmonyPrefix]
             public static bool AddReaderPrefix(BaseCellMapSystem __instance, JobHandle jobHandle)
-            {
-                if (ShouldRedirect(__instance))
-                {
-                    Instance.AddReader(jobHandle);
-                    return false;
-                }
-                return true;
-            }
+                => Redirect.AddReader(__instance, jobHandle);
 
             // Patch: AddWriter
             [HarmonyPatch(typeof(BaseCellMapSystem), "AddWriter")]
             [HarmonyPrefix]
             public static bool AddWriterPrefix(BaseCellMapSystem __instance, JobHandle jobHandle)
-            {
-                if (ShouldRedirect(__instance))
-                {
-                    Instance.AddWriter(jobHandle);
-                    return false;
-                }
-                return true;
-            }
+                => Redirect.AddWriter(__instance, jobHandle);
         }
         #endregion
 
