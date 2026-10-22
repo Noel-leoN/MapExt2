@@ -20,7 +20,7 @@ namespace MapExtPDX.CellShared
         /// <summary>丢弃存档数据，贴图保持 SetDefaults 之后的默认值。</summary>
         Discard = 0,
 
-        /// <summary>最近邻重采样到本模式的贴图边长（自然资源）。</summary>
+        /// <summary>最近邻重采样到本模式的贴图边长（自然资源、地下水）。</summary>
         NearestResample = 1,
     }
 
@@ -197,7 +197,7 @@ namespace MapExtPDX.CellShared
         {
             [ReadOnly] public int m_Stride;
             public int m_TextureSize;            // 本模式的贴图边长，取自系统的 m_TextureSize.x
-            public SizeMismatchPolicy m_Policy;  // Discard 丢弃；NearestResample 重采样（自然资源）
+            public SizeMismatchPolicy m_Policy;  // Discard 丢弃；NearestResample 重采样（自然资源、地下水）
             public NativeArray<TCell> m_Map;
             public EntityReaderData m_ReaderData;
 

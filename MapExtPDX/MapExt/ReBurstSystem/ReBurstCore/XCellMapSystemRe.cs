@@ -40,8 +40,11 @@ namespace MapExtPDX.MapExt.ReBurstSystemCore
         /// <summary>
         /// v2.2.0版本 将CellMapSystem模拟计算的贴图分辨率提升到原版水平
         /// </summary>
-        // 核心调整倍率；57344->4, 28672->2,114688->1(为避免超出Unity贴图限制使用原值),14336->1;
-        public const int CellMapTextureSizeMultiplier = kMapSize >= 114688 ? 1 : (kMapSize / 14336);
+        // 核心调整倍率，等于 CV：57344->4, 28672->2, 43008->3, 114688->8, 14336->1。
+        // 各模式 256 基图层的格距因此都与原版相同（56 m）。ModeC 原先锁 1（格距 448 m），按格汇总的污染图严重失真，
+        // 见 docs/00_plans/todo/26-10-17_CellMap_ModeC_Calibration_Plan.md。
+        // 必须与 PatchSet3CellMapFields 的 texMult 一致，否则原版读写方的贴图边长与本模式贴图不符。
+        public const int CellMapTextureSizeMultiplier = kMapSize / 14336;
 
         // CellMapSystem<T>封闭类型TextureSize字段赋值
         public const int AirPollutionSystemkTextureSize = CellMapTextureSizeMultiplier * 256;

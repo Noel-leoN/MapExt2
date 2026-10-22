@@ -53,6 +53,10 @@ using MapExtPDX.SaveLoadSystem;
         protected override int ModTextureSize => kTextureSize;
         protected override int MapSize => XCellMapSystemRe.kMapSize;
 
+        // 尺寸不符时最近邻重采样、不丢弃，保留玩家的抽用与污染状态。丢弃后 OnGameLoaded 只能从原版原稿升采样，
+        // 而 MapExt 编辑器做的地图原稿为空，地下水会整张清空（ModeC 标定计划 §2.4）。重采样后场非空，OnGameLoaded 照常沿用
+        protected override SizeMismatchPolicy MismatchPolicy => SizeMismatchPolicy.NearestResample;
+
         // === 系統更新週期 ===
         // [MOD FIX] 原版 GroundWaterSystem.GetUpdateInterval 硬編碼 return 128，
         // 即每 128 模擬幀一次 = 每天 262144 / 128 = 2048 次。
