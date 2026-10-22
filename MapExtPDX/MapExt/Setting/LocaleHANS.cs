@@ -831,6 +831,11 @@ namespace MapExtPDX
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.ExportCellMapStats)),
                     "开发者工具：把每张启用中的 CellMap 各数值字段的非零格数、非零面积、最小值、最大值与总和写入 MapExtPDX.log，并附上实际生效的污染、幸福度与吸引力参数，用于比较原版尺寸与扩展模式下同样布局的城市。\n★ 先暂停游戏再导出，各图层取自同一帧。\n★ 需先加载存档。\n★ 同时另存到 ModsData/MapExt2/CellMapStats，下次启动游戏覆盖日志后仍可取用。"
                 },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.CellMapProfiling)), "CellMap 计时（诊断）" },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.CellMapProfiling)),
+                    "临时诊断工具：开启后，地下水、空气、地面、噪音与地形吸引力改为同步执行，并逐个 Job 计时，平均值与最大值写入 MapExtPDX.log。\n★ 开启期间会阻塞主线程，测完请关闭。\n★ 不改变模拟结果。"
+                },
                 { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.RegistrationDumpReport)), "系统注册表结果" },
                 {
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.RegistrationDumpReport)),

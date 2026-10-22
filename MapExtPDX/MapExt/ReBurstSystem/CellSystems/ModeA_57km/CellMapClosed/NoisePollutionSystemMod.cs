@@ -7,6 +7,7 @@ using MapExtPDX.CellShared;
 using Unity.Burst;
 using Unity.Collections;
 using Unity.Jobs;
+using JobTimer = MapExtPDX.MapExt.Tools.CellMapJobTimer;
 
 namespace MapExtPDX.ModeA
 {
@@ -63,8 +64,6 @@ namespace MapExtPDX.ModeA
             {
                 m_PollutionMap = pollutionMap
             };
-            // 按照 Map 长度并行调度，依赖于 inputDeps
-            JobHandle swapHandle = swapJob.Schedule(m_Map.Length, 64, inputDeps);
 
             // 3. 调度清理 Job (Clear Job)
             // 计算完成后，清空 Temp 值，为下一帧的累积做准
@@ -72,6 +71,24 @@ namespace MapExtPDX.ModeA
             {
                 m_PollutionMap = pollutionMap
             };
+
+            // 诊断计时（临时，ModeC 标定计划 Phase 3.2）：同步逐个执行并计时，Job 与常规路径相同
+            if (JobTimer.Enabled)
+            {
+                inputDeps.Complete();
+                long t0 = JobTimer.Now();
+                swapJob.Schedule(m_Map.Length, 64).Complete();
+                long t1 = JobTimer.Now();
+                clearJob.Schedule(m_Map.Length, 64).Complete();
+                long t2 = JobTimer.Now();
+                JobTimer.Record(Tag, "扩散（并行）", kTextureSize, t0, t1, 16);
+                JobTimer.Record(Tag, "清零（并行）", kTextureSize, t1, t2, 16);
+                AddWriter(default);
+                return;
+            }
+
+            // 按照 Map 长度并行调度，依赖于 inputDeps
+            JobHandle swapHandle = swapJob.Schedule(m_Map.Length, 64, inputDeps);
             JobHandle clearHandle = clearJob.Schedule(m_Map.Length, 64, swapHandle);
 
             // 4. 将最终的 JobHandle 注册回基类，确保后续读写安全

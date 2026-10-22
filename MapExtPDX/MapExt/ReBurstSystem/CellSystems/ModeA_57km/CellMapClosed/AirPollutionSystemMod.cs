@@ -38,6 +38,7 @@ using Unity.Collections;
 using Unity.Entities;
 using Unity.Jobs;
 using Unity.Mathematics;
+using JobTimer = MapExtPDX.MapExt.Tools.CellMapJobTimer;
 
 namespace MapExtPDX.ModeA
 {
@@ -130,7 +131,6 @@ namespace MapExtPDX.ModeA
                 m_PollutionParameters = pParams,
                 m_TempMap = scratchMap
             };
-            JobHandle advectHandle = advectJob.Schedule(m_Map.Length, kTextureSize, combinedDeps);
 
             // === 趟2 擴散(Diffusion)＋衰減(Decay)：逐格消耗同一個 Random 序列，
             // 平行化會改變數值，故保持單執行緒 IJob，隨機序列與原版逐位相同。
@@ -142,6 +142,25 @@ namespace MapExtPDX.ModeA
                 m_Random = RandomSeed.Next(),
                 m_Frame = m_SimulationSystem.frameIndex
             };
+
+            // 诊断计时（临时，ModeC 标定计划 Phase 3.2）：同步逐个执行并计时，Job 与常规路径相同
+            if (JobTimer.Enabled)
+            {
+                combinedDeps.Complete();
+                long t0 = JobTimer.Now();
+                advectJob.Schedule(m_Map.Length, kTextureSize).Complete();
+                long t1 = JobTimer.Now();
+                diffuseJob.Schedule().Complete();
+                long t2 = JobTimer.Now();
+                JobTimer.Record(Tag, "趟1 平流（并行）", kTextureSize, t0, t1, 16);
+                JobTimer.Record(Tag, "趟2 扩散（单线程）", kTextureSize, t1, t2, 16);
+                scratchMap.Dispose();
+                AddWriter(default);
+                Dependency = default;
+                return;
+            }
+
+            JobHandle advectHandle = advectJob.Schedule(m_Map.Length, kTextureSize, combinedDeps);
             Dependency = diffuseJob.Schedule(advectHandle);
 
             // [关键] TempJob 的自动释放必须挂在最后一个 Job 上

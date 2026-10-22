@@ -13,6 +13,7 @@ using Unity.Collections;
 using Unity.Entities;
 using Unity.Jobs;
 using Unity.Mathematics;
+using JobTimer = MapExtPDX.MapExt.Tools.CellMapJobTimer;
 
 namespace MapExtPDX.ModeA
 {
@@ -113,8 +114,26 @@ using MapExtPDX.SaveLoadSystem;
                 m_Parameters = m_ParameterQuery.GetSingleton<WaterPipeParameterData>()
             };
 
-            JobHandle tickHandle = IJobExtensions.Schedule(tickJob,
-                JobHandle.CombineDependencies(m_WriteDependencies, m_ReadDependencies, Dependency));
+            JobHandle inputDeps = JobHandle.CombineDependencies(m_WriteDependencies, m_ReadDependencies, Dependency);
+
+            // 诊断计时（临时，ModeC 标定计划 Phase 3.2）：同步逐个执行并计时，Job 与常规路径相同
+            if (JobTimer.Enabled)
+            {
+                inputDeps.Complete();
+                long t0 = JobTimer.Now();
+                IJobExtensions.Schedule(tickJob).Complete();
+                long t1 = JobTimer.Now();
+                applyJob.Schedule(m_Map.Length, kTextureSize).Complete();
+                long t2 = JobTimer.Now();
+                JobTimer.Record(Tag, "趟1+2（单线程）", kTextureSize, t0, t1, 64);
+                JobTimer.Record(Tag, "趟3（并行）", kTextureSize, t1, t2, 64);
+                scratchMap.Dispose();
+                AddWriter(default);
+                Dependency = default;
+                return;
+            }
+
+            JobHandle tickHandle = IJobExtensions.Schedule(tickJob, inputDeps);
             Dependency = applyJob.Schedule(m_Map.Length, kTextureSize, tickHandle);
 
             AddWriter(Dependency);

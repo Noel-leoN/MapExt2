@@ -10,6 +10,7 @@ using Unity.Collections;
 using Unity.Entities;
 using Unity.Jobs;
 using Unity.Mathematics;
+using JobTimer = MapExtPDX.MapExt.Tools.CellMapJobTimer;
 
 namespace MapExtPDX.ModeA
 {
@@ -115,6 +116,33 @@ namespace MapExtPDX.ModeA
                 m_AttractFactorData = m_AttractFactorData
             };
 
+            // 3. 调度主计Job：根据采集的数据计算吸引
+            // 需base.m_ReadDependencies base.m_WriteDependencies 来处Map 的读写锁
+            TerrainAttractivenessJob mainJob = new TerrainAttractivenessJob
+            {
+                m_AttractFactorData = m_AttractFactorData,
+                m_Scale = heightData.scale.x * kTextureSize, // 计算缩放比例
+                m_AttractivenessMap = m_Map,
+                m_AttractivenessParameters = parameters
+            };
+
+            // 诊断计时（临时，ModeC 标定计划 Phase 3.2）：同步逐个执行并计时，Job 与常规路径相同
+            if (JobTimer.Enabled)
+            {
+                JobHandle.CombineDependencies(Dependency, waterDeps, ambienceDeps).Complete();
+                JobHandle.CombineDependencies(m_WriteDependencies, m_ReadDependencies).Complete();
+                long t0 = JobTimer.Now();
+                prepareJob.ScheduleBatch(m_Map.Length, 4).Complete();
+                long t1 = JobTimer.Now();
+                mainJob.ScheduleBatch(m_Map.Length, 4).Complete();
+                long t2 = JobTimer.Now();
+                JobTimer.Record(Tag, "采样（并行）", kTextureSize, t0, t1, 1);
+                JobTimer.Record(Tag, "邻域扫描（并行）", kTextureSize, t1, t2, 1);
+                AddWriter(default);
+                Dependency = default;
+                return;
+            }
+
             JobHandle prepareHandle = prepareJob.ScheduleBatch(
                 m_Map.Length,
                 4,
@@ -125,16 +153,6 @@ namespace MapExtPDX.ModeA
             m_TerrainSystem.AddCPUHeightReader(prepareHandle);
             m_ZoneAmbienceSystem.AddReader(prepareHandle);
             m_WaterSystem.AddSurfaceReader(prepareHandle);
-
-            // 3. 调度主计Job：根据采集的数据计算吸引
-            // 需base.m_ReadDependencies base.m_WriteDependencies 来处Map 的读写锁
-            TerrainAttractivenessJob mainJob = new TerrainAttractivenessJob
-            {
-                m_AttractFactorData = m_AttractFactorData,
-                m_Scale = heightData.scale.x * kTextureSize, // 计算缩放比例
-                m_AttractivenessMap = m_Map,
-                m_AttractivenessParameters = parameters
-            };
 
             // Job 依赖Prepare Job 以及 Map 的读写依
             JobHandle mainHandle = mainJob.ScheduleBatch(
