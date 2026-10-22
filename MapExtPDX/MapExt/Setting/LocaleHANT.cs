@@ -820,6 +820,16 @@ namespace MapExtPDX
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.ExportCellMapChecksums)),
                     "開發者工具：把全部 CellMap（原版與 MapExt）的長度與雜湊寫入 MapExtPDX.log，用於確認同一存檔在不同 Mod 版本下讀出的 CellMap 資料一致。\n★ 先開啟遊戲的「載入後暫停」選項，在模擬推進前匯出。\n★ 需先載入存檔。\n★ 同時另存到 ModsData/MapExt2/CellMapChecksum，下次啟動遊戲覆蓋日誌後仍可取用。"
                 },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.CellMapStatsReport)), "CellMap 統計結果" },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.CellMapStatsReport)),
+                    "顯示最近一次匯出的結果：統計了多少張 CellMap、處於哪個模擬幀。逐圖層統計寫入 MapExtPDX.log。"
+                },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.ExportCellMapStats)), "匯出 CellMap 統計" },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.ExportCellMapStats)),
+                    "開發者工具：把每張啟用中的 CellMap 各數值欄位的非零格數、非零面積、最小值、最大值與總和寫入 MapExtPDX.log，並附上實際生效的污染、幸福度與吸引力參數，用於比較原版尺寸與擴展模式下同樣佈局的城市。\n★ 先暫停遊戲再匯出，各圖層取自同一幀。\n★ 需先載入存檔。\n★ 同時另存到 ModsData/MapExt2/CellMapStats，下次啟動遊戲覆蓋日誌後仍可取用。"
+                },
                 { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.RegistrationDumpReport)), "系統註冊表結果" },
                 {
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.RegistrationDumpReport)),

@@ -1276,6 +1276,30 @@ namespace MapExtPDX
 
         #endregion
 
+        // === CellMap Stats ===
+
+        #region CellMap Stats
+
+        /// <summary>CellMap 统计导出结果，由 ExportCellMapStats 按钮更新；只存于内存，不写入设定文件</summary>
+        private string m_CellMapStatsData = "Click Export to log CellMap statistics.";
+
+        /// <summary>CellMap 统计导出结果显示（计算属性，按钮点击后 UI 自动重新求值）</summary>
+        [SettingsUISection(kDebugTab, kDebugGroup)]
+        public string CellMapStatsReport => m_CellMapStatsData;
+
+        /// <summary>
+        /// 把启用中的 CellMap 逐图层统计（非零格数、非零面积、最值、总和）与实际参数写入 MapExtPDX.log，
+        /// 用于比较原版尺寸与扩展模式下同样布局的城市（ModeC 标定计划 Phase 1.2）。
+        /// </summary>
+        [SettingsUISection(kDebugTab, kDebugGroup)]
+        [SettingsUIButton]
+        public bool ExportCellMapStats
+        {
+            set => m_CellMapStatsData = MapExtPDX.MapExt.Tools.CellMapStatsExporter.Export();
+        }
+
+        #endregion
+
         // === Registration Dump ===
 
         #region Registration Dump
