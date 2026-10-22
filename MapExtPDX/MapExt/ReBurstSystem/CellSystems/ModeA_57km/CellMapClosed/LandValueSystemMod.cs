@@ -9,6 +9,7 @@
 using Colossal.Collections;
 using Colossal.Entities;
 using Colossal.Mathematics;
+using Colossal.Serialization.Entities;
 using Game;
 using Game.Common;
 using Game.Net;
@@ -17,6 +18,7 @@ using Game.Simulation;
 using Game.Tools;
 using HarmonyLib;
 using MapExtPDX.CellShared;
+using MapExtPDX.MapExt.Core;
 using Unity.Burst;
 using Unity.Burst.Intrinsics;
 using Unity.Collections;
@@ -85,6 +87,9 @@ namespace MapExtPDX.ModeA
         // 系统更新周期：每次数32(vanilla)
         public static readonly int kUpdatesPerDay = 32;
         public override int GetUpdateInterval(SystemUpdatePhase phase) => 262144 / kUpdatesPerDay;
+
+        // 读档冷启动标志：OnGameLoadingComplete 置位后手动 Update 一次，OnUpdate 取用时清除
+        private bool m_ColdStart;
         #endregion
 
         #region 查询和系统引
@@ -147,6 +152,10 @@ namespace MapExtPDX.ModeA
             if (!m_LandValueParameterQuery.HasSingleton<LandValueParameterData>()) return;
             LandValueParameterData lvParams = m_LandValueParameterQuery.GetSingleton<LandValueParameterData>();
             AttractivenessParameterData attrParams = m_AttractivenessParameterQuery.GetSingleton<AttractivenessParameterData>();
+
+            // 读档冷启动（见 OnGameLoadingComplete）：取用即清除，这一次只画热力图
+            bool coldStart = m_ColdStart;
+            m_ColdStart = false;
 
             // [新增] 获取 Mod 自定义参(默认值兜
             //LandValueModData modParams = new LandValueModData
@@ -221,7 +230,11 @@ namespace MapExtPDX.ModeA
             // 调度 Edge Job
             // 需要等待环境数据准备好，并且等待上一帧的系统写入完成
             Dependency = JobHandle.CombineDependencies(Dependency, envDeps, m_WriteDependencies);
-            Dependency = edgeJob.ScheduleParallel(m_EdgeGroup, Dependency);
+            // 冷启动不推进 Edge 地价：它随存档读回，是租金与找房的现值，多走一步 0.6 插值就改变了经济
+            if (!coldStart)
+            {
+                Dependency = edgeJob.ScheduleParallel(m_EdgeGroup, Dependency);
+            }
 
             // --- Phase 2: Map Rasterization (UI 可视 ---
             // 这一步将计算好的 Edge 地价“画”到 Map 上。完全为UI 服务
@@ -266,7 +279,10 @@ namespace MapExtPDX.ModeA
                 m_TextureSize = kTextureSize,
 
                 // 传入配置可改为ModSetting输入)
-                m_SpreadDistance = kSpreadDistance
+                m_SpreadDistance = kSpreadDistance,
+
+                // 读档冷启动：直接写目标值
+                m_DirectWrite = coldStart
             };
 
             // 必须等待 Phase 1 完成，因Phase 2 要读 Phase 1 的结
@@ -292,6 +308,66 @@ namespace MapExtPDX.ModeA
             // 合并依赖
             Dependency = JobHandle.CombineDependencies(m_ReadDependencies, m_WriteDependencies, Dependency);
 
+        }
+
+        /// <summary>
+        /// 读档冷启动：存档里没有本系统的图时，加载完成后立即整图栅格化一次，热力图不必等首次常规更新。
+        /// 原版的图随存档读回，没有这个问题；本系统的图读不回来时（存档缺本系统区段、尺寸不符被丢弃），
+        /// 首图最多要等游戏内 45 分钟，且按 0.4 插值只有四成强度。
+        ///
+        /// <para><b>为何不是 OnGameLoaded</b>：那时道路搜索树刚在 PreDeserialize 被清空，
+        /// 要等同一帧稍后的 Modification5 才重建（Game.Net.SearchSystem），这时栅格化每格都算作附近没有道路。
+        /// 本回调在加载画面结束后才触发，搜索树早已重建；加载期间模拟速度为 0，常规更新插不进来，
+        /// 图仍是存档读回的原样。开了"读档后暂停"也照样触发。</para>
+        ///
+        /// <para><b>判据是整图全零</b>：常规更新过一次，每格就都大于零（水面写基准值，陆地向不低于基准值的目标插值），
+        /// 所以全零说明本存档从没画过这张图。只补读档：新开城时原版同样从空图起步，
+        /// 原版地价系统只在 GameSimulation 运行，地图文件里的图从没算过。</para>
+        /// </summary>
+        protected override void OnGameLoadingComplete(Purpose purpose, GameMode mode)
+        {
+            base.OnGameLoadingComplete(purpose, mode);
+            if (mode != GameMode.Game || purpose != Purpose.LoadGame) return;
+            if (!m_Map.IsCreated) return;
+
+            // 只读检查，收敛写入者（读档 job）即可
+            m_WriteDependencies.Complete();
+            for (int i = 0; i < m_Map.Length; i++)
+            {
+                // 存档里有本系统的图：沿用，与原版读回自己的图一致
+                if (m_Map[i].m_LandValue != 0f) return;
+            }
+
+            // 手动 Update 走 ECS 的组件依赖管理（原版 NaturalResourceSystem.PostDeserialize 同样手动 Update）。
+            // 本回调抛出的异常不会停用系统，但会弹游戏的错误对话框，所以就地记录，退回等首次常规更新
+            m_ColdStart = true;
+            bool rasterized;
+            try
+            {
+                Update();
+                // OnUpdate 取用时会清除标志；仍未清除说明它没跑到取用处
+                rasterized = !m_ColdStart;
+            }
+            catch (System.Exception ex)
+            {
+                ModLog.Error(Tag, ex, "读档冷启动失败，地价热力图改等首次常规更新");
+                return;
+            }
+            finally
+            {
+                // 不能留给常规更新：那一次要照常推进 Edge 地价
+                m_ColdStart = false;
+            }
+
+            if (rasterized)
+            {
+                ModLog.Ok(Tag, $"读档时地价图为空，已立即整图栅格化一次（{kTextureSize}²，直接写目标值）");
+            }
+            else
+            {
+                // 没有带地价的道路（RequireAnyForUpdate 未满足），或地价参数尚未就绪
+                ModLog.Info(Tag, "读档时地价图为空，但当前没有可栅格化的道路或地价参数，等首次常规更新");
+            }
         }
         #endregion
 
@@ -470,6 +546,9 @@ namespace MapExtPDX.ModeA
             // ModSetting配置变量
             public float m_SpreadDistance;
 
+            // 读档冷启动：直接写目标值，不做 0.4 插值（见 OnGameLoadingComplete）
+            public bool m_DirectWrite;
+
             public void Execute(int index)
             {
                 // 获取当前像素点的世界坐标中心
@@ -567,8 +646,13 @@ namespace MapExtPDX.ModeA
 
                 // 4. 平滑写入
                 TargetType currentCell = m_LandValueMap[index];
+                if (m_DirectWrite)
+                {
+                    // 读档冷启动：图从全零起步，按 0.4 插值约 4 次更新（游戏内 3 小时）才到 87%，这一次直接写目标值
+                    currentCell.m_LandValue = targetValue;
+                }
                 // 仅当差异较大时Lerp，节省性能，参数可(0.4f 是原版数
-                if (math.abs(currentCell.m_LandValue - targetValue) >= 0.1f)
+                else if (math.abs(currentCell.m_LandValue - targetValue) >= 0.1f)
                 {
                     currentCell.m_LandValue = math.lerp(currentCell.m_LandValue, targetValue, 0.4f);
                 }
