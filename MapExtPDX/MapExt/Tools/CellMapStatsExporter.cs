@@ -29,8 +29,9 @@ namespace MapExtPDX.MapExt.Tools
     /// <para><b>用途</b>：ModeC 标定计划 Phase 1.2。比较原版尺寸与扩展模式下同样布局的城市，
     /// 各图层的覆盖面积与峰值；Phase 3 改贴图倍率后复测也用它。</para>
     ///
-    /// <para><b>内容</b>：每张启用中的 CellMap，逐个数值字段统计非零格数、非零面积、最小值、最大值与总和，
-    /// 另附实际生效的污染、幸福度与吸引力参数。被禁用的系统只列名、不统计：扩展模式下原版系统被禁用，
+    /// <para><b>内容</b>：每张启用中的 CellMap，逐个数值字段统计非零格数、非零面积、最小值、最大值与总和；
+    /// 三张污染图另附幸福度扣 1 分起与扣满的面积；最后附实际生效的污染、幸福度与吸引力参数。
+    /// 被禁用的系统只列名、不统计：扩展模式下原版系统被禁用，
     /// 它的 m_Map 是随存档读写的原稿，不参与模拟。</para>
     ///
     /// <para><b>读法</b>：与 <see cref="CellMapChecksumExporter"/> 相同，反射读 m_Map，读前先完成写入依赖。</para>
@@ -86,6 +87,8 @@ namespace MapExtPDX.MapExt.Tools
                 }
 
                 int mapSize = kVanillaMapSize * PatchManager.CurrentCoreValue;
+                EntityManager entityManager = world.EntityManager;
+                int3 penaltyThresholds = GetPenaltyThresholds(entityManager);
                 var blocks = new List<(string Key, List<string> Lines)>();
                 var disabled = new List<string>();
                 foreach (var system in world.Systems)
@@ -100,7 +103,7 @@ namespace MapExtPDX.MapExt.Tools
                     }
 
                     var lines = (List<string>)s_StatsMapDefinition.MakeGenericMethod(cellType)
-                        .Invoke(null, new object[] { system, mapSize });
+                        .Invoke(null, new object[] { system, mapSize, penaltyThresholds });
                     blocks.Add(($"{cellType.Name} | {system.GetType().FullName}", lines));
                 }
 
@@ -122,7 +125,6 @@ namespace MapExtPDX.MapExt.Tools
                 foreach (var block in blocks) report.AddRange(block.Lines);
 
                 report.Add("实际参数:");
-                EntityManager entityManager = world.EntityManager;
                 AppendSingleton<PollutionParameterData>(entityManager, report);
                 AppendSingleton<CitizenHappinessParameterData>(entityManager, report);
                 AppendSingleton<AttractivenessParameterData>(entityManager, report);
@@ -167,9 +169,10 @@ namespace MapExtPDX.MapExt.Tools
 
         /// <summary>
         /// 先完成写入依赖，再统计单个系统的 m_Map。
-        /// 首行是“格子类型 | 系统类型 | 边长 | 格距”，其后每个数值字段一行。
+        /// 首行是“格子类型 | 系统类型 | 边长 | 格距”，其后每个数值字段一行；
+        /// 三张污染图另加一行幸福度扣分的面积（阈值见 <see cref="GetPenaltyThresholds"/>）。
         /// </summary>
-        private static unsafe List<string> StatsMap<T>(ComponentSystemBase system, int mapSize)
+        private static unsafe List<string> StatsMap<T>(ComponentSystemBase system, int mapSize, int3 penaltyThresholds)
             where T : struct, ISerializable
         {
             var lines = new List<string>();
@@ -225,7 +228,55 @@ namespace MapExtPDX.MapExt.Tools
                     leaf.Path, nonZero, nonZero * cellAreaKm2, min, max, sum));
             }
 
+            // 污染图的幸福度扣分面积：非零面积会随导出时刻相对衰减更新的相位变化（外圈的小值格下一次衰减就清零），
+            // 按扣分阈值统计不受这个影响，也直接对应玩家感受到的影响范围
+            int2 thresholds = PenaltyThresholds<T>(penaltyThresholds);
+            if (thresholds.x > 0)
+            {
+                foreach (Leaf leaf in leaves)
+                {
+                    if (leaf.Path != "m_Pollution") continue;
+
+                    long atLeastOne = 0;
+                    long saturated = 0;
+                    byte* p = basePtr + leaf.Offset;
+                    for (int i = 0; i < map.Length; i++, p += stride)
+                    {
+                        double v = ReadValue(p, leaf.Code);
+                        if (v >= thresholds.x) atLeastOne++;
+                        if (v >= thresholds.y) saturated++;
+                    }
+
+                    lines.Add(string.Format(CultureInfo.InvariantCulture,
+                        "  m_Pollution 幸福度扣分：≥ {0}（扣 1 分起）{1} 格（{2:0.###} km²），≥ {3}（扣满）{4} 格（{5:0.###} km²）",
+                        thresholds.x, atLeastOne, atLeastOne * cellAreaKm2, thresholds.y, saturated, saturated * cellAreaKm2));
+                }
+            }
+
             return lines;
+        }
+
+        /// <summary>
+        /// 由幸福度参数得到扣分阈值：(除数, 空气与地面扣满的格值, 噪音扣满的格值)。
+        /// 扣分 = 格值 ÷ 除数，封顶为上限（CitizenHappinessSystem）；读不到参数时全为 0，不统计扣分面积。
+        /// </summary>
+        private static int3 GetPenaltyThresholds(EntityManager entityManager)
+        {
+            using EntityQuery query = entityManager.CreateEntityQuery(ComponentType.ReadOnly<CitizenHappinessParameterData>());
+            if (!query.TryGetSingleton(out CitizenHappinessParameterData data) || data.m_PollutionBonusDivisor <= 0)
+                return int3.zero;
+
+            int divisor = data.m_PollutionBonusDivisor;
+            return new int3(divisor, divisor * data.m_MaxAirAndGroundPollutionBonus, divisor * data.m_MaxNoisePollutionBonus);
+        }
+
+        /// <summary>三张污染图各自的 (扣 1 分, 扣满) 阈值；其他图层返回 0。</summary>
+        private static int2 PenaltyThresholds<T>(int3 penaltyThresholds)
+        {
+            if (typeof(T) == typeof(NoisePollution)) return new int2(penaltyThresholds.x, penaltyThresholds.z);
+            if (typeof(T) == typeof(AirPollution) || typeof(T) == typeof(GroundPollution))
+                return new int2(penaltyThresholds.x, penaltyThresholds.y);
+            return int2.zero;
         }
 
         /// <summary>递归展开结构体字段（含 float2／float4 等向量的分量），按声明顺序收集全部数值字段。</summary>
