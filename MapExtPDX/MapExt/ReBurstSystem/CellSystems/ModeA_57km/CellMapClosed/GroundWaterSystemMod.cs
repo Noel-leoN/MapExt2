@@ -96,12 +96,24 @@ using MapExtPDX.SaveLoadSystem;
             // TempJob 允许大内存分8MB+)，且Persistent 快
             // 必须Job 完成Dispose
             NativeArray<int2> scratchMap = new NativeArray<int2>(m_Map.Length, Allocator.TempJob);
+            // 趟1 的结果：每格的污染再分配增量（趟2 写暂存时把它并进去）
+            NativeArray<int> pollutionDelta = new NativeArray<int>(m_Map.Length, Allocator.TempJob, NativeArrayOptions.UninitializedMemory);
 
-            // === 趟1＋趟2：污染再分配與水位流動。逐格滾動讀寫 m_TempMap，
-            // 且趟2 的 num5 依賴 tmp 的當前值 → 順序即語義，維持單執行緒 IJob。
-            GroundWaterTickJob tickJob = new()
+            // === 趟1：污染在邻格之间再分配（ModeC 标定计划 4.4）。每格汇总自己四条边的结果，只读主图，
+            // 整数加法与顺序无关，与原写法逐位相同，可以并行
+            GroundWaterPollutionGatherJob pollutionJob = new()
             {
                 m_GroundWaterMap = m_Map,
+                m_PollutionDelta = pollutionDelta
+            };
+
+            // === 趟2：水量与污染随水位差流动（4.4）。水量只取决于主图，与原写法逐位相同；
+            // 随水带走的污染比例改用本趟开始时的值（原写法用扫描到这条边时的滚动值），
+            // 每条边从两端算出的量一致，守恒精确，统计上等价
+            GroundWaterFlowGatherJob flowJob = new()
+            {
+                m_GroundWaterMap = m_Map,
+                m_PollutionDelta = pollutionDelta,
                 m_TempMap = scratchMap
             };
 
@@ -116,25 +128,18 @@ using MapExtPDX.SaveLoadSystem;
 
             JobHandle inputDeps = JobHandle.CombineDependencies(m_WriteDependencies, m_ReadDependencies, Dependency);
 
-            // 诊断计时（临时，ModeC 标定计划 Phase 3.2）：同步逐个执行并计时，Job 与常规路径相同
+            // 诊断计时（临时，ModeC 标定计划 Phase 3.2／4）：同步执行并计时，另用原写法对照
             if (JobTimer.Enabled)
             {
-                inputDeps.Complete();
-                long t0 = JobTimer.Now();
-                IJobExtensions.Schedule(tickJob).Complete();
-                long t1 = JobTimer.Now();
-                applyJob.Schedule(m_Map.Length, kTextureSize).Complete();
-                long t2 = JobTimer.Now();
-                JobTimer.Record(Tag, "趟1+2（单线程）", kTextureSize, t0, t1, 64);
-                JobTimer.Record(Tag, "趟3（并行）", kTextureSize, t1, t2, 64);
+                RunProfiled(pollutionJob, flowJob, applyJob, inputDeps);
                 scratchMap.Dispose();
-                AddWriter(default);
-                Dependency = default;
+                pollutionDelta.Dispose();
                 return;
             }
 
-            JobHandle tickHandle = IJobExtensions.Schedule(tickJob, inputDeps);
-            Dependency = applyJob.Schedule(m_Map.Length, kTextureSize, tickHandle);
+            JobHandle pollutionHandle = pollutionJob.Schedule(m_Map.Length, kTextureSize, inputDeps);
+            JobHandle flowHandle = flowJob.Schedule(m_Map.Length, kTextureSize, pollutionHandle);
+            Dependency = applyJob.Schedule(m_Map.Length, kTextureSize, flowHandle);
 
             AddWriter(Dependency);
 
@@ -143,8 +148,79 @@ using MapExtPDX.SaveLoadSystem;
             // [关键] 注册 TempJob 的自动释
             // 这告Unity：当 Dependency (即这Job) 完成后，自动调用 scratchMap.Dispose()
             // 无需手动管理生命周期，也不会阻塞主线程
-            // 必須掛在最後一個 Job（趟3）上——掛在 tickHandle 上會在趟3 讀取期間被釋放。
+            // 必須掛在最後一個 Job（趟3）上——掛在前面的 Job 上會在趟3 讀取期間被釋放。
             scratchMap.Dispose(Dependency);
+            pollutionDelta.Dispose(Dependency);
+        }
+
+        /// <summary>
+        /// 诊断计时（临时，ModeC 标定计划 Phase 3.2／4，结案前撤下）：同步逐个执行并计时；
+        /// 另用原写法（单线程两趟，再单独跑一次只做趟1）算进副本逐格对照：
+        /// 趟1 与水量应逐位相同，污染只差随水带走的比例。暂存图由调用方释放。
+        /// </summary>
+        private void RunProfiled(GroundWaterPollutionGatherJob pollutionJob, GroundWaterFlowGatherJob flowJob,
+            GroundWaterApplyJob applyJob, JobHandle inputDeps)
+        {
+            inputDeps.Complete();
+
+            long t0 = JobTimer.Now();
+            pollutionJob.Schedule(m_Map.Length, kTextureSize).Complete();
+            long t1 = JobTimer.Now();
+            flowJob.Schedule(m_Map.Length, kTextureSize).Complete();
+            long t2 = JobTimer.Now();
+
+            NativeArray<int2> referencePollution = new NativeArray<int2>(m_Map.Length, Allocator.TempJob);
+            NativeArray<int2> referenceTemp = new NativeArray<int2>(m_Map.Length, Allocator.TempJob);
+            new GroundWaterTickJob
+            {
+                m_GroundWaterMap = m_Map,
+                m_TempMap = referencePollution,
+                m_PollutionOnly = true
+            }.Schedule().Complete();
+            long t3 = JobTimer.Now();
+            new GroundWaterTickJob
+            {
+                m_GroundWaterMap = m_Map,
+                m_TempMap = referenceTemp
+            }.Schedule().Complete();
+            long t4 = JobTimer.Now();
+
+            NativeArray<long> result = new NativeArray<long>(7, Allocator.TempJob);
+            new GroundWaterCompareJob
+            {
+                m_NewPollution = pollutionJob.m_PollutionDelta,
+                m_NewTemp = flowJob.m_TempMap,
+                m_ReferencePollution = referencePollution,
+                m_ReferenceTemp = referenceTemp,
+                m_Result = result
+            }.Schedule().Complete();
+            long pass1Diff = result[0];
+            long waterDiff = result[1];
+            long pollutionDiff = result[2];
+            long maxPollutionDelta = result[3];
+            long sumNewWater = result[4];
+            long sumNewPollution = result[5];
+            long sumOldPollution = result[6];
+            result.Dispose();
+            referencePollution.Dispose();
+            referenceTemp.Dispose();
+
+            long t5 = JobTimer.Now();
+            applyJob.Schedule(m_Map.Length, kTextureSize).Complete();
+            long t6 = JobTimer.Now();
+
+            JobTimer.Record(Tag, "趟1 污染再分配（并行）", kTextureSize, t0, t1, 64);
+            JobTimer.Record(Tag, "趟2 水位流动（并行）", kTextureSize, t1, t2, 64);
+            JobTimer.Record(Tag, "趟1·原写法（单线程）", kTextureSize, t2, t3, 64);
+            JobTimer.Record(Tag, "趟1+2·原写法（单线程）", kTextureSize, t3, t4, 64);
+            JobTimer.Record(Tag, "趟3（并行）", kTextureSize, t5, t6, 64);
+            JobTimer.Compare(Tag, "趟1 污染再分配", pass1Diff, $"{pass1Diff} 格不同（应为 0）", 64);
+            JobTimer.Compare(Tag, "趟2 水量", waterDiff, $"{waterDiff} 格不同（应为 0），水量增量总和 {sumNewWater}（应为 0）", 64);
+            JobTimer.Compare(Tag, "趟1+2 污染", pollutionDiff,
+                $"{pollutionDiff} 格不同，最大差 {maxPollutionDelta}，污染增量总和 新 {sumNewPollution} ／ 原 {sumOldPollution}（都应为 0）", 64);
+
+            AddWriter(default);
+            Dependency = default;
         }
 
         // === 為什麼沒有 SetDefaults 覆寫（勿再補回） ===
@@ -374,8 +450,184 @@ using MapExtPDX.SaveLoadSystem;
         }
         #endregion
 
+        #region 汇总写法（ModeC 标定计划 4.4）
+
+        /// <summary>
+        /// 邻格成对计算：与 <see cref="GroundWaterTickJob"/> 的 HandlePollution／HandleFlow 同一套公式，
+        /// 改成纯函数，供按格汇总的两个 Job 从一对的两端分别调用。两端的输入相同，算出的量也相同，增减正好抵消。
+        /// </summary>
+        private static class GroundWaterPairs
+        {
+            public static bool IsEmpty(TargetType g)
+            {
+                return g.m_Amount == 0 && g.m_Polluted == 0 && g.m_Max == 0;
+            }
+
+            /// <summary>HandlePollution 的 num3：(a, b) 这一对里 a 增加、b 减少的污染量。两格全为 0 时恒为 0。</summary>
+            public static int PollutionTransfer(TargetType a, TargetType b)
+            {
+                if (IsEmpty(a) && IsEmpty(b)) return 0;
+                int num = a.m_Polluted + b.m_Polluted;
+                int num2 = a.m_Amount + b.m_Amount;
+                return math.clamp((((num2 > 0) ? (a.m_Amount * num / num2) : 0) - a.m_Polluted) / 4,
+                    -(b.m_Amount - b.m_Polluted) / 4, (a.m_Amount - a.m_Polluted) / 4);
+            }
+
+            /// <summary>
+            /// HandleFlow：(a, b) 这一对里 a 增加的（水量, 污染）。水量 num4 只取决于主图；
+            /// 带走的污染按流出一方的污染比例计，比例用本趟开始时的值（水量增量取 0，污染增量取趟1 的结果）。
+            /// </summary>
+            public static int2 Flow(TargetType a, int pollutionDeltaA, TargetType b, int pollutionDeltaB)
+            {
+                if (IsEmpty(a) && IsEmpty(b)) return int2.zero;
+                int num3 = a.m_Amount - a.m_Max;
+                int num4 = math.clamp((b.m_Amount - b.m_Max - num3) / 4, -a.m_Amount / 4, b.m_Amount / 4);
+                int num5 = 0;
+                if (num4 > 0)
+                {
+                    num5 = (int)((float)num4 * PollutedRatio(b, pollutionDeltaB));
+                }
+                else if (num4 < 0)
+                {
+                    num5 = (int)((float)num4 * PollutedRatio(a, pollutionDeltaA));
+                }
+                return new int2(num4, num5);
+            }
+
+            /// <summary>HandleFlow 的 num／num2：(m_Polluted + tmp.y) / (m_Amount + tmp.x)，这里 tmp.x 取 0。</summary>
+            private static float PollutedRatio(TargetType g, int pollutionDelta)
+            {
+                return (g.m_Amount != 0) ? (1f * (float)(g.m_Polluted + pollutionDelta) / (float)g.m_Amount) : 0f;
+            }
+        }
+
+        /// <summary>
+        /// 趟1：每格汇总自己四条边的污染再分配。本格是一对里的前一格（右邻、下邻）时增加 num3，
+        /// 是后一格（左邻、上邻）时减少 num3；只读主图，整数加法与顺序无关，与原写法逐位相同。
+        /// </summary>
+        [BurstCompile]
+        private struct GroundWaterPollutionGatherJob : IJobParallelFor
+        {
+            [ReadOnly] public NativeArray<TargetType> m_GroundWaterMap;
+
+            [WriteOnly] public NativeArray<int> m_PollutionDelta;
+
+            public void Execute(int index)
+            {
+                int x = index % kTextureSize;
+                int y = index / kTextureSize;
+                TargetType self = m_GroundWaterMap[index];
+                int delta = 0;
+                if (x < kTextureSize - 1) delta += GroundWaterPairs.PollutionTransfer(self, m_GroundWaterMap[index + 1]);
+                if (y < kTextureSize - 1) delta += GroundWaterPairs.PollutionTransfer(self, m_GroundWaterMap[index + kTextureSize]);
+                if (x > 0) delta -= GroundWaterPairs.PollutionTransfer(m_GroundWaterMap[index - 1], self);
+                if (y > 0) delta -= GroundWaterPairs.PollutionTransfer(m_GroundWaterMap[index - kTextureSize], self);
+                m_PollutionDelta[index] = delta;
+            }
+        }
+
+        /// <summary>
+        /// 趟2：每格汇总自己四条边的水量与污染流动，连同趟1 的污染增量写进暂存（每格都写）。
+        /// 水量与原写法逐位相同；污染比例用本趟开始时的值，与原写法的滚动值不同，统计上等价。
+        /// </summary>
+        [BurstCompile]
+        private struct GroundWaterFlowGatherJob : IJobParallelFor
+        {
+            [ReadOnly] public NativeArray<TargetType> m_GroundWaterMap;
+
+            [ReadOnly] public NativeArray<int> m_PollutionDelta;
+
+            [WriteOnly] public NativeArray<int2> m_TempMap;
+
+            public void Execute(int index)
+            {
+                int x = index % kTextureSize;
+                int y = index / kTextureSize;
+                TargetType self = m_GroundWaterMap[index];
+                int selfDelta = m_PollutionDelta[index];
+                int2 delta = new int2(0, selfDelta);
+                if (x < kTextureSize - 1)
+                {
+                    int other = index + 1;
+                    delta += GroundWaterPairs.Flow(self, selfDelta, m_GroundWaterMap[other], m_PollutionDelta[other]);
+                }
+                if (y < kTextureSize - 1)
+                {
+                    int other = index + kTextureSize;
+                    delta += GroundWaterPairs.Flow(self, selfDelta, m_GroundWaterMap[other], m_PollutionDelta[other]);
+                }
+                if (x > 0)
+                {
+                    int other = index - 1;
+                    delta -= GroundWaterPairs.Flow(m_GroundWaterMap[other], m_PollutionDelta[other], self, selfDelta);
+                }
+                if (y > 0)
+                {
+                    int other = index - kTextureSize;
+                    delta -= GroundWaterPairs.Flow(m_GroundWaterMap[other], m_PollutionDelta[other], self, selfDelta);
+                }
+                m_TempMap[index] = delta;
+            }
+        }
+
+        /// <summary>
+        /// 诊断对照（临时，ModeC 标定计划 Phase 4，结案前撤下）：新旧写法的暂存逐格比较。
+        /// m_Result：趟1 差异格数、水量差异格数、污染差异格数、污染最大差、新写法水量增量总和、新写法污染增量总和、原写法污染增量总和。
+        /// </summary>
+        [BurstCompile]
+        private struct GroundWaterCompareJob : IJob
+        {
+            [ReadOnly] public NativeArray<int> m_NewPollution;
+
+            [ReadOnly] public NativeArray<int2> m_NewTemp;
+
+            [ReadOnly] public NativeArray<int2> m_ReferencePollution;
+
+            [ReadOnly] public NativeArray<int2> m_ReferenceTemp;
+
+            public NativeArray<long> m_Result;
+
+            public void Execute()
+            {
+                long pass1Diff = 0;
+                long waterDiff = 0;
+                long pollutionDiff = 0;
+                long maxPollutionDelta = 0;
+                long sumNewWater = 0;
+                long sumNewPollution = 0;
+                long sumOldPollution = 0;
+                for (int i = 0; i < m_NewTemp.Length; i++)
+                {
+                    if (m_NewPollution[i] != m_ReferencePollution[i].y) pass1Diff++;
+                    int2 a = m_NewTemp[i];
+                    int2 b = m_ReferenceTemp[i];
+                    if (a.x != b.x) waterDiff++;
+                    if (a.y != b.y)
+                    {
+                        pollutionDiff++;
+                        maxPollutionDelta = math.max(maxPollutionDelta, math.abs(a.y - b.y));
+                    }
+                    sumNewWater += a.x;
+                    sumNewPollution += a.y;
+                    sumOldPollution += b.y;
+                }
+
+                m_Result[0] = pass1Diff;
+                m_Result[1] = waterDiff;
+                m_Result[2] = pollutionDiff;
+                m_Result[3] = maxPollutionDelta;
+                m_Result[4] = sumNewWater;
+                m_Result[5] = sumNewPollution;
+                m_Result[6] = sumOldPollution;
+            }
+        }
+
+        #endregion
+
         #region GroundWaterTickJob
         /// <summary>
+        /// 原写法：常规路径已换成 <see cref="GroundWaterPollutionGatherJob"/> 与 <see cref="GroundWaterFlowGatherJob"/>，
+        /// 本 Job 只在诊断计时开启时用来对照（ModeC 标定计划 Phase 4，结案前撤下）。
         /// 趟1＋趟2：污染在鄰格間再分配、水量與污染隨水位差流動，增量累積在 <c>m_TempMap</c>。
         /// <para><b>不平行化</b>：兩趟都對 <c>tmp[index]</c> 與 <c>tmp[otherIndex]</c> 同時寫入（scatter），
         /// 且趟2 的 <c>num5</c> 讀 <c>reference.x</c>／<c>reference.y</c> 的滾動值——順序即語義。
@@ -387,6 +639,9 @@ using MapExtPDX.SaveLoadSystem;
             public NativeArray<TargetType> m_GroundWaterMap;
 
             public NativeArray<int2> m_TempMap;
+
+            /// <summary>只做趟1（对照用）</summary>
+            public bool m_PollutionOnly;
 
             private void HandlePollution(int index, int otherIndex, NativeArray<int2> tmp)
             {
@@ -477,6 +732,7 @@ using MapExtPDX.SaveLoadSystem;
                         this.HandlePollution(i, i + kTextureSize, m_TempMap);
                     }
                 }
+                if (m_PollutionOnly) return;
                 // 趟2：水量與污染隨水位差流動
                 for (int j = 0; j < this.m_GroundWaterMap.Length; j++)
                 {

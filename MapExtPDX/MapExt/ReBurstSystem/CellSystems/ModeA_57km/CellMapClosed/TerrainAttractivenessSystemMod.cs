@@ -116,30 +116,35 @@ namespace MapExtPDX.ModeA
                 m_AttractFactorData = m_AttractFactorData
             };
 
-            // 3. 调度主计Job：根据采集的数据计算吸引
-            // 需base.m_ReadDependencies base.m_WriteDependencies 来处Map 的读写锁
-            TerrainAttractivenessJob mainJob = new TerrainAttractivenessJob
+            // 3. 邻域表：圆内邻格的偏移与（森林、海岸）衰减，只依赖格距与两个距离参数，在主线程上用 Burst 算一次。
+            // 原写法逐格扫 (2r+1)² 的方阵，r 按高度图分辨率换算（m_Scale），比真实格距所需的大好几倍；
+            // 圆外的衰减为 0，不影响取最大值，只扫圆内结果逐位相同（ModeC 标定计划 4.1）
+            NativeList<int2> kernelOffsets = new NativeList<int2>(Allocator.TempJob);
+            NativeList<float2> kernelFalloffs = new NativeList<float2>(Allocator.TempJob);
+            new TerrainAttractivenessKernelJob
+            {
+                m_Scale = heightData.scale.x * kTextureSize,
+                m_AttractivenessParameters = parameters,
+                m_Offsets = kernelOffsets,
+                m_Falloffs = kernelFalloffs
+            }.Run();
+
+            // 4. 调度主计算 Job：按邻域表取最大值
+            // 需 m_ReadDependencies 与 m_WriteDependencies 来处理 Map 的读写锁
+            TerrainAttractivenessScanJob scanJob = new TerrainAttractivenessScanJob
             {
                 m_AttractFactorData = m_AttractFactorData,
-                m_Scale = heightData.scale.x * kTextureSize, // 计算缩放比例
-                m_AttractivenessMap = m_Map,
-                m_AttractivenessParameters = parameters
+                m_Offsets = kernelOffsets.AsArray(),
+                m_Falloffs = kernelFalloffs.AsArray(),
+                m_AttractivenessMap = m_Map
             };
 
-            // 诊断计时（临时，ModeC 标定计划 Phase 3.2）：同步逐个执行并计时，Job 与常规路径相同
+            // 诊断计时（临时，ModeC 标定计划 Phase 3.2／4）：同步执行并计时，另用原写法对照
             if (JobTimer.Enabled)
             {
-                JobHandle.CombineDependencies(Dependency, waterDeps, ambienceDeps).Complete();
-                JobHandle.CombineDependencies(m_WriteDependencies, m_ReadDependencies).Complete();
-                long t0 = JobTimer.Now();
-                prepareJob.ScheduleBatch(m_Map.Length, 4).Complete();
-                long t1 = JobTimer.Now();
-                mainJob.ScheduleBatch(m_Map.Length, 4).Complete();
-                long t2 = JobTimer.Now();
-                JobTimer.Record(Tag, "采样（并行）", kTextureSize, t0, t1, 1);
-                JobTimer.Record(Tag, "邻域扫描（并行）", kTextureSize, t1, t2, 1);
-                AddWriter(default);
-                Dependency = default;
+                RunProfiled(prepareJob, scanJob, heightData, parameters, waterDeps, ambienceDeps);
+                kernelOffsets.Dispose();
+                kernelFalloffs.Dispose();
                 return;
             }
 
@@ -155,17 +160,68 @@ namespace MapExtPDX.ModeA
             m_WaterSystem.AddSurfaceReader(prepareHandle);
 
             // Job 依赖Prepare Job 以及 Map 的读写依
-            JobHandle mainHandle = mainJob.ScheduleBatch(
+            JobHandle mainHandle = scanJob.ScheduleBatch(
                 m_Map.Length,
                 4,
                 JobHandle.CombineDependencies(m_WriteDependencies, m_ReadDependencies, prepareHandle)
             );
+            kernelOffsets.Dispose(mainHandle);
+            kernelFalloffs.Dispose(mainHandle);
 
-            // 4. 完成依赖链设
+            // 5. 完成依赖链设
             // 将此 Job 注册Map 的写入
             AddWriter(mainHandle);
             // 更新系统的主依赖句柄
             Dependency = JobHandle.CombineDependencies(m_ReadDependencies, m_WriteDependencies, mainHandle);
+        }
+
+        /// <summary>
+        /// 诊断计时（临时，ModeC 标定计划 Phase 3.2／4，结案前撤下）：同步逐个执行并计时；
+        /// 另用原写法（逐格扫方阵）算进副本，与新写法逐格比较，应完全相同。
+        /// </summary>
+        private void RunProfiled(TerrainAttractivenessPrepareJob prepareJob, TerrainAttractivenessScanJob scanJob,
+            TerrainHeightData heightData, AttractivenessParameterData parameters, JobHandle waterDeps, JobHandle ambienceDeps)
+        {
+            JobHandle.CombineDependencies(Dependency, waterDeps, ambienceDeps).Complete();
+            JobHandle.CombineDependencies(m_WriteDependencies, m_ReadDependencies).Complete();
+
+            long t0 = JobTimer.Now();
+            prepareJob.ScheduleBatch(m_Map.Length, 4).Complete();
+            long t1 = JobTimer.Now();
+            scanJob.ScheduleBatch(m_Map.Length, 4).Complete();
+            long t2 = JobTimer.Now();
+
+            NativeArray<TargetType> reference = new NativeArray<TargetType>(m_Map.Length, Allocator.TempJob);
+            new TerrainAttractivenessJob
+            {
+                m_AttractFactorData = m_AttractFactorData,
+                m_Scale = heightData.scale.x * kTextureSize,
+                m_AttractivenessMap = reference,
+                m_AttractivenessParameters = parameters
+            }.ScheduleBatch(m_Map.Length, 4).Complete();
+            long t3 = JobTimer.Now();
+
+            long mismatched = 0;
+            for (int i = 0; i < m_Map.Length; i++)
+            {
+                TargetType a = m_Map[i];
+                TargetType b = reference[i];
+                if (math.asuint(a.m_ForestBonus) != math.asuint(b.m_ForestBonus) ||
+                    math.asuint(a.m_ShoreBonus) != math.asuint(b.m_ShoreBonus))
+                {
+                    mismatched++;
+                }
+            }
+
+            reference.Dispose();
+
+            JobTimer.Record(Tag, "采样（并行）", kTextureSize, t0, t1, 1);
+            JobTimer.Record(Tag, "邻域扫描（并行）", kTextureSize, t1, t2, 1);
+            JobTimer.Record(Tag, "邻域扫描·原写法（并行）", kTextureSize, t2, t3, 1);
+            JobTimer.Compare(Tag, "邻域扫描", mismatched, $"{mismatched} 格不同（共 {m_Map.Length} 格，应为 0）", 1);
+
+            AddWriter(default);
+            Dependency = default;
         }
 
         #endregion
@@ -202,7 +258,95 @@ namespace MapExtPDX.ModeA
         }
 
         /// <summary>
-        /// 主计Job：计算最终的吸引Bonus
+        /// 邻域表（ModeC 标定计划 4.1）：圆内邻格的偏移与（森林、海岸）衰减。
+        /// <para>距离用贴图中央一对实际格中心按原写法计算。格中心都是整数米，任意两格的坐标差精确，
+        /// 所以与原写法逐格算出的距离逐位相同。</para>
+        /// <para>方阵半径取原写法的 r（按 m_Scale 换算）与真实格距所需半径中较小的一个；
+        /// 两种衰减都为 0 的偏移对最大值没有贡献，不收。NaN（距离参数为 0 的退化情形）照收。</para>
+        /// </summary>
+        [BurstCompile]
+        private struct TerrainAttractivenessKernelJob : IJob
+        {
+            public float m_Scale;
+            public AttractivenessParameterData m_AttractivenessParameters;
+            public NativeList<int2> m_Offsets;
+            public NativeList<float2> m_Falloffs;
+
+            public void Execute()
+            {
+                float maxDistance = math.max(m_AttractivenessParameters.m_ForestDistance, m_AttractivenessParameters.m_ShoreDistance);
+                float cellSize = (float)XCellMapSystemRe.kMapSize / kTextureSize;
+                int radius = math.min((int)math.ceil(maxDistance / m_Scale), (int)math.ceil(maxDistance / cellSize));
+                radius = math.min(radius, kTextureSize / 2 - 1); // 参照格在中央，邻格不越界
+
+                int center = kTextureSize / 2;
+                float3 centerPos = XCellMapSystemRe.GetCellCenter(center + center * kTextureSize, kTextureSize);
+                for (int dy = -radius; dy <= radius; dy++)
+                {
+                    for (int dx = -radius; dx <= radius; dx++)
+                    {
+                        int neighborIndex = (center + dx) + (center + dy) * kTextureSize;
+                        float distance = math.distance(XCellMapSystemRe.GetCellCenter(neighborIndex, kTextureSize), centerPos);
+                        float forestFalloff = math.saturate(1f - distance / m_AttractivenessParameters.m_ForestDistance);
+                        float shoreFalloff = math.saturate(1f - distance / m_AttractivenessParameters.m_ShoreDistance);
+                        if (forestFalloff != 0f || shoreFalloff != 0f)
+                        {
+                            m_Offsets.Add(new int2(dx, dy));
+                            m_Falloffs.Add(new float2(forestFalloff, shoreFalloff));
+                        }
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// 主计算 Job（ModeC 标定计划 4.1）：按邻域表取森林与海岸加成的最大值。
+        /// <para>越界的邻格直接跳过：原写法把它们钳回边缘格，而钳回后的格本来就以真实偏移在表内，
+        /// 取最大值时没有新贡献。</para>
+        /// </summary>
+        [BurstCompile]
+        private struct TerrainAttractivenessScanJob : IJobParallelForBatch
+        {
+            [ReadOnly] public NativeArray<float3> m_AttractFactorData;
+            [ReadOnly] public NativeArray<int2> m_Offsets;
+            [ReadOnly] public NativeArray<float2> m_Falloffs;
+
+            [NativeDisableParallelForRestriction]
+            public NativeArray<TargetType> m_AttractivenessMap;
+
+            public void Execute(int startIndex, int count)
+            {
+                for (int i = startIndex; i < startIndex + count; i++)
+                {
+                    int x = i % kTextureSize;
+                    int y = i / kTextureSize;
+                    float2 calculatedBonus = float2.zero; // x: Forest, y: Shore
+
+                    for (int k = 0; k < m_Offsets.Length; k++)
+                    {
+                        int2 offset = m_Offsets[k];
+                        int neighborX = x + offset.x;
+                        int neighborY = y + offset.y;
+                        if (neighborX < 0 || neighborX >= kTextureSize || neighborY < 0 || neighborY >= kTextureSize) continue;
+
+                        float3 neighborData = m_AttractFactorData[neighborX + neighborY * kTextureSize]; // x:Water, y:Height, z:Forest
+                        float2 falloff = m_Falloffs[k];
+                        calculatedBonus.x = math.max(calculatedBonus.x, falloff.x * neighborData.z);
+                        float isWater = (neighborData.x > 2f) ? 1f : 0f;
+                        calculatedBonus.y = math.max(calculatedBonus.y, falloff.y * isWater);
+                    }
+
+                    m_AttractivenessMap[i] = new TargetType
+                    {
+                        m_ForestBonus = calculatedBonus.x,
+                        m_ShoreBonus = calculatedBonus.y
+                    };
+                }
+            }
+        }
+
+        /// <summary>
+        /// 原写法：逐格扫 (2r+1)² 的方阵。只在诊断计时开启时用来对照（ModeC 标定计划 Phase 4，结案前撤下）。
         /// 包括森林加成和海岸线加成，通过卷积（周围像素扫描）计算
         /// </summary>
         [BurstCompile]
