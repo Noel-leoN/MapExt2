@@ -66,6 +66,15 @@ namespace MapExtPDX.CellShared
         /// <summary>尺寸不符时的读档策略，默认丢弃。</summary>
         protected virtual SizeMismatchPolicy MismatchPolicy => SizeMismatchPolicy.Discard;
 
+        /// <summary>m_StoredLength 的初值：本次读档没有经过 Deserialize（存档里没有本系统的区段，或是旧版格式）。</summary>
+        private const int kNotRead = int.MinValue;
+
+        /// <summary>
+        /// 最近一次读档时存档里的贴图长度（压缩数据为负），由反序列化 Job 写入，<see cref="OnGameLoaded"/> 读出后复位。
+        /// 用来在尺寸不符时记日志，读档后不必再猜存档是哪个版本存的。
+        /// </summary>
+        private NativeArray<int> m_StoredLength;
+
         #endregion
 
         // === Lifecycle ===
@@ -95,12 +104,46 @@ namespace MapExtPDX.CellShared
 
             // 2. 创建自定义大小纹理
             CreateTextures(ModTextureSize);
+
+            m_StoredLength = new NativeArray<int>(1, Allocator.Persistent);
+            m_StoredLength[0] = kNotRead;
         }
 
         protected override void OnDestroy()
         {
             if (Instance == this) Instance = null;
+            if (m_StoredLength.IsCreated)
+            {
+                m_WriteDependencies.Complete();
+                m_StoredLength.Dispose();
+            }
             base.OnDestroy();
+        }
+
+        /// <summary>
+        /// 读档后，若存档里的贴图尺寸与本模式不符，记一行说明处理方式（重采样或清零）。
+        /// 存档里没有本系统的区段时引擎改调 SetDefaults、不经 Deserialize，不记。
+        /// </summary>
+        protected override void OnGameLoaded(Context serializationContext)
+        {
+            base.OnGameLoaded(serializationContext);
+            if (!m_StoredLength.IsCreated) return;
+
+            m_WriteDependencies.Complete();
+            int stored = m_StoredLength[0];
+            m_StoredLength[0] = kNotRead;
+            if (stored == kNotRead) return;
+
+            int count = math.abs(stored);
+            if (count == m_Map.Length) return;
+
+            int side = (int)math.round(math.sqrt(count));
+            string action = count == 0
+                ? "存档里为空，已清零"
+                : MismatchPolicy == SizeMismatchPolicy.NearestResample
+                    ? "已最近邻重采样"
+                    : "已丢弃并清零，由模拟重建";
+            ModLog.Info(LogTag, $"存档里的贴图是 {side}²（{count} 格），本模式为 {ModTextureSize}²：{action}");
         }
 
         #endregion
@@ -152,6 +195,7 @@ namespace MapExtPDX.CellShared
                 m_TextureSize = m_TextureSize.x,
                 m_Policy = MismatchPolicy,
                 m_Map = m_Map,
+                m_StoredLength = m_StoredLength,
                 m_ReaderData = readerData
             };
             m_WriteDependencies = jobData.Schedule(JobHandle.CombineDependencies(inputDeps, m_ReadDependencies, m_WriteDependencies));
@@ -199,10 +243,12 @@ namespace MapExtPDX.CellShared
             public int m_TextureSize;            // 本模式的贴图边长，取自系统的 m_TextureSize.x
             public SizeMismatchPolicy m_Policy;  // Discard 丢弃；NearestResample 重采样（自然资源、地下水）
             public NativeArray<TCell> m_Map;
+            public NativeArray<int> m_StoredLength;  // [0] 存档里的贴图长度（压缩数据为负），供读档后记日志
             public EntityReaderData m_ReaderData;
 
             public void Execute()
             {
+                m_StoredLength[0] = kNotRead;
                 TReader reader = m_ReaderData.GetReader<TReader>();
                 if (!(reader.context.version > Game.Version.stormWater)) return;
 
@@ -213,6 +259,7 @@ namespace MapExtPDX.CellShared
                 if (reader.context.version > Game.Version.cellMapLengths)
                 {
                     reader.Read(out int storedCount);
+                    m_StoredLength[0] = storedCount;
 
                     // 1. 判断是否匹配
                     bool sizeMatches = (math.abs(storedCount) == m_Map.Length);
