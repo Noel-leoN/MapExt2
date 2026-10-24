@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using Colossal.IO.AssetDatabase;
 using Game.Audio.Radio;
 using HarmonyLib;
@@ -35,6 +36,14 @@ namespace SimpleRadio.Patches
     /// 已知殘留：若玩家刪掉音檔後熱刷新，被刪檔案的 AudioAsset 仍留在 user 資料庫且
     /// 帶著 tag，會被算成另一個 distinct 項進入清單；載入時 <c>LoadAsync</c> 失敗，
     /// 原版 <c>ValidateQueue</c> 會把它移出佇列，屬 session 內自癒，不另行處理。
+    ///
+    /// <para><b>只在新一轮开始时洗牌</b></para>
+    /// 原版不只在一轮播完时调用这里：切回本台（<c>currentChannel</c> setter），以及每个
+    /// 游戏日的最后一个 tick（时刻取整成 86400，00:00–24:00 节目失效一帧，下一帧重置），
+    /// 都会经 <c>SetupOrSkipSegment</c> 再调用一次。而片段游标 <c>m_CurrentClipId</c>
+    /// 只在一轮播完时由 <c>GoToNextClip</c> 归零，这些时候仍停在本轮中途。
+    /// 若照样重洗，本轮剩余部分会换成新排列，听过的歌提前回来、没听过的被挤掉，
+    /// 所以游标不为 0 时保持原顺序。
     /// </summary>
     [HarmonyPatch(typeof(Radio), "GetPlaylistClips")]
     public static class PlaylistClipsPatch
@@ -44,6 +53,12 @@ namespace SimpleRadio.Patches
         // 但沒有理由每次都新建 —— 本 Prefix 只在主執行緒被 Radio.Update 呼叫，
         // 靜態實例無執行緒安全問題。
         private static readonly Random s_rng = new Random();
+
+        // 片段游标：下一首要排进队列的位置，只在一轮播完时由原版 GoToNextClip 归零
+        private static readonly FieldInfo s_nextClipField = AccessTools.Field(typeof(RuntimeSegment), "m_CurrentClipId");
+
+        // 反射失败只警告一次
+        private static bool s_nextClipWarned;
 
         [HarmonyPrefix]
         public static bool Prefix(Radio __instance, RuntimeSegment segment)
@@ -65,16 +80,29 @@ namespace SimpleRadio.Patches
 
                 if (!isOurSegment) return true;
 
-                // --- 去重後隨機重排 ---
-                // segment.clips 在 BuildRuntimeSegments 階段已被加成兩份（見類註解），
-                // 必須先 Distinct 再洗牌，否則每首歌一輪會播兩次。
-                // 注：segment.clips 赋值依赖 RuntimeSegment.clips 可接受 AudioAsset[]；
-                //     若游戏版本更新类型签名，外层 try/catch 会回退到原版逻辑
                 if (segment.clips != null && segment.clips.Count > 0)
                 {
+                    // --- 本轮进行中：保持原顺序（见类注释） ---
+                    if (!IsRoundStart(segment)) return false;
+
+                    // --- 新一轮：去重后随机重排 ---
+                    // 首次调用时 segment.clips 是 BuildRuntimeSegments 加成的两份（见类注释），
+                    // 必须先 Distinct 再洗牌，否则每首歌一轮会播两次。
+                    // 注：segment.clips 赋值依赖 RuntimeSegment.clips 可接受 AudioAsset[]；
+                    //     若游戏版本更新类型签名，外层 try/catch 会回退到原版逻辑
+                    AudioAsset previousLast = segment.clips[segment.clips.Count - 1];
                     var list = segment.clips.Distinct().ToList();
                     segment.clipsCap = list.Count;
-                    segment.clips = list.OrderBy(_ => s_rng.Next()).ToArray();
+                    var shuffled = list.OrderBy(_ => s_rng.Next()).ToArray();
+
+                    // 上一轮的最后一首刚排进队列，新一轮若从它开始就会连播两遍
+                    if (shuffled.Length > 1 && shuffled[0] == previousLast)
+                    {
+                        int swap = 1 + s_rng.Next(shuffled.Length - 1);
+                        (shuffled[0], shuffled[swap]) = (shuffled[swap], shuffled[0]);
+                    }
+
+                    segment.clips = shuffled;
                 }
 
                 return false; // 跳过原版 GetPlaylistClips
@@ -84,6 +112,25 @@ namespace SimpleRadio.Patches
                 Mod.Logger.Error(e, "PlaylistClipsPatch.Prefix 失败，回退到原版");
                 return true;
             }
+        }
+
+        /// <summary>
+        /// 游标为 0 表示本轮还没有任何一首排进队列，此时重洗不会打乱进行中的一轮。
+        /// 读不到字段（游戏更新改名）时退回旧行为：每次都重洗。
+        /// </summary>
+        private static bool IsRoundStart(RuntimeSegment segment)
+        {
+            if (s_nextClipField == null)
+            {
+                if (!s_nextClipWarned)
+                {
+                    s_nextClipWarned = true;
+                    Mod.Logger.Warn("找不到 RuntimeSegment.m_CurrentClipId，改为每次都重洗，歌曲重复会变多。");
+                }
+                return true;
+            }
+
+            return (int)s_nextClipField.GetValue(segment) == 0;
         }
     }
 }
