@@ -63,7 +63,7 @@ namespace MapExtPDX.ModeA
         protected override int ModTextureSize => kTextureSize;
         protected override int MapSize => XCellMapSystemRe.kMapSize;
 
-        // 尺寸不符时最近邻重采样、不丢弃：12 个 CellMap 替换系统中唯一的例外
+        // 尺寸不符时最近邻重采样、不丢弃：12 个 CellMap 替换系统中只有自然资源与地下水这样做
         protected override SizeMismatchPolicy MismatchPolicy => SizeMismatchPolicy.NearestResample;
 
         // 地图尺寸

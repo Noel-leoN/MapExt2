@@ -59,8 +59,9 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
             ModLog.Patch(Tag, "开始修补 CellMapSystem<T> kMapSize/kTextureSize");
 
             int mapMult = PatchManager.CurrentCoreValue;
-            // Texture multiplier uses 1 for ultra large map (114km / mapMult >= 8) to avoid Unity texture limit crash
-            int texMult = mapMult >= 8 ? 1 : mapMult;
+            // 贴图倍率与地图倍率相同，各模式 256 基图层格距都是原版的 56 m（ModeC 原先取 1，见 ModeC 标定计划）。
+            // 必须与 XCellMapSystemRe.CellMapTextureSizeMultiplier 一致，否则原版读写方与 Mod 贴图错位
+            int texMult = mapMult;
 
             // --- 在此处配置清单 ---
             // 格式: Register<系统类>(Map倍率, Texture倍率);

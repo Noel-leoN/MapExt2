@@ -1002,6 +1002,22 @@ namespace MapExtPDX
                     "Developer tool: writes the length and hash of every CellMap (vanilla and MapExt) to MapExtPDX.log, to check that the same save loads identical CellMap data across mod versions.\n★ Turn on the game's pause-after-loading option first, and export before the simulation advances.\n★ Requires a loaded save.\n★ A copy is also saved to ModsData/MapExt2/CellMapChecksum, which survives the log being overwritten on the next launch."
                 },
                 {
+                    m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.CellMapStatsReport)),
+                    "CellMap Statistics Result"
+                },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.CellMapStatsReport)),
+                    "Shows the result of the last export: how many CellMaps were measured and at which simulation frame. The per-layer statistics are written to MapExtPDX.log."
+                },
+                {
+                    m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.ExportCellMapStats)),
+                    "Export CellMap Statistics"
+                },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.ExportCellMapStats)),
+                    "Developer tool: for every active CellMap, writes each value field's non-zero cell count, non-zero area, minimum, maximum and sum to MapExtPDX.log, together with the pollution, happiness and attractiveness parameters in effect. Used to compare the same city layout at vanilla size and in an expanded mode.\n★ Pause the game before exporting, so every layer is taken from the same frame.\n★ Requires a loaded save.\n★ A copy is also saved to ModsData/MapExt2/CellMapStats, which survives the log being overwritten on the next launch."
+                },
+                {
                     m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.RegistrationDumpReport)),
                     "System Registry Result"
                 },

@@ -7,7 +7,6 @@ using Game.Prefabs;
 using Game.Simulation;
 using HarmonyLib;
 using MapExtPDX.CellShared;
-using Unity.Assertions;
 using Unity.Burst;
 using Unity.Collections;
 using Unity.Entities;
@@ -53,6 +52,10 @@ using MapExtPDX.SaveLoadSystem;
         protected override int ModTextureSize => kTextureSize;
         protected override int MapSize => XCellMapSystemRe.kMapSize;
 
+        // 尺寸不符时最近邻重采样、不丢弃，保留玩家的抽用与污染状态。丢弃后 OnGameLoaded 只能从原版原稿升采样，
+        // 而 MapExt 编辑器做的地图原稿为空，地下水会整张清空（ModeC 标定计划 §2.4）。重采样后场非空，OnGameLoaded 照常沿用
+        protected override SizeMismatchPolicy MismatchPolicy => SizeMismatchPolicy.NearestResample;
+
         // === 系統更新週期 ===
         // [MOD FIX] 原版 GroundWaterSystem.GetUpdateInterval 硬編碼 return 128，
         // 即每 128 模擬幀一次 = 每天 262144 / 128 = 2048 次。
@@ -91,12 +94,24 @@ using MapExtPDX.SaveLoadSystem;
             // TempJob 允许大内存分8MB+)，且Persistent 快
             // 必须Job 完成Dispose
             NativeArray<int2> scratchMap = new NativeArray<int2>(m_Map.Length, Allocator.TempJob);
+            // 趟1 的结果：每格的污染再分配增量（趟2 写暂存时把它并进去）
+            NativeArray<int> pollutionDelta = new NativeArray<int>(m_Map.Length, Allocator.TempJob, NativeArrayOptions.UninitializedMemory);
 
-            // === 趟1＋趟2：污染再分配與水位流動。逐格滾動讀寫 m_TempMap，
-            // 且趟2 的 num5 依賴 tmp 的當前值 → 順序即語義，維持單執行緒 IJob。
-            GroundWaterTickJob tickJob = new()
+            // === 趟1：污染在邻格之间再分配（ModeC 标定计划 4.4）。每格汇总自己四条边的结果，只读主图，
+            // 整数加法与顺序无关，与原写法逐位相同，可以并行
+            GroundWaterPollutionGatherJob pollutionJob = new()
             {
                 m_GroundWaterMap = m_Map,
+                m_PollutionDelta = pollutionDelta
+            };
+
+            // === 趟2：水量与污染随水位差流动（4.4）。水量只取决于主图，与原写法逐位相同；
+            // 随水带走的污染比例改用本趟开始时的值（原写法用扫描到这条边时的滚动值），
+            // 每条边从两端算出的量一致，守恒精确，统计上等价
+            GroundWaterFlowGatherJob flowJob = new()
+            {
+                m_GroundWaterMap = m_Map,
+                m_PollutionDelta = pollutionDelta,
                 m_TempMap = scratchMap
             };
 
@@ -109,9 +124,11 @@ using MapExtPDX.SaveLoadSystem;
                 m_Parameters = m_ParameterQuery.GetSingleton<WaterPipeParameterData>()
             };
 
-            JobHandle tickHandle = IJobExtensions.Schedule(tickJob,
-                JobHandle.CombineDependencies(m_WriteDependencies, m_ReadDependencies, Dependency));
-            Dependency = applyJob.Schedule(m_Map.Length, kTextureSize, tickHandle);
+            JobHandle inputDeps = JobHandle.CombineDependencies(m_WriteDependencies, m_ReadDependencies, Dependency);
+
+            JobHandle pollutionHandle = pollutionJob.Schedule(m_Map.Length, kTextureSize, inputDeps);
+            JobHandle flowHandle = flowJob.Schedule(m_Map.Length, kTextureSize, pollutionHandle);
+            Dependency = applyJob.Schedule(m_Map.Length, kTextureSize, flowHandle);
 
             AddWriter(Dependency);
 
@@ -120,8 +137,9 @@ using MapExtPDX.SaveLoadSystem;
             // [关键] 注册 TempJob 的自动释
             // 这告Unity：当 Dependency (即这Job) 完成后，自动调用 scratchMap.Dispose()
             // 无需手动管理生命周期，也不会阻塞主线程
-            // 必須掛在最後一個 Job（趟3）上——掛在 tickHandle 上會在趟3 讀取期間被釋放。
+            // 必須掛在最後一個 Job（趟3）上——掛在前面的 Job 上會在趟3 讀取期間被釋放。
             scratchMap.Dispose(Dependency);
+            pollutionDelta.Dispose(Dependency);
         }
 
         // === 為什麼沒有 SetDefaults 覆寫（勿再補回） ===
@@ -232,7 +250,7 @@ using MapExtPDX.SaveLoadSystem;
             {
                 // 這條分支原本完全靜默，於是「沒有日誌」同時可能代表「場是健康的」與
                 // 「OnGameLoaded 根本沒走到」，無從分辨。而含水層占比又是零格早退命中率
-                // 與 GroundWaterTickJob 成本的唯一決定因素，所以無條件記一行。
+                // 與地下水各趟 Job 成本的唯一決定因素，所以無條件記一行。
                 string source = purpose == Purpose.LoadGame ? "存档" : "地图文件";
                 ModLog.Info(Tag,
                     $"地下水场沿用{source}内容，不介入：{kTextureSize}² = {m_Map.Length} 格，" +
@@ -351,127 +369,127 @@ using MapExtPDX.SaveLoadSystem;
         }
         #endregion
 
-        #region GroundWaterTickJob
+        #region 汇总写法（ModeC 标定计划 4.4）
+
         /// <summary>
-        /// 趟1＋趟2：污染在鄰格間再分配、水量與污染隨水位差流動，增量累積在 <c>m_TempMap</c>。
-        /// <para><b>不平行化</b>：兩趟都對 <c>tmp[index]</c> 與 <c>tmp[otherIndex]</c> 同時寫入（scatter），
-        /// 且趟2 的 <c>num5</c> 讀 <c>reference.x</c>／<c>reference.y</c> 的滾動值——順序即語義。
-        /// 趟3 已拆到 <see cref="GroundWaterApplyJob"/>。</para>
+        /// 邻格成对计算：与原版 <c>GroundWaterTickJob</c> 的 HandlePollution／HandleFlow 同一套公式，
+        /// 改成纯函数，供按格汇总的两个 Job 从一对的两端分别调用。两端的输入相同，算出的量也相同，增减正好抵消。
         /// </summary>
-        [BurstCompile]
-        private struct GroundWaterTickJob : IJob
+        private static class GroundWaterPairs
         {
-            public NativeArray<TargetType> m_GroundWaterMap;
-
-            public NativeArray<int2> m_TempMap;
-
-            private void HandlePollution(int index, int otherIndex, NativeArray<int2> tmp)
+            /// <summary>三个量全为 0。一对格子都为空时，再分配与流动的量恒为 0，可以跳过（零格早退，逐位等价）。</summary>
+            public static bool IsEmpty(TargetType g)
             {
-                TargetType groundWater = this.m_GroundWaterMap[index];
-                TargetType groundWater2 = this.m_GroundWaterMap[otherIndex];
-
-                // === [MOD OPT] 零格早退（位元級等價）===
-                // 兩格的 m_Amount / m_Polluted / m_Max 全為 0 時：
-                //   num = num2 = 0 → 內層三元運算取 0 → (0 - 0) / 4 = 0
-                //   clamp 的上下界 -(0-0)/4 與 (0-0)/4 同時塌成 0 → num3 恆為 0
-                // 故本次呼叫對 tmp 沒有任何增量，可安全跳過（與 tmp 當前值無關）。
-                // 逐項 == 0 比較而非位元 OR：short 是有符號型別，OR 會觸發 CS0675 符號擴展錯誤；
-                // 語意上任何非 0（含理論上不該出現的負值）都不早退，退回原邏輯，行為安全。
-                if (groundWater.m_Amount == 0 && groundWater.m_Polluted == 0 && groundWater.m_Max == 0 &&
-                    groundWater2.m_Amount == 0 && groundWater2.m_Polluted == 0 && groundWater2.m_Max == 0) return;
-
-                ref int2 reference = ref tmp.ElementAt(index);
-                ref int2 reference2 = ref tmp.ElementAt(otherIndex);
-                int num = groundWater.m_Polluted + groundWater2.m_Polluted;
-                int num2 = groundWater.m_Amount + groundWater2.m_Amount;
-                int num3 = math.clamp((((num2 > 0) ? (groundWater.m_Amount * num / num2) : 0) - groundWater.m_Polluted) / 4, -(groundWater2.m_Amount - groundWater2.m_Polluted) / 4, (groundWater.m_Amount - groundWater.m_Polluted) / 4);
-                reference.y += num3;
-                reference2.y -= num3;
-                Assert.IsTrue(0 <= groundWater.m_Polluted + reference.y);
-                Assert.IsTrue(groundWater.m_Polluted + reference.y <= groundWater.m_Amount);
-                Assert.IsTrue(0 <= groundWater2.m_Polluted + reference2.y);
-                Assert.IsTrue(groundWater2.m_Polluted + reference2.y <= groundWater2.m_Amount);
+                return g.m_Amount == 0 && g.m_Polluted == 0 && g.m_Max == 0;
             }
 
-            private void HandleFlow(int index, int otherIndex, NativeArray<int2> tmp)
+            /// <summary>HandlePollution 的 num3：(a, b) 这一对里 a 增加、b 减少的污染量。两格全为 0 时恒为 0。</summary>
+            public static int PollutionTransfer(TargetType a, TargetType b)
             {
-                TargetType groundWater = this.m_GroundWaterMap[index];
-                TargetType groundWater2 = this.m_GroundWaterMap[otherIndex];
+                if (IsEmpty(a) && IsEmpty(b)) return 0;
+                int num = a.m_Polluted + b.m_Polluted;
+                int num2 = a.m_Amount + b.m_Amount;
+                return math.clamp((((num2 > 0) ? (a.m_Amount * num / num2) : 0) - a.m_Polluted) / 4,
+                    -(b.m_Amount - b.m_Polluted) / 4, (a.m_Amount - a.m_Polluted) / 4);
+            }
 
-                // === [MOD OPT] 零格早退（位元級等價）===
-                // 兩格全為 0 時：num3 = 0 - 0 = 0；
-                //   num4 = clamp((0 - 0 - 0) / 4, -0/4, 0/4) = 0 → num5 = 0
-                // → reference / reference2 完全不變。
-                // 關鍵：num4 的 clamp 上下界用的是 map 值（m_Amount）而非 amount + tmp.x，
-                // 故該推導與 tmp 的當前值無關。
-                if (groundWater.m_Amount == 0 && groundWater.m_Polluted == 0 && groundWater.m_Max == 0 &&
-                    groundWater2.m_Amount == 0 && groundWater2.m_Polluted == 0 && groundWater2.m_Max == 0) return;
-
-                ref int2 reference = ref tmp.ElementAt(index);
-                ref int2 reference2 = ref tmp.ElementAt(otherIndex);
-                Assert.IsTrue(groundWater2.m_Polluted + reference2.y <= groundWater2.m_Amount + reference2.x);
-                Assert.IsTrue(groundWater.m_Polluted + reference.y <= groundWater.m_Amount + reference.x);
-                float num = ((groundWater.m_Amount + reference.x != 0) ? (1f * (float)(groundWater.m_Polluted + reference.y) / (float)(groundWater.m_Amount + reference.x)) : 0f);
-                float num2 = ((groundWater2.m_Amount + reference2.x != 0) ? (1f * (float)(groundWater2.m_Polluted + reference2.y) / (float)(groundWater2.m_Amount + reference2.x)) : 0f);
-                int num3 = groundWater.m_Amount - groundWater.m_Max;
-                int num4 = math.clamp((groundWater2.m_Amount - groundWater2.m_Max - num3) / 4, -groundWater.m_Amount / 4, groundWater2.m_Amount / 4);
-                reference.x += num4;
-                reference2.x -= num4;
+            /// <summary>
+            /// HandleFlow：(a, b) 这一对里 a 增加的（水量, 污染）。水量 num4 只取决于主图；
+            /// 带走的污染按流出一方的污染比例计，比例用本趟开始时的值（水量增量取 0，污染增量取趟1 的结果）。
+            /// </summary>
+            public static int2 Flow(TargetType a, int pollutionDeltaA, TargetType b, int pollutionDeltaB)
+            {
+                if (IsEmpty(a) && IsEmpty(b)) return int2.zero;
+                int num3 = a.m_Amount - a.m_Max;
+                int num4 = math.clamp((b.m_Amount - b.m_Max - num3) / 4, -a.m_Amount / 4, b.m_Amount / 4);
                 int num5 = 0;
                 if (num4 > 0)
                 {
-                    num5 = (int)((float)num4 * num2);
+                    num5 = (int)((float)num4 * PollutedRatio(b, pollutionDeltaB));
                 }
                 else if (num4 < 0)
                 {
-                    num5 = (int)((float)num4 * num);
+                    num5 = (int)((float)num4 * PollutedRatio(a, pollutionDeltaA));
                 }
-                reference.y += num5;
-                reference2.y -= num5;
-                Assert.IsTrue(0 <= groundWater.m_Amount + reference.x);
-                Assert.IsTrue(groundWater.m_Amount + reference.x <= groundWater.m_Max);
-                Assert.IsTrue(0 <= groundWater2.m_Amount + reference2.x);
-                Assert.IsTrue(groundWater2.m_Amount + reference2.x <= groundWater2.m_Max);
-                Assert.IsTrue(0 <= groundWater.m_Polluted + reference.y);
-                Assert.IsTrue(groundWater.m_Polluted + reference.y <= groundWater.m_Amount + reference.x);
-                Assert.IsTrue(0 <= groundWater2.m_Polluted + reference2.y);
-                Assert.IsTrue(groundWater2.m_Polluted + reference2.y <= groundWater2.m_Amount + reference2.x);
+                return new int2(num4, num5);
             }
 
-            public void Execute()
+            /// <summary>HandleFlow 的 num／num2：(m_Polluted + tmp.y) / (m_Amount + tmp.x)，这里 tmp.x 取 0。</summary>
+            private static float PollutedRatio(TargetType g, int pollutionDelta)
             {
-                // 趟1：污染在鄰格之間再分配
-                for (int i = 0; i < this.m_GroundWaterMap.Length; i++)
-                {
-                    int num = i % kTextureSize;
-                    int num2 = i / kTextureSize;
-                    if (num < kTextureSize - 1)
-                    {
-                        this.HandlePollution(i, i + 1, m_TempMap);
-                    }
-                    if (num2 < kTextureSize - 1)
-                    {
-                        this.HandlePollution(i, i + kTextureSize, m_TempMap);
-                    }
-                }
-                // 趟2：水量與污染隨水位差流動
-                for (int j = 0; j < this.m_GroundWaterMap.Length; j++)
-                {
-                    int num3 = j % kTextureSize;
-                    int num4 = j / kTextureSize;
-                    if (num3 < kTextureSize - 1)
-                    {
-                        this.HandleFlow(j, j + 1, m_TempMap);
-                    }
-                    if (num4 < kTextureSize - 1)
-                    {
-                        this.HandleFlow(j, j + kTextureSize, m_TempMap);
-                    }
-                }
-                // 趟3（套用增量＋補充＋淨化）已拆成 GroundWaterApplyJob，由 OnUpdate 掛在本 job 之後。
-                // m_TempMap 由调用方分配 Allocator.TempJob，无需手动释放（由 Dispose(Dependency) 管理）
+                return (g.m_Amount != 0) ? (1f * (float)(g.m_Polluted + pollutionDelta) / (float)g.m_Amount) : 0f;
             }
         }
+
+        /// <summary>
+        /// 趟1：每格汇总自己四条边的污染再分配。本格是一对里的前一格（右邻、下邻）时增加 num3，
+        /// 是后一格（左邻、上邻）时减少 num3；只读主图，整数加法与顺序无关，与原写法逐位相同。
+        /// </summary>
+        [BurstCompile]
+        private struct GroundWaterPollutionGatherJob : IJobParallelFor
+        {
+            [ReadOnly] public NativeArray<TargetType> m_GroundWaterMap;
+
+            [WriteOnly] public NativeArray<int> m_PollutionDelta;
+
+            public void Execute(int index)
+            {
+                int x = index % kTextureSize;
+                int y = index / kTextureSize;
+                TargetType self = m_GroundWaterMap[index];
+                int delta = 0;
+                if (x < kTextureSize - 1) delta += GroundWaterPairs.PollutionTransfer(self, m_GroundWaterMap[index + 1]);
+                if (y < kTextureSize - 1) delta += GroundWaterPairs.PollutionTransfer(self, m_GroundWaterMap[index + kTextureSize]);
+                if (x > 0) delta -= GroundWaterPairs.PollutionTransfer(m_GroundWaterMap[index - 1], self);
+                if (y > 0) delta -= GroundWaterPairs.PollutionTransfer(m_GroundWaterMap[index - kTextureSize], self);
+                m_PollutionDelta[index] = delta;
+            }
+        }
+
+        /// <summary>
+        /// 趟2：每格汇总自己四条边的水量与污染流动，连同趟1 的污染增量写进暂存（每格都写）。
+        /// 水量与原写法逐位相同；污染比例用本趟开始时的值，与原写法的滚动值不同，统计上等价。
+        /// </summary>
+        [BurstCompile]
+        private struct GroundWaterFlowGatherJob : IJobParallelFor
+        {
+            [ReadOnly] public NativeArray<TargetType> m_GroundWaterMap;
+
+            [ReadOnly] public NativeArray<int> m_PollutionDelta;
+
+            [WriteOnly] public NativeArray<int2> m_TempMap;
+
+            public void Execute(int index)
+            {
+                int x = index % kTextureSize;
+                int y = index / kTextureSize;
+                TargetType self = m_GroundWaterMap[index];
+                int selfDelta = m_PollutionDelta[index];
+                int2 delta = new int2(0, selfDelta);
+                if (x < kTextureSize - 1)
+                {
+                    int other = index + 1;
+                    delta += GroundWaterPairs.Flow(self, selfDelta, m_GroundWaterMap[other], m_PollutionDelta[other]);
+                }
+                if (y < kTextureSize - 1)
+                {
+                    int other = index + kTextureSize;
+                    delta += GroundWaterPairs.Flow(self, selfDelta, m_GroundWaterMap[other], m_PollutionDelta[other]);
+                }
+                if (x > 0)
+                {
+                    int other = index - 1;
+                    delta -= GroundWaterPairs.Flow(m_GroundWaterMap[other], m_PollutionDelta[other], self, selfDelta);
+                }
+                if (y > 0)
+                {
+                    int other = index - kTextureSize;
+                    delta -= GroundWaterPairs.Flow(m_GroundWaterMap[other], m_PollutionDelta[other], self, selfDelta);
+                }
+                m_TempMap[index] = delta;
+            }
+        }
+
         #endregion
 
         #region GroundWaterApplyJob
@@ -528,7 +546,7 @@ using MapExtPDX.SaveLoadSystem;
         ///
         /// <para>三個欄位各自獨立插值。<c>lerp</c> 是凸組合、<c>round</c> 單調，且三者共用同一組權重，
         /// 故原本的 <c>m_Polluted ≤ m_Amount ≤ m_Max</c> 不變量在插值後仍然成立
-        /// （<c>GroundWaterTickJob</c> 的 <c>Assert</c> 全靠這個不變量）。</para>
+        /// （原版 <c>GroundWaterTickJob</c> 的 <c>Assert</c> 全靠這個不變量）。</para>
         ///
         /// <para>index 直接對應目標格，每個 index 只寫 <c>m_Dst[index]</c>，
         /// 因此不需要 <c>[NativeDisableParallelForRestriction]</c>。</para>

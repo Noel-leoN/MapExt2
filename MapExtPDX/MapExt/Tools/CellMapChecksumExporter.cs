@@ -123,8 +123,9 @@ namespace MapExtPDX.MapExt.Tools
 
         #region Helpers
 
-        /// <summary>沿继承链找到 <c>CellMapSystem&lt;T&gt;</c> 并返回格子类型 T；不是 CellMap 系统则返回 null。</summary>
-        private static Type FindCellType(Type type)
+        /// <summary>沿继承链找到 <c>CellMapSystem&lt;T&gt;</c> 并返回格子类型 T；不是 CellMap 系统则返回 null。
+        /// <see cref="CellMapStatsExporter"/> 也用它。</summary>
+        internal static Type FindCellType(Type type)
         {
             for (Type t = type; t != null; t = t.BaseType)
             {

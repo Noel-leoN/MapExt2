@@ -17,10 +17,10 @@ namespace MapExtPDX.CellShared
     /// <summary>存档里的贴图尺寸与本模式不同时的读档策略。</summary>
     public enum SizeMismatchPolicy : byte
     {
-        /// <summary>丢弃存档数据，贴图保持 SetDefaults 之后的默认值。</summary>
+        /// <summary>丢弃存档数据并把贴图清零，与基类 SetDefaults 相同。</summary>
         Discard = 0,
 
-        /// <summary>最近邻重采样到本模式的贴图边长（自然资源）。</summary>
+        /// <summary>最近邻重采样到本模式的贴图边长（自然资源、地下水）。</summary>
         NearestResample = 1,
     }
 
@@ -66,6 +66,15 @@ namespace MapExtPDX.CellShared
         /// <summary>尺寸不符时的读档策略，默认丢弃。</summary>
         protected virtual SizeMismatchPolicy MismatchPolicy => SizeMismatchPolicy.Discard;
 
+        /// <summary>m_StoredLength 的初值：本次读档没有经过 Deserialize（存档里没有本系统的区段，或是旧版格式）。</summary>
+        private const int kNotRead = int.MinValue;
+
+        /// <summary>
+        /// 最近一次读档时存档里的贴图长度（压缩数据为负），由反序列化 Job 写入，<see cref="OnGameLoaded"/> 读出后复位。
+        /// 用来在尺寸不符时记日志，读档后不必再猜存档是哪个版本存的。
+        /// </summary>
+        private NativeArray<int> m_StoredLength;
+
         #endregion
 
         // === Lifecycle ===
@@ -95,12 +104,46 @@ namespace MapExtPDX.CellShared
 
             // 2. 创建自定义大小纹理
             CreateTextures(ModTextureSize);
+
+            m_StoredLength = new NativeArray<int>(1, Allocator.Persistent);
+            m_StoredLength[0] = kNotRead;
         }
 
         protected override void OnDestroy()
         {
             if (Instance == this) Instance = null;
+            if (m_StoredLength.IsCreated)
+            {
+                m_WriteDependencies.Complete();
+                m_StoredLength.Dispose();
+            }
             base.OnDestroy();
+        }
+
+        /// <summary>
+        /// 读档后，若存档里的贴图尺寸与本模式不符，记一行说明处理方式（重采样或清零）。
+        /// 存档里没有本系统的区段时引擎改调 SetDefaults、不经 Deserialize，不记。
+        /// </summary>
+        protected override void OnGameLoaded(Context serializationContext)
+        {
+            base.OnGameLoaded(serializationContext);
+            if (!m_StoredLength.IsCreated) return;
+
+            m_WriteDependencies.Complete();
+            int stored = m_StoredLength[0];
+            m_StoredLength[0] = kNotRead;
+            if (stored == kNotRead) return;
+
+            int count = math.abs(stored);
+            if (count == m_Map.Length) return;
+
+            int side = (int)math.round(math.sqrt(count));
+            string action = count == 0
+                ? "存档里为空，已清零"
+                : MismatchPolicy == SizeMismatchPolicy.NearestResample
+                    ? "已最近邻重采样"
+                    : "已丢弃并清零，由模拟重建";
+            ModLog.Info(LogTag, $"存档里的贴图是 {side}²（{count} 格），本模式为 {ModTextureSize}²：{action}");
         }
 
         #endregion
@@ -152,6 +195,7 @@ namespace MapExtPDX.CellShared
                 m_TextureSize = m_TextureSize.x,
                 m_Policy = MismatchPolicy,
                 m_Map = m_Map,
+                m_StoredLength = m_StoredLength,
                 m_ReaderData = readerData
             };
             m_WriteDependencies = jobData.Schedule(JobHandle.CombineDependencies(inputDeps, m_ReadDependencies, m_WriteDependencies));
@@ -197,21 +241,25 @@ namespace MapExtPDX.CellShared
         {
             [ReadOnly] public int m_Stride;
             public int m_TextureSize;            // 本模式的贴图边长，取自系统的 m_TextureSize.x
-            public SizeMismatchPolicy m_Policy;  // Discard 丢弃；NearestResample 重采样（自然资源）
+            public SizeMismatchPolicy m_Policy;  // Discard 丢弃；NearestResample 重采样（自然资源、地下水）
             public NativeArray<TCell> m_Map;
+            public NativeArray<int> m_StoredLength;  // [0] 存档里的贴图长度（压缩数据为负），供读档后记日志
             public EntityReaderData m_ReaderData;
 
             public void Execute()
             {
+                m_StoredLength[0] = kNotRead;
                 TReader reader = m_ReaderData.GetReader<TReader>();
                 if (!(reader.context.version > Game.Version.stormWater)) return;
 
-                // 默认为 0
-                // m_Map 已经在 SetDefaults 中被清零了，如果这里不写入，就是重置状态
+                // 存档里有本系统的区段时，引擎只调 Deserialize、不调 SetDefaults（EntityDeserializer 只给存档里缺席的系统调）。
+                // 这时 m_Map 里是读档前的内容：开局是 OnCreate 的初值，同一会话里再读档就是上一个存档的数据。
+                // 所以尺寸不符而丢弃时必须显式清零（ClearMap），不能指望它已经是 0
 
                 if (reader.context.version > Game.Version.cellMapLengths)
                 {
                     reader.Read(out int storedCount);
+                    m_StoredLength[0] = storedCount;
 
                     // 1. 判断是否匹配
                     bool sizeMatches = (math.abs(storedCount) == m_Map.Length);
@@ -232,9 +280,12 @@ namespace MapExtPDX.CellShared
                             {
                                 ResampleNearest(dummy, (int)math.sqrt(storedCount));
                             }
+                            else
+                            {
+                                ClearMap();
+                            }
 
                             dummy.Dispose();
-                            // Discard：m_Map 保持 0
                         }
                     }
                     // 3. 如果是压缩数据 (Length < 0)
@@ -267,12 +318,21 @@ namespace MapExtPDX.CellShared
                                 ResampleNearest(dummy, (int)math.sqrt(actualCount));
                                 dummy.Dispose();
                             }
-                            // Discard：只读取字节流，不解压，m_Map 保持 0
+                            else
+                            {
+                                // Discard：只读取字节流，不解压
+                                ClearMap();
+                            }
                         }
                         finally
                         {
                             compressedBuffer.Dispose();
                         }
+                    }
+                    // 4. 存档里的贴图长度为 0：同样当作尺寸不符，没有可重采样的来源
+                    else
+                    {
+                        ClearMap();
                     }
                 }
                 else
@@ -280,6 +340,15 @@ namespace MapExtPDX.CellShared
                     // 旧版本数据，通常无法匹配尺寸，直接忽略或尝试读取
                     if (m_Map.Length == m_TextureSize * m_TextureSize) // 运气好匹配了
                         reader.Read(m_Map);
+                }
+            }
+
+            // 丢弃时把贴图清零，与基类 CellMapSystem.SetDefaults 相同
+            private void ClearMap()
+            {
+                for (int i = 0; i < m_Map.Length; i++)
+                {
+                    m_Map[i] = default;
                 }
             }
 
