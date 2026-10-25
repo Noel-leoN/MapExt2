@@ -30,7 +30,7 @@ namespace SimpleRadio.Settings
 
                 { m_Setting.GetOptionLabelLocaleID(nameof(SimpleRadioSettings.StationInfo)), "已加载电台数" },
                 { m_Setting.GetOptionDescLocaleID(nameof(SimpleRadioSettings.StationInfo)),
-                    "在数据目录中检测到的自定义电台数量。" },
+                    "从数据目录成功加载的自定义电台数量。" },
 
                 { m_Setting.GetOptionLabelLocaleID(nameof(SimpleRadioSettings.SongInfo)), "已加载歌曲数" },
                 { m_Setting.GetOptionDescLocaleID(nameof(SimpleRadioSettings.SongInfo)),
@@ -38,7 +38,7 @@ namespace SimpleRadio.Settings
 
                 { m_Setting.GetOptionLabelLocaleID(nameof(SimpleRadioSettings.DataPath)), "数据目录" },
                 { m_Setting.GetOptionDescLocaleID(nameof(SimpleRadioSettings.DataPath)),
-                    "SimpleRadio 数据目录路径。在此处创建子文件夹并放入音频文件（.ogg、.mp3、.wav）即可添加自定义电台。" },
+                    "SimpleRadio 数据目录路径。这里的每个子文件夹是一个电台，音频文件（.ogg、.mp3、.wav）须直接放在电台文件夹里，其中的子文件夹不会被扫描。" },
 
                 // === Group: Actions ===
                 { m_Setting.GetOptionGroupLocaleID(SimpleRadioSettings.kGroupActions), "操作" },
@@ -48,14 +48,14 @@ namespace SimpleRadio.Settings
                     "在 Windows 资源管理器中打开 SimpleRadio 数据目录。\n\n" +
                     "添加自定义电台的步骤：\n" +
                     "1. 创建一个子文件夹（文件夹名即为电台名）\n" +
-                    "2. 将音频文件放入文件夹（.ogg、.mp3、.wav）\n" +
-                    "3. 可选：添加 icon.svg 作为电台图标\n" +
+                    "2. 将音频文件（.ogg、.mp3、.wav）直接放入该文件夹，其中的子文件夹不会被扫描\n" +
+                    "3. 可选：添加 icon.svg 作为电台图标，或添加 .m3u8 播放列表指定顺序模式的播放顺序\n" +
                     "4. 点击「刷新电台」或重启游戏即可生效" },
 
                 { m_Setting.GetOptionLabelLocaleID(nameof(SimpleRadioSettings.RefreshStations)), "♫ 刷新电台" },
                 { m_Setting.GetOptionDescLocaleID(nameof(SimpleRadioSettings.RefreshStations)),
                     "重新扫描数据目录并加载所有自定义电台，无需重启游戏。\n\n" +
-                    "在数据目录中添加或删除音频文件后，点击此按钮即可刷新。" },
+                    "添加、删除音频文件或修改播放列表后，点击此按钮即可刷新。" },
 
                 // === 播放設定 ===
                 { m_Setting.GetOptionGroupLocaleID(SimpleRadioSettings.kGroupPlayback), "播放" },
@@ -64,6 +64,9 @@ namespace SimpleRadio.Settings
                     "延续上次使用的电台，跨城市共用。关闭后，各城市使用存档记录的电台。" +
                     "下次进入城市时生效。" },
 
+                { m_Setting.GetOptionLabelLocaleID(nameof(SimpleRadioSettings.PlaylistTip)),
+                    "提示：顺序模式下，在电台文件夹放一个 .m3u8 播放列表即可自定义播放顺序，改完点击「刷新电台」。" },
+
                 { m_Setting.GetOptionLabelLocaleID(nameof(SimpleRadioSettings.PlaybackOrder)), "播放顺序" },
                 { m_Setting.GetOptionDescLocaleID(nameof(SimpleRadioSettings.PlaybackOrder)),
                     "自定义电台的歌曲播放顺序。\n\n" +
@@ -71,7 +74,7 @@ namespace SimpleRadio.Settings
                     "顺序：按文件名顺序播放（与资源管理器的排序一致），播完从头循环。" +
                     "电台文件夹里有 .m3u 或 .m3u8 播放列表（UTF-8 编码）时，先按列表顺序，列表没列到的文件按文件名排在后面。" +
                     "改了播放列表后点击「刷新电台」生效。\n\n" +
-                    "切换后，已排进队列的那首先播完，之后按新顺序继续。" },
+                    "切换后，正在播放和已排进队列的歌会先播完，之后按新顺序继续。" },
                 { m_Setting.GetEnumValueLocaleID(PlaybackOrder.Shuffle), "随机" },
                 { m_Setting.GetEnumValueLocaleID(PlaybackOrder.Sequential), "顺序" },
 

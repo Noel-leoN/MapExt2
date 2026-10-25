@@ -140,6 +140,14 @@ namespace SimpleRadio.Settings
         public bool RestoreLastStation { get; set; } = true;
 
         /// <summary>
+        /// 播放顺序上方的常显提示。选项说明只在悬停时出现，播放列表的用法放在这里才看得到；
+        /// <c>SettingsUIMultilineText</c> 只显示选项名，所以提示文字写在本属性的选项名文案里。
+        /// </summary>
+        [SettingsUISection(kTabInfo, kGroupPlayback)]
+        [SettingsUIMultilineText]
+        public string PlaylistTip => string.Empty;
+
+        /// <summary>
         /// 播放顺序。读档反序列化时也会经过 setter，那时还没有电台，重排会直接跳过。
         /// </summary>
         [SettingsUISection(kTabInfo, kGroupPlayback)]
