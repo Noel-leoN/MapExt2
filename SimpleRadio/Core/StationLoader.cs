@@ -221,7 +221,7 @@ namespace SimpleRadio.Core
                 return true;
             }
 
-            // 使用 List 收集，避免 AddToArray 的 O(N²) 问题；键是文件名，供播放列表匹配与排序
+            // 键是文件名，供播放列表匹配与排序
             var songs = new List<KeyValuePair<string, AudioAsset>>(audioFiles.Count);
 
             foreach (var audioFile in audioFiles)

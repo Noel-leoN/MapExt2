@@ -75,9 +75,8 @@ namespace SimpleRadio
                 _harmony.CreateClassProcessor(typeof(RadioChannelPatch)).Patch();    // 記錄實際切台
                 _harmony.CreateClassProcessor(typeof(PlaylistClipsPatch)).Patch();   // Prefix: 攔截執行期 clip 刷新
 
-                // 獨立模式：無條件註冊 AudioLoadPatch（多格式解碼器選擇）。
-                // 其 Prefix 內建「僅攔截 SimpleRadio 自身資產」的守衛，對他人資產放行，
-                // 與 ExtendedRadio 的全域 LoadAsync Prefix 可安全共存；不再依賴其存在與否。
+                // 无条件注册 AudioLoadPatch（多格式解码器选择）。
+                // 其 Prefix 只拦截 SimpleRadio 自身的资产，其他资产一律放行，不依赖其他 Mod 是否存在。
                 _harmony.CreateClassProcessor(typeof(AudioLoadPatch)).Patch();
                 Logger.Info("已註冊 AudioLoadPatch（多格式解碼支援，獨立自主）。");
 

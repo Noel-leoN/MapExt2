@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using Colossal.IO.AssetDatabase;
 using UnityEngine;
@@ -11,23 +12,22 @@ namespace SimpleRadio.Core
     /// </summary>
     public static class AudioFormatHelper
     {
-        // === 支持的扩展名（不含前导点） ===
-        private static readonly string[] ExtraExtensions = { ".mp3", ".wav" };
+        // === 额外注册的扩展名（含前导点）及其解码器；.ogg 由原版注册，表外的按原版默认的 OGG 解码 ===
+        private static readonly Dictionary<string, AudioType> ExtraDecoders =
+            new Dictionary<string, AudioType>(StringComparer.OrdinalIgnoreCase)
+            {
+                [".mp3"] = AudioType.MPEG,
+                [".wav"] = AudioType.WAV
+            };
 
         /// <summary>
-        /// 根据文件扩展名返回对应的 Unity AudioType。
+        /// 根据文件扩展名（含前导点，不分大小写）返回对应的 Unity AudioType。
         /// </summary>
         public static AudioType GetAudioType(string extension)
         {
-            if (string.IsNullOrEmpty(extension)) return AudioType.OGGVORBIS;
-
-            return extension.TrimStart('.').ToUpperInvariant() switch
-            {
-                "OGG" => AudioType.OGGVORBIS,
-                "MP3" => AudioType.MPEG,
-                "WAV" => AudioType.WAV,
-                _ => AudioType.OGGVORBIS
-            };
+            return extension != null && ExtraDecoders.TryGetValue(extension, out var type)
+                ? type
+                : AudioType.OGGVORBIS;
         }
 
         /// <summary>
@@ -60,22 +60,17 @@ namespace SimpleRadio.Core
         public static void RegisterExtensions()
         {
             // --- 记下是否加载了 ExtendedRadio，只为排错时查日志，不影响任何补丁或注册 ---
-            //
-            // 為何副檔名註冊必須無條件執行：
-            //   ExtendedRadio 的 mp3/wav/flac 副檔名映射受其自身設定開關 gating，
-            //   而那些開關預設全部為 false（見 ExtendedRadio Settings.cs）。
-            //   若我們在偵測到它時就 return，兩邊都不會註冊 .mp3/.wav →
-            //   這些副檔名沒有型別映射 → AssetDatabase.user.AddAsset 回傳 null →
-            //   SimpleRadio 的 mp3/wav 檔案全數靜默失敗，電台空掉。
-            //   原版 DefaultAssetFactory 對重複副檔名僅 warn 不拋例外，故無條件註冊是安全的。
             if (AppDomain.CurrentDomain.GetAssemblies().Any(a => a.GetName().Name == "ExtendedRadio"))
             {
                 Mod.Logger.Info("检测到 ExtendedRadio 已加载。");
             }
 
             // --- 注册扩展名（无条件执行）---
+            // 不能因为别的 Mod 也可能注册 .mp3/.wav 就跳过：对方未必真的注册了，而这些扩展名没有类型映射时
+            // AssetDatabase.user.AddAsset 返回 null，本 Mod 的 mp3/wav 会全部静默失败。
+            // 原版 DefaultAssetFactory 对重复扩展名只警告、不抛异常，所以无条件注册是安全的。
             var factory = DefaultAssetFactory.instance;
-            foreach (var ext in ExtraExtensions)
+            foreach (var ext in ExtraDecoders.Keys)
             {
                 try
                 {

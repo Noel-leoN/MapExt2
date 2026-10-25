@@ -19,15 +19,15 @@ namespace SimpleRadio.Core
     {
         // === COUI Host 配置 ===
         /// <summary>mod 部署目录的 COUI key（预设图标）</summary>
-        public const string kResourceKey = "simpleradio";
+        public const string kModHost = "simpleradio";
         /// <summary>ModsData 目录的 COUI key（用户自定义图标）</summary>
-        public const string kDataKey = "simpleradio-data";
+        public const string kDataHost = "simpleradio-data";
 
         /// <summary>COUI 基础路径前缀</summary>
-        public static readonly string COUIBasePath = $"coui://{kResourceKey}";
+        public static readonly string ModHostUrl = $"coui://{kModHost}";
 
         /// <summary>网络级图标（选择进入 SimpleRadio 时显示）</summary>
-        public static readonly string NetworkIcon = $"{COUIBasePath}/Resources/DefaultIcon.svg";
+        public static readonly string NetworkIcon = $"{ModHostUrl}/Resources/DefaultIcon.svg";
 
         // === 电台图标库 ===
         private const string StationIconDir = "Resources/StationIcons";
@@ -68,9 +68,9 @@ namespace SimpleRadio.Core
                 else
                 {
                     _modDir = modDir.Replace('\\', '/');
-                    UIManager.defaultUISystem.AddHostLocation(kResourceKey, _modDir, false);
+                    UIManager.defaultUISystem.AddHostLocation(kModHost, _modDir, false);
                     _resourceHostRegistered = true;
-                    Mod.Logger.Info($"COUI host 已注册: {kResourceKey} -> {_modDir}");
+                    Mod.Logger.Info($"COUI host 已注册: {kModHost} -> {_modDir}");
                 }
 
                 // 2. 注册 ModsData 目录（用户自定义 icon.svg）
@@ -106,10 +106,10 @@ namespace SimpleRadio.Core
                 string dataDir = StationLoader.GetDataPath().Replace('\\', '/');
                 if (!Directory.Exists(dataDir)) return;
 
-                UIManager.defaultUISystem.AddHostLocation(kDataKey, dataDir, false);
+                UIManager.defaultUISystem.AddHostLocation(kDataHost, dataDir, false);
                 _dataDir = dataDir;
                 _dataHostRegistered = true;
-                Mod.Logger.Info($"COUI host 已注册: {kDataKey} -> {dataDir}");
+                Mod.Logger.Info($"COUI host 已注册: {kDataHost} -> {dataDir}");
             }
             catch (Exception e)
             {
@@ -133,7 +133,7 @@ namespace SimpleRadio.Core
                     // stationDir = ModsData/SimpleRadio/电台名/
                     // COUI host simpleradio-data 映射到 ModsData/SimpleRadio/
                     // → coui://simpleradio-data/电台名/icon.svg
-                    return $"coui://{kDataKey}/{stationName}/icon.svg";
+                    return $"coui://{kDataHost}/{stationName}/icon.svg";
                 }
             }
 
@@ -169,7 +169,7 @@ namespace SimpleRadio.Core
             for (int i = 0; i < files.Length; i++)
             {
                 string fileName = Path.GetFileName(files[i]);
-                _stationIcons[i] = $"{COUIBasePath}/{StationIconDir}/{fileName}";
+                _stationIcons[i] = $"{ModHostUrl}/{StationIconDir}/{fileName}";
             }
 
             Mod.Logger.Info($"已加载 {_stationIcons.Length} 个电台图标。");
@@ -189,12 +189,12 @@ namespace SimpleRadio.Core
             {
                 if (_resourceHostRegistered && !string.IsNullOrEmpty(_modDir))
                 {
-                    UIManager.defaultUISystem.RemoveHostLocation(kResourceKey, _modDir);
+                    UIManager.defaultUISystem.RemoveHostLocation(kModHost, _modDir);
                 }
 
                 if (_dataHostRegistered && !string.IsNullOrEmpty(_dataDir))
                 {
-                    UIManager.defaultUISystem.RemoveHostLocation(kDataKey, _dataDir);
+                    UIManager.defaultUISystem.RemoveHostLocation(kDataHost, _dataDir);
                 }
             }
             catch (Exception e)

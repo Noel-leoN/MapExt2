@@ -1,6 +1,6 @@
 # SimpleRadio - Simple Custom Music Player
 
-Drop your music files into a folder and they appear as a radio station in-game. No JSON configs, no nested directories, no hassle.
+Drop your music files into a folder and they appear as a radio station in-game. Each folder is one station.
 
 > **New in v1.0.6**: Sequential playback, with an optional `.m3u8` playlist to set your own order. Shuffle now plays every song once per round before any repeats.
 
@@ -82,6 +82,10 @@ Open **Options > SimpleRadio** to access:
 
 - No additional dependencies
 
+## Acknowledgments
+
+- Thanks to [ExtendedRadio](https://mods.paradoxplaza.com/mods/75862/Windows): its source code was a helpful reference while learning how the game's radio system works.
+
 ## Other Mods by the Author
 
 - **[MapExt](https://mods.paradoxplaza.com/mods/107939/Windows)** — 28/43/57km map size expansion, plus economy and pathfinding rework for large cities.
@@ -92,7 +96,7 @@ Open **Options > SimpleRadio** to access:
 
 # 极简自定义音乐播放器
 
-将音乐文件放入文件夹即可在游戏中显示为电台。无需 JSON 配置，无需嵌套目录，开箱即用。
+将音乐文件放入文件夹即可在游戏中显示为电台，一个文件夹就是一个电台，开箱即用。
 
 > **v1.0.6 新增**：顺序播放，可用 `.m3u8` 播放列表自定义顺序；随机播放改为每轮每首各播一次，一轮播完才会重复。
 
@@ -173,6 +177,10 @@ MP3 和 WAV 可在 **选项 > SimpleRadio > 格式** 中分别启用或禁用；
 ## 系统要求
 
 - 无额外依赖
+
+## 致谢
+
+- 感谢 [ExtendedRadio](https://mods.paradoxplaza.com/mods/75862/Windows)：开发时参考了它的源码来了解游戏的电台系统。
 
 ## 作者的其他模组
 
