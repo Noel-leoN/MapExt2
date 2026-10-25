@@ -30,7 +30,7 @@ namespace SimpleRadio.Settings
 
                 { m_Setting.GetOptionLabelLocaleID(nameof(SimpleRadioSettings.StationInfo)), "Loaded Stations" },
                 { m_Setting.GetOptionDescLocaleID(nameof(SimpleRadioSettings.StationInfo)),
-                    "Number of custom radio stations detected in the data folder." },
+                    "Number of custom stations loaded from the data folder." },
 
                 { m_Setting.GetOptionLabelLocaleID(nameof(SimpleRadioSettings.SongInfo)), "Loaded Songs" },
                 { m_Setting.GetOptionDescLocaleID(nameof(SimpleRadioSettings.SongInfo)),
@@ -38,7 +38,7 @@ namespace SimpleRadio.Settings
 
                 { m_Setting.GetOptionLabelLocaleID(nameof(SimpleRadioSettings.DataPath)), "Data Folder" },
                 { m_Setting.GetOptionDescLocaleID(nameof(SimpleRadioSettings.DataPath)),
-                    "Path to the SimpleRadio data folder. Create subfolders here with audio files (.ogg, .mp3, .wav) to add custom stations." },
+                    "Path to the SimpleRadio data folder. Each subfolder here is a station; put its audio files (.ogg, .mp3, .wav) directly inside, as folders within a station are not scanned." },
 
                 // === Group: Actions ===
                 { m_Setting.GetOptionGroupLocaleID(SimpleRadioSettings.kGroupActions), "Actions" },
@@ -48,14 +48,14 @@ namespace SimpleRadio.Settings
                     "Open the SimpleRadio data folder in Windows Explorer.\n\n" +
                     "To add a custom station:\n" +
                     "1. Create a subfolder (folder name = station name)\n" +
-                    "2. Place audio files inside (.ogg, .mp3, .wav)\n" +
-                    "3. Optionally add an icon.svg\n" +
+                    "2. Place audio files directly inside it (.ogg, .mp3, .wav); folders within it are not scanned\n" +
+                    "3. Optionally add an icon.svg, or an .m3u8 playlist to set the Sequential play order\n" +
                     "4. Click 'Refresh Stations' or restart the game" },
 
                 { m_Setting.GetOptionLabelLocaleID(nameof(SimpleRadioSettings.RefreshStations)), "♫ Refresh Stations" },
                 { m_Setting.GetOptionDescLocaleID(nameof(SimpleRadioSettings.RefreshStations)),
                     "Re-scan the data folder and reload all custom stations without restarting the game.\n\n" +
-                    "Use this after adding or removing audio files from the data folder." },
+                    "Use this after adding or removing audio files, or editing a playlist." },
 
                 // === 播放設定 ===
                 { m_Setting.GetOptionGroupLocaleID(SimpleRadioSettings.kGroupPlayback), "Playback" },
@@ -63,6 +63,20 @@ namespace SimpleRadio.Settings
                 { m_Setting.GetOptionDescLocaleID(nameof(SimpleRadioSettings.RestoreLastStation)),
                     "Resume the last station used across cities. When disabled, each city uses the station in its save. " +
                     "Applies the next time you enter a city." },
+
+                { m_Setting.GetOptionLabelLocaleID(nameof(SimpleRadioSettings.PlaylistTip)),
+                    "Tip: In Sequential mode, put an .m3u8 playlist in a station folder to set your own play order, then click 'Refresh Stations'." },
+
+                { m_Setting.GetOptionLabelLocaleID(nameof(SimpleRadioSettings.PlaybackOrder)), "Playback Order" },
+                { m_Setting.GetOptionDescLocaleID(nameof(SimpleRadioSettings.PlaybackOrder)),
+                    "How songs on custom stations are ordered.\n\n" +
+                    "Shuffle: each song plays once per round in random order, and a new round doesn't open with the songs that ended the last one.\n\n" +
+                    "Sequential: songs play in file name order (as sorted in Windows Explorer) and loop. " +
+                    "If the station folder has an .m3u or .m3u8 playlist (saved as UTF-8), its order comes first and files it doesn't list follow by file name. " +
+                    "Click 'Refresh Stations' after editing the playlist.\n\n" +
+                    "When you switch, the current song and the one already queued finish first, then the new order begins." },
+                { m_Setting.GetEnumValueLocaleID(PlaybackOrder.Shuffle), "Shuffle" },
+                { m_Setting.GetEnumValueLocaleID(PlaybackOrder.Sequential), "Sequential" },
 
                 // === Group: Formats ===
                 { m_Setting.GetOptionGroupLocaleID(SimpleRadioSettings.kGroupFormats), "Audio Formats" },

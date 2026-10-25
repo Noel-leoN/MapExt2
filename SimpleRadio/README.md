@@ -2,15 +2,18 @@
 
 Drop your music files into a folder and they appear as a radio station in-game. No JSON configs, no nested directories, no hassle.
 
+> **New in v1.0.6**: Sequential playback, with an optional `.m3u8` playlist to set your own order. Shuffle now plays every song once per round before any repeats.
+
 ## Features
 
 - **Zero Configuration**: Just create a folder and drop audio files
-- **Multi-Format**: Supports OGG, MP3, and WAV with per-format toggles
+- **Multi-Format**: Supports OGG, MP3, and WAV; MP3 and WAV can each be turned off
+- **Shuffle or Sequential**: Shuffle plays every song once per round; Sequential follows file names or your own playlist
 - **Auto Metadata**: Reads song title and artist from audio file tags
 - **Remember Last Station**: Resumes your last used station across cities by default; optionally restore each city's saved station
 - **Custom Icons**: Place `icon.svg` in any station folder, or use the built-in icon library
 - **Hot Reload**: Refresh stations from the settings panel without restarting the game
-- **Lightweight**: Zero runtime overhead during playback
+- **Lightweight**: No per-frame work; it only acts when a song or station changes
 - **Compatible**: Works alongside ExtendedRadio without conflicts (but make sure not to use the same station names)
 
 ## How to Use
@@ -18,8 +21,8 @@ Drop your music files into a folder and they appear as a radio station in-game. 
 1. Navigate to your game's user data folder:
    `%USERPROFILE%\AppData\LocalLow\Colossal Order\Cities Skylines II\ModsData\SimpleRadio\`
 2. Create a subfolder - the folder name becomes the station name
-3. Place your audio files inside (`.ogg`, `.mp3`, `.wav`)
-4. Start or restart the game
+3. Place your audio files directly inside it (`.ogg`, `.mp3`, `.wav`); folders within a station are not scanned
+4. Start the game, or click **Refresh Stations** in the settings if you are already in a city
 
 > **Tip**: You can also click **"Open Data Folder"** in the settings panel to quickly navigate to the data directory.
 
@@ -27,8 +30,19 @@ Drop your music files into a folder and they appear as a radio station in-game. 
 
 **ModsData/SimpleRadio/**
 
-- **My Rock Station/** — track01.ogg, track02.mp3, icon.svg (optional custom icon)
+- **My Rock Station/** — track01.ogg, track02.mp3, playlist.m3u8 (optional play order), icon.svg (optional custom icon)
 - **Chill Vibes/** — lofi_beat_1.ogg, lofi_beat_2.wav
+
+## Playback Order
+
+Choose it in **Options > SimpleRadio > Info > Playback > Playback Order**:
+
+- **Shuffle** (default): every song plays once per round in random order, and a new round does not open with the songs that just played.
+- **Sequential**: songs play in file name order, the same as Windows Explorer (2 comes before 10), then start over.
+
+**Set your own order**: in Sequential mode, put an `.m3u8` (or `.m3u`) playlist in the station folder with one file name per line. Listed songs play in that order and the rest follow by file name; lines starting with `#` are ignored. Save the playlist as UTF-8 (the Notepad default), then click **Refresh Stations**.
+
+When you switch modes, the current song and the one already queued finish first.
 
 ## Supported Formats
 
@@ -38,7 +52,7 @@ Drop your music files into a folder and they appear as a radio station in-game. 
 
 > **WAV Warning**: WAV files are uncompressed and typically **10x larger** than OGG/MP3 (~30-50 MB per song). This may significantly increase disk usage and cause brief stuttering on HDD when switching tracks. **Recommended: convert WAV to OGG or MP3** for better performance.
 
-Each format can be individually enabled or disabled in **Options > SimpleRadio > Format**.
+MP3 and WAV can each be enabled or disabled in **Options > SimpleRadio > Format**; OGG is always on.
 
 ## Icons
 
@@ -55,8 +69,9 @@ Open **Options > SimpleRadio** to access:
 - Number of loaded stations and songs
 - Data folder path
 - **Open Data Folder** - opens the data directory in Explorer
-- **Refresh Stations** - hot reload without restarting (available after entering a map)
+- **Refresh Stations** - hot reload without restarting (available after entering a city)
 - **Restore Last Used Station** - enabled by default under Info > Playback; disable to restore each city's saved station the next time you enter a city
+- **Playback Order** - Shuffle (default) or Sequential, under Info > Playback; see Playback Order above
 - **Format toggles** - enable/disable MP3 and WAV support (click **Refresh Stations** to apply)
 - **ExtendedRadio status** - compatibility detection
 
@@ -83,15 +98,18 @@ SimpleRadio runs fully standalone — its audio format support only applies to i
 
 将音乐文件放入文件夹即可在游戏中显示为电台。无需 JSON 配置，无需嵌套目录，开箱即用。
 
+> **v1.0.6 新增**：顺序播放，可用 `.m3u8` 播放列表自定义顺序；随机播放改为每轮每首各播一次，一轮播完才会重复。
+
 ## 功能
 
 - **零配置**：创建文件夹并放入音频文件即可
-- **多格式**：支持 OGG、MP3、WAV，每种格式可独立开关
+- **多格式**：支持 OGG、MP3、WAV，其中 MP3 和 WAV 可分别关闭
+- **随机或顺序**：随机模式每轮每首各播一次；顺序模式按文件名或你的播放列表播放
 - **自动元数据**：自动读取音频文件中的歌曲名和艺术家信息
 - **记住上次电台**：默认跨城市恢复上次使用的电台，也可改为恢复各城市存档记录的电台
 - **自定义图标**：在电台文件夹中放置 `icon.svg` 自定义图标，或使用内置图标库
 - **热刷新**：在设置面板中刷新电台，无需重启游戏
-- **轻量级**：播放时零运行时开销
+- **轻量级**：不做每帧处理，只在换歌、切台时介入
 - **兼容性**：与 ExtendedRadio 兼容，互不冲突（但注意不要使用同样的电台名称）
 
 ## 使用方法
@@ -99,8 +117,8 @@ SimpleRadio runs fully standalone — its audio format support only applies to i
 1. 打开游戏用户数据目录：
    `%USERPROFILE%\AppData\LocalLow\Colossal Order\Cities Skylines II\ModsData\SimpleRadio\`
 2. 创建子文件夹——文件夹名即为电台名
-3. 将音频文件（`.ogg`、`.mp3`、`.wav`）放入其中
-4. 启动或重启游戏
+3. 将音频文件（`.ogg`、`.mp3`、`.wav`）直接放入其中，电台文件夹里的子文件夹不会被扫描
+4. 启动游戏；若已在城市中，在设置面板点击**刷新电台**即可
 
 > **提示**：也可以在设置面板中点击**"打开数据目录"**快速定位。
 
@@ -108,8 +126,19 @@ SimpleRadio runs fully standalone — its audio format support only applies to i
 
 **ModsData/SimpleRadio/**
 
-- **流行音乐/** — 歌曲1.ogg, 歌曲2.mp3, icon.svg（可选自定义图标）
-- **古典音乐/** — lofi_1.ogg, lofi_2.wav
+- **流行音乐/** — 歌曲1.ogg, 歌曲2.mp3, playlist.m3u8（可选，播放顺序）, icon.svg（可选自定义图标）
+- **轻音乐/** — lofi_1.ogg, lofi_2.wav
+
+## 播放顺序
+
+在 **选项 > SimpleRadio > 信息 > 播放 > 播放顺序** 中选择：
+
+- **随机**（默认）：每轮每首歌各播一次，顺序随机；新一轮开头不会是刚播过的几首。
+- **顺序**：按文件名顺序播放，与资源管理器的排序一致（2 排在 10 前面），播完从头循环。
+
+**自定义顺序**：顺序模式下，在电台文件夹放一个 `.m3u8`（或 `.m3u`）播放列表，每行写一个文件名。列出的歌按列表顺序播放，其余按文件名排在后面；`#` 开头的行会被忽略。播放列表用 UTF-8 编码保存（记事本默认即是），然后点击**刷新电台**。
+
+切换模式时，正在播放和已排进队列的歌会先播完。
 
 ## 支持格式
 
@@ -119,7 +148,7 @@ SimpleRadio runs fully standalone — its audio format support only applies to i
 
 > **WAV 提醒**：WAV 是无压缩格式，文件体积通常是 OGG/MP3 的 **10 倍**（每首约 30-50 MB）。可能显著增加磁盘占用，且在机械硬盘上切歌时可能出现短暂卡顿。**建议：将 WAV 转换为 OGG 或 MP3** 以获得更好的性能。
 
-每种格式可在 **选项 > SimpleRadio > 格式** 中独立启用或禁用。
+MP3 和 WAV 可在 **选项 > SimpleRadio > 格式** 中分别启用或禁用；OGG 始终启用。
 
 ## 图标
 
@@ -136,8 +165,9 @@ SimpleRadio runs fully standalone — its audio format support only applies to i
 - 已加载的电台和歌曲数量
 - 数据目录路径
 - **打开数据目录** - 在资源管理器中打开数据目录
-- **刷新电台** - 热刷新电台，无需重启（进入存档后可用）
+- **刷新电台** - 热刷新电台，无需重启（进入城市后可用）
 - **恢复上次使用的电台** - 位于“信息 > 播放”，默认开启；关闭后，下次进入城市改用存档记录的电台
+- **播放顺序** - 随机（默认）或顺序，位于“信息 > 播放”；详见上方“播放顺序”
 - **格式开关** - 启用/禁用 MP3 和 WAV 支持（点击**刷新电台**即可生效）
 - **ExtendedRadio 状态** - 兼容性检测
 
