@@ -1300,19 +1300,6 @@ namespace MapExtPDX
 
         #endregion
 
-        // === CellMap Profiling ===
-
-        #region CellMap Profiling
-
-        /// <summary>
-        /// CellMap Job 诊断计时（临时，ModeC 标定计划 Phase 3.2，结案前撤下）：开启后地下水、空气、地面、噪音与地形吸引力
-        /// 改为同步执行并逐个 Job 计时，结果写入 MapExtPDX.log。会阻塞主线程，测完请关闭。
-        /// </summary>
-        [SettingsUISection(kDebugTab, kDebugGroup)]
-        public bool CellMapProfiling { get; set; } = false;
-
-        #endregion
-
         // === Registration Dump ===
 
         #region Registration Dump

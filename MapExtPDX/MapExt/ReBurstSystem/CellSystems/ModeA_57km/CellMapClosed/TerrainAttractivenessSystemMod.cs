@@ -10,7 +10,6 @@ using Unity.Collections;
 using Unity.Entities;
 using Unity.Jobs;
 using Unity.Mathematics;
-using JobTimer = MapExtPDX.MapExt.Tools.CellMapJobTimer;
 
 namespace MapExtPDX.ModeA
 {
@@ -139,15 +138,6 @@ namespace MapExtPDX.ModeA
                 m_AttractivenessMap = m_Map
             };
 
-            // 诊断计时（临时，ModeC 标定计划 Phase 3.2／4）：同步执行并计时，另用原写法对照
-            if (JobTimer.Enabled)
-            {
-                RunProfiled(prepareJob, scanJob, heightData, parameters, waterDeps, ambienceDeps);
-                kernelOffsets.Dispose();
-                kernelFalloffs.Dispose();
-                return;
-            }
-
             JobHandle prepareHandle = prepareJob.ScheduleBatch(
                 m_Map.Length,
                 4,
@@ -173,55 +163,6 @@ namespace MapExtPDX.ModeA
             AddWriter(mainHandle);
             // 更新系统的主依赖句柄
             Dependency = JobHandle.CombineDependencies(m_ReadDependencies, m_WriteDependencies, mainHandle);
-        }
-
-        /// <summary>
-        /// 诊断计时（临时，ModeC 标定计划 Phase 3.2／4，结案前撤下）：同步逐个执行并计时；
-        /// 另用原写法（逐格扫方阵）算进副本，与新写法逐格比较，应完全相同。
-        /// </summary>
-        private void RunProfiled(TerrainAttractivenessPrepareJob prepareJob, TerrainAttractivenessScanJob scanJob,
-            TerrainHeightData heightData, AttractivenessParameterData parameters, JobHandle waterDeps, JobHandle ambienceDeps)
-        {
-            JobHandle.CombineDependencies(Dependency, waterDeps, ambienceDeps).Complete();
-            JobHandle.CombineDependencies(m_WriteDependencies, m_ReadDependencies).Complete();
-
-            long t0 = JobTimer.Now();
-            prepareJob.ScheduleBatch(m_Map.Length, 4).Complete();
-            long t1 = JobTimer.Now();
-            scanJob.ScheduleBatch(m_Map.Length, 4).Complete();
-            long t2 = JobTimer.Now();
-
-            NativeArray<TargetType> reference = new NativeArray<TargetType>(m_Map.Length, Allocator.TempJob);
-            new TerrainAttractivenessJob
-            {
-                m_AttractFactorData = m_AttractFactorData,
-                m_Scale = heightData.scale.x * kTextureSize,
-                m_AttractivenessMap = reference,
-                m_AttractivenessParameters = parameters
-            }.ScheduleBatch(m_Map.Length, 4).Complete();
-            long t3 = JobTimer.Now();
-
-            long mismatched = 0;
-            for (int i = 0; i < m_Map.Length; i++)
-            {
-                TargetType a = m_Map[i];
-                TargetType b = reference[i];
-                if (math.asuint(a.m_ForestBonus) != math.asuint(b.m_ForestBonus) ||
-                    math.asuint(a.m_ShoreBonus) != math.asuint(b.m_ShoreBonus))
-                {
-                    mismatched++;
-                }
-            }
-
-            reference.Dispose();
-
-            JobTimer.Record(Tag, "采样（并行）", kTextureSize, t0, t1, 1);
-            JobTimer.Record(Tag, "邻域扫描（并行）", kTextureSize, t1, t2, 1);
-            JobTimer.Record(Tag, "邻域扫描·原写法（并行）", kTextureSize, t2, t3, 1);
-            JobTimer.Compare(Tag, "邻域扫描", mismatched, $"{mismatched} 格不同（共 {m_Map.Length} 格，应为 0）", 1);
-
-            AddWriter(default);
-            Dependency = default;
         }
 
         #endregion
@@ -259,6 +200,7 @@ namespace MapExtPDX.ModeA
 
         /// <summary>
         /// 邻域表（ModeC 标定计划 4.1）：圆内邻格的偏移与（森林、海岸）衰减。
+        /// 下文的"原写法"指原版 <c>TerrainAttractivenessJob</c>：逐格扫 (2r+1)² 的方阵、逐个算距离。
         /// <para>距离用贴图中央一对实际格中心按原写法计算。格中心都是整数米，任意两格的坐标差精确，
         /// 所以与原写法逐格算出的距离逐位相同。</para>
         /// <para>方阵半径取原写法的 r（按 m_Scale 换算）与真实格距所需半径中较小的一个；
@@ -336,67 +278,6 @@ namespace MapExtPDX.ModeA
                         calculatedBonus.y = math.max(calculatedBonus.y, falloff.y * isWater);
                     }
 
-                    m_AttractivenessMap[i] = new TargetType
-                    {
-                        m_ForestBonus = calculatedBonus.x,
-                        m_ShoreBonus = calculatedBonus.y
-                    };
-                }
-            }
-        }
-
-        /// <summary>
-        /// 原写法：逐格扫 (2r+1)² 的方阵。只在诊断计时开启时用来对照（ModeC 标定计划 Phase 4，结案前撤下）。
-        /// 包括森林加成和海岸线加成，通过卷积（周围像素扫描）计算
-        /// </summary>
-        [BurstCompile]
-        private struct TerrainAttractivenessJob : IJobParallelForBatch
-        {
-            [ReadOnly] public NativeArray<float3> m_AttractFactorData;
-            [ReadOnly] public float m_Scale;
-
-            [NativeDisableParallelForRestriction]
-            public NativeArray<TargetType> m_AttractivenessMap;
-
-            public AttractivenessParameterData m_AttractivenessParameters;
-
-            public void Execute(int startIndex, int count)
-            {
-                for (int i = startIndex; i < startIndex + count; i++)
-                {
-                    float3 currentCellCenter = XCellMapSystemRe.GetCellCenter(i, kTextureSize);
-                    float2 calculatedBonus = float2.zero; // x: Forest, y: Shore
-
-                    // 计算搜索半径 (基于参数距离和缩
-                    int searchRadius = (int)math.ceil(math.max(m_AttractivenessParameters.m_ForestDistance, m_AttractivenessParameters.m_ShoreDistance) / m_Scale);
-
-                    // 卷积循环：检查周围的格子
-                    for (int yOffset = -searchRadius; yOffset <= searchRadius; yOffset++)
-                    {
-                        for (int xOffset = -searchRadius; xOffset <= searchRadius; xOffset++)
-                        {
-                            // 计算邻居坐标并Clamp防止越界
-                            int neighborX = math.min(kTextureSize - 1, math.max(0, i % kTextureSize + xOffset));
-                            int neighborY = math.min(kTextureSize - 1, math.max(0, i / kTextureSize + yOffset));
-                            int neighborIndex = neighborX + neighborY * kTextureSize;
-
-                            float3 neighborData = m_AttractFactorData[neighborIndex]; // x:Water, y:Height, z:Forest
-                            float distance = math.distance(XCellMapSystemRe.GetCellCenter(neighborIndex, kTextureSize), currentCellCenter);
-
-                            // 计算森林吸引(neighborData.z 是森林环境
-                            // 距离越近，森林值越高，吸引力越
-                            float forestFalloff = math.saturate(1f - distance / m_AttractivenessParameters.m_ForestDistance);
-                            calculatedBonus.x = math.max(calculatedBonus.x, forestFalloff * neighborData.z);
-
-                            // 计算海岸吸引(neighborData.x 是水
-                            // 如果水深 > 2f，视为有效水源，计算距离衰减
-                            float shoreFalloff = math.saturate(1f - distance / m_AttractivenessParameters.m_ShoreDistance);
-                            float isWater = (neighborData.x > 2f) ? 1f : 0f;
-                            calculatedBonus.y = math.max(calculatedBonus.y, shoreFalloff * isWater);
-                        }
-                    }
-
-                    // 写入结果
                     m_AttractivenessMap[i] = new TargetType
                     {
                         m_ForestBonus = calculatedBonus.x,

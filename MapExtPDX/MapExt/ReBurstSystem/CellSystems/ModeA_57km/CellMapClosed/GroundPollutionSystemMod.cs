@@ -10,7 +10,6 @@ using Unity.Collections;
 using Unity.Entities;
 using Unity.Jobs;
 using Unity.Mathematics;
-using JobTimer = MapExtPDX.MapExt.Tools.CellMapJobTimer;
 
 namespace MapExtPDX.ModeA
 {
@@ -79,21 +78,7 @@ namespace MapExtPDX.ModeA
             pollutionFadeJob.m_Random = RandomSeed.Next();
             pollutionFadeJob.m_Frame = this.m_SimulationSystem.frameIndex;
             PollutionFadeJob jobData = pollutionFadeJob;
-            JobHandle inputDeps = JobHandle.CombineDependencies(m_WriteDependencies, m_ReadDependencies, Dependency);
-
-            // 诊断计时（临时，ModeC 标定计划 Phase 3.2）：同步执行并计时，Job 与常规路径相同
-            if (JobTimer.Enabled)
-            {
-                inputDeps.Complete();
-                long t0 = JobTimer.Now();
-                IJobExtensions.Schedule(jobData).Complete();
-                JobTimer.Record(Tag, "衰减（单线程）", kTextureSize, t0, JobTimer.Now(), 16);
-                AddWriter(default);
-                Dependency = default;
-                return;
-            }
-
-            Dependency = IJobExtensions.Schedule(jobData, inputDeps);
+            Dependency = IJobExtensions.Schedule(jobData, JobHandle.CombineDependencies(m_WriteDependencies, m_ReadDependencies, Dependency));
             AddWriter(Dependency);
             Dependency = JobHandle.CombineDependencies(m_ReadDependencies, m_WriteDependencies, Dependency);
         }
