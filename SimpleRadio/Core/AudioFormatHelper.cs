@@ -6,20 +6,13 @@ using UnityEngine;
 namespace SimpleRadio.Core
 {
     /// <summary>
-    /// 音频格式工具类：扩展名映射、AssetDatabase 注册、ExtendedRadio 检测。
+    /// 音频格式工具类：扩展名映射与 AssetDatabase 注册。
+    /// 扩展名注册与 AudioLoadPatch 一律无条件执行，自身资产自行解码，不依赖其他 Mod 的行为。
     /// </summary>
     public static class AudioFormatHelper
     {
         // === 支持的扩展名（不含前导点） ===
         private static readonly string[] ExtraExtensions = { ".mp3", ".wav" };
-
-        /// <summary>
-        /// 偵測 ExtendedRadio 是否已載入。
-        /// 純資訊用途：僅供設定面板顯示相容狀態，不再作為任何 patch 的開關。
-        /// SimpleRadio 採「軟獨佔」策略，副檔名註冊與 AudioLoadPatch 一律無條件執行，
-        /// 對自身資產完全自主解碼，不依賴 ExtendedRadio 的任何行為。
-        /// </summary>
-        public static bool IsExtendedRadioLoaded { get; private set; }
 
         /// <summary>
         /// 根据文件扩展名返回对应的 Unity AudioType。
@@ -66,8 +59,7 @@ namespace SimpleRadio.Core
         /// </summary>
         public static void RegisterExtensions()
         {
-            // --- 偵測 ExtendedRadio（純資訊用途）---
-            // 此旗標僅供設定面板顯示相容狀態，不再 gating 任何 patch 或註冊行為。
+            // --- 记下是否加载了 ExtendedRadio，只为排错时查日志，不影响任何补丁或注册 ---
             //
             // 為何副檔名註冊必須無條件執行：
             //   ExtendedRadio 的 mp3/wav/flac 副檔名映射受其自身設定開關 gating，
@@ -76,12 +68,9 @@ namespace SimpleRadio.Core
             //   這些副檔名沒有型別映射 → AssetDatabase.user.AddAsset 回傳 null →
             //   SimpleRadio 的 mp3/wav 檔案全數靜默失敗，電台空掉。
             //   原版 DefaultAssetFactory 對重複副檔名僅 warn 不拋例外，故無條件註冊是安全的。
-            IsExtendedRadioLoaded = AppDomain.CurrentDomain.GetAssemblies()
-                .Any(a => a.GetName().Name == "ExtendedRadio");
-
-            if (IsExtendedRadioLoaded)
+            if (AppDomain.CurrentDomain.GetAssemblies().Any(a => a.GetName().Name == "ExtendedRadio"))
             {
-                Mod.Logger.Info("偵測到 ExtendedRadio 已載入：SimpleRadio 以獨立模式運作（無條件註冊副檔名與 AudioLoadPatch，自主解碼，並防護第三方電台 Mod 於 LoadRadio 的崩潰）。");
+                Mod.Logger.Info("检测到 ExtendedRadio 已加载。");
             }
 
             // --- 注册扩展名（无条件执行）---

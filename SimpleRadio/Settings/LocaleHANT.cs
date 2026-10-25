@@ -93,18 +93,6 @@ namespace SimpleRadio.Settings
                     "可能顯著增加磁碟佔用，且在傳統硬碟（HDD）上切歌時可能出現短暫卡頓。\n\n" +
                     "建議：將 WAV 轉換為 OGG 或 MP3 以獲得更好的效能。\n\n" +
                     "點擊「刷新電台」即可生效。" },
-
-                // === Group: Compatibility ===
-                { m_Setting.GetOptionGroupLocaleID(SimpleRadioSettings.kGroupCompat), "相容性" },
-
-                { SimpleRadioSettings.kLocaleExtendedRadioDetected, "已偵測到 — 相容" },
-                { SimpleRadioSettings.kLocaleExtendedRadioMissing, "未偵測到" },
-
-                { m_Setting.GetOptionLabelLocaleID(nameof(SimpleRadioSettings.ExtendedRadioStatus)), "ExtendedRadio" },
-                { m_Setting.GetOptionDescLocaleID(nameof(SimpleRadioSettings.ExtendedRadioStatus)),
-                    "顯示是否偵測到 ExtendedRadio。\n\n" +
-                    "無論是否安裝 ExtendedRadio，SimpleRadio 都可獨立運行，兩者可同時使用、互不衝突。\n\n" +
-                    "若其他電台 Mod 在載入時出錯，SimpleRadio 會自動攔截，確保遊戲電台正常可用。" },
             };
         }
 

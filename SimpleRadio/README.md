@@ -14,7 +14,6 @@ Drop your music files into a folder and they appear as a radio station in-game. 
 - **Custom Icons**: Place `icon.svg` in any station folder, or use the built-in icon library
 - **Hot Reload**: Refresh stations from the settings panel without restarting the game
 - **Lightweight**: No per-frame work; it only acts when a song or station changes
-- **Compatible**: Works alongside ExtendedRadio without conflicts (but make sure not to use the same station names)
 
 ## How to Use
 
@@ -73,14 +72,11 @@ Open **Options > SimpleRadio** to access:
 - **Restore Last Used Station** - enabled by default under Info > Playback; disable to restore each city's saved station the next time you enter a city
 - **Playback Order** - Shuffle (default) or Sequential, under Info > Playback; see Playback Order above
 - **Format toggles** - enable/disable MP3 and WAV support (click **Refresh Stations** to apply)
-- **ExtendedRadio status** - compatibility detection
 
 ## Compatibility
 
-- **ExtendedRadio** — ✅ Compatible, can be used together (just avoid identical station names)
-- **All other mods** — ✅ No known conflicts
-
-SimpleRadio runs fully standalone — its audio format support only applies to its own stations, so it behaves the same whether ExtendedRadio is installed or not. As an extra safeguard, if another radio mod crashes while stations are loading, SimpleRadio catches the error so the game's radio keeps working.
+- No known conflicts.
+- Each station needs a unique name: a folder with the same name as an existing station is skipped.
 
 ## Requirements
 
@@ -110,7 +106,6 @@ SimpleRadio runs fully standalone — its audio format support only applies to i
 - **自定义图标**：在电台文件夹中放置 `icon.svg` 自定义图标，或使用内置图标库
 - **热刷新**：在设置面板中刷新电台，无需重启游戏
 - **轻量级**：不做每帧处理，只在换歌、切台时介入
-- **兼容性**：与 ExtendedRadio 兼容，互不冲突（但注意不要使用同样的电台名称）
 
 ## 使用方法
 
@@ -169,14 +164,11 @@ MP3 和 WAV 可在 **选项 > SimpleRadio > 格式** 中分别启用或禁用；
 - **恢复上次使用的电台** - 位于“信息 > 播放”，默认开启；关闭后，下次进入城市改用存档记录的电台
 - **播放顺序** - 随机（默认）或顺序，位于“信息 > 播放”；详见上方“播放顺序”
 - **格式开关** - 启用/禁用 MP3 和 WAV 支持（点击**刷新电台**即可生效）
-- **ExtendedRadio 状态** - 兼容性检测
 
 ## 兼容性
 
-- **ExtendedRadio** — ✅ 兼容，可同时使用（电台名称避免与其他 Mod 重复即可）
-- **其他 Mod** — ✅ 无已知冲突
-
-SimpleRadio 完全独立运行——其音频格式支持仅作用于自身电台，无论是否安装 ExtendedRadio，行为均完全一致。此外还有一层保护：若其他电台 Mod 在加载电台时出错，SimpleRadio 会自动捕获该异常，确保游戏电台功能持续正常运行。
+- 无已知冲突。
+- 电台名称不能重复：与已有电台同名的文件夹会被跳过。
 
 ## 系统要求
 

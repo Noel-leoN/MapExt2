@@ -94,18 +94,6 @@ namespace SimpleRadio.Settings
                     "and cause brief stuttering on HDD when switching tracks.\n\n" +
                     "Recommended: Convert WAV to OGG or MP3 for better performance.\n\n" +
                     "Click 'Refresh Stations' to apply." },
-
-                // === Group: Compatibility ===
-                { m_Setting.GetOptionGroupLocaleID(SimpleRadioSettings.kGroupCompat), "Compatibility" },
-
-                { SimpleRadioSettings.kLocaleExtendedRadioDetected, "Detected - compatible" },
-                { SimpleRadioSettings.kLocaleExtendedRadioMissing, "Not detected" },
-
-                { m_Setting.GetOptionLabelLocaleID(nameof(SimpleRadioSettings.ExtendedRadioStatus)), "ExtendedRadio" },
-                { m_Setting.GetOptionDescLocaleID(nameof(SimpleRadioSettings.ExtendedRadioStatus)),
-                    "Shows whether the ExtendedRadio mod is installed.\n\n" +
-                    "SimpleRadio works on its own either way — you can use both mods together without conflicts.\n\n" +
-                    "If another radio mod runs into an error while loading, SimpleRadio keeps the game's radio working." },
             };
         }
 
