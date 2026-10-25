@@ -17,6 +17,7 @@ namespace SimpleRadio.Core
     ///   ├── 我的摇滚电台/
     ///   │   ├── song1.ogg
     ///   │   ├── song2.ogg
+    ///   │   ├── playlist.m3u8     ← 可选，顺序模式的播放顺序（见 StationSequence）
     ///   │   └── icon.svg          ← 可选电台图标
     ///   └── Chill Vibes/
     ///       ├── lofi_1.ogg
@@ -220,27 +221,28 @@ namespace SimpleRadio.Core
                 return true;
             }
 
-            // 使用 List 收集，避免 AddToArray 的 O(N²) 问题
-            var clips = new List<AudioAsset>(audioFiles.Count);
+            // 使用 List 收集，避免 AddToArray 的 O(N²) 问题；键是文件名，供播放列表匹配与排序
+            var songs = new List<KeyValuePair<string, AudioAsset>>(audioFiles.Count);
 
             foreach (var audioFile in audioFiles)
             {
                 var asset = AudioAssetHelper.LoadAndRegister(audioFile, stationName, NetworkKey);
                 if (asset != null)
                 {
-                    clips.Add(asset);
+                    songs.Add(new KeyValuePair<string, AudioAsset>(Path.GetFileName(audioFile), asset));
                 }
             }
 
-            if (clips.Count == 0)
+            if (songs.Count == 0)
             {
                 Mod.Logger.Warn($"电台 '{stationName}' 没有成功加载的音频，跳过。");
                 return false;
             }
 
             // --- 构建 Segment ---
+            // clips 按顺序模式的播放顺序排列，并登记给 PlaylistOrder（原版建片段时会把它打乱）
             // tags 用于 PlaylistClipsPatch 识别 SimpleRadio segment（包含 NetworkKey）
-            var clipsArray = clips.ToArray();
+            var clipsArray = StationSequence.Build(stationDir, stationName, songs);
             var segment = new Segment
             {
                 type = SegmentType.Playlist,
@@ -275,13 +277,15 @@ namespace SimpleRadio.Core
             };
 
             // --- 注册到游戏 ---
-            channels[channelKey] = channel.CreateRuntime(stationDir);
+            var runtimeChannel = channel.CreateRuntime(stationDir);
+            channels[channelKey] = runtimeChannel;
+            PlaylistOrder.Register(runtimeChannel, clipsArray);
 
             LoadedStations++;
-            LoadedSongs += clips.Count;
+            LoadedSongs += clipsArray.Length;
 
-            Mod.Logger.Info($"  ✓ 电台 '{stationName}': {clips.Count} 首歌曲");
-            return clips.Count == audioFiles.Count;
+            Mod.Logger.Info($"  ✓ 电台 '{stationName}': {clipsArray.Length} 首歌曲");
+            return songs.Count == audioFiles.Count;
         }
     }
 }

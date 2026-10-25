@@ -10,6 +10,15 @@ using SimpleRadio.Core;
 namespace SimpleRadio.Settings
 {
     /// <summary>
+    /// 自定义电台的播放顺序。
+    /// </summary>
+    public enum PlaybackOrder
+    {
+        Shuffle,
+        Sequential
+    }
+
+    /// <summary>
     /// SimpleRadio 设置面板。
     /// 提供只读信息展示、打开数据目录、热刷新电台、格式开关功能。
     /// </summary>
@@ -45,6 +54,7 @@ namespace SimpleRadio.Settings
         private int _stationCount;
         private int _songCount;
         private bool _hasLoaded;
+        private PlaybackOrder _playbackOrder = PlaybackOrder.Shuffle;
 
         public SimpleRadioSettings(IMod mod) : base(mod)
         {
@@ -129,6 +139,24 @@ namespace SimpleRadio.Settings
         [SettingsUISection(kTabInfo, kGroupPlayback)]
         public bool RestoreLastStation { get; set; } = true;
 
+        /// <summary>
+        /// 播放顺序。读档反序列化时也会经过 setter，那时还没有电台，重排会直接跳过。
+        /// </summary>
+        [SettingsUISection(kTabInfo, kGroupPlayback)]
+        public PlaybackOrder PlaybackOrder
+        {
+            get => _playbackOrder;
+            set
+            {
+                if (_playbackOrder == value) return;
+                _playbackOrder = value;
+                if (ReferenceEquals(this, Mod.Instance?.Settings))
+                {
+                    PlaylistOrder.OnModeChanged();
+                }
+            }
+        }
+
         [SettingsUIHidden]
         public string LastStation { get; set; } = string.Empty;
 
@@ -204,6 +232,7 @@ namespace SimpleRadio.Settings
             EnableMP3 = true;
             EnableWAV = true;
             RestoreLastStation = true;
+            PlaybackOrder = PlaybackOrder.Shuffle;
             LastStation = string.Empty;
         }
     }

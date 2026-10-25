@@ -64,6 +64,17 @@ namespace SimpleRadio.Settings
                     "延续上次使用的电台，跨城市共用。关闭后，各城市使用存档记录的电台。" +
                     "下次进入城市时生效。" },
 
+                { m_Setting.GetOptionLabelLocaleID(nameof(SimpleRadioSettings.PlaybackOrder)), "播放顺序" },
+                { m_Setting.GetOptionDescLocaleID(nameof(SimpleRadioSettings.PlaybackOrder)),
+                    "自定义电台的歌曲播放顺序。\n\n" +
+                    "随机：每轮每首歌各播一次，顺序随机；新一轮开头不会是上一轮最后播的几首。\n\n" +
+                    "顺序：按文件名顺序播放（与资源管理器的排序一致），播完从头循环。" +
+                    "电台文件夹里有 .m3u 或 .m3u8 播放列表（UTF-8 编码）时，先按列表顺序，列表没列到的文件按文件名排在后面。" +
+                    "改了播放列表后点击「刷新电台」生效。\n\n" +
+                    "切换后，已排进队列的那首先播完，之后按新顺序继续。" },
+                { m_Setting.GetEnumValueLocaleID(PlaybackOrder.Shuffle), "随机" },
+                { m_Setting.GetEnumValueLocaleID(PlaybackOrder.Sequential), "顺序" },
+
                 // === Group: Formats ===
                 { m_Setting.GetOptionGroupLocaleID(SimpleRadioSettings.kGroupFormats), "音频格式" },
 

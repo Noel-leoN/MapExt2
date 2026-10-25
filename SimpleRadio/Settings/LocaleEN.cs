@@ -64,6 +64,17 @@ namespace SimpleRadio.Settings
                     "Resume the last station used across cities. When disabled, each city uses the station in its save. " +
                     "Applies the next time you enter a city." },
 
+                { m_Setting.GetOptionLabelLocaleID(nameof(SimpleRadioSettings.PlaybackOrder)), "Playback Order" },
+                { m_Setting.GetOptionDescLocaleID(nameof(SimpleRadioSettings.PlaybackOrder)),
+                    "How songs on custom stations are ordered.\n\n" +
+                    "Shuffle: each song plays once per round in random order, and a new round doesn't open with the songs that ended the last one.\n\n" +
+                    "Sequential: songs play in file name order (as sorted in Windows Explorer) and loop. " +
+                    "If the station folder has an .m3u or .m3u8 playlist (saved as UTF-8), its order comes first and files it doesn't list follow by file name. " +
+                    "Click 'Refresh Stations' after editing the playlist.\n\n" +
+                    "When you switch, the song already queued plays first, then the new order continues." },
+                { m_Setting.GetEnumValueLocaleID(PlaybackOrder.Shuffle), "Shuffle" },
+                { m_Setting.GetEnumValueLocaleID(PlaybackOrder.Sequential), "Sequential" },
+
                 // === Group: Formats ===
                 { m_Setting.GetOptionGroupLocaleID(SimpleRadioSettings.kGroupFormats), "Audio Formats" },
 
