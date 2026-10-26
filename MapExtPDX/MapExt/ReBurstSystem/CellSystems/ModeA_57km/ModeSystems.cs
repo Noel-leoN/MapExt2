@@ -73,6 +73,9 @@ namespace MapExtPDX.ModeA
                     .At(sim);
                 r.Replace<RentAdjustSystemMod_CellOnly>(cellMap, typeof(Game.Simulation.RentAdjustSystem))
                     .At(sim);
+                // 找房寻路 Setup：原版 SetupFindHomeJob 按原版尺寸采样污染图，改由尺寸正确的副本接管。
+                // 完整版的 FindHome 由上面 C1 的 FindTargets 补丁接管，两者按配置二选一；本条不注册系统，不影响更新次序
+                r.FindTargetsHandler(cellMap, Game.Pathfind.SetupTargetType.FindHome, new FindHomeHandler_CellOnly());
             }
 
             // === 需求 Job 置换 ===

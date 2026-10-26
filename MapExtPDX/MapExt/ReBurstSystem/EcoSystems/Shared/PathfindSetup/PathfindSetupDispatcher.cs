@@ -35,10 +35,10 @@ namespace MapExtPDX.EcoShared
 	/// 否則 <c>return true</c> 放行原版。P1（ResourceSeller）等優化皆掛此框架，避免多 Prefix 疊掛衝突。
 	/// </para>
 	/// <para>
-	/// <b>與 C1 找房 Prefix 並存說明</b>：ModeA/B/C/D/E 的 <c>PathfindSetupSystem_FindTargets_Patch</c>
-	/// 只接管 <see cref="SetupTargetType.FindHome"/>（對其餘類型 <c>return true</c>）；本 dispatcher 只註冊
-	/// <see cref="SetupTargetType.ResourceSeller"/> 等非 FindHome 類型。兩者接管類型互斥，
-	/// 無論 Harmony 執行順序如何都不會雙重 <c>return false</c> 搶奪 <c>__result</c>。
+	/// <b>与 C1 找房补丁的分工</b>：C1 完整版（经济总开关与找房组都开启）由各模式的 <c>PathfindSetupSystem_FindTargets_Patch</c>
+	/// 接管 <see cref="SetupTargetType.FindHome"/>（其余类型 <c>return true</c>），本 dispatcher 不登记 FindHome；
+	/// CellOnly 配置下不挂 C1 补丁，FindHome 由本 dispatcher 上各模式的 <c>FindHomeHandler_CellOnly</c> 接管。
+	/// 两条路径按会话配置快照二选一，同一会话里只有一方接管 FindHome，不会双重 <c>return false</c> 抢夺 <c>__result</c>。
 	/// </para>
 	/// </summary>
 	[HarmonyPatch]
@@ -64,6 +64,9 @@ namespace MapExtPDX.EcoShared
 
 		/// <summary>清空所有 handler（World 重建 / 模式切換時避免懸掛舊 World 的靜態快取）。</summary>
 		public static void Clear() => s_Handlers.Clear();
+
+		/// <summary>当前登记的 handler（只读），供注册表导出列出各类型由谁接管。</summary>
+		internal static IReadOnlyDictionary<SetupTargetType, IFindTargetsHandler> Handlers => s_Handlers;
 
 		#endregion
 
