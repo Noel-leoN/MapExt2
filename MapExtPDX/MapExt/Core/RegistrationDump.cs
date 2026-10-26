@@ -14,6 +14,7 @@ using System.Text.RegularExpressions;
 using Colossal.PSI.Environment;
 using Game;
 using HarmonyLib;
+using MapExtPDX.EcoShared;
 using Unity.Entities;
 
 namespace MapExtPDX.MapExt.Core
@@ -29,7 +30,8 @@ namespace MapExtPDX.MapExt.Core
     /// 列出 MapExt 系统在各 phase 内的相对次序，并附上它之前最近的原版系统作为锚点。
     /// 不输出绝对序号：它随其他 Mod 的加载先后变化。
     /// ② 启用状态：MapExt 系统的 Enabled，以及处于禁用状态的原版系统。
-    /// ③ 补丁清单：owner 为 MapExt 两个 Harmony 实例的全部补丁，按目标方法分行，行内保持 Harmony 的登记顺序。</para>
+    /// ③ 补丁清单：owner 为 MapExt 两个 Harmony 实例的全部补丁，按目标方法分行，行内保持 Harmony 的登记顺序。
+    /// ④ 寻路 handler：<c>PathfindSetupSystem.FindTargets</c> 的 dispatcher 上登记的 handler，按目标类型列出接管者。</para>
     ///
     /// <para><b>时机</b>：进入城市后导出。原版系统的重新禁用发生在读档过程中，主菜单下的启用状态不完整。</para>
     ///
@@ -65,7 +67,7 @@ namespace MapExtPDX.MapExt.Core
         #region Public API
 
         /// <summary>
-        /// 把更新次序、启用状态与补丁清单写入 MapExtPDX.log。
+        /// 把更新次序、启用状态、补丁清单与寻路 handler 写入 MapExtPDX.log。
         /// </summary>
         /// <returns>供设定页显示的单行结果摘要。</returns>
         public static string Export()
@@ -89,6 +91,7 @@ namespace MapExtPDX.MapExt.Core
                 List<string> order = CollectUpdateOrder(updateSystem);
                 List<string> states = CollectEnabledStates(world);
                 List<string> patches = CollectPatches();
+                List<string> handlers = CollectFindTargetsHandlers();
 
                 ModSettings s = Mod.Instance?.Settings;
                 string settings = s == null
@@ -108,10 +111,12 @@ namespace MapExtPDX.MapExt.Core
                     $"更新次序: {order.Count}",
                     $"启用状态: {states.Count}",
                     $"补丁: {patches.Count}",
+                    $"寻路 handler: {handlers.Count}",
                 };
                 lines.AddRange(order);
                 lines.AddRange(states);
                 lines.AddRange(patches);
+                lines.AddRange(handlers);
 
                 ModLog.Report(Tag, "系统注册表", rb =>
                 {
@@ -224,6 +229,19 @@ namespace MapExtPDX.MapExt.Core
                 AddPatchLine(lines, target, "Finalizer", info.Finalizers);
             }
 
+            lines.Sort(StringComparer.Ordinal);
+            return lines;
+        }
+
+        /// <summary>
+        /// 列出 FindTargets dispatcher 上登记的 handler："寻路 handler | 目标类型 | handler 类型 | Enabled=…"。
+        /// C1 完整版的 FindHome 由 C1 补丁接管，不在此列，见补丁清单。
+        /// </summary>
+        private static List<string> CollectFindTargetsHandlers()
+        {
+            List<string> lines = PathfindSetupDispatcher.Handlers
+                .Select(p => $"寻路 handler | {p.Key} | {FormatType(p.Value.GetType())} | Enabled={p.Value.Enabled}")
+                .ToList();
             lines.Sort(StringComparer.Ordinal);
             return lines;
         }
