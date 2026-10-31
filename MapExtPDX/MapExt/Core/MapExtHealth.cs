@@ -58,6 +58,9 @@ namespace MapExtPDX.MapExt.Core
         /// <summary>状态栏用的简短标签：健康时为 null，降级时如 "DEGRADED (TerrainSystemPatch, WaterSystemInitFix)"。</summary>
         public static string StatusLabel => IsDegraded ? $"DEGRADED ({ListComponents(includeInitFailure: true)})" : null;
 
+        /// <summary>失败组件的简短清单（最多列 3 个，含 OnLoad 中断），供存档闸门的降级提示使用。</summary>
+        public static string ComponentSummary => ListComponents(includeInitFailure: true);
+
         #endregion
 
         // === Public API ===

@@ -69,6 +69,17 @@ namespace MapExtPDX.SaveLoadSystem
                 { "VANILLA_CONVERT.CompleteNotify", "Conversion finished - saved as '{SAVE_NAME}'. You must restart the game before playing it." },
                 { "VANILLA_CONVERT.QuitConfirm", "Quit Game" },
                 { "VANILLA_CONVERT.QuitCancel", "Stay" },
+                { "VANILLA_CONVERT.EnableFirst", "This vanilla save must be converted before it can be played in the current mode. Enable '⚠ Vanilla Map Extension' under MapSize → Save Conversion (Experimental), then load it again." },
+                { "VANILLA_CONVERT.Failed", "The vanilla save conversion failed at step '{STEP}':\n{ERROR}\n\nThe original save was not modified. The game is paused; do not keep playing this city, just return to the main menu." },
+                { "VANILLA_CONVERT.SaveFailed", "The conversion finished, but saving '{SAVE_NAME}' failed.\n\nThe original save was not modified. The game is paused; save it under a new name yourself before quitting." },
+
+                // === 存档入口闸门 ===
+                { "SAVE_GATE.DegradedTitle", "MapExt Is Not Fully Loaded" },
+                { "SAVE_GATE.DegradedMessage", "Some critical MapExt components failed to load this session: {COMPONENTS}.\n\nLoading now may write data of the wrong map size into this city's save. Go back and restart the game; if this keeps happening, wait for a MapExt update." },
+                { "SAVE_GATE.DegradedLoadAnyway", "Load Anyway (Not Recommended)" },
+                { "SAVE_GATE.DegradedBack", "Go Back" },
+                { "SAVE_GATE.DegradedBlocked", "Some critical MapExt components failed to load this session ({COMPONENTS}), so this load was stopped. Load the city from the main menu, or restart the game." },
+                { "SAVE_GATE.ConvertFromMenu", "This save must be converted before it can be played in the current mode. Return to the main menu and load it from the save list to convert it." },
 
                 // === Map size mode apply (restart required) ===
                 { "MODE_APPLY.Title", "Map Size Mode Saved" },
@@ -117,6 +128,17 @@ namespace MapExtPDX.SaveLoadSystem
                 { "VANILLA_CONVERT.CompleteNotify", "转换完成，已存为「{SAVE_NAME}」。开始游玩前必须重启游戏。" },
                 { "VANILLA_CONVERT.QuitConfirm", "退出游戏" },
                 { "VANILLA_CONVERT.QuitCancel", "留在游戏" },
+                { "VANILLA_CONVERT.EnableFirst", "这个原版存档要先转换，才能在当前模式下游玩。请在「地图尺寸」→「存档转换 (实验性)」中启用「⚠ 原版地图扩展」，再重新读取。" },
+                { "VANILLA_CONVERT.Failed", "原版存档转换在「{STEP}」一步失败：\n{ERROR}\n\n原存档没有被修改。游戏已暂停，请不要继续游玩这座城市，返回主菜单即可。" },
+                { "VANILLA_CONVERT.SaveFailed", "转换已完成，但自动保存「{SAVE_NAME}」失败。\n\n原存档没有被修改。游戏已暂停，请在退出前手动另存为新档。" },
+
+                // === 存档入口闸门 ===
+                { "SAVE_GATE.DegradedTitle", "MapExt 未完整加载" },
+                { "SAVE_GATE.DegradedMessage", "本次游戏有 MapExt 关键组件加载失败：{COMPONENTS}。\n\n现在加载，可能把错误尺寸的数据写进这座城市的存档。建议返回并重启游戏；如果反复出现，请等待 MapExt 更新。" },
+                { "SAVE_GATE.DegradedLoadAnyway", "仍要加载（不推荐）" },
+                { "SAVE_GATE.DegradedBack", "返回" },
+                { "SAVE_GATE.DegradedBlocked", "本次游戏有 MapExt 关键组件加载失败（{COMPONENTS}），已阻止这次加载。请从主菜单读取存档，或重启游戏。" },
+                { "SAVE_GATE.ConvertFromMenu", "这个存档要先转换，才能在当前模式下游玩。请回到主菜单，从存档列表读取它进行转换。" },
 
                 // === 应用地图尺寸模式（需重启） ===
                 { "MODE_APPLY.Title", "地图尺寸模式已保存" },
@@ -164,6 +186,17 @@ namespace MapExtPDX.SaveLoadSystem
                 { "VANILLA_CONVERT.CompleteNotify", "轉換完成，已存為「{SAVE_NAME}」。開始遊玩前必須重啟遊戲。" },
                 { "VANILLA_CONVERT.QuitConfirm", "退出遊戲" },
                 { "VANILLA_CONVERT.QuitCancel", "留在遊戲" },
+                { "VANILLA_CONVERT.EnableFirst", "這個原版存檔要先轉換，才能在當前模式下遊玩。請在「地圖尺寸」→「存檔轉換 (實驗性)」中啟用「⚠ 原版地圖擴展」，再重新讀取。" },
+                { "VANILLA_CONVERT.Failed", "原版存檔轉換在「{STEP}」一步失敗：\n{ERROR}\n\n原存檔沒有被修改。遊戲已暫停，請不要繼續遊玩這座城市，返回主選單即可。" },
+                { "VANILLA_CONVERT.SaveFailed", "轉換已完成，但自動儲存「{SAVE_NAME}」失敗。\n\n原存檔沒有被修改。遊戲已暫停，請在退出前手動另存為新檔。" },
+
+                // === 存档入口闸门 ===
+                { "SAVE_GATE.DegradedTitle", "MapExt 未完整載入" },
+                { "SAVE_GATE.DegradedMessage", "本次遊戲有 MapExt 關鍵元件載入失敗：{COMPONENTS}。\n\n現在載入，可能把錯誤尺寸的資料寫進這座城市的存檔。建議返回並重啟遊戲；如果反覆出現，請等待 MapExt 更新。" },
+                { "SAVE_GATE.DegradedLoadAnyway", "仍要載入（不建議）" },
+                { "SAVE_GATE.DegradedBack", "返回" },
+                { "SAVE_GATE.DegradedBlocked", "本次遊戲有 MapExt 關鍵元件載入失敗（{COMPONENTS}），已阻止這次載入。請從主選單讀取存檔，或重啟遊戲。" },
+                { "SAVE_GATE.ConvertFromMenu", "這個存檔要先轉換，才能在當前模式下遊玩。請回到主選單，從存檔列表讀取它進行轉換。" },
 
                 // === 套用地圖尺寸模式（需重啟） ===
                 { "MODE_APPLY.Title", "地圖尺寸模式已儲存" },

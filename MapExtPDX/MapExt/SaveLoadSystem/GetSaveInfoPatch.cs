@@ -42,8 +42,8 @@ namespace MapExtPDX.SaveLoadSystem
             // 添加新的 CoreValue 条目
             mods.Add(coreValueEntry);
 
-            // 如果是转换存档，追加来源标记
-            if (VanillaConversionState.PendingConversion)
+            // 转换请求处于"保存中"时才追加来源标记：只有转换结果的那一次自动存档会带上
+            if (VanillaConversionState.IsSaving)
             {
                 mods.RemoveAll(mod => mod.StartsWith("MapEXT_ConvertedFrom="));
                 mods.Add("MapEXT_ConvertedFrom=vanilla");

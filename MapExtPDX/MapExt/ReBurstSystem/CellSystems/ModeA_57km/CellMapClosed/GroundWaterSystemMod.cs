@@ -209,9 +209,9 @@ using MapExtPDX.SaveLoadSystem;
             // 原版存檔轉換路徑由 VanillaSaveConversionSystem 全權處理：它會清空本場、再把原版
             // orgTextureSize² 資料 1:1 嵌入中心，與這裡的等比拉伸取向互斥（該路徑的地形也是
             // 「原始細節降採樣後嵌入中心」而非拉伸），直接讓路。
-            // 兩者的 OnGameLoaded 誰先跑取決於系統建立順序，但正確性不依賴它：即使旗標已被 Reset、
-            // 本方法後跑，下面「場非空就不動」的判據也會讓嵌入結果原樣保留。
-            if (VanillaConversionState.PendingConversion) return;
+            // 兩者的 OnGameLoaded 誰先跑取決於系統建立順序，但正確性不依賴它：转换请求在整次转换读档期间
+            // （加载中、转换中、保存中）都算数；即使不算，下面「場非空就不動」的判據也會讓嵌入結果原樣保留。
+            if (VanillaConversionState.IsConversionLoad) return;
 
             // 只在真正的遊戲／地圖編輯器會話介入。退出到主菜單時引擎會跑一輪 Purpose.Cleanup 的
             // 反序列化（`ConflictMonitoringSystem.OnGamePreload` 就是靠這個 purpose 重置 PatchSet

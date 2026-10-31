@@ -23,6 +23,7 @@ using MapExtPDX.SaveLoadSystem;
 using System;
 using System.Collections.Generic;
 using System.Reflection;
+using System.Threading.Tasks;
 using Unity.Collections;
 using Unity.Entities;
 using Unity.Jobs;
@@ -34,12 +35,12 @@ using UnityEngine.Rendering;
 namespace MapExtPDX.SaveLoadSystem
 {
     /// <summary>
-    /// 原版存档转换后处理系统。
-    /// 在 OnGameLoaded 时检测 PendingConversion 标志，执行：
-    /// ① Heightmap 合成
-    /// ② NaturalResource 中心嵌入
-    /// ③ GroundWater 中心嵌入
-    /// ④ 自动保存新档
+    /// 原版存档转换后处理系统，按转换请求（<see cref="VanillaConversionState"/>）分阶段执行：
+    /// <c>OnGameLoaded</c> 做转换（MapTile、清理、地形、自然资源、地下水、水体）；
+    /// <c>OnGameLoadingComplete</c> 把自动存档排进原版存读档队列；存档确认写入后才弹完成提示。
+    ///
+    /// <para><b>为什么不用 OnUpdate</b>：本系统注册在 <c>LoadSimulation</c>，这个 phase 只在加载期间由
+    /// <c>SimulationSystem</c> 补帧时更新，加载结束后 <c>OnUpdate</c> 不再跑（v4.12.0 整合计划 §1.5）。</para>
     /// </summary>
     public partial class VanillaSaveConversionSystem : GameSystemBase
     {
@@ -52,10 +53,13 @@ namespace MapExtPDX.SaveLoadSystem
         private const int kVanillaMapSize = 14336;
         private const int kVanillaWorldSize = 57344; // kDefaultMapSize × 4
 
+        // === 自动存档 ===
+        /// <summary>存档预览图尺寸，与原版存档面板相同。</summary>
+        private const int kPreviewWidth = 680;
+        private const int kPreviewHeight = 383;
 
-
-        private bool m_ConversionExecuted = false;
-        private bool m_OriginalPausedAfterLoading = false;
+        /// <summary>请求结束后再压几帧速度：确保排在 SimulationSystem 加载结束后按设定定速的那一次之后。</summary>
+        private const int kPauseSettleFrames = 3;
 
         #endregion
 
@@ -74,87 +78,126 @@ namespace MapExtPDX.SaveLoadSystem
         {
             base.OnGameLoaded(serializationContext);
 
-            if (!VanillaConversionState.PendingConversion)
+            // 只认闸门放行过的请求，且一个请求只执行一次：放行时推进到"加载中"，这里推进到"转换中"（P0-2、P0-3）
+            ConversionRequest request = VanillaConversionState.Current;
+            if (request == null || request.Phase != ConversionPhase.Loading)
                 return;
 
-            if (m_ConversionExecuted)
-            {
-                ModLog.Warn(Tag, "转换已执行过，跳过");
-                VanillaConversionState.Reset();
-                return;
-            }
-
+            request.Phase = ConversionPhase.Converting;
             ModLog.Ok(Tag, "=== 开始原版存档转换 ===");
-            ModLog.Info(Tag, $"目标 CV={VanillaConversionState.TargetCoreValue}, " +
-                $"原始存档名='{VanillaConversionState.OriginalSaveName}'");
+            ModLog.Info(Tag, $"转换请求 {request}");
+
+            // ⓪ 转换与自动存档期间保持暂停，失败后也停在暂停（v4.12.0 整合计划 Q6）
+            StartPauseHold(request);
 
             try
             {
-                // ⓪ 利用游戏原生设置强制暂停
-                // SimulationSystem.selectedSpeed setter 在 m_IsLoading 期间会被忽略，
-                // 加载完成时 SimulationSystem.OnUpdate 读取 pausedAfterLoading 决定速度。
-                var gameplay = Game.Settings.SharedSettings.instance?.gameplay;
-                m_OriginalPausedAfterLoading = gameplay?.pausedAfterLoading ?? false;
-                if (gameplay != null)
-                {
-                    gameplay.pausedAfterLoading = true;
-                    ModLog.Info(Tag, $"已设置 pausedAfterLoading=true（原值: {m_OriginalPausedAfterLoading}）");
-                }
+                // 步骤名用英文标识：失败时原样写进三语提示与日志
 
                 // ⓪a MapTile 边界重建 (529 tiles 全部解锁)
-                ExecuteMapTileRebuild();
+                RunStep(request, "MapTiles", ExecuteMapTileRebuild);
 
                 // ⓪b 先清除所有车辆和居民（消除所有活跃导航引用）
                 // 必须在 OC 删除之前执行，否则车辆导航旧路径会触发 NRE
-                ExecuteVehicleCleanup();
+                RunStep(request, "VehicleCleanup", ExecuteVehicleCleanup);
 
                 // ⓪c OutsideConnection 节点清理（标记为 Deleted）
                 // 包括飞机 OC（无法在游戏内手动删除）
                 // 车辆已全部清除，级联删除安全
-                ExecuteOutsideConnectionCleanup();
+                RunStep(request, "OutsideConnections", ExecuteOutsideConnectionCleanup);
 
                 // ① Heightmap 合成 (含平面底图回退)
-                ExecuteHeightmapSynthesis();
+                RunStep(request, "Heightmap", ExecuteHeightmapSynthesis);
 
                 // ② NaturalResource 中心嵌入
-                ExecuteNaturalResourceRegen();
+                RunStep(request, "NaturalResources", ExecuteNaturalResourceRegen);
 
                 // ③ GroundWater 中心嵌入
-                ExecuteGroundWaterInit();
+                RunStep(request, "GroundWater", ExecuteGroundWaterInit);
 
                 // ③b 水源升级 + 海平面重置
-                ExecuteWaterSimReset();
+                RunStep(request, "WaterSources", ExecuteWaterSimReset);
 
                 // ③c 预模拟水体填充（河流/湖泊注水加速）
-                ExecuteWaterPreSimulation();
+                RunStep(request, "WaterPreSimulation", ExecuteWaterPreSimulation);
 
-                // ④ 自动保存新档
-                ExecuteAutoSave();
-
-                m_ConversionExecuted = true;
-
-                ModLog.Ok(Tag, "=== 原版存档转换完成 ===");
-
-                // ⑥ 显示完成提示
-                ShowCompletionDialog();
+                // ④ 自动存档等加载结束后在 OnGameLoadingComplete 里排队
+                request.Phase = ConversionPhase.Saving;
+                request.CurrentStep = "AutoSave";
+                ModLog.Ok(Tag, "=== 原版存档转换完成，加载结束后自动存档 ===");
             }
             catch (Exception ex)
             {
-                ModLog.Error(Tag, $"转换过程中发生错误: {ex}");
-                ShowErrorDialog(ex.Message);
+                ModLog.Error(Tag, ex, $"转换在「{request.CurrentStep}」一步失败");
+                Fail(request, request.CurrentStep, ex.Message);
             }
-            finally
-            {
-                VanillaConversionState.Reset();
+        }
 
-                // 恢复原始 pausedAfterLoading 设置（不永久修改用户首选项）
-                var gp = Game.Settings.SharedSettings.instance?.gameplay;
-                if (gp != null)
-                {
-                    gp.pausedAfterLoading = m_OriginalPausedAfterLoading;
-                    ModLog.Info(Tag, $"已恢复 pausedAfterLoading={m_OriginalPausedAfterLoading}");
-                }
+        /// <summary>
+        /// 加载画面结束后：转换成功的把自动存档排进原版存读档队列（排在当前加载之后，与玩家的存读档串行）；
+        /// 转换失败的弹出失败提示。读档中途界面还没就绪，两者都放在这里。
+        /// </summary>
+        protected override void OnGameLoadingComplete(Colossal.Serialization.Entities.Purpose purpose, GameMode mode)
+        {
+            base.OnGameLoadingComplete(purpose, mode);
+            if (mode != GameMode.Game) return;
+
+            ConversionRequest request = VanillaConversionState.Current;
+            if (request == null) return;
+
+            if (request.Phase == ConversionPhase.Saving && !request.SaveQueued)
+            {
+                request.SaveQueued = true;
+                Colossal.TaskManager.instance.EnqueueTask("SaveLoadGame", () => SaveConvertedAsync(request), 1);
             }
+            else if (request.Phase == ConversionPhase.Failed && !request.FailureReported)
+            {
+                request.FailureReported = true;
+                ShowFailureDialog(request);
+            }
+        }
+
+        private static void RunStep(ConversionRequest request, string step, Action action)
+        {
+            request.CurrentStep = step;
+            action();
+        }
+
+        private static void Fail(ConversionRequest request, string step, string detail)
+        {
+            request.FailedStep = step;
+            request.FailureDetail = detail;
+            request.Phase = ConversionPhase.Failed;
+            ModLog.Error(Tag, $"转换失败（步骤：{step}）：{detail}。源存档未被修改，游戏保持暂停");
+        }
+
+        /// <summary>
+        /// 转换与自动存档期间把模拟速度压在 0，不改玩家的"加载后暂停"设定。
+        /// 加载期间 <c>selectedSpeed</c> 的写入会被忽略，加载结束后 <c>SimulationSystem</c> 才按设定定一次速度，
+        /// 所以逐帧压，直到请求结束后再压 <see cref="kPauseSettleFrames"/> 帧。
+        /// 原先改 <c>pausedAfterLoading</c>、又在 <c>OnGameLoaded</c> 里就改回去，那时 SimulationSystem 还没读，暂停实际不生效。
+        /// </summary>
+        private void StartPauseHold(ConversionRequest request)
+        {
+            SimulationSystem simulation = World.GetExistingSystemManaged<SimulationSystem>();
+            if (simulation == null)
+            {
+                ModLog.Warn(Tag, "SimulationSystem 不存在，转换期间无法保持暂停");
+                return;
+            }
+
+            int settledFrames = 0;
+            Colossal.Core.MainThreadDispatcher.RegisterUpdater(() =>
+            {
+                GameManager gm = GameManager.instance;
+                // 请求已清除（回主菜单、新的读档）或已离开游戏：停止
+                if (gm == null || VanillaConversionState.Current != request || gm.gameMode != GameMode.Game) return true;
+                if (gm.isGameLoading) return false;
+
+                simulation.selectedSpeed = 0f;
+                bool finished = request.Phase != ConversionPhase.Converting && request.Phase != ConversionPhase.Saving;
+                return finished && ++settledFrames >= kPauseSettleFrames;
+            });
         }
 
         #region ① Heightmap 合成
@@ -827,69 +870,114 @@ namespace MapExtPDX.SaveLoadSystem
         #region ④ 自动保存
 
         /// <summary>
-        /// 自动保存转换后的存档。
-        /// 直接调用 GameManager.Save 确保以新文件名保存，绕过 SafeSaveGame 的异步覆盖确认。
+        /// 转换结果的自动存档，在原版 <c>"SaveLoadGame"</c> 任务队列里执行（与 <c>QuickSave</c> 相同的做法）。
+        /// <list type="bullet">
+        /// <item>新档名去重：<c>原名_MapExtXX</c>，重名时加 " (2)"、" (3)"……，不覆盖任何已有存档；</item>
+        /// <item>存储位置与原版存档一致：玩家最近选的本地或云端库；</item>
+        /// <item>预览照 <c>QuickSave</c> 截一张，存完再销毁；</item>
+        /// <item>成败以 <c>onGameSaveLoad</c> 结束事件的 <c>success</c> 为准，并核对目标资产确实存在
+        /// （<c>GameManager.Save</c> 无论成败都返回 true）。</item>
+        /// </list>
         /// </summary>
-        private void ExecuteAutoSave()
+        private async Task SaveConvertedAsync(ConversionRequest request)
         {
-            ModLog.Info(Tag, "④ 开始自动保存...");
+            GameManager gm = GameManager.instance;
+            string saveName = null;
+            bool? saveSuccess = null;
+            RenderTexture preview = null;
+
+            void OnSaveEvent(string name, string previewUri, bool start, bool success)
+            {
+                if (!start && name == saveName) saveSuccess = success;
+            }
 
             try
             {
-                string modeKm = PatchManager.GetModeNameForCoreValue(VanillaConversionState.TargetCoreValue);
-                // 移除空格，简化文件名
-                string modeSuffix = modeKm.Replace(" ", "");
-                string originalName = VanillaConversionState.OriginalSaveName;
-                if (string.IsNullOrEmpty(originalName)) originalName = "VanillaSave";
-
-                string newSaveName = $"{originalName}_MapExt{modeSuffix}";
-
-                ModLog.Info(Tag, $"保存新档: '{newSaveName}'");
-
-                // 获取 MenuUISystem 用于 GetSaveInfo
-                var menuUI = World.GetExistingSystemManaged<MenuUISystem>();
-                if (menuUI == null)
+                if (VanillaConversionState.Current != request)
                 {
-                    ModLog.Warn(Tag, "MenuUISystem 不存在，无法获取 SaveInfo");
+                    ModLog.Warn(Tag, "转换请求已被清除，取消自动存档");
                     return;
                 }
 
-                // 获取存档元数据
+                var menuUI = World.GetExistingSystemManaged<MenuUISystem>();
+                if (menuUI == null) throw new InvalidOperationException("MenuUISystem 不存在，无法生成存档信息");
+
+                ILocalAssetDatabase db = ResolveTargetDatabase();
+                saveName = MakeUniqueSaveName(db, request);
+                ModLog.Info(Tag, $"④ 自动存档：'{saveName}'（{db.name}）");
+
+                // 请求处于"保存中"，元数据补丁会给这份存档打上转换标签
                 var saveInfo = menuUI.GetSaveInfo(false);
 
-                // 获取目标数据库
-                var getDbMethod = AccessTools.Method(typeof(MenuHelpers), "GetSanitizedCloudTarget");
-                var lastTarget = AccessTools.Field(typeof(Game.Settings.SharedSettings), "instance")
-                    ?.GetValue(null);
-                var userState = lastTarget?.GetType().GetProperty("userState")?.GetValue(lastTarget);
-                var lastCloudTarget = userState?.GetType().GetProperty("lastCloudTarget")?.GetValue(userState);
+                preview = ScreenCaptureHelper.CreateRenderTarget("SaveGamePanel", kPreviewWidth, kPreviewHeight);
+                if (Camera.main != null)
+                    ScreenCaptureHelper.CaptureScreenshot(Camera.main, preview, new MenuHelpers.SaveGamePreviewSettings());
 
-                ILocalAssetDatabase targetDb = null;
-                if (getDbMethod != null && lastCloudTarget != null)
+                gm.onGameSaveLoad += OnSaveEvent;
+                await gm.Save(saveName, saveInfo, db, preview);
+
+                bool exists = SaveExists(db, saveName);
+                if (saveSuccess == true && exists)
                 {
-                    var cloudTarget = getDbMethod.Invoke(null, new[] { lastCloudTarget });
-                    targetDb = (ILocalAssetDatabase)cloudTarget?.GetType().GetProperty("db")?.GetValue(cloudTarget);
+                    request.Phase = ConversionPhase.Completed;
+                    ModLog.Ok(Tag, $"自动存档完成：'{saveName}'");
+                    ShowCompletionDialog(request, saveName);
                 }
-
-                if (targetDb == null)
+                else
                 {
-                    // 降级：使用 AssetDatabase.user（本地存档库）
-                    targetDb = Colossal.IO.AssetDatabase.AssetDatabase.user;
-                    ModLog.Info(Tag, "使用 AssetDatabase.user 作为目标数据库");
+                    Fail(request, "AutoSave", $"存档结果 {(saveSuccess.HasValue ? saveSuccess.Value.ToString() : "未收到结束事件")}，目标资产存在 {exists}");
+                    ShowSaveFailedDialog(saveName);
                 }
-
-                // 直接调用 GameManager.Save（跳过覆盖确认对话框）
-                // savePreview 不能为 null，创建 1x1 哑纹理
-                var dummyPreview = new Texture2D(1, 1);
-                GameManager.instance.Save(newSaveName, saveInfo, targetDb, dummyPreview);
-                UnityEngine.Object.Destroy(dummyPreview);
-                ModLog.Ok(Tag, $"已触发保存: '{newSaveName}'");
             }
             catch (Exception ex)
             {
-                ModLog.Error(Tag, $"自动保存失败: {ex}");
+                ModLog.Error(Tag, ex, $"自动存档 '{saveName}' 失败");
+                Fail(request, "AutoSave", ex.Message);
+                ShowSaveFailedDialog(saveName ?? request.DisplayName);
+            }
+            finally
+            {
+                if (gm != null) gm.onGameSaveLoad -= OnSaveEvent;
+                if (preview != null)
+                {
+                    preview.Release();
+                    UnityEngine.Object.Destroy(preview);
+                }
             }
         }
+
+        /// <summary>与原版存档一致：按玩家最近选的存储位置（本地或云端）取目标库，取不到时退回本地库。</summary>
+        private static ILocalAssetDatabase ResolveTargetDatabase()
+        {
+            try
+            {
+                ILocalAssetDatabase db = MenuHelpers.GetSanitizedCloudTarget(
+                    Game.Settings.SharedSettings.instance.userState.lastCloudTarget).db;
+                if (db != null) return db;
+            }
+            catch (Exception ex)
+            {
+                ModLog.Warn(Tag, $"取存储位置失败：{ex.Message}");
+            }
+
+            ModLog.Info(Tag, "使用本地存档库 AssetDatabase.user");
+            return Colossal.IO.AssetDatabase.AssetDatabase.user;
+        }
+
+        /// <summary>"原名_MapExt模式"，已有同名存档时依次加 " (2)"、" (3)"……</summary>
+        private static string MakeUniqueSaveName(ILocalAssetDatabase db, ConversionRequest request)
+        {
+            string modeSuffix = PatchManager.GetModeNameForCoreValue(request.TargetCoreValue).Replace(" ", "");
+            string original = string.IsNullOrEmpty(request.DisplayName) ? "VanillaSave" : request.DisplayName;
+            string baseName = $"{original}_MapExt{modeSuffix}";
+
+            string name = baseName;
+            for (int i = 2; SaveExists(db, name) && i < 1000; i++) name = $"{baseName} ({i})";
+            return name;
+        }
+
+        private static bool SaveExists(ILocalAssetDatabase db, string name) =>
+            db.Exists<PackageAsset>(SaveHelpers.GetAssetDataPath<Game.Assets.SaveGameMetadata>(db, name), out _);
 
         #endregion
 
@@ -1510,14 +1598,12 @@ namespace MapExtPDX.SaveLoadSystem
             }
         }
 
-        /// <summary>显示转换完成对话框，点击确认后退出游戏</summary>
-        private void ShowCompletionDialog()
+        /// <summary>存档确认写入后显示转换完成对话框，点击确认后退出游戏</summary>
+        private static void ShowCompletionDialog(ConversionRequest request, string saveName)
         {
             try
             {
-                string targetMode = PatchManager.GetModeNameForCoreValue(VanillaConversionState.TargetCoreValue);
-                string modeSuffix = targetMode.Replace(" ", "");
-                string saveName = $"{VanillaConversionState.OriginalSaveName}_MapExt{modeSuffix}";
+                string targetMode = PatchManager.GetModeNameForCoreValue(request.TargetCoreValue);
 
                 var locParams = new Dictionary<string, ILocElement>
                 {
@@ -1569,22 +1655,44 @@ namespace MapExtPDX.SaveLoadSystem
             }
         }
 
-        /// <summary>显示错误对话框</summary>
-        private void ShowErrorDialog(string errorMessage)
+        /// <summary>转换失败：写明失败步骤与原因。源存档没动，游戏保持暂停。</summary>
+        private static void ShowFailureDialog(ConversionRequest request)
         {
-            try
+            var locParams = new Dictionary<string, ILocElement>
             {
-                var dialog = new MessageDialog(
-                    LocalizedString.Id("LOAD_VALIDATION.TitleError"),
-                    LocalizedString.Value($"Vanilla save conversion failed:\n{errorMessage}"),
-                    LocalizedString.Id("LOAD_VALIDATION.ConfirmOK"));
+                { "STEP", LocalizedString.Value(request.FailedStep ?? "?") },
+                { "ERROR", LocalizedString.Value(request.FailureDetail ?? "") }
+            };
+            ShowErrorMessage(new LocalizedString("VANILLA_CONVERT.Failed", null, locParams));
+        }
 
-                GameManager.instance.userInterface.appBindings.ShowMessageDialog(dialog, null);
-            }
-            catch (Exception ex)
+        /// <summary>转换已完成但自动存档失败：源存档没动，游戏保持暂停，请玩家手动另存。</summary>
+        private static void ShowSaveFailedDialog(string saveName)
+        {
+            var locParams = new Dictionary<string, ILocElement> { { "SAVE_NAME", LocalizedString.Value(saveName ?? "?") } };
+            ShowErrorMessage(new LocalizedString("VANILLA_CONVERT.SaveFailed", null, locParams));
+        }
+
+        /// <summary>延后一帧弹出错误对话框，排在其他 Mod 的加载完成对话框之后。</summary>
+        private static void ShowErrorMessage(LocalizedString message)
+        {
+            Colossal.Core.MainThreadDispatcher.RegisterUpdater(() =>
             {
-                ModLog.Warn(Tag, $"显示错误对话框失败: {ex.Message}");
-            }
+                try
+                {
+                    var dialog = new MessageDialog(
+                        LocalizedString.Id("LOAD_VALIDATION.TitleError"),
+                        message,
+                        LocalizedString.Id("LOAD_VALIDATION.ConfirmOK"));
+                    GameManager.instance.userInterface.appBindings.ShowMessageDialog(dialog, null);
+                }
+                catch (Exception ex)
+                {
+                    ModLog.Warn(Tag, $"显示错误对话框失败: {ex.Message}");
+                }
+
+                return true;
+            });
         }
 
         #endregion

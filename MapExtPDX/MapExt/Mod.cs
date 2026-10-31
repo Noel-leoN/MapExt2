@@ -178,16 +178,22 @@ namespace MapExtPDX
             PatchManager.Initialize(_modePatcher, initialMode);
 
 
-            // === D. 存档验证系统 === 
+            // === D. 存档验证系统 ===
             ModLog.Info(Tag, "全局并行方式补丁正在逐条执行...");
-            // 4.1 加载SaveLoadSystem的2个class补丁
-            if (m_Setting.DisableLoadGameValidation == false)
-            {
-                _globalPatcher.CreateClassProcessor(typeof(MetaDataExtenderPatch)).Patch();
-                ModLog.Patch(Tag, $"{nameof(MetaDataExtenderPatch)} 已应用");
-                _globalPatcher.CreateClassProcessor(typeof(LoadGameValidatorPatch)).Patch();
-                ModLog.Patch(Tag, $"{nameof(LoadGameValidatorPatch)} 已应用");
-            }
+            // 4.1 存档元数据与各入口的闸门一律挂载：「禁止读档校验」只在判定时读，
+            // 关着校验时存下的档照样带模式值标签（审查报告 P0-5）。挂载失败按关键处理，本会话进入降级
+            ApplySaveGatePatch(nameof(MetaDataExtenderPatch),
+                () => _globalPatcher.CreateClassProcessor(typeof(MetaDataExtenderPatch)).Patch());
+            ApplySaveGatePatch(nameof(LoadGameValidatorPatch),
+                () => _globalPatcher.CreateClassProcessor(typeof(LoadGameValidatorPatch)).Patch());
+            ApplySaveGatePatch(nameof(ContinueGameGatePatch),
+                () => _globalPatcher.CreateClassProcessor(typeof(ContinueGameGatePatch)).Patch());
+            ApplySaveGatePatch(nameof(NewGameGatePatch),
+                () => _globalPatcher.CreateClassProcessor(typeof(NewGameGatePatch)).Patch());
+            ApplySaveGatePatch(nameof(QuickLoadGatePatch),
+                () => _globalPatcher.CreateClassProcessor(typeof(QuickLoadGatePatch)).Patch());
+            ApplySaveGatePatch(nameof(GameManagerLoadGatePatch),
+                () => _globalPatcher.CreateClassProcessor(typeof(GameManagerLoadGatePatch)).Patch());
 
             // 其他并行的选项补丁，也在这里添加
             // _globalPatcher.CreateClassProcessor(typeof(ParallelOptionPatch)).Patch();
@@ -371,11 +377,34 @@ namespace MapExtPDX
             }
         }
 
+        /// <summary>
+        /// 挂一个存档闸门补丁类。闸门缺一层，模式不符的存档就可能绕过校验读进来，所以失败按关键处理：
+        /// 记错误并让本会话进入降级（见 <see cref="MapExtHealth"/>）。
+        /// </summary>
+        private static void ApplySaveGatePatch(string name, Action apply)
+        {
+            try
+            {
+                apply();
+#if DEBUG
+                // 故障注入：补丁照常挂上后再抛出，只验证降级信号
+                if (MapExtHealth.IsFaultInjected($"SaveGate/{name}"))
+                    throw new InvalidOperationException("故障注入（DEBUG 自检）");
+#endif
+                ModLog.Patch(Tag, $"{name} 已应用");
+            }
+            catch (Exception ex)
+            {
+                MapExtHealth.MarkDegraded($"SaveGate/{name}", ex.Message);
+            }
+        }
+
         public void OnDispose()
         {
             ModLog.Info(Tag, nameof(OnDispose));
 
             IsUnloading = true;
+            VanillaConversionState.Clear("Mod 卸载");
 
             // 在Mod卸载时移除所有补丁
             // 必須傳入自己的 Harmony id：Harmony 的 UnpatchAll(null) 會對每個 patch 的

@@ -73,6 +73,8 @@ namespace MapExtPDX.MapExt.Core
                     WaterAdaptiveSleep.ResetSessionState();
                     // 诊断标志：允许二次加载重新诊断
                     _cellMapDialogShown = false;
+                    // 存档闸门：回主菜单即作废残留的转换请求（P0-3）
+                    VanillaConversionState.Clear("返回主菜单");
                     ModLog.Ok(Tag, "所有 PatchSet 会话状态已重置");
                 }
                 catch (Exception ex)
@@ -86,6 +88,9 @@ namespace MapExtPDX.MapExt.Core
                 // 避免「遊戲中直接載入另一張地圖」時沿用舊記錄而誤報。
                 // （Cleanup 分支已透過 TerrainSystemPatches.ResetSessionState 一併清除）
                 MapSizeMismatchState.Reset();
+
+                // 存档闸门：已完成或失败的转换请求到下一次加载就作废；本次正是转换读档时请求处于"加载中"，不受影响
+                VanillaConversionState.ClearFinished("新一次加载开始");
 
                 // [BUGFIX] 在加载开始前（而非加载完成后）立即重新禁用被引擎复活的原版系统。
                 // 消除加载期间原版+替换系统双跑的窗口期，彻底解决 JobTempAlloc 警告。

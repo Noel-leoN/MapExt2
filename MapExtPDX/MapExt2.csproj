@@ -46,6 +46,10 @@
 		<Reference Include="Colossal.AssetPipeline.Native">
 			<Private>false</Private>
 		</Reference>
+		<!-- 转换自动存档的同名检查：ILocalAssetDatabase.Exists<PackageAsset>，PackageAsset 实现的接口定义在这里 -->
+		<Reference Include="Colossal.AssetPipeline">
+			<Private>false</Private>
+		</Reference>
 		<Reference Include="Colossal.UI">
 			<Private>false</Private>
 		</Reference>
