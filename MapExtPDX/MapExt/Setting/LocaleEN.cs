@@ -1018,6 +1018,14 @@ namespace MapExtPDX
                     "Developer tool: for every active CellMap, writes each value field's non-zero cell count, non-zero area, minimum, maximum and sum to MapExtPDX.log, together with the pollution, happiness and attractiveness parameters in effect. Used to compare the same city layout at vanilla size and in an expanded mode.\n★ Pause the game before exporting, so every layer is taken from the same frame.\n★ Requires a loaded save.\n★ A copy is also saved to ModsData/MapExt2/CellMapStats, which survives the log being overwritten on the next launch."
                 },
                 {
+                    m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.CellMapSerializeProfiling)),
+                    "CellMap Save/Load Timing (diagnostic)"
+                },
+                {
+                    m_Setting.GetOptionDescLocaleID(nameof(ModSettings.CellMapSerializeProfiling)),
+                    "Temporary diagnostic: the save and load jobs of every MapExt CellMap system run synchronously and are timed one by one. Each system's time and byte count, and the total time of the whole save or load, are written to MapExtPDX.log.\n★ Blocks the main thread while saving and loading — turn it off after measuring.\n★ Saved data is unchanged."
+                },
+                {
                     m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.RegistrationDumpReport)),
                     "System Registry Result"
                 },

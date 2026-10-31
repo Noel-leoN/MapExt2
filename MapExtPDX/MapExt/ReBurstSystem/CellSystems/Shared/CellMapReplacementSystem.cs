@@ -7,6 +7,7 @@ using System.Runtime.CompilerServices;
 using Colossal.Serialization.Entities;
 using Game.Simulation;
 using MapExtPDX.MapExt.Core;
+using MapExtPDX.MapExt.Tools;
 using Unity.Burst;
 using Unity.Collections;
 using Unity.Jobs;
@@ -169,12 +170,18 @@ namespace MapExtPDX.CellShared
             }
 
             // 调度自定义的序列化 Job
-            JobHandle jobHandle = new SerializeJobMod<TWriter>
+            SerializeJobMod<TWriter> jobData = new()
             {
                 m_Stride = stride,
                 m_Map = m_Map,
                 m_WriterData = writerData
-            }.Schedule(JobHandle.CombineDependencies(inputDeps, m_WriteDependencies));
+            };
+            JobHandle dependsOn = JobHandle.CombineDependencies(inputDeps, m_WriteDependencies);
+
+            // 存读档计时开着时改为同步执行并计时（临时诊断，见 CellMapSerializeTimer）
+            JobHandle jobHandle = CellMapSerializeTimer.Enabled
+                ? CellMapSerializeTimer.RunSerialize(jobData, dependsOn, writerData, LogTag, m_TextureSize.x)
+                : jobData.Schedule(dependsOn);
 
             m_ReadDependencies = JobHandle.CombineDependencies(m_ReadDependencies, jobHandle);
             return jobHandle;
@@ -198,7 +205,12 @@ namespace MapExtPDX.CellShared
                 m_StoredLength = m_StoredLength,
                 m_ReaderData = readerData
             };
-            m_WriteDependencies = jobData.Schedule(JobHandle.CombineDependencies(inputDeps, m_ReadDependencies, m_WriteDependencies));
+            JobHandle dependsOn = JobHandle.CombineDependencies(inputDeps, m_ReadDependencies, m_WriteDependencies);
+
+            // 存读档计时开着时改为同步执行并计时（临时诊断，见 CellMapSerializeTimer）
+            m_WriteDependencies = CellMapSerializeTimer.Enabled
+                ? CellMapSerializeTimer.RunDeserialize(jobData, dependsOn, readerData, LogTag, m_TextureSize.x)
+                : jobData.Schedule(dependsOn);
             return m_WriteDependencies;
         }
 

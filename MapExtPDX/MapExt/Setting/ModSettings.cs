@@ -1300,6 +1300,30 @@ namespace MapExtPDX
 
         #endregion
 
+        // === CellMap Serialize Profiling ===
+
+        #region CellMap Serialize Profiling
+
+        private bool m_CellMapSerializeProfiling;
+
+        /// <summary>
+        /// CellMap 存读档计时（临时诊断，v4.12.0 整合计划 Phase 0.4，结案前撤下）：开启后，CellMap 替换系统的
+        /// 存档与读档 Job 改为同步执行并逐个计时，每个系统一行写入 MapExtPDX.log，并记下整次存档、读档的总耗时。
+        /// 存读档时会阻塞主线程，测完请关闭。打开时（含读设定文件）订阅存读档事件，见 CellMapSerializeTimer。
+        /// </summary>
+        [SettingsUISection(kDebugTab, kDebugGroup)]
+        public bool CellMapSerializeProfiling
+        {
+            get => m_CellMapSerializeProfiling;
+            set
+            {
+                m_CellMapSerializeProfiling = value;
+                if (value) MapExtPDX.MapExt.Tools.CellMapSerializeTimer.EnsureListening();
+            }
+        }
+
+        #endregion
+
         // === Registration Dump ===
 
         #region Registration Dump
