@@ -148,7 +148,7 @@ namespace MapExtPDX.SaveLoadSystem
             if (request.Phase == ConversionPhase.Saving && !request.SaveQueued)
             {
                 request.SaveQueued = true;
-                Colossal.TaskManager.instance.EnqueueTask("SaveLoadGame", () => SaveConvertedAsync(request), 1);
+                Colossal.TaskManager.instance.EnqueueTask(SaveHelpers.kSaveLoadTaskName, () => SaveConvertedAsync(request), 1);
             }
             else if (request.Phase == ConversionPhase.Failed && !request.FailureReported)
             {

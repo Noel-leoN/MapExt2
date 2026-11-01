@@ -325,7 +325,7 @@ namespace MapExtPDX.SaveLoadSystem
         public static void RequestMainMenu()
         {
             ModLog.Info(Tag, "启动阶段的加载已拦下，转入主菜单");
-            TaskManager.instance.EnqueueTask("SaveLoadGame", () => GameManager.instance.MainMenu(), 1);
+            TaskManager.instance.EnqueueTask(SaveHelpers.kSaveLoadTaskName, () => GameManager.instance.MainMenu(), 1);
         }
 
         /// <summary>
