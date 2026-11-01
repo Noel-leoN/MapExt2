@@ -6,6 +6,7 @@
 
 using Colossal.IO.AssetDatabase;
 using Colossal.Mathematics;
+using Colossal.UI.Binding;
 using Game;
 using Game.Areas;
 using Game.Common;
@@ -60,6 +61,13 @@ namespace MapExtPDX.SaveLoadSystem
 
         /// <summary>请求结束后再压几帧速度：确保排在 SimulationSystem 加载结束后按设定定速的那一次之后。</summary>
         private const int kPauseSettleFrames = 3;
+
+        // === 上次存档名 ===
+        /// <summary>菜单的"上次存档名"：快速存档用它当档名。</summary>
+        private static readonly FieldInfo s_LastSaveNameField = AccessTools.Field(typeof(MenuUISystem), "m_LastSaveNameBinding");
+
+        /// <summary>菜单记下的存储位置：快速存档存进这个库。</summary>
+        private static readonly FieldInfo s_LastCloudTargetField = AccessTools.Field(typeof(MenuUISystem), "m_LastSelectedCloudTarget");
 
         #endregion
 
@@ -136,6 +144,9 @@ namespace MapExtPDX.SaveLoadSystem
         /// <summary>
         /// 加载画面结束后：转换成功的把自动存档排进原版存读档队列（排在当前加载之后，与玩家的存读档串行）；
         /// 转换失败的弹出失败提示。读档中途界面还没就绪，两者都放在这里。
+        ///
+        /// <para>两条路最后都把菜单的"上次存档名"改指新档名（v4.12.0 整合计划 1.8）：读档任务在加载结束后
+        /// 才把它设成源档名，所以改动也要排进同一个队列，排在读档任务之后。</para>
         /// </summary>
         protected override void OnGameLoadingComplete(Colossal.Serialization.Entities.Purpose purpose, GameMode mode)
         {
@@ -154,6 +165,7 @@ namespace MapExtPDX.SaveLoadSystem
             {
                 request.FailureReported = true;
                 ShowFailureDialog(request);
+                Colossal.TaskManager.instance.EnqueueTask(SaveHelpers.kSaveLoadTaskName, () => RedirectAfterFailure(request), 1);
             }
         }
 
@@ -881,12 +893,15 @@ namespace MapExtPDX.SaveLoadSystem
         /// <item>存储位置与原版存档一致：玩家最近选的本地或云端库；</item>
         /// <item>预览照 <c>QuickSave</c> 截一张，存完再销毁；</item>
         /// <item>成败以 <c>onGameSaveLoad</c> 结束事件的 <c>success</c> 为准，并核对目标资产确实存在
-        /// （<c>GameManager.Save</c> 无论成败都返回 true）。</item>
+        /// （<c>GameManager.Save</c> 无论成败都返回 true）；</item>
+        /// <item>不论成败，"上次存档名"与存储位置都改指新档：读档任务刚把它们设成源档的，不改的话 F5 会写回源档。</item>
         /// </list>
         /// </summary>
         private async Task SaveConvertedAsync(ConversionRequest request)
         {
             GameManager gm = GameManager.instance;
+            MenuUISystem menuUI = null;
+            ILocalAssetDatabase db = null;
             string saveName = null;
             bool? saveSuccess = null;
             RenderTexture preview = null;
@@ -904,10 +919,10 @@ namespace MapExtPDX.SaveLoadSystem
                     return;
                 }
 
-                var menuUI = World.GetExistingSystemManaged<MenuUISystem>();
+                menuUI = World.GetExistingSystemManaged<MenuUISystem>();
                 if (menuUI == null) throw new InvalidOperationException("MenuUISystem 不存在，无法生成存档信息");
 
-                ILocalAssetDatabase db = ResolveTargetDatabase();
+                db = ResolveTargetDatabase();
                 saveName = MakeUniqueSaveName(db, request);
                 ModLog.Info(Tag, $"④ 自动存档：'{saveName}'（{db.name}）");
 
@@ -953,6 +968,9 @@ namespace MapExtPDX.SaveLoadSystem
                     preview.Release();
                     UnityEngine.Object.Destroy(preview);
                 }
+
+                // 自动存档失败时也改：玩家按 F5 只会把城市存成这个新档名
+                if (saveName != null) RedirectLastSave(menuUI, saveName, db);
             }
         }
 
@@ -988,6 +1006,49 @@ namespace MapExtPDX.SaveLoadSystem
 
         private static bool SaveExists(ILocalAssetDatabase db, string name) =>
             db.Exists<PackageAsset>(SaveHelpers.GetAssetDataPath<Game.Assets.SaveGameMetadata>(db, name), out _);
+
+        /// <summary>
+        /// 转换失败、没走到自动存档时，把"上次存档名"改指预定的新档名。
+        /// 玩家不顾提示按 F5，转换了一半的城市只会存成新档，不会写回源档。
+        /// </summary>
+        private Task RedirectAfterFailure(ConversionRequest request)
+        {
+            try
+            {
+                ILocalAssetDatabase db = ResolveTargetDatabase();
+                RedirectLastSave(World.GetExistingSystemManaged<MenuUISystem>(), MakeUniqueSaveName(db, request), db);
+            }
+            catch (Exception ex)
+            {
+                ModLog.Error(Tag, ex, "转换失败后改指上次存档名失败，快速存档仍会用源档名");
+            }
+
+            return Task.CompletedTask;
+        }
+
+        /// <summary>
+        /// 把菜单的"上次存档名"与存储位置改指 <paramref name="saveName"/>，做法照原版存档面板（<c>MenuUISystem.SaveGame</c>）。
+        /// 快速存档按这两项定档名与存进哪个库；两者都是私有字段，取不到时记 Error。
+        /// </summary>
+        private static void RedirectLastSave(MenuUISystem menuUI, string saveName, ILocalAssetDatabase db)
+        {
+            if (menuUI == null) return;
+
+            if (!(s_LastSaveNameField?.GetValue(menuUI) is ValueBinding<string> binding))
+            {
+                ModLog.Error(Tag, "取不到 MenuUISystem.m_LastSaveNameBinding（游戏更新后改名？），快速存档仍会用源档名");
+                return;
+            }
+
+            binding.Update(saveName);
+
+            if (s_LastCloudTargetField != null)
+                s_LastCloudTargetField.SetValue(menuUI, db?.dataSource?.remoteStorageSourceName);
+            else
+                ModLog.Error(Tag, "取不到 MenuUISystem.m_LastSelectedCloudTarget（游戏更新后改名？），快速存档仍存进源档所在的库");
+
+            ModLog.Info(Tag, $"上次存档名改指 '{saveName}'，快速存档不会写回源档");
+        }
 
         #endregion
 
