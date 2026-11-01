@@ -176,7 +176,8 @@ namespace MapExtPDX.SaveLoadSystem
             {
                 SaveValidationResult result =
                     ValidateSave(save, currentCV, out Dictionary<string, ILocElement> locParams, out int savedCV, out legacyMatch);
-                ModLog.Info(Tag, $"{entry} '{save.displayName}'：存档 {DescribeCoreValue(savedCV)}，当前 CV={currentCV}，结果 {result}");
+                // 带上存档 ID：命令行 -startGame= 用的就是它
+                ModLog.Info(Tag, $"{entry} '{save.displayName}'（ID {save.id}）：存档 {DescribeCoreValue(savedCV)}，当前 CV={currentCV}，结果 {result}");
 
                 switch (result)
                 {
