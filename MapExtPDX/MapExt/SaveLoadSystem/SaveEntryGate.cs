@@ -322,11 +322,12 @@ namespace MapExtPDX.SaveLoadSystem
         /// <summary>
         /// 启动阶段拦下加载后转入主菜单：排进原版存读档队列，等当前任务结束后再加载。
         /// 启动器"继续"只触发界面事件就返回，引擎之后不会自己加载主菜单。
+        /// 不设同名任务上限（cap）：汇合点拦下时正处在"继续"的读档任务里，传 1 会被静默丢掉。
         /// </summary>
         public static void RequestMainMenu()
         {
             ModLog.Info(Tag, "启动阶段的加载已拦下，转入主菜单");
-            TaskManager.instance.EnqueueTask(SaveHelpers.kSaveLoadTaskName, () => GameManager.instance.MainMenu(), 1);
+            TaskManager.instance.EnqueueTask(SaveHelpers.kSaveLoadTaskName, () => GameManager.instance.MainMenu());
         }
 
         /// <summary>

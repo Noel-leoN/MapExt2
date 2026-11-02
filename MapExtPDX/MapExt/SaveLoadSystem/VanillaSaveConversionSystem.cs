@@ -159,13 +159,15 @@ namespace MapExtPDX.SaveLoadSystem
             if (request.Phase == ConversionPhase.Saving && !request.SaveQueued)
             {
                 request.SaveQueued = true;
-                Colossal.TaskManager.instance.EnqueueTask(SaveHelpers.kSaveLoadTaskName, () => SaveConvertedAsync(request), 1);
+                // 第三个参数是同名任务上限（cap），不是优先级：原版菜单传 1，同名任务在跑就丢弃新任务。
+                // 这里正处在读档任务里，传 1 会被静默丢掉；不设上限才会排在读档任务之后执行
+                Colossal.TaskManager.instance.EnqueueTask(SaveHelpers.kSaveLoadTaskName, () => SaveConvertedAsync(request));
             }
             else if (request.Phase == ConversionPhase.Failed && !request.FailureReported)
             {
                 request.FailureReported = true;
                 ShowFailureDialog(request);
-                Colossal.TaskManager.instance.EnqueueTask(SaveHelpers.kSaveLoadTaskName, () => RedirectAfterFailure(request), 1);
+                Colossal.TaskManager.instance.EnqueueTask(SaveHelpers.kSaveLoadTaskName, () => RedirectAfterFailure(request));
             }
         }
 
