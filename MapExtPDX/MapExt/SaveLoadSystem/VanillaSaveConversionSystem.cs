@@ -177,7 +177,7 @@ namespace MapExtPDX.SaveLoadSystem
 #if DEBUG
             // 故障注入（DEBUG 自检）：FaultInject.txt 写 SaveGate/Convert/<步骤名>，让该步骤失败，验证失败提示与暂停
             if (MapExtHealth.IsFaultInjected("SaveGate/Convert/" + step))
-                throw new InvalidOperationException("故障注入（DEBUG 自检）");
+                throw new InvalidOperationException("Fault injected (DEBUG self-test)");
 #endif
             action();
         }
@@ -938,7 +938,7 @@ namespace MapExtPDX.SaveLoadSystem
 #if DEBUG
                 // 故障注入（DEBUG 自检）：FaultInject.txt 写 SaveGate/AutoSave，模拟自动存档失败（验收 C3）
                 if (MapExtHealth.IsFaultInjected("SaveGate/AutoSave"))
-                    throw new InvalidOperationException("故障注入（DEBUG 自检）");
+                    throw new InvalidOperationException("Fault injected (DEBUG self-test)");
 #endif
                 gm.onGameSaveLoad += OnSaveEvent;
                 await gm.Save(saveName, saveInfo, db, preview);

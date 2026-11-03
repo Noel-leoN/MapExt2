@@ -256,7 +256,7 @@ namespace MapExtPDX.MapExt.Core
 #if DEBUG
                         // 故障注入：补丁照常挂上后再抛出，只验证降级信号
                         if (MapExtHealth.IsFaultInjected(setName))
-                            throw new InvalidOperationException("故障注入（DEBUG 自检）");
+                            throw new InvalidOperationException("Fault injected (DEBUG self-test)");
 #endif
                         ModLog.Ok(Tag, $"Applied patchset: {setName}");
                     }
