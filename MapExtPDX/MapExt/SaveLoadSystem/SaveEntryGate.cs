@@ -66,6 +66,9 @@ namespace MapExtPDX.SaveLoadSystem
         Block,
         OfferConversion,
         ConfirmDegraded,
+
+        /// <summary>原版地图在扩展模式下开新城会被拉伸：给"返回"与"仍要继续"（只在菜单层）。</summary>
+        StretchWarning,
     }
 
     /// <summary>一次判定的结论。</summary>
@@ -101,13 +104,17 @@ namespace MapExtPDX.SaveLoadSystem
             };
 
         public static GateDecision Degraded() => new GateDecision { Verdict = GateVerdict.ConfirmDegraded };
+
+        public static GateDecision Stretch(LocalizedString message) =>
+            new GateDecision { Verdict = GateVerdict.StretchWarning, Message = message };
     }
 
     /// <summary>
     /// 存档入口闸门（v4.12.0 整合计划 §2.1、§2.2）：菜单各入口与 <c>GameManager.Load</c> 汇合点共用的判定与提示。
     ///
     /// <para><b>判定顺序</b>：转换请求 → 模式值（受"禁止读档校验"控制）→ 降级（不受该开关控制）。
-    /// 模式不符的档直接说明原因；降级确认只对本来就会放行的加载弹出，转换在降级状态下一律不提供。</para>
+    /// 模式不符的档直接说明原因；降级确认只对本来就会放行的加载弹出，转换在降级状态下一律不提供。
+    /// 开新城的模式值按地图面积推断，原版地图在扩展模式下的拉伸警告不受任何开关控制（D3）。</para>
     ///
     /// <para><b>两层</b>：菜单层在原方法写入城市配置覆盖项、更新"上次存档名"之前判定，"仍要加载"与转换只在这一层提供，
     /// 确认后带着许可重新调用菜单方法。汇合点只拦不放，兜住命令行、其他 Mod 与菜单层失效的情况。
@@ -132,8 +139,17 @@ namespace MapExtPDX.SaveLoadSystem
         /// <summary>存档 <c>modsEnabled</c> 里本 Mod 的标识前缀。</summary>
         private const string kModIdentifier = "MapExt";
 
-        /// <summary>许可与"已确认降级"的有效期：重新触发的加载几帧内就会到达，过期的视为作废。</summary>
+        /// <summary>许可与"已确认降级""已确认拉伸"的有效期：重新触发的加载几帧内就会到达，过期的视为作废。</summary>
         private const float kPermitSeconds = 60f;
+
+        /// <summary>
+        /// 原版地图 529 个分块的总面积（14336²，约 2.0552E+08 m²）。<c>MapInfo.area</c> 是分块几何面积，
+        /// 与它的比值等于 CV²（开新城计划 §3.2；地形起伏只带来约 0.006% 的漂移）。
+        /// </summary>
+        private const double kVanillaTileArea = (double)PatchManager.OriginalMapSize * PatchManager.OriginalMapSize;
+
+        /// <summary>面积比值与 CV² 的相对容差：超过就判为面积不可信（开新城计划 §3.3）。</summary>
+        private const double kAreaRatioTolerance = 0.05;
 
         #endregion
 
@@ -149,6 +165,12 @@ namespace MapExtPDX.SaveLoadSystem
 
         private static string s_DegradedAckAssetId;
         private static float s_DegradedAckUntil;
+
+        private static string s_StretchAckAssetId;
+        private static float s_StretchAckUntil;
+
+        /// <summary>菜单层对这张地图提示过拉伸、玩家选了"仍要继续"：汇合点放行它时转为 <see cref="StretchPromptedForCurrentLoad"/>。</summary>
+        private static string s_StretchPromptedMapId;
 
         #endregion
 
@@ -214,10 +236,65 @@ namespace MapExtPDX.SaveLoadSystem
             return GateDecision.Allow(legacyMatch);
         }
 
-        /// <summary>判定一次开新城。Phase 1 只看降级；按地图面积推断制作模式在 Phase 2 加。</summary>
+        /// <summary>
+        /// 判定一次开新城（v4.12.0 整合计划 §2.1 第 4 条）：面积推断的制作模式 → 降级。
+        /// <list type="bullet">
+        /// <item>原版地图而当前为扩展模式：拉伸是事实警告，不受任何开关影响（D3）。降级时直接说明并拦下（Q13），
+        /// 否则菜单层给"返回"与"仍要继续"，汇合点只拦；</item>
+        /// <item>推断模式与当前模式不一致（包括 None 模式开扩展地图）：按模式不符拦下，受"禁止读档校验"控制（Q12）；</item>
+        /// <item>面积不可信，或推断出的模式值不属于任何现行模式（Q15）：放行，载入后按地形实际尺寸判。</item>
+        /// </list>
+        /// 降级确认只对会放行的加载弹出。
+        /// </summary>
         public static GateDecision EvaluateNewGame(SaveEntry entry, MapInfo map)
         {
             VanillaConversionState.DropStale(map.id);
+
+            int currentCV = PatchManager.CurrentCoreValue;
+            bool trusted = InferMapCoreValue(map.area, out double ratio, out int mapCV);
+            ModLog.Info(Tag, $"{entry} 地图 '{map.displayName}'（ID {map.id}）：面积 {map.area:E4}，比值 {ratio:0.###}，" +
+                             $"推断 CV={mapCV}（{(trusted ? "可信" : "不可信，放行，载入后按地形实际尺寸判")}），当前 CV={currentCV}");
+
+            if (trusted && mapCV != currentCV)
+            {
+                if (mapCV == NoneModeCoreValue)
+                {
+                    // 原版地图、当前为扩展模式：地形会被拉伸
+                    if (IsDegradedForExpandedLoad)
+                    {
+                        ModLog.Warn(Tag, $"{entry} 原版地图 '{map.displayName}'：本会话降级（{MapExtHealth.ComponentSummary}），拦下");
+                        return GateDecision.Block(new LocalizedString("SAVE_GATE.DegradedVanillaMap", null, MapParams(map, currentCV)));
+                    }
+
+                    if (entry == SaveEntry.Convergence)
+                    {
+                        ModLog.Warn(Tag, $"{entry} 原版地图 '{map.displayName}'：会按 CV={currentCV} 拉伸，汇合点只拦不放");
+                        return GateDecision.Block(new LocalizedString("SAVE_GATE.StretchBlocked", null, MapParams(map, currentCV)));
+                    }
+
+                    if (!ConsumeStretchAck(map.id))
+                    {
+                        ModLog.Warn(Tag, $"{entry} 原版地图 '{map.displayName}'：会按 CV={currentCV} 拉伸，弹拉伸警告");
+                        string key = CanConvertTo(currentCV) ? "SAVE_GATE.StretchMessageConvertOff" : "SAVE_GATE.StretchMessage";
+                        return GateDecision.Stretch(new LocalizedString(key, null, MapParams(map, currentCV)));
+                    }
+
+                    // 玩家刚对这张地图选了"仍要继续"：放行，记下菜单层已提示过（载入后只推通知条，Q11）
+                    s_StretchPromptedMapId = map.id;
+                    ModLog.Warn(Tag, $"{entry} 原版地图 '{map.displayName}'：玩家已确认仍要继续，按 CV={currentCV} 拉伸");
+                }
+                else if (Mod.Instance?.CurrentSettings?.DisableLoadGameValidation != true)
+                {
+                    ModLog.Info(Tag, $"{entry} 地图 '{map.displayName}'：为 CV={mapCV} 制作，与当前模式不符，拦下");
+                    var locParams = MapParams(map, currentCV);
+                    locParams.Add("MAP_MODE", LocalizedString.Value(PatchManager.GetModeNameForCoreValue(mapCV)));
+                    return GateDecision.Block(new LocalizedString("SAVE_GATE.MapMismatch", null, locParams));
+                }
+                else
+                {
+                    ModLog.Info(Tag, $"{entry} 地图 '{map.displayName}'：模式不符，但已禁止读档校验，放行");
+                }
+            }
 
             if (IsDegradedForExpandedLoad && !ConsumeDegradedAck(map.id))
             {
@@ -258,6 +335,10 @@ namespace MapExtPDX.SaveLoadSystem
 
                 case GateVerdict.ConfirmDegraded:
                     ShowDegradedConfirm(assetId, retrigger);
+                    return false;
+
+                case GateVerdict.StretchWarning:
+                    ShowStretchConfirm(assetId, decision.Message, retrigger);
                     return false;
 
                 default:
@@ -317,6 +398,22 @@ namespace MapExtPDX.SaveLoadSystem
             bool valid = assetId != null && assetId == s_PermitAssetId && Time.realtimeSinceStartup <= s_PermitUntil;
             if (valid) s_PermitAssetId = null;
             return valid;
+        }
+
+        /// <summary>
+        /// 本次游戏加载的拉伸已在菜单层提示过、玩家选了"仍要继续"：载入后只推通知条，不再弹框（Q11）。
+        /// 汇合点每次判定游戏加载时重设，到 <c>OnGameLoadingComplete</c> 时指的就是这次加载。
+        /// </summary>
+        public static bool StretchPromptedForCurrentLoad { get; private set; }
+
+        /// <summary>汇合点开始判定一次游戏模式的读档或开新城：清掉上一次加载的标记。</summary>
+        public static void BeginGameLoad() => StretchPromptedForCurrentLoad = false;
+
+        /// <summary>汇合点凭许可放行一张地图：菜单层对它提示过拉伸的，记到本次加载上。</summary>
+        public static void NotePermittedMapLoad(string mapId)
+        {
+            StretchPromptedForCurrentLoad = mapId != null && mapId == s_StretchPromptedMapId;
+            s_StretchPromptedMapId = null;
         }
 
         /// <summary>
@@ -442,6 +539,41 @@ namespace MapExtPDX.SaveLoadSystem
         private static string DescribeCoreValue(int savedCV) =>
             savedCV == VanillaConversionState.UntaggedVanillaCoreValue ? "无 MapExt 标记（原版）" : $"CV={savedCV}";
 
+        /// <summary>
+        /// 按 <c>MapInfo.area</c> 推断地图的制作模式（开新城计划 §3.3 的守卫）。返回是否可信：
+        /// 比值要接近某个整数的平方，且这个整数是现行模式之一（Q15：面积反映的是分块而不是地形，
+        /// 比值 256 的图按 CV=16 会在所有现行模式下被拦，其中几张文件名写着 57km）。
+        /// </summary>
+        private static bool InferMapCoreValue(float area, out double ratio, out int mapCV)
+        {
+            ratio = area / kVanillaTileArea;
+            mapCV = (int)Math.Round(Math.Sqrt(Math.Max(ratio, 0d)));
+            double square = (double)mapCV * mapCV;
+            return mapCV >= 1 && Math.Abs(ratio - square) <= kAreaRatioTolerance * square && PatchManager.IsKnownCoreValue(mapCV);
+        }
+
+        private static Dictionary<string, ILocElement> MapParams(MapInfo map, int currentCV) =>
+            new Dictionary<string, ILocElement>
+            {
+                { "MAP_NAME", LocalizedString.Value(map.displayName ?? map.id ?? "?") },
+                { "CURRENT_MODE", LocalizedString.Value(PatchManager.GetModeNameForCoreValue(currentCV)) },
+                { "COMPONENTS", LocalizedString.Value(MapExtHealth.ComponentSummary) },
+            };
+
+        private static void AcknowledgeStretch(string assetId)
+        {
+            s_StretchAckAssetId = assetId;
+            s_StretchAckUntil = Time.realtimeSinceStartup + kPermitSeconds;
+        }
+
+        /// <summary>玩家刚对这张地图选了"仍要继续"：放行一次，并作废这次确认。</summary>
+        private static bool ConsumeStretchAck(string assetId)
+        {
+            bool valid = assetId != null && assetId == s_StretchAckAssetId && Time.realtimeSinceStartup <= s_StretchAckUntil;
+            if (valid) s_StretchAckAssetId = null;
+            return valid;
+        }
+
         private static void AcknowledgeDegraded(string assetId)
         {
             s_DegradedAckAssetId = assetId;
@@ -533,6 +665,29 @@ namespace MapExtPDX.SaveLoadSystem
                 ModLog.Warn(Tag, $"降级状态下玩家选择仍要加载（{MapExtHealth.ComponentSummary}）");
                 AcknowledgeDegraded(assetId);
                 Retrigger(retrigger, "降级确认");
+            }));
+        }
+
+        /// <summary>拉伸警告：危险的"仍要继续"放在确认按钮上，关闭对话框等其他结果一律当作返回。</summary>
+        private static void ShowStretchConfirm(string mapId, LocalizedString message, Action retrigger)
+        {
+            var dialog = new ConfirmationDialog(
+                LocalizedString.Id("SAVE_GATE.StretchTitle"),
+                message,
+                LocalizedString.Id("SAVE_GATE.StretchContinue"),
+                LocalizedString.Id("SAVE_GATE.StretchBack"));
+
+            ShowWhenUiReady(() => GameManager.instance.userInterface.appBindings.ShowConfirmationDialog(dialog, result =>
+            {
+                if (result != 0)
+                {
+                    ModLog.Info(Tag, "拉伸警告：玩家选择返回");
+                    return;
+                }
+
+                ModLog.Warn(Tag, "拉伸警告：玩家选择仍要继续");
+                AcknowledgeStretch(mapId);
+                Retrigger(retrigger, "拉伸确认");
             }));
         }
 

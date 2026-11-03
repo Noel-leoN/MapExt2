@@ -42,6 +42,8 @@ namespace MapExtPDX.SaveLoadSystem
 
             try
             {
+                SaveEntryGate.BeginGameLoad();
+
                 GateDecision decision;
                 switch (asset)
                 {
@@ -74,7 +76,11 @@ namespace MapExtPDX.SaveLoadSystem
                     {
                         MapInfo map = mapMeta.target;
                         if (map == null) return true;
-                        if (SaveEntryGate.TryConsumePermit(map.id)) return true;
+                        if (SaveEntryGate.TryConsumePermit(map.id))
+                        {
+                            SaveEntryGate.NotePermittedMapLoad(map.id);
+                            return true;
+                        }
 
                         decision = SaveEntryGate.EvaluateNewGame(SaveEntry.Convergence, map);
                         if (decision.Verdict == GateVerdict.Allow) return true;

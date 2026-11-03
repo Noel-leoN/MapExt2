@@ -60,8 +60,8 @@ namespace MapExtPDX.SaveLoadSystem
 
     /// <summary>
     /// 存档入口闸门第 1 层：主菜单开新城（<c>MenuUISystem.SafeNewGame</c>）。
-    /// 在原方法写入城市名、主题、游戏模式与开局选项之前判定。
-    /// Phase 1 只做降级判定，按地图面积推断制作模式在 Phase 2 加（v4.12.0 整合计划 Q3）。
+    /// 在原方法写入城市名、主题、游戏模式与开局选项之前判定：按地图面积推断制作模式，再看降级
+    /// （v4.12.0 整合计划 §2.1 第 4 条、2.3）。面积不可信的地图放行，载入后按地形实际尺寸判。
     /// </summary>
     [HarmonyPatch(typeof(MenuUISystem), "SafeNewGame")]
     public static class NewGameGatePatch
