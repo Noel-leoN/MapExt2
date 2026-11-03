@@ -78,7 +78,8 @@ namespace MapExtPDX.SaveLoadSystem
         {
             base.OnGameLoaded(serializationContext);
 
-            // 只认闸门放行过的请求，且一个请求只执行一次：放行时推进到"加载中"，这里推进到"转换中"（P0-2、P0-3）
+            // 只认闸门放行过的请求，且一个请求只执行一次：放行时推进到"加载中"，这里推进到"转换中"（P0-2、P0-3）。
+            // 地形实际尺寸不是源尺寸的请求，已在反序列化阶段转为"已取消"，不执行任何步骤、不压暂停
             ConversionRequest request = VanillaConversionState.Current;
             if (request == null || request.Phase != ConversionPhase.Loading)
                 return;
@@ -135,10 +136,11 @@ namespace MapExtPDX.SaveLoadSystem
 
         /// <summary>
         /// 加载画面结束后：转换成功的把自动存档排进原版存读档队列（排在当前加载之后，与玩家的存读档串行）；
-        /// 转换失败的弹出失败提示。读档中途界面还没就绪，两者都放在这里。
+        /// 转换失败的弹出失败提示，被否决的弹出否决说明。读档中途界面还没就绪，都放在这里。
         ///
-        /// <para>两条路最后都把菜单的"上次存档名"改指新档名（v4.12.0 整合计划 1.8）：读档任务在加载结束后
-        /// 才把它设成源档名，所以改动也要排进同一个队列，排在读档任务之后。</para>
+        /// <para>三条路最后都把菜单的"上次存档名"改指新档名（v4.12.0 整合计划 1.8）：读档任务在加载结束后
+        /// 才把它设成源档名，所以改动也要排进同一个队列，排在读档任务之后。被否决的城市虽然没动，
+        /// 按 F5 也只存成新档，不写回源档（§7 第 2 条）。</para>
         /// </summary>
         protected override void OnGameLoadingComplete(Colossal.Serialization.Entities.Purpose purpose, GameMode mode)
         {
@@ -159,7 +161,13 @@ namespace MapExtPDX.SaveLoadSystem
             {
                 request.FailureReported = true;
                 ShowFailureDialog(request);
-                Colossal.TaskManager.instance.EnqueueTask(SaveHelpers.kSaveLoadTaskName, () => RedirectAfterFailure(request));
+                Colossal.TaskManager.instance.EnqueueTask(SaveHelpers.kSaveLoadTaskName, () => RedirectToNewSaveName(request));
+            }
+            else if (request.Phase == ConversionPhase.Cancelled && !request.VetoReported)
+            {
+                request.VetoReported = true;
+                ShowVetoDialog(request);
+                Colossal.TaskManager.instance.EnqueueTask(SaveHelpers.kSaveLoadTaskName, () => RedirectToNewSaveName(request));
             }
         }
 
@@ -1002,10 +1010,10 @@ namespace MapExtPDX.SaveLoadSystem
             db.Exists<PackageAsset>(SaveHelpers.GetAssetDataPath<Game.Assets.SaveGameMetadata>(db, name), out _);
 
         /// <summary>
-        /// 转换失败、没走到自动存档时，把"上次存档名"改指预定的新档名。
-        /// 玩家不顾提示按 F5，转换了一半的城市只会存成新档，不会写回源档。
+        /// 转换失败或被否决、没有自动存档时，把"上次存档名"改指预定的新档名。
+        /// 玩家按 F5，转换了一半或被否决的城市只会存成新档，不会写回源档。
         /// </summary>
-        private Task RedirectAfterFailure(ConversionRequest request)
+        private Task RedirectToNewSaveName(ConversionRequest request)
         {
             try
             {
@@ -1014,7 +1022,7 @@ namespace MapExtPDX.SaveLoadSystem
             }
             catch (Exception ex)
             {
-                ModLog.Error(Tag, ex, "转换失败后改指上次存档名失败，快速存档仍会用源档名");
+                ModLog.Error(Tag, ex, $"转换{(request.Phase == ConversionPhase.Cancelled ? "被否决" : "失败")}后改指上次存档名失败，快速存档仍会用源档名");
             }
 
             return Task.CompletedTask;
@@ -1714,15 +1722,31 @@ namespace MapExtPDX.SaveLoadSystem
             ShowErrorMessage(new LocalizedString("VANILLA_CONVERT.SaveFailed", null, locParams));
         }
 
-        /// <summary>延后一帧弹出错误对话框，排在其他 Mod 的加载完成对话框之后。</summary>
-        private static void ShowErrorMessage(LocalizedString message)
+        /// <summary>转换被否决：地形实际尺寸不是源尺寸，什么都没改，城市按原样载入，可以照常玩。</summary>
+        private static void ShowVetoDialog(ConversionRequest request)
+        {
+            var locParams = new Dictionary<string, ILocElement>
+            {
+                { "NAME", LocalizedString.Value(request.DisplayName ?? "?") },
+                { "TERRAIN_SIZE", LocalizedString.Value(MapSizeMismatchState.DescribeMapSize(request.VetoedTerrainMapSize)) },
+                { "SOURCE_SIZE", LocalizedString.Value(MapSizeMismatchState.DescribeMapSize(request.SourceTerrainMapSize)) }
+            };
+            ShowMessage(LocalizedString.Id("VANILLA_CONVERT.VetoedTitle"),
+                new LocalizedString("VANILLA_CONVERT.Vetoed", null, locParams));
+        }
+
+        private static void ShowErrorMessage(LocalizedString message) =>
+            ShowMessage(LocalizedString.Id("LOAD_VALIDATION.TitleError"), message);
+
+        /// <summary>延后一帧弹出对话框，排在其他 Mod 的加载完成对话框之后。</summary>
+        private static void ShowMessage(LocalizedString title, LocalizedString message)
         {
             Colossal.Core.MainThreadDispatcher.RegisterUpdater(() =>
             {
                 try
                 {
                     var dialog = new MessageDialog(
-                        LocalizedString.Id("LOAD_VALIDATION.TitleError"),
+                        title,
                         message,
                         LocalizedString.Id("LOAD_VALIDATION.ConfirmOK"));
                     GameManager.instance.userInterface.appBindings.ShowMessageDialog(dialog, null);

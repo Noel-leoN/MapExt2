@@ -37,6 +37,12 @@ namespace MapExtPDX.SaveLoadSystem
 
         /// <summary>转换或存档失败，见 <see cref="ConversionRequest.FailedStep"/>。</summary>
         Failed = 5,
+
+        /// <summary>
+        /// 被否决：地形实际尺寸不是源尺寸，不执行任何步骤、不压暂停，城市按原样载入（v4.12.0 整合计划 2.1）。
+        /// 不走"失败"：失败提示要玩家别继续玩，被否决的城市可以照常玩。
+        /// </summary>
+        Cancelled = 6,
     }
 
     /// <summary>
@@ -69,6 +75,9 @@ namespace MapExtPDX.SaveLoadSystem
         /// <summary>源存档的模式值；无标记的原版档为 <see cref="VanillaConversionState.UntaggedVanillaCoreValue"/>，不折算成 1。</summary>
         public int SourceCoreValue { get; }
 
+        /// <summary>源资产应有的地形尺寸（<c>playableArea.x</c>）：原版档与 CV=1 档都是 14336。否决闸按它比对。</summary>
+        public float SourceTerrainMapSize => Math.Max(SourceCoreValue, 1) * PatchManager.OriginalMapSize;
+
         public int TargetCoreValue { get; }
 
         /// <summary>源存档的显示名，用于新档命名与提示。</summary>
@@ -89,6 +98,12 @@ namespace MapExtPDX.SaveLoadSystem
 
         /// <summary>转换失败的提示是否已弹过：失败发生在读档中途，提示等加载结束后再弹。</summary>
         internal bool FailureReported { get; set; }
+
+        /// <summary>被否决时记录的地形实际尺寸，写进否决说明。</summary>
+        internal float VetoedTerrainMapSize { get; set; }
+
+        /// <summary>否决说明是否已弹过：否决发生在反序列化阶段，说明等加载结束后再弹。</summary>
+        internal bool VetoReported { get; set; }
 
         internal float RequestedAt { get; }
 
@@ -176,11 +191,31 @@ namespace MapExtPDX.SaveLoadSystem
             Clear("闸门判定的加载与本请求无关，或请求已过期、已结束");
         }
 
-        /// <summary>新一次加载开始时调用：清除已经完成或失败的请求。</summary>
+        /// <summary>
+        /// 记录地形实际尺寸时调用（反序列化阶段，早于各系统的 <c>OnGameLoaded</c>）：加载中的请求要求地形是源尺寸，
+        /// 不符就转为"已取消"，不执行任何步骤。地形已是扩展尺寸的地图若照样转换，会被降采样塞进中央（开新城计划 §5.1）。
+        /// 这时地下水还没判断让路，被否决的加载照常补场。地形是正方形，只比 x。
+        /// </summary>
+        public static void VetoIfTerrainMismatch(float terrainMapSize)
+        {
+            ConversionRequest r = Current;
+            if (r == null || r.Phase != ConversionPhase.Loading) return;
+
+            float expected = r.SourceTerrainMapSize;
+            if (Math.Abs(terrainMapSize - expected) < 1f) return;
+
+            r.VetoedTerrainMapSize = terrainMapSize;
+            r.Phase = ConversionPhase.Cancelled;
+            ModLog.Warn(Tag, $"地形实际尺寸 {terrainMapSize} 不是转换要求的 {expected}，否决转换，按原样载入：{r}");
+        }
+
+        /// <summary>新一次加载开始时调用：清除已经完成、失败或被否决的请求。</summary>
         public static void ClearFinished(string reason)
         {
             ConversionRequest r = Current;
-            if (r != null && (r.Phase == ConversionPhase.Completed || r.Phase == ConversionPhase.Failed)) Clear(reason);
+            if (r != null && (r.Phase == ConversionPhase.Completed || r.Phase == ConversionPhase.Failed ||
+                              r.Phase == ConversionPhase.Cancelled))
+                Clear(reason);
         }
 
         public static void Clear(string reason)

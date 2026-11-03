@@ -72,6 +72,9 @@ namespace MapExtPDX.SaveLoadSystem
                 { "VANILLA_CONVERT.EnableFirst", "This vanilla save must be converted before it can be played in the current mode. Enable '⚠ Vanilla Map Extension' under MapSize → Save Conversion (Experimental), then load it again." },
                 { "VANILLA_CONVERT.Failed", "The vanilla save conversion failed at step '{STEP}':\n{ERROR}\n\nThe original save was not modified. The game is paused; do not keep playing this city, just return to the main menu." },
                 { "VANILLA_CONVERT.SaveFailed", "The conversion finished, but saving '{SAVE_NAME}' failed.\n\nThe original save was not modified. The game is paused; save it under a new name yourself before quitting." },
+                // 否决：地形实际尺寸不是源尺寸（反序列化阶段判定，加载结束后说明）
+                { "VANILLA_CONVERT.VetoedTitle", "Conversion Cancelled" },
+                { "VANILLA_CONVERT.Vetoed", "'{NAME}' already has {TERRAIN_SIZE} terrain, but this conversion expects {SOURCE_SIZE}.\n\nThe conversion was cancelled and nothing was changed; the city has been loaded as it is." },
 
                 // === 存档入口闸门 ===
                 { "SAVE_GATE.DegradedTitle", "MapExt Is Not Fully Loaded" },
@@ -131,6 +134,8 @@ namespace MapExtPDX.SaveLoadSystem
                 { "VANILLA_CONVERT.EnableFirst", "这个原版存档要先转换，才能在当前模式下游玩。请在「地图尺寸」→「存档转换 (实验性)」中启用「⚠ 原版地图扩展」，再重新读取。" },
                 { "VANILLA_CONVERT.Failed", "原版存档转换在「{STEP}」一步失败：\n{ERROR}\n\n原存档没有被修改。游戏已暂停，请不要继续游玩这座城市，返回主菜单即可。" },
                 { "VANILLA_CONVERT.SaveFailed", "转换已完成，但自动保存「{SAVE_NAME}」失败。\n\n原存档没有被修改。游戏已暂停，请在退出前手动另存为新档。" },
+                { "VANILLA_CONVERT.VetoedTitle", "转换已取消" },
+                { "VANILLA_CONVERT.Vetoed", "「{NAME}」的地形实际是 {TERRAIN_SIZE}，而这次转换要求 {SOURCE_SIZE}。\n\n转换已取消，没有做任何改动，城市已按原样载入。" },
 
                 // === 存档入口闸门 ===
                 { "SAVE_GATE.DegradedTitle", "MapExt 未完整加载" },
@@ -189,6 +194,8 @@ namespace MapExtPDX.SaveLoadSystem
                 { "VANILLA_CONVERT.EnableFirst", "這個原版存檔要先轉換，才能在當前模式下遊玩。請在「地圖尺寸」→「存檔轉換 (實驗性)」中啟用「⚠ 原版地圖擴展」，再重新讀取。" },
                 { "VANILLA_CONVERT.Failed", "原版存檔轉換在「{STEP}」一步失敗：\n{ERROR}\n\n原存檔沒有被修改。遊戲已暫停，請不要繼續遊玩這座城市，返回主選單即可。" },
                 { "VANILLA_CONVERT.SaveFailed", "轉換已完成，但自動儲存「{SAVE_NAME}」失敗。\n\n原存檔沒有被修改。遊戲已暫停，請在退出前手動另存為新檔。" },
+                { "VANILLA_CONVERT.VetoedTitle", "轉換已取消" },
+                { "VANILLA_CONVERT.Vetoed", "「{NAME}」的地形實際是 {TERRAIN_SIZE}，而這次轉換要求 {SOURCE_SIZE}。\n\n轉換已取消，沒有做任何改動，城市已按原樣載入。" },
 
                 // === 存档入口闸门 ===
                 { "SAVE_GATE.DegradedTitle", "MapExt 未完整載入" },

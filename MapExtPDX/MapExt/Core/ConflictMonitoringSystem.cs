@@ -87,9 +87,10 @@ namespace MapExtPDX.MapExt.Core
                 // 每次載入開始前清除上一次的地圖尺寸錯配判定，
                 // 避免「遊戲中直接載入另一張地圖」時沿用舊記錄而誤報。
                 // （Cleanup 分支已透過 TerrainSystemPatches.ResetSessionState 一併清除）
+                // 同时清掉地形尺寸记录：本次加载第一次调用 FinalizeTerrainData 才记得下来（整合计划 2.1）
                 MapSizeMismatchState.Reset();
 
-                // 存档闸门：已完成或失败的转换请求到下一次加载就作废；本次正是转换读档时请求处于"加载中"，不受影响
+                // 存档闸门：已完成、失败或被否决的转换请求到下一次加载就作废；本次正是转换读档时请求处于"加载中"，不受影响
                 VanillaConversionState.ClearFinished("新一次加载开始");
 
                 // [BUGFIX] 在加载开始前（而非加载完成后）立即重新禁用被引擎复活的原版系统。

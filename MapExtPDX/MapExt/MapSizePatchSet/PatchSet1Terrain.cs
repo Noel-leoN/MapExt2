@@ -39,6 +39,16 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
             int scalefactor = PatchManager.CurrentCoreValue;
             float baseSize = PatchManager.OriginalMapSize;
 
+            // 权威记录（v4.12.0 整合计划 2.1）：只记每次加载第一次调用，那次的 inMapSize 来自读档的 playableArea
+            // 或 SetDefaults 的默认值；之后转换步骤与编辑器导入调 ReplaceHeightmap 等，都以默认 14336 调用，不算。
+            // 转换的否决闸也在这里判：此时还在反序列化阶段，地下水等系统的 OnGameLoaded 都还没跑
+            if (MapSizeMismatchState.TryRecordTerrainSize(inMapSize.x, scalefactor))
+            {
+                ModLog.Info(Tag, $"本次加载的地形尺寸 {inMapSize.x}（{MapSizeMismatchState.DescribeMapSize(inMapSize.x)}），当前 CV={scalefactor}" +
+                                 (MapSizeMismatchState.VanillaStretched ? "：原版尺寸的地形按当前模式拉伸" : ""));
+                VanillaConversionState.VetoIfTerrainMismatch(inMapSize.x);
+            }
+
             if (math.abs(inMapSize.x - baseSize) < 1f)
             {
                 inMapSize *= scalefactor;

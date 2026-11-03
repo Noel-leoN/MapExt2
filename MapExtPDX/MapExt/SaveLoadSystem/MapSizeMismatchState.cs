@@ -1,6 +1,9 @@
 // Copyright (c) 2024 Noel2(Noel-leoN)
 // Licensed under the MIT License.
 
+using System;
+using MapExtPDX.MapExt.Core;
+
 namespace MapExtPDX.SaveLoadSystem
 {
     /// <summary>
@@ -27,6 +30,15 @@ namespace MapExtPDX.SaveLoadSystem
         /// <summary>已對本次錯配彈過提示，避免重複打擾。</summary>
         public static bool DialogShown { get; set; } = false;
 
+        /// <summary>
+        /// 本次加载第一次调用 <c>FinalizeTerrainData</c> 时的地形尺寸（<c>inMapSize.x</c>，缩放前）；0 表示还没记录。
+        /// 之后 <c>ReplaceHeightmap</c> 等以默认 14336 调用的不算（v4.12.0 整合计划 2.1）。
+        /// </summary>
+        public static float TerrainMapSize { get; private set; }
+
+        /// <summary>地形是原版的 14336、当前为扩展模式：这次加载的地形按当前模式拉伸了。</summary>
+        public static bool VanillaStretched { get; private set; }
+
         /// <summary>記錄一次錯配（保留最早一次，後續重入不覆寫）。</summary>
         public static void Record(int authoredCV, int currentCV)
         {
@@ -37,6 +49,24 @@ namespace MapExtPDX.SaveLoadSystem
             CurrentCoreValue = currentCV;
         }
 
+        /// <summary>记录本次加载的地形尺寸，只认第一次调用；已记录过时返回 false。</summary>
+        public static bool TryRecordTerrainSize(float mapSize, int currentCV)
+        {
+            if (TerrainMapSize > 0f) return false;
+
+            TerrainMapSize = mapSize;
+            VanillaStretched = currentCV > 1 && Math.Abs(mapSize - PatchManager.OriginalMapSize) < 1f;
+            return true;
+        }
+
+        /// <summary>地形尺寸的说明：是现行模式的整数倍时写模式名，否则写公里数。</summary>
+        public static string DescribeMapSize(float mapSize)
+        {
+            int cv = (int)Math.Round(mapSize / PatchManager.OriginalMapSize);
+            bool isMode = Math.Abs(mapSize - cv * PatchManager.OriginalMapSize) < 1f && PatchManager.IsKnownCoreValue(cv);
+            return isMode ? PatchManager.GetModeNameForCoreValue(cv) : $"{mapSize / 1000f:0.#} km";
+        }
+
         /// <summary>重置所有狀態（場景清理與每次載入開始時呼叫）。</summary>
         public static void Reset()
         {
@@ -44,6 +74,8 @@ namespace MapExtPDX.SaveLoadSystem
             AuthoredCoreValue = 0;
             CurrentCoreValue = 0;
             DialogShown = false;
+            TerrainMapSize = 0f;
+            VanillaStretched = false;
         }
     }
 }

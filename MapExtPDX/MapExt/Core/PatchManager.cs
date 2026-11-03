@@ -297,6 +297,17 @@ namespace MapExtPDX.MapExt.Core
             }
         }
 
+        /// <summary>是否为现行模式之一的 CoreValue；已废弃的旧 ModeD（CV=16）不算。</summary>
+        public static bool IsKnownCoreValue(int coreValue)
+        {
+            foreach (PatchModeSetting mode in Enum.GetValues(typeof(PatchModeSetting)))
+            {
+                if (GetCoreValueForMode(mode) == coreValue) return true;
+            }
+
+            return false;
+        }
+
         /// <summary>
         /// 补丁集：分级＋应用委托。关键补丁集失败会让本会话进入降级状态（见 <see cref="MapExtHealth"/>）。
         /// </summary>
