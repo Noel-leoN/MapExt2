@@ -24,7 +24,7 @@ namespace MapExtPDX.SaveLoadSystem
     /// 不符就拦下并说明，不提供"仍要加载"与转换——那两项只在菜单层提供。</para>
     ///
     /// <para><b>拦下时</b>：返回 <c>Task.FromResult(false)</c> 跳过原方法，并复位菜单已写入的城市配置覆盖项，
-    /// 否则被取消的开局选项会套到下一次读档上。</para>
+    /// 否则被取消的开局选项会套到下一次读档上。拦下的是存档时，还要恢复"上次存档名"（见 <see cref="LastSaveTarget"/>）。</para>
     ///
     /// <para><b>已知缺口</b>：资产是 <c>MapData</c>／<c>SaveGameData</c> 时不带元数据，无法判定，记 Warn 放行。</para>
     /// </summary>
@@ -65,6 +65,8 @@ namespace MapExtPDX.SaveLoadSystem
                         }
 
                         ModLog.Warn(Tag, $"汇合点拦下读档 '{save.displayName}'（{decision.Verdict}），没有经过菜单层的判定");
+                        // 原版读档、继续在 Load 返回后不看结果，照样把"上次存档名"设成这个档；排一个任务恢复（整合计划 2.7）
+                        LastSaveTarget.RestoreAfterBlockedLoad(save.displayName);
                         break;
                     }
 

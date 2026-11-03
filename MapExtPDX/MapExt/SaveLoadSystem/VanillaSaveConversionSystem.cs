@@ -6,7 +6,6 @@
 
 using Colossal.IO.AssetDatabase;
 using Colossal.Mathematics;
-using Colossal.UI.Binding;
 using Game;
 using Game.Areas;
 using Game.Common;
@@ -61,13 +60,6 @@ namespace MapExtPDX.SaveLoadSystem
 
         /// <summary>请求结束后再压几帧速度：确保排在 SimulationSystem 加载结束后按设定定速的那一次之后。</summary>
         private const int kPauseSettleFrames = 3;
-
-        // === 上次存档名 ===
-        /// <summary>菜单的"上次存档名"：快速存档用它当档名。</summary>
-        private static readonly FieldInfo s_LastSaveNameField = AccessTools.Field(typeof(MenuUISystem), "m_LastSaveNameBinding");
-
-        /// <summary>菜单记下的存储位置：快速存档存进这个库。</summary>
-        private static readonly FieldInfo s_LastCloudTargetField = AccessTools.Field(typeof(MenuUISystem), "m_LastSelectedCloudTarget");
 
         #endregion
 
@@ -972,7 +964,7 @@ namespace MapExtPDX.SaveLoadSystem
                 }
 
                 // 自动存档失败时也改：玩家按 F5 只会把城市存成这个新档名
-                if (saveName != null) RedirectLastSave(menuUI, saveName, db);
+                if (saveName != null) LastSaveTarget.Redirect(menuUI, saveName, db);
             }
         }
 
@@ -1018,7 +1010,7 @@ namespace MapExtPDX.SaveLoadSystem
             try
             {
                 ILocalAssetDatabase db = ResolveTargetDatabase();
-                RedirectLastSave(World.GetExistingSystemManaged<MenuUISystem>(), MakeUniqueSaveName(db, request), db);
+                LastSaveTarget.Redirect(World.GetExistingSystemManaged<MenuUISystem>(), MakeUniqueSaveName(db, request), db);
             }
             catch (Exception ex)
             {
@@ -1026,30 +1018,6 @@ namespace MapExtPDX.SaveLoadSystem
             }
 
             return Task.CompletedTask;
-        }
-
-        /// <summary>
-        /// 把菜单的"上次存档名"与存储位置改指 <paramref name="saveName"/>，做法照原版存档面板（<c>MenuUISystem.SaveGame</c>）。
-        /// 快速存档按这两项定档名与存进哪个库；两者都是私有字段，取不到时记 Error。
-        /// </summary>
-        private static void RedirectLastSave(MenuUISystem menuUI, string saveName, ILocalAssetDatabase db)
-        {
-            if (menuUI == null) return;
-
-            if (!(s_LastSaveNameField?.GetValue(menuUI) is ValueBinding<string> binding))
-            {
-                ModLog.Error(Tag, "取不到 MenuUISystem.m_LastSaveNameBinding（游戏更新后改名？），快速存档仍会用源档名");
-                return;
-            }
-
-            binding.Update(saveName);
-
-            if (s_LastCloudTargetField != null)
-                s_LastCloudTargetField.SetValue(menuUI, db?.dataSource?.remoteStorageSourceName);
-            else
-                ModLog.Error(Tag, "取不到 MenuUISystem.m_LastSelectedCloudTarget（游戏更新后改名？），快速存档仍存进源档所在的库");
-
-            ModLog.Info(Tag, $"上次存档名改指 '{saveName}'，快速存档不会写回源档");
         }
 
         #endregion
