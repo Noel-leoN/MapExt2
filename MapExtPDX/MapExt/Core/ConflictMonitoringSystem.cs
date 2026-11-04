@@ -28,6 +28,16 @@ namespace MapExtPDX.MapExt.Core
     {
         private const string Tag = nameof(ConflictMonitoringSystem);
 
+        #region Constants
+
+        /// <summary>地图尺寸模式不符的通知条。</summary>
+        private const string kMismatchNotificationId = "mapext.mapsize_mismatch";
+
+        /// <summary>原版地形被拉伸的通知条（v4.12.0 整合计划 2.2）。</summary>
+        private const string kStretchNotificationId = "mapext.vanilla_stretch";
+
+        #endregion
+
         #region Fields
 
         /// <summary>是否已执行过首次诊断</summary>
@@ -52,6 +62,11 @@ namespace MapExtPDX.MapExt.Core
         protected override void OnGamePreload(Purpose purpose, GameMode mode)
         {
             base.OnGamePreload(purpose, mode);
+
+            // 这两条通知说的是上一次加载的地图；原版加载时不清通知条，不撤下会留到另一座城市
+            PopNotification(kMismatchNotificationId);
+            PopNotification(kStretchNotificationId);
+
             if (purpose == Purpose.Cleanup)
             {
                 ModLog.Info(Tag, "检测到场景清理（Cleanup），重置所有 PatchSet 会话状态...");
@@ -115,7 +130,7 @@ namespace MapExtPDX.MapExt.Core
                 SystemReplacer.ReDisableVanillaSystems(this.World);
 
                 // 地圖尺寸模式錯配提示（由 FinalizeTerrainData_Prefix 於載入中途記錄）
-                ShowMapSizeMismatchDialogIfNeeded();
+                ShowMapSizeMismatchDialogIfNeeded(purpose, mode);
 
                 RunDiagnostics();
             }
@@ -123,7 +138,7 @@ namespace MapExtPDX.MapExt.Core
             {
                 // 地圖作者在編輯器載入別的模式製作的地圖，地形取樣同樣錯位，而且比遊戲內更常發生；
                 // 原版系統重禁用與狀態診斷屬遊戲會話專用，編輯器只做錯配提示。
-                ShowMapSizeMismatchDialogIfNeeded();
+                ShowMapSizeMismatchDialogIfNeeded(purpose, mode);
             }
         }
 
@@ -139,10 +154,20 @@ namespace MapExtPDX.MapExt.Core
         ///
         /// <para>沿用 <c>VanillaSaveConversionSystem</c> 的 <c>MainThreadDispatcher</c>
         /// 延遲模式，確保排在 RoadBuilder 等其它 Mod 的載入完成對話框之後，不被覆蓋。</para>
+        ///
+        /// <para><b>原版地形被拉伸</b>另走 <see cref="ShowVanillaStretchIfNeeded"/>（v4.12.0 整合计划 2.2）。</para>
         /// </summary>
-        private void ShowMapSizeMismatchDialogIfNeeded()
+        private void ShowMapSizeMismatchDialogIfNeeded(Purpose purpose, GameMode mode)
         {
-            if (!MapSizeMismatchState.HasMismatch || MapSizeMismatchState.DialogShown)
+            if (MapSizeMismatchState.DialogShown) return;
+
+            if (MapSizeMismatchState.VanillaStretched)
+            {
+                ShowVanillaStretchIfNeeded(purpose, mode);
+                return;
+            }
+
+            if (!MapSizeMismatchState.HasMismatch)
                 return;
 
             // 尊重使用者關閉驗證的設定，與 LoadGameValidatorPatch 的行為一致
@@ -182,7 +207,7 @@ namespace MapExtPDX.MapExt.Core
                 // 通知條由 PSI 層管理、不屬於場景 UI，重建沖不掉它，且玩家事後回頭仍看得到。
                 // 兩者各自解決不同的失敗模式，所以都留著。
                 NotificationSystem.Push(
-                    identifier: "mapext.mapsize_mismatch",
+                    identifier: kMismatchNotificationId,
                     title: LocalizedString.Id("MAPEXT_MAPSIZE.MismatchTitle"),
                     text: new LocalizedString("MAPEXT_MAPSIZE.MismatchNotify", null, locParams),
                     progressState: Colossal.PSI.Common.ProgressState.Warning,
@@ -195,6 +220,92 @@ namespace MapExtPDX.MapExt.Core
             catch (Exception ex)
             {
                 ModLog.Warn(Tag, $"显示地图尺寸错配对话框失败: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// 原版 14 km 的地形在扩展模式下按当前尺寸拉伸后的载入后提示（v4.12.0 整合计划 2.2）。
+        /// <list type="bullet">
+        /// <item>事实警告，不受"禁止读档校验"控制（D3）；</item>
+        /// <item>只提示游戏的开新城与编辑器的读图（<c>LoadMap</c>）：编辑器新建地图本来就以默认 14336 创建再缩放；
+        /// 读档拉伸只在关闭校验后读原版存档时出现，只记 Warn（Q10）；</item>
+        /// <item>本次加载有转换请求时不提示，否决的说明由转换系统弹；</item>
+        /// <item>菜单层已提示过、玩家选了"仍要继续"的只推通知条（Q11），其余对话框与通知条并存（理由同模式不符）。</item>
+        /// </list>
+        /// 到这里的开新城，是菜单层判不了的：面积不可信、资产没有元数据，或闸门异常放行。
+        /// </summary>
+        private static void ShowVanillaStretchIfNeeded(Purpose purpose, GameMode mode)
+        {
+            string currentMode = PatchManager.GetModeNameForCoreValue(PatchManager.CurrentCoreValue);
+
+            if (VanillaConversionState.HasRequestForCurrentLoad)
+            {
+                ModLog.Info(Tag, $"原版尺寸的地形本次由转换请求处理，不提示拉伸：{VanillaConversionState.Current}");
+                return;
+            }
+
+            bool editor = mode == GameMode.Editor;
+            if (editor ? purpose != Purpose.LoadMap : purpose != Purpose.NewGame)
+            {
+                if (editor)
+                    ModLog.Info(Tag, $"编辑器 {purpose}：默认地形按 {currentMode} 创建，不提示拉伸");
+                else
+                    ModLog.Warn(Tag, $"读档（{purpose}）的地形是原版 14 km，已按 {currentMode} 拉伸；读档的拉伸只记日志，不提示");
+                return;
+            }
+
+            MapSizeMismatchState.DialogShown = true;
+
+            try
+            {
+                var locParams = new Dictionary<string, ILocElement>
+                {
+                    { "CURRENT_MODE", LocalizedString.Value(currentMode) },
+                    { "NONE_MODE", LocalizedString.Value(PatchManager.GetModeNameForCoreValue(SaveEntryGate.NoneModeCoreValue)) }
+                };
+
+                // 菜单层的标记只在游戏开新城时有；编辑器读图一律弹框
+                bool prompted = !editor && SaveEntryGate.StretchPromptedForCurrentLoad;
+                if (!prompted)
+                {
+                    var dialog = new MessageDialog(
+                        LocalizedString.Id("MAPEXT_MAPSIZE.StretchTitle"),
+                        new LocalizedString(editor ? "MAPEXT_MAPSIZE.StretchEditorMessage" : "MAPEXT_MAPSIZE.StretchMessage", null, locParams),
+                        LocalizedString.Id("LOAD_VALIDATION.ConfirmOK"));
+
+                    Colossal.Core.MainThreadDispatcher.RegisterUpdater(() =>
+                    {
+                        GameManager.instance.userInterface.appBindings.ShowMessageDialog(dialog, null);
+                        return true;
+                    });
+                }
+
+                NotificationSystem.Push(
+                    identifier: kStretchNotificationId,
+                    title: LocalizedString.Id("MAPEXT_MAPSIZE.StretchTitle"),
+                    text: new LocalizedString(editor ? "MAPEXT_MAPSIZE.StretchEditorNotify" : "MAPEXT_MAPSIZE.StretchNotify", null, locParams),
+                    progressState: Colossal.PSI.Common.ProgressState.Warning,
+                    progress: 100
+                );
+
+                ModLog.Warn(Tag, $"原版尺寸的地形已按 {currentMode} 拉伸（{mode} {purpose}），" +
+                                 (prompted ? "菜单层已提示过，只推通知条" : "已弹提示并推通知条"));
+            }
+            catch (Exception ex)
+            {
+                ModLog.Warn(Tag, $"显示拉伸提示失败: {ex.Message}");
+            }
+        }
+
+        private static void PopNotification(string identifier)
+        {
+            try
+            {
+                if (NotificationSystem.Exist(identifier)) NotificationSystem.Pop(identifier);
+            }
+            catch (Exception ex)
+            {
+                ModLog.Warn(Tag, $"撤下通知条 {identifier} 失败: {ex.Message}");
             }
         }
 

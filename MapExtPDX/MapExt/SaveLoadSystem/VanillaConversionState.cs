@@ -148,6 +148,12 @@ namespace MapExtPDX.SaveLoadSystem
         /// <summary>正在为转换结果存档。只有这时 <c>GetSaveInfo</c> 才打转换标签。</summary>
         public static bool IsSaving => Current != null && Current.Phase == ConversionPhase.Saving;
 
+        /// <summary>
+        /// 当前请求已被闸门放行过（加载中及之后的任何阶段）。在 <c>OnGameLoadingComplete</c> 里，它属于刚结束的这次加载：
+        /// 自动存档排在加载结束之后才完成，已完成、失败、被否决的请求要到下一次加载开始才清除。
+        /// </summary>
+        public static bool HasRequestForCurrentLoad => Current != null && Current.Phase != ConversionPhase.Requested;
+
         #endregion
 
         // === Public API ===

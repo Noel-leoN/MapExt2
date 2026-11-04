@@ -52,6 +52,13 @@ namespace MapExtPDX.SaveLoadSystem
                 // 通知條版本（短文案）：對話框可能被其它 Mod 的 UI 重建沖掉，這條留在通知區
                 { "MAPEXT_MAPSIZE.MismatchNotify", "This map was made for '{AUTHORED_MODE}' but MapExt is set to '{CURRENT_MODE}'. Terrain height is sampled at the wrong scale. Quit to the main menu, switch MapExt's MapSize Mode to '{AUTHORED_MODE}', then reload." },
 
+                // === 原版地形被拉伸：载入后提示（v4.12.0 整合计划 2.2），游戏开新城与编辑器读图各一套 ===
+                { "MAPEXT_MAPSIZE.StretchTitle", "⚠️ Vanilla Map Stretched" },
+                { "MAPEXT_MAPSIZE.StretchMessage", "This new city was started on a map with vanilla 14 km terrain, but MapExt is set to '{CURRENT_MODE}'. The terrain has been stretched to the current map size: slopes are flattened, while water sources, outside connections and map tiles stayed where they were, so only the central 14 km can ever be bought.\n\nIt is best not to keep building this city. Return to the main menu and start a new city on a map made for '{CURRENT_MODE}' instead." },
+                { "MAPEXT_MAPSIZE.StretchNotify", "This city's vanilla 14 km terrain is stretched to '{CURRENT_MODE}': slopes are flattened and only the central 14 km can be bought." },
+                { "MAPEXT_MAPSIZE.StretchEditorMessage", "This map has vanilla 14 km terrain, but MapExt is set to '{CURRENT_MODE}', so the editor shows it stretched to the current map size. Its map tiles were not rebuilt and still cover only the central 14 km.\n\nSaved like this, it becomes a map with '{CURRENT_MODE}' terrain whose buyable area is only the central 14 km. To edit the map at its original size, switch MapExt's MapSize Mode to '{NONE_MODE}' and restart the game." },
+                { "MAPEXT_MAPSIZE.StretchEditorNotify", "This vanilla 14 km map is shown stretched to '{CURRENT_MODE}', and its map tiles still cover only the central 14 km. To edit it at its original size, switch MapExt to '{NONE_MODE}'." },
+
                 // === WorldMap Import Warning ===
                 { "MAPEXT_WORLDMAP.WarningTitle", "⚠️ Performance Warning" },
                 { "MAPEXT_WORLDMAP.WarningMessage", "Importing a World Map introduces additional rendering overhead:\n\n• Extra cascade rendering layer (baseLod increased)\n• Per-frame DownSampleHeightMap for backdrop\n• Larger MinMaxMap (1024 vs 512)\n• Increased GPU memory usage\n\nThis may reduce FPS on large maps. Continue?" },
@@ -124,6 +131,12 @@ namespace MapExtPDX.SaveLoadSystem
                 // 通知条版本（短文案）
                 { "MAPEXT_MAPSIZE.MismatchNotify", "此地图为「{AUTHORED_MODE}」制作，但 MapExt 当前为「{CURRENT_MODE}」，地形高度采样比例错误。请退出到主菜单，将地图尺寸模式改为「{AUTHORED_MODE}」后重新加载。" },
 
+                { "MAPEXT_MAPSIZE.StretchTitle", "⚠️ 原版地图已被拉伸" },
+                { "MAPEXT_MAPSIZE.StretchMessage", "这座新城用的地图是原版 14 km 地形，但 MapExt 当前为「{CURRENT_MODE}」，地形已按当前尺寸拉伸：坡度变缓，水源、外部连接与地图分块却停在原处，只有中央 14 km 能够购买。\n\n建议不要继续经营这座城市。请返回主菜单，改用为「{CURRENT_MODE}」制作的地图开新城。" },
+                { "MAPEXT_MAPSIZE.StretchNotify", "这座城市的原版 14 km 地形已按「{CURRENT_MODE}」拉伸：坡度变缓，只有中央 14 km 能够购买。" },
+                { "MAPEXT_MAPSIZE.StretchEditorMessage", "这张地图是原版 14 km 地形，但 MapExt 当前为「{CURRENT_MODE}」，编辑器里显示的是按当前尺寸拉伸后的地形；地图分块没有重建，仍只覆盖中央 14 km。\n\n照这样存回去，会得到一张地形为「{CURRENT_MODE}」、可购买范围却只有中央 14 km 的地图。如果只想按原版尺寸编辑，请把 MapExt 的地图尺寸模式切到「{NONE_MODE}」并重启游戏。" },
+                { "MAPEXT_MAPSIZE.StretchEditorNotify", "这张原版 14 km 地图按「{CURRENT_MODE}」拉伸显示，地图分块仍只覆盖中央 14 km。要按原版尺寸编辑，请把 MapExt 切到「{NONE_MODE}」。" },
+
                 // === 世界地图导入性能警告 ===
                 { "MAPEXT_WORLDMAP.WarningTitle", "⚠️ 性能警告" },
                 { "MAPEXT_WORLDMAP.WarningMessage", "导入世界地图(WorldMap)会引入额外的渲染开销：\n\n• 增加一层级联渲染层（baseLod 提升）\n• 每帧执行 DownSampleHeightMap 降采样\n• MinMaxMap 尺寸增大（1024 vs 512）\n• GPU 显存占用增加\n\n在大地图模式下可能导致帧率下降。是否继续？" },
@@ -192,6 +205,12 @@ namespace MapExtPDX.SaveLoadSystem
                 { "MAPEXT_MAPSIZE.MismatchMessage", "此地圖是在「{AUTHORED_MODE}」下製作的，但 MapExt 當前設定為「{CURRENT_MODE}」。\n\n地形高度正以錯誤的比例取樣，海拔、水體與可建造區域都會出錯。\n\n解決方法：退出至主選單，將 MapExt 的地圖尺寸模式設為「{AUTHORED_MODE}」，然後重新載入此地圖。\n\n說明：編輯器匯出的地圖不含地圖尺寸元資料，因此只能在載入開始後才偵測得到。" },
                 // 通知條版本（短文案）
                 { "MAPEXT_MAPSIZE.MismatchNotify", "此地圖為「{AUTHORED_MODE}」製作，但 MapExt 當前為「{CURRENT_MODE}」，地形高度取樣比例錯誤。請退出至主選單，將地圖尺寸模式改為「{AUTHORED_MODE}」後重新載入。" },
+
+                { "MAPEXT_MAPSIZE.StretchTitle", "⚠️ 原版地圖已被拉伸" },
+                { "MAPEXT_MAPSIZE.StretchMessage", "這座新城用的地圖是原版 14 km 地形，但 MapExt 當前為「{CURRENT_MODE}」，地形已按當前尺寸拉伸：坡度變緩，水源、外部連接與地圖分塊卻停在原處，只有中央 14 km 能夠購買。\n\n建議不要繼續經營這座城市。請返回主選單，改用為「{CURRENT_MODE}」製作的地圖開新城。" },
+                { "MAPEXT_MAPSIZE.StretchNotify", "這座城市的原版 14 km 地形已按「{CURRENT_MODE}」拉伸：坡度變緩，只有中央 14 km 能夠購買。" },
+                { "MAPEXT_MAPSIZE.StretchEditorMessage", "這張地圖是原版 14 km 地形，但 MapExt 當前為「{CURRENT_MODE}」，編輯器裡顯示的是按當前尺寸拉伸後的地形；地圖分塊沒有重建，仍只覆蓋中央 14 km。\n\n照這樣存回去，會得到一張地形為「{CURRENT_MODE}」、可購買範圍卻只有中央 14 km 的地圖。如果只想按原版尺寸編輯，請把 MapExt 的地圖尺寸模式切到「{NONE_MODE}」並重啟遊戲。" },
+                { "MAPEXT_MAPSIZE.StretchEditorNotify", "這張原版 14 km 地圖按「{CURRENT_MODE}」拉伸顯示，地圖分塊仍只覆蓋中央 14 km。要按原版尺寸編輯，請把 MapExt 切到「{NONE_MODE}」。" },
 
                 // === 世界地图导入性能警告 ===
                 { "MAPEXT_WORLDMAP.WarningTitle", "⚠️ 性能警告" },
