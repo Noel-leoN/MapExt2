@@ -144,13 +144,15 @@ using MapExtPDX.SaveLoadSystem;
 
         // === 為什麼沒有 SetDefaults 覆寫（勿再補回） ===
         // v4.8.0 開發期間曾有一版覆寫，在 purpose == NewGame 時以原版的 Perlin 公式生成
-        // 程序化含水層。2026-08-28 遊戲內實測後移除，兩個理由：
+        // 程序化含水層。2026-08-28 遊戲內實測後移除。當時寫了兩個理由，第 1 條不成立：
         //
-        //   1. 它從未生效。載入地圖檔時，SerializerSystem 只在「什麼都讀不到」時才把
-        //      LoadGame/LoadMap 改寫成 NewGame/NewMap（SerializerSystem.cs:127-141），
-        //      而地圖檔是讀得到的 → SetDefaults 收到的 purpose 是 LoadMap/LoadGame，條件恆不成立。
-        //      purpose 變成 NewGame 是在那之後，只有 OnGameLoaded 拿到的 context 才是 NewGame。
-        //      實測日誌可證：開新城時「初始場已生成」是印在 OnGameLoaded 的兜底 Warn 之後。
+        //   1. （2026-11-02 更正，v4.12.0 整合计划 §1.7）原先说"它从未生效：SetDefaults 收到的
+        //      purpose 是 LoadMap/LoadGame"，这不对。GameManager.Load 建的 Context 就是 NewGame，
+        //      反序列化器沿用传入的 purpose，并用同一个 Context 给地图里缺席的系统调 SetDefaults
+        //      （EntityDeserializer.cs:621-625）；SerializerSystem 只在什么都读不到时才改写 purpose
+        //      （SerializerSystem.cs:130-135）。原版地图里没有本模式的区段，开新城时本类的
+        //      SetDefaults 收到的就是 NewGame，那一版覆写会生成 Perlin 含水层（代码推断，验收 V10 确认）。
+        //      移除的理由只剩第 2 条，结论不变。
         //
         //   2. 原版同樣不生成。原版 GroundWaterSystem.SetDefaults（GroundWaterSystem.cs:266）
         //      的守衛比這裡更嚴——多一個 context.version < Version.timoSerializationFlow，
@@ -208,9 +210,10 @@ using MapExtPDX.SaveLoadSystem;
 
             // 原版存檔轉換路徑由 VanillaSaveConversionSystem 全權處理：它會清空本場、再把原版
             // orgTextureSize² 資料 1:1 嵌入中心，與這裡的等比拉伸取向互斥（該路徑的地形也是
-            // 「原始細節降採樣後嵌入中心」而非拉伸），直接讓路。
+            // 「原始細節降採樣後嵌入中心」而非拉伸），直接讓路。原版地图开新城转换同样让路。
             // 兩者的 OnGameLoaded 誰先跑取決於系統建立順序，但正確性不依賴它：转换请求在整次转换读档期间
             // （加载中、转换中、保存中）都算数；即使不算，下面「場非空就不動」的判據也會讓嵌入結果原樣保留。
+            // 地形尺寸不符而被否决的请求，在反序列化阶段已转为"已取消"，不算转换读档，这里照常补场。
             if (VanillaConversionState.IsConversionLoad) return;
 
             // 只在真正的遊戲／地圖編輯器會話介入。退出到主菜單時引擎會跑一輪 Purpose.Cleanup 的

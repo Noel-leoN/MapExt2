@@ -74,11 +74,15 @@ namespace MapExtPDX.SaveLoadSystem
                 { "VANILLA_CONVERT.CompleteMessage", "Vanilla map has been extended to {TARGET_MODE}.\nNew save: {SAVE_NAME}\n\n✅ Terrain heightmap synthesized\n✅ Original natural resources and ground water preserved\n✅ All vehicle and resident entities cleared\n✅ All outside connections removed\n✅ Water sources upgraded and sea level reset\n⚠ All 529 map tiles unlocked\n\n⚠ RESTART REQUIRED\nYou MUST quit to desktop and reload the new save.\nFailure to restart will cause water simulation glitches or crashes!\n\n📋 AFTER RESTART - TODO LIST:\n\n1. Rebuild Outside Connections at new map edges:\n   • Roads (highway connections)\n   • Railways (train lines)\n   • Shipping Lanes (cargo and passenger ships)\n   • Airline Routes (airport flight paths)\n   • Electricity (power line connections)\n   • Water Supply (water pipe connections)\n\n2. Place new Water Sources and Adjust Sea Level:\n   • Original water sources have been cleared\n   • You MUST use the Water Features mod to place river/sea sources (no other mods have this feature)\n   • ⚠ Note: Water levels might not be perfectly accurate. Use Water Tools (M button) or Water Features mod to adjust and fill naturally." },
                 // 通知條版本（短文案）：完成對話框可能被其它 Mod 的 UI 重建沖掉，這條留在通知區
                 { "VANILLA_CONVERT.CompleteNotify", "Conversion finished - saved as '{SAVE_NAME}'. You must restart the game before playing it." },
+                // 原版地图开新城（v4.12.0 整合计划 2.4）：分块只解锁中央 9 格（D2），外部连接保留（D1）
+                { "VANILLA_CONVERT.NewGameMessage", "The selected map is a vanilla 14 km map. Extend it to the current mode ({TARGET_MODE}) before starting the new city?\n\n⚠ HIGHLY EXPERIMENTAL - the following will happen:\n• The terrain heightmap is synthesized: the original 14 km stays in the center, the background terrain fills the rest\n• Map tiles are rebuilt for the new size; only the central 9 tiles start unlocked, the rest can be bought as usual\n• Starting tiles set by the map author are not kept\n• The map's natural resources and ground water are kept in the center; the new area starts without them\n• Outside connections stay at the old 14 km border\n• Water is reset to the sea level\n\nThe map itself will NOT be modified.\nThe new city will be saved automatically (Format: CityName_MapExtMode).\nYou MUST restart the game after conversion to prevent water glitches or crashes." },
+                { "VANILLA_CONVERT.NewGameConfirm", "Extend and Start" },
+                { "VANILLA_CONVERT.NewGameCompleteMessage", "The vanilla map has been extended to {TARGET_MODE}.\nNew save: {SAVE_NAME}\n\n✅ Terrain heightmap synthesized\n✅ Map tiles rebuilt; the central 9 tiles are unlocked\n✅ The map's natural resources and ground water kept in the center\n✅ Water reset to the sea level\n⚠ Outside connections are still at the old 14 km border\n\n⚠ RESTART REQUIRED\nYou MUST quit to desktop and load the new save.\nFailure to restart will cause water simulation glitches or crashes!" },
                 { "VANILLA_CONVERT.QuitConfirm", "Quit Game" },
                 { "VANILLA_CONVERT.QuitCancel", "Stay" },
                 { "VANILLA_CONVERT.EnableFirst", "This vanilla save must be converted before it can be played in the current mode. Enable '⚠ Vanilla Map Extension' under MapSize → Save Conversion (Experimental), then load it again." },
-                { "VANILLA_CONVERT.Failed", "The vanilla save conversion failed at step '{STEP}':\n{ERROR}\n\nThe original save was not modified. The game is paused; do not keep playing this city, just return to the main menu." },
-                { "VANILLA_CONVERT.SaveFailed", "The conversion finished, but saving '{SAVE_NAME}' failed.\n\nThe original save was not modified. The game is paused; save it under a new name yourself before quitting." },
+                { "VANILLA_CONVERT.Failed", "The vanilla conversion failed at step '{STEP}':\n{ERROR}\n\nThe original save or map was not modified. The game is paused; do not keep playing this city, just return to the main menu." },
+                { "VANILLA_CONVERT.SaveFailed", "The conversion finished, but saving '{SAVE_NAME}' failed.\n\nThe original save or map was not modified. The game is paused; save it under a new name yourself before quitting." },
                 // 否决：地形实际尺寸不是源尺寸（反序列化阶段判定，加载结束后说明）
                 { "VANILLA_CONVERT.VetoedTitle", "Conversion Cancelled" },
                 { "VANILLA_CONVERT.Vetoed", "'{NAME}' already has {TERRAIN_SIZE} terrain, but this conversion expects {SOURCE_SIZE}.\n\nThe conversion was cancelled and nothing was changed; the city has been loaded as it is." },
@@ -152,11 +156,14 @@ namespace MapExtPDX.SaveLoadSystem
                 { "VANILLA_CONVERT.CompleteMessage", "原版地图已成功扩展至 {TARGET_MODE}。\n新存档：{SAVE_NAME}\n\n✅ 地形高度图已合成\n✅ 原版自然资源与地下水已完美保留\n✅ 所有车辆与居民实体已清除\n✅ 全部外部连接已拆除\n✅ 水源已升级并重置海平面\n⚠ 全部 529 格地图分块已解锁\n\n⚠ 必须重启游戏\n请立即退出到桌面并重新加载新存档。\n不重启直接游玩会导致水体异常或游戏崩溃！\n\n📋 重启后待办事项：\n\n1. 在新的地图边界重建对外连接：\n   • 道路（高速公路连接）\n   • 铁路（火车线路）\n   • 航道（货运与客运轮船航线）\n   • 航线（机场飞行航线）\n   • 电力（输电线路连接）\n   • 供水（供水管道连接）\n\n2. 重新设置水源与海平面：\n   • 原有水源已被清除，必须使用 Water Features 模组在所需位置重新放置河流/海洋水源（目前无其他模组具备此功能）\n   • ⚠ 提示：转换后水位可能不够准确。建议使用内建水体工具（M按钮）或 Water Features 模组手动调整海平面并加速注水。" },
                 // 通知条版本（短文案）
                 { "VANILLA_CONVERT.CompleteNotify", "转换完成，已存为「{SAVE_NAME}」。开始游玩前必须重启游戏。" },
+                { "VANILLA_CONVERT.NewGameMessage", "所选地图是原版 14 km 地图。是否先扩展至当前模式（{TARGET_MODE}）再开新城？\n\n⚠ 高度实验性 - 转换过程将执行以下操作：\n• 合成地形高度图：原版 14 km 留在中央，外围由背景地形补齐\n• 按新尺寸重建地图分块：开局只解锁中央 9 格，其余照常购买\n• 地图作者设定的起始分块不保留\n• 地图的自然资源与地下水保留在中央，新增区域开局没有\n• 外部连接留在原 14 km 边界\n• 水体重置到海平面\n\n地图本身不会被修改。\n新城将自动保存为新存档（格式：城市名_MapExt模式）。\n转换后必须重启游戏！否则将导致水体表现异常或游戏崩溃。" },
+                { "VANILLA_CONVERT.NewGameConfirm", "扩展并开始" },
+                { "VANILLA_CONVERT.NewGameCompleteMessage", "原版地图已扩展至 {TARGET_MODE}。\n新存档：{SAVE_NAME}\n\n✅ 已合成地形高度图\n✅ 已重建地图分块，中央 9 格已解锁\n✅ 地图的自然资源与地下水保留在中央\n✅ 水体已重置到海平面\n⚠ 外部连接仍在原 14 km 边界\n\n⚠ 必须重启游戏\n请退出到桌面，再读取新存档。\n不重启会导致水体模拟异常或游戏崩溃！" },
                 { "VANILLA_CONVERT.QuitConfirm", "退出游戏" },
                 { "VANILLA_CONVERT.QuitCancel", "留在游戏" },
                 { "VANILLA_CONVERT.EnableFirst", "这个原版存档要先转换，才能在当前模式下游玩。请在「地图尺寸」→「存档转换 (实验性)」中启用「⚠ 原版地图扩展」，再重新读取。" },
-                { "VANILLA_CONVERT.Failed", "原版存档转换在「{STEP}」一步失败：\n{ERROR}\n\n原存档没有被修改。游戏已暂停，请不要继续游玩这座城市，返回主菜单即可。" },
-                { "VANILLA_CONVERT.SaveFailed", "转换已完成，但自动保存「{SAVE_NAME}」失败。\n\n原存档没有被修改。游戏已暂停，请在退出前手动另存为新档。" },
+                { "VANILLA_CONVERT.Failed", "原版转换在「{STEP}」一步失败：\n{ERROR}\n\n原存档或地图没有被修改。游戏已暂停，请不要继续游玩这座城市，返回主菜单即可。" },
+                { "VANILLA_CONVERT.SaveFailed", "转换已完成，但自动保存「{SAVE_NAME}」失败。\n\n原存档或地图没有被修改。游戏已暂停，请在退出前手动另存为新档。" },
                 { "VANILLA_CONVERT.VetoedTitle", "转换已取消" },
                 { "VANILLA_CONVERT.Vetoed", "「{NAME}」的地形实际是 {TERRAIN_SIZE}，而这次转换要求 {SOURCE_SIZE}。\n\n转换已取消，没有做任何改动，城市已按原样载入。" },
 
@@ -227,11 +234,14 @@ namespace MapExtPDX.SaveLoadSystem
                 { "VANILLA_CONVERT.CompleteMessage", "原版地圖已成功擴展至 {TARGET_MODE}。\n新存檔：{SAVE_NAME}\n\n✅ 地形高度圖已合成\n✅ 原版自然資源與地下水已完美保留\n✅ 所有車輛與居民實體已清除\n✅ 全部外部連接已拆除\n✅ 水源已升級並重置海平面\n⚠ 全部 529 格地圖分塊已解鎖\n\n⚠ 必須重啟遊戲\n請立即退出到桌面並重新載入新存檔。\n不重啟直接遊玩會導致水體異常或遊戲崩潰！\n\n📋 重啟後待辦事項：\n\n1. 在新的地圖邊界重建對外連接：\n   • 道路（高速公路連接）\n   • 鐵路（火車線路）\n   • 航道（貨運與客運輪船航線）\n   • 航線（機場飛行航線）\n   • 電力（輸電線路連接）\n   • 供水（供水管道連接）\n\n2. 重新設置水源與海平面：\n   • 原有水源已被清除，必須使用 Water Features 模組在所需位置重新放置河流/海洋水源（目前無其他模組具備此功能）\n   • ⚠ 提示：轉換後水位可能不夠準確。建議使用內建水體工具（M按鈕）或 Water Features 模組手動調整海平面並加速注水。" },
                 // 通知條版本（短文案）
                 { "VANILLA_CONVERT.CompleteNotify", "轉換完成，已存為「{SAVE_NAME}」。開始遊玩前必須重啟遊戲。" },
+                { "VANILLA_CONVERT.NewGameMessage", "所選地圖是原版 14 km 地圖。是否先擴展至當前模式（{TARGET_MODE}）再開新城？\n\n⚠ 高度實驗性 - 轉換過程將執行以下操作：\n• 合成地形高度圖：原版 14 km 留在中央，外圍由背景地形補齊\n• 按新尺寸重建地圖分塊：開局只解鎖中央 9 格，其餘照常購買\n• 地圖作者設定的起始分塊不保留\n• 地圖的自然資源與地下水保留在中央，新增區域開局沒有\n• 外部連接留在原 14 km 邊界\n• 水體重置到海平面\n\n地圖本身不會被修改。\n新城將自動儲存為新存檔（格式：城市名_MapExt模式）。\n轉換後必須重啟遊戲！否則將導致水體表現異常或遊戲崩潰。" },
+                { "VANILLA_CONVERT.NewGameConfirm", "擴展並開始" },
+                { "VANILLA_CONVERT.NewGameCompleteMessage", "原版地圖已擴展至 {TARGET_MODE}。\n新存檔：{SAVE_NAME}\n\n✅ 已合成地形高度圖\n✅ 已重建地圖分塊，中央 9 格已解鎖\n✅ 地圖的自然資源與地下水保留在中央\n✅ 水體已重置到海平面\n⚠ 外部連接仍在原 14 km 邊界\n\n⚠ 必須重啟遊戲\n請退出到桌面，再讀取新存檔。\n不重啟會導致水體模擬異常或遊戲崩潰！" },
                 { "VANILLA_CONVERT.QuitConfirm", "退出遊戲" },
                 { "VANILLA_CONVERT.QuitCancel", "留在遊戲" },
                 { "VANILLA_CONVERT.EnableFirst", "這個原版存檔要先轉換，才能在當前模式下遊玩。請在「地圖尺寸」→「存檔轉換 (實驗性)」中啟用「⚠ 原版地圖擴展」，再重新讀取。" },
-                { "VANILLA_CONVERT.Failed", "原版存檔轉換在「{STEP}」一步失敗：\n{ERROR}\n\n原存檔沒有被修改。遊戲已暫停，請不要繼續遊玩這座城市，返回主選單即可。" },
-                { "VANILLA_CONVERT.SaveFailed", "轉換已完成，但自動儲存「{SAVE_NAME}」失敗。\n\n原存檔沒有被修改。遊戲已暫停，請在退出前手動另存為新檔。" },
+                { "VANILLA_CONVERT.Failed", "原版轉換在「{STEP}」一步失敗：\n{ERROR}\n\n原存檔或地圖沒有被修改。遊戲已暫停，請不要繼續遊玩這座城市，返回主選單即可。" },
+                { "VANILLA_CONVERT.SaveFailed", "轉換已完成，但自動儲存「{SAVE_NAME}」失敗。\n\n原存檔或地圖沒有被修改。遊戲已暫停，請在退出前手動另存為新檔。" },
                 { "VANILLA_CONVERT.VetoedTitle", "轉換已取消" },
                 { "VANILLA_CONVERT.Vetoed", "「{NAME}」的地形實際是 {TERRAIN_SIZE}，而這次轉換要求 {SOURCE_SIZE}。\n\n轉換已取消，沒有做任何改動，城市已按原樣載入。" },
 

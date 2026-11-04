@@ -7,7 +7,7 @@ using UnityEngine;
 
 namespace MapExtPDX.SaveLoadSystem
 {
-    /// <summary>转换请求的来源。开新城转换（Phase 2）与 28→57（Phase 3）在这里加值。</summary>
+    /// <summary>转换请求的来源。28→57（Phase 3）在这里加值。</summary>
     public enum ConversionKind : byte
     {
         /// <summary>没有 MapExt 标记的原版存档。</summary>
@@ -15,6 +15,12 @@ namespace MapExtPDX.SaveLoadSystem
 
         /// <summary>MapExt 在 None 模式（CV=1）下保存的存档。</summary>
         CoreValue1Save = 1,
+
+        /// <summary>
+        /// 用原版地图开新城（v4.12.0 整合计划 2.4）：重建分块后只解锁中央 9 格（D2），
+        /// 跳过车辆与居民、外部连接两步（D1）。
+        /// </summary>
+        VanillaMapNewGame = 2,
     }
 
     /// <summary>转换请求的阶段，按声明顺序推进。</summary>
@@ -69,10 +75,13 @@ namespace MapExtPDX.SaveLoadSystem
 
         public ConversionKind Kind { get; }
 
-        /// <summary>源存档的 <c>SaveInfo.id</c>。闸门只对这个资产放行。</summary>
+        /// <summary>源资产的 ID：存档为 <c>SaveInfo.id</c>，开新城为 <c>MapInfo.id</c>。闸门只对这个资产放行。</summary>
         public string SourceAssetId { get; }
 
-        /// <summary>源存档的模式值；无标记的原版档为 <see cref="VanillaConversionState.UntaggedVanillaCoreValue"/>，不折算成 1。</summary>
+        /// <summary>
+        /// 源资产的模式值；无标记的原版档为 <see cref="VanillaConversionState.UntaggedVanillaCoreValue"/>，不折算成 1；
+        /// 开新城为按面积推断的 1。
+        /// </summary>
         public int SourceCoreValue { get; }
 
         /// <summary>源资产应有的地形尺寸（<c>playableArea.x</c>）：原版档与 CV=1 档都是 14336。否决闸按它比对。</summary>
@@ -80,8 +89,11 @@ namespace MapExtPDX.SaveLoadSystem
 
         public int TargetCoreValue { get; }
 
-        /// <summary>源存档的显示名，用于新档命名与提示。</summary>
+        /// <summary>源存档的显示名，开新城为城市名（为空时用地图名），用于新档命名与提示。</summary>
         public string DisplayName { get; }
+
+        /// <summary>开新城转换：没有源存档，转换步骤与提示都不同。</summary>
+        public bool IsNewGame => Kind == ConversionKind.VanillaMapNewGame;
 
         public ConversionPhase Phase { get; internal set; }
 

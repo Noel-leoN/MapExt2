@@ -2,7 +2,7 @@
 // Licensed under the MIT License.
 
 // VanillaSaveConversionSystem.cs
-// 原版存档转换后处理系统：在目标模式下加载原版存档后，执行一次性数据修复。
+// 原版存档转换后处理系统：在目标模式下加载原版存档或用原版地图开新城后，执行一次性数据修复。
 
 using Colossal.IO.AssetDatabase;
 using Colossal.Mathematics;
@@ -23,6 +23,7 @@ using MapExtPDX.SaveLoadSystem;
 using System;
 using System.Collections.Generic;
 using System.Reflection;
+using System.Runtime.ExceptionServices;
 using System.Threading.Tasks;
 using Unity.Collections;
 using Unity.Entities;
@@ -35,8 +36,8 @@ using UnityEngine.Rendering;
 namespace MapExtPDX.SaveLoadSystem
 {
     /// <summary>
-    /// 原版存档转换后处理系统，按转换请求（<see cref="VanillaConversionState"/>）分阶段执行：
-    /// <c>OnGameLoaded</c> 做转换（MapTile、清理、地形、自然资源、地下水、水体）；
+    /// 原版存档转换与原版地图开新城转换的后处理系统，按转换请求（<see cref="VanillaConversionState"/>）分阶段执行：
+    /// <c>OnGameLoaded</c> 做转换（MapTile、清理、地形、自然资源、地下水、水体；开新城跳过两步清理）；
     /// <c>OnGameLoadingComplete</c> 把自动存档排进原版存读档队列；存档确认写入后才弹完成提示。
     ///
     /// <para><b>为什么不用 OnUpdate</b>：本系统注册在 <c>LoadSimulation</c>，这个 phase 只在加载期间由
@@ -85,8 +86,9 @@ namespace MapExtPDX.SaveLoadSystem
                 return;
 
             request.Phase = ConversionPhase.Converting;
-            ModLog.Ok(Tag, "=== 开始原版存档转换 ===");
-            ModLog.Info(Tag, $"转换请求 {request}");
+            bool newGame = request.IsNewGame;
+            ModLog.Ok(Tag, newGame ? "=== 开始原版地图开新城转换 ===" : "=== 开始原版存档转换 ===");
+            ModLog.Info(Tag, $"转换请求 {request}，purpose={serializationContext.purpose}");
 
             // ⓪ 转换与自动存档期间保持暂停，失败后也停在暂停（v4.12.0 整合计划 Q6）
             StartPauseHold(request);
@@ -95,17 +97,26 @@ namespace MapExtPDX.SaveLoadSystem
             {
                 // 步骤名用英文标识：失败时原样写进三语提示与日志
 
-                // ⓪a MapTile 边界重建 (529 tiles 全部解锁)
-                RunStep(request, "MapTiles", ExecuteMapTileRebuild);
+                // ⓪a MapTile 边界重建：存档 529 格全部解锁；开新城只解锁中央 9 格（D2）
+                RunStep(request, "MapTiles", () => ExecuteMapTileRebuild(unlockAll: !newGame));
 
-                // ⓪b 先清除所有车辆和居民（消除所有活跃导航引用）
-                // 必须在 OC 删除之前执行，否则车辆导航旧路径会触发 NRE
-                RunStep(request, "VehicleCleanup", ExecuteVehicleCleanup);
+                if (newGame)
+                {
+                    // 新城没有车辆与居民；外部连接保留在原处（D1）：MapExt 没有重新生成外部连接的路径，
+                    // 玩家在游戏内也建不了，删掉就没有移民与进出口
+                    ModLog.Info(Tag, "开新城：跳过车辆与居民清理、外部连接清理（D1）");
+                }
+                else
+                {
+                    // ⓪b 先清除所有车辆和居民（消除所有活跃导航引用）
+                    // 必须在 OC 删除之前执行，否则车辆导航旧路径会触发 NRE
+                    RunStep(request, "VehicleCleanup", ExecuteVehicleCleanup);
 
-                // ⓪c OutsideConnection 节点清理（标记为 Deleted）
-                // 包括飞机 OC（无法在游戏内手动删除）
-                // 车辆已全部清除，级联删除安全
-                RunStep(request, "OutsideConnections", ExecuteOutsideConnectionCleanup);
+                    // ⓪c OutsideConnection 节点清理（标记为 Deleted）
+                    // 包括飞机 OC（无法在游戏内手动删除）
+                    // 车辆已全部清除，级联删除安全
+                    RunStep(request, "OutsideConnections", ExecuteOutsideConnectionCleanup);
+                }
 
                 // ① Heightmap 合成 (含平面底图回退)
                 RunStep(request, "Heightmap", ExecuteHeightmapSynthesis);
@@ -125,7 +136,7 @@ namespace MapExtPDX.SaveLoadSystem
                 // ④ 自动存档等加载结束后在 OnGameLoadingComplete 里排队
                 request.Phase = ConversionPhase.Saving;
                 request.CurrentStep = "AutoSave";
-                ModLog.Ok(Tag, "=== 原版存档转换完成，加载结束后自动存档 ===");
+                ModLog.Ok(Tag, $"=== 原版{(newGame ? "地图开新城" : "存档")}转换完成，加载结束后自动存档 ===");
             }
             catch (Exception ex)
             {
@@ -140,7 +151,7 @@ namespace MapExtPDX.SaveLoadSystem
         ///
         /// <para>三条路最后都把菜单的"上次存档名"改指新档名（v4.12.0 整合计划 1.8）：读档任务在加载结束后
         /// 才把它设成源档名，所以改动也要排进同一个队列，排在读档任务之后。被否决的城市虽然没动，
-        /// 按 F5 也只存成新档，不写回源档（§7 第 2 条）。</para>
+        /// 按 F5 也只存成新档，不写回源档（§7 第 2 条）；被否决的开新城没有源档，不改。</para>
         /// </summary>
         protected override void OnGameLoadingComplete(Colossal.Serialization.Entities.Purpose purpose, GameMode mode)
         {
@@ -167,7 +178,9 @@ namespace MapExtPDX.SaveLoadSystem
             {
                 request.VetoReported = true;
                 ShowVetoDialog(request);
-                Colossal.TaskManager.instance.EnqueueTask(SaveHelpers.kSaveLoadTaskName, () => RedirectToNewSaveName(request));
+                // 开新城没有源档要护，城市也没动：照原版开新城，F5 按城市名存
+                if (!request.IsNewGame)
+                    Colossal.TaskManager.instance.EnqueueTask(SaveHelpers.kSaveLoadTaskName, () => RedirectToNewSaveName(request));
             }
         }
 
@@ -711,11 +724,10 @@ namespace MapExtPDX.SaveLoadSystem
                 ModLog.Info(Tag, $"原版数据统计: 非零 Fertility={nzFert}, Ore={nzOre}, Oil={nzOil} (共{vanillaMap.Length}cells)");
 #endif
 
+                // 全零也要照常清零，不能跳过：原版地图开新城时，本模式的 SetDefaults 收到 NewGame，
+                // 已经按 Perlin 生成了整张资源（v4.12.0 整合计划 §1.7），跳过会把它留下
                 if (nzFert == 0 && nzOre == 0 && nzOil == 0)
-                {
-                    ModLog.Warn(Tag, "原版数据全为零，可能存档未正确反序列化，跳过");
-                    return;
-                }
+                    ModLog.Warn(Tag, "原版数据全为零（地图没有资源，或存档未正确反序列化），Mod 地图照常清零");
 
                 // === 写入目标: Mod NaturalResourceSystemMod (大地图 CellMap) ===
                 var modSystem = GetNaturalResourceSystemMod();
@@ -1063,53 +1075,67 @@ namespace MapExtPDX.SaveLoadSystem
         // === ⓪ MapTile 边界重建 ===
 
         /// <summary>
-        /// 通过反射调用 MapTileSystem.LegacyGenerateMapTiles(false) 重建 MapTile 实体，
-        /// 然后移除所有 Native 组件以全部解锁 529 格。
+        /// 通过反射调用 MapTileSystem.LegacyGenerateMapTiles(false) 重建 MapTile 实体：它销毁旧分块，
+        /// 生成 529 格（分块尺寸由 ReBurst 的 GenerateMapTilesJob 按 CV 放大），清空并重写 m_StartTiles，
+        /// 全部加 Native 后只给中央 3×3 去掉。
+        ///
+        /// <para><paramref name="unlockAll"/> 为 true（存档转换）时再移除全部 Native，529 格全部解锁；
+        /// 开新城保留原版的购地节奏，只解锁中央 9 格（D2），地图作者自定的起始格不保留。</para>
+        ///
+        /// <para>失败直接抛出、走失败路径：吞掉的话会静默产出只有中央 14 km 可买的城市（v4.12.0 整合计划 §1.7）。
+        /// 异常消息用英文，会原样写进三语的失败提示。</para>
         /// </summary>
-        private void ExecuteMapTileRebuild()
+        private void ExecuteMapTileRebuild(bool unlockAll)
         {
-            ModLog.Info(Tag, "⓪ 开始 MapTile 边界重建...");
+            ModLog.Info(Tag, $"⓪ 开始 MapTile 边界重建（{(unlockAll ? "全部解锁" : "只解锁中央 9 格")}）...");
+
+            var mapTileSystem = World.GetExistingSystemManaged<Game.Areas.MapTileSystem>()
+                ?? throw new InvalidOperationException("MapTileSystem not found");
+
+            // 通过反射调用 private LegacyGenerateMapTiles(false)
+            var method = AccessTools.Method(typeof(Game.Areas.MapTileSystem), "LegacyGenerateMapTiles")
+                ?? throw new MissingMethodException("MapTileSystem.LegacyGenerateMapTiles not found (renamed by a game update?)");
 
             try
             {
-                var mapTileSystem = World.GetExistingSystemManaged<Game.Areas.MapTileSystem>();
-                if (mapTileSystem == null)
-                {
-                    ModLog.Warn(Tag, "MapTileSystem 不存在，跳过 MapTile 重建");
-                    return;
-                }
-
-                // 通过反射调用 private LegacyGenerateMapTiles(false)
-                var method = AccessTools.Method(typeof(Game.Areas.MapTileSystem), "LegacyGenerateMapTiles");
-                if (method == null)
-                {
-                    ModLog.Warn(Tag, "无法找到 LegacyGenerateMapTiles 方法");
-                    return;
-                }
-
                 method.Invoke(mapTileSystem, new object[] { false });
-                ModLog.Info(Tag, "LegacyGenerateMapTiles(false) 已执行，529 tiles 已重建");
+            }
+            catch (TargetInvocationException ex) when (ex.InnerException != null)
+            {
+                // 反射调用把原异常包了一层，失败提示要的是原异常
+                ExceptionDispatchInfo.Capture(ex.InnerException).Throw();
+            }
 
+            ModLog.Info(Tag, "LegacyGenerateMapTiles(false) 已执行，529 tiles 已重建");
+
+            var lockedQuery = EntityManager.CreateEntityQuery(
+                ComponentType.ReadOnly<Game.Areas.MapTile>(),
+                ComponentType.ReadOnly<Native>(),
+                ComponentType.Exclude<Temp>(),
+                ComponentType.Exclude<Deleted>());
+
+            if (unlockAll)
+            {
                 // 移除所有 MapTile 上的 Native 组件 → 全部解锁
-                var nativeQuery = EntityManager.CreateEntityQuery(
-                    ComponentType.ReadOnly<Game.Areas.MapTile>(),
-                    ComponentType.ReadOnly<Native>(),
-                    ComponentType.Exclude<Temp>(),
-                    ComponentType.Exclude<Deleted>());
-
-                int nativeCount = nativeQuery.CalculateEntityCount();
+                int nativeCount = lockedQuery.CalculateEntityCount();
                 if (nativeCount > 0)
                 {
-                    EntityManager.RemoveComponent<Native>(nativeQuery);
+                    EntityManager.RemoveComponent<Native>(lockedQuery);
                     ModLog.Info(Tag, $"已移除 {nativeCount} 个 MapTile 的 Native 组件（全部解锁）");
                 }
 
                 ModLog.Ok(Tag, "MapTile 边界重建完成 (529 tiles, 全部解锁)");
+                return;
             }
-            catch (Exception ex)
-            {
-                ModLog.Error(Tag, $"MapTile 重建失败: {ex}");
-            }
+
+            // 开新城：核对解锁格数，验收 V5 以这一行为准
+            var allQuery = EntityManager.CreateEntityQuery(
+                ComponentType.ReadOnly<Game.Areas.MapTile>(),
+                ComponentType.Exclude<Temp>(),
+                ComponentType.Exclude<Deleted>());
+            int total = allQuery.CalculateEntityCount();
+            int unlocked = total - lockedQuery.CalculateEntityCount();
+            ModLog.Ok(Tag, $"MapTile 边界重建完成：{total} 格，解锁 {unlocked} 格（D2 应为中央 9 格）");
         }
 
         // === ⓪b OutsideConnection 节点清理 ===
@@ -1660,9 +1686,11 @@ namespace MapExtPDX.SaveLoadSystem
                     { "SAVE_NAME", LocalizedString.Value(saveName) }
                 };
 
+                // 开新城另用一套：分块只解锁中央 9 格，外部连接保留，没有要重建的东西
                 var dialog = new ConfirmationDialog(
                     LocalizedString.Id("VANILLA_CONVERT.Complete"),
-                    new LocalizedString("VANILLA_CONVERT.CompleteMessage", null, locParams),
+                    new LocalizedString(request.IsNewGame ? "VANILLA_CONVERT.NewGameCompleteMessage" : "VANILLA_CONVERT.CompleteMessage",
+                        null, locParams),
                     LocalizedString.Id("VANILLA_CONVERT.QuitConfirm"),
                     LocalizedString.Id("VANILLA_CONVERT.QuitCancel"));
 

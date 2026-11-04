@@ -76,14 +76,20 @@ namespace MapExtPDX.SaveLoadSystem
                     {
                         MapInfo map = mapMeta.target;
                         if (map == null) return true;
+                        // 放行时推进转换请求：不推进的话请求停在"已请求"，转换不执行、地下水不让路（整合计划 2.0）
                         if (SaveEntryGate.TryConsumePermit(map.id))
                         {
                             SaveEntryGate.NotePermittedMapLoad(map.id);
+                            VanillaConversionState.MarkLoading(map.id);
                             return true;
                         }
 
                         decision = SaveEntryGate.EvaluateNewGame(SaveEntry.Convergence, map);
-                        if (decision.Verdict == GateVerdict.Allow) return true;
+                        if (decision.Verdict == GateVerdict.Allow)
+                        {
+                            VanillaConversionState.MarkLoading(map.id);
+                            return true;
+                        }
 
                         ModLog.Warn(Tag, $"汇合点拦下开新城 '{map.displayName}'（{decision.Verdict}），没有经过菜单层的判定");
                         break;

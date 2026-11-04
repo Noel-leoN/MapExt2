@@ -237,10 +237,10 @@ namespace MapExtPDX.SaveLoadSystem
         }
 
         /// <summary>
-        /// 判定一次开新城（v4.12.0 整合计划 §2.1 第 4 条）：面积推断的制作模式 → 降级。
+        /// 判定一次开新城（v4.12.0 整合计划 §2.1 第 4 条）：转换请求 → 面积推断的制作模式 → 降级。
         /// <list type="bullet">
-        /// <item>原版地图而当前为扩展模式：拉伸是事实警告，不受任何开关影响（D3）。降级时直接说明并拦下（Q13），
-        /// 否则菜单层给"返回"与"仍要继续"，汇合点只拦；</item>
+        /// <item>原版地图而当前为扩展模式：拉伸是事实警告，不受任何开关影响（D3）。降级时直接说明并拦下（Q13）；
+        /// 汇合点只拦；菜单层在 ModeA／ModeB 且启用转换时给"转换／取消"，其余给"返回"与"仍要继续"；</item>
         /// <item>推断模式与当前模式不一致（包括 None 模式开扩展地图）：按模式不符拦下，受"禁止读档校验"控制（Q12）；</item>
         /// <item>面积不可信，或推断出的模式值不属于任何现行模式（Q15）：放行，载入后按地形实际尺寸判。</item>
         /// </list>
@@ -248,6 +248,13 @@ namespace MapExtPDX.SaveLoadSystem
         /// </summary>
         public static GateDecision EvaluateNewGame(SaveEntry entry, MapInfo map)
         {
+            // 确认转换后重新触发的那一次：不认请求的话会再判成原版地图、再弹转换框（§1.7）
+            if (VanillaConversionState.IsRequestedFor(map.id))
+            {
+                ModLog.Info(Tag, $"{entry} 地图 '{map.displayName}'：转换请求绑定的地图，放行");
+                return GateDecision.Allow();
+            }
+
             VanillaConversionState.DropStale(map.id);
 
             int currentCV = PatchManager.CurrentCoreValue;
@@ -270,6 +277,12 @@ namespace MapExtPDX.SaveLoadSystem
                     {
                         ModLog.Warn(Tag, $"{entry} 原版地图 '{map.displayName}'：会按 CV={currentCV} 拉伸，汇合点只拦不放");
                         return GateDecision.Block(new LocalizedString("SAVE_GATE.StretchBlocked", null, MapParams(map, currentCV)));
+                    }
+
+                    if (CanConvertTo(currentCV) && IsConversionEnabled)
+                    {
+                        ModLog.Info(Tag, $"{entry} 原版地图 '{map.displayName}'：可转换到 CV={currentCV}，弹转换确认");
+                        return GateDecision.Conversion(ConversionKind.VanillaMapNewGame, NoneModeCoreValue, currentCV);
                     }
 
                     if (!ConsumeStretchAck(map.id))
@@ -308,9 +321,10 @@ namespace MapExtPDX.SaveLoadSystem
         /// <summary>
         /// 菜单层按判定结论行事。返回 true 表示放行原方法（已发许可）；false 表示已拦下并弹框。
         /// 转换与"仍要加载"在确认后调用 <paramref name="retrigger"/>，重新走一遍菜单方法。
-        /// 快速读档与开新城不提供转换，只说明。
+        /// 快速读档不提供转换，只说明。<paramref name="displayName"/> 用于新档命名，为空时取存档的显示名。
         /// </summary>
-        public static bool HandleAtMenu(SaveEntry entry, GateDecision decision, string assetId, SaveInfo save, Action retrigger)
+        public static bool HandleAtMenu(SaveEntry entry, GateDecision decision, string assetId, SaveInfo save, Action retrigger,
+            string displayName = null)
         {
             switch (decision.Verdict)
             {
@@ -324,13 +338,14 @@ namespace MapExtPDX.SaveLoadSystem
                     return false;
 
                 case GateVerdict.OfferConversion:
-                    if (entry == SaveEntry.QuickLoad || save == null)
+                    if (entry == SaveEntry.QuickLoad)
                     {
                         ShowMessage(LocalizedString.Id("SAVE_GATE.ConvertFromMenu"));
                         return false;
                     }
 
-                    ShowConversionConfirm(save, decision, retrigger);
+                    ShowConversionConfirm(assetId, displayName ?? save?.displayName ?? save?.cityName ?? "UnknownCity",
+                        decision, retrigger);
                     return false;
 
                 case GateVerdict.ConfirmDegraded:
@@ -616,19 +631,21 @@ namespace MapExtPDX.SaveLoadSystem
             ShowWhenUiReady(() => GameManager.instance.userInterface.appBindings.ShowMessageDialog(dialog, null));
         }
 
-        /// <summary>转换确认：确认后新建绑定这个存档的请求，再重新触发菜单方法。</summary>
-        private static void ShowConversionConfirm(SaveInfo save, GateDecision decision, Action retrigger)
+        /// <summary>
+        /// 转换确认：确认后新建绑定这个资产（存档或地图）的请求，再重新触发菜单方法。
+        /// 开新城另用一套文案：没有源存档，分块只解锁中央 9 格，外部连接保留。
+        /// </summary>
+        private static void ShowConversionConfirm(string assetId, string displayName, GateDecision decision, Action retrigger)
         {
             string targetMode = PatchManager.GetModeNameForCoreValue(decision.TargetCoreValue);
             var locParams = new Dictionary<string, ILocElement> { { "TARGET_MODE", LocalizedString.Value(targetMode) } };
+            bool newGame = decision.ConversionKind == ConversionKind.VanillaMapNewGame;
             var dialog = new ConfirmationDialog(
                 LocalizedString.Id("VANILLA_CONVERT.Title"),
-                new LocalizedString("VANILLA_CONVERT.Message", null, locParams),
-                LocalizedString.Id("VANILLA_CONVERT.Confirm"),
+                new LocalizedString(newGame ? "VANILLA_CONVERT.NewGameMessage" : "VANILLA_CONVERT.Message", null, locParams),
+                LocalizedString.Id(newGame ? "VANILLA_CONVERT.NewGameConfirm" : "VANILLA_CONVERT.Confirm"),
                 LocalizedString.Id("VANILLA_CONVERT.Cancel"));
 
-            string saveId = save.id;
-            string displayName = save.displayName ?? save.cityName ?? "UnknownCity";
             ShowWhenUiReady(() => GameManager.instance.userInterface.appBindings.ShowConfirmationDialog(dialog, result =>
             {
                 // 只有确认按钮（0）才转换；关闭对话框等其他结果一律当作取消
@@ -639,7 +656,7 @@ namespace MapExtPDX.SaveLoadSystem
                 }
 
                 ModLog.Ok(Tag, $"玩家确认转换 '{displayName}' → {targetMode}");
-                VanillaConversionState.Begin(decision.ConversionKind, saveId, decision.SourceCoreValue,
+                VanillaConversionState.Begin(decision.ConversionKind, assetId, decision.SourceCoreValue,
                     decision.TargetCoreValue, displayName);
                 Retrigger(retrigger, "确认转换");
             }));

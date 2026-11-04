@@ -78,8 +78,11 @@ namespace MapExtPDX.SaveLoadSystem
                 if (map == null) return true; // 交给汇合点判定
 
                 GateDecision decision = SaveEntryGate.EvaluateNewGame(SaveEntry.MenuNewGame, map);
+                // 转换后的新档按城市名命名，玩家没填城市名时用地图名（v4.12.0 整合计划 2.0）
+                string displayName = string.IsNullOrWhiteSpace(args.cityName) ? map.displayName : args.cityName;
                 return SaveEntryGate.HandleAtMenu(SaveEntry.MenuNewGame, decision, map.id, null,
-                    () => AccessTools.Method(typeof(MenuUISystem), "SafeNewGame").Invoke(__instance, new object[] { args, dismiss }));
+                    () => AccessTools.Method(typeof(MenuUISystem), "SafeNewGame").Invoke(__instance, new object[] { args, dismiss }),
+                    displayName);
             }
             catch (Exception ex)
             {
