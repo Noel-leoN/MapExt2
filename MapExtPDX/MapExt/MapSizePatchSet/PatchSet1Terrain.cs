@@ -7,6 +7,8 @@
 
 namespace MapExtPDX.MapExt.MapSizePatchSet
 {
+    using Game;
+    using Game.SceneFlow;
     using Game.Simulation;
     using HarmonyLib;
     using MapExtPDX.MapExt.Core;
@@ -39,10 +41,13 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
             int scalefactor = PatchManager.CurrentCoreValue;
             float baseSize = PatchManager.OriginalMapSize;
 
-            // 权威记录（v4.12.0 整合计划 2.1）：只记每次加载第一次调用，那次的 inMapSize 来自读档的 playableArea
+            // 权威记录（v4.12.0 整合计划 2.1）：只记游戏与编辑器每次加载的第一次调用，那次的 inMapSize 来自读档的 playableArea
             // 或 SetDefaults 的默认值；之后转换步骤与编辑器导入调 ReplaceHeightmap 等，都以默认 14336 调用，不算。
+            // 回主菜单的 Cleanup 也经 SetDefaults 以 14336 调用一次，不记，否则每次回主菜单都多一行"原版地形被拉伸"。
             // 转换的否决闸也在这里判：此时还在反序列化阶段，地下水等系统的 OnGameLoaded 都还没跑
-            if (MapSizeMismatchState.TryRecordTerrainSize(inMapSize.x, scalefactor))
+            GameManager gm = GameManager.instance;
+            if (gm != null && gm.gameMode.IsGameOrEditor() &&
+                MapSizeMismatchState.TryRecordTerrainSize(inMapSize.x, scalefactor))
             {
                 ModLog.Info(Tag, $"本次加载的地形尺寸 {inMapSize.x}（{MapSizeMismatchState.DescribeMapSize(inMapSize.x)}），当前 CV={scalefactor}" +
                                  (MapSizeMismatchState.VanillaStretched ? "：原版尺寸的地形按当前模式拉伸" : ""));
