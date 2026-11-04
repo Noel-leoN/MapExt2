@@ -128,7 +128,7 @@ namespace MapExtPDX.SaveLoadSystem
                 RunStep(request, "GroundWater", ExecuteGroundWaterInit);
 
                 // ③b 水源升级 + 海平面重置
-                RunStep(request, "WaterSources", ExecuteWaterSimReset);
+                RunStep(request, "WaterSources", () => ExecuteWaterSimReset(request));
 
                 // ③c 预模拟水体填充（河流/湖泊注水加速）
                 RunStep(request, "WaterPreSimulation", ExecuteWaterPreSimulation);
@@ -1184,8 +1184,9 @@ namespace MapExtPDX.SaveLoadSystem
         /// ② 对保留水源执行 Legacy→新系统的 m_Height 语义转换。
         /// ③ 清除陈旧 GPU 流速/传播纹理，防止水面流向异常。
         /// ④ 使用 AddComponent&lt;Deleted&gt; 替代 DestroyEntity，避免并行 Job NRE。
+        /// <para>处理结果记到 <see cref="ConversionRequest.WaterSources"/>，完成提示按它写水体一段。</para>
         /// </summary>
-        private void ExecuteWaterSimReset()
+        private void ExecuteWaterSimReset(ConversionRequest request)
         {
             ModLog.Info(Tag, "③b 开始水模拟安全升级...");
 
@@ -1224,6 +1225,7 @@ namespace MapExtPDX.SaveLoadSystem
                     waterSystem.TerrainWillChange();
                     waterSystem.WaterSimSpeed = 1;
 
+                    request.WaterSources = WaterSourceOutcome.Kept;
                     ModLog.Ok(Tag, $"已是新版水源，执行完整 GPU 重置 + ResetToSealevel + m_NewMap={frames2}");
                     return;
                 }
@@ -1352,6 +1354,8 @@ namespace MapExtPDX.SaveLoadSystem
                 }
 
                 ModLog.Info(Tag, $"水源处理: 删除 {deletedCount} 个旧版海源(Type 3), 保留并升级 {upgradedCount} 个水源(含 Type 2 海水源)");
+                // 地形数据未就绪时上面只能全删；本来就没有水源的不算删除
+                request.WaterSources = terrainReady || totalSources == 0 ? WaterSourceOutcome.Upgraded : WaterSourceOutcome.Removed;
 
                 // --- ⑤ 设置 Legacy 旗标 ---
                 // 使用反射直接设置字段，绕过 setter 中的 UpgradeToNewWaterSystem() 调用
@@ -1686,6 +1690,10 @@ namespace MapExtPDX.SaveLoadSystem
                     { "SAVE_NAME", LocalizedString.Value(saveName) }
                 };
 
+                // 存档转换的水体一段按水源的实际处理结果写（原先一律写"原有水源已被清除"）
+                if (!request.IsNewGame)
+                    locParams.Add("WATER_NOTE", LocalizedString.Value(ResolveText(WaterNoteKey(request.WaterSources))));
+
                 // 开新城另用一套：分块只解锁中央 9 格，外部连接保留，没有要重建的东西
                 var dialog = new ConfirmationDialog(
                     LocalizedString.Id("VANILLA_CONVERT.Complete"),
@@ -1730,6 +1738,26 @@ namespace MapExtPDX.SaveLoadSystem
             {
                 ModLog.Warn(Tag, $"显示完成对话框失败: {ex.Message}");
             }
+        }
+
+        private static string WaterNoteKey(WaterSourceOutcome outcome)
+        {
+            switch (outcome)
+            {
+                case WaterSourceOutcome.Upgraded: return "VANILLA_CONVERT.WaterUpgraded";
+                case WaterSourceOutcome.Removed: return "VANILLA_CONVERT.WaterRemoved";
+                default: return "VANILLA_CONVERT.WaterKept";
+            }
+        }
+
+        /// <summary>
+        /// 按当前语言取一条本 Mod 文本，作为另一条文本的参数值；取不到时返回键名，便于发现漏写。
+        /// 不传嵌套的 <c>LocalizedString.Id</c> 参数：界面端是否解析嵌套参数，本地没有前端源码可核对。
+        /// </summary>
+        private static string ResolveText(string key)
+        {
+            var dictionary = GameManager.instance?.localizationManager?.activeDictionary;
+            return dictionary != null && dictionary.TryGetValue(key, out string text) ? text : key;
         }
 
         /// <summary>转换失败：写明失败步骤与原因。源存档没动，游戏保持暂停。</summary>

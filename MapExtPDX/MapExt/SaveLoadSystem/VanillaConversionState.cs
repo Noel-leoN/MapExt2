@@ -23,6 +23,19 @@ namespace MapExtPDX.SaveLoadSystem
         VanillaMapNewGame = 2,
     }
 
+    /// <summary>转换中水源的处理结果：存档转换的完成提示按它写水体一段（v4.12.0 整合计划 2.5）。</summary>
+    public enum WaterSourceOutcome : byte
+    {
+        /// <summary>新版水源：一个不删，只把水体重置到海平面。</summary>
+        Kept = 0,
+
+        /// <summary>旧版水源：河流、湖泊与海水水源换算到新水源系统，旧式恒定海源删除，改由海平面代替。</summary>
+        Upgraded = 1,
+
+        /// <summary>旧版水源而地形高度数据未就绪：无法换算，全部删除。</summary>
+        Removed = 2,
+    }
+
     /// <summary>转换请求的阶段，按声明顺序推进。</summary>
     public enum ConversionPhase : byte
     {
@@ -104,6 +117,9 @@ namespace MapExtPDX.SaveLoadSystem
 
         /// <summary>失败详情（异常消息或存档结果），写进失败提示。</summary>
         public string FailureDetail { get; internal set; }
+
+        /// <summary>水源步骤的处理结果，写进完成提示。</summary>
+        public WaterSourceOutcome WaterSources { get; internal set; }
 
         /// <summary>自动存档是否已排进任务队列，防止重复排队。</summary>
         internal bool SaveQueued { get; set; }
