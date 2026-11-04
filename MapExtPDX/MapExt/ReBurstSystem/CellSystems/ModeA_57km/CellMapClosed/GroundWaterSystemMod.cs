@@ -151,7 +151,8 @@ using MapExtPDX.SaveLoadSystem;
         //      反序列化器沿用传入的 purpose，并用同一个 Context 给地图里缺席的系统调 SetDefaults
         //      （EntityDeserializer.cs:621-625）；SerializerSystem 只在什么都读不到时才改写 purpose
         //      （SerializerSystem.cs:130-135）。原版地图里没有本模式的区段，开新城时本类的
-        //      SetDefaults 收到的就是 NewGame，那一版覆写会生成 Perlin 含水层（代码推断，验收 V10 确认）。
+        //      SetDefaults 收到的就是 NewGame，那一版覆写会生成 Perlin 含水层。2026-11-04 验收 V10 实证：
+        //      同一条路径下，NaturalResourceSystemMod 的 SetDefaults 按 Perlin 把自然资源铺满了整张图。
         //      移除的理由只剩第 2 条，结论不变。
         //
         //   2. 原版同樣不生成。原版 GroundWaterSystem.SetDefaults（GroundWaterSystem.cs:266）
