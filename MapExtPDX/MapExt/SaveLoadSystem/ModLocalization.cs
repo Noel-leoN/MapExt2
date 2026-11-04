@@ -54,7 +54,7 @@ namespace MapExtPDX.SaveLoadSystem
 
                 // === 原版地形被拉伸：载入后提示（v4.12.0 整合计划 2.2），游戏开新城与编辑器读图各一套 ===
                 { "MAPEXT_MAPSIZE.StretchTitle", "⚠️ Vanilla Map Stretched" },
-                { "MAPEXT_MAPSIZE.StretchMessage", "This new city was started on a map with vanilla 14 km terrain, but MapExt is set to '{CURRENT_MODE}'. The terrain has been stretched to the current map size: slopes are flattened, while water sources, outside connections and map tiles stayed where they were, so only the central 14 km can ever be bought.\n\nIt is best not to keep building this city. Return to the main menu and start a new city on a map made for '{CURRENT_MODE}' instead." },
+                { "MAPEXT_MAPSIZE.StretchMessage", "This new city was started on a map with vanilla 14 km terrain, but MapExt is set to '{CURRENT_MODE}'. The terrain has been stretched to the current map size: slopes are flattened, while water sources, outside connections and map tiles stayed where they were, so only the central 14 km can ever be bought. Natural resources were also generated randomly instead of using the ones painted on the map.\n\nIt is best not to keep building this city. Return to the main menu and start a new city on a map made for '{CURRENT_MODE}' instead." },
                 { "MAPEXT_MAPSIZE.StretchNotify", "This city's vanilla 14 km terrain is stretched to '{CURRENT_MODE}': slopes are flattened and only the central 14 km can be bought." },
                 { "MAPEXT_MAPSIZE.StretchEditorMessage", "This map has vanilla 14 km terrain, but MapExt is set to '{CURRENT_MODE}', so the editor shows it stretched to the current map size. Its map tiles were not rebuilt and still cover only the central 14 km.\n\nSaved like this, it becomes a map with '{CURRENT_MODE}' terrain whose buyable area is only the central 14 km. To edit the map at its original size, switch MapExt's MapSize Mode to '{NONE_MODE}' and restart the game." },
                 { "MAPEXT_MAPSIZE.StretchEditorNotify", "This vanilla 14 km map is shown stretched to '{CURRENT_MODE}', and its map tiles still cover only the central 14 km. To edit it at its original size, switch MapExt to '{NONE_MODE}'." },
@@ -101,8 +101,8 @@ namespace MapExtPDX.SaveLoadSystem
 
                 // === 开新城：按地图面积推断制作模式（v4.12.0 整合计划 2.3）===
                 { "SAVE_GATE.StretchTitle", "Vanilla Map Will Be Stretched" },
-                { "SAVE_GATE.StretchMessage", "'{MAP_NAME}' is a vanilla 14 km map, but MapExt is set to '{CURRENT_MODE}'. A new city on it gets its terrain stretched to the current map size: slopes flatten out, while water sources, outside connections and map tiles stay where they were, so only the central 14 km can ever be bought.\n\n'{CURRENT_MODE}' cannot convert vanilla maps. Use a map made for this mode instead." },
-                { "SAVE_GATE.StretchMessageConvertOff", "'{MAP_NAME}' is a vanilla 14 km map, but MapExt is set to '{CURRENT_MODE}'. A new city on it gets its terrain stretched to the current map size: slopes flatten out, while water sources, outside connections and map tiles stay where they were, so only the central 14 km can ever be bought.\n\nTo extend the map properly instead, enable '⚠ Vanilla Map Extension' under MapSize → Save Conversion (Experimental), then start the new city again." },
+                { "SAVE_GATE.StretchMessage", "'{MAP_NAME}' is a vanilla 14 km map, but MapExt is set to '{CURRENT_MODE}'. A new city on it gets its terrain stretched to the current map size: slopes flatten out, while water sources, outside connections and map tiles stay where they were, so only the central 14 km can ever be bought. Natural resources are also generated randomly instead of using the ones painted on the map.\n\n'{CURRENT_MODE}' cannot convert vanilla maps. Use a map made for this mode instead." },
+                { "SAVE_GATE.StretchMessageConvertOff", "'{MAP_NAME}' is a vanilla 14 km map, but MapExt is set to '{CURRENT_MODE}'. A new city on it gets its terrain stretched to the current map size: slopes flatten out, while water sources, outside connections and map tiles stay where they were, so only the central 14 km can ever be bought. Natural resources are also generated randomly instead of using the ones painted on the map.\n\nTo extend the map properly instead, enable '⚠ Vanilla Map Extension' under MapSize → Save Conversion (Experimental), then start the new city again." },
                 { "SAVE_GATE.StretchContinue", "Continue Anyway" },
                 { "SAVE_GATE.StretchBack", "Go Back" },
                 { "SAVE_GATE.StretchBlocked", "'{MAP_NAME}' is a vanilla 14 km map, and in '{CURRENT_MODE}' its terrain would be stretched, so this new city was not started. Start it from the main menu, where you can choose what to do." },
@@ -140,7 +140,7 @@ namespace MapExtPDX.SaveLoadSystem
                 { "MAPEXT_MAPSIZE.MismatchNotify", "此地图为「{AUTHORED_MODE}」制作，但 MapExt 当前为「{CURRENT_MODE}」，地形高度采样比例错误。请退出到主菜单，将地图尺寸模式改为「{AUTHORED_MODE}」后重新加载。" },
 
                 { "MAPEXT_MAPSIZE.StretchTitle", "⚠️ 原版地图已被拉伸" },
-                { "MAPEXT_MAPSIZE.StretchMessage", "这座新城用的地图是原版 14 km 地形，但 MapExt 当前为「{CURRENT_MODE}」，地形已按当前尺寸拉伸：坡度变缓，水源、外部连接与地图分块却停在原处，只有中央 14 km 能够购买。\n\n建议不要继续经营这座城市。请返回主菜单，改用为「{CURRENT_MODE}」制作的地图开新城。" },
+                { "MAPEXT_MAPSIZE.StretchMessage", "这座新城用的地图是原版 14 km 地形，但 MapExt 当前为「{CURRENT_MODE}」，地形已按当前尺寸拉伸：坡度变缓，水源、外部连接与地图分块却停在原处，只有中央 14 km 能够购买。自然资源也改为随机生成，没有用地图里画好的。\n\n建议不要继续经营这座城市。请返回主菜单，改用为「{CURRENT_MODE}」制作的地图开新城。" },
                 { "MAPEXT_MAPSIZE.StretchNotify", "这座城市的原版 14 km 地形已按「{CURRENT_MODE}」拉伸：坡度变缓，只有中央 14 km 能够购买。" },
                 { "MAPEXT_MAPSIZE.StretchEditorMessage", "这张地图是原版 14 km 地形，但 MapExt 当前为「{CURRENT_MODE}」，编辑器里显示的是按当前尺寸拉伸后的地形；地图分块没有重建，仍只覆盖中央 14 km。\n\n照这样存回去，会得到一张地形为「{CURRENT_MODE}」、可购买范围却只有中央 14 km 的地图。如果只想按原版尺寸编辑，请把 MapExt 的地图尺寸模式切到「{NONE_MODE}」并重启游戏。" },
                 { "MAPEXT_MAPSIZE.StretchEditorNotify", "这张原版 14 km 地图按「{CURRENT_MODE}」拉伸显示，地图分块仍只覆盖中央 14 km。要按原版尺寸编辑，请把 MapExt 切到「{NONE_MODE}」。" },
@@ -183,8 +183,8 @@ namespace MapExtPDX.SaveLoadSystem
                 { "SAVE_GATE.ConvertFromMenu", "这个存档要先转换，才能在当前模式下游玩。请回到主菜单，从存档列表读取它进行转换。" },
 
                 { "SAVE_GATE.StretchTitle", "原版地图会被拉伸" },
-                { "SAVE_GATE.StretchMessage", "「{MAP_NAME}」是原版 14 km 地图，但 MapExt 当前为「{CURRENT_MODE}」。用它开新城，地形会被拉伸到当前尺寸：坡度变缓，水源、外部连接与地图分块却停在原处，只有中央 14 km 能够购买。\n\n「{CURRENT_MODE}」不支持转换原版地图，请改用为这个模式制作的地图。" },
-                { "SAVE_GATE.StretchMessageConvertOff", "「{MAP_NAME}」是原版 14 km 地图，但 MapExt 当前为「{CURRENT_MODE}」。用它开新城，地形会被拉伸到当前尺寸：坡度变缓，水源、外部连接与地图分块却停在原处，只有中央 14 km 能够购买。\n\n要正确扩展这张地图，请在「地图尺寸」→「存档转换 (实验性)」中启用「⚠ 原版地图扩展」，再重新开新城。" },
+                { "SAVE_GATE.StretchMessage", "「{MAP_NAME}」是原版 14 km 地图，但 MapExt 当前为「{CURRENT_MODE}」。用它开新城，地形会被拉伸到当前尺寸：坡度变缓，水源、外部连接与地图分块却停在原处，只有中央 14 km 能够购买。自然资源也会改为随机生成，不用地图里画好的。\n\n「{CURRENT_MODE}」不支持转换原版地图，请改用为这个模式制作的地图。" },
+                { "SAVE_GATE.StretchMessageConvertOff", "「{MAP_NAME}」是原版 14 km 地图，但 MapExt 当前为「{CURRENT_MODE}」。用它开新城，地形会被拉伸到当前尺寸：坡度变缓，水源、外部连接与地图分块却停在原处，只有中央 14 km 能够购买。自然资源也会改为随机生成，不用地图里画好的。\n\n要正确扩展这张地图，请在「地图尺寸」→「存档转换 (实验性)」中启用「⚠ 原版地图扩展」，再重新开新城。" },
                 { "SAVE_GATE.StretchContinue", "仍要继续" },
                 { "SAVE_GATE.StretchBack", "返回" },
                 { "SAVE_GATE.StretchBlocked", "「{MAP_NAME}」是原版 14 km 地图，在「{CURRENT_MODE}」下地形会被拉伸，已阻止这次开新城。请从主菜单开新城，在那里选择处理方式。" },
@@ -221,7 +221,7 @@ namespace MapExtPDX.SaveLoadSystem
                 { "MAPEXT_MAPSIZE.MismatchNotify", "此地圖為「{AUTHORED_MODE}」製作，但 MapExt 當前為「{CURRENT_MODE}」，地形高度取樣比例錯誤。請退出至主選單，將地圖尺寸模式改為「{AUTHORED_MODE}」後重新載入。" },
 
                 { "MAPEXT_MAPSIZE.StretchTitle", "⚠️ 原版地圖已被拉伸" },
-                { "MAPEXT_MAPSIZE.StretchMessage", "這座新城用的地圖是原版 14 km 地形，但 MapExt 當前為「{CURRENT_MODE}」，地形已按當前尺寸拉伸：坡度變緩，水源、外部連接與地圖分塊卻停在原處，只有中央 14 km 能夠購買。\n\n建議不要繼續經營這座城市。請返回主選單，改用為「{CURRENT_MODE}」製作的地圖開新城。" },
+                { "MAPEXT_MAPSIZE.StretchMessage", "這座新城用的地圖是原版 14 km 地形，但 MapExt 當前為「{CURRENT_MODE}」，地形已按當前尺寸拉伸：坡度變緩，水源、外部連接與地圖分塊卻停在原處，只有中央 14 km 能夠購買。自然資源也改為隨機生成，沒有用地圖裡畫好的。\n\n建議不要繼續經營這座城市。請返回主選單，改用為「{CURRENT_MODE}」製作的地圖開新城。" },
                 { "MAPEXT_MAPSIZE.StretchNotify", "這座城市的原版 14 km 地形已按「{CURRENT_MODE}」拉伸：坡度變緩，只有中央 14 km 能夠購買。" },
                 { "MAPEXT_MAPSIZE.StretchEditorMessage", "這張地圖是原版 14 km 地形，但 MapExt 當前為「{CURRENT_MODE}」，編輯器裡顯示的是按當前尺寸拉伸後的地形；地圖分塊沒有重建，仍只覆蓋中央 14 km。\n\n照這樣存回去，會得到一張地形為「{CURRENT_MODE}」、可購買範圍卻只有中央 14 km 的地圖。如果只想按原版尺寸編輯，請把 MapExt 的地圖尺寸模式切到「{NONE_MODE}」並重啟遊戲。" },
                 { "MAPEXT_MAPSIZE.StretchEditorNotify", "這張原版 14 km 地圖按「{CURRENT_MODE}」拉伸顯示，地圖分塊仍只覆蓋中央 14 km。要按原版尺寸編輯，請把 MapExt 切到「{NONE_MODE}」。" },
@@ -264,8 +264,8 @@ namespace MapExtPDX.SaveLoadSystem
                 { "SAVE_GATE.ConvertFromMenu", "這個存檔要先轉換，才能在當前模式下遊玩。請回到主選單，從存檔列表讀取它進行轉換。" },
 
                 { "SAVE_GATE.StretchTitle", "原版地圖會被拉伸" },
-                { "SAVE_GATE.StretchMessage", "「{MAP_NAME}」是原版 14 km 地圖，但 MapExt 當前為「{CURRENT_MODE}」。用它開新城，地形會被拉伸到當前尺寸：坡度變緩，水源、外部連接與地圖分塊卻停在原處，只有中央 14 km 能夠購買。\n\n「{CURRENT_MODE}」不支援轉換原版地圖，請改用為這個模式製作的地圖。" },
-                { "SAVE_GATE.StretchMessageConvertOff", "「{MAP_NAME}」是原版 14 km 地圖，但 MapExt 當前為「{CURRENT_MODE}」。用它開新城，地形會被拉伸到當前尺寸：坡度變緩，水源、外部連接與地圖分塊卻停在原處，只有中央 14 km 能夠購買。\n\n要正確擴展這張地圖，請在「地圖尺寸」→「存檔轉換 (實驗性)」中啟用「⚠ 原版地圖擴展」，再重新開新城。" },
+                { "SAVE_GATE.StretchMessage", "「{MAP_NAME}」是原版 14 km 地圖，但 MapExt 當前為「{CURRENT_MODE}」。用它開新城，地形會被拉伸到當前尺寸：坡度變緩，水源、外部連接與地圖分塊卻停在原處，只有中央 14 km 能夠購買。自然資源也會改為隨機生成，不用地圖裡畫好的。\n\n「{CURRENT_MODE}」不支援轉換原版地圖，請改用為這個模式製作的地圖。" },
+                { "SAVE_GATE.StretchMessageConvertOff", "「{MAP_NAME}」是原版 14 km 地圖，但 MapExt 當前為「{CURRENT_MODE}」。用它開新城，地形會被拉伸到當前尺寸：坡度變緩，水源、外部連接與地圖分塊卻停在原處，只有中央 14 km 能夠購買。自然資源也會改為隨機生成，不用地圖裡畫好的。\n\n要正確擴展這張地圖，請在「地圖尺寸」→「存檔轉換 (實驗性)」中啟用「⚠ 原版地圖擴展」，再重新開新城。" },
                 { "SAVE_GATE.StretchContinue", "仍要繼續" },
                 { "SAVE_GATE.StretchBack", "返回" },
                 { "SAVE_GATE.StretchBlocked", "「{MAP_NAME}」是原版 14 km 地圖，在「{CURRENT_MODE}」下地形會被拉伸，已阻止這次開新城。請從主選單開新城，在那裡選擇處理方式。" },
