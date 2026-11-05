@@ -79,6 +79,10 @@ namespace MapExtPDX.SaveLoadSystem
         {
             base.OnGameLoaded(serializationContext);
 
+            // 反序列化已经结束：撤掉 28→57 的类型路由，下一次存读档重建出不带路由的映射表（v4.12.0 整合计划 §1.8）。
+            // 被否决的请求也要撤，所以放在判断请求之前
+            SaveExpansionTypeMapPatch.EndLoad("读档结束");
+
             // 只认闸门放行过的请求，且一个请求只执行一次：放行时推进到"加载中"，这里推进到"转换中"（P0-2、P0-3）。
             // 地形实际尺寸不是源尺寸的请求，已在反序列化阶段转为"已取消"，不执行任何步骤、不压暂停
             ConversionRequest request = VanillaConversionState.Current;

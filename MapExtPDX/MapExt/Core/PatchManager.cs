@@ -131,6 +131,10 @@ namespace MapExtPDX.MapExt.Core
                 // 始终注册，由 Prefix 内部 Settings 开关控制启停，实现实时切换
                 { "TerrainBrushRoadBlock", new PatchSet(Optional, (h) => h.CreateClassProcessor(typeof(Tools.TerrainBrushBlockPatch)).Patch()) },
 
+                // PatchSet6:SaveLoad — 28→57 存档扩展的类型路由（v4.12.0 整合计划 3.3）
+                // 只在 ModeA 挂（委托内判断，其余模式跳过不算失败）；失败只让 28→57 不可用，存档闸门照常按模式不符拦下
+                { "SaveExpansionTypeMap", new PatchSet(Optional, (h) => SaveLoadSystem.SaveExpansionTypeMapPatch.Apply(h)) },
+
                 // PatchSetFinal:ReBurstJobSystems
                 // 集中调用方式
                 {
@@ -166,6 +170,7 @@ namespace MapExtPDX.MapExt.Core
             "CellMapSystemValuesPatch",
             "AirwaySystemPatch",
             "TerrainBrushRoadBlock",
+            "SaveExpansionTypeMap",
             "ReBurstSystemsPatches",
         };
 

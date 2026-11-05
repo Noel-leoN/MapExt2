@@ -7,7 +7,7 @@ using UnityEngine;
 
 namespace MapExtPDX.SaveLoadSystem
 {
-    /// <summary>转换请求的来源。28→57（Phase 3）在这里加值。</summary>
+    /// <summary>转换请求的来源。</summary>
     public enum ConversionKind : byte
     {
         /// <summary>没有 MapExt 标记的原版存档。</summary>
@@ -21,6 +21,12 @@ namespace MapExtPDX.SaveLoadSystem
         /// 跳过车辆与居民、外部连接两步（D1）。
         /// </summary>
         VanillaMapNewGame = 2,
+
+        /// <summary>
+        /// MapExt ModeB（CV=2）存档扩展到 ModeA（v4.12.0 整合计划 Phase 3，28→57）：ModeB 的 5 张贴图经类型路由
+        /// 读进 ModeA 系统并中心嵌入（<see cref="SaveExpansionTypeMapPatch"/>），不再从原版实例嵌入。
+        /// </summary>
+        CoreValue2Save = 3,
     }
 
     /// <summary>转换中水源的处理结果：存档转换的完成提示按它写水体一段（v4.12.0 整合计划 2.5）。</summary>
@@ -93,11 +99,11 @@ namespace MapExtPDX.SaveLoadSystem
 
         /// <summary>
         /// 源资产的模式值；无标记的原版档为 <see cref="VanillaConversionState.UntaggedVanillaCoreValue"/>，不折算成 1；
-        /// 开新城为按面积推断的 1。
+        /// 开新城为按面积推断的 1；28→57 为 2。
         /// </summary>
         public int SourceCoreValue { get; }
 
-        /// <summary>源资产应有的地形尺寸（<c>playableArea.x</c>）：原版档与 CV=1 档都是 14336。否决闸按它比对。</summary>
+        /// <summary>源资产应有的地形尺寸（<c>playableArea.x</c>）：原版档与 CV=1 档都是 14336，CV=2 档是 28672。否决闸按它比对。</summary>
         public float SourceTerrainMapSize => Math.Max(SourceCoreValue, 1) * PatchManager.OriginalMapSize;
 
         public int TargetCoreValue { get; }
@@ -107,6 +113,9 @@ namespace MapExtPDX.SaveLoadSystem
 
         /// <summary>开新城转换：没有源存档，转换步骤与提示都不同。</summary>
         public bool IsNewGame => Kind == ConversionKind.VanillaMapNewGame;
+
+        /// <summary>28→57 存档扩展：贴图数据来自 ModeB 区段，地形按 1/2 的比值合成。</summary>
+        public bool IsSaveExpansion => Kind == ConversionKind.CoreValue2Save;
 
         public ConversionPhase Phase { get; internal set; }
 
@@ -212,6 +221,9 @@ namespace MapExtPDX.SaveLoadSystem
             if (!IsRequestedFor(assetId)) return;
             Current.Phase = ConversionPhase.Loading;
             ModLog.Info(Tag, $"转换请求进入加载：{Current}");
+
+            // 28→57：让这次读档重建序列化映射表，类型路由才会生效（整合计划 §1.8）
+            if (Current.IsSaveExpansion) SaveExpansionTypeMapPatch.BeginLoad();
         }
 
         /// <summary>
@@ -257,6 +269,9 @@ namespace MapExtPDX.SaveLoadSystem
             if (Current == null) return;
             ModLog.Info(Tag, $"清除转换请求（{reason}）：{Current}");
             Current = null;
+
+            // 读档中途被清除（回主菜单、Mod 卸载）也要撤掉 28→57 的路由
+            SaveExpansionTypeMapPatch.EndLoad($"转换请求清除：{reason}");
         }
 
         #endregion
