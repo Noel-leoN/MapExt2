@@ -42,12 +42,14 @@ namespace MapExtPDX.SaveLoadSystem
             // 添加新的 CoreValue 条目
             mods.Add(coreValueEntry);
 
-            // 转换请求处于"保存中"时才追加来源标记：只有转换结果的那一次自动存档会带上
+            // 转换请求处于"保存中"时才追加来源标记：只有转换结果的那一次自动存档会带上。
+            // 28→57 写 CV2（整合计划 3.2），其余三类沿用 vanilla
             if (VanillaConversionState.IsSaving)
             {
+                string source = VanillaConversionState.Current.IsSaveExpansion ? "CV2" : "vanilla";
                 mods.RemoveAll(mod => mod.StartsWith("MapEXT_ConvertedFrom="));
-                mods.Add("MapEXT_ConvertedFrom=vanilla");
-                ModLog.Patch(Tag, "已注入 ConvertedFrom=vanilla 标签");
+                mods.Add("MapEXT_ConvertedFrom=" + source);
+                ModLog.Patch(Tag, $"已注入 ConvertedFrom={source} 标签");
             }
 
             // 将修改后的列表转换回数组并更新到 SaveInfo 对象中

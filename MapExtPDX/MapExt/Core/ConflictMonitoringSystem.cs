@@ -170,6 +170,13 @@ namespace MapExtPDX.MapExt.Core
             if (!MapSizeMismatchState.HasMismatch)
                 return;
 
+            // 28→57 读的是 28 km 存档：模式不符正是转换要处理的；被否决的由转换系统弹否决说明（v4.12.0 整合计划 §1.8）
+            if (VanillaConversionState.HasRequestForCurrentLoad)
+            {
+                ModLog.Info(Tag, $"地图尺寸模式不符由转换请求处理，不提示：{VanillaConversionState.Current}");
+                return;
+            }
+
             // 尊重使用者關閉驗證的設定，與 LoadGameValidatorPatch 的行為一致
             if (Mod.Instance?.CurrentSettings?.DisableLoadGameValidation == true)
             {

@@ -18,6 +18,7 @@ using Game.UI;
 using Game.UI.Localization;
 using Game.UI.Menu;
 using HarmonyLib;
+using MapExtPDX.CellShared;
 using MapExtPDX.MapExt.Core;
 using MapExtPDX.SaveLoadSystem;
 using System;
@@ -91,7 +92,8 @@ namespace MapExtPDX.SaveLoadSystem
 
             request.Phase = ConversionPhase.Converting;
             bool newGame = request.IsNewGame;
-            ModLog.Ok(Tag, newGame ? "=== 开始原版地图开新城转换 ===" : "=== 开始原版存档转换 ===");
+            bool expansion = request.IsSaveExpansion;
+            ModLog.Ok(Tag, newGame ? "=== 开始原版地图开新城转换 ===" : expansion ? "=== 开始 28→57 存档扩展 ===" : "=== 开始原版存档转换 ===");
             ModLog.Info(Tag, $"转换请求 {request}，purpose={serializationContext.purpose}");
 
             // ⓪ 转换与自动存档期间保持暂停，失败后也停在暂停（v4.12.0 整合计划 Q6）
@@ -100,6 +102,16 @@ namespace MapExtPDX.SaveLoadSystem
             try
             {
                 // 步骤名用英文标识：失败时原样写进三语提示与日志
+
+                if (expansion)
+                {
+                    // ⓪ 28→57：ModeB 的 5 张贴图须已路由并中心嵌入，放在第一步，早于任何清理（整合计划 §1.8）
+                    RunStep(request, "Receive", ExecuteExpansionReceiveCheck);
+
+                    // 关口构建（整合计划 3.1c）：地形、水体与清理在 3.5 实现，这一版核对完就按失败收尾
+                    RunStep(request, "GateBuild", () =>
+                        throw new NotSupportedException("28→57 conversion steps are not implemented in this gate build"));
+                }
 
                 // ⓪a MapTile 边界重建：存档 529 格全部解锁；开新城只解锁中央 9 格（D2）
                 RunStep(request, "MapTiles", () => ExecuteMapTileRebuild(unlockAll: !newGame));
@@ -235,6 +247,32 @@ namespace MapExtPDX.SaveLoadSystem
                 return finished && ++settledFrames >= kPauseSettleFrames;
             });
         }
+
+        #region ⓪ 28→57 接收核对
+
+        /// <summary>
+        /// 28→57 的接收核对（v4.12.0 整合计划 3.1、§1.8）：ModeB 的 5 张贴图须已经类型路由读进 ModeA 系统并中心嵌入。
+        /// 读的是基类读档 Job 写下的结果，与各系统 OnGameLoaded 的先后无关；没收到（存档缺区段、路由没生效）
+        /// 或被拒（源边长不对）都抛出，转换在任何清理之前失败。异常消息用英文，原样写进三语的失败提示。
+        /// </summary>
+        private void ExecuteExpansionReceiveCheck()
+        {
+            var problems = new List<string>();
+            foreach (Type target in SaveExpansionTypeMapPatch.TargetTypes)
+            {
+                ExpansionEmbedResult result = World.GetExistingSystemManaged(target) is ISaveExpansionTarget receiver
+                    ? receiver.ExpansionEmbed
+                    : ExpansionEmbedResult.None;
+                if (result != ExpansionEmbedResult.Done) problems.Add($"{target.Name} {result}");
+            }
+
+            if (problems.Count > 0)
+                throw new InvalidOperationException("ModeB data was not received: " + string.Join(", ", problems));
+
+            ModLog.Ok(Tag, $"28→57 接收核对通过：{SaveExpansionTypeMapPatch.TargetTypes.Count} 张贴图都已中心嵌入");
+        }
+
+        #endregion
 
         #region ① Heightmap 合成
 

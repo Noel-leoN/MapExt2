@@ -220,6 +220,14 @@ namespace MapExtPDX.SaveLoadSystem
                                 : GateDecision.Conversion(ConversionKind.CoreValue1Save, NoneModeCoreValue, currentCV);
                         }
 
+                        // 28→57（整合计划 3.2）：ModeB 存档在 ModeA 下读，且类型路由已挂上；路由没挂上时照常按模式不符拦下
+                        if (IsConversionEnabled && SaveExpansionTypeMapPatch.CanExpand(savedCV, currentCV))
+                        {
+                            return IsDegradedForExpandedLoad
+                                ? GateDecision.Block(DegradedBlockedMessage())
+                                : GateDecision.Conversion(ConversionKind.CoreValue2Save, savedCV, currentCV);
+                        }
+
                         return GateDecision.Block(new LocalizedString("LOAD_VALIDATION.Mismatch", null, locParams));
 
                     case SaveValidationResult.LegacyMismatch:
@@ -633,17 +641,30 @@ namespace MapExtPDX.SaveLoadSystem
 
         /// <summary>
         /// 转换确认：确认后新建绑定这个资产（存档或地图）的请求，再重新触发菜单方法。
-        /// 开新城另用一套文案：没有源存档，分块只解锁中央 9 格，外部连接保留。
+        /// 开新城另用一套文案：没有源存档，分块只解锁中央 9 格，外部连接保留；28→57 也另用一套：源是 28 km 存档。
         /// </summary>
         private static void ShowConversionConfirm(string assetId, string displayName, GateDecision decision, Action retrigger)
         {
             string targetMode = PatchManager.GetModeNameForCoreValue(decision.TargetCoreValue);
             var locParams = new Dictionary<string, ILocElement> { { "TARGET_MODE", LocalizedString.Value(targetMode) } };
-            bool newGame = decision.ConversionKind == ConversionKind.VanillaMapNewGame;
+
+            string titleKey = "VANILLA_CONVERT.Title", messageKey = "VANILLA_CONVERT.Message", confirmKey = "VANILLA_CONVERT.Confirm";
+            if (decision.ConversionKind == ConversionKind.VanillaMapNewGame)
+            {
+                messageKey = "VANILLA_CONVERT.NewGameMessage";
+                confirmKey = "VANILLA_CONVERT.NewGameConfirm";
+            }
+            else if (decision.ConversionKind == ConversionKind.CoreValue2Save)
+            {
+                titleKey = "VANILLA_CONVERT.ExpandSaveTitle";
+                messageKey = "VANILLA_CONVERT.ExpandSaveMessage";
+                locParams.Add("SOURCE_MODE", LocalizedString.Value(PatchManager.GetModeNameForCoreValue(decision.SourceCoreValue)));
+            }
+
             var dialog = new ConfirmationDialog(
-                LocalizedString.Id("VANILLA_CONVERT.Title"),
-                new LocalizedString(newGame ? "VANILLA_CONVERT.NewGameMessage" : "VANILLA_CONVERT.Message", null, locParams),
-                LocalizedString.Id(newGame ? "VANILLA_CONVERT.NewGameConfirm" : "VANILLA_CONVERT.Confirm"),
+                LocalizedString.Id(titleKey),
+                new LocalizedString(messageKey, null, locParams),
+                LocalizedString.Id(confirmKey),
                 LocalizedString.Id("VANILLA_CONVERT.Cancel"));
 
             ShowWhenUiReady(() => GameManager.instance.userInterface.appBindings.ShowConfirmationDialog(dialog, result =>
