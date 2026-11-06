@@ -592,15 +592,19 @@ namespace MapExtPDX
 
                 // --- Group: 存档转换 ---
                 { m_Setting.GetOptionGroupLocaleID(ModSettings.kSaveConvertGroup), "存檔轉換 (實驗性)" },
-                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.EnableVanillaConversion)), "⚠ 原版地圖擴展 (高度實驗性)" },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.EnableVanillaConversion)), "⚠ 地圖擴展轉換（實驗性）" },
                 {
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.EnableVanillaConversion)),
-                    "⚠ 高度實驗性功能。啟用後可將原版 14km 存檔轉換到當前 MapExt 模式。\n\n" +
+                    "⚠ 實驗性功能。啟用後，以下三種來源可以擴展到當前 MapExt 模式，轉換前都會彈框確認：\n" +
+                    " - 原版 14 km 存檔（含 MapExt 在 14 km 下儲存的存檔）→ 28 km 或 57 km\n" +
+                    " - 用原版 14 km 地圖開新城 → 28 km 或 57 km\n" +
+                    " - MapExt 28 km 存檔 → 57 km（僅 57 km 模式）\n\n" +
                     "★ 轉換時執行的操作：\n" +
-                    " - 合成並擴展地形高度圖（無世界背景時自動生成平面地形）\n" +
-                    " - 完美保留原版自然資源與地下水\n" +
-                    " - 刪除所有外部連接節點（公路/鐵路/航空/航運）\n" +
-                    " - 解鎖全部 529 格地圖分塊\n\n" +
+                    " - 合成地形高度圖：原城市留在新地圖中央，外圍由背景地形補齊，沒有背景時為平地\n" +
+                    " - 自然資源與地下水保留在中央；28 km 存檔另保留地面與空氣污染、土壤含水量\n" +
+                    " - 存檔：清除車輛與居民，拆除全部外部連接，解鎖全部 529 格地圖分塊\n" +
+                    " - 開新城：外部連接留在原處，只解鎖中央 9 格\n" +
+                    " - 原存檔不會被修改，轉換結果自動另存為新檔（存檔名_MapExt模式）\n\n" +
                     "★ 已知問題：\n" +
                     " - 水體模擬可能需要轉換後透過 MapExt 遊戲內面板手動調整\n" +
                     " - 擴展區域可能出現模擬不穩定\n\n" +
@@ -620,7 +624,7 @@ namespace MapExtPDX
                     " - 消除 CPU 主執行緒同步阻塞等待 GPU 回讀\n\n" +
                     "★ 副作用：可玩區域外的遠景變為平坦地形。\n\n" +
                     "⚠ 開啟後儲存存檔，背景世界地圖數據將永久丟失！\n" +
-                    "★ 與「原版存檔轉換」互斥——啟用其一，另一項會變灰不可選。\n" +
+                    "★ 與「地圖擴展轉換」互斥——啟用其一，另一項會變灰不可選。\n" +
                     "★ 提示：僅對包含背景世界地圖的存檔有效。無需重啟，重新載入存檔即可生效。"
                 },
 

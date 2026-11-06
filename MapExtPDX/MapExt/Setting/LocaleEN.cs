@@ -705,16 +705,20 @@ namespace MapExtPDX
                 { m_Setting.GetOptionGroupLocaleID(ModSettings.kSaveConvertGroup), "Save Conversion (Experimental)" },
                 {
                     m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.EnableVanillaConversion)),
-                    "⚠ Vanilla Map Extension (HIGHLY EXPERIMENTAL)"
+                    "⚠ Map Extension Conversion (EXPERIMENTAL)"
                 },
                 {
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.EnableVanillaConversion)),
-                    "⚠ HIGHLY EXPERIMENTAL. Enables extending vanilla 14km saves to the current MapExt mode.\n\n" +
+                    "⚠ EXPERIMENTAL. When enabled, three kinds of sources can be extended to the current MapExt mode, each after a confirmation dialog:\n" +
+                    " - Vanilla 14 km saves (including saves made by MapExt at 14 km) → 28 km or 57 km\n" +
+                    " - New cities started on vanilla 14 km maps → 28 km or 57 km\n" +
+                    " - MapExt 28 km saves → 57 km (57 km mode only)\n\n" +
                     "★ What happens during conversion:\n" +
-                    " - Terrain heightmap synthesized and expanded (flat fallback if no world backdrop)\n" +
-                    " - Original NaturalResource and GroundWater perfectly preserved\n" +
-                    " - All OutsideConnection nodes (highway/rail/air/sea) DELETED\n" +
-                    " - All 529 map tiles unlocked\n\n" +
+                    " - Terrain heightmap synthesized: the original city stays in the center of the new map; the background terrain fills the rest, or flat land if there is none\n" +
+                    " - Natural resources and ground water kept in the center; 28 km saves also keep ground and air pollution and soil water\n" +
+                    " - Saves: all vehicles and residents cleared, all outside connections removed, all 529 map tiles unlocked\n" +
+                    " - New cities: outside connections stay where they are; only the central 9 tiles are unlocked\n" +
+                    " - The original save is never modified; the result is saved as a new save (SaveName_MapExtMode)\n\n" +
                     "★ Known Issues:\n" +
                     " - Water simulation may need manual adjustment via MapExt in-game panel\n" +
                     " - Simulation instability may occur in expanded areas\n\n" +
@@ -739,7 +743,7 @@ namespace MapExtPDX
                     " - Removes 1 cascade rendering layer (cascade[0] skipped)\n\n" +
                     "★ Side Effect: Terrain beyond the playable area becomes flat.\n\n" +
                     "⚠ [IMPORTANT]: If you SAVE with this enabled, world backdrop data will be PERMANENTLY LOST!\n" +
-                    "★ Mutually exclusive with 'Vanilla Save Conversion' — enabling one greys out the other.\n" +
+                    "★ Mutually exclusive with 'Map Extension Conversion' — enabling one greys out the other.\n" +
                     "★ Tip: Only affects saves with a world backdrop map. No restart needed — just reload the save."
                 },
 

@@ -771,7 +771,7 @@ namespace MapExtPDX
             if (!m_EnableVanillaConversion || !m_DisableWorldBackdrop) return;
 
             ModLog.Warn(Tag,
-                "配置文件中「原版存档转换」与「停用背景世界地图」同时开启（互斥组合），" +
+                "配置文件中「地图扩展转换」与「停用背景世界地图」同时开启（互斥组合），" +
                 "已关闭后者以保留转换流程");
             m_DisableWorldBackdrop = false;
         }
