@@ -92,5 +92,30 @@ namespace MapExtPDX.SaveLoadSystem
         {
             return (world - corner) / size * width;
         }
+
+        /// <summary>
+        /// 海道底高（28→57 没有背景地形时，v4.12.0 整合计划 Q24）：对原边界一条边的高度剖面沿边做宽
+        /// <c>2 × halfWidth + 1</c> 的最小值滤波，滤波后低于 <paramref name="seaLevel"/> 的位置返回该值（海道底），
+        /// 其余返回 -1（不开道）。最小值滤波把一两格宽的海口加宽，免得被比地形粗一倍的水面网格平均成陆地。
+        /// 例如剖面 <c>[120, 90, 120]</c>、海平面 100、半宽 1 得 <c>[90, 90, 90]</c>。
+        /// </summary>
+        public static int[] SeaChannelDepths(ushort[] profile, int seaLevel, int halfWidth)
+        {
+            var depths = new int[profile.Length];
+            for (int i = 0; i < profile.Length; i++)
+            {
+                int lo = System.Math.Max(0, i - halfWidth);
+                int hi = System.Math.Min(profile.Length - 1, i + halfWidth);
+                int min = int.MaxValue;
+                for (int j = lo; j <= hi; j++)
+                {
+                    if (profile[j] < min) min = profile[j];
+                }
+
+                depths[i] = min < seaLevel ? min : -1;
+            }
+
+            return depths;
+        }
     }
 }

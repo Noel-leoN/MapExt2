@@ -60,6 +60,12 @@ namespace MapExtPDX.SaveLoadSystem
         /// <summary>28→57 的外围混合宽度（像素）：目标地形 14 m/px，约 448 m（28→57 计划 §3.3）。</summary>
         private const int kExpansionBlendWidth = 32;
 
+        /// <summary>
+        /// 28→57 海道沿边加宽的半宽（像素，整合计划 Q24）：2 即最窄 5 像素、约 70 m，
+        /// 宽于两格水面网格（57 km 下 28 m/格），一两格宽的海口不会被平均成陆地。
+        /// </summary>
+        private const int kSeaChannelHalfWidth = 2;
+
         // === 自动存档 ===
         /// <summary>存档预览图尺寸，与原版存档面板相同。</summary>
         private const int kPreviewWidth = 680;
@@ -353,8 +359,8 @@ namespace MapExtPDX.SaveLoadSystem
 
                 if (request.IsSaveExpansion) // 28→57
                 {
-                    request.FlatPeriphery = !SynthesizeExpansion(terrainSystem, worldHM, detailPixels, synthesized, hmWidth,
-                        request.SourceTerrainMapSize, cv * (double)kVanillaMapSize);
+                    SynthesizeExpansion(request, terrainSystem, worldHM, detailPixels, synthesized, hmWidth,
+                        cv * (double)kVanillaMapSize);
                 }
                 else if (cv == 4) // ModeA: 57km
                 {
@@ -484,13 +490,17 @@ namespace MapExtPDX.SaveLoadSystem
         /// <item>底图：背景按 TerrainSystem 记录的实际世界范围裁出新地图范围，双线性上采样；
         /// 没有背景、或背景盖不住新地图时用平底（14→28 转出的城市没有背景）；</item>
         /// <item>源 detail（覆盖源可玩区）按源／目标比值降采样，放在中央，世界位置不变；</item>
-        /// <item>边界校准只平移外围，边缘混合写在外围：原 28 km 城市的地形不改写。</item>
+        /// <item>边界校准只平移外围，边缘混合写在外围：原 28 km 城市的地形不改写；</item>
+        /// <item>平底时开海道（整合计划 Q24）：平底校准到原边界的平均高度，常比海平面略高，海从地图边缘传不进城里；
+        /// 原边界上低于海平面的格子沿垂直方向一直延伸到新地图边缘（<see cref="CarveSeaChannels"/>）。</item>
         /// </list>
+        /// 外围是否平底、是否开了海道记在请求上，完成提示据此写一句说明。
         /// </summary>
-        /// <returns>外围是否取自背景地形；false 为平底，完成提示据此写一句说明。</returns>
-        private bool SynthesizeExpansion(TerrainSystem terrainSystem, Texture worldHM, NativeArray<ushort> detailPixels,
-            NativeArray<ushort> synthesized, int hmWidth, double sourceMap, double targetMap)
+        private void SynthesizeExpansion(ConversionRequest request, TerrainSystem terrainSystem, Texture worldHM,
+            NativeArray<ushort> detailPixels, NativeArray<ushort> synthesized, int hmWidth, double targetMap)
         {
+            double sourceMap = request.SourceTerrainMapSize;
+
             // 否决闸已保证地形是源尺寸，这里再核对一次：比值不对会把城市放错位置
             float playable = terrainSystem.playableArea.x;
             if (math.abs(playable - sourceMap) > 1f)
@@ -501,6 +511,7 @@ namespace MapExtPDX.SaveLoadSystem
 
             // --- 底图 ---
             float2 cropStart = default, cropSize = default;
+            ushort seaR16 = 0; // 平底时记下海平面的 R16 值，开海道用
             bool backdrop = worldHM != null && worldHM.width == worldHM.height &&
                 TryGetBackdropWindow(terrainSystem, worldHM.width, targetMap, out cropStart, out cropSize);
             if (backdrop)
@@ -520,9 +531,9 @@ namespace MapExtPDX.SaveLoadSystem
             }
             else
             {
-                ushort flat = FlatBaseR16(terrainSystem);
+                seaR16 = FlatBaseR16(terrainSystem);
                 for (int i = 0; i < synthesized.Length; i++)
-                    synthesized[i] = flat;
+                    synthesized[i] = seaR16;
 
                 ModLog.Info(Tag, worldHM == null
                     ? "28→57 底图：存档没有背景地形，外围用平底"
@@ -547,7 +558,16 @@ namespace MapExtPDX.SaveLoadSystem
             ApplyOuterEdgeBlend(synthesized, hmWidth, embedStart, embedSize, kExpansionBlendWidth);
             ModLog.Info(Tag, $"28→57 外围混合: blendWidth={kExpansionBlendWidth}px (~{kExpansionBlendWidth * targetMap / hmWidth:F0}m)，原区域不改写");
 
-            return backdrop;
+            // --- 海道：只在平底时开，有背景时外围带着原地图的海（Q24）。放在混合之后，免得混合带又把海道抬到海平面以上 ---
+            request.FlatPeriphery = !backdrop;
+            if (!backdrop)
+            {
+                int carved = CarveSeaChannels(synthesized, hmWidth, embedStart, embedSize, seaR16);
+                request.SeaChannels = carved > 0;
+                ModLog.Info(Tag, carved > 0
+                    ? $"28→57 海道：原边界上 {carved} 格（含加宽）低于海平面，已沿垂直方向延伸到新地图边缘"
+                    : "28→57 海道：原边界上没有低于海平面的格子，不开海道");
+            }
         }
 
         /// <summary>
@@ -790,6 +810,70 @@ namespace MapExtPDX.SaveLoadSystem
                     synthesized[idx] = (ushort)math.clamp(math.lerp(edgeVal, baseVal, t), 0, 65535);
                 }
             }
+        }
+
+        /// <summary>
+        /// 海道（28→57 平底外围，整合计划 Q24）：原边界四条边上低于海平面的格子，沿垂直方向一直延伸到新地图边缘。
+        /// <para>海水从地图边缘沿低于海平面的格子传播进来。平底校准到原边界的平均高度，常比海平面略高
+        /// （第 3 轮 Fort Johnson 高 0.7 m），城里的海与新地图边缘不连通，调高海平面又会把整片外围变成浅海。</para>
+        /// <para>每条边取嵌入区最外一圈作剖面，经 <see cref="SaveExpansionGeometry.SeaChannelDepths"/> 沿边做最小值滤波加宽，
+        /// 低于海平面的位置把这一行／列的外围压到该高度（与已有值取较低者）。只写嵌入区外，原城市地形不动；
+        /// 四个角落不开，边上的海道已直达地图边缘。返回开道的边界格数（含加宽）。</para>
+        /// </summary>
+        private static int CarveSeaChannels(NativeArray<ushort> synthesized, int size, int embedStart, int embedSize, ushort seaR16)
+        {
+            int embedEnd = embedStart + embedSize; // exclusive
+            var profile = new ushort[embedSize];
+            int carved = 0;
+
+            // 0、1：y 小端与大端两条边（剖面沿 x）；2、3：x 小端与大端两条边（剖面沿 y）
+            for (int side = 0; side < 4; side++)
+            {
+                for (int k = 0; k < embedSize; k++)
+                {
+                    int i = embedStart + k;
+                    profile[k] = side switch
+                    {
+                        0 => synthesized[embedStart * size + i],
+                        1 => synthesized[(embedEnd - 1) * size + i],
+                        2 => synthesized[i * size + embedStart],
+                        _ => synthesized[i * size + (embedEnd - 1)],
+                    };
+                }
+
+                int[] depths = SaveExpansionGeometry.SeaChannelDepths(profile, seaR16, kSeaChannelHalfWidth);
+                for (int k = 0; k < embedSize; k++)
+                {
+                    if (depths[k] < 0) continue;
+
+                    carved++;
+                    int i = embedStart + k;
+                    ushort floor = (ushort)depths[k];
+                    switch (side)
+                    {
+                        case 0:
+                            for (int y = 0; y < embedStart; y++) LowerTo(synthesized, y * size + i, floor);
+                            break;
+                        case 1:
+                            for (int y = embedEnd; y < size; y++) LowerTo(synthesized, y * size + i, floor);
+                            break;
+                        case 2:
+                            for (int x = 0; x < embedStart; x++) LowerTo(synthesized, i * size + x, floor);
+                            break;
+                        default:
+                            for (int x = embedEnd; x < size; x++) LowerTo(synthesized, i * size + x, floor);
+                            break;
+                    }
+                }
+            }
+
+            return carved;
+        }
+
+        /// <summary>把 <paramref name="index"/> 处的高度压到不高于 <paramref name="floor"/>。</summary>
+        private static void LowerTo(NativeArray<ushort> heights, int index, ushort floor)
+        {
+            if (heights[index] > floor) heights[index] = floor;
         }
 
         /// <summary>
@@ -1601,6 +1685,12 @@ namespace MapExtPDX.SaveLoadSystem
         /// ③ SimulationSystem.selectedSpeed 必须 > 0（pausedAfterLoading 会设为 0）
         /// ④ TimeStepOverride = 1 最大化每步传播距离
         /// ⑤ WaterSimSpeed = MaxSpeed 最大化每帧内部迭代次数
+        ///
+        /// <para><b>③ 在转换里达不到</b>（v4.12.0 整合计划 Q25）：转换跑在读档期间，<c>SimulationSystem</c> 从 <c>OnGamePreload</c>
+        /// 到加载结束都忽略 <c>selectedSpeed</c> 的写入，它保持 0，<c>WaterSystem.Simulate</c> 的内循环每帧只跑 1 次就退出。
+        /// 河湖预注水因此基本无效，暂不处理，河湖等解除暂停后靠水源注水。日志按实际迭代次数记。</para>
+        /// <para><b>这一步不要删</b>：第一帧会执行海平面变更后的海域重算（转换前面把海平面原值写回过），
+        /// 存档前海面靠它就位。</para>
         /// </summary>
         private void ExecuteWaterPreSimulation()
         {
@@ -1641,7 +1731,7 @@ namespace MapExtPDX.SaveLoadSystem
 
                 // --- 解锁条件 ③ selectedSpeed > 0 ---
                 // Simulate 内部循环有 if (selectedSpeed == 0f) break;
-                // 因为我们设置了 pausedAfterLoading=true，需要临时解除
+                // 读档期间这次写入会被 SimulationSystem 忽略（Q25，见方法注释），先保留：挪到加载结束后执行时才会生效
                 var simSystem = World.GetExistingSystemManaged<SimulationSystem>();
                 float origSpeed = simSystem?.selectedSpeed ?? 1f;
                 if (simSystem != null)
@@ -1667,7 +1757,10 @@ namespace MapExtPDX.SaveLoadSystem
                 int cv = PatchManager.CurrentCoreValue;
                 int preSimFrames = cv >= 4 ? 300 : cv >= 2 ? 200 : 100;
 
-                ModLog.Info(Tag, $"预模拟 {preSimFrames} 帧 × {maxSpeed} 迭代/帧, TimeStep=1...");
+                // 读档期间 selectedSpeed 写不进去（见方法注释），仍为 0 时 Simulate 每帧只跑 1 次迭代，按实际次数记
+                int itersPerFrame = simSystem != null && simSystem.selectedSpeed == 0f ? 1 : maxSpeed;
+                ModLog.Info(Tag, $"预模拟 {preSimFrames} 帧 × {itersPerFrame} 迭代/帧, TimeStep=1" +
+                    (itersPerFrame == 1 ? "（读档期间模拟速度写不进去，每帧只跑 1 次）..." : "..."));
 
                 for (int i = 0; i < preSimFrames; i++)
                 {
@@ -1687,7 +1780,7 @@ namespace MapExtPDX.SaveLoadSystem
                 if (simSystem != null)
                     simSystem.selectedSpeed = origSpeed;
 
-                ModLog.Ok(Tag, $"水体预模拟完成: {preSimFrames} × {maxSpeed} = {preSimFrames * maxSpeed} 有效迭代");
+                ModLog.Ok(Tag, $"水体预模拟完成: {preSimFrames} × {itersPerFrame} = {preSimFrames * itersPerFrame} 次迭代");
             }
             catch (Exception ex)
             {
@@ -1855,11 +1948,12 @@ namespace MapExtPDX.SaveLoadSystem
                 if (!request.IsNewGame)
                     locParams.Add("WATER_NOTE", LocalizedString.Value(ResolveText(WaterNoteKey(request.WaterSources))));
 
-                // 28→57 另写一句外围地形的来源：没有背景地形时外围是平地（28→57 计划 §3.3）
+                // 28→57 另写一句外围地形的来源：没有背景地形时外围是平地（28→57 计划 §3.3），开了海道再说明一句（Q24）
                 if (request.IsSaveExpansion)
-                    locParams.Add("TERRAIN_NOTE", LocalizedString.Value(ResolveText(request.FlatPeriphery
-                        ? "VANILLA_CONVERT.ExpandTerrainFlat"
-                        : "VANILLA_CONVERT.ExpandTerrainBackdrop")));
+                    locParams.Add("TERRAIN_NOTE", LocalizedString.Value(ResolveText(
+                        !request.FlatPeriphery ? "VANILLA_CONVERT.ExpandTerrainBackdrop"
+                        : request.SeaChannels ? "VANILLA_CONVERT.ExpandTerrainFlatChannels"
+                        : "VANILLA_CONVERT.ExpandTerrainFlat")));
 
                 // 开新城另用一套：分块只解锁中央 9 格，外部连接保留，没有要重建的东西；
                 // 28→57 也另用一套：数据来自 28 km 存档，不是原版
