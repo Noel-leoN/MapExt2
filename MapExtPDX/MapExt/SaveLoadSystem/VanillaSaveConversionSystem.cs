@@ -1377,6 +1377,12 @@ namespace MapExtPDX.SaveLoadSystem
                 // === 非 Legacy 路径（MapExt vanilla 模式存档转换）===
                 // 地形已完全替换，需要完整的 GPU 状态重置
                 ClearWaterGpuState(waterSystem);
+
+                // 原值写回 SeaLevel：setter 经 UpdateSeaLevel 置 m_seaLevelChanged，下一次 Simulate 重算海域传播
+                // （移除海水、清传播、重新传播、按海平面补回）。Legacy 路径设海平面、MapExtUI 调海平面走的都是这一步；
+                // 不写的话海域传播已被上面清空，海水只能从地图边缘按模拟速度慢慢流进来
+                // （2026-11-06 第 3 轮验收：开新城与 28→57 的新档都要手动调海平面才注满，原版档转换正常）
+                waterSystem.SeaLevel = currentSeaLevel;
                 waterSystem.ResetToSealevel();
 
                 int cv2 = PatchManager.CurrentCoreValue;
@@ -1391,7 +1397,7 @@ namespace MapExtPDX.SaveLoadSystem
                 waterSystem.WaterSimSpeed = 1;
 
                 request.WaterSources = WaterSourceOutcome.Kept;
-                ModLog.Ok(Tag, $"已是新版水源，执行完整 GPU 重置 + ResetToSealevel + m_NewMap={frames2}");
+                ModLog.Ok(Tag, $"已是新版水源，执行完整 GPU 重置 + 重设海平面 {currentSeaLevel}m + ResetToSealevel + m_NewMap={frames2}");
                 return;
             }
 
