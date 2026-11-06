@@ -81,5 +81,16 @@ namespace MapExtPDX.SaveLoadSystem
             srcStart = embedStart * ratio;
             srcEnd = (embedStart + embedSize) * ratio;
         }
+
+        /// <summary>
+        /// 世界坐标（单轴）换算成一张贴图上的像素坐标（连续值，像素左缘为整数）。
+        /// 贴图覆盖 <c>[corner, corner + size)</c>，宽 <paramref name="width"/> 像素。
+        /// 用于按背景的实际世界范围裁剪：把目标地图的边界换算到源背景上，得到采样窗口。
+        /// 例如标准 28 km 背景（世界 114,688 m，左下角 -57,344）上，57 km 地图的边界 ±28,672 m 得 1024 与 3072。
+        /// </summary>
+        public static double WorldToPixel(double world, double corner, double size, int width)
+        {
+            return (world - corner) / size * width;
+        }
     }
 }

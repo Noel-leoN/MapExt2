@@ -130,6 +130,9 @@ namespace MapExtPDX.SaveLoadSystem
         /// <summary>水源步骤的处理结果，写进完成提示。</summary>
         public WaterSourceOutcome WaterSources { get; internal set; }
 
+        /// <summary>28→57 地形合成时外围是否为平底（存档没有背景地形，或背景盖不住新地图），写进完成提示。</summary>
+        public bool FlatPeriphery { get; internal set; }
+
         /// <summary>自动存档是否已排进任务队列，防止重复排队。</summary>
         internal bool SaveQueued { get; set; }
 

@@ -37,9 +37,11 @@ using UnityEngine.Rendering;
 namespace MapExtPDX.SaveLoadSystem
 {
     /// <summary>
-    /// 原版存档转换与原版地图开新城转换的后处理系统，按转换请求（<see cref="VanillaConversionState"/>）分阶段执行：
-    /// <c>OnGameLoaded</c> 做转换（MapTile、清理、地形、自然资源、地下水、水体；开新城跳过两步清理）；
+    /// 原版存档转换、原版地图开新城转换与 28→57 存档扩展的后处理系统，按转换请求（<see cref="VanillaConversionState"/>）分阶段执行：
+    /// <c>OnGameLoaded</c> 做转换（MapTile、清理、地形、自然资源、地下水、水体；开新城跳过两步清理；
+    /// 28→57 先核对路由读入的 5 张贴图，自然资源与地下水不再从原版实例嵌入）；
     /// <c>OnGameLoadingComplete</c> 把自动存档排进原版存读档队列；存档确认写入后才弹完成提示。
+    /// <para>必需步骤出错一律抛出、走失败路径（v4.12.0 整合计划 Q19），只有水体预模拟是加速项，出错只记日志。</para>
     ///
     /// <para><b>为什么不用 OnUpdate</b>：本系统注册在 <c>LoadSimulation</c>，这个 phase 只在加载期间由
     /// <c>SimulationSystem</c> 补帧时更新，加载结束后 <c>OnUpdate</c> 不再跑（v4.12.0 整合计划 §1.5）。</para>
@@ -54,6 +56,9 @@ namespace MapExtPDX.SaveLoadSystem
         private const int kVanillaHeightmapWidth = 4096;
         private const int kVanillaMapSize = 14336;
         private const int kVanillaWorldSize = 57344; // kDefaultMapSize × 4
+
+        /// <summary>28→57 的外围混合宽度（像素）：目标地形 14 m/px，约 448 m（28→57 计划 §3.3）。</summary>
+        private const int kExpansionBlendWidth = 32;
 
         // === 自动存档 ===
         /// <summary>存档预览图尺寸，与原版存档面板相同。</summary>
@@ -107,10 +112,6 @@ namespace MapExtPDX.SaveLoadSystem
                 {
                     // ⓪ 28→57：ModeB 的 5 张贴图须已路由并中心嵌入，放在第一步，早于任何清理（整合计划 §1.8）
                     RunStep(request, "Receive", ExecuteExpansionReceiveCheck);
-
-                    // 关口构建（整合计划 3.1c）：地形、水体与清理在 3.5 实现，这一版核对完就按失败收尾
-                    RunStep(request, "GateBuild", () =>
-                        throw new NotSupportedException("28→57 conversion steps are not implemented in this gate build"));
                 }
 
                 // ⓪a MapTile 边界重建：存档 529 格全部解锁；开新城只解锁中央 9 格（D2）
@@ -135,13 +136,22 @@ namespace MapExtPDX.SaveLoadSystem
                 }
 
                 // ① Heightmap 合成 (含平面底图回退)
-                RunStep(request, "Heightmap", ExecuteHeightmapSynthesis);
+                RunStep(request, "Heightmap", () => ExecuteHeightmapSynthesis(request));
 
-                // ② NaturalResource 中心嵌入
-                RunStep(request, "NaturalResources", ExecuteNaturalResourceRegen);
+                if (expansion)
+                {
+                    // ②③ 28→57：自然资源与地下水已经路由读入、中心嵌入（⓪ 已核对），再从原版实例嵌入会把它们覆盖掉
+                    // （整合计划 §1.8）；改为清空原版地下水实例，防新档重启后被拉伸回填（28→57 计划 §3.4）
+                    RunStep(request, "VanillaGroundWater", ExecuteVanillaGroundWaterClear);
+                }
+                else
+                {
+                    // ② NaturalResource 中心嵌入
+                    RunStep(request, "NaturalResources", ExecuteNaturalResourceRegen);
 
-                // ③ GroundWater 中心嵌入
-                RunStep(request, "GroundWater", ExecuteGroundWaterInit);
+                    // ③ GroundWater 中心嵌入
+                    RunStep(request, "GroundWater", ExecuteGroundWaterInit);
+                }
 
                 // ③b 水源升级 + 海平面重置
                 RunStep(request, "WaterSources", () => ExecuteWaterSimReset(request));
@@ -152,7 +162,9 @@ namespace MapExtPDX.SaveLoadSystem
                 // ④ 自动存档等加载结束后在 OnGameLoadingComplete 里排队
                 request.Phase = ConversionPhase.Saving;
                 request.CurrentStep = "AutoSave";
-                ModLog.Ok(Tag, $"=== 原版{(newGame ? "地图开新城" : "存档")}转换完成，加载结束后自动存档 ===");
+                ModLog.Ok(Tag, expansion
+                    ? "=== 28→57 存档扩展完成，加载结束后自动存档 ==="
+                    : $"=== 原版{(newGame ? "地图开新城" : "存档")}转换完成，加载结束后自动存档 ===");
             }
             catch (Exception ex)
             {
@@ -277,88 +289,74 @@ namespace MapExtPDX.SaveLoadSystem
         #region ① Heightmap 合成
 
         /// <summary>
-        /// Heightmap 合成：worldHeightmap 作为底图 + 原版 detail heightmap 降采样覆盖中心区域。
+        /// Heightmap 合成：worldHeightmap 作为底图 + 源 detail heightmap 降采样覆盖中心区域。
+        /// <list type="bullet">
+        /// <item>原版来源的两条分支照旧：目标 ModeA 嵌 1024²，目标 ModeB 裁背景中央并嵌 2048²，混合写在嵌入区内侧；</item>
+        /// <item>28→57 按源／目标比值嵌入，背景按实际世界范围裁出新地图范围，校准与混合只改外围
+        /// （<see cref="SynthesizeExpansion"/>，v4.12.0 整合计划 3.5）。</item>
+        /// </list>
+        /// <para>取不到地形、detail 形状不对或回读失败都抛出、走失败路径（整合计划 Q19）：原先直接 return，
+        /// 转换照样报成功，存下的城市地形没有合成，或者只剩背景。异常消息用英文，原样写进三语的失败提示。</para>
         /// </summary>
-        private void ExecuteHeightmapSynthesis()
+        private void ExecuteHeightmapSynthesis(ConversionRequest request)
         {
             ModLog.Info(Tag, "① 开始 Heightmap 合成...");
 
-            var terrainSystem = World.GetExistingSystemManaged<TerrainSystem>();
-            if (terrainSystem == null)
-            {
-                ModLog.Error(Tag, "TerrainSystem 不存在，跳过 Heightmap 合成");
-                return;
-            }
+            var terrainSystem = World.GetExistingSystemManaged<TerrainSystem>()
+                ?? throw new InvalidOperationException("TerrainSystem not found");
 
             int cv = PatchManager.CurrentCoreValue;
+            int hmWidth = kVanillaHeightmapWidth; // 4096
 
             // --- 获取 worldHeightmap 和 m_Heightmap ---
             var worldHM = terrainSystem.worldHeightmap;
-            var heightmapField = AccessTools.Field(typeof(TerrainSystem), "m_Heightmap");
-            var detailHM = heightmapField?.GetValue(terrainSystem) as RenderTexture;
-
-            // --- worldHeightmap 缺失时生成平面底图 ---
-            NativeArray<ushort> worldPixels;
-            bool flatFallback = false;
-
-            if (worldHM == null)
-            {
-                ModLog.Info(Tag, "worldHeightmap 为 null，生成默认平面底图");
-                flatFallback = true;
-
-                // 从 WaterSystem 获取实际海平面高度（世界坐标 m）
-                var waterSystem = World.GetExistingSystemManaged<WaterSystem>();
-                float seaLevelWorld = waterSystem?.SeaLevel ?? 511.7f; // kDefaultSeaLevel
-
-                // 从 TerrainSystem 获取 heightScaleOffset
-                float2 hso = terrainSystem.heightScaleOffset; // .x=scale, .y=offset
-
-                // 世界坐标 → R16 像素值
-                ushort seaLevelR16 = (ushort)math.clamp(
-                    (seaLevelWorld - hso.y) / math.max(hso.x, 1f) * 65535f, 0, 65535);
-
-                ModLog.Info(Tag, $"海平面: {seaLevelWorld}m → R16={seaLevelR16} (scale={hso.x}, offset={hso.y})");
-
-                int flatSize = kVanillaHeightmapWidth; // 4096
-                worldPixels = new NativeArray<ushort>(flatSize * flatSize, Allocator.Persistent);
-                for (int i = 0; i < worldPixels.Length; i++)
-                    worldPixels[i] = seaLevelR16;
-            }
-            else
-            {
-                worldPixels = ReadbackTextureToR16(worldHM, "worldHeightmap");
-            }
-
-            int hmWidth = kVanillaHeightmapWidth; // 4096
-
-            if (detailHM == null)
-            {
-                ModLog.Warn(Tag, "m_Heightmap 为 null，跳过 detail 嵌入");
-            }
+            var detailHM = AccessTools.Field(typeof(TerrainSystem), "m_Heightmap")?.GetValue(terrainSystem) as RenderTexture
+                ?? throw new InvalidOperationException("TerrainSystem.m_Heightmap is not available");
+            if (detailHM.width != hmWidth || detailHM.height != hmWidth)
+                throw new InvalidOperationException(
+                    $"Unsupported heightmap size {detailHM.width}x{detailHM.height}, expected {hmWidth}x{hmWidth}");
 
             ModLog.Info(Tag, $"worldHeightmap: {(worldHM != null ? $"{worldHM.width}x{worldHM.height}" : "FLAT")}, " +
-                $"m_Heightmap: {(detailHM != null ? $"{detailHM.width}x{detailHM.height}" : "null")}");
+                $"m_Heightmap: {detailHM.width}x{detailHM.height}");
 
-            // --- GPU 回读 detail 高度图 ---
+            NativeArray<ushort> worldPixels = default;
             NativeArray<ushort> detailPixels = default;
-            if (detailHM != null)
-                detailPixels = ReadbackRenderTextureToR16(detailHM, "m_Heightmap");
-
-            if (!worldPixels.IsCreated)
-            {
-                ModLog.Error(Tag, "世界底图数据无效，跳过 Heightmap 合成");
-                if (detailPixels.IsCreated) detailPixels.Dispose();
-                return;
-            }
-
+            NativeArray<ushort> synthesized = default;
+            Texture2D synthTex = null;
             try
             {
-                // --- 创建合成纹理 ---
-                // 底图 = worldHeightmap（全量复制）
-                NativeArray<ushort> synthesized = new NativeArray<ushort>(hmWidth * hmWidth, Allocator.Persistent);
-                NativeArray<ushort>.Copy(worldPixels, synthesized);
+                // --- GPU 回读 detail 高度图 ---
+                detailPixels = ReadbackToR16(detailHM, "m_Heightmap");
 
-                if (cv == 4 && detailPixels.IsCreated) // ModeA: 57km
+                // --- 创建合成纹理 ---
+                synthesized = new NativeArray<ushort>(hmWidth * hmWidth, Allocator.Persistent);
+
+                // --- 原版来源：底图 = worldHeightmap（全量复制），缺失时生成平面底图 ---
+                bool flatFallback = worldHM == null;
+                if (!request.IsSaveExpansion)
+                {
+                    if (flatFallback)
+                    {
+                        ModLog.Info(Tag, "worldHeightmap 为 null，生成默认平面底图");
+                        ushort seaLevelR16 = FlatBaseR16(terrainSystem);
+                        worldPixels = new NativeArray<ushort>(hmWidth * hmWidth, Allocator.Persistent);
+                        for (int i = 0; i < worldPixels.Length; i++)
+                            worldPixels[i] = seaLevelR16;
+                    }
+                    else
+                    {
+                        worldPixels = ReadbackToR16(worldHM, "worldHeightmap");
+                    }
+
+                    NativeArray<ushort>.Copy(worldPixels, synthesized);
+                }
+
+                if (request.IsSaveExpansion) // 28→57
+                {
+                    request.FlatPeriphery = !SynthesizeExpansion(terrainSystem, worldHM, detailPixels, synthesized, hmWidth,
+                        request.SourceTerrainMapSize, cv * (double)kVanillaMapSize);
+                }
+                else if (cv == 4) // ModeA: 57km
                 {
                     // 原版 heightmap 覆盖中心 1/4 区域
                     // UV: [0.375, 0.625] → pixel [1536, 2560] → 1024px
@@ -388,7 +386,7 @@ namespace MapExtPDX.SaveLoadSystem
                     ApplyEdgeBlend(synthesized, hmWidth, embedStart, embedSize, worldPixels, blendWidth);
                     ModLog.Info(Tag, $"ModeA 边缘混合: blendWidth={blendWidth}px (~{blendWidth * 14}m)");
                 }
-                else if (cv == 2 && detailPixels.IsCreated) // ModeB: 28km
+                else if (cv == 2) // ModeB: 28km
                 {
                     // === ModeB 合成策略 ===
                     // worldMap (4096px = 57344m) 中心 50% ([1024:3072] = 28672m)
@@ -442,7 +440,7 @@ namespace MapExtPDX.SaveLoadSystem
                 }
 
                 // --- 上传合成纹理到 TerrainSystem ---
-                Texture2D synthTex = new Texture2D(hmWidth, hmWidth, GraphicsFormat.R16_UNorm,
+                synthTex = new Texture2D(hmWidth, hmWidth, GraphicsFormat.R16_UNorm,
                     TextureCreationFlags.DontInitializePixels | TextureCreationFlags.DontUploadUponCreate);
                 synthTex.name = "VanillaConvert_SynthesizedHeightmap";
                 synthTex.SetPixelData(synthesized, 0);
@@ -469,52 +467,156 @@ namespace MapExtPDX.SaveLoadSystem
                 // 此时 worldHeightmap == null → baseLod=0 → 无 cascade 边界
                 terrainSystem.ReplaceHeightmap(synthTex);
                 ModLog.Ok(Tag, "Heightmap 合成完成，已调用 ReplaceHeightmap (baseLod=0, 无 cascade)");
-
-                // 清理
-                UnityEngine.Object.Destroy(synthTex);
-                synthesized.Dispose();
             }
             finally
             {
+                // 失败路径也要释放：原先合成纹理与数组只在成功路径清理
+                if (synthTex != null) UnityEngine.Object.Destroy(synthTex);
+                if (synthesized.IsCreated) synthesized.Dispose();
                 if (worldPixels.IsCreated) worldPixels.Dispose();
                 if (detailPixels.IsCreated) detailPixels.Dispose();
             }
         }
 
-        // === GPU 回读工具方法 ===
-
-        /// <summary>从 Texture (Texture2D) 回读 R16 数据</summary>
-        private NativeArray<ushort> ReadbackTextureToR16(Texture tex, string name)
+        /// <summary>
+        /// 28→57 的地形合成（28→57 计划 §3.3）：
+        /// <list type="number">
+        /// <item>底图：背景按 TerrainSystem 记录的实际世界范围裁出新地图范围，双线性上采样；
+        /// 没有背景、或背景盖不住新地图时用平底（14→28 转出的城市没有背景）；</item>
+        /// <item>源 detail（覆盖源可玩区）按源／目标比值降采样，放在中央，世界位置不变；</item>
+        /// <item>边界校准只平移外围，边缘混合写在外围：原 28 km 城市的地形不改写。</item>
+        /// </list>
+        /// </summary>
+        /// <returns>外围是否取自背景地形；false 为平底，完成提示据此写一句说明。</returns>
+        private bool SynthesizeExpansion(TerrainSystem terrainSystem, Texture worldHM, NativeArray<ushort> detailPixels,
+            NativeArray<ushort> synthesized, int hmWidth, double sourceMap, double targetMap)
         {
-            try
+            // 否决闸已保证地形是源尺寸，这里再核对一次：比值不对会把城市放错位置
+            float playable = terrainSystem.playableArea.x;
+            if (math.abs(playable - sourceMap) > 1f)
+                throw new InvalidOperationException($"Terrain playable area {playable} does not match the source map size {sourceMap}");
+
+            int embedSize = SaveExpansionGeometry.EmbedSize(hmWidth, sourceMap, targetMap);
+            int embedStart = SaveExpansionGeometry.EmbedStart(hmWidth, embedSize);
+
+            // --- 底图 ---
+            float2 cropStart = default, cropSize = default;
+            bool backdrop = worldHM != null && worldHM.width == worldHM.height &&
+                TryGetBackdropWindow(terrainSystem, worldHM.width, targetMap, out cropStart, out cropSize);
+            if (backdrop)
             {
-                var output = new NativeArray<ushort>(tex.width * tex.height, Allocator.Persistent);
-                AsyncGPUReadback.RequestIntoNativeArray(ref output, tex).WaitForCompletion();
-                ModLog.Info(Tag, $"GPU 回读 {name}: {tex.width}x{tex.height} 完成");
-                return output;
+                NativeArray<ushort> worldPixels = ReadbackToR16(worldHM, "worldHeightmap");
+                try
+                {
+                    BilinearUpsampleRegion(worldPixels, worldHM.width, cropStart, cropSize, synthesized, hmWidth);
+                }
+                finally
+                {
+                    worldPixels.Dispose();
+                }
+
+                ModLog.Info(Tag, $"28→57 底图：背景 {worldHM.width}²（世界 {terrainSystem.worldSize.x} m）裁取 " +
+                    $"[{cropStart.x:F1}:{cropStart.x + cropSize.x:F1}) 上采样为 {hmWidth}²");
             }
-            catch (Exception ex)
+            else
             {
-                ModLog.Error(Tag, $"GPU 回读 {name} 失败: {ex.Message}");
-                return default;
+                ushort flat = FlatBaseR16(terrainSystem);
+                for (int i = 0; i < synthesized.Length; i++)
+                    synthesized[i] = flat;
+
+                ModLog.Info(Tag, worldHM == null
+                    ? "28→57 底图：存档没有背景地形，外围用平底"
+                    : $"28→57 底图：背景 {worldHM.width}x{worldHM.height}（世界 {terrainSystem.worldSize.x} m）盖不住新地图，外围用平底");
             }
+
+            // --- 源 detail 降采样，放在中央 ---
+            ModLog.Info(Tag, $"28→57 合成: 源 {sourceMap} m → 目标 {targetMap} m，降采样 {hmWidth}² → {embedSize}², " +
+                $"嵌入 [{embedStart}:{embedStart + embedSize}]");
+            BoxFilterDownsample(detailPixels, hmWidth, synthesized, hmWidth, embedStart, embedSize);
+
+            // --- 边界校准：只平移外围 ---
+            int offsetR16 = MeasureBoundaryOffset(synthesized, hmWidth, embedStart, embedSize);
+            if (math.abs(offsetR16) > 10) // 超过 ~0.6m 才校准
+            {
+                float offsetMeters = offsetR16 / 65535f * terrainSystem.heightScaleOffset.x;
+                ModLog.Info(Tag, $"实测边界偏差: {offsetR16} R16 ≈ {offsetMeters:F1}m, 校准外围底图");
+                ApplyOffsetOutsideEmbed(synthesized, hmWidth, embedStart, embedSize, offsetR16);
+            }
+
+            // --- 外围混合：从原边界的 detail 值过渡到底图，嵌入区不动 ---
+            ApplyOuterEdgeBlend(synthesized, hmWidth, embedStart, embedSize, kExpansionBlendWidth);
+            ModLog.Info(Tag, $"28→57 外围混合: blendWidth={kExpansionBlendWidth}px (~{kExpansionBlendWidth * targetMap / hmWidth:F0}m)，原区域不改写");
+
+            return backdrop;
         }
 
-        /// <summary>从 RenderTexture 回读 R16 数据</summary>
-        private NativeArray<ushort> ReadbackRenderTextureToR16(RenderTexture rt, string name)
+        /// <summary>
+        /// 新地图范围在背景贴图上的采样窗口（像素，可为小数）。按 TerrainSystem 记录的实际世界范围换算，
+        /// 不假设背景是可玩区的 4 倍（28→57 计划 §3.3）。窗口超出背景时返回 false：背景盖不住新地图，按没有背景处理。
+        /// </summary>
+        private static bool TryGetBackdropWindow(TerrainSystem terrainSystem, int backdropWidth, double targetMap,
+            out float2 start, out float2 size)
         {
+            float2 worldSize = terrainSystem.worldSize;
+            float2 worldCorner = terrainSystem.worldOffset; // 世界范围的左下角，与 FinalizeTerrainData 的 inWorldCorner 相同
+            double half = 0.5 * targetMap;
+
+            double x0 = SaveExpansionGeometry.WorldToPixel(-half, worldCorner.x, worldSize.x, backdropWidth);
+            double x1 = SaveExpansionGeometry.WorldToPixel(half, worldCorner.x, worldSize.x, backdropWidth);
+            double y0 = SaveExpansionGeometry.WorldToPixel(-half, worldCorner.y, worldSize.y, backdropWidth);
+            double y1 = SaveExpansionGeometry.WorldToPixel(half, worldCorner.y, worldSize.y, backdropWidth);
+            start = new float2((float)x0, (float)y0);
+            size = new float2((float)(x1 - x0), (float)(y1 - y0));
+
+            const double tolerance = 0.5; // 半个像素
+            return worldSize.x > 0f && worldSize.y > 0f &&
+                   x0 >= -tolerance && y0 >= -tolerance &&
+                   x1 <= backdropWidth + tolerance && y1 <= backdropWidth + tolerance;
+        }
+
+        /// <summary>平底的 R16 值：WaterSystem 的实际海平面（世界坐标 m）按地形的高度缩放换算。</summary>
+        private ushort FlatBaseR16(TerrainSystem terrainSystem)
+        {
+            // 从 WaterSystem 获取实际海平面高度（世界坐标 m）
+            var waterSystem = World.GetExistingSystemManaged<WaterSystem>();
+            float seaLevelWorld = waterSystem?.SeaLevel ?? 511.7f; // kDefaultSeaLevel
+
+            // 从 TerrainSystem 获取 heightScaleOffset
+            float2 hso = terrainSystem.heightScaleOffset; // .x=scale, .y=offset
+
+            // 世界坐标 → R16 像素值
+            ushort seaLevelR16 = (ushort)math.clamp(
+                (seaLevelWorld - hso.y) / math.max(hso.x, 1f) * 65535f, 0, 65535);
+
+            ModLog.Info(Tag, $"海平面: {seaLevelWorld}m → R16={seaLevelR16} (scale={hso.x}, offset={hso.y})");
+            return seaLevelR16;
+        }
+
+        // === GPU 回读工具方法 ===
+
+        /// <summary>
+        /// 从 GPU 回读 R16 高度数据（Texture2D 与 RenderTexture 通用）。
+        /// 失败抛出（整合计划 Q19）：原先记一行错误后返回空数组，调用方跳过嵌入，存下的城市地形没有合成；
+        /// 回读请求出错时数组内容也不可信，原先没检查。
+        /// </summary>
+        private static NativeArray<ushort> ReadbackToR16(Texture tex, string name)
+        {
+            var output = new NativeArray<ushort>(tex.width * tex.height, Allocator.Persistent);
             try
             {
-                var output = new NativeArray<ushort>(rt.width * rt.height, Allocator.Persistent);
-                AsyncGPUReadback.RequestIntoNativeArray(ref output, rt).WaitForCompletion();
-                ModLog.Info(Tag, $"GPU 回读 {name}: {rt.width}x{rt.height} 完成");
-                return output;
+                AsyncGPUReadbackRequest readback = AsyncGPUReadback.RequestIntoNativeArray(ref output, tex);
+                readback.WaitForCompletion();
+                if (readback.hasError)
+                    throw new InvalidOperationException($"GPU readback of {name} failed");
             }
-            catch (Exception ex)
+            catch
             {
-                ModLog.Error(Tag, $"GPU 回读 {name} 失败: {ex.Message}");
-                return default;
+                output.Dispose();
+                throw;
             }
+
+            ModLog.Info(Tag, $"GPU 回读 {name}: {tex.width}x{tex.height} 完成");
+            return output;
         }
 
         // === 采样算法 ===
@@ -569,14 +671,27 @@ namespace MapExtPDX.SaveLoadSystem
             int cropStart, int cropSize,
             NativeArray<ushort> dest, int destSize)
         {
-            float ratio = (float)cropSize / destSize;
+            // 整数窗口在 float 下都能精确表示，换算与原先逐位相同（14→28 分支的结果不变）
+            BilinearUpsampleRegion(source, srcSize, new float2(cropStart), new float2(cropSize), dest, destSize);
+        }
+
+        /// <summary>
+        /// 双线性上采样：将 source (srcSize²) 上 [cropStart, cropStart+cropSize) 的窗口上采样到 dest (destSize²) 全图。
+        /// 窗口以源像素为单位，可为小数，两轴分开给（28→57 按背景的实际世界范围裁剪）。
+        /// </summary>
+        private static void BilinearUpsampleRegion(
+            NativeArray<ushort> source, int srcSize,
+            float2 cropStart, float2 cropSize,
+            NativeArray<ushort> dest, int destSize)
+        {
+            float2 ratio = cropSize / destSize;
 
             for (int dy = 0; dy < destSize; dy++)
             {
                 for (int dx = 0; dx < destSize; dx++)
                 {
-                    float srcX = cropStart + dx * ratio;
-                    float srcY = cropStart + dy * ratio;
+                    float srcX = cropStart.x + dx * ratio.x;
+                    float srcY = cropStart.y + dy * ratio.y;
 
                     int x0 = math.clamp((int)srcX, 0, srcSize - 1);
                     int y0 = math.clamp((int)srcY, 0, srcSize - 1);
@@ -636,6 +751,43 @@ namespace MapExtPDX.SaveLoadSystem
                     float worldVal = worldPixels[idx];
                     float detailVal = synthesized[idx];
                     synthesized[idx] = (ushort)math.clamp(math.lerp(worldVal, detailVal, t), 0, 65535);
+                }
+            }
+        }
+
+        /// <summary>
+        /// 外围混合（28→57）：嵌入区外 <paramref name="blendWidth"/> 像素内，从最近的嵌入区边缘像素（detail）
+        /// 平滑过渡到底图；嵌入区内一个像素都不写。与 <see cref="ApplyEdgeBlend"/> 方向相反：
+        /// 那个写在嵌入区内侧，会改动原城市的地形（28→57 计划 §3.3"旧区域内不执行改写"）。
+        /// </summary>
+        private static void ApplyOuterEdgeBlend(
+            NativeArray<ushort> synthesized, int size,
+            int embedStart, int embedSize, int blendWidth)
+        {
+            int embedEnd = embedStart + embedSize; // exclusive
+            int from = math.max(0, embedStart - blendWidth);
+            int to = math.min(size, embedEnd + blendWidth);
+
+            for (int y = from; y < to; y++)
+            {
+                int edgeY = math.clamp(y, embedStart, embedEnd - 1);
+                for (int x = from; x < to; x++)
+                {
+                    int edgeX = math.clamp(x, embedStart, embedEnd - 1);
+
+                    // 到嵌入区的切比雪夫距离：0 在嵌入区内，不动；达到 blendWidth 保持底图
+                    int dist = math.max(math.abs(x - edgeX), math.abs(y - edgeY));
+                    if (dist == 0 || dist >= blendWidth)
+                        continue;
+
+                    // smoothstep：t=0 贴着边界取 detail 值，t=1 取底图值。只读嵌入区内与本像素，原地写安全
+                    float t = (float)dist / blendWidth;
+                    t = t * t * (3f - 2f * t);
+
+                    int idx = y * size + x;
+                    float edgeVal = synthesized[edgeY * size + edgeX];
+                    float baseVal = synthesized[idx];
+                    synthesized[idx] = (ushort)math.clamp(math.lerp(edgeVal, baseVal, t), 0, 65535);
                 }
             }
         }
@@ -724,102 +876,82 @@ namespace MapExtPDX.SaveLoadSystem
         /// ① 从反序列化后被拉伸的 m_Map 中降采样回原版尺寸 (256²)，恢复原始资源数据。
         /// ② 清空整个 m_Map。
         /// ③ 将原版数据 1:1 嵌入到扩展地图中心。
+        ///
+        /// <para>取不到系统或字段、或处理出错都抛出、走失败路径（整合计划 Q19）：原先跳过或只记日志，
+        /// 转换照样报成功，存下的是被拉伸的资源图。</para>
         /// </summary>
         private void ExecuteNaturalResourceRegen()
         {
             ModLog.Info(Tag, "② 开始 NaturalResource 中心嵌入...");
 
-            try
+            // === 读取源: 原版 NaturalResourceSystem (存档数据在这里) ===
+            var vanillaSystem = World.GetExistingSystemManaged<NaturalResourceSystem>()
+                ?? throw new InvalidOperationException("NaturalResourceSystem not found");
+            CompleteDependencies(vanillaSystem);
+
+            var vanillaMapField = AccessTools.Field(typeof(CellMapSystem<NaturalResourceCell>), "m_Map")
+                ?? throw new MissingFieldException("CellMapSystem<NaturalResourceCell>.m_Map not found");
+            var vanillaMap = (NativeArray<NaturalResourceCell>)vanillaMapField.GetValue(vanillaSystem);
+            int vanillaSize = (int)math.sqrt(vanillaMap.Length); // 应为 256
+
+#if DEBUG
+            ModLog.Info(Tag, $"原版 NaturalResource m_Map: Length={vanillaMap.Length}, Size={vanillaSize}");
+#endif
+
+            // 统计原版数据中的非零 cell（兼作全零守卫）
+            int nzFert = 0, nzOre = 0, nzOil = 0;
+            for (int i = 0; i < vanillaMap.Length; i++)
             {
-                // === 读取源: 原版 NaturalResourceSystem (存档数据在这里) ===
-                var vanillaSystem = World.GetExistingSystemManaged<NaturalResourceSystem>();
-                if (vanillaSystem == null)
-                {
-                    ModLog.Warn(Tag, "无法获取原版 NaturalResourceSystem 实例，跳过");
-                    return;
-                }
-                CompleteDependencies(vanillaSystem);
-
-                var vanillaMapField = AccessTools.Field(typeof(CellMapSystem<NaturalResourceCell>), "m_Map");
-                if (vanillaMapField == null)
-                {
-                    ModLog.Warn(Tag, "无法获取原版 NaturalResource m_Map 字段，跳过");
-                    return;
-                }
-                var vanillaMap = (NativeArray<NaturalResourceCell>)vanillaMapField.GetValue(vanillaSystem);
-                int vanillaSize = (int)math.sqrt(vanillaMap.Length); // 应为 256
-
-#if DEBUG
-                ModLog.Info(Tag, $"原版 NaturalResource m_Map: Length={vanillaMap.Length}, Size={vanillaSize}");
-#endif
-
-                // 统计原版数据中的非零 cell（兼作全零守卫）
-                int nzFert = 0, nzOre = 0, nzOil = 0;
-                for (int i = 0; i < vanillaMap.Length; i++)
-                {
-                    var dc = vanillaMap[i];
-                    if (dc.m_Fertility.m_Base > 0) nzFert++;
-                    if (dc.m_Ore.m_Base > 0) nzOre++;
-                    if (dc.m_Oil.m_Base > 0) nzOil++;
-                }
-#if DEBUG
-                ModLog.Info(Tag, $"原版数据统计: 非零 Fertility={nzFert}, Ore={nzOre}, Oil={nzOil} (共{vanillaMap.Length}cells)");
-#endif
-
-                // 全零也要照常清零，不能跳过：原版地图开新城时，本模式的 SetDefaults 收到 NewGame，
-                // 已经按 Perlin 生成了整张资源（v4.12.0 整合计划 §1.7），跳过会把它留下
-                if (nzFert == 0 && nzOre == 0 && nzOil == 0)
-                    ModLog.Warn(Tag, "原版数据全为零（地图没有资源，或存档未正确反序列化），Mod 地图照常清零");
-
-                // === 写入目标: Mod NaturalResourceSystemMod (大地图 CellMap) ===
-                var modSystem = GetNaturalResourceSystemMod();
-                if (modSystem == null)
-                {
-                    ModLog.Warn(Tag, "无法获取 NaturalResourceSystemMod 实例，跳过");
-                    return;
-                }
-                CompleteDependencies(modSystem);
-
-                var modMapField = AccessTools.Field(modSystem.GetType().BaseType, "m_Map");
-                if (modMapField == null)
-                {
-                    ModLog.Warn(Tag, "无法获取 Mod NaturalResource m_Map 字段，跳过");
-                    return;
-                }
-                var modMap = (NativeArray<NaturalResourceCell>)modMapField.GetValue(modSystem);
-                int modSize = (int)math.sqrt(modMap.Length); // ModeA=1024, ModeB=512
-
-#if DEBUG
-                ModLog.Info(Tag, $"Mod NaturalResource m_Map: Length={modMap.Length}, Size={modSize}");
-#endif
-
-                // --- 清空 mod m_Map ---
-                for (int i = 0; i < modMap.Length; i++)
-                    modMap[i] = default;
-
-                // --- 将原版数据 1:1 嵌入 mod 地图中心 ---
-                // 原版: 256 cells × 56m/cell = 14336m
-                // ModeA 1024²: embedStart = (1024-256)/2 = 384
-                // ModeB 512²:  embedStart = (512-256)/2 = 128
-                int embedStart = (modSize - vanillaSize) / 2;
-                int embedEnd = embedStart + vanillaSize;
-
-                for (int vy = 0; vy < vanillaSize; vy++)
-                {
-                    for (int vx = 0; vx < vanillaSize; vx++)
-                    {
-                        int srcIdx = vy * vanillaSize + vx;
-                        int dstIdx = (embedStart + vy) * modSize + (embedStart + vx);
-                        modMap[dstIdx] = vanillaMap[srcIdx];
-                    }
-                }
-
-                ModLog.Ok(Tag, $"NaturalResource 修复完成: 原版 {vanillaSize}² 嵌入 Mod {modSize}² 中心 [{embedStart}:{embedEnd}], 外围清空");
+                var dc = vanillaMap[i];
+                if (dc.m_Fertility.m_Base > 0) nzFert++;
+                if (dc.m_Ore.m_Base > 0) nzOre++;
+                if (dc.m_Oil.m_Base > 0) nzOil++;
             }
-            catch (Exception ex)
+#if DEBUG
+            ModLog.Info(Tag, $"原版数据统计: 非零 Fertility={nzFert}, Ore={nzOre}, Oil={nzOil} (共{vanillaMap.Length}cells)");
+#endif
+
+            // 全零也要照常清零，不能跳过：原版地图开新城时，本模式的 SetDefaults 收到 NewGame，
+            // 已经按 Perlin 生成了整张资源（v4.12.0 整合计划 §1.7），跳过会把它留下
+            if (nzFert == 0 && nzOre == 0 && nzOil == 0)
+                ModLog.Warn(Tag, "原版数据全为零（地图没有资源，或存档未正确反序列化），Mod 地图照常清零");
+
+            // === 写入目标: Mod NaturalResourceSystemMod (大地图 CellMap) ===
+            var modSystem = GetNaturalResourceSystemMod()
+                ?? throw new InvalidOperationException($"NaturalResourceSystemMod not found (CV={PatchManager.CurrentCoreValue})");
+            CompleteDependencies(modSystem);
+
+            var modMapField = AccessTools.Field(modSystem.GetType().BaseType, "m_Map")
+                ?? throw new MissingFieldException("NaturalResourceSystemMod m_Map not found");
+            var modMap = (NativeArray<NaturalResourceCell>)modMapField.GetValue(modSystem);
+            int modSize = (int)math.sqrt(modMap.Length); // ModeA=1024, ModeB=512
+
+#if DEBUG
+            ModLog.Info(Tag, $"Mod NaturalResource m_Map: Length={modMap.Length}, Size={modSize}");
+#endif
+
+            // --- 清空 mod m_Map ---
+            for (int i = 0; i < modMap.Length; i++)
+                modMap[i] = default;
+
+            // --- 将原版数据 1:1 嵌入 mod 地图中心 ---
+            // 原版: 256 cells × 56m/cell = 14336m
+            // ModeA 1024²: embedStart = (1024-256)/2 = 384
+            // ModeB 512²:  embedStart = (512-256)/2 = 128
+            int embedStart = (modSize - vanillaSize) / 2;
+            int embedEnd = embedStart + vanillaSize;
+
+            for (int vy = 0; vy < vanillaSize; vy++)
             {
-                ModLog.Error(Tag, $"NaturalResource 处理失败: {ex}");
+                for (int vx = 0; vx < vanillaSize; vx++)
+                {
+                    int srcIdx = vy * vanillaSize + vx;
+                    int dstIdx = (embedStart + vy) * modSize + (embedStart + vx);
+                    modMap[dstIdx] = vanillaMap[srcIdx];
+                }
             }
+
+            ModLog.Ok(Tag, $"NaturalResource 修复完成: 原版 {vanillaSize}² 嵌入 Mod {modSize}² 中心 [{embedStart}:{embedEnd}], 外围清空");
         }
 
         #endregion
@@ -831,111 +963,112 @@ namespace MapExtPDX.SaveLoadSystem
 
         /// <summary>
         /// GroundWater 修复：将反序列化拉伸的数据降采样回原版尺寸，
-        /// 嵌入扩展地图中心区域，外围保持清空。策略与 NaturalResource 相同。
+        /// 嵌入扩展地图中心区域，外围保持清空。策略与 NaturalResource 相同，出错同样抛出（整合计划 Q19）。
         /// </summary>
         private void ExecuteGroundWaterInit()
         {
             ModLog.Info(Tag, "③ 开始 GroundWater 中心嵌入...");
 
-            try
-            {
-                // === 读取源: 原版 GroundWaterSystem (存档数据在这里) ===
-                var vanillaSystem = World.GetExistingSystemManaged<GroundWaterSystem>();
-                if (vanillaSystem == null)
-                {
-                    ModLog.Warn(Tag, "无法获取原版 GroundWaterSystem 实例，跳过");
-                    return;
-                }
-                CompleteDependencies(vanillaSystem);
+            // === 读取源: 原版 GroundWaterSystem (存档数据在这里) ===
+            var vanillaSystem = World.GetExistingSystemManaged<GroundWaterSystem>()
+                ?? throw new InvalidOperationException("GroundWaterSystem not found");
+            CompleteDependencies(vanillaSystem);
 
-                var vanillaMapField = AccessTools.Field(typeof(CellMapSystem<GroundWater>), "m_Map");
-                if (vanillaMapField == null)
-                {
-                    ModLog.Warn(Tag, "无法获取原版 GroundWater m_Map 字段，跳过");
-                    return;
-                }
-                var vanillaMap = (NativeArray<GroundWater>)vanillaMapField.GetValue(vanillaSystem);
-                int vanillaSize = (int)math.sqrt(vanillaMap.Length); // 应为 256
+            var vanillaMap = GetVanillaGroundWaterMap(vanillaSystem);
+            int vanillaSize = (int)math.sqrt(vanillaMap.Length); // 应为 256
 
 #if DEBUG
-                ModLog.Info(Tag, $"原版 GroundWater m_Map: Length={vanillaMap.Length}, Size={vanillaSize}");
-                int nzAmount = 0;
-                for (int i = 0; i < vanillaMap.Length; i++)
-                    if (vanillaMap[i].m_Amount > 0) nzAmount++;
-                ModLog.Info(Tag, $"原版数据统计: 非零 Amount={nzAmount} (共{vanillaMap.Length}cells)");
+            ModLog.Info(Tag, $"原版 GroundWater m_Map: Length={vanillaMap.Length}, Size={vanillaSize}");
+            int nzAmount = 0;
+            for (int i = 0; i < vanillaMap.Length; i++)
+                if (vanillaMap[i].m_Amount > 0) nzAmount++;
+            ModLog.Info(Tag, $"原版数据统计: 非零 Amount={nzAmount} (共{vanillaMap.Length}cells)");
 #endif
 
-                // === 写入目标: Mod GroundWaterSystemMod ===
-                var modSystem = GetGroundWaterSystemMod();
-                if (modSystem == null)
-                {
-                    ModLog.Warn(Tag, "无法获取 GroundWaterSystemMod 实例，跳过");
-                    return;
-                }
-                CompleteDependencies(modSystem);
+            // === 写入目标: Mod GroundWaterSystemMod ===
+            var modSystem = GetGroundWaterSystemMod()
+                ?? throw new InvalidOperationException($"GroundWaterSystemMod not found (CV={PatchManager.CurrentCoreValue})");
+            CompleteDependencies(modSystem);
 
-                var modMapField = AccessTools.Field(modSystem.GetType().BaseType, "m_Map");
-                if (modMapField == null)
-                {
-                    ModLog.Warn(Tag, "无法获取 Mod GroundWater m_Map 字段，跳过");
-                    return;
-                }
-                var modMap = (NativeArray<GroundWater>)modMapField.GetValue(modSystem);
-                int modSize = (int)math.sqrt(modMap.Length);
+            var modMapField = AccessTools.Field(modSystem.GetType().BaseType, "m_Map")
+                ?? throw new MissingFieldException("GroundWaterSystemMod m_Map not found");
+            var modMap = (NativeArray<GroundWater>)modMapField.GetValue(modSystem);
+            int modSize = (int)math.sqrt(modMap.Length);
 
 #if DEBUG
-                ModLog.Info(Tag, $"Mod GroundWater m_Map: Length={modMap.Length}, Size={modSize}");
+            ModLog.Info(Tag, $"Mod GroundWater m_Map: Length={modMap.Length}, Size={modSize}");
 #endif
 
-                // --- 清空 mod m_Map ---
-                for (int i = 0; i < modMap.Length; i++)
-                    modMap[i] = default;
+            // --- 清空 mod m_Map ---
+            for (int i = 0; i < modMap.Length; i++)
+                modMap[i] = default;
 
-                // --- 将原版数据 1:1 嵌入中心 ---
-                int embedStart = (modSize - vanillaSize) / 2;
-                int embedEnd = embedStart + vanillaSize;
+            // --- 将原版数据 1:1 嵌入中心 ---
+            int embedStart = (modSize - vanillaSize) / 2;
+            int embedEnd = embedStart + vanillaSize;
 
-                for (int vy = 0; vy < vanillaSize; vy++)
-                {
-                    for (int vx = 0; vx < vanillaSize; vx++)
-                    {
-                        int srcIdx = vy * vanillaSize + vx;
-                        int dstIdx = (embedStart + vy) * modSize + (embedStart + vx);
-                        modMap[dstIdx] = vanillaMap[srcIdx];
-                    }
-                }
-
-                ModLog.Ok(Tag, $"GroundWater 修复完成: 原版 {vanillaSize}² 嵌入 Mod {modSize}² 中心 [{embedStart}:{embedEnd}], 外围清空");
-            }
-            catch (Exception ex)
+            for (int vy = 0; vy < vanillaSize; vy++)
             {
-                ModLog.Error(Tag, $"GroundWater 处理失败: {ex}");
+                for (int vx = 0; vx < vanillaSize; vx++)
+                {
+                    int srcIdx = vy * vanillaSize + vx;
+                    int dstIdx = (embedStart + vy) * modSize + (embedStart + vx);
+                    modMap[dstIdx] = vanillaMap[srcIdx];
+                }
             }
+
+            ModLog.Ok(Tag, $"GroundWater 修复完成: 原版 {vanillaSize}² 嵌入 Mod {modSize}² 中心 [{embedStart}:{embedEnd}], 外围清空");
         }
 
+        /// <summary>
+        /// 28→57：清空原版 <c>GroundWaterSystem</c> 实例的 <c>m_Map</c>（28→57 计划 §3.4 防回填）。
+        /// <para>ModeB 存档的原版区段里还留着最早那张 14 km 地图的原稿。不清的话，新档重启后若本模式的地下水场全为零
+        /// （合法的无含水层地图），<c>GroundWaterSystemMod.OnGameLoaded</c> 的空场修复会把原稿等比拉伸，回填整张图。
+        /// 原版系统已停用、不模拟，清空后到自动存档前不会再被写入。</para>
+        /// </summary>
+        private void ExecuteVanillaGroundWaterClear()
+        {
+            ModLog.Info(Tag, "③ 开始清空原版地下水实例...");
 
+            var vanillaSystem = World.GetExistingSystemManaged<GroundWaterSystem>()
+                ?? throw new InvalidOperationException("GroundWaterSystem not found");
+            CompleteDependencies(vanillaSystem);
+
+            var vanillaMap = GetVanillaGroundWaterMap(vanillaSystem);
+            int aquifer = 0;
+            for (int i = 0; i < vanillaMap.Length; i++)
+            {
+                // 含水层与 GroundWaterSystemMod.CountAquiferCells 同口径：m_Max 非零
+                if (vanillaMap[i].m_Max != 0) aquifer++;
+                vanillaMap[i] = default;
+            }
+
+            ModLog.Ok(Tag, $"已清空原版地下水实例：{(int)math.sqrt(vanillaMap.Length)}²，原有含水层 {aquifer} 格；新档重启后不会被拉伸回填");
+        }
+
+        /// <summary>原版 <c>GroundWaterSystem</c> 的 <c>m_Map</c>（反射取 <c>CellMapSystem&lt;GroundWater&gt;</c> 的字段）。</summary>
+        private static NativeArray<GroundWater> GetVanillaGroundWaterMap(GroundWaterSystem vanillaSystem)
+        {
+            var field = AccessTools.Field(typeof(CellMapSystem<GroundWater>), "m_Map")
+                ?? throw new MissingFieldException("CellMapSystem<GroundWater>.m_Map not found");
+            return (NativeArray<GroundWater>)field.GetValue(vanillaSystem);
+        }
 
         /// <summary>
         /// 完成目标系统的所有挂起 Job 依赖，确保安全读写 m_Map。
+        /// 取不到依赖字段就保证不了这一点，抛出、走失败路径（整合计划 Q19）；原先只记 Warn，照样读写。
         /// </summary>
         private static void CompleteDependencies(GameSystemBase system)
         {
-            try
-            {
-                // CellMapSystem<T> 的依赖字段在基类中
-                var baseType = system.GetType().BaseType;
-                var writeDeps = AccessTools.Field(baseType, "m_WriteDependencies");
-                var readDeps = AccessTools.Field(baseType, "m_ReadDependencies");
+            // CellMapSystem<T> 的依赖字段在基类中，AccessTools.Field 会沿继承链往上找
+            var baseType = system.GetType().BaseType;
+            var writeDeps = AccessTools.Field(baseType, "m_WriteDependencies")
+                ?? throw new MissingFieldException($"{system.GetType().Name}: m_WriteDependencies not found");
+            var readDeps = AccessTools.Field(baseType, "m_ReadDependencies")
+                ?? throw new MissingFieldException($"{system.GetType().Name}: m_ReadDependencies not found");
 
-                if (writeDeps != null)
-                    ((JobHandle)writeDeps.GetValue(system)).Complete();
-                if (readDeps != null)
-                    ((JobHandle)readDeps.GetValue(system)).Complete();
-            }
-            catch (Exception ex)
-            {
-                ModLog.Warn(Tag, $"CompleteDependencies 失败: {ex.Message}");
-            }
+            ((JobHandle)writeDeps.GetValue(system)).Complete();
+            ((JobHandle)readDeps.GetValue(system)).Complete();
         }
 
         #endregion
@@ -1185,35 +1318,29 @@ namespace MapExtPDX.SaveLoadSystem
         /// <summary>
         /// 给所有 OutsideConnection 实体添加 Deleted 组件，
         /// 触发游戏清理系统级联删除关联的 Edge/Lane/SubLane 等网络实体。
-        /// 包括电力和水管类 OC（它们同样位于旧 14km 边界，需在新边界重建）。
+        /// 包括电力和水管类 OC（它们同样位于旧边界，需在新边界重建）。
+        /// <para>出错抛出、走失败路径（整合计划 Q19）：原先只记日志，转换照样报成功，旧边界上留着外部连接。</para>
         /// </summary>
         private void ExecuteOutsideConnectionCleanup()
         {
             ModLog.Info(Tag, "⓪c 开始 OutsideConnection 节点清理（全类型）...");
 
-            try
-            {
-                var ocQuery = EntityManager.CreateEntityQuery(
-                    ComponentType.ReadOnly<Game.Objects.OutsideConnection>(),
-                    ComponentType.Exclude<Deleted>(),
-                    ComponentType.Exclude<Temp>());
+            var ocQuery = EntityManager.CreateEntityQuery(
+                ComponentType.ReadOnly<Game.Objects.OutsideConnection>(),
+                ComponentType.Exclude<Deleted>(),
+                ComponentType.Exclude<Temp>());
 
-                int count = ocQuery.CalculateEntityCount();
-                if (count > 0)
-                {
-                    // 完成所有挂起的 Job，防止结构变更后访问已变更 archetype 的实体
-                    EntityManager.CompleteAllTrackedJobs();
-                    EntityManager.AddComponent<Deleted>(ocQuery);
-                    ModLog.Ok(Tag, $"已标记 {count} 个 OutsideConnection 实体为删除（含交通/电力/水管）");
-                }
-                else
-                {
-                    ModLog.Info(Tag, "未发现 OutsideConnection 实体");
-                }
-            }
-            catch (Exception ex)
+            int count = ocQuery.CalculateEntityCount();
+            if (count > 0)
             {
-                ModLog.Error(Tag, $"OutsideConnection 清理失败: {ex}");
+                // 完成所有挂起的 Job，防止结构变更后访问已变更 archetype 的实体
+                EntityManager.CompleteAllTrackedJobs();
+                EntityManager.AddComponent<Deleted>(ocQuery);
+                ModLog.Ok(Tag, $"已标记 {count} 个 OutsideConnection 实体为删除（含交通/电力/水管）");
+            }
+            else
+            {
+                ModLog.Info(Tag, "未发现 OutsideConnection 实体");
             }
         }
 
@@ -1227,241 +1354,232 @@ namespace MapExtPDX.SaveLoadSystem
         /// ③ 清除陈旧 GPU 流速/传播纹理，防止水面流向异常。
         /// ④ 使用 AddComponent&lt;Deleted&gt; 替代 DestroyEntity，避免并行 Job NRE。
         /// <para>处理结果记到 <see cref="ConversionRequest.WaterSources"/>，完成提示按它写水体一段。</para>
+        /// <para>出错抛出、走失败路径（整合计划 Q19）：水面贴图在扩展后覆盖范围错拉，水源处理与 GPU 重置是必需步骤
+        /// （28→57 计划 §3.5），原先只记日志，转换照样报成功。</para>
         /// </summary>
         private void ExecuteWaterSimReset(ConversionRequest request)
         {
             ModLog.Info(Tag, "③b 开始水模拟安全升级...");
 
-            try
+            var waterSystem = World.GetExistingSystemManaged<WaterSystem>()
+                ?? throw new InvalidOperationException("WaterSystem not found");
+
+            float currentSeaLevel = waterSystem.SeaLevel;
+            bool isLegacy = waterSystem.UseLegacyWaterSources;
+            ModLog.Info(Tag, $"当前海平面: {currentSeaLevel}m, Legacy水源: {isLegacy}");
+
+            // --- 共用：暂停水模拟、完成 Job ---
+            waterSystem.WaterSimSpeed = 0;
+            EntityManager.CompleteAllTrackedJobs();
+
+            if (!isLegacy)
             {
-                var waterSystem = World.GetExistingSystemManaged<WaterSystem>();
-                if (waterSystem == null)
-                {
-                    ModLog.Warn(Tag, "WaterSystem 不存在");
-                    return;
-                }
-
-                float currentSeaLevel = waterSystem.SeaLevel;
-                bool isLegacy = waterSystem.UseLegacyWaterSources;
-                ModLog.Info(Tag, $"当前海平面: {currentSeaLevel}m, Legacy水源: {isLegacy}");
-
-                // --- 共用：暂停水模拟、完成 Job ---
-                waterSystem.WaterSimSpeed = 0;
-                EntityManager.CompleteAllTrackedJobs();
-
-                if (!isLegacy)
-                {
-                    // === 非 Legacy 路径（MapExt vanilla 模式存档转换）===
-                    // 地形已完全替换，需要完整的 GPU 状态重置
-                    ClearWaterGpuState(waterSystem);
-                    waterSystem.ResetToSealevel();
-
-                    int cv2 = PatchManager.CurrentCoreValue;
-                    int frames2 = cv2 >= 4 ? 16 : cv2 >= 2 ? 8 : 5;
-                    var newMapField2 = AccessTools.Field(typeof(WaterSystem), "m_NewMap");
-                    if (newMapField2 != null)
-                        newMapField2.SetValue(waterSystem, frames2);
-
-                    // TerrainWillChange() 内部会设置 WaterSimSpeed=0，
-                    // 必须在之后重新设置 WaterSimSpeed=1
-                    waterSystem.TerrainWillChange();
-                    waterSystem.WaterSimSpeed = 1;
-
-                    request.WaterSources = WaterSourceOutcome.Kept;
-                    ModLog.Ok(Tag, $"已是新版水源，执行完整 GPU 重置 + ResetToSealevel + m_NewMap={frames2}");
-                    return;
-                }
-
-                // === Legacy 路径：安全版 UpgradeToNewWaterSystem ===
-
-                // --- ③ 获取新地形高度数据（Heightmap 合成已完成）---
-                var terrainSystem = World.GetExistingSystemManaged<TerrainSystem>();
-                TerrainHeightData terrainData = default;
-                bool terrainReady = false;
-
-                if (terrainSystem != null)
-                {
-                    terrainSystem.AddCPUHeightReader(default);
-                    terrainData = terrainSystem.GetHeightData(waitForPending: true);
-                    terrainReady = terrainData.isCreated;
-                }
-
-                if (!terrainReady)
-                    ModLog.Warn(Tag, "TerrainHeightData 未就绪，保留水源将使用降级处理（全删）");
-
-                // --- ④ 遍历水源：按类型分类处理 ---
-                var sourceQuery = EntityManager.CreateEntityQuery(
-                    ComponentType.ReadOnly<Game.Simulation.WaterSourceData>(),
-                    ComponentType.ReadOnly<Game.Objects.Transform>(),
-                    ComponentType.Exclude<Deleted>());
-
-                int totalSources = sourceQuery.CalculateEntityCount();
-                // 与原版 UpgradeToNewWaterSystem 一致，初始值为 MaxValue
-                // 仅在实际发现 Type 2/3 海源时才更新
-                float minSeaLevel = float.MaxValue;
-                bool hasSeaSource = false;
-                int deletedCount = 0, upgradedCount = 0;
-
-                if (totalSources > 0)
-                {
-                    var getNextIdMethod = AccessTools.Method(typeof(WaterSystem), "GetNextSourceId");
-                    var entities = sourceQuery.ToEntityArray(Allocator.TempJob);
-
-                    for (int i = 0; i < entities.Length; i++)
-                    {
-                        var entity = entities[i];
-                        var sourceData = EntityManager.GetComponentData<WaterSourceData>(entity);
-
-                        // --- Type 3: 旧版海源 → 删除（已被新 SeaLevel 系统替代）---
-                        if (sourceData.m_ConstantDepth == 3)
-                        {
-                            minSeaLevel = math.min(minSeaLevel, sourceData.m_Height);
-                            hasSeaSource = true;
-                            EntityManager.AddComponent<Deleted>(entity);
-                            deletedCount++;
-                            continue;
-                        }
-
-                        // --- Type 2: 海水源 → 记录 m_Height（绝对海平面高度）---
-                        // 原版 UpgradeToNewWaterSystem 中，Type 2 判断后**不用 continue**，
-                        // 继续走下面的通用坐标升级流程（XZ clamp + WaterUtils.SampleHeight + 相对水深转换）。
-                        // 我们这里也保持一致，仅记录 minSeaLevel 后 fall-through。
-                        if (sourceData.m_ConstantDepth == 2)
-                        {
-                            minSeaLevel = math.min(minSeaLevel, sourceData.m_Height);
-                            hasSeaSource = true;
-                            // 不 continue —— 走后续的通用坐标升级流程
-                        }
-
-                        // --- 通用坐标升级（Type 0/1/2 共用）---
-                        if (!terrainReady)
-                        {
-                            // 降级：无地形数据时只能删除
-                            EntityManager.AddComponent<Deleted>(entity);
-                            deletedCount++;
-                            continue;
-                        }
-
-                        var transform = EntityManager.GetComponentData<Game.Objects.Transform>(entity);
-
-                        // 将 XZ 钳制到新地形边界内
-                        Bounds3 bounds = TerrainUtils.GetBounds(ref terrainData);
-                        if (!MathUtils.Intersect(bounds.xz, transform.m_Position.xz))
-                        {
-                            transform.m_Position.xz = MathUtils.Clamp(transform.m_Position.xz, bounds.xz);
-                        }
-
-                        // 采样新地形高度
-                        float newTerrainH = TerrainUtils.SampleHeight(ref terrainData, transform.m_Position);
-
-                        if (sourceData.m_ConstantDepth == 1)
-                        {
-                            // Type 1（恒定深度）: Legacy m_Height 是绝对水面高度 → 转为相对水深
-                            float absoluteWaterLevel = sourceData.m_Height;
-                            float relativeDepth = absoluteWaterLevel - newTerrainH;
-                            // 钳制：至少 1m 水深，避免负值（地形可能因降采样略有变化）
-                            sourceData.m_Height = math.max(1f, relativeDepth);
-                        }
-                        else if (sourceData.m_ConstantDepth == 2)
-                        {
-                            // Type 2（海水源）: Legacy m_Height 是绝对海平面高度 → 转为相对水深
-                            // 原版: componentData.m_Height = num2 - num3 (WaterSampleHeight - TerrainHeight)
-                            // 我们无法调用 WaterUtils.SampleHeight（需要 GPU 数据），
-                            // 直接用 m_Height（绝对海平面） - 地形高度作为相对水深
-                            float seaRelativeDepth = sourceData.m_Height - newTerrainH;
-                            sourceData.m_Height = math.max(0f, seaRelativeDepth);
-                        }
-                        // else: Type 0（流水源）: m_Height 是流量系数，不需要转换
-
-                        // 更新 Transform.y
-                        // 原版: Transform.y = WaterUtils.SampleHeight（GPU 水面采样）
-                        // Type 2 海水源: 水面 ≈ 海平面高度，使用 minSeaLevel
-                        // Type 0/1: 无 GPU 数据，近似用地形高度
-                        transform.m_Position.y = (sourceData.m_ConstantDepth == 2)
-                            ? minSeaLevel
-                            : newTerrainH;
-
-                        // 分配新源 ID
-                        if (getNextIdMethod != null)
-                        {
-                            sourceData.m_Id = (int)getNextIdMethod.Invoke(waterSystem, null);
-                        }
-
-                        EntityManager.SetComponentData(entity, transform);
-                        EntityManager.SetComponentData(entity, sourceData);
-                        upgradedCount++;
-                    }
-
-                    entities.Dispose();
-                }
-
-                ModLog.Info(Tag, $"水源处理: 删除 {deletedCount} 个旧版海源(Type 3), 保留并升级 {upgradedCount} 个水源(含 Type 2 海水源)");
-                // 地形数据未就绪时上面只能全删；本来就没有水源的不算删除
-                request.WaterSources = terrainReady || totalSources == 0 ? WaterSourceOutcome.Upgraded : WaterSourceOutcome.Removed;
-
-                // --- ⑤ 设置 Legacy 旗标 ---
-                // 使用反射直接设置字段，绕过 setter 中的 UpgradeToNewWaterSystem() 调用
-                var legacyField = AccessTools.Field(typeof(WaterSystem), "m_UseLegacyWaterSources");
-                if (legacyField != null)
-                {
-                    legacyField.SetValue(waterSystem, false);
-                    ModLog.Info(Tag, "已设置 m_UseLegacyWaterSources = false");
-                }
-
-                // --- ⑥ 设置 m_SimulateBackdrop = false ---
-                // 存档中的残留值可能为 true，需显式重置以匹配新水源系统初始状态
-                var backdropField = AccessTools.Field(typeof(WaterSystem), "m_SimulateBackdrop");
-                if (backdropField != null)
-                {
-                    backdropField.SetValue(waterSystem, false);
-                }
-
-                // --- ⑦ 清除陈旧 GPU 流速/传播纹理 ---
+                // === 非 Legacy 路径（MapExt vanilla 模式存档转换）===
+                // 地形已完全替换，需要完整的 GPU 状态重置
                 ClearWaterGpuState(waterSystem);
-
-                // --- ⑧ 设置海平面 ---
-                // 仅当实际存在海源（Type 2/3）时才设置 minSeaLevel，
-                // 否则保持当前值（避免 float.MaxValue 覆盖）
-                float finalSeaLevel = hasSeaSource ? minSeaLevel : currentSeaLevel;
-                waterSystem.SeaLevel = finalSeaLevel;
-                ModLog.Info(Tag, $"已设置海平面: {waterSystem.SeaLevel}m" +
-                    (hasSeaSource ? $" (从 Type 2/3 海源检测)" : " (无海源，使用默认值)"));
-
-                // --- ⑨ 重置水渲染（填充水面纹理到海平面高度）---
                 waterSystem.ResetToSealevel();
 
-                // --- ⑩ 设置 m_NewMap（触发水模拟重新初始化）---
-                // 原版 UpgradeToNewWaterSystem 使用 3，但扩展地图的 CellSize 更大
-                // (ModeA: 28 vs 原版 7)，相同帧数内水传播的物理距离成比例缩短。
-                // 需要按地图缩放比例增加初始化帧数，确保海水/水源传播能覆盖整个区域。
-                // 参考: 原版 OnBackdropActiveChanged 在类似场景中使用 m_NewMap=16。
-                int cv = PatchManager.CurrentCoreValue;
-                int newMapFrames = cv >= 4 ? 16 : cv >= 2 ? 8 : 5;  // ModeA=16, ModeB=8, 其他=5
-                var newMapField = AccessTools.Field(typeof(WaterSystem), "m_NewMap");
-                if (newMapField != null)
-                {
-                    newMapField.SetValue(waterSystem, newMapFrames);
-                }
+                int cv2 = PatchManager.CurrentCoreValue;
+                int frames2 = cv2 >= 4 ? 16 : cv2 >= 2 ? 8 : 5;
+                var newMapField2 = AccessTools.Field(typeof(WaterSystem), "m_NewMap");
+                if (newMapField2 != null)
+                    newMapField2.SetValue(waterSystem, frames2);
 
-                // --- ⑪ 同步 shader global ---
-                Shader.SetGlobalVector("colossal_WaterParams",
-                    new UnityEngine.Vector4(waterSystem.SeaLevel, 0f, 0f, 0f));
-
-                // --- ⑫ 通知地形变更 ---
-                // TerrainWillChange() 内部会设置 WaterSimSpeed=0，必须在之后重新设置
+                // TerrainWillChange() 内部会设置 WaterSimSpeed=0，
+                // 必须在之后重新设置 WaterSimSpeed=1
                 waterSystem.TerrainWillChange();
-
-                // --- ⑬ 恢复水模拟速度 ---
-                // 必须在 TerrainWillChange() 之后，否则会被覆盖为 0
                 waterSystem.WaterSimSpeed = 1;
 
-                ModLog.Ok(Tag, $"水源安全升级完成: 删除 {deletedCount} 海源, 保留 {upgradedCount} 河流/湖泊, " +
-                    $"海平面 {waterSystem.SeaLevel}m, m_NewMap={newMapFrames}");
+                request.WaterSources = WaterSourceOutcome.Kept;
+                ModLog.Ok(Tag, $"已是新版水源，执行完整 GPU 重置 + ResetToSealevel + m_NewMap={frames2}");
+                return;
             }
-            catch (Exception ex)
+
+            // === Legacy 路径：安全版 UpgradeToNewWaterSystem ===
+
+            // --- ③ 获取新地形高度数据（Heightmap 合成已完成）---
+            var terrainSystem = World.GetExistingSystemManaged<TerrainSystem>();
+            TerrainHeightData terrainData = default;
+            bool terrainReady = false;
+
+            if (terrainSystem != null)
             {
-                ModLog.Error(Tag, $"水模拟升级失败: {ex}");
+                terrainSystem.AddCPUHeightReader(default);
+                terrainData = terrainSystem.GetHeightData(waitForPending: true);
+                terrainReady = terrainData.isCreated;
             }
+
+            if (!terrainReady)
+                ModLog.Warn(Tag, "TerrainHeightData 未就绪，保留水源将使用降级处理（全删）");
+
+            // --- ④ 遍历水源：按类型分类处理 ---
+            var sourceQuery = EntityManager.CreateEntityQuery(
+                ComponentType.ReadOnly<Game.Simulation.WaterSourceData>(),
+                ComponentType.ReadOnly<Game.Objects.Transform>(),
+                ComponentType.Exclude<Deleted>());
+
+            int totalSources = sourceQuery.CalculateEntityCount();
+            // 与原版 UpgradeToNewWaterSystem 一致，初始值为 MaxValue
+            // 仅在实际发现 Type 2/3 海源时才更新
+            float minSeaLevel = float.MaxValue;
+            bool hasSeaSource = false;
+            int deletedCount = 0, upgradedCount = 0;
+
+            if (totalSources > 0)
+            {
+                var getNextIdMethod = AccessTools.Method(typeof(WaterSystem), "GetNextSourceId");
+                var entities = sourceQuery.ToEntityArray(Allocator.TempJob);
+
+                for (int i = 0; i < entities.Length; i++)
+                {
+                    var entity = entities[i];
+                    var sourceData = EntityManager.GetComponentData<WaterSourceData>(entity);
+
+                    // --- Type 3: 旧版海源 → 删除（已被新 SeaLevel 系统替代）---
+                    if (sourceData.m_ConstantDepth == 3)
+                    {
+                        minSeaLevel = math.min(minSeaLevel, sourceData.m_Height);
+                        hasSeaSource = true;
+                        EntityManager.AddComponent<Deleted>(entity);
+                        deletedCount++;
+                        continue;
+                    }
+
+                    // --- Type 2: 海水源 → 记录 m_Height（绝对海平面高度）---
+                    // 原版 UpgradeToNewWaterSystem 中，Type 2 判断后**不用 continue**，
+                    // 继续走下面的通用坐标升级流程（XZ clamp + WaterUtils.SampleHeight + 相对水深转换）。
+                    // 我们这里也保持一致，仅记录 minSeaLevel 后 fall-through。
+                    if (sourceData.m_ConstantDepth == 2)
+                    {
+                        minSeaLevel = math.min(minSeaLevel, sourceData.m_Height);
+                        hasSeaSource = true;
+                        // 不 continue —— 走后续的通用坐标升级流程
+                    }
+
+                    // --- 通用坐标升级（Type 0/1/2 共用）---
+                    if (!terrainReady)
+                    {
+                        // 降级：无地形数据时只能删除
+                        EntityManager.AddComponent<Deleted>(entity);
+                        deletedCount++;
+                        continue;
+                    }
+
+                    var transform = EntityManager.GetComponentData<Game.Objects.Transform>(entity);
+
+                    // 将 XZ 钳制到新地形边界内
+                    Bounds3 bounds = TerrainUtils.GetBounds(ref terrainData);
+                    if (!MathUtils.Intersect(bounds.xz, transform.m_Position.xz))
+                    {
+                        transform.m_Position.xz = MathUtils.Clamp(transform.m_Position.xz, bounds.xz);
+                    }
+
+                    // 采样新地形高度
+                    float newTerrainH = TerrainUtils.SampleHeight(ref terrainData, transform.m_Position);
+
+                    if (sourceData.m_ConstantDepth == 1)
+                    {
+                        // Type 1（恒定深度）: Legacy m_Height 是绝对水面高度 → 转为相对水深
+                        float absoluteWaterLevel = sourceData.m_Height;
+                        float relativeDepth = absoluteWaterLevel - newTerrainH;
+                        // 钳制：至少 1m 水深，避免负值（地形可能因降采样略有变化）
+                        sourceData.m_Height = math.max(1f, relativeDepth);
+                    }
+                    else if (sourceData.m_ConstantDepth == 2)
+                    {
+                        // Type 2（海水源）: Legacy m_Height 是绝对海平面高度 → 转为相对水深
+                        // 原版: componentData.m_Height = num2 - num3 (WaterSampleHeight - TerrainHeight)
+                        // 我们无法调用 WaterUtils.SampleHeight（需要 GPU 数据），
+                        // 直接用 m_Height（绝对海平面） - 地形高度作为相对水深
+                        float seaRelativeDepth = sourceData.m_Height - newTerrainH;
+                        sourceData.m_Height = math.max(0f, seaRelativeDepth);
+                    }
+                    // else: Type 0（流水源）: m_Height 是流量系数，不需要转换
+
+                    // 更新 Transform.y
+                    // 原版: Transform.y = WaterUtils.SampleHeight（GPU 水面采样）
+                    // Type 2 海水源: 水面 ≈ 海平面高度，使用 minSeaLevel
+                    // Type 0/1: 无 GPU 数据，近似用地形高度
+                    transform.m_Position.y = (sourceData.m_ConstantDepth == 2)
+                        ? minSeaLevel
+                        : newTerrainH;
+
+                    // 分配新源 ID
+                    if (getNextIdMethod != null)
+                    {
+                        sourceData.m_Id = (int)getNextIdMethod.Invoke(waterSystem, null);
+                    }
+
+                    EntityManager.SetComponentData(entity, transform);
+                    EntityManager.SetComponentData(entity, sourceData);
+                    upgradedCount++;
+                }
+
+                entities.Dispose();
+            }
+
+            ModLog.Info(Tag, $"水源处理: 删除 {deletedCount} 个旧版海源(Type 3), 保留并升级 {upgradedCount} 个水源(含 Type 2 海水源)");
+            // 地形数据未就绪时上面只能全删；本来就没有水源的不算删除
+            request.WaterSources = terrainReady || totalSources == 0 ? WaterSourceOutcome.Upgraded : WaterSourceOutcome.Removed;
+
+            // --- ⑤ 设置 Legacy 旗标 ---
+            // 使用反射直接设置字段，绕过 setter 中的 UpgradeToNewWaterSystem() 调用
+            var legacyField = AccessTools.Field(typeof(WaterSystem), "m_UseLegacyWaterSources");
+            if (legacyField != null)
+            {
+                legacyField.SetValue(waterSystem, false);
+                ModLog.Info(Tag, "已设置 m_UseLegacyWaterSources = false");
+            }
+
+            // --- ⑥ 设置 m_SimulateBackdrop = false ---
+            // 存档中的残留值可能为 true，需显式重置以匹配新水源系统初始状态
+            var backdropField = AccessTools.Field(typeof(WaterSystem), "m_SimulateBackdrop");
+            if (backdropField != null)
+            {
+                backdropField.SetValue(waterSystem, false);
+            }
+
+            // --- ⑦ 清除陈旧 GPU 流速/传播纹理 ---
+            ClearWaterGpuState(waterSystem);
+
+            // --- ⑧ 设置海平面 ---
+            // 仅当实际存在海源（Type 2/3）时才设置 minSeaLevel，
+            // 否则保持当前值（避免 float.MaxValue 覆盖）
+            float finalSeaLevel = hasSeaSource ? minSeaLevel : currentSeaLevel;
+            waterSystem.SeaLevel = finalSeaLevel;
+            ModLog.Info(Tag, $"已设置海平面: {waterSystem.SeaLevel}m" +
+                (hasSeaSource ? $" (从 Type 2/3 海源检测)" : " (无海源，使用默认值)"));
+
+            // --- ⑨ 重置水渲染（填充水面纹理到海平面高度）---
+            waterSystem.ResetToSealevel();
+
+            // --- ⑩ 设置 m_NewMap（触发水模拟重新初始化）---
+            // 原版 UpgradeToNewWaterSystem 使用 3，但扩展地图的 CellSize 更大
+            // (ModeA: 28 vs 原版 7)，相同帧数内水传播的物理距离成比例缩短。
+            // 需要按地图缩放比例增加初始化帧数，确保海水/水源传播能覆盖整个区域。
+            // 参考: 原版 OnBackdropActiveChanged 在类似场景中使用 m_NewMap=16。
+            int cv = PatchManager.CurrentCoreValue;
+            int newMapFrames = cv >= 4 ? 16 : cv >= 2 ? 8 : 5;  // ModeA=16, ModeB=8, 其他=5
+            var newMapField = AccessTools.Field(typeof(WaterSystem), "m_NewMap");
+            if (newMapField != null)
+            {
+                newMapField.SetValue(waterSystem, newMapFrames);
+            }
+
+            // --- ⑪ 同步 shader global ---
+            Shader.SetGlobalVector("colossal_WaterParams",
+                new UnityEngine.Vector4(waterSystem.SeaLevel, 0f, 0f, 0f));
+
+            // --- ⑫ 通知地形变更 ---
+            // TerrainWillChange() 内部会设置 WaterSimSpeed=0，必须在之后重新设置
+            waterSystem.TerrainWillChange();
+
+            // --- ⑬ 恢复水模拟速度 ---
+            // 必须在 TerrainWillChange() 之后，否则会被覆盖为 0
+            waterSystem.WaterSimSpeed = 1;
+
+            ModLog.Ok(Tag, $"水源安全升级完成: 删除 {deletedCount} 海源, 保留 {upgradedCount} 河流/湖泊, " +
+                $"海平面 {waterSystem.SeaLevel}m, m_NewMap={newMapFrames}");
         }
 
         // === ③c 水体预模拟填充 ===
@@ -1691,32 +1809,27 @@ namespace MapExtPDX.SaveLoadSystem
         {
             ModLog.Info(Tag, "③c 开始清除车辆和居民...");
 
-            try
-            {
-                // 完成所有挂起的 Job（TrainNavigation/CarNavigation 等）
-                // 否则已调度的 Job 会访问被 Deleted 实体的 archetype → NRE
-                EntityManager.CompleteAllTrackedJobs();
+            // 出错抛出、走失败路径（整合计划 Q19）：原先只记日志，接着删外部连接时车辆导航还引用着旧路径，会 NRE
 
-                // 标记所有居民为 Deleted
-                var residentQuery = EntityManager.CreateEntityQuery(
-                    ComponentType.ReadOnly<Game.Creatures.Resident>());
-                int residentCount = residentQuery.CalculateEntityCount();
-                EntityManager.AddComponent<Game.Common.Deleted>(residentQuery);
-                ModLog.Info(Tag, $"已标记 {residentCount} 个居民实体为 Deleted");
+            // 完成所有挂起的 Job（TrainNavigation/CarNavigation 等）
+            // 否则已调度的 Job 会访问被 Deleted 实体的 archetype → NRE
+            EntityManager.CompleteAllTrackedJobs();
 
-                // 标记所有车辆为 Deleted（汽车/火车/轮船/飞机/地铁等全部类型）
-                var vehicleQuery = EntityManager.CreateEntityQuery(
-                    ComponentType.ReadOnly<Game.Vehicles.Vehicle>());
-                int vehicleCount = vehicleQuery.CalculateEntityCount();
-                EntityManager.AddComponent<Game.Common.Deleted>(vehicleQuery);
-                ModLog.Info(Tag, $"已标记 {vehicleCount} 个车辆实体为 Deleted");
+            // 标记所有居民为 Deleted
+            var residentQuery = EntityManager.CreateEntityQuery(
+                ComponentType.ReadOnly<Game.Creatures.Resident>());
+            int residentCount = residentQuery.CalculateEntityCount();
+            EntityManager.AddComponent<Game.Common.Deleted>(residentQuery);
+            ModLog.Info(Tag, $"已标记 {residentCount} 个居民实体为 Deleted");
 
-                ModLog.Ok(Tag, $"车辆/居民清理完成: {vehicleCount} 车辆 + {residentCount} 居民");
-            }
-            catch (Exception ex)
-            {
-                ModLog.Error(Tag, $"车辆清理失败: {ex}");
-            }
+            // 标记所有车辆为 Deleted（汽车/火车/轮船/飞机/地铁等全部类型）
+            var vehicleQuery = EntityManager.CreateEntityQuery(
+                ComponentType.ReadOnly<Game.Vehicles.Vehicle>());
+            int vehicleCount = vehicleQuery.CalculateEntityCount();
+            EntityManager.AddComponent<Game.Common.Deleted>(vehicleQuery);
+            ModLog.Info(Tag, $"已标记 {vehicleCount} 个车辆实体为 Deleted");
+
+            ModLog.Ok(Tag, $"车辆/居民清理完成: {vehicleCount} 车辆 + {residentCount} 居民");
         }
 
         /// <summary>存档确认写入后显示转换完成对话框，点击确认后退出游戏</summary>
@@ -1736,11 +1849,20 @@ namespace MapExtPDX.SaveLoadSystem
                 if (!request.IsNewGame)
                     locParams.Add("WATER_NOTE", LocalizedString.Value(ResolveText(WaterNoteKey(request.WaterSources))));
 
-                // 开新城另用一套：分块只解锁中央 9 格，外部连接保留，没有要重建的东西
+                // 28→57 另写一句外围地形的来源：没有背景地形时外围是平地（28→57 计划 §3.3）
+                if (request.IsSaveExpansion)
+                    locParams.Add("TERRAIN_NOTE", LocalizedString.Value(ResolveText(request.FlatPeriphery
+                        ? "VANILLA_CONVERT.ExpandTerrainFlat"
+                        : "VANILLA_CONVERT.ExpandTerrainBackdrop")));
+
+                // 开新城另用一套：分块只解锁中央 9 格，外部连接保留，没有要重建的东西；
+                // 28→57 也另用一套：数据来自 28 km 存档，不是原版
+                string messageKey = request.IsNewGame ? "VANILLA_CONVERT.NewGameCompleteMessage"
+                    : request.IsSaveExpansion ? "VANILLA_CONVERT.ExpandCompleteMessage"
+                    : "VANILLA_CONVERT.CompleteMessage";
                 var dialog = new ConfirmationDialog(
                     LocalizedString.Id("VANILLA_CONVERT.Complete"),
-                    new LocalizedString(request.IsNewGame ? "VANILLA_CONVERT.NewGameCompleteMessage" : "VANILLA_CONVERT.CompleteMessage",
-                        null, locParams),
+                    new LocalizedString(messageKey, null, locParams),
                     LocalizedString.Id("VANILLA_CONVERT.QuitConfirm"),
                     LocalizedString.Id("VANILLA_CONVERT.QuitCancel"));
 
