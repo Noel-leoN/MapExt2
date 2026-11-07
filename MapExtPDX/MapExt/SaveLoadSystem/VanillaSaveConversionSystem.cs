@@ -38,7 +38,8 @@ namespace MapExtPDX.SaveLoadSystem
 {
     /// <summary>
     /// 原版存档转换、原版地图开新城转换与 28→57 存档扩展的后处理系统，按转换请求（<see cref="VanillaConversionState"/>）分阶段执行：
-    /// <c>OnGameLoaded</c> 做转换（MapTile、清理、地形、自然资源、地下水、水体；开新城跳过两步清理；
+    /// <c>OnGameLoaded</c> 做转换（MapTile、车辆与居民清理、地形、自然资源、地下水、水体；开新城跳过清理；
+    /// 外部连接一律保留，原版在一个都不剩时会闪退，见整合计划 Q27；
     /// 28→57 先核对路由读入的 5 张贴图，自然资源与地下水不再从原版实例嵌入）；
     /// <c>OnGameLoadingComplete</c> 把自动存档排进原版存读档队列；存档确认写入后才弹完成提示。
     /// <para>必需步骤出错一律抛出、走失败路径（v4.12.0 整合计划 Q19），只有水体预模拟是加速项，出错只记日志。</para>
@@ -125,21 +126,20 @@ namespace MapExtPDX.SaveLoadSystem
 
                 if (newGame)
                 {
-                    // 新城没有车辆与居民；外部连接保留在原处（D1）：MapExt 没有重新生成外部连接的路径，
-                    // 玩家在游戏内也建不了，删掉就没有移民与进出口
-                    ModLog.Info(Tag, "开新城：跳过车辆与居民清理、外部连接清理（D1）");
+                    // 新城没有车辆与居民
+                    ModLog.Info(Tag, "开新城：跳过车辆与居民清理");
                 }
                 else
                 {
-                    // ⓪b 先清除所有车辆和居民（消除所有活跃导航引用）
-                    // 必须在 OC 删除之前执行，否则车辆导航旧路径会触发 NRE
+                    // ⓪b 清除所有车辆和居民（消除活跃导航引用，地形换过后交通重新生成）
                     RunStep(request, "VehicleCleanup", ExecuteVehicleCleanup);
-
-                    // ⓪c OutsideConnection 节点清理（标记为 Deleted）
-                    // 包括飞机 OC（无法在游戏内手动删除）
-                    // 车辆已全部清除，级联删除安全
-                    RunStep(request, "OutsideConnections", ExecuteOutsideConnectionCleanup);
                 }
+
+                // 外部连接一律保留在原边界（整合计划 Q27，开新城原本就是 D1）。原版至少三处 Job 从外部连接列表里随机取一个、
+                // 不判空：ResourceExporterSystem.HandleExportsJob（无重量资源出口）、CitizenBehaviorSystem（通勤家庭）、
+                // CitizenTravelPurposeSystem（游客）。存档转换原先删光外部连接，转出的城市一出口就 Burst 越界、访问违例闪退，
+                // 没有任何日志（第 4 轮 4b，Special K 的 crash.log 定位）。MapExt 也没有重新生成外部连接的路径
+                ModLog.Info(Tag, "外部连接保留在原边界（不删除：一个都不剩时原版出口会闪退，整合计划 Q27）");
 
                 // ① Heightmap 合成 (含平面底图回退)
                 RunStep(request, "Heightmap", () => ExecuteHeightmapSynthesis(request));
@@ -1395,37 +1395,6 @@ namespace MapExtPDX.SaveLoadSystem
             int total = allQuery.CalculateEntityCount();
             int unlocked = total - lockedQuery.CalculateEntityCount();
             ModLog.Ok(Tag, $"MapTile 边界重建完成：{total} 格，解锁 {unlocked} 格（D2 应为中央 9 格）");
-        }
-
-        // === ⓪b OutsideConnection 节点清理 ===
-
-        /// <summary>
-        /// 给所有 OutsideConnection 实体添加 Deleted 组件，
-        /// 触发游戏清理系统级联删除关联的 Edge/Lane/SubLane 等网络实体。
-        /// 包括电力和水管类 OC（它们同样位于旧边界，需在新边界重建）。
-        /// <para>出错抛出、走失败路径（整合计划 Q19）：原先只记日志，转换照样报成功，旧边界上留着外部连接。</para>
-        /// </summary>
-        private void ExecuteOutsideConnectionCleanup()
-        {
-            ModLog.Info(Tag, "⓪c 开始 OutsideConnection 节点清理（全类型）...");
-
-            var ocQuery = EntityManager.CreateEntityQuery(
-                ComponentType.ReadOnly<Game.Objects.OutsideConnection>(),
-                ComponentType.Exclude<Deleted>(),
-                ComponentType.Exclude<Temp>());
-
-            int count = ocQuery.CalculateEntityCount();
-            if (count > 0)
-            {
-                // 完成所有挂起的 Job，防止结构变更后访问已变更 archetype 的实体
-                EntityManager.CompleteAllTrackedJobs();
-                EntityManager.AddComponent<Deleted>(ocQuery);
-                ModLog.Ok(Tag, $"已标记 {count} 个 OutsideConnection 实体为删除（含交通/电力/水管）");
-            }
-            else
-            {
-                ModLog.Info(Tag, "未发现 OutsideConnection 实体");
-            }
         }
 
         // === ③b 水模拟重置 ===

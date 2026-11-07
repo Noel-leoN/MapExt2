@@ -716,8 +716,8 @@ namespace MapExtPDX
                     "★ What happens during conversion:\n" +
                     " - Terrain heightmap synthesized: the original city stays in the center of the new map; the background terrain fills the rest, or flat land if there is none\n" +
                     " - Natural resources and ground water kept in the center; 28 km saves also keep ground and air pollution and soil water\n" +
-                    " - Saves: all vehicles and residents cleared, all outside connections removed, all 529 map tiles unlocked\n" +
-                    " - New cities: outside connections stay where they are; only the central 9 tiles are unlocked\n" +
+                    " - Outside connections always stay at the old border; new ones can be added at the new edges with developer mode or a mod\n" +
+                    " - Saves: all vehicles and residents cleared, all 529 map tiles unlocked; new cities: only the central 9 tiles are unlocked\n" +
                     " - The original save is never modified; the result is saved as a new save (SaveName_MapExtMode)\n\n" +
                     "★ Known Issues:\n" +
                     " - Water simulation may need manual adjustment via MapExt in-game panel\n" +

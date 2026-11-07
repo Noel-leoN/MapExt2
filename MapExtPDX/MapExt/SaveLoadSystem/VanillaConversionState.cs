@@ -18,7 +18,7 @@ namespace MapExtPDX.SaveLoadSystem
 
         /// <summary>
         /// 用原版地图开新城（v4.12.0 整合计划 2.4）：重建分块后只解锁中央 9 格（D2），
-        /// 跳过车辆与居民、外部连接两步（D1）。
+        /// 跳过车辆与居民清理。外部连接三种转换都保留（D1，存档转换自 Q27 起也保留）。
         /// </summary>
         VanillaMapNewGame = 2,
 

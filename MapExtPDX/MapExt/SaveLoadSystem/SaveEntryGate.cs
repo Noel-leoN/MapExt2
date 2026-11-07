@@ -641,7 +641,7 @@ namespace MapExtPDX.SaveLoadSystem
 
         /// <summary>
         /// 转换确认：确认后新建绑定这个资产（存档或地图）的请求，再重新触发菜单方法。
-        /// 开新城另用一套文案：没有源存档，分块只解锁中央 9 格，外部连接保留；28→57 也另用一套：源是 28 km 存档。
+        /// 开新城另用一套文案：没有源存档，分块只解锁中央 9 格；28→57 也另用一套：源是 28 km 存档。外部连接各种转换都保留（Q27）。
         /// </summary>
         private static void ShowConversionConfirm(string assetId, string displayName, GateDecision decision, Action retrigger)
         {
