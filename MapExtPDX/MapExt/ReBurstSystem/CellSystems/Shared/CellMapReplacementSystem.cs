@@ -378,8 +378,12 @@ namespace MapExtPDX.CellShared
                         else
                         {
                             // 尺寸不匹配或中心嵌入：读取到临时数组（必须读取以推进流位置）。
-                            // 下面的 Read 会整块写满，分配时不必清零（本 Job 的三个临时数组同此，原版每次都清零）
-                            var dummy = new NativeArray<TCell>(storedCount, Allocator.Temp, NativeArrayOptions.UninitializedMemory);
+                            // 本 Job 的三个临时数组都必须分配时清零（与原版相同），不能改成 UninitializedMemory：
+                            // ① 解码 unfilter_strided_data 不写数据长度除以 stride 的余数字节（2026-11-08 直接调用游戏的 PipelinePlugin 实测），
+                            //    原版 NaturalResourceCell.GetStride 漏算了鱼（12 对 16 字节），每格写 16 字节时总有 4 字节余数，
+                            //    也就是最后一格的鱼，清零后读出为 0，原版同样如此；不清零就是上一次分配留下的残值（v4.12.0 整合计划 4.6 复测发现）；
+                            // ② 读格式较老的存档时，格子里后来新增的字段（如鱼，FormatTags.FishResource）不会被读入，同样留着残值
+                            var dummy = new NativeArray<TCell>(storedCount, Allocator.Temp);
                             reader.Read(dummy);
                             if (m_Policy == SizeMismatchPolicy.CenterEmbed)
                             {
@@ -404,7 +408,8 @@ namespace MapExtPDX.CellShared
                         reader.Read(out int byteLength);
 
                         // 必须读出来以清空流
-                        NativeArray<byte> compressedBuffer = new NativeArray<byte>(byteLength, Allocator.Temp, NativeArrayOptions.UninitializedMemory);
+                        // 必须清零：解码不写余数字节（见上方 dummy 处的说明）
+                        NativeArray<byte> compressedBuffer = new NativeArray<byte>(byteLength, Allocator.Temp);
                         try
                         {
                             reader.Read(compressedBuffer, m_Stride);
@@ -419,7 +424,7 @@ namespace MapExtPDX.CellShared
                             else if (m_Policy == SizeMismatchPolicy.NearestResample || m_Policy == SizeMismatchPolicy.CenterEmbed)
                             {
                                 // 尺寸不匹配或中心嵌入：解压到临时数组，再插值或写进中央
-                                var dummy = new NativeArray<TCell>(actualCount, Allocator.Temp, NativeArrayOptions.UninitializedMemory);
+                                var dummy = new NativeArray<TCell>(actualCount, Allocator.Temp);
                                 NativeReference<int> pos = new NativeReference<int>(0, Allocator.Temp);
                                 m_ReaderData.GetReader<TReader>(compressedBuffer, pos).Read(dummy);
                                 pos.Dispose();
