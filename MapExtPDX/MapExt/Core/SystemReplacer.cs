@@ -32,10 +32,11 @@ namespace MapExtPDX.MapExt.Core
         #region Public API
 
         /// <summary>
-        /// [BUGFIX] 重新禁用被引擎重新启用的原版系统。
-        /// 退出主菜单后 CS2 引擎会重置所有系统的 Enabled 状态为 true，
-        /// 但 Apply() 只在 Mod.OnLoad() 中调用一次。
-        /// 此方法在读档开始与完成时调用；要禁用的正是本会话各条替换声明取代的原版系统。
+        /// 防御性重新禁用：读档开始与完成时检查本会话各条替换声明取代的原版系统，已被启用的再禁用一次。
+        /// 禁用只在 Apply()（Mod.OnLoad）里做一次，之后若有谁改回 Enabled，这里兜住。
+        /// 原注释说"退出主菜单后引擎会重置所有系统的 Enabled"，知识库里找不到依据：
+        /// Game/Simulation 中会自己改 Enabled 的原版系统都不在禁用名单里（v4.12.0 整合计划 §1.4）。
+        /// 正常不应触发；真的触发时记 Warn，并逐个列出系统名，便于追查是谁启用的。
         /// </summary>
         public static void ReDisableVanillaSystems(Unity.Entities.World world)
         {
@@ -43,7 +44,7 @@ namespace MapExtPDX.MapExt.Core
 
             int count = Registrar.ReDisable(world);
             if (count > 0)
-                ModLog.Warn(Tag, $"[BUGFIX] 重新禁用了 {count} 个被引擎重新启用的原版系统");
+                ModLog.Warn(Tag, $"重新禁用了 {count} 个已被启用的原版系统（防御性检查，正常不应触发）");
             else
                 ModLog.Ok(Tag, "所有原版系统已正确禁用，无需修复");
         }

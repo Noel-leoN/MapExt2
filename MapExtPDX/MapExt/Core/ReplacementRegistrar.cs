@@ -161,7 +161,7 @@ namespace MapExtPDX.MapExt.Core
                 ModLog.Error(Tag, $"替换声明 {m_Failures.Count} 条失败、{applied} 条成功：{string.Join("; ", m_Failures)}");
         }
 
-        /// <summary>重新禁用被引擎复活的原版系统，返回本次重新禁用的数量。</summary>
+        /// <summary>防御性重新禁用：已被启用的原版系统再禁用一次，返回本次重新禁用的数量。</summary>
         public int ReDisable(World world)
         {
             int count = 0;
