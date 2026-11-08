@@ -223,7 +223,7 @@ namespace MapExtPDX.CellShared
         JobHandle IJobSerializable.Serialize<TWriter>(EntityWriterData writerData, JobHandle inputDeps) =>
             Serialize<TWriter>(writerData, inputDeps);
 
-        // 重写 Serialize 以处理大数据 (使用 TempJob)
+        // 存档：写法同原版 CellMapSystem.SerializeJob，缓冲按整图一次分配（见 SerializeJobMod）
         public new JobHandle Serialize<TWriter>(EntityWriterData writerData, JobHandle inputDeps)
             where TWriter : struct, IWriter
         {
@@ -291,8 +291,14 @@ namespace MapExtPDX.CellShared
             return m_WriteDependencies;
         }
 
+        /// <summary>
+        /// 存档 Job。泛型 Job 的封闭类型要到运行时才确定，Burst 不会自己编译它；
+        /// 封闭类型由 <c>CellMapSerializeJobRegistration.cs</c> 的 <c>RegisterGenericJobType</c> 逐个登记（v4.12.0 整合计划 4.6），
+        /// 所以是 internal：程序集级特性要能访问到它。新增 CellMap 替换系统时那里要补两行，否则静默退回 Mono，
+        /// 唯一的信号是建置日志 Burst 段少了对应的 <c>Method:</c> 行。
+        /// </summary>
         [BurstCompile]
-        private struct SerializeJobMod<TWriter> : IJob where TWriter : struct, IWriter
+        internal struct SerializeJobMod<TWriter> : IJob where TWriter : struct, IWriter
         {
             [ReadOnly] public int m_Stride;
             [ReadOnly] public NativeArray<TCell> m_Map;
@@ -303,8 +309,10 @@ namespace MapExtPDX.CellShared
                 TWriter writer = m_WriterData.GetWriter<TWriter>();
                 if (m_Stride != 0 && m_Map.Length != 0)
                 {
-                    // 必须用 TempJob 防止 1024+ 尺寸导致内存溢出
-                    NativeList<byte> buffer = new NativeList<byte>(m_Map.Length * 2, Allocator.TempJob);
+                    // Job 内分配、Job 内用完，与原版一样用 Temp：超过块大小的请求改走默认堆，不会出错（v4.12.0 整合计划 §1.4）。
+                    // 初始容量按整图一次分配到位（每格写出的字节数即 SizeOf<TCell>）。原版从 1000 字节起步、写满就翻倍，
+                    // 扩展模式的图大 4–64 倍，要扩容十几次。不用 m_Stride 估算：原版 NaturalResourceCell.GetStride 漏算了鱼（12 对 16 字节）
+                    NativeList<byte> buffer = new NativeList<byte>(m_Map.Length * UnsafeUtility.SizeOf<TCell>(), Allocator.Temp);
                     try
                     {
                         m_WriterData.GetWriter<TWriter>(buffer).Write(m_Map);
@@ -325,8 +333,12 @@ namespace MapExtPDX.CellShared
             }
         }
 
+        /// <summary>
+        /// 读档 Job。与 <see cref="SerializeJobMod{TWriter}"/> 一样靠 <c>RegisterGenericJobType</c> 登记封闭类型走 Burst，所以是 internal。
+        /// 临时数组都在 Job 内分配、Job 内释放，用 Temp（v4.12.0 整合计划 4.6）。
+        /// </summary>
         [BurstCompile]
-        private struct DeserializeJobResetMismatch<TReader> : IJob where TReader : struct, IReader
+        internal struct DeserializeJobResetMismatch<TReader> : IJob where TReader : struct, IReader
         {
             [ReadOnly] public int m_Stride;
             public int m_TextureSize;            // 本模式的贴图边长，取自系统的 m_TextureSize.x
@@ -365,8 +377,9 @@ namespace MapExtPDX.CellShared
                         }
                         else
                         {
-                            // 尺寸不匹配或中心嵌入：读取到临时数组（必须读取以推进流位置）
-                            var dummy = new NativeArray<TCell>(storedCount, Allocator.TempJob);
+                            // 尺寸不匹配或中心嵌入：读取到临时数组（必须读取以推进流位置）。
+                            // 下面的 Read 会整块写满，分配时不必清零（本 Job 的三个临时数组同此，原版每次都清零）
+                            var dummy = new NativeArray<TCell>(storedCount, Allocator.Temp, NativeArrayOptions.UninitializedMemory);
                             reader.Read(dummy);
                             if (m_Policy == SizeMismatchPolicy.CenterEmbed)
                             {
@@ -391,7 +404,7 @@ namespace MapExtPDX.CellShared
                         reader.Read(out int byteLength);
 
                         // 必须读出来以清空流
-                        NativeArray<byte> compressedBuffer = new NativeArray<byte>(byteLength, Allocator.TempJob);
+                        NativeArray<byte> compressedBuffer = new NativeArray<byte>(byteLength, Allocator.Temp, NativeArrayOptions.UninitializedMemory);
                         try
                         {
                             reader.Read(compressedBuffer, m_Stride);
@@ -406,7 +419,7 @@ namespace MapExtPDX.CellShared
                             else if (m_Policy == SizeMismatchPolicy.NearestResample || m_Policy == SizeMismatchPolicy.CenterEmbed)
                             {
                                 // 尺寸不匹配或中心嵌入：解压到临时数组，再插值或写进中央
-                                var dummy = new NativeArray<TCell>(actualCount, Allocator.TempJob);
+                                var dummy = new NativeArray<TCell>(actualCount, Allocator.Temp, NativeArrayOptions.UninitializedMemory);
                                 NativeReference<int> pos = new NativeReference<int>(0, Allocator.Temp);
                                 m_ReaderData.GetReader<TReader>(compressedBuffer, pos).Read(dummy);
                                 pos.Dispose();
