@@ -235,18 +235,12 @@ namespace MapExtPDX.CellShared
             }
 
             // 调度自定义的序列化 Job
-            SerializeJobMod<TWriter> jobData = new()
+            JobHandle jobHandle = new SerializeJobMod<TWriter>
             {
                 m_Stride = stride,
                 m_Map = m_Map,
                 m_WriterData = writerData
-            };
-            JobHandle dependsOn = JobHandle.CombineDependencies(inputDeps, m_WriteDependencies);
-
-            // 存读档计时开着时改为同步执行并计时（临时诊断，见 CellMapSerializeTimer）
-            JobHandle jobHandle = CellMapSerializeTimer.Enabled
-                ? CellMapSerializeTimer.RunSerialize(jobData, dependsOn, writerData, LogTag, m_TextureSize.x)
-                : jobData.Schedule(dependsOn);
+            }.Schedule(JobHandle.CombineDependencies(inputDeps, m_WriteDependencies));
 
             m_ReadDependencies = JobHandle.CombineDependencies(m_ReadDependencies, jobHandle);
             return jobHandle;
@@ -282,12 +276,7 @@ namespace MapExtPDX.CellShared
                 m_EmbedResult = m_EmbedResult,
                 m_ReaderData = readerData
             };
-            JobHandle dependsOn = JobHandle.CombineDependencies(inputDeps, m_ReadDependencies, m_WriteDependencies);
-
-            // 存读档计时开着时改为同步执行并计时（临时诊断，见 CellMapSerializeTimer）
-            m_WriteDependencies = CellMapSerializeTimer.Enabled
-                ? CellMapSerializeTimer.RunDeserialize(jobData, dependsOn, readerData, LogTag, m_TextureSize.x)
-                : jobData.Schedule(dependsOn);
+            m_WriteDependencies = jobData.Schedule(JobHandle.CombineDependencies(inputDeps, m_ReadDependencies, m_WriteDependencies));
             return m_WriteDependencies;
         }
 
