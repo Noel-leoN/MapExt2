@@ -217,12 +217,12 @@ namespace MapExtPDX
                 },
                 {
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.EnableResourceBuyerEcoSystem)),
-                    "優化市民購物與企業採購的資源匹配，並優化服務覆蓋尋路，大幅降低超遠路程規劃產生的性能開銷。\n\n⚠️ 與 Realistic PathFinding 等尋路模組不相容！\n⚠️ 修改後需重啟遊戲生效。"
+                    "優化市民購物與企業採購的資源匹配，並優化服務覆蓋尋路，大幅降低超遠路程規劃產生的性能開銷。\n\n與 Realistic PathFinding 替換同一個系統；啟用該模組時，本分組在本次遊戲中自動停用。\n⚠️ 修改後需重啟遊戲生效。"
                 },
                 { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.EnableResidentAIEcoSystem)), "└─ 居民AI尋路優化補丁" },
                 {
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.EnableResidentAIEcoSystem)),
-                    "修復市民尋路 AI 等待時間的邏輯缺陷，緩解大地圖底層尋路記憶體溢出的問題。\n\n⚠️ 與 Realistic PathFinding 等尋路模組不相容！\n⚠️ 修改後需重啟遊戲生效。\n\n⚠️ 預設關閉，以避免與流行尋路模組衝突。"
+                    "修復市民尋路 AI 等待時間的邏輯缺陷，緩解大地圖底層尋路記憶體溢出的問題。\n\n與 Realistic PathFinding 替換同一個系統；啟用該模組時，本分組在本次遊戲中自動停用。\n⚠️ 修改後需重啟遊戲生效。\n\n預設關閉。"
                 },
                 { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.EnableDownstreamAIEcoSystem)), "└─ 載具AI與尋路系統組 (Beta)" },
                 {

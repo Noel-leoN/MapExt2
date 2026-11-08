@@ -95,9 +95,9 @@ namespace MapExtPDX.MapExt.Core
             {
                 NotificationSystem.Push(
                     identifier: kNotificationId,
-                    title: LocalizedString.Value("MapExt2: Core patches failed"),
+                    title: LocalizedString.Value("MapExt: Core patches failed"),
                     text: LocalizedString.Value(
-                        $"[MapExt2] {s_Components.Count} critical component(s) failed to load: " +
+                        $"[MapExt] {s_Components.Count} critical component(s) failed to load: " +
                         $"{ListComponents(includeInitFailure: false)}. " +
                         "Map extension is NOT fully active this session - do NOT load or save an extended-size city. " +
                         "Restart the game; if it repeats, report Logs/MapExtPDX.log."),

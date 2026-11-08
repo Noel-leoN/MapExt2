@@ -262,9 +262,9 @@ namespace MapExtPDX
                 // 分组在注册前就已停用，本会话即时生效、无需重启；设定本身未被改动
                 NotificationSystem.Push(
                     identifier: "mapext.conflict",
-                    title: LocalizedString.Value("MapExt2: Conflicting groups disabled"),
+                    title: LocalizedString.Value("MapExt: Conflicting groups disabled"),
                     text: LocalizedString.Value(
-                        $"[MapExt2] Disabled {disabledGroups.Count} group(s) for this session " +
+                        $"[MapExt] Disabled {disabledGroups.Count} group(s) for this session " +
                         $"due to mod conflicts: {string.Join(", ", disabledGroups)}. Your saved settings are unchanged."),
                     progressState: Colossal.PSI.Common.ProgressState.Failed,
                     progress: 100,
@@ -277,21 +277,19 @@ namespace MapExtPDX
                 );
             }
 
-            // === J. RPF 硬冲突通知 ===
-            // RPF 的 UpdateGroupSystem 跨阶段注册会导致 ECB 崩溃，两者不能共存
+            // === J. RealisticPathFinding 提示 ===
+            // 两者同时运行时，系统注册的更新阶段不一致，会引发 EntityCommandBuffer 报错，所以提示只启用其中一个。
+            // 对外文字只写本 Mod 的事实、不评价对方，三语文本见 ModLocalization 的 MAPEXT_CONFLICT.*（v4.12.0 发版 R1）；
+            // 状态用原版普通通知的 None，不用失败样式
             if (ModConflictDetector.HasRealisticPathFinding)
             {
                 NotificationSystem.Push(
                     identifier: "mapext.rpf_incompatible",
-                    title: LocalizedString.Value("MapExt2: Incompatible Mod Detected"),
-                    text: LocalizedString.Value(
-                        "[MapExt2] RealisticPathFinding (RPF) is incompatible with MapExt2. " +
-                        "RPF's cross-phase system registration causes EntityCommandBuffer crashes. " +
-                        "Please disable one of them to avoid errors."),
-                    progressState: Colossal.PSI.Common.ProgressState.Failed,
-                    progress: 100
+                    title: LocalizedString.Id("MAPEXT_CONFLICT.RpfTitle"),
+                    text: LocalizedString.Id("MAPEXT_CONFLICT.RpfNotify"),
+                    progressState: Colossal.PSI.Common.ProgressState.None
                 );
-                ModLog.Error(Tag, "RPF 与 MapExt2 存在不可调和的 ECS 管线冲突（UpdateGroupSystem 跨阶段注册），请禁用其中之一。");
+                ModLog.Warn(Tag, "检测到 RealisticPathFinding：两者未针对同时启用设计，已提示只启用其中一个");
             }
         }
 
@@ -361,9 +359,9 @@ namespace MapExtPDX
             {
                 NotificationSystem.Push(
                     identifier: "mapext.init_failed",
-                    title: LocalizedString.Value("MapExt2: INITIALIZATION FAILED"),
+                    title: LocalizedString.Value("MapExt: INITIALIZATION FAILED"),
                     text: LocalizedString.Value(
-                        "MapExt2 did not finish loading, so map extension is NOT fully active this session. " +
+                        "MapExt did not finish loading, so map extension is NOT fully active this session. " +
                         "Do NOT load or save an extended-size city now - save corruption is possible. " +
                         $"Restart the game; if it repeats, report Logs/MapExtPDX.log ({ex.GetType().Name})."),
                     progressState: Colossal.PSI.Common.ProgressState.Failed,
