@@ -313,7 +313,6 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
 
             // --- 新 Water kMapSize ---
             int NewKMapSizeI = MapScaleMultiplier * OriginalKMapSize;
-            float NewKMapSizeF = MapScaleMultiplier * OriginalKMapSize;
 
             // --- 新 Water CellSize ---
             // 新公式: CellSize = kMapSize_scaled / WaterTextureSize
@@ -326,34 +325,17 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
 
             for (int i = 0; i < codes.Count; i++)
             {
-                // Check for loading kMapSize (static int)
+                // kMapSize 是 static int：'ldsfld kMapSize' 原地换成 'ldc.i4 NewKMapSizeI'，后面若有 conv.r4 照样保留。
+                // 不删 conv.r4：它可能带着跳转标签（如 (float)(cond ? x : kMapSize)），删掉后另一条分支的值不再转成 float，
+                // 生成无效 IL。原地改 opcode 与 operand 不动标签与异常块，做法同 PatchSet3（v4.12.0 整合计划 4.2）
                 if (codes[i].LoadsField(_kMapSizeField))
                 {
-                    // Determine if the next instruction converts it to float
-                    bool convertsToFloat = i + 1 < codes.Count && codes[i + 1].opcode == OpCodes.Conv_R4;
-
-                    if (convertsToFloat)
-                    {
-                        // Replace 'ldsfld kMapSize' with 'ldc.r4 NewKMapSizeF'
-                        codes[i].opcode = OpCodes.Ldc_R4;
-                        codes[i].operand = NewKMapSizeF;
-                        // Remove the now redundant 'conv.r4' instruction
-                        codes.RemoveAt(i + 1);
-                        patched = true;
+                    codes[i].opcode = OpCodes.Ldc_I4;
+                    codes[i].operand = NewKMapSizeI;
+                    patched = true;
 #if DEBUG
-                        ModLog.Debug(Tag, $"Patched kMapSize (as float) {codes[i].operand} in {methodName}");
+                    ModLog.Debug(Tag, $"Patched kMapSize to {codes[i].operand} in {methodName}");
 #endif
-                    }
-                    else
-                    {
-                        // Replace 'ldsfld kMapSize' with 'ldc.i4 NewKMapSizeI'
-                        codes[i].opcode = OpCodes.Ldc_I4;
-                        codes[i].operand = NewKMapSizeI;
-                        patched = true;
-#if DEBUG
-                        ModLog.Debug(Tag, $"Patched kMapSize (as int) to {codes[i].operand} in {methodName}");
-#endif
-                    }
                 }
                 // Check for loading kCellSize (static float)
                 else if (codes[i].LoadsField(_kCellSizeField))
