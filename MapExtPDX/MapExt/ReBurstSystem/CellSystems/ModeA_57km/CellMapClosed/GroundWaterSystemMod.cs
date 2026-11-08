@@ -90,10 +90,11 @@ using MapExtPDX.SaveLoadSystem;
 
         protected override void OnUpdate()
         {
-            // [核心方案] 使用 Allocator.TempJob 分配临时缓冲
-            // TempJob 允许大内存分8MB+)，且Persistent 快
-            // 必须Job 完成Dispose
-            NativeArray<int2> scratchMap = new NativeArray<int2>(m_Map.Length, Allocator.TempJob);
+            // 暂存要跨三趟并行 Job、跨线程共用，Job 内的 Temp 用不了，所以用 TempJob，随 Job 链在末尾释放。
+            // 超过 TempJob 块大小（2 MB）的分配实际走默认堆，与 Persistent 同价；选 TempJob 只为自动释放（v4.12.0 整合计划 §1.4）。
+            // 不清零（4.3）：趟2 对每格无条件写入暂存（GroundWaterFlowGatherJob），趟3 读到的都是趟2 写过的值。
+            // 原版是散射写法，每条边同时累加到两端，暂存才必须先清零
+            NativeArray<int2> scratchMap = new NativeArray<int2>(m_Map.Length, Allocator.TempJob, NativeArrayOptions.UninitializedMemory);
             // 趟1 的结果：每格的污染再分配增量（趟2 写暂存时把它并进去）
             NativeArray<int> pollutionDelta = new NativeArray<int>(m_Map.Length, Allocator.TempJob, NativeArrayOptions.UninitializedMemory);
 

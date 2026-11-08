@@ -110,9 +110,8 @@ namespace MapExtPDX.ModeA
             // 获取风力数据 (只读)
             var windMap = m_WindSystem.GetMap(true, out JobHandle windDeps);
 
-            // [核心方案] 使用 Allocator.TempJob 分配临时缓冲区
-            // TempJob 允许大内存分配(8MB+)，且比 Persistent 快
-            // 必须在 Job 完成后 Dispose
+            // 暂存要跨多个并行 Job、跨线程共用，Job 内的 Temp 用不了，所以用 TempJob，随 Job 链在末尾释放。
+            // 超过 TempJob 块大小（2 MB）的分配实际走默认堆，与 Persistent 同价；选 TempJob 只为自动释放（v4.12.0 整合计划 §1.4）。
             // 分配时清零（ClearMemory）：活跃区外的暂存格保持 0，扩散读到的就是正确的 0
             NativeArray<TargetType> scratchMap = new(m_Map.Length, Allocator.TempJob);
 
