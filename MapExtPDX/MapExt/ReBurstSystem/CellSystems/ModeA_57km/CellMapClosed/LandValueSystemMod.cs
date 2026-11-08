@@ -285,8 +285,9 @@ namespace MapExtPDX.ModeA
                 m_DirectWrite = coldStart
             };
 
-            // 必须等待 Phase 1 完成，因Phase 2 要读 Phase 1 的结
-            JobHandle gridDeps = JobHandle.CombineDependencies(Dependency, searchDep);
+            // 必须等待 Phase 1 完成，因为 Phase 2 要读 Phase 1 的结果。
+            // 写图前还要等这张图的读者（热力图、悬停提示、调试视图与存档），原版同样读写依赖都等（v4.12.0 整合计划 4.1）
+            JobHandle gridDeps = JobHandle.CombineDependencies(Dependency, searchDep, m_ReadDependencies);
 
             // 调度 Map Job
             Dependency = gridJob.Schedule(kTextureSize * kTextureSize, 64, gridDeps);
