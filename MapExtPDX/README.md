@@ -1,6 +1,6 @@
 # Map Extended Mod (28/43/57 km + vanilla) — Economy Rework, In-Game Tools and Performance
 
-* **Larger Maps:** 57km (default), 28km and an experimental 43km mode, alongside the vanilla 14km size.
+* **Larger Maps:** 57km (default), 28km, an experimental 43km mode and a 114km mode (not recommended), alongside the vanilla 14km size.
 * **Economy and Performance:** Reworked demand, job and home search, and consumption to ease pathfinding load at large populations, adjustable in game.
 * **In-Game Tools:** HUD dashboard with key economic metrics, sea level and water tools, through-traffic and pet controls, editor collision override and heightmap export.
 * **Safeguards:** Every load checks the map size mode first, and conflicting mods are detected at startup.
@@ -16,7 +16,7 @@ The normal way to play is to start a new city on a large map built for your chos
 
 **Staying on 57km (the default):** nothing to configure. Just load a 57km map and start building.
 
-**Switching to another size** (28km, 43km, or vanilla 14km):
+**Switching to another size** (28km, 43km, 114km, or vanilla 14km):
 
 1. In the **Main Menu**, open Options -> MapExt -> **MapSize** tab, and pick the size under **"► Select MapSize Mode"**.
 2. Click **"► Apply Changes"**.
@@ -33,7 +33,7 @@ Maps for each size can be made yourself (see "Making a 1:1 Map" below) or subscr
 
 An **optional extra** for moving to a larger map without starting over. You do not need it to start a new city on a map built for your mode — see "Getting Started" above.
 
-Three sources can be converted to 28km or 57km (43km is not supported):
+Three sources can be converted to 28km or 57km (43km and 114km are not supported):
 
 * **Vanilla 14km save** → 28km or 57km: all 529 tiles are unlocked.
 * **New city on a vanilla 14km map** → 28km or 57km: only the central 9 tiles start unlocked and the rest can be bought as usual; starting tiles set by the map author are not kept.
@@ -78,6 +78,7 @@ The original save or map is never modified. The result is saved as `{Name}_MapEx
 * **57km (Default):** 4x4 vanilla size (DEM-14m)
 * **43km (Experimental):** 3x3 (DEM-10.5m)
 * **28km:** 2x2 (DEM-7m)
+* **114km (Not Recommended):** 8x8 (DEM-28m)
 * **14km:** Vanilla 1x1 (DEM-3.5m)
 * **Map Tiles:** Fixed at the vanilla 529-tile grid — each tile scales up with the map size rather than the tile count multiplying.
 * **Terrain Precision:** Terrain sampling resolution decreases as map size increases. Coastlines on larger sizes exhibit noticeable jagged edges.
@@ -110,6 +111,7 @@ Import heightmaps and worldmaps corresponding to your chosen mode in the Map Edi
 * **28km:** Heightmap 28,672m / Worldmap 114,688m
 * **43km:** Heightmap 43,008m / Worldmap 172,032m
 * **57km:** Heightmap 57,344m / Worldmap 229,376m
+* **114km:** Heightmap 114,688m / Worldmap 458,752m
 
 * **Format:** 4096x4096 16-bit grayscale (PNG/TIFF).
 * **Tip:** Importing a Worldmap is not recommended — it is purely visual and adds 1-2 GB VRAM overhead.
@@ -152,7 +154,7 @@ Import heightmaps and worldmaps corresponding to your chosen mode in the Map Edi
 
 # 地图尺寸扩展模组（28/43/57 km 及原版尺寸）— 经济改良、游戏内工具与性能优化
 
-* **更大的地图**：57km（默认）、28km 与实验性的 43km 模式，也可使用原版 14km 尺寸。
+* **更大的地图**：57km（默认）、28km、实验性的 43km 与不推荐的 114km 模式，也可使用原版 14km 尺寸。
 * **经济与性能**：改写需求、求职找房与消费逻辑，缓解大人口规模下的寻路负担，可在游戏内调整。
 * **游戏内工具**：HUD 经济数据面板、海平面与水体工具、过境交通与宠物控制、编辑器碰撞跳过与高度图导出。
 * **防错机制**：每次载入前先检查地图尺寸模式，启动时识别冲突模组。
@@ -168,7 +170,7 @@ Import heightmaps and worldmaps corresponding to your chosen mode in the Map Edi
 
 **沿用 57km（默认模式）**：无需任何设置，直接载入 57km 地图开始建城。
 
-**改用其他尺寸**（28km / 43km / 原版 14km）：
+**改用其他尺寸**（28km / 43km / 114km / 原版 14km）：
 
 1. 在**主菜单**打开 选项 -> MapExt -> **MapSize** 标签页，用 **“► Select MapSize Mode”** 选择目标尺寸。
 2. 点击 **“► Apply Changes”** 应用。
@@ -185,7 +187,7 @@ Import heightmaps and worldmaps corresponding to your chosen mode in the Map Edi
 
 这是一项**可选的附加功能**，供不想从零开始、希望迁往大地图的玩家使用。在对应尺寸的地图上开新城不需要它——见上方“开始使用”。
 
-可转换三种来源，目标为 28km 或 57km（不支持 43km）：
+可转换三种来源，目标为 28km 或 57km（不支持 43km 与 114km）：
 
 * **14km 原版存档** → 28km 或 57km：解锁全部 529 块瓦片。
 * **用 14km 原版地图开新城** → 28km 或 57km：只解锁中央 9 块，其余照常购买；地图作者设定的起始瓦片不保留。
@@ -230,6 +232,7 @@ Import heightmaps and worldmaps corresponding to your chosen mode in the Map Edi
 * **57km（默认）**：4x4 原版尺寸（DEM-14m）
 * **43km（实验性）**：3x3（DEM-10.5m）
 * **28km**：2x2（DEM-7m）
+* **114km（不推荐）**：8x8（DEM-28m）
 * **14km**：原版 1x1（DEM-3.5m）
 * **地图瓦片**：固定为原版 529 块可解锁瓦片——每块瓦片随地图尺寸等比放大，而非瓦片数量增殖。
 * **地形精度**：地图尺寸越大，地形采样精度相对降低。大尺寸边缘海岸线存在较多锯齿。
@@ -262,6 +265,7 @@ Import heightmaps and worldmaps corresponding to your chosen mode in the Map Edi
 * **28km**：高程图 28,672m / 世界贴图 114,688m
 * **43km**：高程图 43,008m / 世界贴图 172,032m
 * **57km**：高程图 57,344m / 世界贴图 229,376m
+* **114km**：高程图 114,688m / 世界贴图 458,752m
 
 * **格式**：4096x4096 16-bit 灰度图（PNG/TIFF）。
 * **提示**：不建议导入 Worldmap，其仅为视觉装饰，会额外占用 1-2GB 显存。
