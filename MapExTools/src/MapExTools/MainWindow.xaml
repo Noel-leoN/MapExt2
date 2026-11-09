@@ -1,0 +1,55 @@
+<Window x:Class="MapExTools.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:svc="clr-namespace:MapExTools.Services"
+        Title="{Binding [App.Title], Source={x:Static svc:Loc.Instance}}"
+        Icon="Assets/MapExTools.ico"
+        Width="1100" Height="720" MinWidth="880" MinHeight="560"
+        WindowStartupLocation="CenterScreen">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <!-- 顶部：界面语言与主题 -->
+        <StackPanel Grid.Row="0" Orientation="Horizontal" HorizontalAlignment="Right" Margin="16,12,16,4">
+            <TextBlock Text="{Binding [Settings.Language], Source={x:Static svc:Loc.Instance}}"
+                       VerticalAlignment="Center" Margin="0,0,8,0" />
+            <ComboBox x:Name="LanguageBox" MinWidth="130" DisplayMemberPath="Display"
+                      SelectionChanged="OnLanguageChanged" />
+            <TextBlock Text="{Binding [Settings.Theme], Source={x:Static svc:Loc.Instance}}"
+                       VerticalAlignment="Center" Margin="20,0,8,0" />
+            <ComboBox x:Name="ThemeBox" MinWidth="130" DisplayMemberPath="Display"
+                      SelectionChanged="OnThemeChanged" />
+        </StackPanel>
+
+        <!-- 四个功能页；各页在后续批次实现 -->
+        <TabControl Grid.Row="1" Margin="12,4,12,8">
+            <TabItem Header="{Binding [Tab.Launch], Source={x:Static svc:Loc.Instance}}">
+                <TextBlock Text="{Binding [Tab.Pending], Source={x:Static svc:Loc.Instance}}" Margin="16" />
+            </TabItem>
+            <TabItem Header="{Binding [Tab.Logs], Source={x:Static svc:Loc.Instance}}">
+                <TextBlock Text="{Binding [Tab.Pending], Source={x:Static svc:Loc.Instance}}" Margin="16" />
+            </TabItem>
+            <TabItem Header="{Binding [Tab.Saves], Source={x:Static svc:Loc.Instance}}">
+                <TextBlock Text="{Binding [Tab.Pending], Source={x:Static svc:Loc.Instance}}" Margin="16" />
+            </TabItem>
+            <TabItem Header="{Binding [Tab.Heightmaps], Source={x:Static svc:Loc.Instance}}">
+                <TextBlock Text="{Binding [Tab.Pending], Source={x:Static svc:Loc.Instance}}" Margin="16" />
+            </TabItem>
+        </TabControl>
+
+        <!-- 底部常驻：游戏运行状态与用户数据目录 -->
+        <Border Grid.Row="2" BorderThickness="0,1,0,0" Padding="16,6"
+                BorderBrush="{DynamicResource {x:Static SystemColors.ActiveBorderBrushKey}}">
+            <DockPanel>
+                <Ellipse x:Name="GameStateDot" Width="10" Height="10" Margin="0,0,8,0" VerticalAlignment="Center" />
+                <TextBlock x:Name="GameStateText" VerticalAlignment="Center" />
+                <TextBlock x:Name="UserDataText" VerticalAlignment="Center" HorizontalAlignment="Right"
+                           Opacity="0.7" TextTrimming="CharacterEllipsis" Margin="24,0,0,0" />
+            </DockPanel>
+        </Border>
+    </Grid>
+</Window>

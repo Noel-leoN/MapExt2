@@ -1,0 +1,9 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/MapExTools/MapExTools.csproj" />
+    <Project Path="src/MapExTools.Core/MapExTools.Core.csproj" />
+  </Folder>
+  <Folder Name="/Tests/">
+    <Project Path="Tests/MapExTools.Tests/MapExTools.Tests.csproj" />
+  </Folder>
+</Solution>

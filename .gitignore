@@ -9,6 +9,8 @@ Ref-Mods/
 [Tt]emp/
 [Oo]bj/
 [Bb]uild/
+# MapExTools 的发布与图标脚本目录（不是 Unity 生成物）
+!MapExTools/build/
 [Bb]uilds/
 [Ll]ogs/
 [Uu]ser[Ss]ettings/

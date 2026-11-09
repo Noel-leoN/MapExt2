@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- 解析与业务逻辑：不依赖 WPF，供主程序与单元测试共用 -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>MapExTools.Core</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- 与 Mod 共用的启动期设定定义（同一份源文件，见 StartupKeys 的类注释） -->
+    <Compile Include="..\..\..\MapExtPDX\MapExt\Setting\StartupKeys.cs" Link="Shared\StartupKeys.cs" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,15 @@
+<Project>
+  <!-- MapExTools 三个工程的共同属性。只作用于 MapExTools/ 之下，不影响 MapExtPDX 等 Mod 工程 -->
+  <PropertyGroup>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <Version>1.0.0</Version>
+    <Authors>Noel2</Authors>
+    <Product>MapExTools</Product>
+    <Copyright>Copyright (c) 2026 Noel2 (Noel-leoN)</Copyright>
+    <NeutralLanguage>en-US</NeutralLanguage>
+    <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
+  </PropertyGroup>
+</Project>

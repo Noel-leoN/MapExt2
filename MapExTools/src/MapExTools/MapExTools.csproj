@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- WPF 主程序。不指定 Win11 专属的 TargetPlatformVersion，Windows 10 / 11 都能运行（计划 §2 第 2 条） -->
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <RootNamespace>MapExTools</RootNamespace>
+    <AssemblyName>MapExTools</AssemblyName>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon>Assets\MapExTools.ico</ApplicationIcon>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Resource Include="Assets\MapExTools.ico" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\MapExTools.Core\MapExTools.Core.csproj" />
+  </ItemGroup>
+
+</Project>
