@@ -17,8 +17,8 @@ namespace MapExtPDX.SaveLoadSystem
     {
         private const string Tag = nameof(MetaDataExtenderPatch);
 
-        // CV在SaveInfo中的前缀
-        public const string CoreValueKeyPrefix = "MapEXT_CoreValue=";
+        // CV在SaveInfo中的前缀（定义在 StartupKeys，与外部工具 MapExTools 共用）
+        public const string CoreValueKeyPrefix = StartupKeys.CoreValueTagPrefix;
 
         /// <summary>
         /// 在 GetSaveInfo 方法执行后运行。

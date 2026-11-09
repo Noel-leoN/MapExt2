@@ -117,8 +117,12 @@ namespace MapExtPDX
             // 且每次註冊獨立 try-catch。理由見 RegisterLocalization。
             RegisterLocalization();
             // 读取已保存设置
-            Colossal.IO.AssetDatabase.AssetDatabase.global.LoadSettings(ModName, m_Setting, new ModSettings(this));
+            var defaultSettings = new ModSettings(this);
+            Colossal.IO.AssetDatabase.AssetDatabase.global.LoadSettings(ModName, m_Setting, defaultSettings);
             ModLog.Ok(Tag, "Settings 已初始化");
+
+            // 外部工具 MapExTools 按 StartupKeys 显示默认值、判定存档模式：与本 Mod 的实际定义逐项比对
+            VerifyStartupKeys(defaultSettings);
 
             // 兩個 SaveConvert 開關在 UI 上互鎖，但外部工具（Simple Mod Checker Plus 的
             // 「啟動時恢復配置」等）可能把 .coc 寫成兩者皆 true 的非法組合，載入後歸一化一次
@@ -395,6 +399,79 @@ namespace MapExtPDX
             {
                 MapExtHealth.MarkDegraded($"SaveGate/{name}", ex.Message);
             }
+        }
+
+        /// <summary>
+        /// 把 <see cref="StartupKeys"/>（与外部工具 MapExTools 共用的定义）和本 Mod 的实际定义逐项比对：
+        /// 9 个键的默认值、模式枚举名与顺序、各模式 CoreValue、设定块名、原版地图边长、原版存档判定值。
+        /// 不一致只记 Warn，不影响加载——后果是工具显示的默认值或存档判定与 Mod 不符。
+        /// </summary>
+        /// <param name="defaults">传给 <c>LoadSettings</c> 的默认值对象（构造时已执行 <c>SetDefaults</c>）。</param>
+        private static void VerifyStartupKeys(ModSettings defaults)
+        {
+            try
+            {
+                var mismatches = new System.Collections.Generic.List<string>();
+
+                // --- 9 个键：属性存在、类型相符、默认值一致 ---
+                foreach (StartupKeyInfo key in StartupKeys.Keys)
+                {
+                    PropertyInfo prop = typeof(ModSettings).GetProperty(key.Name, BindingFlags.Instance | BindingFlags.Public);
+                    if (prop == null)
+                    {
+                        mismatches.Add($"{key.Name}: ModSettings 没有该属性");
+                        continue;
+                    }
+
+                    object actual = prop.GetValue(defaults);
+                    bool same = key.Kind == StartupKeyKind.Mode
+                        ? prop.PropertyType == typeof(PatchModeSetting) && actual.ToString() == (string)key.DefaultValue
+                        : prop.PropertyType == typeof(bool) && Equals(actual, key.DefaultValue);
+                    if (!same)
+                        mismatches.Add($"{key.Name}: StartupKeys={key.DefaultValue}, ModSettings={actual} ({prop.PropertyType.Name})");
+                }
+
+                // --- 模式枚举名、顺序与 CoreValue ---
+                string[] enumNames = Enum.GetNames(typeof(PatchModeSetting));
+                if (string.Join(",", enumNames) != string.Join(",", StartupKeys.ModeNames))
+                    mismatches.Add($"PatchModeSetting 枚举名或顺序: StartupKeys=[{string.Join(",", StartupKeys.ModeNames)}], 实际=[{string.Join(",", enumNames)}]");
+
+                foreach (StartupModeInfo mode in StartupKeys.Modes)
+                {
+                    if (!Enum.TryParse(mode.Name, false, out PatchModeSetting value))
+                    {
+                        mismatches.Add($"{mode.Name}: PatchModeSetting 没有该枚举名");
+                        continue;
+                    }
+
+                    int actualCV = PatchManager.GetCoreValueForMode(value);
+                    if (actualCV != mode.CoreValue)
+                        mismatches.Add($"{mode.Name} CoreValue: StartupKeys={mode.CoreValue}, PatchManager={actualCV}");
+                }
+
+                // --- 其余常量（经 object 比较：两边都是编译期常量，直接写 != 会被判为不可达代码） ---
+                AddIfDiffer(mismatches, "设定块名 (Mod.ModName)", StartupKeys.CocBlockName, ModName);
+                AddIfDiffer(mismatches, "原版边长 (PatchManager.OriginalMapSize)",
+                    StartupKeys.OriginalMapSize, PatchManager.OriginalMapSize);
+                AddIfDiffer(mismatches, "原版存档判定值 (VanillaConversionState)",
+                    StartupKeys.UntaggedVanillaCoreValue, VanillaConversionState.UntaggedVanillaCoreValue);
+
+                if (mismatches.Count == 0)
+                    ModLog.Ok(Tag, $"StartupKeys 自检通过（{StartupKeys.Keys.Length} 个键、{StartupKeys.Modes.Length} 个模式）");
+                else
+                    ModLog.Warn(Tag, $"StartupKeys 与 Mod 定义不一致 {mismatches.Count} 处，MapExTools 的默认值或存档判定会出错: " +
+                                     string.Join("; ", mismatches));
+            }
+            catch (Exception ex)
+            {
+                ModLog.Warn(Tag, $"StartupKeys 自检异常，已跳过: {ex.Message}");
+            }
+        }
+
+        private static void AddIfDiffer(System.Collections.Generic.List<string> mismatches, string label, object shared, object actual)
+        {
+            if (!Equals(shared, actual))
+                mismatches.Add($"{label}: StartupKeys={shared}, 实际={actual}");
         }
 
         public void OnDispose()

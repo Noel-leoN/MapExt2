@@ -132,12 +132,12 @@ namespace MapExtPDX.SaveLoadSystem
         #region Constants
 
         /// <summary>没有模式值标签的旧版 MapExt 存档按 57 km（CV=4）处理。</summary>
-        public const int LegacySaveCoreValue = 4;
+        public const int LegacySaveCoreValue = StartupKeys.LegacySaveCoreValue;
 
         public const int NoneModeCoreValue = 1;
 
-        /// <summary>存档 <c>modsEnabled</c> 里本 Mod 的标识前缀。</summary>
-        private const string kModIdentifier = "MapExt";
+        /// <summary>存档 <c>modsEnabled</c> 里本 Mod 的标识前缀（定义在 StartupKeys，与外部工具 MapExTools 共用）。</summary>
+        private const string kModIdentifier = StartupKeys.ModIdentifierPrefix;
 
         /// <summary>许可与"已确认降级""已确认拉伸"的有效期：重新触发的加载几帧内就会到达，过期的视为作废。</summary>
         private const float kPermitSeconds = 60f;
@@ -149,7 +149,7 @@ namespace MapExtPDX.SaveLoadSystem
         private const double kVanillaTileArea = (double)PatchManager.OriginalMapSize * PatchManager.OriginalMapSize;
 
         /// <summary>面积比值与 CV² 的相对容差：超过就判为面积不可信（开新城计划 §3.3）。</summary>
-        private const double kAreaRatioTolerance = 0.05;
+        private const double kAreaRatioTolerance = StartupKeys.MapAreaRatioTolerance;
 
         #endregion
 
