@@ -14,6 +14,7 @@ using Game.UI.Localization;
 using HarmonyLib;
 using MapExtPDX.MapExt.Core;
 using MapExtPDX.SaveLoadSystem;
+using Unity.Jobs.LowLevel.Unsafe;
 
 namespace MapExtPDX
 {
@@ -251,6 +252,13 @@ namespace MapExtPDX
             // 此后注册、重新禁用、诊断与寻路 handler 都只读快照；中途改设定要重启才生效
             AppliedConfig config = AppliedConfig.Capture(m_Setting, disabledGroups);
             ModLog.Info(Tag, $"本会话生效配置: {config}");
+
+            // 本会话 Burst 是否开启：--burst-disable-compilation 参数或环境变量 UNITY_BURST_DISABLE_COMPILATION 会让 Job 改走 Mono，
+            // Burst 库照样加载，从进程外看不出来。外部工具 MapExTools 按这一行判断，改措辞要同步工具的匹配规则
+            if (JobsUtility.JobCompilerEnabled)
+                ModLog.Info(Tag, "本会话 Burst: 已启用");
+            else
+                ModLog.Warn(Tag, "本会话 Burst: 已停用（--burst-disable-compilation 或 UNITY_BURST_DISABLE_COMPILATION），Job 改走 Mono，运行会明显变慢");
 
             // === H. ECS替换系统补丁 ===
             // CellMapSystem<T> 和 经济系统 的ECS替换补丁
