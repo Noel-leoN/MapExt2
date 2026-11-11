@@ -2,7 +2,7 @@
 
   <!-- 单元测试：只测 MapExTools.Core，不依赖 WPF 与命令行接口 -->
   <PropertyGroup>
-    <TargetFramework>net10.0</TargetFramework>
+    <TargetFramework>net11.0</TargetFramework>
     <OutputType>Exe</OutputType>
     <IsPackable>false</IsPackable>
     <IsTestProject>true</IsTestProject>

@@ -2,7 +2,7 @@
 
   <!-- 解析与业务逻辑：不依赖 WPF，供主程序与单元测试共用 -->
   <PropertyGroup>
-    <TargetFramework>net10.0</TargetFramework>
+    <TargetFramework>net11.0</TargetFramework>
     <RootNamespace>MapExTools.Core</RootNamespace>
   </PropertyGroup>
 
