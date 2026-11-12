@@ -14,6 +14,11 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- .coc 固定样本：输入与期望输出逐字节比对（计划 2.1） -->
+    <None Include="Coc\Samples\**" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\..\src\MapExTools.Core\MapExTools.Core.csproj" />
   </ItemGroup>
 

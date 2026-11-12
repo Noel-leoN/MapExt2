@@ -17,3 +17,10 @@ indent_size = 2
 
 [*.md]
 trim_trailing_whitespace = false
+
+# .coc 测试样本混用 CRLF 与 LF，部分带 BOM，测试逐字节比对：编辑器不改换行、编码与行尾空白
+[*.coc]
+charset = unset
+end_of_line = unset
+insert_final_newline = unset
+trim_trailing_whitespace = false

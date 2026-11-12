@@ -1,0 +1,6 @@
+MapExtPDX
+{
+    "TerrainCascadeThrottle": true,
+    "PatchModeChoice": "ModeB",
+    "EnableResidentAIEcoSystem": true
+}

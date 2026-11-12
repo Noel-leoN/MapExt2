@@ -52,6 +52,74 @@ public static class Strings
             "保存 MapExTools.json 失败：{0}",
             "儲存 MapExTools.json 失敗：{0}",
         ],
+
+        // === 设定文件 MapExtPDX.coc：格式错误（{0} 为 Coc.Position）与写入失败 ===
+        ["Coc.Position"] = ["line {0}, column {1}", "第 {0} 行第 {1} 列", "第 {0} 行第 {1} 欄"],
+        ["Coc.Err.StringUnclosed"] = [
+            "{0}: the string is not closed",
+            "{0}：字符串没有闭合",
+            "{0}：字串沒有閉合",
+        ],
+        ["Coc.Err.BracketUnclosed"] = [
+            "{0}: the bracket is not closed",
+            "{0}：括号没有闭合",
+            "{0}：括號沒有閉合",
+        ],
+        ["Coc.Err.NoOpenBrace"] = [
+            "{0}: missing {{ after block '{1}'",
+            "{0}：块 '{1}' 之后缺少 {{",
+            "{0}：區塊 '{1}' 之後缺少 {{",
+        ],
+        ["Coc.Err.KeyExpected"] = [
+            "{0}: expected a quoted key",
+            "{0}：这里应为带引号的键名",
+            "{0}：這裡應為帶引號的鍵名",
+        ],
+        ["Coc.Err.ColonMissing"] = [
+            "{0}: missing colon after key '{1}'",
+            "{0}：键 '{1}' 之后缺少冒号",
+            "{0}：鍵 '{1}' 之後缺少冒號",
+        ],
+        ["Coc.Err.ValueMissing"] = [
+            "{0}: key '{1}' has no value",
+            "{0}：键 '{1}' 缺少取值",
+            "{0}：鍵 '{1}' 缺少值",
+        ],
+        ["Coc.Err.CommaMissing"] = [
+            "{0}: missing comma between two entries",
+            "{0}：两项之间缺少逗号",
+            "{0}：兩項之間缺少逗號",
+        ],
+        ["Coc.Err.TrailingComma"] = [
+            "{0}: extra comma after the last entry",
+            "{0}：最后一项后面多了逗号",
+            "{0}：最後一項後面多了逗號",
+        ],
+        ["Coc.Err.BadLiteral"] = [
+            "{0}: unrecognized value '{1}'",
+            "{0}：无法识别的取值 '{1}'",
+            "{0}：無法識別的值 '{1}'",
+        ],
+        ["Coc.Err.DuplicateKey"] = [
+            "{0}: key '{1}' appears more than once; the game cannot read the block",
+            "{0}：键 '{1}' 重复出现，游戏会读不进整个块",
+            "{0}：鍵 '{1}' 重複出現，遊戲會讀不進整個區塊",
+        ],
+        ["Coc.Err.InvalidEncoding"] = [
+            "The settings file is not valid UTF-8 text.",
+            "设定文件不是有效的 UTF-8 文本。",
+            "設定檔不是有效的 UTF-8 文字。",
+        ],
+        ["Coc.Err.FileChanged"] = [
+            "The settings file was changed by another program after it was read. Reload it and save again.",
+            "设定文件读取后被其他程序改过，请重新读取后再保存。",
+            "設定檔讀取後被其他程式改過，請重新讀取後再儲存。",
+        ],
+        ["Coc.Err.VerifyFailed"] = [
+            "Verification after writing failed: {0}",
+            "写入结果校验失败：{0}",
+            "寫入結果驗證失敗：{0}",
+        ],
     };
 
     /// <summary>全部文案键，供单元测试检查。</summary>

@@ -1,0 +1,7 @@
+MapExtPDX
+{
+    "List": [1, {"x": "}"}],
+    "Obj": {"a": [2, 3]},
+    "PatchModeChoice": "ModeB",
+    "EnableResourceBuyerEcoSystem": true
+}

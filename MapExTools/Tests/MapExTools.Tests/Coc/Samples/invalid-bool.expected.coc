@@ -1,0 +1,5 @@
+MapExtPDX
+{
+    "isEnableEconomyFix": true,
+    "PatchModeChoice": "ModeA"
+}

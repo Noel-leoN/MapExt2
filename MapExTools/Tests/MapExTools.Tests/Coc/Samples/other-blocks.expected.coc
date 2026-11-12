@@ -1,0 +1,9 @@
+OtherMod
+{
+    "a": "x { y } \" z"
+}
+MapExtPDX
+{
+    "S": "brace } and \"quote\" {",
+    "PatchModeChoice": "ModeC"
+}

@@ -1,0 +1,174 @@
+[
+  {
+    "name": "game-format",
+    "note": "游戏写出的格式：只替换两个值，其余逐字不变",
+    "input": "game-format.input.coc",
+    "target": { "PatchModeChoice": "ModeC", "EnableHouseholdPropertyEcoSystem": true },
+    "expected": "game-format.expected.coc"
+  },
+  {
+    "name": "no-change",
+    "note": "目标值与文件一致时不写入",
+    "input": "game-format.input.coc",
+    "target": { "PatchModeChoice": "ModeA", "isEnableEconomyFix": true },
+    "expected": null
+  },
+  {
+    "name": "reset-mode-d",
+    "note": "先恢复 9 个键的默认值，再叠加 ModeD；不受管的键不动",
+    "input": "game-format.input.coc",
+    "reset": true,
+    "target": { "PatchModeChoice": "ModeD" },
+    "expected": "reset-mode-d.expected.coc"
+  },
+  {
+    "name": "all-keys",
+    "note": "9 个键一起改：已有的原地替换，缺的按 StartupKeys 顺序追加",
+    "input": "game-format.input.coc",
+    "target": {
+      "PatchModeChoice": "None",
+      "isEnableEconomyFix": false,
+      "EnableDemandEcoSystem": false,
+      "EnableJobSearchEcoSystem": false,
+      "EnableHouseholdPropertyEcoSystem": true,
+      "EnableResourceBuyerEcoSystem": true,
+      "EnableResidentAIEcoSystem": true,
+      "EnableDownstreamAIEcoSystem": true,
+      "DisableLoadGameValidation": true
+    },
+    "expected": "all-keys.expected.coc"
+  },
+  {
+    "name": "append-missing",
+    "note": "缺的键追加到对象末尾，沿用已有项的缩进",
+    "input": "append-missing.input.coc",
+    "target": { "PatchModeChoice": "ModeB", "EnableResidentAIEcoSystem": true },
+    "expected": "append-missing.expected.coc"
+  },
+  {
+    "name": "empty-object",
+    "note": "空对象",
+    "input": "empty-object.input.coc",
+    "target": { "PatchModeChoice": "ModeD" },
+    "expected": "empty-object.expected.coc"
+  },
+  {
+    "name": "empty-object-same-line",
+    "note": "同一行的 {}",
+    "input": "empty-object-same-line.input.coc",
+    "target": { "PatchModeChoice": "None" },
+    "expected": "empty-object-same-line.expected.coc"
+  },
+  {
+    "name": "new-file",
+    "note": "文件与目录都不存在：按游戏格式新建，不留备份",
+    "input": null,
+    "target": { "isEnableEconomyFix": false },
+    "expected": "new-file.expected.coc"
+  },
+  {
+    "name": "other-blocks",
+    "note": "其他块与含括号、转义引号的字符串原样保留",
+    "input": "other-blocks.input.coc",
+    "target": { "PatchModeChoice": "ModeC" },
+    "expected": "other-blocks.expected.coc"
+  },
+  {
+    "name": "invalid-mode-name",
+    "note": "游戏读不懂的模式名按 ModeA 生效；目标是 ModeA 时也要改写",
+    "input": "invalid-mode-name.input.coc",
+    "target": { "PatchModeChoice": "ModeA" },
+    "expected": "invalid-mode-name.expected.coc"
+  },
+  {
+    "name": "numeric-mode",
+    "note": "数字取值按枚举顺序换算（2 为 ModeC），改写时换成模式名",
+    "input": "numeric-mode.input.coc",
+    "target": { "PatchModeChoice": "ModeD" },
+    "expected": "numeric-mode.expected.coc"
+  },
+  {
+    "name": "numeric-mode-same",
+    "note": "数字 2 已是 ModeC，目标 ModeC 时不写入",
+    "input": "numeric-mode.input.coc",
+    "target": { "PatchModeChoice": "ModeC" },
+    "expected": null
+  },
+  {
+    "name": "bom",
+    "note": "保留 BOM",
+    "input": "bom.input.coc",
+    "target": { "PatchModeChoice": "ModeC" },
+    "expected": "bom.expected.coc"
+  },
+  {
+    "name": "tab-indent",
+    "note": "沿用制表符缩进",
+    "input": "tab-indent.input.coc",
+    "target": { "EnableDemandEcoSystem": false },
+    "expected": "tab-indent.expected.coc"
+  },
+  {
+    "name": "crlf-in-block",
+    "note": "对象内部是 CRLF 时，追加的行也用 CRLF",
+    "input": "crlf-in-block.input.coc",
+    "target": { "EnableDemandEcoSystem": false },
+    "expected": "crlf-in-block.expected.coc"
+  },
+  {
+    "name": "single-line-block",
+    "note": "块名、键与大括号在同一行：缩进退回 4 个空格，换行用 LF",
+    "input": "single-line-block.input.coc",
+    "target": { "EnableDemandEcoSystem": false },
+    "expected": "single-line-block.expected.coc"
+  },
+  {
+    "name": "duplicate-block",
+    "note": "同名块重复时游戏只认第一个，只改第一个",
+    "input": "duplicate-block.input.coc",
+    "target": { "PatchModeChoice": "ModeD" },
+    "expected": "duplicate-block.expected.coc"
+  },
+  {
+    "name": "block-missing",
+    "note": "没有 MapExtPDX 块：接在原文后面新建",
+    "input": "block-missing.input.coc",
+    "target": { "PatchModeChoice": "ModeB" },
+    "expected": "block-missing.expected.coc"
+  },
+  {
+    "name": "block-missing-no-newline",
+    "note": "没有 MapExtPDX 块且原文不以换行结尾：先补 CRLF",
+    "input": "block-missing-no-newline.input.coc",
+    "target": { "PatchModeChoice": "ModeB" },
+    "expected": "block-missing-no-newline.expected.coc"
+  },
+  {
+    "name": "whitespace-only",
+    "note": "只有空白的文件按空文件处理",
+    "input": "whitespace-only.input.coc",
+    "target": { "PatchModeChoice": "ModeB" },
+    "expected": "whitespace-only.expected.coc"
+  },
+  {
+    "name": "invalid-bool",
+    "note": "开关只认 true/false，1 按默认值生效；目标等于默认值时也要改写",
+    "input": "invalid-bool.input.coc",
+    "target": { "isEnableEconomyFix": true },
+    "expected": "invalid-bool.expected.coc"
+  },
+  {
+    "name": "nested-values",
+    "note": "嵌套的对象与数组（含字符串里的括号）原样保留",
+    "input": "nested-values.input.coc",
+    "target": { "PatchModeChoice": "ModeB", "EnableResourceBuyerEcoSystem": true },
+    "expected": "nested-values.expected.coc"
+  },
+  {
+    "name": "utf8-raw",
+    "note": "字符串里未转义的中文与全角字符逐字节保留",
+    "input": "utf8-raw.input.coc",
+    "target": { "PatchModeChoice": "ModeB" },
+    "expected": "utf8-raw.expected.coc"
+  }
+]

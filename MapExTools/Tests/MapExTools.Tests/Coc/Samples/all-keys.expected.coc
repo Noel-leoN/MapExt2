@@ -1,0 +1,18 @@
+MapExtPDX
+{
+    "TerrainCascadeThrottle": true,
+    "WaterSimQuality": "Minimal_Every4Frames",
+    "EnableHouseholdPropertyEcoSystem": true,
+    "PopDiagData": "Households: 38914 | Housed: 37022 (95.1%)\nMovingAway: 1892 (4.9%)",
+    "HeightmapExportData": "Exported 5 file(s) \u2014 4096x4096 16-bit \u2192 C:/Users/Player/AppData\\Heightmaps",
+    "PatchModeChoice": "None",
+    "DisableLoadGameValidation": true,
+    "isEnableEconomyFix": false,
+    "ShoppingTrafficReduction": 0.0004,
+    "HouseholdResourceDemandMultiplier": 3.5,
+    "EnableDemandEcoSystem": false,
+    "EnableJobSearchEcoSystem": false,
+    "EnableResourceBuyerEcoSystem": true,
+    "EnableResidentAIEcoSystem": true,
+    "EnableDownstreamAIEcoSystem": true
+}

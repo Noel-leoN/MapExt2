@@ -9,6 +9,9 @@
 *.md text=auto eol=lf
 *.yaml text=auto eol=lf
 
+# .coc 测试样本照游戏格式混用 CRLF 与 LF，测试逐字节比对，不做换行转换
+*.coc -text
+
 # Unity YAML merging
 *.asset merge=unityyamlmerge eol=lf
 *.prefab merge=unityyamlmerge eol=lf
