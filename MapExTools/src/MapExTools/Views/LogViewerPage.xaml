@@ -1,0 +1,121 @@
+<UserControl x:Class="MapExTools.Views.LogViewerPage"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:svc="clr-namespace:MapExTools.Services"
+             xmlns:diag="clr-namespace:MapExTools.Core.Diagnostics;assembly=MapExTools.Core">
+    <UserControl.Resources>
+        <!-- 摘要的一段：标题加若干行，按醒目程度着色 -->
+        <DataTemplate x:Key="SectionTemplate" DataType="{x:Type diag:SummarySection}">
+            <StackPanel Margin="0,0,0,6">
+                <TextBlock Text="{Binding Title}" FontWeight="SemiBold" />
+                <ItemsControl ItemsSource="{Binding Lines}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate DataType="{x:Type diag:SummaryLine}">
+                            <TextBlock x:Name="LineText" Text="{Binding Text}" TextWrapping="Wrap" Margin="14,1,0,1" />
+                            <DataTemplate.Triggers>
+                                <DataTrigger Binding="{Binding Severity}" Value="Notice">
+                                    <Setter TargetName="LineText" Property="Foreground" Value="{DynamicResource TextFillColorSecondaryBrush}" />
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding Severity}" Value="Warning">
+                                    <Setter TargetName="LineText" Property="Foreground" Value="{DynamicResource SystemFillColorCautionBrush}" />
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding Severity}" Value="Error">
+                                    <Setter TargetName="LineText" Property="Foreground" Value="{DynamicResource SystemFillColorCriticalBrush}" />
+                                </DataTrigger>
+                            </DataTemplate.Triggers>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </StackPanel>
+        </DataTemplate>
+    </UserControl.Resources>
+
+    <!-- 日志诊断（计划 3.1、3.2）：上为会话摘要，下为日志浏览 -->
+    <Grid Margin="12,8,12,4">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <!-- === 会话摘要 === -->
+        <Expander Grid.Row="0" IsExpanded="True" Margin="0,0,0,8"
+                  Header="{Binding [Logs.Summary], Source={x:Static svc:Loc.Instance}}">
+            <Grid Margin="0,4,0,0">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+                <DockPanel Grid.Row="0" LastChildFill="True">
+                    <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                        <Button Content="{Binding [Logs.Refresh], Source={x:Static svc:Loc.Instance}}"
+                                Click="OnRefreshClick" Margin="0,0,8,0" />
+                        <Button Content="{Binding [Logs.Copy], Source={x:Static svc:Loc.Instance}}"
+                                Click="OnCopyClick" Margin="0,0,8,0" />
+                        <Button Content="{Binding [Logs.OpenFolder], Source={x:Static svc:Loc.Instance}}"
+                                Click="OnOpenFolderClick" />
+                    </StackPanel>
+                    <TextBlock x:Name="SummaryNote" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"
+                               Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                </DockPanel>
+                <!-- 左栏：上次运行、启动；右栏：MapExt。两栏并排，告警不必往下翻 -->
+                <ScrollViewer Grid.Row="1" MaxHeight="260" Margin="0,8,0,0"
+                              VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="24" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <ItemsControl x:Name="LeftSections" Grid.Column="0" ItemTemplate="{StaticResource SectionTemplate}" />
+                        <ItemsControl x:Name="RightSections" Grid.Column="2" ItemTemplate="{StaticResource SectionTemplate}" />
+                    </Grid>
+                </ScrollViewer>
+            </Grid>
+        </Expander>
+
+        <!-- === 日志浏览：选日志、筛级别与关键词 === -->
+        <DockPanel Grid.Row="1" Margin="0,0,0,6" LastChildFill="False">
+            <ComboBox x:Name="LogBox" MinWidth="220" DisplayMemberPath="DisplayName" SelectionChanged="OnLogChanged" />
+            <ComboBox x:Name="LevelBox" MinWidth="150" Margin="8,0,0,0" DisplayMemberPath="Display" SelectionChanged="OnLevelChanged" />
+            <TextBlock Text="{Binding [Logs.Keyword], Source={x:Static svc:Loc.Instance}}"
+                       VerticalAlignment="Center" Margin="16,0,6,0" />
+            <TextBox x:Name="KeywordBox" MinWidth="200" TextChanged="OnKeywordChanged" />
+            <CheckBox x:Name="FollowBox" DockPanel.Dock="Right" IsChecked="True" VerticalAlignment="Center"
+                      Content="{Binding [Logs.Follow], Source={x:Static svc:Loc.Instance}}" Click="OnFollowClick" />
+        </DockPanel>
+
+        <ListBox x:Name="LinesList" Grid.Row="2" SelectionMode="Extended"
+                 VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.VirtualizationMode="Recycling"
+                 ScrollViewer.CanContentScroll="True" ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                 FontFamily="Cascadia Mono, Consolas" FontSize="12">
+            <ListBox.ItemContainerStyle>
+                <Style TargetType="ListBoxItem" BasedOn="{StaticResource {x:Type ListBoxItem}}">
+                    <Setter Property="Padding" Value="8,1" />
+                    <Setter Property="Margin" Value="0" />
+                    <Setter Property="MinHeight" Value="0" />
+                </Style>
+            </ListBox.ItemContainerStyle>
+            <ListBox.ItemTemplate>
+                <DataTemplate DataType="{x:Type diag:LogLine}">
+                    <TextBlock x:Name="LineText" Text="{Binding Text}" />
+                    <DataTemplate.Triggers>
+                        <DataTrigger Binding="{Binding Level}" Value="Debug">
+                            <Setter TargetName="LineText" Property="Foreground" Value="{DynamicResource TextFillColorTertiaryBrush}" />
+                        </DataTrigger>
+                        <DataTrigger Binding="{Binding Level}" Value="Warning">
+                            <Setter TargetName="LineText" Property="Foreground" Value="{DynamicResource SystemFillColorCautionBrush}" />
+                        </DataTrigger>
+                        <DataTrigger Binding="{Binding Level}" Value="Error">
+                            <Setter TargetName="LineText" Property="Foreground" Value="{DynamicResource SystemFillColorCriticalBrush}" />
+                        </DataTrigger>
+                    </DataTemplate.Triggers>
+                </DataTemplate>
+            </ListBox.ItemTemplate>
+        </ListBox>
+
+        <TextBlock x:Name="StatusText" Grid.Row="3" Margin="0,4,0,0" TextTrimming="CharacterEllipsis"
+                   Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+    </Grid>
+</UserControl>
