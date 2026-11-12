@@ -1,0 +1,12 @@
+Mono path[0] = 'D:/Games/Steam/steamapps/common/Cities Skylines II/Cities2_Data/Managed'
+Initialize engine version: 2022.3.71f1 (c9bf13b0b844)
+Game version: 1.6.4f1 (1000.0001) [6400.20000]
+NullReferenceException: Object reference not set to an instance of an object
+  at Game.Sample.SampleSystem.OnUpdate () [0x00000] in <00000000000000000000000000000000>:0
+  at Unity.Entities.SystemBase.Update () [0x00000] in <00000000000000000000000000000000>:0
+(Filename: <00000000000000000000000000000000> Line: 0)
+
+[SceneFlow] [CRITICAL]  System update error during ToolUpdate->SampleSystem: System.Exception: Sample failure
+  at Game.Sample.SampleSystem.OnUpdate () [0x00000] in <00000000000000000000000000000000>:0
+[SampleMod] [WARN]  不算问题：只是警告
+Crash!!!

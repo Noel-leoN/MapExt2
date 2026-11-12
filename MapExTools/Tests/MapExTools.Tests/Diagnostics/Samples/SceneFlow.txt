@@ -1,0 +1,16 @@
+[2026-11-12 20:00:50,000] [INFO]  Command line: D:\Games\Steam\steamapps\common\Cities Skylines II\Cities2.exe
+--developerMode
+--burst-disable-compilation
+logsEffectiveness=*****
+startGame=********************************
+[2026-11-12 20:00:50,100] [INFO]  Harmony found.
+[2026-11-12 20:00:55,000] [INFO]  Date: 11/12/2026 12:00:55
+Game version: 1.6.4f1 (1000.0001) [6400.20000] Windows Steamworks
+Game configuration: Release (Mono)
+Unity version: 2022.3.71f1
+[2026-11-12 20:00:55,010] [INFO]  Configuration: {"startGame":"0123456789abcdef0123456789abcdef","disablePDXSDK":false,"developerMode":true,"profilerTarget":null}
+[2026-11-12 20:01:20,000] {SampleClimate (copy)} [WARN]  Duplicate prefab ID: ClimatePrefab:SampleClimate (copy)
+[2026-11-12 20:01:59,000] [INFO]  Waiting for mods to finish loading
+[2026-11-12 20:02:59,000] [WARN]  Mods registration did not start within 60s, continuing
+[2026-11-12 20:03:10,000] [INFO]  Starting game from 'Sample City (SaveGameMetadata:0123456789abcdef0123456789abcdef)'
+[2026-11-12 20:03:30,000] [INFO]  Loading completed

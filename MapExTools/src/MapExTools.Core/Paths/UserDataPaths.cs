@@ -34,6 +34,9 @@ public sealed class UserDataPaths
 
     public string MapExtLog => Combine("Logs/MapExtPDX.log");
 
+    /// <summary>游戏 <c>SceneFlow</c> 日志器的输出：命令行、启动配置、读档流程（不进 Player.log）。</summary>
+    public string SceneFlowLog => Combine("Logs/SceneFlow.log");
+
     public string PlayerLog => Combine("Player.log");
 
     public string PlayerPrevLog => Combine("Player-prev.log");

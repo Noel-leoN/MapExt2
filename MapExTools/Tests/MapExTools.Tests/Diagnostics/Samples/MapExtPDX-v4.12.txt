@@ -1,0 +1,19 @@
+[2026-11-12 20:01:02,100] [INFO]  [MapExt|Mod] 🔹 OnLoad, version:4.12.0
+[2026-11-12 20:01:02,101] [INFO]  [MapExt|Mod] 🔹 MapExt2 v4.12.0.0 mod asset at C:/Users/Player/AppData/LocalLow/Colossal Order/Cities Skylines II/Mods/MapExt2/MapExt2.dll
+[2026-11-12 20:01:02,105] [INFO]  [MapExt|Mod] 🔧 HarmonyGlobal 实例已创建
+[2026-11-12 20:01:09,900] [WARN]  [MapExt|ModConflictDetector] ⚠️ 检测到冲突 Mod: SampleModA (ResidentAI/ResourceBuyer 系统替换)
+[2026-11-12 20:01:09,901] [WARN]  [MapExt|ModConflictDetector] ⚠️ Auto-disabled ResidentAI group (conflict: SampleModA)
+[2026-11-12 20:01:09,902] [WARN]  [MapExt|ModConflictDetector] ⚠️ 共自动禁用 1 个系统组: ResidentAI
+[2026-11-12 20:01:09,903] [INFO]  [MapExt|Mod] 🔹 本会话生效配置: Mode=ModeA, CV=4, EcoFix=True, Demand=True, Job=True, Household=True, ResBuyer=False, ResidentAI=True, DownAI=False, AutoDisabled=[ResidentAI]
+[2026-11-12 20:01:09,904] [INFO]  [MapExt|Mod] 🔹 本会话 Burst: 已启用
+[2026-11-12 20:01:10,000] [INFO]  [MapExt|PatchManager] ✅
+┌─── 补丁集 ───
+│ ModeA: 4
+└─── 1 entries ───
+[2026-11-12 20:03:00,000] [INFO]  [MapExt|SaveEntryGate] 🔹 MenuNewGame 地图 'Sample Map 28km'（ID User/0123456789abcdef0123456789abcdef）：面积 8.2208E+008，比值 4，推断 CV=2（可信），当前 CV=4
+[2026-11-12 20:03:00,001] [INFO]  [MapExt|SaveEntryGate] 🔹 MenuNewGame 地图 'Sample Map 28km'：为 CV=2 制作，与当前模式不符，拦下
+[2026-11-12 20:04:00,000] [INFO]  [MapExt|SaveEntryGate] 🔹 MenuLoad 'Sample City'（ID User/fedcba9876543210fedcba9876543210）：存档 CV=4，当前 CV=4，结果 Success
+[2026-11-12 20:04:05,000] [ERROR]  [MapExt|SampleSystem] ❌ 示例错误：读不到数据
+System.InvalidOperationException: Sample failure
+  at MapExtPDX.Sample.SampleSystem.Run () [0x00000] in <00000000000000000000000000000000>:0
+[2026-11-12 20:30:00,000] [INFO]  [MapExt|Mod] 🔹 OnDispose

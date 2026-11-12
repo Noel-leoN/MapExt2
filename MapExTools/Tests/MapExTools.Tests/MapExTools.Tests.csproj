@@ -16,6 +16,8 @@
   <ItemGroup>
     <!-- .coc 固定样本：输入与期望输出逐字节比对（计划 2.1） -->
     <None Include="Coc\Samples\**" CopyToOutputDirectory="PreserveNewest" />
+    <!-- 日志诊断的脱敏样本，存成 .txt：*.log 会被 .gitignore 忽略（计划 3.1） -->
+    <None Include="Diagnostics\Samples\**" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
   <ItemGroup>
