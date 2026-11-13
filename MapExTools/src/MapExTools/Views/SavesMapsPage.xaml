@@ -1,0 +1,178 @@
+<UserControl x:Class="MapExTools.Views.SavesMapsPage"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:svc="clr-namespace:MapExTools.Services"
+             xmlns:views="clr-namespace:MapExTools.Views"
+             xmlns:pkg="clr-namespace:MapExTools.Core.Packages;assembly=MapExTools.Core">
+    <UserControl.Resources>
+        <!-- 按醒目程度着色：匹配绿、可转换蓝、要留意橙、不符与损坏红、未知灰 -->
+        <Style x:Key="ToneText" TargetType="TextBlock">
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding Tone}" Value="Good">
+                    <Setter Property="Foreground" Value="{DynamicResource SystemFillColorSuccessBrush}" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding Tone}" Value="Accent">
+                    <Setter Property="Foreground" Value="{DynamicResource AccentTextFillColorPrimaryBrush}" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding Tone}" Value="Muted">
+                    <Setter Property="Foreground" Value="{DynamicResource TextFillColorSecondaryBrush}" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding Tone}" Value="Warning">
+                    <Setter Property="Foreground" Value="{DynamicResource SystemFillColorCautionBrush}" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding Tone}" Value="Error">
+                    <Setter Property="Foreground" Value="{DynamicResource SystemFillColorCriticalBrush}" />
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+
+        <!-- 存档／地图切换：单选按钮画成切换按钮 -->
+        <Style x:Key="KindToggle" TargetType="RadioButton" BasedOn="{StaticResource {x:Type ToggleButton}}">
+            <Setter Property="MinWidth" Value="96" />
+            <Setter Property="Margin" Value="0,0,4,0" />
+        </Style>
+    </UserControl.Resources>
+
+    <!-- 存档与地图（计划 4.1）：左列表、右详情 -->
+    <Grid Margin="12,8,12,4">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <!-- === 设定的模式与转换开关（取自 MapExtPDX.coc） === -->
+        <DockPanel Grid.Row="0" Margin="0,0,0,8">
+            <Button x:Name="RescanButton" DockPanel.Dock="Right" VerticalAlignment="Top"
+                    Content="{Binding [Saves.Rescan], Source={x:Static svc:Loc.Instance}}" Click="OnRescanClick" />
+            <StackPanel Margin="0,0,12,0">
+                <TextBlock x:Name="HeaderText" FontWeight="SemiBold" TextWrapping="Wrap"
+                           ToolTip="{Binding [Saves.HeaderTip], Source={x:Static svc:Loc.Instance}}" />
+                <TextBlock x:Name="HeaderNote" TextWrapping="Wrap" Margin="0,2,0,0" Visibility="Collapsed"
+                           Foreground="{DynamicResource SystemFillColorCautionBrush}" />
+            </StackPanel>
+        </DockPanel>
+
+        <!-- === 存档／地图、关系筛选、关键词 === -->
+        <DockPanel Grid.Row="1" Margin="0,0,0,8" LastChildFill="False">
+            <RadioButton x:Name="SavesToggle" GroupName="PackageKind" IsChecked="True" Style="{StaticResource KindToggle}"
+                         Checked="OnKindChecked" />
+            <RadioButton x:Name="MapsToggle" GroupName="PackageKind" Style="{StaticResource KindToggle}"
+                         Checked="OnKindChecked" />
+            <ComboBox x:Name="RelationBox" MinWidth="170" Margin="12,0,0,0" DisplayMemberPath="Display"
+                      SelectionChanged="OnRelationFilterChanged" />
+            <TextBlock Text="{Binding [Saves.Keyword], Source={x:Static svc:Loc.Instance}}"
+                       VerticalAlignment="Center" Margin="16,0,6,0" />
+            <TextBox x:Name="KeywordBox" MinWidth="200" TextChanged="OnKeywordChanged" />
+        </DockPanel>
+
+        <Grid Grid.Row="2">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="2*" MinWidth="300" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="3*" MinWidth="340" />
+            </Grid.ColumnDefinitions>
+
+            <!-- === 列表（虚拟化：只为可见的项生成界面、读缩略图） === -->
+            <ListBox x:Name="PackageList" Grid.Column="0" SelectionMode="Single"
+                     VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.VirtualizationMode="Recycling"
+                     ScrollViewer.CanContentScroll="True" ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                     SelectionChanged="OnSelectionChanged">
+                <ListBox.ItemContainerStyle>
+                    <Style TargetType="ListBoxItem" BasedOn="{StaticResource {x:Type ListBoxItem}}">
+                        <Setter Property="Padding" Value="6,4" />
+                        <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                    </Style>
+                </ListBox.ItemContainerStyle>
+                <ListBox.ItemTemplate>
+                    <DataTemplate DataType="{x:Type views:PackageListItem}">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <Border Width="96" Height="54" CornerRadius="3" ClipToBounds="True"
+                                    Background="{DynamicResource SubtleFillColorSecondaryBrush}">
+                                <Grid>
+                                    <TextBlock Text="{Binding PlaceholderText}" FontSize="10" TextWrapping="Wrap" TextAlignment="Center"
+                                               HorizontalAlignment="Center" VerticalAlignment="Center" Margin="4,0"
+                                               Foreground="{DynamicResource TextFillColorTertiaryBrush}" />
+                                    <Image Source="{Binding Thumbnail}" Stretch="UniformToFill"
+                                           RenderOptions.BitmapScalingMode="HighQuality" />
+                                </Grid>
+                            </Border>
+                            <StackPanel Grid.Column="1" Margin="10,0,0,0" VerticalAlignment="Center">
+                                <TextBlock Text="{Binding Title}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                                <!-- 模式 · 关系（关系按醒目程度着色） -->
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="{Binding ModeText, StringFormat='{}{0} · '}" />
+                                    <TextBlock Grid.Column="1" Text="{Binding RelationText}" TextTrimming="CharacterEllipsis"
+                                               Style="{StaticResource ToneText}" />
+                                </Grid>
+                                <TextBlock Text="{Binding InfoText}" FontSize="11" TextTrimming="CharacterEllipsis"
+                                           Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                            </StackPanel>
+                        </Grid>
+                    </DataTemplate>
+                </ListBox.ItemTemplate>
+            </ListBox>
+
+            <GridSplitter Grid.Column="1" Width="8" HorizontalAlignment="Center" VerticalAlignment="Stretch"
+                          ResizeBehavior="PreviousAndNext" Background="Transparent" />
+
+            <!-- === 详情：预览图、各项信息与两个按钮 === -->
+            <TextBlock x:Name="NoSelectionText" Grid.Column="2" Margin="12,8,0,0"
+                       Text="{Binding [Saves.NoSelection], Source={x:Static svc:Loc.Instance}}"
+                       Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+            <ScrollViewer x:Name="DetailsScroll" Grid.Column="2" Visibility="Collapsed"
+                          VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                <StackPanel Margin="4,0,4,8">
+                    <!-- 预览图限高，给下面的详情留出位置；窗口放大时不再跟着变大 -->
+                    <Border CornerRadius="4" MinWidth="320" MinHeight="140" ClipToBounds="True" HorizontalAlignment="Left"
+                            Background="{DynamicResource SubtleFillColorSecondaryBrush}">
+                        <Grid>
+                            <TextBlock x:Name="PreviewPlaceholder" HorizontalAlignment="Center" VerticalAlignment="Center"
+                                       Foreground="{DynamicResource TextFillColorTertiaryBrush}" />
+                            <Image x:Name="PreviewImage" Stretch="Uniform" MaxHeight="240"
+                                   RenderOptions.BitmapScalingMode="HighQuality" />
+                        </Grid>
+                    </Border>
+                    <!-- 预览图说明：DataContext 为 PackageText.Preview 生成的 DetailLine -->
+                    <TextBlock x:Name="PreviewCaption" Margin="0,4,0,0" FontSize="11" TextWrapping="Wrap"
+                               Text="{Binding Value}" Style="{StaticResource ToneText}" />
+
+                    <TextBlock x:Name="DetailTitle" FontSize="18" FontWeight="SemiBold" TextWrapping="Wrap" Margin="0,10,0,8" />
+                    <ItemsControl x:Name="DetailLines" Grid.IsSharedSizeScope="True">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate DataType="{x:Type pkg:DetailLine}">
+                                <Grid Margin="0,2">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto" SharedSizeGroup="DetailLabel" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="{Binding Label}" Margin="0,0,16,0"
+                                               Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                                    <TextBlock Grid.Column="1" Text="{Binding Value}" TextWrapping="Wrap" Style="{StaticResource ToneText}" />
+                                </Grid>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+
+                    <WrapPanel Margin="0,12,0,0">
+                        <Button x:Name="SwitchButton" Click="OnSwitchClick" Margin="0,0,8,4" />
+                        <Button x:Name="ExplorerButton" Click="OnShowInExplorerClick" Margin="0,0,8,4"
+                                Content="{Binding [Saves.ShowInExplorer], Source={x:Static svc:Loc.Instance}}" />
+                    </WrapPanel>
+                </StackPanel>
+            </ScrollViewer>
+        </Grid>
+
+        <TextBlock x:Name="StatusText" Grid.Row="3" Margin="0,6,0,0" TextTrimming="CharacterEllipsis"
+                   Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+    </Grid>
+</UserControl>
