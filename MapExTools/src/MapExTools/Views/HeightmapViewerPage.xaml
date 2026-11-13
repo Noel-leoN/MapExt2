@@ -1,0 +1,147 @@
+<UserControl x:Class="MapExTools.Views.HeightmapViewerPage"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:svc="clr-namespace:MapExTools.Services"
+             xmlns:views="clr-namespace:MapExTools.Views"
+             AllowDrop="True" DragOver="OnDragOver" Drop="OnDrop">
+
+    <!-- 高度图查看（计划 4.2）：左列表、右查看；可打开或拖入外部文件 -->
+    <Grid Margin="12,8,12,4">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <!-- === 目录与按钮 === -->
+        <DockPanel Grid.Row="0" Margin="0,0,0,8">
+            <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                <Button Content="{Binding [Heightmaps.Open], Source={x:Static svc:Loc.Instance}}" Click="OnOpenClick" Margin="0,0,8,0" />
+                <Button x:Name="RefreshButton" Content="{Binding [Heightmaps.Refresh], Source={x:Static svc:Loc.Instance}}"
+                        Click="OnRefreshClick" Margin="0,0,8,0" />
+                <Button Content="{Binding [Heightmaps.OpenFolder], Source={x:Static svc:Loc.Instance}}" Click="OnOpenFolderClick" />
+            </StackPanel>
+            <TextBlock x:Name="FolderText" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" Margin="0,0,12,0"
+                       Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+        </DockPanel>
+
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="1*" MinWidth="240" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="3*" MinWidth="420" />
+            </Grid.ColumnDefinitions>
+
+            <!-- === 文件列表 === -->
+            <ListBox x:Name="FileList" Grid.Column="0" SelectionMode="Single" SelectionChanged="OnFileSelected"
+                     VirtualizingPanel.IsVirtualizing="True" ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                <ListBox.ItemContainerStyle>
+                    <Style TargetType="ListBoxItem" BasedOn="{StaticResource {x:Type ListBoxItem}}">
+                        <Setter Property="Padding" Value="8,4" />
+                        <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                    </Style>
+                </ListBox.ItemContainerStyle>
+                <ListBox.ItemTemplate>
+                    <DataTemplate DataType="{x:Type views:HeightmapListItem}">
+                        <StackPanel>
+                            <TextBlock Text="{Binding Name}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                            <TextBlock Text="{Binding Detail}" TextTrimming="CharacterEllipsis" />
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="{Binding Issues}" Style="{StaticResource ToneText}" Margin="0,0,8,0" />
+                                <TextBlock Grid.Column="1" Text="{Binding Meta}" FontSize="11" TextTrimming="CharacterEllipsis"
+                                           VerticalAlignment="Center" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                            </Grid>
+                        </StackPanel>
+                    </DataTemplate>
+                </ListBox.ItemTemplate>
+            </ListBox>
+
+            <GridSplitter Grid.Column="1" Width="8" HorizontalAlignment="Center" VerticalAlignment="Stretch"
+                          ResizeBehavior="PreviousAndNext" Background="Transparent" />
+
+            <!-- === 查看 === -->
+            <Grid Grid.Column="2" Margin="4,0,0,0">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+
+                <!-- 视图、高度比例、海平面、缩放 -->
+                <WrapPanel Grid.Row="0" Margin="0,0,0,6">
+                    <TextBlock Text="{Binding [Heightmaps.View], Source={x:Static svc:Loc.Instance}}" VerticalAlignment="Center" Margin="0,0,6,0" />
+                    <ComboBox x:Name="ViewBox" MinWidth="150" DisplayMemberPath="Display" SelectionChanged="OnViewChanged" Margin="0,0,16,4" />
+                    <TextBlock Text="{Binding [Heightmaps.HeightScale], Source={x:Static svc:Loc.Instance}}" VerticalAlignment="Center" Margin="0,0,6,0" />
+                    <TextBox x:Name="HeightScaleBox" Width="80" Text="4096" TextChanged="OnInputChanged" Margin="0,0,16,4" />
+                    <TextBlock Text="{Binding [Heightmaps.SeaLevel], Source={x:Static svc:Loc.Instance}}" VerticalAlignment="Center" Margin="0,0,6,0" />
+                    <TextBox x:Name="SeaLevelBox" Width="80" Text="0" TextChanged="OnInputChanged" Margin="0,0,16,4" />
+                    <Button Content="{Binding [Heightmaps.Fit], Source={x:Static svc:Loc.Instance}}" Click="OnFitClick" Margin="0,0,8,4" />
+                    <Button Content="{Binding [Heightmaps.ActualPixels], Source={x:Static svc:Loc.Instance}}" Click="OnActualPixelsClick" Margin="0,0,8,4" />
+                    <TextBlock x:Name="ZoomText" VerticalAlignment="Center" Margin="0,0,0,4" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                </WrapPanel>
+
+                <!-- 文件与读数 -->
+                <StackPanel Grid.Row="1" Margin="0,0,0,6">
+                    <TextBlock x:Name="TitleText" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                    <WrapPanel>
+                        <TextBlock x:Name="KindText" Margin="0,0,12,0" />
+                        <TextBlock x:Name="IssuesText" Style="{StaticResource ToneText}" TextWrapping="Wrap" />
+                    </WrapPanel>
+                    <TextBlock x:Name="StatsText" Foreground="{DynamicResource TextFillColorSecondaryBrush}" TextWrapping="Wrap" />
+                    <TextBlock x:Name="InputError" Foreground="{DynamicResource SystemFillColorCautionBrush}" TextWrapping="Wrap" Visibility="Collapsed" />
+                </StackPanel>
+
+                <!-- 图像（滚轮缩放、左键拖动）与图例 -->
+                <Grid Grid.Row="2">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <Border Grid.Column="0" Background="{DynamicResource SubtleFillColorSecondaryBrush}" CornerRadius="4" ClipToBounds="True">
+                        <Grid>
+                            <TextBlock x:Name="PlaceholderText" HorizontalAlignment="Center" VerticalAlignment="Center" TextWrapping="Wrap"
+                                       TextAlignment="Center" Margin="24" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                            <ScrollViewer x:Name="Viewport" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto"
+                                          PreviewMouseWheel="OnViewportWheel" SizeChanged="OnViewportSizeChanged">
+                                <Image x:Name="HeightImage" Stretch="None" HorizontalAlignment="Center" VerticalAlignment="Center" Cursor="Cross"
+                                       RenderOptions.BitmapScalingMode="HighQuality"
+                                       MouseMove="OnImageMouseMove" MouseLeave="OnImageMouseLeave"
+                                       MouseLeftButtonDown="OnImageMouseDown" MouseLeftButtonUp="OnImageMouseUp">
+                                    <Image.LayoutTransform>
+                                        <ScaleTransform x:Name="ImageScale" ScaleX="1" ScaleY="1" />
+                                    </Image.LayoutTransform>
+                                </Image>
+                            </ScrollViewer>
+                        </Grid>
+                    </Border>
+
+                    <StackPanel x:Name="LegendPanel" Grid.Column="1" Margin="12,0,0,0" MinWidth="150" Visibility="Collapsed">
+                        <TextBlock Text="{Binding [Heightmaps.Legend], Source={x:Static svc:Loc.Instance}}" FontWeight="SemiBold" Margin="0,0,0,6" />
+                        <ItemsControl x:Name="LegendList">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate DataType="{x:Type views:LegendRow}">
+                                    <StackPanel Orientation="Horizontal" Margin="0,1">
+                                        <Border Width="14" Height="14" Background="{Binding Swatch}" BorderThickness="1" CornerRadius="2"
+                                                BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}" VerticalAlignment="Center" />
+                                        <TextBlock Text="{Binding Text}" Margin="8,0,0,0" VerticalAlignment="Center" />
+                                    </StackPanel>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                </Grid>
+
+                <!-- 鼠标所在像素的读数 -->
+                <TextBlock x:Name="HoverText" Grid.Row="3" Margin="0,6,0,0" TextTrimming="CharacterEllipsis" FontFamily="Cascadia Mono, Consolas" />
+            </Grid>
+        </Grid>
+
+        <TextBlock x:Name="StatusText" Grid.Row="2" Margin="0,6,0,0" TextTrimming="CharacterEllipsis"
+                   Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+    </Grid>
+</UserControl>

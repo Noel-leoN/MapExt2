@@ -2,5 +2,27 @@
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              ShutdownMode="OnMainWindowClose">
-    <Application.Resources />
+    <Application.Resources>
+        <!-- 按数据项的 Tone（PackageTone）着色：匹配／可导入绿、可转换蓝、要留意橙、不符／损坏红、次要灰。
+             颜色取自 Fluent 主题，深浅色自动切换；存档与地图页、高度图页共用 -->
+        <Style x:Key="ToneText" TargetType="TextBlock">
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding Tone}" Value="Good">
+                    <Setter Property="Foreground" Value="{DynamicResource SystemFillColorSuccessBrush}" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding Tone}" Value="Accent">
+                    <Setter Property="Foreground" Value="{DynamicResource AccentTextFillColorPrimaryBrush}" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding Tone}" Value="Muted">
+                    <Setter Property="Foreground" Value="{DynamicResource TextFillColorSecondaryBrush}" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding Tone}" Value="Warning">
+                    <Setter Property="Foreground" Value="{DynamicResource SystemFillColorCautionBrush}" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding Tone}" Value="Error">
+                    <Setter Property="Foreground" Value="{DynamicResource SystemFillColorCriticalBrush}" />
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+    </Application.Resources>
 </Application>

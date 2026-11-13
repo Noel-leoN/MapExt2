@@ -38,7 +38,7 @@
                 <views:SavesMapsPage />
             </TabItem>
             <TabItem Header="{Binding [Tab.Heightmaps], Source={x:Static svc:Loc.Instance}}">
-                <TextBlock Text="{Binding [Tab.Pending], Source={x:Static svc:Loc.Instance}}" Margin="16" />
+                <views:HeightmapViewerPage />
             </TabItem>
         </TabControl>
 

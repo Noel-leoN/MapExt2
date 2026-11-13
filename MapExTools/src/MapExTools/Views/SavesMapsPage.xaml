@@ -5,26 +5,7 @@
              xmlns:views="clr-namespace:MapExTools.Views"
              xmlns:pkg="clr-namespace:MapExTools.Core.Packages;assembly=MapExTools.Core">
     <UserControl.Resources>
-        <!-- 按醒目程度着色：匹配绿、可转换蓝、要留意橙、不符与损坏红、未知灰 -->
-        <Style x:Key="ToneText" TargetType="TextBlock">
-            <Style.Triggers>
-                <DataTrigger Binding="{Binding Tone}" Value="Good">
-                    <Setter Property="Foreground" Value="{DynamicResource SystemFillColorSuccessBrush}" />
-                </DataTrigger>
-                <DataTrigger Binding="{Binding Tone}" Value="Accent">
-                    <Setter Property="Foreground" Value="{DynamicResource AccentTextFillColorPrimaryBrush}" />
-                </DataTrigger>
-                <DataTrigger Binding="{Binding Tone}" Value="Muted">
-                    <Setter Property="Foreground" Value="{DynamicResource TextFillColorSecondaryBrush}" />
-                </DataTrigger>
-                <DataTrigger Binding="{Binding Tone}" Value="Warning">
-                    <Setter Property="Foreground" Value="{DynamicResource SystemFillColorCautionBrush}" />
-                </DataTrigger>
-                <DataTrigger Binding="{Binding Tone}" Value="Error">
-                    <Setter Property="Foreground" Value="{DynamicResource SystemFillColorCriticalBrush}" />
-                </DataTrigger>
-            </Style.Triggers>
-        </Style>
+        <!-- 着色样式 ToneText 定义在 App.xaml，与高度图页共用 -->
 
         <!-- 存档／地图切换：单选按钮画成切换按钮 -->
         <Style x:Key="KindToggle" TargetType="RadioButton" BasedOn="{StaticResource {x:Type ToggleButton}}">

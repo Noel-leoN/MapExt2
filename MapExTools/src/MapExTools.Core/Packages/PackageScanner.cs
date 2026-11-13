@@ -33,46 +33,13 @@ public static class PackageScanner
         return new PackageScanResult(MarkDuplicates(packages), started, watch.Elapsed);
     }
 
-    /// <summary>递归列出目录下的 .cok，按路径排序。读不了的子目录跳过。</summary>
-    public static IReadOnlyList<string> EnumeratePackageFiles(string root)
-    {
-        ArgumentException.ThrowIfNullOrEmpty(root);
-
-        var result = new List<string>();
-        var pending = new Stack<string>();
-        if (Directory.Exists(root))
-            pending.Push(Path.GetFullPath(root));
-
-        while (pending.Count > 0)
-        {
-            string dir = pending.Pop();
-            try
-            {
-                foreach (string file in Directory.EnumerateFiles(dir))
-                {
-                    string name = Path.GetFileName(file);
-                    if (!IsSkipped(name) && string.Equals(Path.GetExtension(name), CokPackageReader.PackageExtension, StringComparison.OrdinalIgnoreCase))
-                        result.Add(file);
-                }
-
-                foreach (string sub in Directory.EnumerateDirectories(dir))
-                {
-                    if (!IsSkipped(Path.GetFileName(sub)))
-                        pending.Push(sub);
-                }
-            }
-            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
-            {
-                // 与游戏一致：这个目录读不了就跳过
-            }
-        }
-
-        result.Sort(StringComparer.OrdinalIgnoreCase);
-        return result;
-    }
+    /// <summary>递归列出目录下的 .cok，按路径排序（游戏的跳过规则见 <see cref="UserDataFiles"/>）。</summary>
+    public static IReadOnlyList<string> EnumeratePackageFiles(string root) =>
+        UserDataFiles.Enumerate(root, [CokPackageReader.PackageExtension]);
 
     /// <summary>
-    /// 元数据 guid 相同的包互相标出（Phase 0.3：复制出来的存档与原包 guid 相同，游戏里只会认其中一个）。
+    /// 元数据 guid 相同的包互相标出（Phase 0.3：复制出来的存档与原包 guid 相同）。游戏按 guid 登记资产，
+    /// 后扫到的同 guid 条目被忽略，只记一条 Verbose 日志（<c>FileSystemDataSource.AddEntry</c>），所以只会列出其中一个。
     /// </summary>
     public static IReadOnlyList<CokPackageInfo> MarkDuplicates(IReadOnlyList<CokPackageInfo> packages)
     {
@@ -92,7 +59,4 @@ public static class PackageScanner
                 : p)
             .ToList();
     }
-
-    /// <summary>游戏跳过以 <c>~</c> 或 <c>.</c> 开头的文件和目录（含 <c>.packages</c>）。</summary>
-    private static bool IsSkipped(string name) => name.StartsWith('~') || name.StartsWith('.');
 }

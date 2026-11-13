@@ -475,6 +475,108 @@ public static class Strings
         ["Saves.Preview.Corrupt"] = ["Damaged: {0}", "已损坏：{0}", "已損毀：{0}"],
         ["Saves.Preview.Loading"] = ["Loading…", "读取中…", "讀取中…"],
         ["Saves.Preview.Error"] = ["Cannot read: {0}", "无法读取：{0}", "無法讀取：{0}"],
+
+        // === 高度图：页面 ===
+        ["Heightmaps.Folder"] = ["Heightmaps folder: {0}", "高度图目录：{0}", "高度圖目錄：{0}"],
+        ["Heightmaps.Open"] = ["Open file…", "打开文件…", "開啟檔案…"],
+        ["Heightmaps.Refresh"] = ["Refresh", "刷新", "重新整理"],
+        ["Heightmaps.OpenFolder"] = ["Open folder", "打开目录", "開啟資料夾"],
+        ["Heightmaps.FolderMissing"] = ["The folder does not exist: {0}", "目录不存在：{0}", "資料夾不存在：{0}"],
+        ["Heightmaps.FileFilter"] = [
+            "Images (*.png;*.tif;*.tiff;*.jpg;*.jpeg)|*.png;*.tif;*.tiff;*.jpg;*.jpeg|All files (*.*)|*.*",
+            "图片 (*.png;*.tif;*.tiff;*.jpg;*.jpeg)|*.png;*.tif;*.tiff;*.jpg;*.jpeg|所有文件 (*.*)|*.*",
+            "圖片 (*.png;*.tif;*.tiff;*.jpg;*.jpeg)|*.png;*.tif;*.tiff;*.jpg;*.jpeg|所有檔案 (*.*)|*.*",
+        ],
+        ["Heightmaps.NoSelection"] = [
+            "Select a heightmap on the left, or open or drop an image file.",
+            "在左侧选择一张高度图，或打开、拖入图片文件。",
+            "在左側選擇一張高度圖，或開啟、拖入圖片檔案。",
+        ],
+        ["Heightmaps.Status"] = [
+            "{0} images: {1} can be imported, {2} cannot",
+            "共 {0} 张图：可导入 {1}、不可导入 {2}",
+            "共 {0} 張圖：可匯入 {1}、不可匯入 {2}",
+        ],
+        ["Heightmaps.Scanning"] = ["Reading the Heightmaps folder…", "正在读取高度图目录…", "正在讀取高度圖目錄…"],
+        ["Heightmaps.View"] = ["View", "视图", "檢視"],
+        ["Heightmaps.View.Raw"] = ["Grayscale (raw)", "原始灰度", "原始灰階"],
+        ["Heightmaps.View.Stretched"] = ["Stretched contrast", "自动拉伸", "自動拉伸"],
+        ["Heightmaps.View.Layered"] = ["Layered by elevation", "分层着色", "分層著色"],
+        ["Heightmaps.HeightScale"] = ["Height scale (m)", "高度比例（米）", "高度比例（公尺）"],
+        ["Heightmaps.SeaLevel"] = ["Sea level (m)", "海平面（米）", "海平面（公尺）"],
+        ["Heightmaps.Fit"] = ["Fit", "适应窗口", "符合視窗"],
+        ["Heightmaps.ActualPixels"] = ["Actual pixels", "实际像素", "實際像素"],
+        ["Heightmaps.Zoom"] = ["{0:0}%", "{0:0}%", "{0:0}%"],
+        ["Heightmaps.Legend"] = ["Legend", "图例", "圖例"],
+        ["Heightmaps.Decoding"] = ["Decoding…", "解码中…", "解碼中…"],
+        ["Heightmaps.BadHeightScale"] = [
+            "The height scale must be between 200 and 10000 m; the previous value is kept.",
+            "高度比例须在 200–10000 米之间，仍用上一个值。",
+            "高度比例須在 200–10000 公尺之間，仍用上一個值。",
+        ],
+        ["Heightmaps.BadSeaLevel"] = [
+            "The sea level must be a number; the previous value is kept.",
+            "海平面须为数字，仍用上一个值。",
+            "海平面須為數字，仍用上一個值。",
+        ],
+
+        // === 高度图：格式与能否导入 ===
+        ["Heightmaps.Kind.Gray16"] = ["16-bit grayscale", "16 位灰度", "16 位元灰階"],
+        ["Heightmaps.Kind.Rgba16"] = [
+            "16-bit RGBA (the game uses the R channel)",
+            "16 位 RGBA（游戏取 R 通道）",
+            "16 位元 RGBA（遊戲取 R 通道）",
+        ],
+        ["Heightmaps.Kind.Bits"] = ["{0}-bit, {1} channel(s)", "{0} 位 · {1} 通道", "{0} 位元 · {1} 通道"],
+        ["Heightmaps.Kind.Float"] = ["{0}-bit floating point, {1} channel(s)", "{0} 位浮点 · {1} 通道", "{0} 位元浮點 · {1} 通道"],
+        ["Heightmaps.Ok"] = ["Can be imported", "可以导入游戏", "可以匯入遊戲"],
+        ["Heightmaps.OkShort"] = ["OK", "可导入", "可匯入"],
+        ["Heightmaps.WrongSize"] = [
+            "Wrong size: the game needs 4096×4096",
+            "尺寸不符：游戏要求 4096×4096",
+            "尺寸不符：遊戲要求 4096×4096",
+        ],
+        ["Heightmaps.WrongSizeShort"] = ["Wrong size", "尺寸不符", "尺寸不符"],
+        ["Heightmaps.WrongFormat"] = [
+            "Wrong format: the game needs 16-bit grayscale or 16-bit RGBA",
+            "格式不符：游戏要求 16 位灰度或 16 位 RGBA",
+            "格式不符：遊戲要求 16 位元灰階或 16 位元 RGBA",
+        ],
+        ["Heightmaps.WrongFormatShort"] = ["Wrong format", "格式不符", "格式不符"],
+        ["Heightmaps.Unrecognized"] = ["Unrecognized image file", "认不出的图片文件", "無法辨識的圖片檔"],
+        ["Heightmaps.ReadError"] = ["Cannot read: {0}", "无法读取：{0}", "無法讀取：{0}"],
+        ["Heightmaps.TooLarge"] = [
+            "Larger than 4096×4096: the content is not shown.",
+            "大于 4096×4096，不显示内容。",
+            "大於 4096×4096，不顯示內容。",
+        ],
+        ["Heightmaps.DecodeFailed"] = ["Could not decode the image: {0}", "无法解码图片：{0}", "無法解碼圖片：{0}"],
+
+        // === 高度图：读数与图例 ===
+        ["Heightmaps.Size"] = ["{0}×{1} · {2}", "{0}×{1} · {2}", "{0}×{1} · {2}"],
+        ["Heightmaps.RawRange"] = ["Raw values {0} – {1}", "原始值 {0} – {1}", "原始值 {0} – {1}"],
+        ["Heightmaps.ElevationRange"] = [
+            "Elevation {0:N1} – {1:N1} m (mean {2:N1} m)",
+            "海拔 {0:N1} – {1:N1} 米（平均 {2:N1} 米）",
+            "海拔 {0:N1} – {1:N1} 公尺（平均 {2:N1} 公尺）",
+        ],
+        ["Heightmaps.Hover"] = [
+            "x {0}, y {1} · raw {2} · elevation {3:N1} m",
+            "x {0}，y {1} · 原始值 {2} · 海拔 {3:N1} 米",
+            "x {0}，y {1} · 原始值 {2} · 海拔 {3:N1} 公尺",
+        ],
+        ["Heightmaps.AboveSea"] = [" · {0:N1} m above sea level", " · 高出海平面 {0:N1} 米", " · 高出海平面 {0:N1} 公尺"],
+        ["Heightmaps.BelowSea"] = [" · {0:N1} m below sea level", " · 低于海平面 {0:N1} 米", " · 低於海平面 {0:N1} 公尺"],
+        ["Heightmaps.Legend.Band"] = ["{0:N0} – {1:N0} m", "{0:N0} – {1:N0} 米", "{0:N0} – {1:N0} 公尺"],
+        ["Heightmaps.Legend.Coast"] = [
+            "Coastline (sea level {0:N1} m)",
+            "海岸线（海平面 {0:N1} 米）",
+            "海岸線（海平面 {0:N1} 公尺）",
+        ],
+        ["Heightmaps.Legend.Black"] = ["Black: {0:N0} m", "黑：{0:N0} 米", "黑：{0:N0} 公尺"],
+        ["Heightmaps.Legend.White"] = ["White: {0:N0} m", "白：{0:N0} 米", "白：{0:N0} 公尺"],
+        ["Heightmaps.Legend.BlackAtMost"] = ["Black: {0:N0} m and below", "黑：{0:N0} 米及以下", "黑：{0:N0} 公尺及以下"],
+        ["Heightmaps.Legend.WhiteAtLeast"] = ["White: {0:N0} m and above", "白：{0:N0} 米及以上", "白：{0:N0} 公尺及以上"],
     };
 
     /// <summary>全部文案键，供单元测试检查。</summary>
