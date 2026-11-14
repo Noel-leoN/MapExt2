@@ -50,6 +50,12 @@ public sealed class UserDataPaths
     /// <summary>本地 Mod 目录。工具的 exe 不能放在这里，否则会被游戏当作 Mod 扫描。</summary>
     public string ModsDir => Combine("Mods");
 
+    /// <summary>下次启动的一次性参数：游戏启动时读取后删除。</summary>
+    public string RunOnceFile => Combine("runOnce.txt");
+
+    /// <summary>Skyve 的游戏内 Mod 记下的游戏路径与平台，找游戏的第三顺位（只读）。</summary>
+    public string SkyveFolderSettings => Combine("ModsSettings/Skyve/FolderSettings.json");
+
     private string Combine(string relative) =>
         Path.GetFullPath(Path.Combine(Root, relative.Replace('/', Path.DirectorySeparatorChar)));
 }

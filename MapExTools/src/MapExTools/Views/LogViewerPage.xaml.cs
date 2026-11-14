@@ -79,8 +79,8 @@ public partial class LogViewerPage : UserControl
 
     private sealed record Choice<T>(T Value, string Display);
 
-    /// <summary>游戏目录下的 crash.log；游戏路径未知时为 null（启动服务 2.2 会填上）。</summary>
-    private static string? CrashLogPath => LogSources.GetCrashLogPath(App.Services.Config.GameExePath);
+    /// <summary>游戏目录下的 crash.log；游戏路径未知时为 null（路径由启动服务定位，计划 2.2）。</summary>
+    private static string? CrashLogPath => LogSources.GetCrashLogPath(App.Services.GameLocation.Game?.ExePath);
 
     private void OnLoaded(object sender, RoutedEventArgs e)
     {
@@ -221,7 +221,7 @@ public partial class LogViewerPage : UserControl
     /// <summary>重新列出日志文件（新出现的 *.log 也会列上），保留当前选中的那个。</summary>
     private void PopulateLogBox()
     {
-        IReadOnlyList<LogSource> sources = LogSources.Enumerate(App.Services.Paths, App.Services.Config.GameExePath);
+        IReadOnlyList<LogSource> sources = LogSources.Enumerate(App.Services.Paths, App.Services.GameLocation.Game?.ExePath);
         string? current = (LogBox.SelectedItem as LogSource)?.Path ?? _tail?.Path;
 
         _populating = true;

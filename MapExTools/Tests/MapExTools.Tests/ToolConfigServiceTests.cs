@@ -1,5 +1,6 @@
 using System.Text;
 using MapExTools.Core.Config;
+using MapExTools.Core.Launch;
 using MapExTools.Core.Paths;
 
 namespace MapExTools.Tests;
@@ -83,6 +84,60 @@ public sealed class ToolConfigServiceTests : IDisposable
         Assert.False(string.IsNullOrEmpty(result.Error));
         Assert.Equal("{ not json", File.ReadAllText(service.CorruptBackupPath));
         Assert.Equal(ThemePreference.System, result.Config.Theme);
+    }
+
+    [Fact]
+    public void LaunchOptions_RoundTrip()
+    {
+        ToolConfigService service = CreateService();
+        var config = new ToolConfig();
+        config.Launch.Channel = LaunchChannel.RunOnce;
+        config.Launch.DeveloperMode = true;
+        config.Launch.LogLevel = "DEBUG";
+        config.Launch.CustomArguments = "--x \"a b\"";
+        service.Save(config);
+
+        string json = File.ReadAllText(service.ConfigPath);
+        Assert.Contains("\"launch\": {", json);
+        Assert.Contains("\"channel\": \"RunOnce\"", json);
+
+        LaunchOptions loaded = service.Load().Config.Launch;
+        Assert.Equal(LaunchChannel.RunOnce, loaded.Channel);
+        Assert.True(loaded.DeveloperMode);
+        Assert.False(loaded.NoSplash);
+        Assert.Equal("DEBUG", loaded.LogLevel);
+        Assert.Equal("--x \"a b\"", loaded.CustomArguments);
+    }
+
+    [Theory]
+    [InlineData("""{ "language": "en-US" }""")]
+    [InlineData("""{ "launch": null }""")]
+    public void Load_MissingOrNullLaunch_UsesDefaults(string json)
+    {
+        ToolConfigService service = CreateService();
+        Directory.CreateDirectory(Path.GetDirectoryName(service.ConfigPath)!);
+        File.WriteAllText(service.ConfigPath, json, Encoding.UTF8);
+
+        ToolConfigLoadResult result = service.Load();
+        Assert.Equal(ToolConfigLoadStatus.Loaded, result.Status);
+        Assert.Equal(LaunchChannel.Direct, result.Config.Launch.Channel);
+    }
+
+    [Fact]
+    public void Save_PreservesUnknownLaunchFields()
+    {
+        ToolConfigService service = CreateService();
+        Directory.CreateDirectory(Path.GetDirectoryName(service.ConfigPath)!);
+        File.WriteAllText(service.ConfigPath, """{ "launch": { "channel": "Steam", "futureOption": 3 } }""", Encoding.UTF8);
+
+        ToolConfigLoadResult loaded = service.Load();
+        Assert.Equal(LaunchChannel.Steam, loaded.Config.Launch.Channel);
+        loaded.Config.Launch.NoSplash = true;
+        service.Save(loaded.Config);
+
+        string json = File.ReadAllText(service.ConfigPath);
+        Assert.Contains("\"futureOption\": 3", json);
+        Assert.Contains("\"noSplash\": true", json);
     }
 
     [Fact]

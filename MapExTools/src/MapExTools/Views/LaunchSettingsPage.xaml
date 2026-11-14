@@ -32,9 +32,133 @@
         </Style>
     </UserControl.Resources>
 
-    <!-- 启动与设定（计划 2.3）：MapExt 的 9 个启动期设定、MapExTools 的位置与快捷方式；启动游戏一栏在 2.2 加 -->
+    <!-- 启动与设定：启动游戏（计划 2.2）、MapExt 的 9 个启动期设定、MapExTools 的位置与快捷方式（计划 2.3） -->
     <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
         <StackPanel Margin="12,8,12,4">
+
+            <!-- === 启动游戏：按钮、命令行预览与状态在上，下面是游戏位置、启动方式与参数（存进 MapExTools.json） === -->
+            <Border Style="{StaticResource Card}">
+                <StackPanel>
+                    <!-- 标题行右边是启动按钮：打开页面不用往下翻就看得到 -->
+                    <DockPanel>
+                        <Button x:Name="LaunchButton" DockPanel.Dock="Right" VerticalAlignment="Top" Margin="16,2,0,0"
+                                Style="{DynamicResource AccentButtonStyle}" MinWidth="140" Padding="16,6" Click="OnLaunchClick" />
+                        <StackPanel>
+                            <TextBlock Style="{StaticResource SectionTitle}"
+                                       Text="{Binding [Launch.Title], Source={x:Static svc:Loc.Instance}}" />
+                            <TextBlock Style="{StaticResource MutedText}"
+                                       Text="{Binding [Launch.Intro], Source={x:Static svc:Loc.Instance}}" />
+                        </StackPanel>
+                    </DockPanel>
+
+                    <!-- 命令行预览：可选中复制 -->
+                    <TextBox x:Name="CommandPreviewBox" Margin="0,8,0,0" IsReadOnly="True" TextWrapping="Wrap"
+                             BorderThickness="0" Background="Transparent" Padding="0"
+                             FontFamily="Cascadia Mono, Consolas, Courier New" />
+
+                    <!-- 状态：游戏在运行、Steam 没开、上次启动的结果；runOnce.txt 待生效时可清除 -->
+                    <ItemsControl x:Name="LaunchStatusLines" Margin="0,4,0,0">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate DataType="{x:Type views:ToneLine}">
+                                <TextBlock Text="{Binding Text}" TextWrapping="Wrap" Margin="0,0,0,2" Style="{StaticResource ToneText}" />
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                    <TextBlock x:Name="RunOncePendingText" TextWrapping="Wrap" Margin="0,0,0,2" Visibility="Collapsed"
+                               Foreground="{DynamicResource SystemFillColorCautionBrush}">
+                        <Run x:Name="RunOncePendingRun" />
+                        <Hyperlink Click="OnClearRunOnceClick">
+                            <Run Text="{Binding [Launch.ClearRunOnce], Source={x:Static svc:Loc.Instance}, Mode=OneWay}" />
+                        </Hyperlink>
+                    </TextBlock>
+
+                    <!-- 游戏位置：手动指定 → Steam → Skyve 的记录 -->
+                    <TextBlock x:Name="GameLocationText" TextWrapping="Wrap" Margin="0,12,0,0" />
+                    <TextBlock x:Name="GameLocationNote" TextWrapping="Wrap" Margin="0,2,0,0" Visibility="Collapsed"
+                               Foreground="{DynamicResource SystemFillColorCautionBrush}" />
+                    <WrapPanel Margin="0,4,0,0">
+                        <TextBlock VerticalAlignment="Center" Margin="0,0,16,0">
+                            <Hyperlink x:Name="ChooseGameLink" Click="OnChooseGameClick">
+                                <Run Text="{Binding [Launch.Choose], Source={x:Static svc:Loc.Instance}, Mode=OneWay}" />
+                            </Hyperlink>
+                        </TextBlock>
+                        <TextBlock x:Name="AutoLocateText" VerticalAlignment="Center">
+                            <Hyperlink Click="OnAutoLocateClick">
+                                <Run Text="{Binding [Launch.AutoLocate], Source={x:Static svc:Loc.Instance}, Mode=OneWay}" />
+                            </Hyperlink>
+                        </TextBlock>
+                    </WrapPanel>
+
+                    <!-- 启动方式：三条通道，下面是所选通道的说明 -->
+                    <TextBlock Style="{StaticResource GroupTitle}" Margin="0,14,0,6"
+                               Text="{Binding [Launch.Group.Channel], Source={x:Static svc:Loc.Instance}}" />
+                    <WrapPanel>
+                        <RadioButton x:Name="DirectChannelRadio" GroupName="LaunchChannel" Margin="0,0,24,2" Checked="OnLaunchOptionChanged"
+                                     Content="{Binding [Launch.Channel.Direct], Source={x:Static svc:Loc.Instance}}" />
+                        <RadioButton x:Name="SteamChannelRadio" GroupName="LaunchChannel" Margin="0,0,24,2" Checked="OnLaunchOptionChanged"
+                                     Content="{Binding [Launch.Channel.Steam], Source={x:Static svc:Loc.Instance}}" />
+                        <RadioButton x:Name="RunOnceChannelRadio" GroupName="LaunchChannel" Margin="0,0,24,2" Checked="OnLaunchOptionChanged"
+                                     Content="{Binding [Launch.Channel.RunOnce], Source={x:Static svc:Loc.Instance}}" />
+                    </WrapPanel>
+                    <TextBlock x:Name="ChannelNoteText" Style="{StaticResource MutedText}" Margin="0,2,0,0" />
+                    <TextBlock x:Name="ChannelBlockText" TextWrapping="Wrap" Margin="0,2,0,0" Visibility="Collapsed"
+                               Foreground="{DynamicResource SystemFillColorCautionBrush}" />
+
+                    <!-- 参数：左常规、右开发者 -->
+                    <Grid Margin="0,14,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Grid.Column="0" Margin="0,0,40,0" MaxWidth="360">
+                            <TextBlock Style="{StaticResource GroupTitle}"
+                                       Text="{Binding [Launch.Group.General], Source={x:Static svc:Loc.Instance}}" />
+                            <CheckBox x:Name="DisableUserSectionBox" Margin="0,1" Checked="OnLaunchOptionChanged" Unchecked="OnLaunchOptionChanged"
+                                      Content="{Binding [Launch.Opt.DisableUserSection], Source={x:Static svc:Loc.Instance}}" />
+                            <CheckBox x:Name="DisableCodeModdingBox" Margin="0,1" Checked="OnLaunchOptionChanged" Unchecked="OnLaunchOptionChanged"
+                                      Content="{Binding [Launch.Opt.DisableCodeModding], Source={x:Static svc:Loc.Instance}}" />
+                            <CheckBox x:Name="DisableModdingBox" Margin="0,1" Checked="OnLaunchOptionChanged" Unchecked="OnLaunchOptionChanged"
+                                      Content="{Binding [Launch.Opt.DisableModding], Source={x:Static svc:Loc.Instance}}" />
+                            <CheckBox x:Name="NoSplashBox" Margin="0,1" Checked="OnLaunchOptionChanged" Unchecked="OnLaunchOptionChanged"
+                                      Content="{Binding [Launch.Opt.NoSplash], Source={x:Static svc:Loc.Instance}}" />
+                        </StackPanel>
+                        <StackPanel Grid.Column="1">
+                            <TextBlock Style="{StaticResource GroupTitle}"
+                                       Text="{Binding [Launch.Group.Developer], Source={x:Static svc:Loc.Instance}}" />
+                            <CheckBox x:Name="DeveloperModeBox" Margin="0,1" Checked="OnLaunchOptionChanged" Unchecked="OnLaunchOptionChanged"
+                                      Content="{Binding [Launch.Opt.DeveloperMode], Source={x:Static svc:Loc.Instance}}" />
+                            <CheckBox x:Name="UiDeveloperModeBox" Margin="0,1" Checked="OnLaunchOptionChanged" Unchecked="OnLaunchOptionChanged"
+                                      Content="{Binding [Launch.Opt.UiDeveloperMode], Source={x:Static svc:Loc.Instance}}" />
+                            <CheckBox x:Name="DuplicateLogBox" Margin="0,1" Checked="OnLaunchOptionChanged" Unchecked="OnLaunchOptionChanged"
+                                      Content="{Binding [Launch.Opt.DuplicateLogToDefault], Source={x:Static svc:Loc.Instance}}" />
+                            <StackPanel Orientation="Horizontal" Margin="0,4,0,4">
+                                <TextBlock VerticalAlignment="Center" Margin="0,0,8,0"
+                                           Text="{Binding [Launch.Opt.LogLevel], Source={x:Static svc:Loc.Instance}}" />
+                                <ComboBox x:Name="LogLevelBox" MinWidth="170" DisplayMemberPath="Display"
+                                          SelectionChanged="OnLaunchOptionChanged" />
+                            </StackPanel>
+                            <CheckBox x:Name="DisableBurstBox" Margin="0,1" Checked="OnLaunchOptionChanged" Unchecked="OnLaunchOptionChanged"
+                                      Content="{Binding [Launch.Opt.DisableBurst], Source={x:Static svc:Loc.Instance}}" />
+                            <TextBlock x:Name="BurstRunOnceText" Style="{StaticResource MutedText}" Margin="28,0,0,0" Visibility="Collapsed"
+                                       Text="{Binding [Launch.BurstRunOnce], Source={x:Static svc:Loc.Instance}}" />
+                        </StackPanel>
+                    </Grid>
+
+                    <!-- 自定义参数：原样附在后面，失焦时保存 -->
+                    <DockPanel Margin="0,12,0,0">
+                        <TextBlock DockPanel.Dock="Left" VerticalAlignment="Center" Margin="0,0,8,0"
+                                   Text="{Binding [Launch.Opt.Custom], Source={x:Static svc:Loc.Instance}}" />
+                        <TextBox x:Name="CustomArgumentsBox" AcceptsReturn="False" TextChanged="OnCustomArgumentsChanged"
+                                 LostKeyboardFocus="OnCustomArgumentsLostFocus"
+                                 AutomationProperties.Name="{Binding [Launch.Opt.Custom], Source={x:Static svc:Loc.Instance}}" />
+                    </DockPanel>
+                    <TextBlock Style="{StaticResource MutedText}" Margin="0,2,0,0"
+                               Text="{Binding [Launch.CustomNote], Source={x:Static svc:Loc.Instance}}" />
+                    <TextBlock x:Name="CustomQuotesText" TextWrapping="Wrap" Margin="0,2,0,0" Visibility="Collapsed"
+                               Foreground="{DynamicResource SystemFillColorCautionBrush}"
+                               Text="{Binding [Launch.CustomQuotes], Source={x:Static svc:Loc.Instance}}" />
+                </StackPanel>
+            </Border>
 
             <!-- === MapExt 启动设定（MapExtPDX.coc） === -->
             <Border Style="{StaticResource Card}">

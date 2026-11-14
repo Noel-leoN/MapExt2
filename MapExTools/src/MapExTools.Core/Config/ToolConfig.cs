@@ -1,5 +1,6 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using MapExTools.Core.Launch;
 
 namespace MapExTools.Core.Config;
 
@@ -29,6 +30,9 @@ public sealed class ToolConfig
 
     /// <summary>手动指定的 <c>Cities2.exe</c> 路径；null 表示自动定位。</summary>
     public string? GameExePath { get; set; }
+
+    /// <summary>启动方式与参数（计划 2.2）。</summary>
+    public LaunchOptions Launch { get; set; } = new();
 
     /// <summary>本版本不认识的字段。</summary>
     [JsonExtensionData]

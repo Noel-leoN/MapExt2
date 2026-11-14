@@ -17,12 +17,13 @@ using MapExtPDX;
 namespace MapExTools.Views;
 
 /// <summary>
-/// 启动与设定页（计划 2.3）。上半部分改 <c>MapExtPDX.coc</c> 里 MapExt 只在启动时读取的 9 个设定，做法沿用开发版
-/// <c>Set-MapExtStartup.ps1</c> 的界面：界面上的改动相对最后一次读取成功的设定计算，保存时只写有改动的键；
-/// 游戏运行中不能保存（退出时游戏会用内存里的设定写回）。下半部分是 MapExTools 的位置与桌面快捷方式（§2 第 9 条）。
+/// 启动与设定页。最上面是启动游戏（计划 2.2，见 <c>LaunchSettingsPage.Launch.cs</c>）。中间改 <c>MapExtPDX.coc</c>
+/// 里 MapExt 只在启动时读取的 9 个设定（计划 2.3），做法沿用开发版 <c>Set-MapExtStartup.ps1</c> 的界面：界面上的改动
+/// 相对最后一次读取成功的设定计算，保存时只写有改动的键；游戏运行中不能保存（退出时游戏会用内存里的设定写回）。
+/// 最下面是 MapExTools 的位置与桌面快捷方式（§2 第 9 条）。
 ///
 /// <para>页面可见时每 1.5 秒检查一次：游戏刚退出（退出时写回了设定）或文件被外部改过（记事本、存档页的"切到该模式"），
-/// 就重新读取，界面上未保存的改动保留。</para>
+/// 就重新读取，界面上未保存的改动保留；同时刷新启动一栏的 Steam 状态与 runOnce.txt。</para>
 /// </summary>
 public partial class LaunchSettingsPage : UserControl
 {
@@ -59,6 +60,7 @@ public partial class LaunchSettingsPage : UserControl
         // 第一次显示之前先读一遍，未打开本页就关窗时也能判断有没有未保存的改动
         _gameRunning = GameProcess.IsRunning();
         Reload(keepEdits: false);
+        InitLaunch();
     }
 
     /// <summary>.coc 的存在与否、修改时间与长度，用来发现外部改动。</summary>
@@ -83,6 +85,7 @@ public partial class LaunchSettingsPage : UserControl
         UpdateOptionTexts();
         OnPollTick();
         _pollTimer.Start();
+        RefreshLaunchOnLoad();
         RefreshInstall();
         _ = LoadAppliedAsync();
     }
@@ -98,6 +101,8 @@ public partial class LaunchSettingsPage : UserControl
         UpdateOptionTexts();
         UpdateState();
         UpdateAppliedText();
+        PopulateLogLevels();
+        UpdateLaunchState();
         RefreshInstall();
     }
 
@@ -121,6 +126,7 @@ public partial class LaunchSettingsPage : UserControl
 
         _gameRunning = running;
         UpdateState();
+        RefreshLaunchPoll(running);
     }
 
     // === 选项 ===
@@ -352,12 +358,16 @@ public partial class LaunchSettingsPage : UserControl
 
     // === 按钮与链接 ===
 
-    private void OnSaveClick(object sender, RoutedEventArgs e)
+    private void OnSaveClick(object sender, RoutedEventArgs e) => SaveSettings();
+
+    /// <summary>保存界面上的改动。返回 true 表示已写入或本来就没有改动；游戏运行中或写入失败时返回 false（失败已弹窗说明）。</summary>
+    private bool SaveSettings()
     {
         if (_state == null || !IsUsable)
-            return;
+            return false;
 
         IReadOnlyList<StartupSettingChange> pending = GetPending();
+        bool saved = false;
         try
         {
             CocSaveResult result = new CocSettingsManager(CocPath).Save(_state, GetUiValues());
@@ -368,12 +378,14 @@ public partial class LaunchSettingsPage : UserControl
                     break;
                 case CocSaveStatus.NoChanges:
                     _note = lang => Localized(lang, "Startup.NoChanges");
+                    saved = true;
                     break;
                 default:
                     string time = DateTime.Now.ToString("HH:mm:ss", CultureInfo.InvariantCulture);
                     Reload(keepEdits: false);
                     _note = lang => string.Format(CultureInfo.InvariantCulture, Localized(lang, "Startup.Saved"),
                         time, StartupSettingsText.ChangeList(pending, lang));
+                    saved = true;
                     break;
             }
         }
@@ -392,6 +404,7 @@ public partial class LaunchSettingsPage : UserControl
         }
 
         UpdateState();
+        return saved;
     }
 
     private void OnReloadClick(object sender, RoutedEventArgs e)
