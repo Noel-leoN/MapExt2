@@ -10,12 +10,30 @@
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
+        <!-- 横幅：在临时目录或下载文件夹里运行时提供"固定到本地"（计划 §2 第 9 条），只在玩家点击后执行 -->
+        <Border x:Name="PinBanner" Grid.Row="0" Visibility="Collapsed" Margin="16,12,16,0" Padding="12,8"
+                CornerRadius="4" BorderThickness="1"
+                Background="{DynamicResource SystemFillColorCautionBackgroundBrush}"
+                BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}">
+            <DockPanel>
+                <Button x:Name="BannerHideButton" DockPanel.Dock="Right" Content="×" Padding="10,2" Margin="8,0,0,0"
+                        VerticalAlignment="Center" Click="OnHideBannerClick"
+                        ToolTip="{Binding [Install.Banner.Hide], Source={x:Static svc:Loc.Instance}}"
+                        AutomationProperties.Name="{Binding [Install.Banner.Hide], Source={x:Static svc:Loc.Instance}}" />
+                <Button x:Name="BannerPinButton" DockPanel.Dock="Right" Margin="12,0,0,0" VerticalAlignment="Center"
+                        Style="{DynamicResource AccentButtonStyle}" Click="OnPinClick"
+                        Content="{Binding [Install.Pin], Source={x:Static svc:Loc.Instance}}" />
+                <TextBlock x:Name="BannerText" TextWrapping="Wrap" VerticalAlignment="Center" />
+            </DockPanel>
+        </Border>
+
         <!-- 顶部：界面语言与主题 -->
-        <StackPanel Grid.Row="0" Orientation="Horizontal" HorizontalAlignment="Right" Margin="16,12,16,4">
+        <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Right" Margin="16,12,16,4">
             <TextBlock Text="{Binding [Settings.Language], Source={x:Static svc:Loc.Instance}}"
                        VerticalAlignment="Center" Margin="0,0,8,0" />
             <ComboBox x:Name="LanguageBox" MinWidth="130" DisplayMemberPath="Display"
@@ -26,10 +44,10 @@
                       SelectionChanged="OnThemeChanged" />
         </StackPanel>
 
-        <!-- 四个功能页；各页在后续批次实现 -->
-        <TabControl Grid.Row="1" Margin="12,4,12,8">
+        <!-- 四个功能页 -->
+        <TabControl Grid.Row="2" Margin="12,4,12,8">
             <TabItem Header="{Binding [Tab.Launch], Source={x:Static svc:Loc.Instance}}">
-                <TextBlock Text="{Binding [Tab.Pending], Source={x:Static svc:Loc.Instance}}" Margin="16" />
+                <views:LaunchSettingsPage x:Name="LaunchPage" />
             </TabItem>
             <TabItem Header="{Binding [Tab.Logs], Source={x:Static svc:Loc.Instance}}">
                 <views:LogViewerPage />
@@ -43,7 +61,7 @@
         </TabControl>
 
         <!-- 底部常驻：游戏运行状态与用户数据目录 -->
-        <Border Grid.Row="2" BorderThickness="0,1,0,0" Padding="16,6"
+        <Border Grid.Row="3" BorderThickness="0,1,0,0" Padding="16,6"
                 BorderBrush="{DynamicResource {x:Static SystemColors.ActiveBorderBrushKey}}">
             <DockPanel>
                 <Ellipse x:Name="GameStateDot" Width="10" Height="10" Margin="0,0,8,0" VerticalAlignment="Center" />

@@ -1,9 +1,11 @@
+using System.ComponentModel;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Threading;
 using MapExTools.Core.Config;
 using MapExTools.Core.Game;
+using MapExTools.Core.Install;
 using MapExTools.Core.Localization;
 using MapExTools.Services;
 
@@ -20,6 +22,12 @@ public partial class MainWindow : Window
     // 填充下拉框时会触发 SelectionChanged，这段时间不当作用户操作
     private bool _populating;
 
+    // 已经确认过（固定到本地后从新位置重新打开），关窗时不再询问未保存的改动
+    private bool _closeConfirmed;
+
+    // 玩家关掉了横幅：只在本次运行中隐藏，不写配置
+    private bool _bannerHidden;
+
     public MainWindow()
     {
         InitializeComponent();
@@ -33,12 +41,72 @@ public partial class MainWindow : Window
         _pollTimer.Start();
         RefreshGameState();
         RefreshUserDataText();
+        RefreshBanner();
 
+        Closing += OnClosing;
         Closed += (_, _) =>
         {
             _pollTimer.Stop();
             Loc.Instance.LanguageChanged -= OnUiLanguageChanged;
         };
+    }
+
+    /// <summary>
+    /// "固定到本地"（横幅与启动页的按钮共用）：确认后复制、建快捷方式、从新位置启动，然后关闭本窗口。
+    /// 启动页有未保存的改动时在确认框里一并说明。
+    /// </summary>
+    internal void PinAndRestart()
+    {
+        if (!InstallLocationService.PinAndStart(this, confirm: true, LaunchPage.HasUnsavedChanges))
+            return;
+
+        _closeConfirmed = true;
+        Close();
+    }
+
+    private void OnClosing(object? sender, CancelEventArgs e)
+    {
+        if (_closeConfirmed || !LaunchPage.HasUnsavedChanges)
+            return;
+
+        if (MessageBox.Show(this, Loc.Instance["Startup.ConfirmClose"], Loc.Instance["App.Title"],
+                MessageBoxButton.YesNo, MessageBoxImage.Question) != MessageBoxResult.Yes)
+        {
+            e.Cancel = true;
+        }
+    }
+
+    // === 运行位置横幅 ===
+
+    private void RefreshBanner()
+    {
+        InstallLocation location = InstallLocationService.Current;
+        string? key = location.Kind switch
+        {
+            InstallLocationKind.Temp => "Install.Banner.Temp",
+            InstallLocationKind.Downloads => "Install.Banner.Downloads",
+            _ => null,
+        };
+        if (key == null || _bannerHidden)
+        {
+            PinBanner.Visibility = Visibility.Collapsed;
+            return;
+        }
+
+        BannerText.Text = Loc.Instance[key];
+        BannerPinButton.IsEnabled = !InstallLocationService.IsDevelopmentBuild;
+        BannerPinButton.ToolTip = InstallLocationService.IsDevelopmentBuild
+            ? Loc.Instance["Install.PinDevBuild"]
+            : Loc.Instance.Format("Install.PinTip", ToolPinning.DefaultPinnedDir);
+        PinBanner.Visibility = Visibility.Visible;
+    }
+
+    private void OnPinClick(object sender, RoutedEventArgs e) => PinAndRestart();
+
+    private void OnHideBannerClick(object sender, RoutedEventArgs e)
+    {
+        _bannerHidden = true;
+        PinBanner.Visibility = Visibility.Collapsed;
     }
 
     private sealed record Choice<T>(T Value, string Display);
@@ -92,6 +160,7 @@ public partial class MainWindow : Window
         _gameRunning = null;
         RefreshGameState();
         RefreshUserDataText();
+        RefreshBanner();
     }
 
     // === 状态栏 ===
