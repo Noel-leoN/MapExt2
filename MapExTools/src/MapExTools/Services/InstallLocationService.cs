@@ -30,7 +30,7 @@ internal static class InstallLocationService
 
         string exe = Environment.ProcessPath ?? Path.Combine(AppContext.BaseDirectory, ToolPinning.ExeName);
         Current = InstallLocation.Classify(ShellFolders.GetLongPath(exe), ShellFolders.Detect(paths.ModsDir));
-        IsDevelopmentBuild = File.Exists(Path.Combine(AppContext.BaseDirectory, "MapExTools.dll"));
+        IsDevelopmentBuild = Current.HasCompanionDll;
     }
 
     /// <summary>

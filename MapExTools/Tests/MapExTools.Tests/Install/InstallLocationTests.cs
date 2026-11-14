@@ -70,4 +70,32 @@ public sealed class InstallLocationTests
     {
         Assert.Equal(expected, InstallLocation.IsUnder(path, dir));
     }
+
+    [Fact]
+    public void HasCompanionDll_ChecksExeDirectory_NotBaseDirectory()
+    {
+        string tempRoot = Path.Combine(Path.GetTempPath(), "MapExTools.Tests", Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempRoot);
+        try
+        {
+            string exePath = Path.Combine(tempRoot, "MapExTools.exe");
+            File.WriteAllBytes(exePath, [0]);
+
+            // 单文件构建：exe 旁边没有 MapExTools.dll（即使测试运行目录 AppContext.BaseDirectory 下有同名 dll 也不受影响）
+            InstallLocation singleFile = InstallLocation.Classify(exePath, s_folders);
+            Assert.False(singleFile.HasCompanionDll);
+
+            // 多文件开发构建：exe 同目录下存在 MapExTools.dll
+            string dllPath = Path.Combine(tempRoot, "MapExTools.dll");
+            File.WriteAllBytes(dllPath, [0]);
+            Assert.True(singleFile.HasCompanionDll);
+            File.Delete(dllPath);
+        }
+        finally
+        {
+            foreach (string f in Directory.GetFiles(tempRoot))
+                File.Delete(f);
+            Directory.Delete(tempRoot, recursive: false);
+        }
+    }
 }

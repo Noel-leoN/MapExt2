@@ -34,6 +34,14 @@ public sealed record InstallLocation(string ExePath, InstallLocationKind Kind)
     /// <summary>是否该提供"固定到本地"：在临时目录、下载文件夹或游戏的 Mods 下运行时。</summary>
     public bool OffersPinning => Kind is InstallLocationKind.Temp or InstallLocationKind.Downloads or InstallLocationKind.GameMods;
 
+    /// <summary>
+    /// exe 自身所在目录下是否有 <c>MapExTools.dll</c>（开发时的多文件构建）。注意：单文件便携包设了
+    /// <c>IncludeAllContentForSelfExtract</c> 后会把托管程序集解压到 <c>%TEMP%\.net\</c> 并把
+    /// <see cref="AppContext.BaseDirectory"/> 指过去，因此必须按 <see cref="ExePath"/> 所在目录判断。
+    /// </summary>
+    public bool HasCompanionDll =>
+        Path.GetDirectoryName(ExePath) is { Length: > 0 } dir && File.Exists(Path.Combine(dir, "MapExTools.dll"));
+
     /// <summary>按所在目录归类。几个目录有重叠时依次以 Mods、固定位置、临时目录、下载文件夹为准。</summary>
     public static InstallLocation Classify(string exePath, InstallFolders folders)
     {
