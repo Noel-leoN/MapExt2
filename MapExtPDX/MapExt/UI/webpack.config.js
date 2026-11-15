@@ -72,7 +72,8 @@ module.exports = {
         test: /\.(png|jpe?g|gif|svg)$/i,
         type: "asset/resource",
         generator: {
-          filename: "images/[name][ext][query]",
+          // 所有 UI Mod 共享 coui://ui-mods/ 宿主，输出文件名加 mapext- 前缀防止与其他 Mod 同名图标互相覆盖
+          filename: "images/mapext-[name][ext][query]",
         },
       },
     ],
