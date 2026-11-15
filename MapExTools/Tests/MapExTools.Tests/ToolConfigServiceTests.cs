@@ -32,19 +32,27 @@ public sealed class ToolConfigServiceTests : IDisposable
         Assert.Equal(ToolConfigLoadStatus.Missing, result.Status);
         Assert.Null(result.Config.Language);
         Assert.Equal(ThemePreference.System, result.Config.Theme);
+        Assert.False(result.Config.LaunchOptionsExpanded);
     }
 
     [Fact]
     public void SaveThenLoad_RoundTrips_AndCreatesDirectory()
     {
         ToolConfigService service = CreateService();
-        service.Save(new ToolConfig { Language = "zh-HANT", Theme = ThemePreference.Dark, GameExePath = @"D:\Games\Cities2.exe" });
+        service.Save(new ToolConfig
+        {
+            Language = "zh-HANT",
+            Theme = ThemePreference.Dark,
+            GameExePath = @"D:\Games\Cities2.exe",
+            LaunchOptionsExpanded = true,
+        });
 
         ToolConfigLoadResult result = service.Load();
         Assert.Equal(ToolConfigLoadStatus.Loaded, result.Status);
         Assert.Equal("zh-HANT", result.Config.Language);
         Assert.Equal(ThemePreference.Dark, result.Config.Theme);
         Assert.Equal(@"D:\Games\Cities2.exe", result.Config.GameExePath);
+        Assert.True(result.Config.LaunchOptionsExpanded);
 
         string json = File.ReadAllText(service.ConfigPath);
         Assert.Contains("\"theme\": \"Dark\"", json);

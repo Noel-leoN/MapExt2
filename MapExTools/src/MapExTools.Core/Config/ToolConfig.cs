@@ -34,6 +34,9 @@ public sealed class ToolConfig
     /// <summary>启动方式与参数（计划 2.2）。</summary>
     public LaunchOptions Launch { get; set; } = new();
 
+    /// <summary>启动页"启动方式、游戏路径与参数"折叠栏是否展开；默认收起以把首屏留给 MapExt 启动设定。</summary>
+    public bool LaunchOptionsExpanded { get; set; }
+
     /// <summary>本版本不认识的字段。</summary>
     [JsonExtensionData]
     public Dictionary<string, JsonElement>? Extra { get; set; }

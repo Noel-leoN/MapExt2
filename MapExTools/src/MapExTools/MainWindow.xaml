@@ -10,13 +10,12 @@
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
-            <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
         <!-- 横幅：在临时目录或下载文件夹里运行时提供"固定到本地"（计划 §2 第 9 条），只在玩家点击后执行 -->
-        <Border x:Name="PinBanner" Grid.Row="0" Visibility="Collapsed" Margin="16,12,16,0" Padding="12,8"
+        <Border x:Name="PinBanner" Grid.Row="0" Visibility="Collapsed" Margin="16,10,16,0" Padding="12,8"
                 CornerRadius="4" BorderThickness="1"
                 Background="{DynamicResource SystemFillColorCautionBackgroundBrush}"
                 BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}">
@@ -32,20 +31,8 @@
             </DockPanel>
         </Border>
 
-        <!-- 顶部：界面语言与主题 -->
-        <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Right" Margin="16,12,16,4">
-            <TextBlock Text="{Binding [Settings.Language], Source={x:Static svc:Loc.Instance}}"
-                       VerticalAlignment="Center" Margin="0,0,8,0" />
-            <ComboBox x:Name="LanguageBox" MinWidth="130" DisplayMemberPath="Display"
-                      SelectionChanged="OnLanguageChanged" />
-            <TextBlock Text="{Binding [Settings.Theme], Source={x:Static svc:Loc.Instance}}"
-                       VerticalAlignment="Center" Margin="20,0,8,0" />
-            <ComboBox x:Name="ThemeBox" MinWidth="130" DisplayMemberPath="Display"
-                      SelectionChanged="OnThemeChanged" />
-        </StackPanel>
-
         <!-- 四个功能页 -->
-        <TabControl Grid.Row="2" Margin="12,4,12,8">
+        <TabControl Grid.Row="1" Margin="12,8,12,6">
             <TabItem Header="{Binding [Tab.Launch], Source={x:Static svc:Loc.Instance}}">
                 <views:LaunchSettingsPage x:Name="LaunchPage" />
             </TabItem>
@@ -60,8 +47,21 @@
             </TabItem>
         </TabControl>
 
+        <!-- 顶部右侧（与页签栏同行，节省一行垂直空间）：界面语言与主题 -->
+        <StackPanel Grid.Row="1" Orientation="Horizontal"
+                    HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,6,16,0">
+            <TextBlock Text="{Binding [Settings.Language], Source={x:Static svc:Loc.Instance}}"
+                       VerticalAlignment="Center" Margin="0,0,6,0" />
+            <ComboBox x:Name="LanguageBox" MinWidth="118" DisplayMemberPath="Display"
+                      SelectionChanged="OnLanguageChanged" />
+            <TextBlock Text="{Binding [Settings.Theme], Source={x:Static svc:Loc.Instance}}"
+                       VerticalAlignment="Center" Margin="14,0,6,0" />
+            <ComboBox x:Name="ThemeBox" MinWidth="112" DisplayMemberPath="Display"
+                      SelectionChanged="OnThemeChanged" />
+        </StackPanel>
+
         <!-- 底部常驻：游戏运行状态与用户数据目录 -->
-        <Border Grid.Row="3" BorderThickness="0,1,0,0" Padding="16,6"
+        <Border Grid.Row="2" BorderThickness="0,1,0,0" Padding="16,6"
                 BorderBrush="{DynamicResource {x:Static SystemColors.ActiveBorderBrushKey}}">
             <DockPanel>
                 <Ellipse x:Name="GameStateDot" Width="10" Height="10" Margin="0,0,8,0" VerticalAlignment="Center" />

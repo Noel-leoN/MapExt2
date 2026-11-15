@@ -30,6 +30,30 @@ public static class InstallText
         };
     }
 
+    /// <summary>位置与快捷方式折叠栏的标题摘要。</summary>
+    public static string Summary(InstallLocation location, ShortcutStatus? status, string language)
+    {
+        ArgumentNullException.ThrowIfNull(location);
+
+        string kindText = location.Kind switch
+        {
+            InstallLocationKind.Normal => Strings.Get(language, "Install.Summary.Normal"),
+            InstallLocationKind.Temp => Strings.Get(language, "Install.Summary.Temp"),
+            _ => Strings.Get(language, "Install.Kind." + location.Kind),
+        };
+        if (status == null)
+            return kindText;
+
+        string shortcutText = status.State switch
+        {
+            ShortcutState.Missing => Strings.Get(language, "Install.Summary.ShortcutMissing"),
+            ShortcutState.PointsHere => Strings.Get(language, "Install.Summary.ShortcutHere"),
+            ShortcutState.PointsElsewhere => Strings.Get(language, "Install.Summary.ShortcutElsewhere"),
+            _ => Strings.Get(language, "Install.Summary.ShortcutForeign"),
+        };
+        return Format(language, "Install.Summary.Join", kindText, shortcutText);
+    }
+
     /// <summary>版本号写三段（1.0.0）；读不到时写"未知"。</summary>
     public static string Version(Version? version, string language) =>
         version == null ? Strings.Get(language, "Install.VersionUnknown")

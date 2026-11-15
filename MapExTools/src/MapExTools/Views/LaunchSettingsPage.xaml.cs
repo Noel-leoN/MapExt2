@@ -311,6 +311,7 @@ public partial class LaunchSettingsPage : UserControl
 
         bool exists = File.Exists(CocPath);
         FileText.Text = Loc.Instance.Format("Startup.File", CocPath);
+        FileText.ToolTip = FileText.Text;
         EditLink.IsEnabled = exists;
         ShowFileLink.IsEnabled = exists || Directory.Exists(Path.GetDirectoryName(CocPath));
     }
@@ -349,10 +350,12 @@ public partial class LaunchSettingsPage : UserControl
         if (_applied == null)
         {
             AppliedText.Visibility = Visibility.Collapsed;
+            AppliedText.ToolTip = null;
             return;
         }
 
         AppliedText.Text = Loc.Instance.Format("Startup.Applied", _applied.Timestamp, _applied.Raw);
+        AppliedText.ToolTip = AppliedText.Text;
         AppliedText.Visibility = Visibility.Visible;
     }
 
@@ -463,6 +466,9 @@ public partial class LaunchSettingsPage : UserControl
         LocationText.Text = InstallText.Location(location, lang);
         ShortcutText.Text = desktop.Length > 0 ? InstallText.Shortcut(status, lang) : string.Empty;
         ShortcutText.Visibility = desktop.Length > 0 ? Visibility.Visible : Visibility.Collapsed;
+        InstallSummaryText.DataContext = new ToneLine(
+            InstallText.Summary(location, desktop.Length > 0 ? status : null, lang),
+            location.OffersPinning ? PackageTone.Warning : PackageTone.Muted);
 
         // 在临时位置或下载文件夹时只提供固定到本地：快捷方式指向那里，文件被清理或挪走后就失效了
         bool temporary = location.OffersPinning;

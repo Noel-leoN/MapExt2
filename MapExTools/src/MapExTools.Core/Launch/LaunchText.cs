@@ -58,6 +58,25 @@ public static class LaunchText
         return Command(channel, arguments, language);
     }
 
+    /// <summary>启动配置折叠栏的标题摘要：通道简称（或未定位游戏）加生效参数项数。</summary>
+    public static string OptionsSummary(GameLocateResult result, LaunchOptions options, string language)
+    {
+        ArgumentNullException.ThrowIfNull(result);
+        ArgumentNullException.ThrowIfNull(options);
+
+        string head = result.Game == null
+            ? Strings.Get(language, "Launch.Summary.NoGame")
+            : ChannelShort(options.Channel, language);
+        int count = LaunchArgumentBuilder.ActiveOptionCount(options);
+        string tail = count switch
+        {
+            0 => Strings.Get(language, "Launch.Summary.NoOptions"),
+            1 => Strings.Get(language, "Launch.Summary.OneOption"),
+            _ => Format(language, "Launch.Summary.Options", count),
+        };
+        return Format(language, "Launch.Summary.Join", head, tail);
+    }
+
     private static string Join(string program, string arguments) =>
         arguments.Length > 0 ? program + " " + arguments : program;
 

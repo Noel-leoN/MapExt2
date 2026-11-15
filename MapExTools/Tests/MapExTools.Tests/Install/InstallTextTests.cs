@@ -34,6 +34,31 @@ public sealed class InstallTextTests
     }
 
     [Fact]
+    public void Summary_CombinesLocationAndShortcut()
+    {
+        var normal = new InstallLocation(@"D:\Tools\MapExTools.exe", InstallLocationKind.Normal);
+        var temp = new InstallLocation(@"C:\Temp\MapExTools.exe", InstallLocationKind.Temp);
+        var here = new ShortcutStatus(ShortcutState.PointsHere, "MapExTools.lnk", @"D:\Tools\MapExTools.exe");
+        var missing = new ShortcutStatus(ShortcutState.Missing, "MapExTools.lnk", null);
+
+        Assert.Equal("常规目录 · 已创建桌面快捷方式", InstallText.Summary(normal, here, Zh));
+        Assert.Equal("临时位置 · 未创建桌面快捷方式", InstallText.Summary(temp, missing, Zh));
+        Assert.Equal("custom folder", InstallText.Summary(normal, null, UiLanguage.English));
+
+        foreach (InstallLocationKind kind in Enum.GetValues<InstallLocationKind>())
+        {
+            foreach (ShortcutState state in Enum.GetValues<ShortcutState>())
+            {
+                foreach (string language in UiLanguage.All)
+                {
+                    string summary = InstallText.Summary(new InstallLocation(@"C:\x.exe", kind), new ShortcutStatus(state, "a.lnk", @"C:\y.exe"), language);
+                    Assert.DoesNotContain("Install.", summary, StringComparison.Ordinal);
+                }
+            }
+        }
+    }
+
+    [Fact]
     public void Version_ThreeParts_OrUnknown()
     {
         Assert.Equal("1.2.3", InstallText.Version(new Version(1, 2, 3, 4), Zh));

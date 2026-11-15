@@ -90,6 +90,7 @@ public partial class LaunchSettingsPage
             DuplicateLogBox.IsChecked = o.DuplicateLogToDefault;
             DisableBurstBox.IsChecked = o.DisableBurstCompilation;
             CustomArgumentsBox.Text = o.CustomArguments ?? string.Empty;
+            LaunchOptionsExpander.IsExpanded = App.Services.Config.LaunchOptionsExpanded || Location.Game == null;
         }
         finally
         {
@@ -104,6 +105,19 @@ public partial class LaunchSettingsPage
     private void RefreshLaunchOnLoad()
     {
         App.Services.RefreshGameLocation();
+        if (Location.Game == null && !LaunchOptionsExpander.IsExpanded)
+        {
+            _populatingLaunch = true;
+            try
+            {
+                LaunchOptionsExpander.IsExpanded = true;
+            }
+            finally
+            {
+                _populatingLaunch = false;
+            }
+        }
+
         _steamRunning = SteamRegistry.IsSteamRunning();
         _runOncePending = RunOnceFile.ReadPending(App.Services.Paths.RunOnceFile);
         PopulateLogLevels();
@@ -156,9 +170,13 @@ public partial class LaunchSettingsPage
         BurstRunOnceText.Visibility = runOnce ? Visibility.Visible : Visibility.Collapsed;
         CustomQuotesText.Visibility = runOnce && LaunchArgumentBuilder.CustomHasQuotes(o) ? Visibility.Visible : Visibility.Collapsed;
 
-        // 命令行预览；直启时提示另设了两个环境变量
+        // 命令行预览与折叠栏摘要；直启时提示另设了两个环境变量
         CommandPreviewBox.Text = Loc.Instance.Format("Launch.Preview", LaunchText.Preview(o.Channel, o, lang));
         CommandPreviewBox.ToolTip = o.Channel == LaunchChannel.Direct ? Loc.Instance["Launch.PreviewEnvTip"] : null;
+        PackageTone summaryTone = location.Game == null
+            ? PackageTone.Warning
+            : LaunchArgumentBuilder.ActiveOptionCount(o) > 0 ? PackageTone.Accent : PackageTone.Muted;
+        LaunchSummaryText.DataContext = new ToneLine(LaunchText.OptionsSummary(location, o, lang), summaryTone);
 
         // 状态
         var lines = new List<ToneLine>();
@@ -179,6 +197,15 @@ public partial class LaunchSettingsPage
     }
 
     // === 参数 ===
+
+    private void OnLaunchExpanderChanged(object sender, RoutedEventArgs e)
+    {
+        if (_populatingLaunch || !IsLoaded)
+            return;
+
+        App.Services.Config.LaunchOptionsExpanded = LaunchOptionsExpander.IsExpanded;
+        App.Services.TrySaveConfig(Window.GetWindow(this));
+    }
 
     /// <summary>界面 → 配置，并保存。</summary>
     private void OnLaunchOptionChanged(object sender, RoutedEventArgs e)

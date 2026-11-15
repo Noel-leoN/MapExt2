@@ -24,7 +24,7 @@ public sealed class LaunchOptions
 {
     public LaunchChannel Channel { get; set; } = LaunchChannel.Direct;
 
-    /// <summary><c>--disableUserSection</c>：隐藏主菜单的用户区。</summary>
+    /// <summary><c>--disableUserSection</c>：隐藏主菜单的用户资料。</summary>
     public bool DisableUserSection { get; set; }
 
     /// <summary><c>--disableCodeModding</c>：禁用代码 Mod（MapExt 也会被禁用）。</summary>

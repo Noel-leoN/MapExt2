@@ -63,6 +63,17 @@ public static class LaunchArgumentBuilder
         return args;
     }
 
+    /// <summary>当前通道下实际会生效的附加参数项数（含非空自定义参数；走 runOnce.txt 时不计入 Burst）。</summary>
+    public static int ActiveOptionCount(LaunchOptions options)
+    {
+        ArgumentNullException.ThrowIfNull(options);
+
+        int count = BuildOptionArguments(options, includeBurst: options.Channel != LaunchChannel.RunOnce).Count;
+        if (NormalizeCustom(options.CustomArguments).Length > 0)
+            count++;
+        return count;
+    }
+
     /// <summary>
     /// 直启与 <c>-applaunch</c> 的参数串：勾选项加上原样附在后面的自定义参数（只把换行、制表符换成空格）。
     /// </summary>

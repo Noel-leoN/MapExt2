@@ -63,4 +63,28 @@ public class LaunchTextTests
         var found = new GameLocateResult(new GameLocation(@"D:\G\Cities2.exe", GameLocationSource.Skyve, false), null, null);
         Assert.Equal(@"游戏：D:\G\Cities2.exe（取自 Skyve 的记录）", LaunchText.Location(found, UiLanguage.SimplifiedChinese));
     }
+
+    [Fact]
+    public void OptionsSummary_CountsEffectiveOptionsAndGameState()
+    {
+        var found = new GameLocateResult(new GameLocation(@"D:\G\Cities2.exe", GameLocationSource.Steam, true), null, null);
+
+        Assert.Equal("直启 · 无附加参数", LaunchText.OptionsSummary(found, new LaunchOptions(), UiLanguage.SimplifiedChinese));
+        Assert.Equal("未找到 Cities2.exe · 无附加参数", LaunchText.OptionsSummary(GameLocateResult.None, new LaunchOptions(), UiLanguage.SimplifiedChinese));
+
+        var single = new LaunchOptions { Channel = LaunchChannel.Steam, NoSplash = true };
+        Assert.Equal("through Steam · 1 option enabled", LaunchText.OptionsSummary(found, single, UiLanguage.English));
+
+        // --disableModding 已含 --disableCodeModding，计 1 项；走 runOnce.txt 时 Burst 不生效、不计入
+        var runOnce = new LaunchOptions
+        {
+            Channel = LaunchChannel.RunOnce,
+            DisableModding = true,
+            DisableCodeModding = true,
+            DisableBurstCompilation = true,
+            CustomArguments = " --developerMode ",
+        };
+        Assert.Equal(2, LaunchArgumentBuilder.ActiveOptionCount(runOnce));
+        Assert.Equal("经 runOnce.txt · 已启用 2 项参数", LaunchText.OptionsSummary(found, runOnce, UiLanguage.SimplifiedChinese));
+    }
 }
