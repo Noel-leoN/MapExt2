@@ -626,9 +626,9 @@ public static class Strings
             "偵測遊戲是否執行所用的行程名稱（預設 Cities2）",
         ],
         ["Cli.Usage.Footer"] = [
-            "Options can also be written as --mode=ModeB. Exit codes: 0 success; 1 error; 2 the game is running and nothing was changed.\nPowerShell and cmd do not wait for a windowed program to exit. To get the exit code, run it with Start-Process -Wait -NoNewWindow -PassThru, or start /wait.",
-            "选项也可写成 --mode=ModeB。退出码：0 成功；1 出错；2 游戏正在运行，未做任何改动。\nPowerShell 和 cmd 不等窗口程序退出；要拿到退出码，用 Start-Process -Wait -NoNewWindow -PassThru 或 start /wait 运行。",
-            "選項也可寫成 --mode=ModeB。結束代碼：0 成功；1 出錯；2 遊戲正在執行，未做任何變更。\nPowerShell 和 cmd 不等視窗程式結束；要取得結束代碼，用 Start-Process -Wait -NoNewWindow -PassThru 或 start /wait 執行。",
+            "Options can also be written as --mode=ModeB. Exit codes: 0 success; 1 error; 2 the game is running and nothing was changed.\nPowerShell and cmd do not wait for a windowed program to exit. To get the exit code, use start /wait in cmd; in PowerShell, use $p = Start-Process MapExTools.exe -ArgumentList '--launch' -PassThru; $p.WaitForExit(); $p.ExitCode\nWith --launch, do not use Start-Process -Wait or a pipe: both keep waiting until the game exits.",
+            "选项也可写成 --mode=ModeB。退出码：0 成功；1 出错；2 游戏正在运行，未做任何改动。\nPowerShell 和 cmd 不等窗口程序退出。要拿到退出码：cmd 用 start /wait；PowerShell 用 $p = Start-Process MapExTools.exe -ArgumentList '--launch' -PassThru; $p.WaitForExit(); $p.ExitCode\n带 --launch 时不要用 Start-Process -Wait 或管道：它们会一直等到游戏退出。",
+            "選項也可寫成 --mode=ModeB。結束代碼：0 成功；1 出錯；2 遊戲正在執行，未做任何變更。\nPowerShell 和 cmd 不等視窗程式結束。要取得結束代碼：cmd 用 start /wait；PowerShell 用 $p = Start-Process MapExTools.exe -ArgumentList '--launch' -PassThru; $p.WaitForExit(); $p.ExitCode\n帶 --launch 時不要用 Start-Process -Wait 或管線：它們會一直等到遊戲結束。",
         ],
 
         // === 日志诊断：会话摘要 ===
