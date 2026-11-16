@@ -19,7 +19,7 @@ public enum CocSaveStatus
     GameRunning,
 }
 
-/// <param name="Changes">按 <see cref="StartupKeys.Keys"/> 顺序列出的改动；游戏运行中时为本该写入的改动。</param>
+/// <param name="Changes">按 <see cref="StartupKeys.AllKeys"/> 顺序列出的改动；游戏运行中时为本该写入的改动。</param>
 /// <param name="BackupPath">写入前原文件的备份；新建文件或没有写入时为 null。</param>
 public sealed record CocSaveResult(CocSaveStatus Status, IReadOnlyList<StartupSettingChange> Changes, string? BackupPath);
 
@@ -55,8 +55,8 @@ public sealed class CocSaveException : IOException
 }
 
 /// <summary>
-/// 读写 <c>{UserData}/ModsSettings/MapExtPDX/MapExtPDX.coc</c> 里 MapExtPDX 块的 9 个受管键，其余字符逐字保留。
-/// 移植自开发版 <c>Set-MapExtStartup.ps1</c> 的解析与改写。
+/// 读写 <c>{UserData}/ModsSettings/MapExtPDX/MapExtPDX.coc</c> 里 MapExtPDX 块的受管键，其余字符逐字保留。
+/// 移植并扩展自开发版 <c>Set-MapExtStartup.ps1</c> 的解析与改写。
 ///
 /// <para>写入流程：游戏运行中拒绝写入 → 只写有改动的键 → 文件自读取后被改过则拒绝 → 在内存里改写并按同一规则
 /// 重新解析核对 → 原文件复制为 <c>.bak</c> → 写临时文件后整体替换 → 从磁盘读回再核对一次。</para>
@@ -86,9 +86,23 @@ public sealed class CocSettingsManager
 
     private string TempPath => CocPath + ".tmp";
 
-    /// <summary>9 个受管键的默认值，供"恢复默认"使用。</summary>
+    /// <summary>9 个核心启动键的默认值，供命令行 <c>--reset</c> 与固定样本使用。</summary>
     public static Dictionary<string, object> GetDefaultValues() =>
         StartupKeys.Keys.ToDictionary(k => k.Name, k => k.DefaultValue, StringComparer.Ordinal);
+
+    /// <summary>全部 65 个受管键的默认值，供图形界面"全部恢复默认"使用。</summary>
+    public static Dictionary<string, object> GetAllDefaultValues() =>
+        StartupKeys.AllKeys.ToDictionary(k => k.Name, k => k.DefaultValue, StringComparer.Ordinal);
+
+    /// <summary>某个一级分类下所有受管键的默认值。</summary>
+    public static Dictionary<string, object> GetCategoryDefaultValues(OptionCategory category) =>
+        StartupKeys.AllKeys.Where(k => k.Category == category)
+            .ToDictionary(k => k.Name, k => k.DefaultValue, StringComparer.Ordinal);
+
+    /// <summary>某个分组卡片下所有受管键的默认值。</summary>
+    public static Dictionary<string, object> GetGroupDefaultValues(OptionGroup group) =>
+        StartupKeys.AllKeys.Where(k => k.Group == group)
+            .ToDictionary(k => k.Name, k => k.DefaultValue, StringComparer.Ordinal);
 
     /// <summary>读取并解析设定文件；文件不存在时各键取默认值。</summary>
     /// <exception cref="CocFormatException">格式有误或不是 UTF-8 文本。</exception>
@@ -115,20 +129,20 @@ public sealed class CocSettingsManager
     }
 
     /// <summary>
-    /// 列出需要写入的项：目标值与当前值不同，或当前值游戏读不懂。只比较 <paramref name="target"/> 里给出的键。
+    /// 列出需要写入的项：目标值与当前值不同，或当前值无效／越界。只比较 <paramref name="target"/> 里给出的键。
     /// </summary>
-    /// <exception cref="ArgumentException">目标里有不认识的键，或取值类型、模式名不对。</exception>
+    /// <exception cref="ArgumentException">目标里有不认识的键，或取值类型、范围、枚举名不对。</exception>
     public static IReadOnlyList<StartupSettingChange> GetChanges(StartupSettingsState state, IReadOnlyDictionary<string, object> target)
     {
         ArgumentNullException.ThrowIfNull(state);
         ValidateTarget(target);
 
         var changes = new List<StartupSettingChange>();
-        foreach (StartupSettingValue current in state.Settings)
+        foreach (StartupSettingValue current in state.AllSettings)
         {
             if (!target.TryGetValue(current.Key.Name, out object? value))
                 continue;
-            if (current.Invalid || !Equals(current.Value, value))
+            if (current.Invalid || !StartupKeys.ValueEquals(current.Key, current.Value, value))
                 changes.Add(new StartupSettingChange(current.Key, current.Value, value, current.Invalid));
         }
 
@@ -179,9 +193,9 @@ public sealed class CocSettingsManager
         ArgumentNullException.ThrowIfNull(state);
         ValidateTarget(updates);
 
-        // 按 StartupKeys 的顺序处理，追加的键顺序固定
+        // 按 StartupKeys.AllKeys 的顺序处理，追加的键顺序固定（前 9 项与 StartupKeys.Keys 相同）
         var ordered = new List<(StartupKeyInfo Key, string Raw)>();
-        foreach (StartupKeyInfo key in StartupKeys.Keys)
+        foreach (StartupKeyInfo key in StartupKeys.AllKeys)
         {
             if (updates.TryGetValue(key.Name, out object? value))
                 ordered.Add((key, StartupSettingsState.Encode(key, value)));
@@ -262,9 +276,22 @@ public sealed class CocSettingsManager
         {
             StartupKeyInfo key = StartupKeys.FindKey(name)
                                  ?? throw new ArgumentException($"不是受管的设定键：{name}", nameof(target));
-            bool ok = key.Kind == StartupKeyKind.Mode
-                ? value is string mode && Array.IndexOf(StartupKeys.ModeNames, mode) >= 0
-                : value is bool;
+            bool ok = key.Kind switch
+            {
+                StartupKeyKind.Mode => value is string mode && Array.IndexOf(StartupKeys.ModeNames, mode) >= 0,
+                StartupKeyKind.Enum => value is string enumVal
+                                       && key.SelectableEnumNames != null
+                                       && Array.IndexOf(key.SelectableEnumNames, enumVal) >= 0,
+                StartupKeyKind.Bool => value is bool,
+                StartupKeyKind.Int => value is int iv
+                                      && iv >= (int)Math.Round(key.Min)
+                                      && iv <= (int)Math.Round(key.Max),
+                StartupKeyKind.Float => value is float fv
+                                        && float.IsFinite(fv)
+                                        && fv >= (float)key.Min - 1e-6f
+                                        && fv <= (float)key.Max + 1e-6f,
+                _ => false,
+            };
             if (!ok)
                 throw new ArgumentException($"{name} 的取值无效：{value}", nameof(target));
         }
@@ -278,7 +305,7 @@ public sealed class CocSettingsManager
         foreach ((string name, object value) in updates)
         {
             StartupSettingValue actual = written[name];
-            if (!actual.InFile || actual.Invalid || !Equals(actual.Value, value))
+            if (!actual.InFile || actual.Invalid || !StartupKeys.ValueEquals(actual.Key, actual.Value, value))
                 throw new CocSaveException(CocSaveFailure.VerifyFailed, name);
         }
     }

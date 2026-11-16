@@ -445,9 +445,14 @@ public partial class SavesMapsPage : UserControl
             var manager = new CocSettingsManager(App.Services.Paths.CocFile);
             CocSaveResult result = manager.Save(_cocState, new Dictionary<string, object> { [StartupKeys.ModeKey] = target.Name });
             if (result.Status == CocSaveStatus.GameRunning)
+            {
                 ShowMessage(Loc.Instance["Saves.SwitchGameRunning"], MessageBoxImage.Warning);
+            }
             else
+            {
+                App.Services.Coc.NotifyExternalWrite();
                 ShowMessage(Loc.Instance.Format("Saves.SwitchDone", to), MessageBoxImage.Information);
+            }
         }
         catch (Exception ex) when (ex is CocFormatException or CocSaveException or IOException or UnauthorizedAccessException)
         {

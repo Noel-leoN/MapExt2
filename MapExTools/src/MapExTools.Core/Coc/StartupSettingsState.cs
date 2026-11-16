@@ -5,18 +5,18 @@ using MapExtPDX;
 namespace MapExTools.Core.Coc;
 
 /// <summary>
-/// 一个受管键按游戏解码规则得到的值。<see cref="Value"/>：模式键为模式名字符串，开关键为 bool。
+/// 一个受管键按游戏解码规则得到的值。<see cref="Value"/>：Mode/Enum 为枚举名字符串，Bool 为 bool，Int 为 int，Float 为 float。
 /// </summary>
 /// <param name="InFile">文件的 MapExtPDX 块里有没有这个键；没有时 <see cref="Value"/> 为默认值。</param>
-/// <param name="Invalid">文件里的值游戏读不懂，会落回默认值（模式键落回 ModeA）。</param>
+/// <param name="Invalid">文件里的值游戏读不懂、命中已挂起枚举或超出有效范围；界面与保存时按修正后的安全值处理。</param>
 /// <param name="Raw">文件里的取值原文；不在文件里时为 null。</param>
 public sealed record StartupSettingValue(StartupKeyInfo Key, object Value, bool InFile, bool Invalid, string? Raw);
 
-/// <summary>一项待写入的改动；<see cref="WasInvalid"/> 表示原值游戏读不懂，值相同也要改写。</summary>
+/// <summary>一项待写入的改动；<see cref="WasInvalid"/> 表示原值无效或越界，值相同也要改写。</summary>
 public sealed record StartupSettingChange(StartupKeyInfo Key, object OldValue, object NewValue, bool WasInvalid);
 
 /// <summary>
-/// 读取 <c>MapExtPDX.coc</c> 的结果：原文、MapExtPDX 块的位置与各项，以及 9 个受管键实际生效的值。
+/// 读取 <c>MapExtPDX.coc</c> 的结果：原文、MapExtPDX 块的位置与各项，以及受管键实际生效的值。
 /// 没有这个块或没有某个键时，该键取 <see cref="StartupKeys"/> 里的默认值。
 /// </summary>
 public sealed class StartupSettingsState
@@ -30,7 +30,8 @@ public sealed class StartupSettingsState
         CocBlock? block,
         int blockCount,
         IReadOnlyList<CocEntry> entries,
-        IReadOnlyList<StartupSettingValue> settings)
+        IReadOnlyList<StartupSettingValue> settings,
+        IReadOnlyList<StartupSettingValue> allSettings)
     {
         Exists = exists;
         HasBom = hasBom;
@@ -39,7 +40,8 @@ public sealed class StartupSettingsState
         BlockCount = blockCount;
         Entries = entries;
         Settings = settings;
-        _byName = settings.ToDictionary(s => s.Key.Name, StringComparer.Ordinal);
+        AllSettings = allSettings;
+        _byName = allSettings.ToDictionary(s => s.Key.Name, StringComparer.Ordinal);
     }
 
     /// <summary>文件是否存在。</summary>
@@ -60,18 +62,28 @@ public sealed class StartupSettingsState
     /// <summary>第一个 MapExtPDX 块顶层的全部项（含不受管的键），按文件顺序。</summary>
     public IReadOnlyList<CocEntry> Entries { get; }
 
-    /// <summary>9 个受管键的值，顺序同 <see cref="StartupKeys.Keys"/>。</summary>
+    /// <summary>启动期 9 个核心受管键的值，顺序同 <see cref="StartupKeys.Keys"/>（供命令行与固定样本使用）。</summary>
     public IReadOnlyList<StartupSettingValue> Settings { get; }
 
-    /// <summary>有没有游戏读不懂的值。</summary>
+    /// <summary>全部 65 个受管键的值，顺序同 <see cref="StartupKeys.AllKeys"/>（供图形界面全量设置中心使用）。</summary>
+    public IReadOnlyList<StartupSettingValue> AllSettings { get; }
+
+    /// <summary>9 个启动期键里有没有无效值。</summary>
     public bool HasInvalidValues => Settings.Any(s => s.Invalid);
 
-    /// <summary>按键名取值；不是受管键时抛 <see cref="KeyNotFoundException"/>。</summary>
+    /// <summary>全部 65 个受管键里有没有无效值或越界值。</summary>
+    public bool HasAnyInvalidValues => AllSettings.Any(s => s.Invalid);
+
+    /// <summary>按键名取值（支持全部 65 个受管键）；不是受管键时抛 <see cref="KeyNotFoundException"/>。</summary>
     public StartupSettingValue this[string keyName] => _byName[keyName];
 
-    /// <summary>键名到值的对照，可直接改几项后作为写入目标。</summary>
+    /// <summary>9 个启动期键名到值的对照（供命令行与固定样本使用）。</summary>
     public Dictionary<string, object> GetValues() =>
         Settings.ToDictionary(s => s.Key.Name, s => s.Value, StringComparer.Ordinal);
+
+    /// <summary>全部 65 个受管键名到值的对照（供图形界面工作副本初始化使用）。</summary>
+    public Dictionary<string, object> GetAllValues() =>
+        AllSettings.ToDictionary(s => s.Key.Name, s => s.Value, StringComparer.Ordinal);
 
     /// <summary>解析设定文本。</summary>
     /// <exception cref="CocFormatException">格式有误。</exception>
@@ -96,71 +108,147 @@ public sealed class StartupSettingsState
                 entries = CocParser.ParseEntries(text, block);
         }
 
-        var settings = new List<StartupSettingValue>(StartupKeys.Keys.Length);
-        foreach (StartupKeyInfo key in StartupKeys.Keys)
+        var entryByName = new Dictionary<string, CocEntry>(entries.Count, StringComparer.Ordinal);
+        foreach (CocEntry entry in entries)
+            entryByName[entry.Key] = entry;
+
+        var allSettings = new List<StartupSettingValue>(StartupKeys.AllKeys.Length);
+        foreach (StartupKeyInfo key in StartupKeys.AllKeys)
         {
-            CocEntry? hit = entries.FirstOrDefault(e => e.Key == key.Name);
-            if (hit == null)
+            if (!entryByName.TryGetValue(key.Name, out CocEntry? hit))
             {
-                settings.Add(new StartupSettingValue(key, key.DefaultValue, InFile: false, Invalid: false, Raw: null));
+                allSettings.Add(new StartupSettingValue(key, key.DefaultValue, InFile: false, Invalid: false, Raw: null));
                 continue;
             }
 
             (object value, bool valid) = Decode(key, hit.Raw);
-            settings.Add(new StartupSettingValue(key, value, InFile: true, Invalid: !valid, hit.Raw));
+            allSettings.Add(new StartupSettingValue(key, value, InFile: true, Invalid: !valid, hit.Raw));
         }
 
-        return new StartupSettingsState(exists, hasBom, text, block, blockCount, entries, settings);
+        // 前 9 项与 StartupKeys.Keys 一一对应
+        var startupSettings = allSettings.GetRange(0, StartupKeys.Keys.Length);
+        return new StartupSettingsState(exists, hasBom, text, block, blockCount, entries, startupSettings, allSettings);
     }
 
     /// <summary>
-    /// 按游戏的解码规则换算取值。模式键：游戏用 <c>Enum.Parse</c>（区分大小写，去掉首尾空白，也接受数字），
-    /// 失败时取 <c>default(T)</c> 即 ModeA；数字超出枚举范围时游戏不报错，但 MapExt 按 ModeA 的 CoreValue 处理，
-    /// 这里同样记为读不懂、按 ModeA 显示。开关键只认 <c>true</c>／<c>false</c>。
+    /// 按游戏的解码规则换算取值并校验范围。
+    /// <list type="bullet">
+    /// <item>Mode / Enum：游戏用 <c>Enum.Parse</c>（区分大小写，去掉首尾空白，也接受数字序号），失败时取 <c>default(T)</c>；
+    /// 命中已挂起枚举值（如 <c>Adaptive_EventDriven</c>）时同样落回默认值并标为需修正。</item>
+    /// <item>Bool：只认 <c>true</c>／<c>false</c>。</item>
+    /// <item>Int / Float：不带引号的有限十进制数；无法解析时落回默认值并标无效，超出滑块 <c>[Min, Max]</c>（含 MaxCost &lt;= 0）时夹紧至边界并标无效。</item>
+    /// </list>
     /// </summary>
     internal static (object Value, bool Valid) Decode(StartupKeyInfo key, string raw)
     {
-        if (key.Kind == StartupKeyKind.Mode)
+        switch (key.Kind)
         {
-            string? text = raw;
-            if (raw.StartsWith('"'))
+            case StartupKeyKind.Mode:
+            case StartupKeyKind.Enum:
+                return DecodeEnum(key, raw);
+
+            case StartupKeyKind.Bool:
+                return raw switch
+                {
+                    "true" => (true, true),
+                    "false" => (false, true),
+                    _ => (key.DefaultValue, false),
+                };
+
+            case StartupKeyKind.Int:
             {
-                try
+                if (raw.StartsWith('"')
+                    || !int.TryParse(raw, NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture, out int iv))
                 {
-                    text = JsonSerializer.Deserialize<string>(raw);
+                    return (key.DefaultValue, false);
                 }
-                catch (JsonException)
-                {
-                    text = null;
-                }
+
+                int min = (int)Math.Round(key.Min);
+                int max = (int)Math.Round(key.Max);
+                if (iv < min || iv > max)
+                    return (Math.Clamp(iv, min, max), false);
+                return (iv, true);
             }
 
-            text = text?.Trim();
-            if (text != null)
+            case StartupKeyKind.Float:
             {
-                if (Array.IndexOf(StartupKeys.ModeNames, text) >= 0)
-                    return (text, true);
-                if (int.TryParse(text, NumberStyles.Integer, CultureInfo.InvariantCulture, out int number)
-                    && number >= 0 && number < StartupKeys.ModeNames.Length)
+                if (raw.StartsWith('"')
+                    || !float.TryParse(raw, NumberStyles.Float, CultureInfo.InvariantCulture, out float fv)
+                    || !float.IsFinite(fv))
                 {
-                    return (StartupKeys.ModeNames[number], true);
+                    return (key.DefaultValue, false);
                 }
+
+                if (fv == 0f)
+                    fv = 0f; // 归一化 -0f
+
+                float min = (float)key.Min;
+                float max = (float)key.Max;
+                if (fv < min - 1e-6f || fv > max + 1e-6f)
+                    return (Math.Clamp(fv, min, max), false);
+                return (fv, true);
             }
 
-            return (StartupKeys.ModeNames[0], false);
+            default:
+                return (key.DefaultValue, false);
         }
-
-        return raw switch
-        {
-            "true" => (true, true),
-            "false" => (false, true),
-            _ => (key.DefaultValue, false),
-        };
     }
 
-    /// <summary>值写进 .coc 的原文：模式名带引号，开关为 <c>true</c>／<c>false</c>。</summary>
+    private static (object Value, bool Valid) DecodeEnum(StartupKeyInfo key, string raw)
+    {
+        string[] allNames = key.EnumNames ?? StartupKeys.ModeNames;
+        string[] selectable = key.SelectableEnumNames ?? allNames;
+
+        string? text = raw;
+        if (raw.StartsWith('"'))
+        {
+            try
+            {
+                text = JsonSerializer.Deserialize<string>(raw);
+            }
+            catch (JsonException)
+            {
+                text = null;
+            }
+        }
+
+        text = text?.Trim();
+        string? resolved = null;
+        if (text != null)
+        {
+            if (Array.IndexOf(allNames, text) >= 0)
+            {
+                resolved = text;
+            }
+            else if (int.TryParse(text, NumberStyles.Integer, CultureInfo.InvariantCulture, out int number)
+                     && number >= 0 && number < allNames.Length)
+            {
+                resolved = allNames[number];
+            }
+        }
+
+        if (resolved != null && Array.IndexOf(selectable, resolved) >= 0)
+            return (resolved, true);
+
+        return ((string)key.DefaultValue, false);
+    }
+
+    /// <summary>值写进 .coc 的原文：枚举名带引号，开关为 <c>true</c>／<c>false</c>，整数与浮点为不带科学计数法的十进制字面量。</summary>
     internal static string Encode(StartupKeyInfo key, object value) =>
-        key.Kind == StartupKeyKind.Mode
-            ? "\"" + (string)value + "\""
-            : (bool)value ? "true" : "false";
+        key.Kind switch
+        {
+            StartupKeyKind.Mode or StartupKeyKind.Enum => "\"" + (string)value + "\"",
+            StartupKeyKind.Bool => (bool)value ? "true" : "false",
+            StartupKeyKind.Int => ((int)value).ToString(CultureInfo.InvariantCulture),
+            StartupKeyKind.Float => FormatFloat((float)value),
+            _ => throw new ArgumentOutOfRangeException(nameof(key)),
+        };
+
+    private static string FormatFloat(float value)
+    {
+        if (value == 0f)
+            return "0";
+        decimal exact = (decimal)value;
+        return exact.ToString("0.######", CultureInfo.InvariantCulture);
+    }
 }

@@ -10,7 +10,9 @@ public static class Strings
     {
         // === 窗口与标签页 ===
         ["App.Title"] = ["MapExTools", "MapExTools", "MapExTools"],
-        ["Tab.Launch"] = ["Launch & Settings", "启动与设定", "啟動與設定"],
+        ["Tab.Launch"] = ["Launch & Setup", "启动与设定", "啟動與設定"],
+        ["Tab.Options"] = ["Mod Settings", "模组设置", "模組設定"],
+        ["Tab.OptionsDirty"] = ["Mod Settings ● {0}", "模组设置 ● {0}", "模組設定 ● {0}"],
         ["Tab.Logs"] = ["Log Diagnostics", "日志诊断", "日誌診斷"],
         ["Tab.Saves"] = ["Saves & Maps", "存档与地图", "存檔與地圖"],
         ["Tab.Heightmaps"] = ["Heightmaps", "高度图", "高度圖"],
@@ -1104,6 +1106,512 @@ public static class Strings
         ["Heightmaps.Legend.White"] = ["White: {0:N0} m", "白：{0:N0} 米", "白：{0:N0} 公尺"],
         ["Heightmaps.Legend.BlackAtMost"] = ["Black: {0:N0} m and below", "黑：{0:N0} 米及以下", "黑：{0:N0} 公尺及以下"],
         ["Heightmaps.Legend.WhiteAtLeast"] = ["White: {0:N0} m and above", "白：{0:N0} 米及以上", "白：{0:N0} 公尺及以上"],
+
+        // === 模组设置中心（全量 65 项 OptionUI 持久化配置） ===
+        ["Startup.OpenAllOptions"] = ["All mod settings (65) →", "全部模组设置 (65项) →", "全部模組設定 (65項) →"],
+        ["Startup.Group.ConvertAndCheck"] = ["Save conversion & check", "存档转换与安全校验", "存檔轉換與安全驗證"],
+        ["Startup.MutualExclusion"] = [
+            "Map Extension Conversion and Disable World Backdrop are mutually exclusive.",
+            "地图扩展转换与停用背景世界地图互斥。",
+            "地圖擴展轉換與停用背景世界地圖互斥。",
+        ],
+
+        ["Options.SearchPlaceholder"] = ["Search settings or .coc keys…", "搜索选项名称或 .coc 键名…", "搜尋選項名稱或 .coc 鍵名…"],
+        ["Options.ClearSearch"] = ["Clear", "清除", "清除"],
+        ["Options.NoMatch"] = [
+            "No settings match \"{0}\".",
+            "没有匹配“{0}”的设定项。",
+            "沒有符合「{0}」的設定項。",
+        ],
+        ["Options.ResetGroup"] = ["Reset group", "重置本组", "重設本組"],
+        ["Options.ResetGroupTip"] = [
+            "Restore this card's options to MapExt defaults (save to write)",
+            "将本卡片内的选项恢复为默认值（需点击保存写入）",
+            "將本卡片內的選項恢復為預設值（需點擊儲存寫入）",
+        ],
+        ["Options.ResetAll"] = ["All defaults", "全部默认", "全部預設"],
+        ["Options.ResetAllTip"] = [
+            "Restore all 65 options to MapExt defaults (save to write)",
+            "将全部 65 项恢复为 MapExt 默认值（需点击保存写入）",
+            "將全部 65 項恢復為 MapExt 預設值（需點擊儲存寫入）",
+        ],
+        ["Options.ResetItemTip"] = ["Reset to default ({0})", "恢复默认值（{0}）", "恢復預設值（{0}）"],
+        ["Options.ChangesMore"] = ["{0} (total {1} changes)", "{0}（共 {1} 项改动）", "{0}（共 {1} 項變更）"],
+
+        // 一级分类
+        ["Options.Cat.Core"] = ["Core & Conversion", "核心模式与转换", "核心模式與轉換"],
+        ["Options.Cat.Performance"] = ["Performance & Tools", "性能、画面与工具", "性能、畫面與工具"],
+        ["Options.Cat.Pathfinding"] = ["Pathfinding Limits", "寻路成本上限", "尋路成本上限"],
+        ["Options.Cat.EcoBehavior"] = ["Economy & Throughput", "经济吞吐与候选", "經濟吞吐與候選"],
+        ["Options.Cat.RentControl"] = ["Land Value & Rent", "地价与租金管控", "地價與租金管控"],
+        ["Options.Cat.Interface"] = ["UI & Developer", "面板外观与开发", "面板外觀與開發"],
+
+        // 分组卡片标题
+        ["Options.Group.ModeAndConvert"] = ["Map Size Mode & Save Conversion", "地图尺寸模式与存档转换", "地圖尺寸模式與存檔轉換"],
+        ["Options.Group.EcoToggles"] = ["EconomyEX System Toggles", "经济子系统开关（EconomyEX）", "經濟子系統開關（EconomyEX）"],
+        ["Options.Group.TerrainWater"] = ["Terrain, Water & Snow GPU Optimization", "地形、水体与积雪 GPU 优化", "地形、水體與積雪 GPU 優化"],
+        ["Options.Group.EntitiesTraffic"] = ["Pets (NoDogs) & Through-Traffic", "宠物控制（NoDogs）与过境交通", "寵物控制（NoDogs）與過境交通"],
+        ["Options.Group.EditorBrush"] = ["Map Editor & Terrain Brush", "地图编辑器与道路笔刷", "地圖編輯器與道路筆刷"],
+        ["Options.Group.VehicleRescue"] = ["Stuck Vehicle Rescue", "购车停放救援（幽灵车清理）", "購車停放救援（幽靈車清理）"],
+        ["Options.Group.PathfindDaily"] = ["Daily Travel, Cargo, Jobs & Housing", "日常出行、货运、求职与找房", "日常出行、貨運、求職與找房"],
+        ["Options.Group.PathfindSchool"] = ["Education Pathfinding (4 Tiers)", "四级教育就学范围", "四級教育就學範圍"],
+        ["Options.Group.EcoThroughput"] = ["Job & Housing Seeker Throughput", "求职与找房每轮吞吐上限", "求職與找房每輪吞吐上限"],
+        ["Options.Group.EcoConsumption"] = ["Household Shopping & Consumption", "家庭购物频率与购买量补偿", "家庭購物頻率與購買量補償"],
+        ["Options.Group.EcoCandidates"] = ["Pathfind Early-Exit Candidate Caps", "寻路提前退出候选上限（P1 / P2 / P6）", "尋路提前退出候選上限（P1 / P2 / P6）"],
+        ["Options.Group.LandValue"] = ["Edge Land Value Factors", "道路地价传递因子", "道路地價傳遞因子"],
+        ["Options.Group.RentMatrix"] = ["RCI Rent Formula Matrix (3×3)", "住宅／商业／工业 租金公式矩阵", "住宅／商業／工業 租金公式矩陣"],
+        ["Options.Group.PanelSize"] = ["In-Game Floating Panel Dimensions", "游戏内悬浮面板尺寸", "遊戲內懸浮面板尺寸"],
+        ["Options.Group.DashboardSections"] = ["Dashboard Default Expanded Sections", "仪表盘打开时默认展开区块", "儀表板開啟時預設展開區塊"],
+        ["Options.Group.DebugExport"] = ["Heightmap Export Presets (Debug)", "游戏内高度图导出预设", "遊戲內高度圖匯出預設"],
+
+        // 生效时机徽章
+        ["Options.Timing.Restart"] = ["Restart required", "需重启生效", "需重啟生效"],
+        ["Options.Timing.LoadOrRestart"] = ["On launch / load", "启动或读档生效", "啟動或讀檔生效"],
+        ["Options.Timing.Live"] = ["Live in-game", "游戏内实时生效", "遊戲內即時生效"],
+
+        // 上下文智能提示
+        ["Options.Note.VanillaTerrain"] = [
+            "Current mode is None (14km vanilla): terrain buffer pre-allocation, cascade throttle and backdrop downsample gate only mount in expanded modes (28–114 km).",
+            "当前选择的是 None（14km 原版）模式：地形缓冲预分配、级联降频与背景降采样事件化仅在扩展模式（28～114km）下挂载生效。",
+            "目前選擇的是 None（14km 原版）模式：地形緩衝預分配、級聯降頻與背景降採樣事件化僅在擴展模式（28～114km）下掛載生效。",
+        ],
+        ["Options.Note.EcoMasterOff"] = [
+            "Economy master switch is OFF: economy pathfinding and throughput parameters below remain saved as presets and take effect once EconomyEX is enabled.",
+            "经济系统修复总开关当前已关闭：下方参数可预先配置保存，开启总开关及对应子系统后生效。",
+            "經濟系統修復總開關目前已關閉：下方參數可預先配置儲存，開啟總開關及對應子系統後生效。",
+        ],
+        ["Options.Note.SchoolSubgroupOff"] = [
+            "\"Vehicle AI and Pathfind Systems\" is currently unchecked: school pathfind limits apply once that group is enabled.",
+            "「载具AI与寻路系统组」当前未勾选：四级学校寻路上限需启用该分组后生效（此处可预先保存）。",
+            "「載具AI與尋路系統組」目前未勾選：四級學校尋路上限需啟用該分組後生效（此處可預先儲存）。",
+        ],
+        ["Options.Note.NoDogsPurgeInGame"] = [
+            "Note: one-shot \"Purge All Existing Pets\" requires a loaded city and must be triggered inside the game's Options screen.",
+            "提示：一次性「清除存量宠物」需载入城市后在游戏内设置页点击执行；此处两项在启动与读档时自动生效。",
+            "提示：一次性「清除存量寵物」需載入城市後在遊戲內設定頁點擊執行；此處兩項在啟動與讀檔時自動生效。",
+        ],
+
+        // 3×3 租金矩阵行列标题
+        ["Options.Matrix.Metric"] = ["Formula term", "调节维度", "調節維度"],
+        ["Options.Matrix.Res"] = ["Residential (R)", "住宅 (R)", "住宅 (R)"],
+        ["Options.Matrix.Com"] = ["Commercial (C)", "商业 (C)", "商業 (C)"],
+        ["Options.Matrix.Ind"] = ["Industrial (I)", "工业 (I)", "工業 (I)"],
+        ["Options.Matrix.RowRent"] = ["Overall rent multiplier", "租金总乘数", "租金總乘數"],
+        ["Options.Matrix.RowLandValue"] = ["Land value weight", "地价贡献系数", "地價貢獻係數"],
+        ["Options.Matrix.RowLevel"] = ["Building level weight", "建筑等级系数", "建築等級係數"],
+
+        // 枚举选项译文
+        ["Options.Enum.WaterSimQuality.Vanilla_EveryFrame"] = ["Vanilla (Every Frame)", "原版（每帧计算）", "原版（每幀計算）"],
+        ["Options.Enum.WaterSimQuality.Reduced_NoBackdrop"] = ["Reduced (No Backdrop)", "降低（关闭远景水流）", "降低（關閉遠景水流）"],
+        ["Options.Enum.WaterSimQuality.Minimal_Every4Frames"] = ["Minimal (Every 4 Frames)", "极简（每 4 帧 + 关模糊）", "極簡（每 4 幀 + 關模糊）"],
+        ["Options.Enum.WaterSimQuality.Paused_NoFlow"] = ["Paused (No Flow)", "暂停（冻结流动）", "暫停（凍結流動）"],
+
+        ["Options.Enum.SnowSimFreeze.Off"] = ["Off (Vanilla)", "关闭（原版常开）", "關閉（原版常開）"],
+        ["Options.Enum.SnowSimFreeze.Auto"] = ["Auto (Snow-free Weather)", "自动（无雪天气冻结，推荐）", "自動（無雪天氣凍結，推薦）"],
+        ["Options.Enum.SnowSimFreeze.Always"] = ["Always Frozen", "始终冻结", "始終凍結"],
+
+        ["Options.Enum.EditorCollisionSkip.Off"] = ["Off (Vanilla)", "关闭（原版校验）", "關閉（原版驗證）"],
+        ["Options.Enum.EditorCollisionSkip.TreesOnly"] = ["Trees Only", "仅跳过树木", "僅跳過樹木"],
+        ["Options.Enum.EditorCollisionSkip.AllObjects"] = ["All Objects", "跳过所有对象", "跳過所有物件"],
+
+        ["Options.Enum.HeightmapExportDirection.Native"] = ["Native (No Transform)", "原生行序（不翻转）", "原生行序（不翻轉）"],
+        ["Options.Enum.HeightmapExportDirection.FlipVertical"] = ["Flip Vertical (N–S)", "垂直翻转（南北对调）", "垂直翻轉（南北對調）"],
+        ["Options.Enum.HeightmapExportDirection.FlipHorizontal"] = ["Flip Horizontal (E–W)", "水平翻转（东西对调）", "水平翻轉（東西對調）"],
+        ["Options.Enum.HeightmapExportDirection.Rotate180"] = ["Rotate 180°", "旋转 180°", "旋轉 180°"],
+        ["Options.Enum.HeightmapExportDirection.All"] = ["All (Export 4 Variants)", "全部（一次导出 4 份比对）", "全部（一次匯出 4 份比對）"],
+
+        // === 新增 56 个设定项的显示名（Startup.Key.<Name>） ===
+        ["Startup.Key.EnableVanillaConversion"] = ["Map Extension Conversion (Experimental)", "地图扩展转换（实验性）", "地圖擴展轉換（實驗性）"],
+        ["Startup.Key.DisableWorldBackdrop"] = ["Disable World Backdrop Map", "停用背景世界地图 (Backdrop)", "停用背景世界地圖 (Backdrop)"],
+
+        ["Startup.Key.TerrainBufferPrealloc"] = ["Terrain Buffer Pre-allocation", "地形缓冲预分配", "地形緩衝預分配"],
+        ["Startup.Key.TerrainCascadeThrottle"] = ["Terrain Cascade Throttle (Experimental)", "地形级联降频（实验性）", "地形級聯降頻（實驗性）"],
+        ["Startup.Key.TerrainDownsampleThrottle"] = ["Backdrop Terrain Downsample Gate", "背景地形降采样事件化", "背景地形降採樣事件化"],
+        ["Startup.Key.WaterSimQuality"] = ["Water Simulation Quality", "水体模拟质量", "水體模擬質量"],
+        ["Startup.Key.WaterPauseFreeze"] = ["Freeze Water Simulation While Paused", "暂停时冻结水模拟", "暫停時凍結水模擬"],
+        ["Startup.Key.SnowSimFreeze"] = ["Freeze Snow Simulation", "冻结雪模拟", "凍結雪模擬"],
+
+        ["Startup.Key.NoDogsOnStreet"] = ["NoDogs: Disable Pets on Streets", "NoDogs：禁止宠物上街", "NoDogs：禁止寵物上街"],
+        ["Startup.Key.NoDogsGeneration"] = ["NoDogs: Prevent New Pet Generation", "NoDogs：阻止新宠物生成", "NoDogs：阻止新寵物生成"],
+        ["Startup.Key.NoThroughTraffic"] = ["Disable Through-Traffic", "禁止过境交通", "禁止過境交通"],
+
+        ["Startup.Key.EditorCollisionSkip"] = ["Skip Object Collision (Map Editor)", "跳过碰撞检测（地图编辑器）", "跳過碰撞偵測（地圖編輯器）"],
+        ["Startup.Key.TerrainBrushRoadBlock"] = ["Terrain Brush Road Block", "地形笔刷道路阻挡", "地形筆刷道路阻擋"],
+        ["Startup.Key.TerrainBrushRoadMargin"] = ["Road Block Margin", "道路阻挡宽度余量", "道路阻擋寬度餘量"],
+
+        ["Startup.Key.EnableVehicleRescue"] = ["Enable Stuck Vehicle Rescue", "启用购车停放救援", "啟用購車停放救援"],
+        ["Startup.Key.EnableRescueDebugLog"] = ["Enable Vehicle Rescue Debug Log", "启用购车救援调试日志", "啟用購車救援偵測日誌"],
+
+        ["Startup.Key.ShoppingMaxCost"] = ["Max Shopping Pathfind Cost", "购物最高寻路成本", "購物最高尋路成本"],
+        ["Startup.Key.CompanyShoppingMaxCost"] = ["Company Max Delivery Pathfind Cost", "公司货运最高寻路成本", "公司貨運最高尋路成本"],
+        ["Startup.Key.LeisureMaxCost"] = ["Max Leisure / Sightseeing Cost", "休闲观光最高寻路成本", "休閒觀光最高尋路成本"],
+        ["Startup.Key.EmergencyMaxCost"] = ["Max Hospital / Crime Cost", "医院／犯罪最高寻路成本", "醫院／犯罪最高尋路成本"],
+        ["Startup.Key.FindJobMaxCost"] = ["Max Find Job Pathfind Cost", "找工作最高寻路成本", "找工作最高尋路成本"],
+        ["Startup.Key.FindHomeMaxCost"] = ["Max Find Home Pathfind Cost", "找房搬家最高寻路成本", "找房搬家最高尋路成本"],
+        ["Startup.Key.FindSchoolElementaryMaxCost"] = ["Max Elementary School Cost", "找小学最高寻路成本", "找小學最高尋路成本"],
+        ["Startup.Key.FindSchoolHighSchoolMaxCost"] = ["Max High School Cost", "找高中最高寻路成本", "找高中最高尋路成本"],
+        ["Startup.Key.FindSchoolCollegeMaxCost"] = ["Max College Pathfind Cost", "找学院最高寻路成本", "找學院最高尋路成本"],
+        ["Startup.Key.FindSchoolUniversityMaxCost"] = ["Max University Pathfind Cost", "找大学最高寻路成本", "找大學最高尋路成本"],
+
+        ["Startup.Key.JobSeekerCap"] = ["Job Search: Seeker Throughput", "找工作：求职吞吐量", "找工作：求職吞吐量"],
+        ["Startup.Key.PathfindRequestCap"] = ["Job Search: Pathfind Throughput", "找工作：寻路吞吐量", "找工作：尋路吞吐量"],
+        ["Startup.Key.ShoppingTrafficReduction"] = ["Shopping Population Damping", "购物概率人口压制系数", "購物機率人口壓制係數"],
+        ["Startup.Key.HouseholdResourceDemandMultiplier"] = ["Household Shopping Demand Multiplier", "家庭购物需求倍率", "家庭購物需求倍率"],
+        ["Startup.Key.HomeSeekerCap"] = ["Home Search: Move Throughput", "找房：常规搬家吞吐量", "找房：常規搬家吞吐量"],
+        ["Startup.Key.HomelessSeekerCap"] = ["Home Search: Homeless Throughput", "找房：流浪安置吞吐量", "找房：流浪安置吞吐量"],
+        ["Startup.Key.ResourceSellerCandidateCap"] = ["Business Purchasing: Supplier Cap (P1)", "企业采购：候选供应商上限 (P1)", "企業採購：候選供應商上限 (P1)"],
+        ["Startup.Key.LeisureCandidateCap"] = ["Leisure Search: Venue Cap (P2)", "休闲寻路：候选设施上限 (P2)", "休閒尋路：候選設施上限 (P2)"],
+        ["Startup.Key.FindHomeCandidateCap"] = ["Home Search: Property Cap (P6)", "找房寻路：候选房屋上限 (P6)", "找房尋路：候選房屋上限 (P6)"],
+
+        ["Startup.Key.LandValueEnvironmentEffect"] = ["Environment Land Value Impact", "环境地价影响系数", "環境地價影響係數"],
+        ["Startup.Key.ServiceBonusCapMultiplier"] = ["Service Bonus Cap Multiplier", "服务加成上限乘数", "服務加成上限乘數"],
+        ["Startup.Key.RentMultiplierResidential"] = ["Residential Rent Multiplier", "住宅租金总乘数", "住宅租金總乘數"],
+        ["Startup.Key.RentMultiplierCommercial"] = ["Commercial Rent Multiplier", "商业租金总乘数", "商業租金總乘數"],
+        ["Startup.Key.RentMultiplierIndustrial"] = ["Industrial Rent Multiplier", "工业租金总乘数", "工業租金總乘數"],
+        ["Startup.Key.LandValueFactorResidential"] = ["Residential: Land Value Weight", "住宅：地价贡献系数", "住宅：地價貢獻係數"],
+        ["Startup.Key.LandValueFactorCommercial"] = ["Commercial: Land Value Weight", "商业：地价贡献系数", "商業：地價貢獻係數"],
+        ["Startup.Key.LandValueFactorIndustrial"] = ["Industrial: Land Value Weight", "工业：地价贡献系数", "工業：地價貢獻係數"],
+        ["Startup.Key.LevelFactorResidential"] = ["Residential: Level Weight", "住宅：等级贡献系数", "住宅：等級貢獻係數"],
+        ["Startup.Key.LevelFactorCommercial"] = ["Commercial: Level Weight", "商业：等级贡献系数", "商業：等級貢獻係數"],
+        ["Startup.Key.LevelFactorIndustrial"] = ["Industrial: Level Weight", "工业：等级贡献系数", "工業：等級貢獻係數"],
+
+        ["Startup.Key.UIMenuPanelWidth"] = ["Left Menu Panel Width", "左侧菜单面板宽度", "左側選單面板寬度"],
+        ["Startup.Key.UIDetailPanelWidth"] = ["Right Detail Panel Width", "右侧详情面板宽度", "右側詳情面板寬度"],
+        ["Startup.Key.UIPanelHeight"] = ["Left Panel Height", "左侧面板高度", "左側面板高度"],
+        ["Startup.Key.DashboardDefaultCityStats"] = ["City Stats", "城市统计", "城市統計"],
+        ["Startup.Key.DashboardDefaultResidential"] = ["Residential Market", "住宅市场", "住宅市場"],
+        ["Startup.Key.DashboardDefaultCommercial"] = ["Commercial Market", "商业市场", "商業市場"],
+        ["Startup.Key.DashboardDefaultActivity"] = ["Population Activity", "人口活动", "人口活動"],
+        ["Startup.Key.DashboardDefaultMisc"] = ["Misc", "其他", "其他"],
+        ["Startup.Key.HeightmapExportDirection"] = ["Heightmap Export Orientation", "高程图导出方向", "高度圖匯出方向"],
+        ["Startup.Key.HeightmapExportRaw"] = ["Also Export Headerless 16-bit RAW", "额外导出无档头 16-bit RAW", "額外匯出無檔頭 16-bit RAW"],
+
+        // === 全部 65 个设定项的悬停提示（Startup.Tip.<Name>） ===
+        ["Startup.Tip.PatchModeChoice"] = [
+            "Target map edge scale applied at game startup. Restart required after changing.",
+            "游戏启动时应用的地图边长倍率模式。修改后下次启动游戏生效。",
+            "遊戲啟動時套用的地圖邊長倍率模式。修改後下次啟動遊戲生效。",
+        ],
+        ["Startup.Tip.isEnableEconomyFix"] = [
+            "Master switch for MapExt's large-city economy and pathfinding optimizations. Requires restart.",
+            "百万人口级城市经济与寻路优化的总开关。修改后需重启游戏。",
+            "百萬人口級城市經濟與尋路優化的總開關。修改後需重啟遊戲。",
+        ],
+        ["Startup.Tip.EnableDemandEcoSystem"] = [
+            "Smooths Residential, Commercial and Industrial demand curves for mega-cities. Requires restart.",
+            "平滑住宅、商业、工业需求曲线以适配巨型城市。修改后需重启。",
+            "平滑住宅、商業、工業需求曲線以適配巨型城市。修改後需重啟。",
+        ],
+        ["Startup.Tip.EnableJobSearchEcoSystem"] = [
+            "Optimizes citizen job-seeking throughput and matching. Incompatible with Realistic JobSearch. Requires restart.",
+            "优化市民求职吞吐与岗位匹配效率；与 Realistic JobSearch 等冲突。修改后需重启。",
+            "優化市民求職吞吐與職缺匹配效率；與 Realistic JobSearch 等衝突。修改後需重啟。",
+        ],
+        ["Startup.Tip.EnableHouseholdPropertyEcoSystem"] = [
+            "Optimizes household home-search, consumption and rent adjustment. Requires restart.",
+            "优化家庭找房寻路、消费行为与租金重算机制。修改后需重启。",
+            "優化家庭找房尋路、消費行為與租金重算機制。修改後需重啟。",
+        ],
+        ["Startup.Tip.EnableResourceBuyerEcoSystem"] = [
+            "Optimizes citizen shopping, company procurement and service coverage pathfinding. Auto-disabled if Realistic PathFinding is active.",
+            "优化市民购物、企业采购与服务覆盖寻路；启用 Realistic PathFinding 时会自动让路停用。",
+            "優化市民購物、企業採購與服務覆蓋尋路；啟用 Realistic PathFinding 時會自動讓路停用。",
+        ],
+        ["Startup.Tip.EnableResidentAIEcoSystem"] = [
+            "Mitigates pathfinding wait-time and memory pressure on large maps. Default: Off. Requires restart.",
+            "缓解大地图市民寻路等待逻辑与内存压力。默认关闭，修改后需重启。",
+            "緩解大地圖市民尋路等待邏輯與記憶體壓力。預設關閉，修改後需重啟。",
+        ],
+        ["Startup.Tip.EnableDownstreamAIEcoSystem"] = [
+            "Replaces PersonalCarAI, TaxiAI, Leisure and FindSchool systems to support configurable MaxCost per trip purpose. Default: Off (Beta).",
+            "替换私家车AI、出租车AI、休闲与找学校系统以支持分级寻路成本上限，防止远途车辆半途消失。默认关闭（Beta）。",
+            "替換私家車AI、計程車AI、休閒與找學校系統以支援分級尋路成本上限，防止遠途車輛半途消失。預設關閉（Beta）。",
+        ],
+        ["Startup.Tip.DisableLoadGameValidation"] = [
+            "Bypasses map-size validation when loading saves. Risk of save corruption if sizes mismatch! Keep unchecked normally.",
+            "取消读档时的地图尺寸校验；读错尺寸可能损坏存档！仅用于无法识别的旧版存档。",
+            "取消讀檔時的地圖尺寸驗證；讀錯尺寸可能損壞存檔！僅用於無法識別的舊版存檔。",
+        ],
+        ["Startup.Tip.EnableVanillaConversion"] = [
+            "Allows extending 14 km vanilla saves/maps to 28/57 km, or 28 km saves to 57 km (saves as a new file). Mutually exclusive with Disable World Backdrop.",
+            "允许将 14km 原版存档/地图扩展至 28/57km，或将 28km 存档扩展至 57km（自动另存新档，不改原档）。与停用背景世界地图互斥。",
+            "允許將 14km 原版存檔/地圖擴展至 28/57km，或將 28km 存檔擴展至 57km（自動另存新檔，不改原檔）。與停用背景世界地圖互斥。",
+        ],
+        ["Startup.Tip.DisableWorldBackdrop"] = [
+            "Skips loading the world backdrop heightmap (~37 MB VRAM & 0.5–2 ms GPU saved). Warning: saving the city afterwards permanently strips backdrop data!",
+            "读档时阻止加载背景世界地图（省约 37MB 显存与每帧 0.5～2ms GPU）。警告：开启后保存存档将永久丢失远景地形数据！",
+            "讀檔時阻止載入背景世界地圖（省約 37MB 顯示記憶體與每幀 0.5～2ms GPU）。警告：開啟後儲存存檔將永久遺失遠景地形資料！",
+        ],
+        ["Startup.Tip.TerrainBufferPrealloc"] = [
+            "Pre-allocates larger GPU StructuredBuffers on the first frame to prevent stutter when panning over dense areas. Recommended: On.",
+            "首帧按地图倍率预分配更大的 GPU 缓冲，避免建筑密集区镜头移动时动态扩容卡顿。建议保持开启。",
+            "首幀按地圖倍率預分配更大的 GPU 緩衝，避免建築密集區鏡頭移動時動態擴容卡頓。建議保持開啟。",
+        ],
+        ["Startup.Tip.TerrainCascadeThrottle"] = [
+            "Updates distant terrain cascades every 4 frames. May cause brief visual misalignment while moving the camera. Recommended: Off.",
+            "远距地形级联每 4 帧更新一次以降低 GPU 负载；移动镜头时可能出现短暂地形错位。非严重显卡瓶颈建议关闭。",
+            "遠距地形級聯每 4 幀更新一次以降低 GPU 負載；移動鏡頭時可能出現短暫地形錯位。非嚴重顯示卡瓶頸建議關閉。",
+        ],
+        ["Startup.Tip.TerrainDownsampleThrottle"] = [
+            "Skips per-frame backdrop heightmap downsampling when cascades have not been redrawn. Effective on saves with a world backdrop.",
+            "地形级联未重绘时跳过每帧背景高度图降采样计算；对含背景世界地图的存档有稳定的小幅 GPU 收益。",
+            "地形級聯未重繪時跳過每幀背景高度圖降採樣計算；對含背景世界地圖的存檔有穩定的小幅 GPU 收益。",
+        ],
+        ["Startup.Tip.WaterSimQuality"] = [
+            "Controls water CPU/GPU simulation frequency. Reduced skips backdrop flow; Minimal runs every 4 frames without blur; Paused freezes flow.",
+            "控制水体计算频率：降低档关闭远景水流；极简档每 4 帧计算并关模糊；暂停档冻结水体流动。",
+            "控制水體計算頻率：降低檔關閉遠景水流；極簡檔每 4 幀計算並關模糊；暫停檔凍結水體流動。",
+        ],
+        ["Startup.Tip.WaterPauseFreeze"] = [
+            "Freezes wasted GPU water simulation dispatches while the game is paused (automatically yields during terrain edits). Recommended: On.",
+            "游戏暂停时冻结空转的水模拟 GPU 管线，地形编辑期间自动让行。近零风险，建议开启。",
+            "遊戲暫停時凍結空轉的水模擬 GPU 管線，地形編輯期間自動讓行。近零風險，建議開啟。",
+        ],
+        ["Startup.Tip.SnowSimFreeze"] = [
+            "Auto freezes full-map snow GPU passes during warm snow-free weather and thaws automatically before cold/precipitation.",
+            "自动档仅在温暖无降水的无雪天气冻结全图雪深 GPU 计算，转冷或降水立即自动解冻。",
+            "自動檔僅在溫暖無降水的無雪天氣凍結全圖雪深 GPU 計算，轉冷或降水立即自動解凍。",
+        ],
+        ["Startup.Tip.NoDogsOnStreet"] = [
+            "Disables HouseholdPetSpawnSystem so pets do not spawn, render or pathfind on streets.",
+            "关闭宠物外出生成系统，禁止宠物上街渲染与寻路。",
+            "關閉寵物外出生成系統，禁止寵物上街渲染與尋路。",
+        ],
+        ["Startup.Tip.NoDogsGeneration"] = [
+            "Sets household pet spawn probabilities to 0% when loading a city so new households bring no pets.",
+            "读档时将新搬入家庭生成宠物的概率设为 0%，已有存量宠物保留不变。",
+            "讀檔時將新搬入家庭生成寵物的機率設為 0%，已有存量寵物保留不變。",
+        ],
+        ["Startup.Tip.NoThroughTraffic"] = [
+            "Disables TrafficSpawnerAISystem to stop outside-to-outside dummy through-traffic.",
+            "禁用外部连接之间的过境虚拟车流生成，降低寻路负载与高速拥堵。",
+            "停用外部連接之間的過境虛擬車流生成，降低尋路負載與高速擁堵。",
+        ],
+        ["Startup.Tip.EditorCollisionSkip"] = [
+            "Skips object collision checks when placing trees or props in the Map Editor.",
+            "在地图编辑器中放置物件时跳过碰撞校验；「仅跳过树木」适合大面积快速造林。",
+            "在地圖編輯器中放置物件時跳過碰撞驗證；「僅跳過樹木」適合大面積快速造林。",
+        ],
+        ["Startup.Tip.TerrainBrushRoadBlock"] = [
+            "Prevents terrain brushes (raise/level/slope/smooth) from propagating across roads.",
+            "启用后地形笔刷（升降/平整/坡度/平滑）不会穿过道路传播，便于修整沿路河岸。",
+            "啟用後地形筆刷（升降/平整/坡度/平滑）不會穿過道路傳播，便於修整沿路河岸。",
+        ],
+        ["Startup.Tip.TerrainBrushRoadMargin"] = [
+            "Extra protection buffer width on both sides of road edges (0–30 m, recommended 1–4 m).",
+            "道路边缘两侧额外扩展的地形保护宽度（0～30 m，建议 1～4 m）。",
+            "道路邊緣兩側額外擴展的地形保護寬度（0～30 m，建議 1～4 m）。",
+        ],
+        ["Startup.Tip.EnableVehicleRescue"] = [
+            "Teleports personal cars stuck without a parking lane (m_Lane == Null) near their owner's home and cleans up orphaned ghost cars.",
+            "检测因车位不足卡成无车道（m_Lane == Null）的幽灵私家车，有住宅者传送回住处重停，孤儿车安全清理。",
+            "偵測因車位不足卡成無車道（m_Lane == Null）的幽靈私家車，有住宅者傳送回住處重停，孤兒車安全清理。",
+        ],
+        ["Startup.Tip.EnableRescueDebugLog"] = [
+            "Logs every vehicle rescue, retry or cleanup event. Keep off in large cities to avoid log growth.",
+            "每次执行购车救援或清理时打印详细日志；日常游玩建议关闭以免日志膨胀。",
+            "每次執行購車救援或清理時列印詳細日誌；日常遊玩建議關閉以免日誌膨脹。",
+        ],
+        ["Startup.Tip.ShoppingMaxCost"] = [
+            "Max travel cost for citizen shopping (1000–200000). Recommended: 8000 (14/28km), 8000–12000 (57/114km).",
+            "市民外出购物的最大寻路成本（1000～200000）。建议：14/28km 用 8000，57/114km 用 8000～12000。",
+            "市民外出購物的最大尋路成本（1000～200000）。建議：14/28km 用 8000，57/114km 用 8000～12000。",
+        ],
+        ["Startup.Tip.CompanyShoppingMaxCost"] = [
+            "Max cargo restocking search cost for companies (1000–200000). Recommended: 200000 across all map sizes.",
+            "企业呼叫货车采购补货的最大搜索成本（1000～200000）。建议全尺寸保持 200000 以防大地图缺料。",
+            "企業呼叫貨車採購補貨的最大搜尋成本（1000～200000）。建議全尺寸保持 200000 以防大地圖缺料。",
+        ],
+        ["Startup.Tip.LeisureMaxCost"] = [
+            "Max travel cost for parks and sightseeing (1000–200000). Recommended: 8000–12000 (14/28km), 12000–20000 (57/114km).",
+            "市民游览公园与观光的最大成本（1000～200000）。建议：14/28km 用 8000～12000，57/114km 用 12000～20000。",
+            "市民遊覽公園與觀光的最大成本（1000～200000）。建議：14/28km 用 8000～12000，57/114km 用 12000～20000。",
+        ],
+        ["Startup.Tip.EmergencyMaxCost"] = [
+            "Max search range for citizens seeking hospitals or police crime response (1000–17000, default 6000).",
+            "市民就医或犯罪响应的最大搜索成本（1000～17000，默认 6000，建议 4000～8000 就近服务）。",
+            "市民就醫或犯罪響應的最大搜尋成本（1000～17000，預設 6000，建議 4000～8000 就近服務）。",
+        ],
+        ["Startup.Tip.FindJobMaxCost"] = [
+            "Max job-hunting search cost across the map (17000–200000, default 200000 so remote towns can hire workers).",
+            "市民全图求职的最大成本（17000～200000，默认拉满 200000 以便远郊城镇招工）。",
+            "市民全圖求職的最大成本（17000～200000，預設拉滿 200000 以便遠郊城鎮招工）。",
+        ],
+        ["Startup.Tip.FindHomeMaxCost"] = [
+            "Max relocation search cost across the map (17000–200000, default 200000 so remote districts can be settled).",
+            "家庭跨全图搬家找房的最大成本（17000～200000，默认拉满 200000 避免偏远新城无人入住）。",
+            "家庭跨全圖搬家找房的最大成本（17000～200000，預設拉滿 200000 避免偏遠新城無人入住）。",
+        ],
+        ["Startup.Tip.FindSchoolElementaryMaxCost"] = [
+            "Max travel cost for elementary students (1000–200000, default 10000 to encourage neighborhood enrollment).",
+            "小学生就近入学的最大路线成本（1000～200000，默认 10000）。",
+            "小學生就近入學的最大路線成本（1000～200000，預設 10000）。",
+        ],
+        ["Startup.Tip.FindSchoolHighSchoolMaxCost"] = [
+            "Max travel cost for high school students (1000–200000, default 17000).",
+            "中学生寻找高中的最大路线成本（1000～200000，默认 17000）。",
+            "中學生尋找高中的最大路線成本（1000～200000，預設 17000）。",
+        ],
+        ["Startup.Tip.FindSchoolCollegeMaxCost"] = [
+            "Max travel cost for college students (1000–200000, default 50000).",
+            "寻找学院（大专）的最大路线成本（1000～200000，默认 50000）。",
+            "尋找學院（大專）的最大路線成本（1000～200000，預設 50000）。",
+        ],
+        ["Startup.Tip.FindSchoolUniversityMaxCost"] = [
+            "Max travel cost for university students (1000–200000, default 100000; raise to 200000 for a single campus citywide).",
+            "寻找大学的最大路线成本（1000～200000，默认 100000；全图单一大学城可拉满至 200000）。",
+            "尋找大學的最大路線成本（1000～200000，預設 100000；全圖單一大學城可拉滿至 200000）。",
+        ],
+        ["Startup.Tip.JobSeekerCap"] = [
+            "Max job seeker entities created per B1 update (200–5000, default 1000). Recommended: 200–500 (<500k pop), 500–1000 (2M), 1000–3000 (>5M).",
+            "每次求职系统更新最多创建的求职者数（200～5000，默认 1000）。建议：<50万用 200～500，200万用 500～1000，>500万用 1000～3000。",
+            "每次求職系統更新最多建立的求職者數（200～5000，預設 1000）。建議：<50萬用 200～500，200萬用 500～1000，>500萬用 1000～3000。",
+        ],
+        ["Startup.Tip.PathfindRequestCap"] = [
+            "Max job pathfind requests processed per B2 update (500–10000, default 4000; typically 2–4× Seeker Throughput).",
+            "每次求职寻路最多处理的请求数（500～10000，默认 4000；通常设为求职吞吐量的 2～4 倍）。",
+            "每次求職尋路最多處理的請求數（500～10000，預設 4000；通常設為求職吞吐量的 2～4 倍）。",
+        ],
+        ["Startup.Tip.ShoppingTrafficReduction"] = [
+            "Population damping factor on household shopping chance (1–20 ×0.0001, stored as 0.0001–0.0020; default 4 = 0.0004). Lower values boost commercial demand in mega-cities.",
+            "人口对家庭购物概率的衰减系数（界面 1～20 对应存储 0.0001～0.0020，默认 4 即 0.0004）。超大城市适当调低可提振商业消费。",
+            "人口對家庭購物機率的衰減係數（介面 1～20 對應儲存 0.0001～0.0020，預設 4 即 0.0004）。超大城市適當調低可提振商業消費。",
+        ],
+        ["Startup.Tip.HouseholdResourceDemandMultiplier"] = [
+            "Per-trip purchase multiplier compensating reduced shopping tick rate (1.0–8.0×, default 3.5×; 14km: 1–2×, 28km: 2–3.5×, 57km: 3.5–5×, 114km: 5–8×).",
+            "单次家庭购物购买量倍率（1.0～8.0×，默认 3.5×），用于补偿降频后的总消费量。建议：14km 1～2×，28km 2～3.5×，57km 3.5～5×，114km 5～8×。",
+            "單次家庭購物購買量倍率（1.0～8.0×，預設 3.5×），用於補償降頻後的總消費量。建議：14km 1～2×，28km 2～3.5×，57km 3.5～5×，114km 5～8×。",
+        ],
+        ["Startup.Tip.HomeSeekerCap"] = [
+            "Max housed families evaluated for relocation per update (32–512, default 128).",
+            "每轮最多处理的已有住房家庭搬家评估数（32～512，默认 128）。",
+            "每輪最多處理的已有住房家庭搬家評估數（32～512，預設 128）。",
+        ],
+        ["Startup.Tip.HomelessSeekerCap"] = [
+            "Max homeless families processed for housing placement per update (128–5120, default 1280).",
+            "每轮最多处理的无家可归家庭找房安置数（128～5120，默认 1280）。",
+            "每輪最多處理的無家可歸家庭找房安置數（128～5120，預設 1280）。",
+        ],
+        ["Startup.Tip.ResourceSellerCandidateCap"] = [
+            "P1 early-exit cap: max qualified suppliers collected per chunk for company purchasing (3–20, default 8).",
+            "【P1】企业采购在每个实体区块收集的合格供应商上限（3～20，默认 8），凑满提前退出区块扫描；稀缺资源自动遍历全城不漏找。",
+            "【P1】企業採購在每個實體區塊收集的合格供應商上限（3～20，預設 8），湊滿提前退出區塊掃描；稀缺資源自動遍歷全城不漏找。",
+        ],
+        ["Startup.Tip.LeisureCandidateCap"] = [
+            "P2 early-exit cap: max qualified leisure venues collected per chunk (3–15, default 6).",
+            "【P2】休闲寻路在每个实体区块收集的合格设施上限（3～15，默认 6），凑满提前退出扫描。",
+            "【P2】休閒尋路在每個實體區塊收集的合格設施上限（3～15，預設 6），湊滿提前退出掃描。",
+        ],
+        ["Startup.Tip.FindHomeCandidateCap"] = [
+            "P6 early-exit cap: max qualified properties scored per chunk (3–15, default 5). Higher values improve housing quality match at slightly higher CPU cost.",
+            "【P6】家庭找房在每个区块打分收集的候选房源上限（3～15，默认 5）。值越高选房质量越优但 CPU 开销略增。",
+            "【P6】家庭找房在每個區塊評分收集的候選房源上限（3～15，預設 5）。值越高選房品質越優但 CPU 開銷略增。",
+        ],
+        ["Startup.Tip.LandValueEnvironmentEffect"] = [
+            "Share of environmental factors (attractiveness, telecom, pollution) passed to road Edge land value (0–100%, default 40%; 0% = near vanilla).",
+            "环境因子（吸引力、电信、污染）传递至道路 Edge 地价的比例（0～100%，默认推荐 40%；0% 最接近原版）。",
+            "環境因子（吸引力、電信、污染）傳遞至道路 Edge 地價的比例（0～100%，預設推薦 40%；0% 最接近原版）。",
+        ],
+        ["Startup.Tip.ServiceBonusCapMultiplier"] = [
+            "Scales the cap of service coverage bonuses (health, police, education, transit) on Edge land value (0–200%, default 100%).",
+            "服务覆盖（医疗、警务、教育、交通）对道路地价加成上限的缩放比例（0～200%，默认 100%）。",
+            "服務覆蓋（醫療、警務、教育、交通）對道路地價加成上限的縮放比例（0～200%，預設 100%）。",
+        ],
+        ["Startup.Tip.RentMultiplierResidential"] = [
+            "Overall multiplier applied to residential rent (0–200%, 100% = vanilla equivalent).",
+            "住宅租金总体乘数（0～200%，100% 等效原版公式）。",
+            "住宅租金總體乘數（0～200%，100% 等效原版公式）。",
+        ],
+        ["Startup.Tip.RentMultiplierCommercial"] = [
+            "Overall multiplier applied to commercial rent (0–200%, 100% = vanilla equivalent).",
+            "商业租金总体乘数（0～200%，降低有助于商铺在高地价区生存）。",
+            "商業租金總體乘數（0～200%，降低有助於商鋪在高地價區生存）。",
+        ],
+        ["Startup.Tip.RentMultiplierIndustrial"] = [
+            "Overall multiplier applied to industrial rent (0–200%, 100% = vanilla equivalent).",
+            "工业租金总体乘数（0～200%，100% 等效原版公式）。",
+            "工業租金總體乘數（0～200%，100% 等效原版公式）。",
+        ],
+        ["Startup.Tip.LandValueFactorResidential"] = [
+            "Weight of Edge land value in residential rent (0–200%, 100% = vanilla weight).",
+            "道路地价对住宅租金的影响权重（0～200%，0% 完全忽略地价，100% 原版权重）。",
+            "道路地價對住宅租金的影響權重（0～200%，0% 完全忽略地價，100% 原版權重）。",
+        ],
+        ["Startup.Tip.LandValueFactorCommercial"] = [
+            "Weight of Edge land value in commercial rent (0–200%, 100% = vanilla weight).",
+            "道路地价对商业租金的影响权重（0～200%，调低可减轻中心城区商业高租金）。",
+            "道路地價對商業租金的影響權重（0～200%，調低可減輕中心城區商業高租金）。",
+        ],
+        ["Startup.Tip.LandValueFactorIndustrial"] = [
+            "Weight of Edge land value in industrial rent (0–200%, 100% = vanilla weight).",
+            "道路地价对工业租金的影响权重（0～200%，100% 原版权重）。",
+            "道路地價對工業租金的影響權重（0～200%，100% 原版權重）。",
+        ],
+        ["Startup.Tip.LevelFactorResidential"] = [
+            "Weight of building upgrade level in residential rent (0–200%, 100% = vanilla weight).",
+            "建筑升级等级对住宅租金的贡献权重（0～200%，100% 原版权重）。",
+            "建築升級等級對住宅租金的貢獻權重（0～200%，100% 原版權重）。",
+        ],
+        ["Startup.Tip.LevelFactorCommercial"] = [
+            "Weight of building upgrade level in commercial rent (0–200%, 100% = vanilla weight).",
+            "建筑升级等级对商业租金的贡献权重（0～200%，100% 原版权重）。",
+            "建築升級等級對商業租金的貢獻權重（0～200%，100% 原版權重）。",
+        ],
+        ["Startup.Tip.LevelFactorIndustrial"] = [
+            "Weight of building upgrade level in industrial rent (0–200%, 100% = vanilla weight).",
+            "建筑升级等级对工业租金的贡献权重（0～200%，100% 原版权重）。",
+            "建築升級等級對工業租金的貢獻權重（0～200%，100% 原版權重）。",
+        ],
+        ["Startup.Tip.UIMenuPanelWidth"] = [
+            "Width of the in-game MapExt left menu panel (160–320 rem, default 200).",
+            "游戏内 MapExt 左侧菜单面板宽度（160～320 rem，默认 200；游戏内亦可拖拽边缘调整）。",
+            "遊戲內 MapExt 左側選單面板寬度（160～320 rem，預設 200；遊戲內亦可拖曳邊緣調整）。",
+        ],
+        ["Startup.Tip.UIDetailPanelWidth"] = [
+            "Width of the in-game MapExt right detail panel (200–450 rem, default 220).",
+            "游戏内 MapExt 右侧详情面板宽度（200～450 rem，默认 220）。",
+            "遊戲內 MapExt 右側詳情面板寬度（200～450 rem，預設 220）。",
+        ],
+        ["Startup.Tip.UIPanelHeight"] = [
+            "Height of the in-game MapExt panel (300–1000 rem, default 1000).",
+            "游戏内 MapExt 左侧面板高度（300～1000 rem，默认 1000）。",
+            "遊戲內 MapExt 左側面板高度（300～1000 rem，預設 1000）。",
+        ],
+        ["Startup.Tip.DashboardDefaultCityStats"] = [
+            "Expand the City Stats section by default when opening the in-game dashboard.",
+            "打开游戏内仪表盘时默认展开「城市统计」区块。",
+            "開啟遊戲內儀表板時預設展開「城市統計」區塊。",
+        ],
+        ["Startup.Tip.DashboardDefaultResidential"] = [
+            "Expand the Residential Market section by default when opening the in-game dashboard.",
+            "打开游戏内仪表盘时默认展开「住宅市场」区块。",
+            "開啟遊戲內儀表板時預設展開「住宅市場」區塊。",
+        ],
+        ["Startup.Tip.DashboardDefaultCommercial"] = [
+            "Expand the Commercial Market section by default when opening the in-game dashboard.",
+            "打开游戏内仪表盘时默认展开「商业市场」区块。",
+            "開啟遊戲內儀表板時預設展開「商業市場」區塊。",
+        ],
+        ["Startup.Tip.DashboardDefaultActivity"] = [
+            "Expand the Population Activity section by default when opening the in-game dashboard.",
+            "打开游戏内仪表盘时默认展开「人口活动」区块。",
+            "開啟遊戲內儀表板時預設展開「人口活動」區塊。",
+        ],
+        ["Startup.Tip.DashboardDefaultMisc"] = [
+            "Expand the Misc section by default when opening the in-game dashboard.",
+            "打开游戏内仪表盘时默认展开「其他」区块。",
+            "開啟遊戲內儀表板時預設展開「其他」區塊。",
+        ],
+        ["Startup.Tip.HeightmapExportDirection"] = [
+            "Row-order orientation preset used when clicking Export Heightmap inside the game's Debug tab.",
+            "游戏内「开发者选项 → 导出高度图」按钮默认采用的行序翻转方向。",
+            "遊戲內「開發者選項 → 匯出高度圖」按鈕預設採用的行序翻轉方向。",
+        ],
+        ["Startup.Tip.HeightmapExportRaw"] = [
+            "Also write a headerless 16-bit .raw file when exporting a heightmap in-game (Map Editor imports .png only).",
+            "游戏内导出高度图时额外输出一份无档头 16-bit .raw 文件（注：地图编辑器只接受 .png）。",
+            "遊戲內匯出高度圖時額外輸出一份無檔頭 16-bit .raw 檔案（註：地圖編輯器只接受 .png）。",
+        ],
     };
 
     /// <summary>全部文案键，供单元测试检查。</summary>

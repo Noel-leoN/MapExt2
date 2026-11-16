@@ -165,10 +165,15 @@ public sealed class CocSettingsManagerTests : IDisposable
     public static TheoryData<string, object> BadTargets() => new()
     {
         { "patchmodechoice", "ModeA" }, // 键名区分大小写
-        { "TerrainCascadeThrottle", true }, // 不是受管的键
+        { "TerrainCullThrottle", true }, // 已隐藏弃用，不是受管的键
+        { "NoDogsPurge", true }, // 一次性游戏内操作，不是受管的键
         { "PatchModeChoice", "modeC" },
         { "PatchModeChoice", 2 },
         { "isEnableEconomyFix", "true" },
+        { "WaterSimQuality", "Adaptive_EventDriven" }, // 已硬挂起的枚举档位不允许写入
+        { "ShoppingMaxCost", 0f }, // 严禁写入 0（静默无限寻路陷阱）
+        { "RentMultiplierCommercial", 250 }, // 超出 [0, 200]
+        { "ShoppingTrafficReduction", float.NaN },
     };
 
     [Theory]
@@ -303,5 +308,51 @@ public sealed class CocSettingsManagerTests : IDisposable
         var ex = new CocSaveException(CocSaveFailure.VerifyFailed, "PatchModeChoice");
         Assert.Equal("写入结果校验失败：PatchModeChoice", ex.GetMessage(UiLanguage.SimplifiedChinese));
         Assert.Equal("Verification after writing failed: PatchModeChoice", ex.Message);
+    }
+
+    [Fact]
+    public void ReadAndSave_ExtendedTypes_EnumIntFloatAndClamping()
+    {
+        StartupSettingsState state = StartupSettingsState.Parse(Block(
+            "    \"WaterSimQuality\": \"Adaptive_EventDriven\",\n" +
+            "    \"SnowSimFreeze\": 1,\n" +
+            "    \"ShoppingMaxCost\": 0,\n" +
+            "    \"RentMultiplierCommercial\": 250,\n" +
+            "    \"ShoppingTrafficReduction\": 0.0002,\n" +
+            "    \"HouseholdResourceDemandMultiplier\": 5.5"));
+
+        // 挂起枚举落回 Vanilla 并标无效；数字序号 1 解码为 Auto
+        Assert.Equal("Vanilla_EveryFrame", state["WaterSimQuality"].Value);
+        Assert.True(state["WaterSimQuality"].Invalid);
+        Assert.Equal("Auto", state["SnowSimFreeze"].Value);
+        Assert.False(state["SnowSimFreeze"].Invalid);
+
+        // MaxCost=0 夹紧到 1000f 并标无效；250% 夹紧到 200% 并标无效
+        Assert.Equal(1000f, state["ShoppingMaxCost"].Value);
+        Assert.True(state["ShoppingMaxCost"].Invalid);
+        Assert.Equal(200, state["RentMultiplierCommercial"].Value);
+        Assert.True(state["RentMultiplierCommercial"].Invalid);
+
+        Assert.Equal(0.0002f, (float)state["ShoppingTrafficReduction"].Value, 1e-6f);
+        Assert.Equal(5.5f, (float)state["HouseholdResourceDemandMultiplier"].Value, 1e-6f);
+
+        // 全量保存后越界与挂起项被修正为合法字面量，二次保存为 NoChanges
+        CocSettingsManager manager = CreateManager();
+        WriteCoc(state.Text);
+        StartupSettingsState disk = manager.Read();
+        Dictionary<string, object> all = disk.GetAllValues();
+        all["ShoppingTrafficReduction"] = 0.0001f;
+        all["RentMultiplierCommercial"] = 85;
+
+        CocSaveResult saved = manager.Save(disk, all);
+        Assert.Equal(CocSaveStatus.Saved, saved.Status);
+
+        StartupSettingsState reloaded = manager.Read();
+        Assert.False(reloaded.HasAnyInvalidValues);
+        Assert.Equal("Vanilla_EveryFrame", reloaded["WaterSimQuality"].Value);
+        Assert.Equal(1000f, reloaded["ShoppingMaxCost"].Value);
+        Assert.Equal(85, reloaded["RentMultiplierCommercial"].Value);
+        Assert.Equal("0.0001", reloaded["ShoppingTrafficReduction"].Raw);
+        Assert.Equal(CocSaveStatus.NoChanges, manager.Save(reloaded, reloaded.GetAllValues()).Status);
     }
 }

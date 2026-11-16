@@ -31,10 +31,13 @@
             </DockPanel>
         </Border>
 
-        <!-- 四个功能页 -->
-        <TabControl Grid.Row="1" Margin="12,8,12,6">
+        <!-- 五个功能页 -->
+        <TabControl x:Name="MainTabs" Grid.Row="1" Margin="12,8,12,6">
             <TabItem Header="{Binding [Tab.Launch], Source={x:Static svc:Loc.Instance}}">
                 <views:LaunchSettingsPage x:Name="LaunchPage" />
+            </TabItem>
+            <TabItem x:Name="OptionsTab">
+                <views:ModSettingsPage x:Name="OptionsPage" />
             </TabItem>
             <TabItem Header="{Binding [Tab.Logs], Source={x:Static svc:Loc.Instance}}">
                 <views:LogViewerPage />

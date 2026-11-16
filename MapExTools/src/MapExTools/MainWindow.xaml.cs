@@ -35,29 +35,41 @@ public partial class MainWindow : Window
         PopulateLanguageBox();
         PopulateThemeBox();
         Loc.Instance.LanguageChanged += OnUiLanguageChanged;
+        App.Services.Coc.Changed += OnCocSessionChanged;
 
         _pollTimer = new DispatcherTimer { Interval = s_pollInterval };
-        _pollTimer.Tick += (_, _) => RefreshGameState();
+        _pollTimer.Tick += (_, _) =>
+        {
+            App.Services.Coc.Poll();
+            RefreshGameState();
+        };
         _pollTimer.Start();
         RefreshGameState();
         RefreshUserDataText();
         RefreshBanner();
+        RefreshOptionsTabHeader();
 
         Closing += OnClosing;
         Closed += (_, _) =>
         {
             _pollTimer.Stop();
             Loc.Instance.LanguageChanged -= OnUiLanguageChanged;
+            App.Services.Coc.Changed -= OnCocSessionChanged;
         };
+    }
+
+    internal void OpenModSettings()
+    {
+        MainTabs.SelectedItem = OptionsTab;
     }
 
     /// <summary>
     /// "固定到本地"（横幅与启动页的按钮共用）：确认后复制、建快捷方式、从新位置启动，然后关闭本窗口。
-    /// 启动页有未保存的改动时在确认框里一并说明。
+    /// 有未保存的改动时在确认框里一并说明。
     /// </summary>
     internal void PinAndRestart()
     {
-        if (!InstallLocationService.PinAndStart(this, confirm: true, LaunchPage.HasUnsavedChanges))
+        if (!InstallLocationService.PinAndStart(this, confirm: true, App.Services.Coc.HasUnsavedChanges))
             return;
 
         _closeConfirmed = true;
@@ -66,7 +78,7 @@ public partial class MainWindow : Window
 
     private void OnClosing(object? sender, CancelEventArgs e)
     {
-        if (_closeConfirmed || !LaunchPage.HasUnsavedChanges)
+        if (_closeConfirmed || !App.Services.Coc.HasUnsavedChanges)
             return;
 
         if (MessageBox.Show(this, Loc.Instance["Startup.ConfirmClose"], Loc.Instance["App.Title"],
@@ -161,6 +173,20 @@ public partial class MainWindow : Window
         RefreshGameState();
         RefreshUserDataText();
         RefreshBanner();
+        RefreshOptionsTabHeader();
+    }
+
+    private void OnCocSessionChanged(object? sender, EventArgs e)
+    {
+        RefreshOptionsTabHeader();
+    }
+
+    private void RefreshOptionsTabHeader()
+    {
+        int pending = App.Services.Coc.IsUsable ? App.Services.Coc.GetPending().Count : 0;
+        OptionsTab.Header = pending > 0
+            ? Loc.Instance.Format("Tab.OptionsDirty", pending)
+            : Loc.Instance["Tab.Options"];
     }
 
     // === 状态栏 ===

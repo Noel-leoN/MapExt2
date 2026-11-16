@@ -27,7 +27,7 @@
             <Setter Property="TextWrapping" Value="Wrap" />
         </Style>
         <Style x:Key="ActionButton" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
-            <Setter Property="MinWidth" Value="88" />
+            <Setter Property="MinWidth" Value="84" />
             <Setter Property="Margin" Value="0,0,6,0" />
         </Style>
         <!-- 收紧 Fluent 默认 32px 单选／勾选行高，确保核心选项一屏尽览 -->
@@ -43,14 +43,13 @@
         </Style>
     </UserControl.Resources>
 
-    <!-- 启动与设定：首屏常驻快捷启动与 MapExt 9 个核心启动期设定；低频启动配置与快捷方式管理按需展开 -->
+    <!-- 启动与设定：首屏常驻快捷启动与 MapExt 11 个核心启动期设定；全部 65 项配置与低频操作一键直达 -->
     <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
         <StackPanel Margin="10,6,10,4">
 
             <!-- === 启动游戏：按钮、命令行预览与状态常驻在上；路径、通道与参数收进折叠栏（存进 MapExTools.json） === -->
             <Border Style="{StaticResource Card}">
                 <StackPanel>
-                    <!-- 标题行右边是启动按钮：打开页面不用往下翻就看得到 -->
                     <DockPanel>
                         <Button x:Name="LaunchButton" DockPanel.Dock="Right" VerticalAlignment="Center" Margin="16,0,0,0"
                                 Style="{DynamicResource AccentButtonStyle}" MinWidth="136" Padding="16,6" Click="OnLaunchClick" />
@@ -62,12 +61,10 @@
                         </StackPanel>
                     </DockPanel>
 
-                    <!-- 命令行预览：可选中复制（清掉 Fluent TextBox 默认 32px 最小高度） -->
                     <TextBox x:Name="CommandPreviewBox" Margin="0,4,0,0" IsReadOnly="True" TextWrapping="Wrap"
                              BorderThickness="0" Background="Transparent" Padding="0" MinHeight="0" FontSize="12"
                              FontFamily="Cascadia Mono, Consolas, Courier New" />
 
-                    <!-- 状态：游戏在运行、Steam 没开、上次启动的结果；runOnce.txt 待生效时可清除 -->
                     <ItemsControl x:Name="LaunchStatusLines" Margin="0,2,0,0">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate DataType="{x:Type views:ToneLine}">
@@ -83,7 +80,6 @@
                         </Hyperlink>
                     </TextBlock>
 
-                    <!-- 低频启动配置折叠栏：展开状态记入 MapExTools.json，未定位到游戏时自动展开 -->
                     <Expander x:Name="LaunchOptionsExpander" Margin="0,6,0,0"
                               HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
                               Expanded="OnLaunchExpanderChanged" Collapsed="OnLaunchExpanderChanged"
@@ -97,7 +93,6 @@
                             </WrapPanel>
                         </Expander.Header>
                         <StackPanel Margin="0,2,0,0">
-                            <!-- 游戏位置：手动指定 → Steam → Skyve 的记录 -->
                             <WrapPanel>
                                 <TextBlock x:Name="GameLocationText" TextWrapping="Wrap" VerticalAlignment="Center" Margin="0,0,16,0" />
                                 <TextBlock VerticalAlignment="Center" Margin="0,0,16,0">
@@ -114,7 +109,6 @@
                             <TextBlock x:Name="GameLocationNote" TextWrapping="Wrap" FontSize="12" Margin="0,2,0,0" Visibility="Collapsed"
                                        Foreground="{DynamicResource SystemFillColorCautionBrush}" />
 
-                            <!-- 启动方式：三条通道，下面是所选通道的说明 -->
                             <TextBlock Style="{StaticResource GroupTitle}" Margin="0,10,0,4"
                                        Text="{Binding [Launch.Group.Channel], Source={x:Static svc:Loc.Instance}}" />
                             <WrapPanel>
@@ -129,7 +123,6 @@
                             <TextBlock x:Name="ChannelBlockText" TextWrapping="Wrap" FontSize="12" Margin="0,2,0,0" Visibility="Collapsed"
                                        Foreground="{DynamicResource SystemFillColorCautionBrush}" />
 
-                            <!-- 参数：左常规、右开发者 -->
                             <Grid Margin="0,10,0,0">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="Auto" />
@@ -169,7 +162,6 @@
                                 </StackPanel>
                             </Grid>
 
-                            <!-- 自定义参数：原样附在后面，失焦时保存 -->
                             <DockPanel Margin="0,8,0,0">
                                 <TextBlock DockPanel.Dock="Left" VerticalAlignment="Center" Margin="0,0,8,0"
                                            Text="{Binding [Launch.Opt.Custom], Source={x:Static svc:Loc.Instance}}" />
@@ -187,13 +179,12 @@
                 </StackPanel>
             </Border>
 
-            <!-- === MapExt 启动设定（MapExtPDX.coc）：首屏完整常驻展开 === -->
+            <!-- === MapExt 启动设定速选（MapExtPDX.coc）：三栏紧凑常驻，与"模组设置"全量页实时双向同步 === -->
             <Border Style="{StaticResource Card}">
                 <StackPanel>
-                    <!-- 标题行右边直接放置保存／重新读取／恢复默认，无需滚到底部 -->
                     <DockPanel>
                         <WrapPanel DockPanel.Dock="Right" VerticalAlignment="Top" Margin="16,0,0,0">
-                            <Button x:Name="SaveButton" Style="{DynamicResource AccentButtonStyle}" MinWidth="88" Margin="0,0,6,0"
+                            <Button x:Name="SaveButton" Style="{DynamicResource AccentButtonStyle}" MinWidth="84" Margin="0,0,6,0"
                                     Click="OnSaveClick" Content="{Binding [Startup.Save], Source={x:Static svc:Loc.Instance}}" />
                             <Button x:Name="ReloadButton" Style="{StaticResource ActionButton}" Click="OnReloadClick"
                                     Content="{Binding [Startup.Reload], Source={x:Static svc:Loc.Instance}}"
@@ -212,6 +203,11 @@
 
                     <DockPanel Margin="0,4,0,0">
                         <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center" Margin="12,0,0,0">
+                            <TextBlock FontSize="12" FontWeight="SemiBold" VerticalAlignment="Center" Margin="0,0,14,0">
+                                <Hyperlink x:Name="OpenAllOptionsLink" Click="OnOpenAllOptionsClick">
+                                    <Run Text="{Binding [Startup.OpenAllOptions], Source={x:Static svc:Loc.Instance}, Mode=OneWay}" />
+                                </Hyperlink>
+                            </TextBlock>
                             <TextBlock FontSize="12" VerticalAlignment="Center" Margin="0,0,12,0">
                                 <Hyperlink x:Name="EditLink" Click="OnEditClick"
                                            ToolTip="{Binding [Startup.EditTip], Source={x:Static svc:Loc.Instance}}">
@@ -229,24 +225,29 @@
                                    TextTrimming="CharacterEllipsis" />
                     </DockPanel>
 
-                    <!-- 左：模式与其他；右：经济系统。选项由代码按 StartupKeys 生成 -->
+                    <!-- 三栏并排：左 地图尺寸模式 · 中 存档转换与安全校验 · 右 经济系统开关 -->
                     <Grid Margin="0,8,0,0">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
                             <ColumnDefinition Width="*" />
                         </Grid.ColumnDefinitions>
-                        <StackPanel Grid.Column="0" Margin="0,0,36,0" MaxWidth="380">
+                        <StackPanel Grid.Column="0" Margin="0,0,26,0" MaxWidth="270">
                             <TextBlock Style="{StaticResource GroupTitle}"
                                        Text="{Binding [Startup.Group.Mode], Source={x:Static svc:Loc.Instance}}" />
                             <StackPanel x:Name="ModePanel" />
-                            <TextBlock Style="{StaticResource GroupTitle}" Margin="0,8,0,4"
-                                       Text="{Binding [Startup.Group.Other], Source={x:Static svc:Loc.Instance}}" />
+                        </StackPanel>
+                        <StackPanel Grid.Column="1" Margin="0,0,26,0" MaxWidth="290">
+                            <TextBlock Style="{StaticResource GroupTitle}"
+                                       Text="{Binding [Startup.Group.ConvertAndCheck], Source={x:Static svc:Loc.Instance}}" />
                             <StackPanel x:Name="OtherPanel" />
-                            <TextBlock x:Name="ValidationWarning" TextWrapping="Wrap" FontSize="12" Margin="28,2,0,0" Visibility="Collapsed"
+                            <TextBlock Style="{StaticResource MutedText}" FontSize="11" Margin="28,2,0,0"
+                                       Text="{Binding [Startup.MutualExclusion], Source={x:Static svc:Loc.Instance}}" />
+                            <TextBlock x:Name="ValidationWarning" TextWrapping="Wrap" FontSize="11" Margin="28,2,0,0" Visibility="Collapsed"
                                        Foreground="{DynamicResource SystemFillColorCautionBrush}"
                                        Text="{Binding [Startup.ValidationOff], Source={x:Static svc:Loc.Instance}}" />
                         </StackPanel>
-                        <StackPanel Grid.Column="1">
+                        <StackPanel Grid.Column="2">
                             <TextBlock Style="{StaticResource GroupTitle}"
                                        Text="{Binding [Startup.Group.Economy], Source={x:Static svc:Loc.Instance}}" />
                             <StackPanel x:Name="EconomyPanel" />
@@ -256,14 +257,14 @@
                     </Grid>
 
                     <!-- 状态：游戏是否在运行、文件问题、刚才的操作；待保存的改动；最近一次启动实际生效的配置 -->
-                    <ItemsControl x:Name="StatusLines" Margin="0,8,0,0">
+                    <ItemsControl x:Name="StatusLines" Margin="0,7,0,0">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate DataType="{x:Type views:ToneLine}">
                                 <TextBlock Text="{Binding Text}" TextWrapping="Wrap" FontSize="12" Margin="0,0,0,1" Style="{StaticResource ToneText}" />
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
-                    <TextBlock x:Name="PendingText" Margin="0,1,0,0" FontSize="12" TextWrapping="Wrap" Text="{Binding Text}"
+                    <TextBlock x:Name="PendingText" Margin="0,1,0,0" FontSize="12" TextTrimming="CharacterEllipsis" Text="{Binding Text}"
                                Style="{StaticResource ToneText}" />
                     <TextBlock x:Name="AppliedText" Margin="0,2,0,0" FontSize="12"
                                Foreground="{DynamicResource TextFillColorSecondaryBrush}"

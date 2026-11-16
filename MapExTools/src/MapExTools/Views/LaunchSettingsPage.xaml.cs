@@ -1,14 +1,9 @@
-using System.ComponentModel;
-using System.Diagnostics;
-using System.Globalization;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Threading;
 using MapExTools.Core.Coc;
-using MapExTools.Core.Diagnostics;
-using MapExTools.Core.Game;
 using MapExTools.Core.Install;
 using MapExTools.Core.Packages;
 using MapExTools.Services;
@@ -17,13 +12,9 @@ using MapExtPDX;
 namespace MapExTools.Views;
 
 /// <summary>
-/// 启动与设定页。最上面是启动游戏（计划 2.2，见 <c>LaunchSettingsPage.Launch.cs</c>）。中间改 <c>MapExtPDX.coc</c>
-/// 里 MapExt 只在启动时读取的 9 个设定（计划 2.3），做法沿用开发版 <c>Set-MapExtStartup.ps1</c> 的界面：界面上的改动
-/// 相对最后一次读取成功的设定计算，保存时只写有改动的键；游戏运行中不能保存（退出时游戏会用内存里的设定写回）。
-/// 最下面是 MapExTools 的位置与桌面快捷方式（§2 第 9 条）。
-///
-/// <para>页面可见时每 1.5 秒检查一次：游戏刚退出（退出时写回了设定）或文件被外部改过（记事本、存档页的"切到该模式"），
-/// 就重新读取，界面上未保存的改动保留；同时刷新启动一栏的 Steam 状态与 runOnce.txt。</para>
+/// 启动与设定页。最上面是启动游戏（见 <c>LaunchSettingsPage.Launch.cs</c>）；中间是高频核心启动设定速选（地图尺寸模式、
+/// 存档转换与安全校验、经济系统开关共 11 项），与第 2 页签「模组设置」共用窗口级 <see cref="CocSession"/>；
+/// 最下面是 MapExTools 的位置与桌面快捷方式。
 /// </summary>
 public partial class LaunchSettingsPage : UserControl
 {
@@ -33,18 +24,6 @@ public partial class LaunchSettingsPage : UserControl
     private readonly Dictionary<string, RadioButton> _modeButtons = new(StringComparer.Ordinal);
     private readonly Dictionary<string, CheckBox> _checkBoxes = new(StringComparer.Ordinal);
 
-    // 最后一次读取成功的设定：界面上的改动相对它计算。格式有误时保留上一次的，供修好后恢复改动
-    private StartupSettingsState? _state;
-    private CocFormatException? _formatError;
-    private string? _readError;
-    private CocStamp _stamp;
-    private bool? _gameRunning;
-
-    // 状态行里的补充说明（已保存、已重新读取……），按界面语言生成，切换语言时跟着变
-    private Func<string, string>? _note;
-    private AppliedConfigInfo? _applied;
-
-    // 程序设置勾选状态时会触发 Checked／Unchecked，这段时间不当作用户操作
     private bool _populating;
 
     public LaunchSettingsPage()
@@ -53,46 +32,37 @@ public partial class LaunchSettingsPage : UserControl
         BuildOptions();
         UpdateOptionTexts();
 
-        _pollTimer.Tick += (_, _) => OnPollTick();
+        _pollTimer.Tick += (_, _) => RefreshLaunchPoll(Coc.GameRunning);
         Loaded += OnLoaded;
         Unloaded += OnUnloaded;
 
-        // 第一次显示之前先读一遍，未打开本页就关窗时也能判断有没有未保存的改动
-        _gameRunning = GameProcess.IsRunning();
-        Reload(keepEdits: false);
+        SyncFromSession();
         InitLaunch();
     }
 
-    /// <summary>.coc 的存在与否、修改时间与长度，用来发现外部改动。</summary>
-    private readonly record struct CocStamp(bool Exists, DateTime LastWriteUtc, long Length);
+    public bool HasUnsavedChanges => Coc.HasUnsavedChanges;
 
-    /// <summary>
-    /// 有没有未保存的改动（关窗、固定到本地重新打开前确认）。文件格式出错期间也算：改动相对最后一次读取成功的设定保留着。
-    /// </summary>
-    public bool HasUnsavedChanges => GetPending().Count > 0;
+    private static CocSession Coc => App.Services.Coc;
 
     private static string CurrentLanguage => Loc.Instance.Language;
-
-    private static string CocPath => App.Services.Paths.CocFile;
-
-    private bool IsUsable => _state != null && _formatError == null;
 
     // === 生命周期 ===
 
     private void OnLoaded(object sender, RoutedEventArgs e)
     {
         Loc.Instance.LanguageChanged += OnLanguageChanged;
+        Coc.Changed += OnSessionChanged;
         UpdateOptionTexts();
-        OnPollTick();
+        SyncFromSession();
         _pollTimer.Start();
         RefreshLaunchOnLoad();
         RefreshInstall();
-        _ = LoadAppliedAsync();
     }
 
     private void OnUnloaded(object sender, RoutedEventArgs e)
     {
         Loc.Instance.LanguageChanged -= OnLanguageChanged;
+        Coc.Changed -= OnSessionChanged;
         _pollTimer.Stop();
     }
 
@@ -100,95 +70,96 @@ public partial class LaunchSettingsPage : UserControl
     {
         UpdateOptionTexts();
         UpdateState();
-        UpdateAppliedText();
         PopulateLogLevels();
         UpdateLaunchState();
         RefreshInstall();
     }
 
-    /// <summary>定时检查：游戏刚退出，或文件被外部改过（含暂时读不了之后的重试）。</summary>
-    private void OnPollTick()
+    private void OnSessionChanged(object? sender, EventArgs e)
     {
-        bool running = GameProcess.IsRunning();
-        if (_gameRunning == true && !running)
-        {
-            Reload(keepEdits: true);
-            _note = lang => Localized(lang, "Startup.GameExited");
-            _ = LoadAppliedAsync();
-        }
-        else if (ReadStamp() != _stamp)
-        {
-            bool retry = _readError != null;
-            Reload(keepEdits: true);
-            if (!retry && _readError == null)
-                _note = lang => Localized(lang, "Startup.FileChanged");
-        }
-
-        _gameRunning = running;
-        UpdateState();
-        RefreshLaunchPoll(running);
+        SyncFromSession();
+        UpdateLaunchState();
     }
 
     // === 选项 ===
 
-    /// <summary>按 <see cref="StartupKeys"/> 生成单选与勾选框，键的增减随共享定义走。</summary>
+    /// <summary>按 <see cref="OptionCategory.Core"/> 生成 5 个模式单选与 10 个核心开关。</summary>
     private void BuildOptions()
     {
         foreach (string mode in StartupKeys.ModeNames)
         {
-            var radio = new RadioButton { GroupName = "PatchMode", Tag = mode, Margin = new Thickness(0, 1, 0, 1) };
-            radio.Checked += OnOptionChanged;
+            var radio = new RadioButton { GroupName = "LaunchPatchMode", Tag = mode, Margin = new Thickness(0, 1, 0, 1) };
+            radio.Checked += OnModeChecked;
             _modeButtons[mode] = radio;
             ModePanel.Children.Add(radio);
         }
 
-        foreach (StartupKeyInfo key in StartupKeys.Keys)
+        // 中栏顺序：地图扩展转换 → 停用背景地图 → 禁止读档校验
+        string[] middleOrder = [SaveGateRules.ConversionKey, SaveGateRules.BackdropKey, SaveGateRules.ValidationKey];
+        foreach (string name in middleOrder)
         {
-            if (key.Kind != StartupKeyKind.Bool)
-                continue;
-
-            var box = new CheckBox { Tag = key.Name, Margin = new Thickness(key.EcoGroup ? 28 : 0, 1, 0, 1) };
-            box.Checked += OnOptionChanged;
-            box.Unchecked += OnOptionChanged;
-            _checkBoxes[key.Name] = box;
-            (StartupSettingsText.IsEconomyKey(key) ? EconomyPanel : OtherPanel).Children.Add(box);
+            StartupKeyInfo key = StartupKeys.FindKey(name)!;
+            AddCoreCheckBox(key, OtherPanel);
         }
+
+        foreach (StartupKeyInfo key in StartupKeys.AllKeys.Where(StartupSettingsText.IsEconomyKey))
+        {
+            AddCoreCheckBox(key, EconomyPanel);
+        }
+    }
+
+    private void AddCoreCheckBox(StartupKeyInfo key, Panel host)
+    {
+        var box = new CheckBox
+        {
+            Tag = key.Name,
+            Margin = new Thickness(key.EcoGroup ? 24 : 0, 1, 0, 1),
+        };
+        box.Checked += OnCheckChanged;
+        box.Unchecked += OnCheckChanged;
+        _checkBoxes[key.Name] = box;
+        host.Children.Add(box);
     }
 
     private void UpdateOptionTexts()
     {
+        string lang = CurrentLanguage;
         foreach ((string mode, RadioButton radio) in _modeButtons)
-            radio.Content = StartupSettingsText.ModeChoice(mode, CurrentLanguage);
+            radio.Content = StartupSettingsText.ModeChoice(mode, lang);
         foreach ((string name, CheckBox box) in _checkBoxes)
-            box.Content = StartupSettingsText.KeyLabel(StartupKeys.FindKey(name)!, CurrentLanguage);
+        {
+            StartupKeyInfo key = StartupKeys.FindKey(name)!;
+            box.Content = StartupSettingsText.KeyLabel(key, lang);
+            box.ToolTip = StartupSettingsText.KeyTip(key, lang);
+        }
     }
 
-    private void OnOptionChanged(object sender, RoutedEventArgs e)
+    private void OnModeChecked(object sender, RoutedEventArgs e)
     {
-        if (!_populating)
-            UpdateState();
+        if (_populating || sender is not RadioButton { IsChecked: true, Tag: string mode })
+            return;
+
+        Coc.SetValue(StartupKeys.ModeKey, mode);
     }
 
-    private Dictionary<string, object> GetUiValues()
+    private void OnCheckChanged(object sender, RoutedEventArgs e)
     {
-        var values = new Dictionary<string, object>(StringComparer.Ordinal);
-        string? mode = _modeButtons.FirstOrDefault(p => p.Value.IsChecked == true).Key;
-        values[StartupKeys.ModeKey] = mode ?? StartupKeys.ModeNames[0];
-        foreach ((string name, CheckBox box) in _checkBoxes)
-            values[name] = box.IsChecked == true;
-        return values;
+        if (_populating || sender is not CheckBox { Tag: string name } box)
+            return;
+
+        Coc.SetValue(name, box.IsChecked == true);
     }
 
-    private void SetUiValues(IReadOnlyDictionary<string, object> values)
+    private void SyncFromSession()
     {
         _populating = true;
         try
         {
-            string mode = (string)values[StartupKeys.ModeKey];
+            string mode = Coc.GetString(StartupKeys.ModeKey);
             foreach ((string name, RadioButton radio) in _modeButtons)
                 radio.IsChecked = name == mode;
             foreach ((string name, CheckBox box) in _checkBoxes)
-                box.IsChecked = (bool)values[name];
+                box.IsChecked = Coc.GetBool(name);
         }
         finally
         {
@@ -198,257 +169,87 @@ public partial class LaunchSettingsPage : UserControl
         UpdateState();
     }
 
-    private IReadOnlyList<StartupSettingChange> GetPending() =>
-        _state == null ? [] : CocSettingsManager.GetChanges(_state, GetUiValues());
-
-    // === 读取 ===
-
-    private static CocStamp ReadStamp()
-    {
-        var info = new FileInfo(CocPath);
-        return info.Exists ? new CocStamp(true, info.LastWriteTimeUtc, info.Length) : default;
-    }
-
-    /// <summary>
-    /// 重新读设定文件作为基准。<paramref name="keepEdits"/> 时把界面上未保存的改动套到新读到的值上；改动相对最后一次
-    /// 读取成功的设定计算，中间文件格式出错过也不丢（同开发版）。格式有误时记下错误、界面只能看不能改；
-    /// 文件正被占用时下一轮再读。
-    /// </summary>
-    private void Reload(bool keepEdits)
-    {
-        IReadOnlyList<StartupSettingChange> edits = keepEdits ? GetPending() : [];
-        _stamp = ReadStamp();
-
-        StartupSettingsState state;
-        try
-        {
-            state = new CocSettingsManager(CocPath).Read();
-        }
-        catch (Exception ex) when (ex is CocFormatException or IOException or UnauthorizedAccessException)
-        {
-            if (ex is CocFormatException format)
-            {
-                _formatError = format;
-                _readError = null;
-            }
-            else
-            {
-                // 暂时读不了（被占用等）：下一轮看到时间戳不同就会重试
-                _readError = ex.Message;
-                _stamp = default;
-            }
-
-            // 点"重新读取"是要放弃改动：读不了时也退回最后一次读到的值
-            if (!keepEdits && _state != null)
-                SetUiValues(_state.GetValues());
-            else
-                UpdateState();
-            return;
-        }
-
-        _formatError = null;
-        _readError = null;
-        _state = state;
-
-        Dictionary<string, object> values = state.GetValues();
-        foreach (StartupSettingChange edit in edits)
-            values[edit.Key.Name] = edit.NewValue;
-        SetUiValues(values);
-    }
-
-    /// <summary>读 MapExtPDX.log 里最近一次启动的"本会话生效配置"。日志每次启动游戏时重写。</summary>
-    private async Task LoadAppliedAsync()
-    {
-        string log = App.Services.Paths.MapExtLog;
-        try
-        {
-            _applied = await Task.Run(() =>
-                File.Exists(log) ? MapExtLogSummary.Parse(LogDiagnostics.ReadLines(log)).AppliedConfig : null);
-        }
-        catch (Exception ex) when (ex is not OutOfMemoryException)
-        {
-            // 只是一行参考信息：读不了或日志内容意外时不显示，不影响改设定
-            _applied = null;
-        }
-
-        UpdateAppliedText();
-    }
-
     // === 界面状态 ===
 
     private void UpdateState()
     {
-        bool usable = IsUsable;
-        bool running = _gameRunning == true;
-        bool economyOn = _checkBoxes[StartupSettingsText.EconomyMasterKey].IsChecked == true;
+        string lang = CurrentLanguage;
+        bool usable = Coc.IsUsable;
+        bool running = Coc.GameRunning;
+        bool economyOn = Coc.GetBool(StartupSettingsText.EconomyMasterKey);
 
         foreach (RadioButton radio in _modeButtons.Values)
             radio.IsEnabled = usable;
         foreach ((string name, CheckBox box) in _checkBoxes)
-            box.IsEnabled = usable && (!StartupKeys.FindKey(name)!.EcoGroup || economyOn);
+            box.IsEnabled = Coc.IsKeyEnabled(StartupKeys.FindKey(name)!);
+
         EconomyOffText.Visibility = usable && !economyOn ? Visibility.Visible : Visibility.Collapsed;
-        ValidationWarning.Visibility = _checkBoxes[SaveGateRules.ValidationKey].IsChecked == true
+        ValidationWarning.Visibility = Coc.GetBool(SaveGateRules.ValidationKey)
             ? Visibility.Visible
             : Visibility.Collapsed;
 
-        IReadOnlyList<StartupSettingChange> pending = usable ? GetPending() : [];
+        IReadOnlyList<StartupSettingChange> pending = usable ? Coc.GetPending() : [];
         if (!usable)
         {
-            // 格式有误时没有可比的基准，整行隐藏
             PendingText.Visibility = Visibility.Collapsed;
+            PendingText.ToolTip = null;
         }
         else
         {
             PendingText.Visibility = Visibility.Visible;
+            string compact = pending.Count > 0 ? StartupSettingsText.ChangeListCompact(pending, lang) : string.Empty;
             PendingText.DataContext = pending.Count > 0
-                ? new ToneLine(Loc.Instance.Format("Startup.Pending", StartupSettingsText.ChangeList(pending, CurrentLanguage)), PackageTone.Warning)
+                ? new ToneLine(Loc.Instance.Format("Startup.Pending", compact), PackageTone.Warning)
                 : new ToneLine(Loc.Instance["Startup.PendingNone"], PackageTone.Muted);
+            PendingText.ToolTip = pending.Count > 0
+                ? Loc.Instance.Format("Startup.Pending", StartupSettingsText.ChangeList(pending, lang))
+                : null;
         }
 
         SaveButton.IsEnabled = usable && !running && pending.Count > 0;
         DefaultsButton.IsEnabled = usable;
-        StatusLines.ItemsSource = BuildStatusLines(running);
+        StatusLines.ItemsSource = Coc.BuildStatusLines(lang);
 
-        bool exists = File.Exists(CocPath);
-        FileText.Text = Loc.Instance.Format("Startup.File", CocPath);
+        string cocPath = Coc.CocPath;
+        bool exists = File.Exists(cocPath);
+        FileText.Text = Loc.Instance.Format("Startup.File", cocPath);
         FileText.ToolTip = FileText.Text;
         EditLink.IsEnabled = exists;
-        ShowFileLink.IsEnabled = exists || Directory.Exists(Path.GetDirectoryName(CocPath));
-    }
+        ShowFileLink.IsEnabled = exists || Directory.Exists(Path.GetDirectoryName(cocPath));
 
-    private List<ToneLine> BuildStatusLines(bool running)
-    {
-        string lang = CurrentLanguage;
-        var lines = new List<ToneLine>();
-        if (_formatError != null)
-            lines.Add(new ToneLine(Loc.Instance.Format("Startup.FileError", _formatError.GetMessage(lang)), PackageTone.Error));
-        else if (_readError != null)
-            lines.Add(new ToneLine(Loc.Instance.Format("Startup.ReadError", _readError), PackageTone.Warning));
-
-        if (running)
-            lines.Add(new ToneLine(Loc.Instance["Startup.Running"], PackageTone.Error));
-        else if (lines.Count == 0)
-            lines.Add(new ToneLine(_note?.Invoke(lang) ?? Loc.Instance["Startup.Ready"], PackageTone.Good));
-
-        if (_state != null && _formatError == null)
+        if (Coc.Applied is { } applied)
         {
-            if (!_state.Exists)
-                lines.Add(new ToneLine(Loc.Instance["Startup.NoFile"], PackageTone.Muted));
-            else if (_state.Block == null)
-                lines.Add(new ToneLine(Loc.Instance["Startup.NoBlock"], PackageTone.Muted));
-            if (_state.BlockCount > 1)
-                lines.Add(new ToneLine(Loc.Instance.Format("Startup.ExtraBlocks", _state.BlockCount), PackageTone.Warning));
-            if (StartupSettingsText.InvalidList(_state, lang) is { } invalid)
-                lines.Add(new ToneLine(Loc.Instance.Format("Startup.Invalid", invalid), PackageTone.Warning));
+            AppliedText.Text = Loc.Instance.Format("Startup.Applied", applied.Timestamp, applied.Raw);
+            AppliedText.ToolTip = AppliedText.Text;
+            AppliedText.Visibility = Visibility.Visible;
         }
-
-        return lines;
-    }
-
-    private void UpdateAppliedText()
-    {
-        if (_applied == null)
+        else
         {
             AppliedText.Visibility = Visibility.Collapsed;
             AppliedText.ToolTip = null;
-            return;
         }
-
-        AppliedText.Text = Loc.Instance.Format("Startup.Applied", _applied.Timestamp, _applied.Raw);
-        AppliedText.ToolTip = AppliedText.Text;
-        AppliedText.Visibility = Visibility.Visible;
     }
 
     // === 按钮与链接 ===
 
-    private void OnSaveClick(object sender, RoutedEventArgs e) => SaveSettings();
+    private void OnSaveClick(object sender, RoutedEventArgs e) => Coc.Save(Window.GetWindow(this));
 
-    /// <summary>保存界面上的改动。返回 true 表示已写入或本来就没有改动；游戏运行中或写入失败时返回 false（失败已弹窗说明）。</summary>
-    private bool SaveSettings()
-    {
-        if (_state == null || !IsUsable)
-            return false;
-
-        IReadOnlyList<StartupSettingChange> pending = GetPending();
-        bool saved = false;
-        try
-        {
-            CocSaveResult result = new CocSettingsManager(CocPath).Save(_state, GetUiValues());
-            switch (result.Status)
-            {
-                case CocSaveStatus.GameRunning:
-                    _gameRunning = true;
-                    break;
-                case CocSaveStatus.NoChanges:
-                    _note = lang => Localized(lang, "Startup.NoChanges");
-                    saved = true;
-                    break;
-                default:
-                    string time = DateTime.Now.ToString("HH:mm:ss", CultureInfo.InvariantCulture);
-                    Reload(keepEdits: false);
-                    _note = lang => string.Format(CultureInfo.InvariantCulture, Localized(lang, "Startup.Saved"),
-                        time, StartupSettingsText.ChangeList(pending, lang));
-                    saved = true;
-                    break;
-            }
-        }
-        catch (Exception ex) when (ex is CocFormatException or CocSaveException or IOException or UnauthorizedAccessException)
-        {
-            string message = ex switch
-            {
-                CocFormatException format => format.GetMessage(CurrentLanguage),
-                CocSaveException save => save.GetMessage(CurrentLanguage),
-                _ => ex.Message,
-            };
-            ShowMessage(Loc.Instance.Format("Startup.SaveFailed", message), MessageBoxImage.Warning);
-
-            // 文件被外部改过等：重新读取，界面上的改动保留，可以再保存一次
-            Reload(keepEdits: true);
-        }
-
-        UpdateState();
-        return saved;
-    }
-
-    private void OnReloadClick(object sender, RoutedEventArgs e)
-    {
-        _note = null;
-        Reload(keepEdits: false);
-        _ = LoadAppliedAsync();
-    }
+    private void OnReloadClick(object sender, RoutedEventArgs e) => Coc.ReloadManual();
 
     private void OnDefaultsClick(object sender, RoutedEventArgs e)
     {
-        if (IsUsable)
-            SetUiValues(CocSettingsManager.GetDefaultValues());
+        if (Coc.IsUsable)
+            Coc.ResetCoreStartupDefaults();
     }
 
-    /// <summary>用记事本打开 .coc；保存后由定时检查发现改动并重新读取。</summary>
-    private void OnEditClick(object sender, RoutedEventArgs e)
+    private void OnOpenAllOptionsClick(object sender, RoutedEventArgs e)
     {
-        if (!File.Exists(CocPath))
-            return;
-        if (GameProcess.IsRunning()
-            && MessageBox.Show(Window.GetWindow(this)!, Loc.Instance["Startup.ConfirmEditWhileRunning"], Loc.Instance["App.Title"],
-                MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes)
-        {
-            return;
-        }
-
-        var start = new ProcessStartInfo("notepad.exe") { UseShellExecute = false };
-        start.ArgumentList.Add(CocPath);
-        StartProcess(start);
+        (Window.GetWindow(this) as MainWindow)?.OpenModSettings();
     }
 
-    private void OnShowFileClick(object sender, RoutedEventArgs e)
-    {
-        var start = new ProcessStartInfo("explorer.exe") { UseShellExecute = false };
-        if (File.Exists(CocPath))
-            start.Arguments = "/select,\"" + CocPath + "\"";
-        else
-            start.ArgumentList.Add(Path.GetDirectoryName(CocPath)!);
-        StartProcess(start);
-    }
+    private void OnEditClick(object sender, RoutedEventArgs e) => Coc.OpenInNotepad(Window.GetWindow(this));
+
+    private void OnShowFileClick(object sender, RoutedEventArgs e) => Coc.ShowInExplorer(Window.GetWindow(this));
 
     // === MapExTools 的位置与快捷方式 ===
 
@@ -458,7 +259,6 @@ public partial class LaunchSettingsPage : UserControl
         InstallLocation location = InstallLocationService.Current;
         string desktop = ToolShortcut.DesktopDir;
 
-        // 取不到桌面目录（极少见）时不提供快捷方式
         ShortcutStatus status = desktop.Length > 0
             ? ToolShortcut.Inspect(desktop, location.ExePath)
             : new ShortcutStatus(ShortcutState.Foreign, ToolShortcut.FileName, null);
@@ -470,7 +270,6 @@ public partial class LaunchSettingsPage : UserControl
             InstallText.Summary(location, desktop.Length > 0 ? status : null, lang),
             location.OffersPinning ? PackageTone.Warning : PackageTone.Muted);
 
-        // 在临时位置或下载文件夹时只提供固定到本地：快捷方式指向那里，文件被清理或挪走后就失效了
         bool temporary = location.OffersPinning;
         bool devBuild = InstallLocationService.IsDevelopmentBuild;
         PinButton.Visibility = temporary ? Visibility.Visible : Visibility.Collapsed;
@@ -524,21 +323,7 @@ public partial class LaunchSettingsPage : UserControl
         RefreshInstall();
     }
 
-    // === 辅助 ===
-
     private static string Localized(string language, string key) => Core.Localization.Strings.Get(language, key);
-
-    private void StartProcess(ProcessStartInfo start)
-    {
-        try
-        {
-            Process.Start(start)?.Dispose();
-        }
-        catch (Win32Exception ex)
-        {
-            ShowMessage(Loc.Instance.Format("Startup.OpenFailed", ex.Message), MessageBoxImage.Warning);
-        }
-    }
 
     private void ShowMessage(string text, MessageBoxImage image) =>
         MessageBox.Show(Window.GetWindow(this)!, text, Loc.Instance["App.Title"], MessageBoxButton.OK, image);

@@ -139,7 +139,7 @@ public partial class LaunchSettingsPage
         string lang = CurrentLanguage;
         GameLocateResult location = Location;
         LaunchOptions o = Options;
-        bool running = _gameRunning == true;
+        bool running = Coc.GameRunning;
 
         // 游戏位置与说明
         GameLocationText.Text = LaunchText.Location(location, lang);
@@ -376,22 +376,22 @@ public partial class LaunchSettingsPage
     /// </summary>
     private bool ConfirmStartupSettingsBeforeLaunch()
     {
-        if (_formatError != null)
+        if (Coc.FormatError is { } formatError)
         {
-            return Ask(Loc.Instance.Format("Launch.ConfirmCocError", _formatError.GetMessage(CurrentLanguage)),
+            return Ask(Loc.Instance.Format("Launch.ConfirmCocError", formatError.GetMessage(CurrentLanguage)),
                 MessageBoxButton.YesNo, MessageBoxImage.Warning) == MessageBoxResult.Yes;
         }
 
-        IReadOnlyList<StartupSettingChange> pending = GetPending();
+        IReadOnlyList<StartupSettingChange> pending = Coc.GetPending();
         if (pending.Count == 0)
             return true;
 
         MessageBoxResult answer = Ask(
-            Loc.Instance.Format("Launch.ConfirmUnsaved", StartupSettingsText.ChangeList(pending, CurrentLanguage)),
+            Loc.Instance.Format("Launch.ConfirmUnsaved", StartupSettingsText.ChangeListCompact(pending, CurrentLanguage)),
             MessageBoxButton.YesNoCancel, MessageBoxImage.Question);
         return answer switch
         {
-            MessageBoxResult.Yes => SaveSettings(),
+            MessageBoxResult.Yes => Coc.Save(Window.GetWindow(this)),
             MessageBoxResult.No => true,
             _ => false,
         };

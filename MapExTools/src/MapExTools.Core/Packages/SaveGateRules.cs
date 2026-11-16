@@ -84,11 +84,14 @@ public static class SaveGateRules
 {
     /// <summary>
     /// "地图扩展转换"的设定键，即 <c>ModSettings.EnableVanillaConversion</c>，默认 false。
-    /// 不是 9 个受管键之一，只读不写。
+    /// 与 "停用背景世界地图"（<see cref="BackdropKey"/>）在主菜单启动时归一化：两者同时为 true 时游戏保留本项。
     /// </summary>
     public const string ConversionKey = "EnableVanillaConversion";
 
-    /// <summary>"禁止读档校验"的设定键，是 9 个受管键之一（<see cref="StartupKeys.Keys"/>）。</summary>
+    /// <summary>"停用背景世界地图"的设定键，即 <c>ModSettings.DisableWorldBackdrop</c>，默认 false。</summary>
+    public const string BackdropKey = "DisableWorldBackdrop";
+
+    /// <summary>"禁止读档校验"的设定键（<see cref="StartupKeys.Keys"/>）。</summary>
     public const string ValidationKey = "DisableLoadGameValidation";
 
     /// <summary>None 模式（原版 14 km）的 CoreValue。</summary>
@@ -103,11 +106,11 @@ public static class SaveGateRules
     /// <summary>转换只支持转到 57 km（CV=4）与 28 km（CV=2）（<c>SaveEntryGate.CanConvertTo</c>）。</summary>
     public static bool CanConvertTo(int coreValue) => coreValue is 4 or 2;
 
-    /// <summary>.coc 里 <see cref="ConversionKey"/> 的值：只认 <c>true</c>，其余（含缺失、读不懂）按默认 false。</summary>
+    /// <summary>.coc 里 <see cref="ConversionKey"/> 的值：由受管键解码得到，只认 <c>true</c>，其余按默认 false。</summary>
     public static bool ReadConversionEnabled(StartupSettingsState state)
     {
         ArgumentNullException.ThrowIfNull(state);
-        return state.Entries.FirstOrDefault(e => e.Key == ConversionKey)?.Raw == "true";
+        return state[ConversionKey].Value is true;
     }
 
     /// <summary>

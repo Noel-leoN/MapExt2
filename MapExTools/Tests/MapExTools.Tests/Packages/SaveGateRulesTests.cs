@@ -198,12 +198,23 @@ public sealed class SaveGateRulesTests
     }
 
     [Fact]
-    public void ValidationKey_IsAManagedBoolKey()
+    public void ValidationAndConversionKeys_AreManagedBoolKeys()
     {
-        StartupKeyInfo? key = StartupKeys.FindKey(SaveGateRules.ValidationKey);
+        StartupKeyInfo? validation = StartupKeys.FindKey(SaveGateRules.ValidationKey);
+        StartupKeyInfo? conversion = StartupKeys.FindKey(SaveGateRules.ConversionKey);
+        StartupKeyInfo? backdrop = StartupKeys.FindKey(SaveGateRules.BackdropKey);
 
-        Assert.NotNull(key);
-        Assert.Equal(StartupKeyKind.Bool, key.Kind);
-        Assert.Null(StartupKeys.FindKey(SaveGateRules.ConversionKey));
+        Assert.NotNull(validation);
+        Assert.Equal(StartupKeyKind.Bool, validation.Kind);
+        Assert.Contains(validation, StartupKeys.Keys);
+
+        Assert.NotNull(conversion);
+        Assert.Equal(StartupKeyKind.Bool, conversion.Kind);
+        Assert.Equal(false, conversion.DefaultValue);
+        Assert.DoesNotContain(conversion, StartupKeys.Keys);
+
+        Assert.NotNull(backdrop);
+        Assert.Equal(StartupKeyKind.Bool, backdrop.Kind);
+        Assert.Equal(false, backdrop.DefaultValue);
     }
 }

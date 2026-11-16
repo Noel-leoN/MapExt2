@@ -411,7 +411,7 @@ namespace MapExtPDX
 
         /// <summary>
         /// 把 <see cref="StartupKeys"/>（与外部工具 MapExTools 共用的定义）和本 Mod 的实际定义逐项比对：
-        /// 9 个键的默认值、模式枚举名与顺序、各模式 CoreValue、设定块名、原版地图边长、原版存档判定值。
+        /// 全部受管键的默认值与枚举定义、各模式 CoreValue、设定块名、原版地图边长、原版存档判定值。
         /// 不一致只记 Warn，不影响加载——后果是工具显示的默认值或存档判定与 Mod 不符。
         /// </summary>
         /// <param name="defaults">传给 <c>LoadSettings</c> 的默认值对象（构造时已执行 <c>SetDefaults</c>）。</param>
@@ -421,8 +421,8 @@ namespace MapExtPDX
             {
                 var mismatches = new System.Collections.Generic.List<string>();
 
-                // --- 9 个键：属性存在、类型相符、默认值一致 ---
-                foreach (StartupKeyInfo key in StartupKeys.Keys)
+                // --- 全部受管键：属性存在、类型相符、枚举序列与默认值一致 ---
+                foreach (StartupKeyInfo key in StartupKeys.AllKeys)
                 {
                     PropertyInfo prop = typeof(ModSettings).GetProperty(key.Name, BindingFlags.Instance | BindingFlags.Public);
                     if (prop == null)
@@ -432,9 +432,40 @@ namespace MapExtPDX
                     }
 
                     object actual = prop.GetValue(defaults);
-                    bool same = key.Kind == StartupKeyKind.Mode
-                        ? prop.PropertyType == typeof(PatchModeSetting) && actual.ToString() == (string)key.DefaultValue
-                        : prop.PropertyType == typeof(bool) && Equals(actual, key.DefaultValue);
+                    bool same;
+                    switch (key.Kind)
+                    {
+                        case StartupKeyKind.Mode:
+                            same = prop.PropertyType == typeof(PatchModeSetting) && actual.ToString() == (string)key.DefaultValue;
+                            break;
+                        case StartupKeyKind.Enum:
+                            same = prop.PropertyType.IsEnum && actual.ToString() == (string)key.DefaultValue;
+                            if (prop.PropertyType.IsEnum && key.EnumNames != null)
+                            {
+                                string[] names = Enum.GetNames(prop.PropertyType);
+                                if (string.Join(",", names) != string.Join(",", key.EnumNames))
+                                {
+                                    mismatches.Add($"{key.Name} 枚举名或顺序: StartupKeys=[{string.Join(",", key.EnumNames)}], 实际=[{string.Join(",", names)}]");
+                                }
+                            }
+                            break;
+                        case StartupKeyKind.Bool:
+                            same = prop.PropertyType == typeof(bool) && Equals(actual, key.DefaultValue);
+                            break;
+                        case StartupKeyKind.Int:
+                            same = prop.PropertyType == typeof(int) && Equals(actual, key.DefaultValue);
+                            break;
+                        case StartupKeyKind.Float:
+                            same = prop.PropertyType == typeof(float)
+                                   && actual is float af
+                                   && key.DefaultValue is float kf
+                                   && Math.Abs(af - kf) < 1e-6f;
+                            break;
+                        default:
+                            same = false;
+                            break;
+                    }
+
                     if (!same)
                         mismatches.Add($"{key.Name}: StartupKeys={key.DefaultValue}, ModSettings={actual} ({prop.PropertyType.Name})");
                 }
@@ -465,7 +496,7 @@ namespace MapExtPDX
                     StartupKeys.UntaggedVanillaCoreValue, VanillaConversionState.UntaggedVanillaCoreValue);
 
                 if (mismatches.Count == 0)
-                    ModLog.Ok(Tag, $"StartupKeys 自检通过（{StartupKeys.Keys.Length} 个键、{StartupKeys.Modes.Length} 个模式）");
+                    ModLog.Ok(Tag, $"StartupKeys 自检通过（{StartupKeys.AllKeys.Length} 个键、{StartupKeys.Modes.Length} 个模式）");
                 else
                     ModLog.Warn(Tag, $"StartupKeys 与 Mod 定义不一致 {mismatches.Count} 处，MapExTools 的默认值或存档判定会出错: " +
                                      string.Join("; ", mismatches));

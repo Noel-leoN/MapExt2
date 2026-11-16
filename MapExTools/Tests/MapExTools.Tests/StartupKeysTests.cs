@@ -88,6 +88,67 @@ public class StartupKeysTests
     public void FindKey_ReturnsDefinitionOrNull()
     {
         Assert.Equal(StartupKeyKind.Mode, StartupKeys.FindKey(StartupKeys.ModeKey)?.Kind);
+        Assert.Equal(StartupKeyKind.Enum, StartupKeys.FindKey("WaterSimQuality")?.Kind);
+        Assert.Equal(StartupKeyKind.Int, StartupKeys.FindKey("RentMultiplierResidential")?.Kind);
+        Assert.Equal(StartupKeyKind.Float, StartupKeys.FindKey("ShoppingMaxCost")?.Kind);
         Assert.Null(StartupKeys.FindKey("patchmodechoice"));
+        Assert.Null(StartupKeys.FindKey("TerrainCullThrottle"));
+        Assert.Null(StartupKeys.FindKey("NoDogsPurge"));
+    }
+
+    [Fact]
+    public void AllKeys_Has65ValidUniqueDefinitions_AndPreservesLeadingNine()
+    {
+        Assert.Equal(65, StartupKeys.AllKeys.Length);
+        Assert.Equal(StartupKeys.Keys, StartupKeys.AllKeys.Take(StartupKeys.Keys.Length));
+        Assert.Equal(StartupKeys.AllKeys.Length, StartupKeys.AllKeys.Select(k => k.Name).Distinct(StringComparer.Ordinal).Count());
+
+        foreach (StartupKeyInfo key in StartupKeys.AllKeys)
+        {
+            switch (key.Kind)
+            {
+                case StartupKeyKind.Mode:
+                case StartupKeyKind.Enum:
+                    Assert.NotNull(key.EnumNames);
+                    Assert.NotNull(key.SelectableEnumNames);
+                    Assert.Contains((string)key.DefaultValue, key.SelectableEnumNames!);
+                    Assert.All(key.SelectableEnumNames!, m => Assert.Contains(m, key.EnumNames!));
+                    break;
+                case StartupKeyKind.Bool:
+                    Assert.IsType<bool>(key.DefaultValue);
+                    break;
+                case StartupKeyKind.Int:
+                {
+                    int dv = Assert.IsType<int>(key.DefaultValue);
+                    Assert.True(key.Step > 0d, key.Name);
+                    Assert.InRange(dv, (int)Math.Round(key.Min), (int)Math.Round(key.Max));
+                    break;
+                }
+                case StartupKeyKind.Float:
+                {
+                    float dv = Assert.IsType<float>(key.DefaultValue);
+                    Assert.True(key.Step > 0d, key.Name);
+                    Assert.InRange(dv, (float)key.Min - 1e-6f, (float)key.Max + 1e-6f);
+                    if (key.Name.EndsWith("MaxCost", StringComparison.Ordinal))
+                        Assert.True(key.Min >= 1000d, $"{key.Name} 下限严禁为 0");
+                    break;
+                }
+            }
+        }
+    }
+
+    [Fact]
+    public void AllKeys_MatchPublicPropertiesInModSettingsSource()
+    {
+        string? dir = AppContext.BaseDirectory;
+        while (dir != null && !File.Exists(Path.Combine(dir, "MapExtPDX", "MapExt", "Setting", "ModSettings.cs")))
+            dir = Path.GetDirectoryName(dir);
+        Assert.NotNull(dir);
+
+        string source = File.ReadAllText(Path.Combine(dir!, "MapExtPDX", "MapExt", "Setting", "ModSettings.cs"));
+        foreach (StartupKeyInfo key in StartupKeys.AllKeys)
+        {
+            Assert.Matches($@"\bpublic\s+\S+\s+{System.Text.RegularExpressions.Regex.Escape(key.Name)}\b", source);
+        }
     }
 }

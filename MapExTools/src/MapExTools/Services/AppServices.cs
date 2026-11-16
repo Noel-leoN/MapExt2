@@ -16,6 +16,7 @@ public sealed class AppServices
         ConfigService = configService;
         Config = config;
         Launcher = CreateLauncher(paths);
+        Coc = new CocSession(paths);
         RefreshGameLocation();
     }
 
@@ -27,6 +28,9 @@ public sealed class AppServices
 
     /// <summary>启动游戏（计划 2.2）。</summary>
     public GameLauncher Launcher { get; }
+
+    /// <summary>窗口级共享的 MapExtPDX.coc 配置状态与待保存副本。</summary>
+    public CocSession Coc { get; }
 
     /// <summary>游戏与 Steam 的位置。启动时找一次；打开启动页、改手动路径、点启动时重找。</summary>
     public GameLocateResult GameLocation { get; private set; } = GameLocateResult.None;

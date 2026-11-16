@@ -13,8 +13,21 @@ public sealed class StartupSettingsTextTests
     [MemberData(nameof(Languages))]
     public void EveryKeyAndMode_HasLabel(string language)
     {
-        foreach (StartupKeyInfo key in StartupKeys.Keys)
+        foreach (StartupKeyInfo key in StartupKeys.AllKeys)
+        {
             Assert.NotEqual("Startup.Key." + key.Name, StartupSettingsText.KeyLabel(key, language));
+            Assert.NotEqual("Startup.Tip." + key.Name, StartupSettingsText.KeyTip(key, language));
+            if (key.Kind == StartupKeyKind.Enum && key.SelectableEnumNames != null)
+            {
+                foreach (string member in key.SelectableEnumNames)
+                    Assert.NotEqual($"Options.Enum.{key.Name}.{member}", StartupSettingsText.EnumChoice(key, member, language));
+            }
+        }
+
+        foreach (OptionCategory cat in Enum.GetValues<OptionCategory>())
+            Assert.NotEqual("Options.Cat." + cat, StartupSettingsText.CategoryLabel(cat, language));
+        foreach (OptionGroup group in Enum.GetValues<OptionGroup>())
+            Assert.NotEqual("Options.Group." + group, StartupSettingsText.GroupLabel(group, language));
         foreach (string mode in StartupKeys.ModeNames)
             Assert.StartsWith(mode + " ", StartupSettingsText.ModeChoice(mode, language), StringComparison.Ordinal);
     }
