@@ -36,11 +36,13 @@ public partial class MainWindow : Window
         PopulateThemeBox();
         Loc.Instance.LanguageChanged += OnUiLanguageChanged;
         App.Services.Coc.Changed += OnCocSessionChanged;
+        App.Services.Conflicts.Changed += OnConflictsChanged;
 
         _pollTimer = new DispatcherTimer { Interval = s_pollInterval };
         _pollTimer.Tick += (_, _) =>
         {
             App.Services.Coc.Poll();
+            App.Services.Conflicts.Poll();
             RefreshGameState();
         };
         _pollTimer.Start();
@@ -48,6 +50,8 @@ public partial class MainWindow : Window
         RefreshUserDataText();
         RefreshBanner();
         RefreshOptionsTabHeader();
+        RefreshConflictsTabHeader();
+        App.Services.Conflicts.TriggerScan();
 
         Closing += OnClosing;
         Closed += (_, _) =>
@@ -55,6 +59,7 @@ public partial class MainWindow : Window
             _pollTimer.Stop();
             Loc.Instance.LanguageChanged -= OnUiLanguageChanged;
             App.Services.Coc.Changed -= OnCocSessionChanged;
+            App.Services.Conflicts.Changed -= OnConflictsChanged;
         };
     }
 
@@ -174,11 +179,17 @@ public partial class MainWindow : Window
         RefreshUserDataText();
         RefreshBanner();
         RefreshOptionsTabHeader();
+        RefreshConflictsTabHeader();
     }
 
     private void OnCocSessionChanged(object? sender, EventArgs e)
     {
         RefreshOptionsTabHeader();
+    }
+
+    private void OnConflictsChanged(object? sender, EventArgs e)
+    {
+        RefreshConflictsTabHeader();
     }
 
     private void RefreshOptionsTabHeader()
@@ -187,6 +198,15 @@ public partial class MainWindow : Window
         OptionsTab.Header = pending > 0
             ? Loc.Instance.Format("Tab.OptionsDirty", pending)
             : Loc.Instance["Tab.Options"];
+    }
+
+    private void RefreshConflictsTabHeader()
+    {
+        var report = App.Services.Conflicts.Report;
+        int alerts = report != null ? report.HardConflictCount + report.WarningCount : 0;
+        ConflictsTab.Header = alerts > 0
+            ? Loc.Instance.Format("Tab.ConflictsAlert", alerts)
+            : Loc.Instance["Tab.Conflicts"];
     }
 
     // === 状态栏 ===

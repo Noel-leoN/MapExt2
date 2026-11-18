@@ -183,6 +183,62 @@ public sealed class CocSession
         Reload(keepEdits: true, notify: true);
     }
 
+    /// <summary>
+    /// 仅将指定的几个键写入磁盘基准（例如冲突预检页一键关闭单个经济分组），
+    /// 同时保留其他页签上尚未保存的改动，避免连带保存玩家未确认的其他设置。
+    /// </summary>
+    public bool SaveSpecificKeys(IReadOnlyDictionary<string, object> updates, Window? owner)
+    {
+        if (State == null || !IsUsable || updates.Count == 0)
+            return false;
+
+        bool saved = false;
+        try
+        {
+            IReadOnlyList<StartupSettingChange> subsetChanges = CocSettingsManager.GetChanges(State, updates);
+            CocSaveResult result = new CocSettingsManager(CocPath).Save(State, updates);
+            switch (result.Status)
+            {
+                case CocSaveStatus.GameRunning:
+                    _gameRunning = true;
+                    break;
+                case CocSaveStatus.NoChanges:
+                    SetValues(updates);
+                    _note = lang => Strings.Get(lang, "Startup.NoChanges");
+                    saved = true;
+                    break;
+                default:
+                    foreach ((string name, object val) in updates)
+                    {
+                        if (StartupKeys.FindKey(name) != null)
+                            _working[name] = val;
+                    }
+
+                    string time = DateTime.Now.ToString("HH:mm:ss", CultureInfo.InvariantCulture);
+                    Reload(keepEdits: true, notify: false);
+                    _note = lang => string.Format(CultureInfo.InvariantCulture, Strings.Get(lang, "Startup.Saved"),
+                        time, StartupSettingsText.ChangeListCompact(subsetChanges, lang));
+                    saved = true;
+                    break;
+            }
+        }
+        catch (Exception ex) when (ex is CocFormatException or CocSaveException or IOException or UnauthorizedAccessException)
+        {
+            string lang = Loc.Instance.Language;
+            string message = ex switch
+            {
+                CocFormatException format => format.GetMessage(lang),
+                CocSaveException save => save.GetMessage(lang),
+                _ => ex.Message,
+            };
+            ShowMessage(owner, Loc.Instance.Format("Startup.SaveFailed", message), MessageBoxImage.Warning);
+            Reload(keepEdits: true, notify: false);
+        }
+
+        RaiseChanged();
+        return saved;
+    }
+
     /// <summary>保存当前工作副本中的改动。返回 true 表示已成功写入或本来无改动。</summary>
     public bool Save(Window? owner)
     {

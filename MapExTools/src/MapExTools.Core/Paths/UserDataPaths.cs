@@ -50,6 +50,18 @@ public sealed class UserDataPaths
     /// <summary>本地 Mod 目录。工具的 exe 不能放在这里，否则会被游戏当作 Mod 扫描。</summary>
     public string ModsDir => Combine("Mods");
 
+    /// <summary>PDX SDK 本地模组与 Playset 配置缓存目录 <c>.cache/Mods</c>。</summary>
+    public string ModsCacheDir => Combine(".cache/Mods");
+
+    /// <summary>PDX SDK 激活 Playset 与启用模组列表 <c>.cache/Mods/playset_config.json</c>（只读）。</summary>
+    public string PlaysetConfigFile => Combine(".cache/Mods/playset_config.json");
+
+    /// <summary>PDX SDK 订阅与本地源存储根路径配置 <c>.cache/Mods/mod_directory.json</c>（只读）。</summary>
+    public string ModsDirectoryFile => Combine(".cache/Mods/mod_directory.json");
+
+    /// <summary>PDX SDK 模组商店显示名与版本号缓存 <c>.cache/Mods/pdx_mods_cache.json</c>（只读）。</summary>
+    public string PdxModsCacheFile => Combine(".cache/Mods/pdx_mods_cache.json");
+
     /// <summary>下次启动的一次性参数：游戏启动时读取后删除。</summary>
     public string RunOnceFile => Combine("runOnce.txt");
 

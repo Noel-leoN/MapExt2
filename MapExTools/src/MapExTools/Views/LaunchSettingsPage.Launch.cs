@@ -4,9 +4,11 @@ using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using MapExTools.Core.Coc;
+using MapExTools.Core.Conflicts;
 using MapExTools.Core.Launch;
 using MapExTools.Core.Packages;
 using MapExTools.Services;
+using MapExtPDX.MapExt.Core;
 using Microsoft.Win32;
 
 namespace MapExTools.Views;
@@ -181,9 +183,17 @@ public partial class LaunchSettingsPage
         // 状态
         var lines = new List<ToneLine>();
         if (running)
+        {
             lines.Add(new ToneLine(Loc.Instance["Launch.Status.Running"], PackageTone.Warning));
-        else if (o.Channel == LaunchChannel.Direct && location.Game is { IsSteamBuild: true } && _steamRunning == false)
-            lines.Add(new ToneLine(Loc.Instance["Launch.Status.SteamNotRunning"], PackageTone.Warning));
+        }
+        else
+        {
+            if (o.Channel == LaunchChannel.Direct && location.Game is { IsSteamBuild: true } && _steamRunning == false)
+                lines.Add(new ToneLine(Loc.Instance["Launch.Status.SteamNotRunning"], PackageTone.Warning));
+            if (ConflictText.BuildLaunchPageHint(App.Services.Conflicts.Report, o, _runOncePending, lang) is { } conflictHint)
+                lines.Add(new ToneLine(conflictHint.Value, conflictHint.Tone));
+        }
+
         if (_launchNote != null)
             lines.Add(new ToneLine(_launchNote(lang), PackageTone.Good));
         LaunchStatusLines.ItemsSource = lines;
@@ -320,13 +330,34 @@ public partial class LaunchSettingsPage
         }
 
         // 不论哪条通道游戏都会读 runOnce.txt；runOnce 通道自己会整个覆盖，不用问
-        if (channel != LaunchChannel.RunOnce && RunOnceFile.ReadPending(launcher.RunOncePath) is { } pending)
+        string? remainingRunOnce = channel != LaunchChannel.RunOnce ? RunOnceFile.ReadPending(launcher.RunOncePath) : null;
+        if (remainingRunOnce is { } pending)
         {
             MessageBoxResult answer = Ask(Loc.Instance.Format("Launch.ConfirmRunOnce", pending), MessageBoxButton.YesNoCancel, MessageBoxImage.Question);
             if (answer == MessageBoxResult.Cancel || (answer == MessageBoxResult.Yes && !TryClearRunOnce()))
             {
                 UpdateLaunchState();
                 return;
+            }
+
+            if (answer == MessageBoxResult.Yes)
+                remainingRunOnce = null;
+        }
+
+        // 按最终即将传给游戏的设定与启动参数检查是否存在 🔴 硬冲突（若本次启动已禁用代码 Mod 则不拦截）
+        if (!ConflictText.IsCodeModdingDisabledForLaunch(Options, remainingRunOnce))
+        {
+            ConflictReport? effectiveReport = Coc.State != null
+                ? App.Services.Conflicts.EvaluateWith(ConflictEvalSettings.FromDictionary(Coc.State.GetAllValues()))
+                : App.Services.Conflicts.Report;
+            if (effectiveReport is { HardConflictCount: > 0 })
+            {
+                string confirmMsg = ConflictText.BuildLaunchHardConfirmMessage(effectiveReport, CurrentLanguage);
+                if (Ask(confirmMsg, MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes)
+                {
+                    UpdateLaunchState();
+                    return;
+                }
             }
         }
 

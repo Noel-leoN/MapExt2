@@ -98,7 +98,7 @@ public partial class App : Application
         int code = new CommandLineRunner(context, output, language).Run(options);
 
         CliConsole.Write(output.ToString(),
-            dialogWithoutConsole: code != ExitCodes.Success || options.Show || options.Help,
+            dialogWithoutConsole: code != ExitCodes.Success || options.Show || options.Help || options.CheckConflicts,
             isError: code != ExitCodes.Success);
         return code;
     }

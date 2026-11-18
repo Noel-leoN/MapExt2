@@ -52,6 +52,7 @@ public partial class LaunchSettingsPage : UserControl
     {
         Loc.Instance.LanguageChanged += OnLanguageChanged;
         Coc.Changed += OnSessionChanged;
+        App.Services.Conflicts.Changed += OnConflictsChanged;
         UpdateOptionTexts();
         SyncFromSession();
         _pollTimer.Start();
@@ -63,7 +64,13 @@ public partial class LaunchSettingsPage : UserControl
     {
         Loc.Instance.LanguageChanged -= OnLanguageChanged;
         Coc.Changed -= OnSessionChanged;
+        App.Services.Conflicts.Changed -= OnConflictsChanged;
         _pollTimer.Stop();
+    }
+
+    private void OnConflictsChanged(object? sender, EventArgs e)
+    {
+        UpdateLaunchState();
     }
 
     private void OnLanguageChanged(object? sender, EventArgs e)

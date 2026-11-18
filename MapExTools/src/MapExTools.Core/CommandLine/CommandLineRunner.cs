@@ -2,10 +2,12 @@ using System.ComponentModel;
 using System.Globalization;
 using MapExTools.Core.Coc;
 using MapExTools.Core.Config;
+using MapExTools.Core.Conflicts;
 using MapExTools.Core.Diagnostics;
 using MapExTools.Core.Launch;
 using MapExTools.Core.Localization;
 using MapExTools.Core.Paths;
+using MapExtPDX.MapExt.Core;
 
 namespace MapExTools.Core.CommandLine;
 
@@ -126,8 +128,19 @@ public sealed class CommandLineRunner
         }
 
         int code = options.Launch ? Launch() : ExitCodes.Success;
-        if (options.Show)
-            WriteStatus(state);
+        try
+        {
+            if (options.Show)
+                WriteStatus(state);
+            if (options.CheckConflicts)
+                WriteConflicts(state);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidOperationException)
+        {
+            Line("Cli.Error", ex.Message);
+            return ExitCodes.Error;
+        }
+
         return code;
     }
 
@@ -212,6 +225,27 @@ public sealed class CommandLineRunner
         Line("Cli.LaunchMethod", LaunchText.ChannelName(options.Channel, _language));
         Line("Launch.Preview", LaunchText.Preview(options.Channel, options, _language));
         Line(_context.IsGameRunning() ? "Status.GameRunning" : "Status.GameNotRunning");
+    }
+
+    private void WriteConflicts(StartupSettingsState state)
+    {
+        GameLocateResult location = _context.LocateGame();
+        ScannedModWorkspace ws = ConflictAnalyzer.ScanWorkspace(_context.Paths, location.Game?.GameDir);
+        ConflictEvalSettings evalSettings = ConflictEvalSettings.FromDictionary(state.GetAllValues());
+        ConflictReport report = ConflictAnalyzer.Evaluate(ws, evalSettings);
+
+        _output.WriteLine(ConflictText.HeaderSummary(report, _language));
+        _output.WriteLine(ConflictText.StatusBanner(report, _language).Value);
+
+        foreach (ModConflictItem item in report.Items)
+        {
+            _output.WriteLine($"[{ConflictText.SeverityBadge(item.Severity, _language)}] {item.DisplayName} " +
+                              $"{ConflictText.VersionLabel(item, _language)} · {ConflictText.SourceLabel(item, _language)}");
+            foreach (ConflictFinding finding in item.Findings)
+            {
+                _output.WriteLine("  - " + ConflictText.DescribeFinding(finding, evalSettings, _language));
+            }
+        }
     }
 
     private AppliedConfigInfo? ReadApplied()

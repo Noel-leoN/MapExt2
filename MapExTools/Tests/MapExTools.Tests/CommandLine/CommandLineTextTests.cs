@@ -44,8 +44,8 @@ public partial class CommandLineTextTests
             columns.Add(CommandLineText.DisplayWidth(line[..match.Groups["text"].Index]));
         }
 
-        // 9 个设定、--reset、--launch、--show、--lang、--help、--user-data、--game-process
-        Assert.Equal(CommandLineParser.SettingOptions.Count + 7, rows);
+        // 9 个设定、--reset、--launch、--show、--check-conflicts、--lang、--help、--user-data、--game-process
+        Assert.Equal(CommandLineParser.SettingOptions.Count + 8, rows);
         Assert.Single(columns);
     }
 }

@@ -18,6 +18,7 @@ public sealed class AppServices
         Launcher = CreateLauncher(paths);
         Coc = new CocSession(paths);
         RefreshGameLocation();
+        Conflicts = new ConflictScanService(paths, Coc, () => GameLocation.Game?.GameDir);
     }
 
     public UserDataPaths Paths { get; }
@@ -32,12 +33,21 @@ public sealed class AppServices
     /// <summary>窗口级共享的 MapExtPDX.coc 配置状态与待保存副本。</summary>
     public CocSession Coc { get; }
 
+    /// <summary>后台只读模组冲突预检服务（v1.1）。</summary>
+    public ConflictScanService Conflicts { get; }
+
     /// <summary>游戏与 Steam 的位置。启动时找一次；打开启动页、改手动路径、点启动时重找。</summary>
     public GameLocateResult GameLocation { get; private set; } = GameLocateResult.None;
 
     public GameLocateResult RefreshGameLocation()
     {
+        string? before = GameLocation.Game?.GameDir;
         GameLocation = LocateGame(Paths, Config);
+        if (Conflicts != null && !string.Equals(before, GameLocation.Game?.GameDir, StringComparison.OrdinalIgnoreCase))
+        {
+            Conflicts.TriggerScan();
+        }
+
         return GameLocation;
     }
 

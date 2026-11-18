@@ -1,0 +1,555 @@
+using System.Reflection;
+using System.Reflection.Emit;
+using MapExTools.Core.Conflicts;
+using MapExTools.Core.Paths;
+using MapExtPDX.MapExt.Core;
+
+namespace MapExTools.Tests.Conflicts;
+
+public sealed class ModAssemblyInspectorTests
+{
+    [Fact]
+    public void EnabledTracking_DetectsChained_Field_LocalBranch_AndVariableBool_IncludingNestedHost()
+    {
+        byte[] bytes = SyntheticModBuilder.BuildModAssembly("EnabledPositiveMod", new Version(1, 0, 0), (mod, env) =>
+        {
+            TypeBuilder tb = mod.DefineType("Sample.PositiveSystem", TypeAttributes.Public | TypeAttributes.Class, env.GameSystemBaseType);
+            FieldBuilder instField = tb.DefineField("_rentSys", env.RentAdjustSystemType, FieldAttributes.Private);
+            FieldBuilder staticField = tb.DefineField("s_navActions", env.CarNavActionsType, FieldAttributes.Private | FieldAttributes.Static);
+
+            // 1. 链式直调：world.GetOrCreateSystemManaged<LandValueSystem>().Enabled = false
+            MethodBuilder mChain = tb.DefineMethod("DisableChained", MethodAttributes.Public, typeof(void), [env.WorldType]);
+            ILGenerator il1 = mChain.GetILGenerator();
+            il1.Emit(OpCodes.Ldarg_1);
+            il1.Emit(OpCodes.Callvirt, env.GetOrCreateGeneric.MakeGenericMethod(env.LandValueSystemType));
+            il1.Emit(OpCodes.Ldc_I4_0);
+            il1.Emit(OpCodes.Callvirt, env.EnabledProperty.SetMethod!);
+            il1.Emit(OpCodes.Ret);
+
+            // 2. 实例字段 ldfld + 静态字段 ldsfld + 非常量布尔形参 enable (.Enabled = enable)
+            MethodBuilder mField = tb.DefineMethod("ToggleViaFields", MethodAttributes.Public, typeof(void), [typeof(bool)]);
+            ILGenerator il2 = mField.GetILGenerator();
+            il2.Emit(OpCodes.Ldarg_0);
+            il2.Emit(OpCodes.Ldfld, instField);
+            il2.Emit(OpCodes.Ldarg_1); // 非常量布尔实参！
+            il2.Emit(OpCodes.Callvirt, env.EnabledProperty.SetMethod!);
+
+            il2.Emit(OpCodes.Ldsfld, staticField);
+            il2.Emit(OpCodes.Ldarg_1);
+            il2.Emit(OpCodes.Callvirt, env.EnabledProperty.SetMethod!);
+            il2.Emit(OpCodes.Ret);
+
+            // 3. LocalVarSig 局部变量判空中转：var s = world.GetExistingSystemManaged<HouseholdFindPropertySystem>(); if (s != null) s.Enabled = flag;
+            MethodBuilder mLocal = tb.DefineMethod("ToggleViaLocalAfterNullCheck", MethodAttributes.Public, typeof(void), [env.WorldType, typeof(bool)]);
+            ILGenerator il3 = mLocal.GetILGenerator();
+            LocalBuilder locSys = il3.DeclareLocal(env.HouseholdFindPropertySystemType);
+            Label endLabel = il3.DefineLabel();
+            il3.Emit(OpCodes.Ldarg_1);
+            il3.Emit(OpCodes.Callvirt, env.GetExistingGeneric.MakeGenericMethod(env.HouseholdFindPropertySystemType));
+            il3.Emit(OpCodes.Stloc, locSys);
+            il3.Emit(OpCodes.Ldloc, locSys);
+            il3.Emit(OpCodes.Brfalse_S, endLabel);
+            il3.Emit(OpCodes.Ldloc, locSys);
+            il3.Emit(OpCodes.Ldarg_2);
+            il3.Emit(OpCodes.Callvirt, env.EnabledProperty.SetMethod!);
+            il3.MarkLabel(endLabel);
+            il3.Emit(OpCodes.Ret);
+
+            tb.CreateType();
+        });
+
+        AssemblyInspectionResult? res = ModAssemblyInspector.InspectBytes(bytes);
+        Assert.NotNull(res);
+
+        Assert.Contains(res.EnabledWrites, w => w.TargetSystemTypeName == "Game.Simulation.LandValueSystem");
+        Assert.Contains(res.EnabledWrites, w => w.TargetSystemTypeName == "Game.Simulation.RentAdjustSystem");
+        Assert.Contains(res.EnabledWrites, w => w.TargetSystemTypeName == "Game.Simulation.CarNavigationSystem+Actions");
+        Assert.Contains(res.EnabledWrites, w => w.TargetSystemTypeName == "Game.Simulation.HouseholdFindPropertySystem");
+    }
+
+    [Fact]
+    public void EnabledTracking_IgnoresDisablingSelf_ReadOnlyGetData_AndAuxToolHosts()
+    {
+        // 复刻 CustomWaterToolSystem.OnCreate 形态：同方法内获取受保护系统（甚至 LandValueSystem）与 WaterSystem/TerrainSystem 引用，
+        // 只读调用 GetData(true)，最后调用 this.Enabled = false 停用自身，以及停用常态禁用的工具宿主 AreaToolSystem -> 必须 0 误报！
+        byte[] bytes = SyntheticModBuilder.BuildModAssembly("BenignToolMod", new Version(1, 0, 0), (mod, env) =>
+        {
+            TypeBuilder tb = mod.DefineType("Benign.CustomToolSystem", TypeAttributes.Public | TypeAttributes.Class, env.GameSystemBaseType);
+            FieldBuilder lvField = tb.DefineField("_landValue", env.LandValueSystemType, FieldAttributes.Private);
+            FieldBuilder waterField = tb.DefineField("_water", env.WaterSystemType, FieldAttributes.Private);
+            FieldBuilder terrainField = tb.DefineField("_terrain", env.TerrainSystemType, FieldAttributes.Private);
+
+            MethodBuilder onCreate = tb.DefineMethod("OnCreate", MethodAttributes.Family | MethodAttributes.Virtual, typeof(void), [env.WorldType]);
+            ILGenerator il = onCreate.GetILGenerator();
+
+            // 缓存受保护系统与水/地形系统引用
+            il.Emit(OpCodes.Ldarg_0);
+            il.Emit(OpCodes.Ldarg_1);
+            il.Emit(OpCodes.Callvirt, env.GetOrCreateGeneric.MakeGenericMethod(env.LandValueSystemType));
+            il.Emit(OpCodes.Stfld, lvField);
+
+            il.Emit(OpCodes.Ldarg_0);
+            il.Emit(OpCodes.Ldarg_1);
+            il.Emit(OpCodes.Callvirt, env.GetOrCreateGeneric.MakeGenericMethod(env.WaterSystemType));
+            il.Emit(OpCodes.Stfld, waterField);
+
+            il.Emit(OpCodes.Ldarg_0);
+            il.Emit(OpCodes.Ldarg_1);
+            il.Emit(OpCodes.Callvirt, env.GetOrCreateGeneric.MakeGenericMethod(env.TerrainSystemType));
+            il.Emit(OpCodes.Stfld, terrainField);
+
+            // 只读观测 LandValueSystem.GetData(true)
+            il.Emit(OpCodes.Ldarg_0);
+            il.Emit(OpCodes.Ldfld, lvField);
+            il.Emit(OpCodes.Ldc_I4_1);
+            il.Emit(OpCodes.Callvirt, env.LandValueGetDataMethod);
+            il.Emit(OpCodes.Pop);
+
+            // this.Enabled = false（接收者为 ldarg.0 Self！）
+            il.Emit(OpCodes.Ldarg_0);
+            il.Emit(OpCodes.Ldc_I4_0);
+            il.Emit(OpCodes.Callvirt, env.EnabledProperty.SetMethod!);
+
+            // 对工具宿主 AreaToolSystem 和补丁目标 WaterSystem 设 Enabled（均不在 IsProtectedEnabledTarget 名单内）
+            il.Emit(OpCodes.Ldarg_1);
+            il.Emit(OpCodes.Callvirt, env.GetOrCreateGeneric.MakeGenericMethod(env.AreaToolSystemType));
+            il.Emit(OpCodes.Ldc_I4_0);
+            il.Emit(OpCodes.Callvirt, env.EnabledProperty.SetMethod!);
+
+            il.Emit(OpCodes.Ldarg_0);
+            il.Emit(OpCodes.Ldfld, waterField);
+            il.Emit(OpCodes.Ldc_I4_1);
+            il.Emit(OpCodes.Callvirt, env.EnabledProperty.SetMethod!);
+
+            il.Emit(OpCodes.Ret);
+            tb.CreateType();
+        });
+
+        AssemblyInspectionResult? res = ModAssemblyInspector.InspectBytes(bytes);
+        Assert.NotNull(res);
+        Assert.Empty(res.EnabledWrites);
+        Assert.Empty(res.HarmonyOverlaps);
+        Assert.Empty(res.UnpatchAllNullCalls);
+        Assert.Empty(res.ReflectionFieldWrites);
+    }
+
+    [Fact]
+    public void HarmonyDetection_MergesClassAndMethodAttributes_ConventionNames_Getter_AndVanillaRecipe()
+    {
+        byte[] bytes = SyntheticModBuilder.BuildModAssembly("HarmonyOverlapMod", new Version(1, 0, 0), (mod, env) =>
+        {
+            // 类级 [HarmonyPatch(typeof(WaterSystem))]
+            TypeBuilder tb = mod.DefineType("Sample.WaterPatches", TypeAttributes.Public | TypeAttributes.Abstract | TypeAttributes.Sealed | TypeAttributes.Class);
+            tb.SetCustomAttribute(new CustomAttributeBuilder(env.HarmonyPatchTypeOnlyCtor, [env.WaterSystemType]));
+
+            // 方法 1：方法级 [HarmonyPatch("OnSimulateGPU")] + 约定方法名 Prefix（返回 bool，无 [HarmonyPrefix] 特性）
+            // OnSimulateGPU 属于 VanillaRecipe，None 模式下同样应告警！
+            MethodBuilder mSim = tb.DefineMethod("Prefix", MethodAttributes.Public | MethodAttributes.Static, typeof(bool), Type.EmptyTypes);
+            mSim.SetCustomAttribute(new CustomAttributeBuilder(env.HarmonyPatchMethodOnlyCtor, ["OnSimulateGPU"]));
+            ILGenerator il1 = mSim.GetILGenerator();
+            il1.Emit(OpCodes.Ldc_I4_1);
+            il1.Emit(OpCodes.Ret);
+
+            // 方法 2：[HarmonyPatch(typeof(WaterSystem), "MapSize", MethodType.Getter)] + [HarmonyTranspiler]（仅扩展模式生效）
+            MethodBuilder mMapSize = tb.DefineMethod("MapSizeTranspiler", MethodAttributes.Public | MethodAttributes.Static, typeof(object), [typeof(object)]);
+            object getterEnumVal = Enum.ToObject(env.HarmonyMethodTypeEnum, 1);
+            mMapSize.SetCustomAttribute(new CustomAttributeBuilder(env.HarmonyPatchMethodTypeCtor, [env.WaterSystemType, "MapSize", getterEnumVal]));
+            mMapSize.SetCustomAttribute(new CustomAttributeBuilder(env.HarmonyTranspilerAttrType.GetConstructor(Type.EmptyTypes)!, []));
+            ILGenerator il2 = mMapSize.GetILGenerator();
+            il2.Emit(OpCodes.Ldarg_0);
+            il2.Emit(OpCodes.Ret);
+
+            tb.CreateType();
+        });
+
+        AssemblyInspectionResult? res = ModAssemblyInspector.InspectBytes(bytes);
+        Assert.NotNull(res);
+        Assert.Equal(2, res.HarmonyOverlaps.Count);
+
+        HarmonyOverlapEvidence simOverlap = Assert.Single(res.HarmonyOverlaps, o => o.TargetMethodName == "OnSimulateGPU");
+        Assert.Equal(DetectedPatchKind.PrefixBlockingCapable, simOverlap.Kind);
+
+        HarmonyOverlapEvidence getterOverlap = Assert.Single(res.HarmonyOverlaps, o => o.TargetMethodName == "get_MapSize");
+        Assert.Equal(DetectedPatchKind.Transpiler, getterOverlap.Kind);
+
+        // 验证 None 模式下：OnSimulateGPU 属于 VanillaRecipe 仍为 Warning，而 get_MapSize 为 None
+        var vanillaSettings = new ConflictEvalSettings("None", true, true, true, true, false, false, false);
+        PatchedMethodTarget simTarget = ConflictTargets.FindPatchedMethod("Game.Simulation.WaterSystem", "OnSimulateGPU")!;
+        PatchedMethodTarget mapSizeTarget = ConflictTargets.FindPatchedMethod("Game.Simulation.WaterSystem", "get_MapSize")!;
+        Assert.Equal(ConflictSeverity.Warning, ConflictTargets.EvaluatePatchOverlap(simTarget, vanillaSettings, true).Severity);
+        Assert.Equal(ConflictSeverity.None, ConflictTargets.EvaluatePatchOverlap(mapSizeTarget, vanillaSettings, true).Severity);
+    }
+
+    [Fact]
+    public void UnpatchAll_ClassifiesOnLoadAsHard_DisposeAndPrivateHelperAsDisposeOnly_AndWithIdAsIgnored()
+    {
+        Type updateSysType = SyntheticModBuilder.Env.GameAsm.GetType("Game.UpdateSystem")!;
+
+        // 样本 A：OnDispose 调用私有辅助方法 Cleanup() -> UnpatchAll(null)，且 OnLoad 调用带参 UnpatchAll("my.id") -> 仅 DisposeOnly 备注，0 拦截！
+        byte[] benignDisposeMod = SyntheticModBuilder.BuildModAssembly("AnarchyLikeMod", new Version(1, 0, 0), (mod, env) =>
+        {
+            TypeBuilder tb = mod.DefineType("Benign.ModEntry", TypeAttributes.Public | TypeAttributes.Class);
+            tb.AddInterfaceImplementation(env.IModType);
+
+            MethodBuilder cleanupHelper = tb.DefineMethod("CleanupPatches", MethodAttributes.Private, typeof(void), Type.EmptyTypes);
+            ILGenerator cil = cleanupHelper.GetILGenerator();
+            cil.Emit(OpCodes.Ldstr, "benign.id");
+            cil.Emit(OpCodes.Newobj, env.HarmonyCtor);
+            cil.Emit(OpCodes.Ldnull); // 无参 UnpatchAll(null)
+            cil.Emit(OpCodes.Callvirt, env.UnpatchAllMethod);
+            cil.Emit(OpCodes.Ret);
+
+            MethodBuilder onLoad = tb.DefineMethod("OnLoad", MethodAttributes.Public | MethodAttributes.Virtual, typeof(void), [updateSysType]);
+            ILGenerator lil = onLoad.GetILGenerator();
+            lil.Emit(OpCodes.Ldstr, "benign.id");
+            lil.Emit(OpCodes.Newobj, env.HarmonyCtor);
+            lil.Emit(OpCodes.Ldstr, "benign.id"); // 带参 UnpatchAll("benign.id") -> 0 误报
+            lil.Emit(OpCodes.Callvirt, env.UnpatchAllMethod);
+            lil.Emit(OpCodes.Ret);
+
+            MethodBuilder onDispose = tb.DefineMethod("OnDispose", MethodAttributes.Public | MethodAttributes.Virtual, typeof(void), Type.EmptyTypes);
+            ILGenerator dil = onDispose.GetILGenerator();
+            dil.Emit(OpCodes.Ldarg_0);
+            dil.Emit(OpCodes.Call, cleanupHelper);
+            dil.Emit(OpCodes.Ret);
+
+            tb.CreateType();
+        });
+
+        AssemblyInspectionResult? benignRes = ModAssemblyInspector.InspectBytes(benignDisposeMod);
+        Assert.NotNull(benignRes);
+        UnpatchAllNullEvidence dispOnly = Assert.Single(benignRes.UnpatchAllNullCalls);
+        Assert.Equal(UnpatchAllContext.DisposeOnly, dispOnly.Context);
+
+        // 样本 B：OnLoad 内调用无参 UnpatchAll(null) -> InitializationOrLifecycle (Hard)！
+        byte[] badOnLoadMod = SyntheticModBuilder.BuildModAssembly("WipeAllMod", new Version(1, 0, 0), (mod, env) =>
+        {
+            TypeBuilder tb = mod.DefineType("Bad.ModEntry", TypeAttributes.Public | TypeAttributes.Class);
+            tb.AddInterfaceImplementation(env.IModType);
+
+            MethodBuilder onLoad = tb.DefineMethod("OnLoad", MethodAttributes.Public | MethodAttributes.Virtual, typeof(void), [updateSysType]);
+            ILGenerator lil = onLoad.GetILGenerator();
+            lil.Emit(OpCodes.Ldstr, "bad.id");
+            lil.Emit(OpCodes.Newobj, env.HarmonyCtor);
+            lil.Emit(OpCodes.Ldnull);
+            lil.Emit(OpCodes.Callvirt, env.UnpatchAllMethod);
+            lil.Emit(OpCodes.Ret);
+
+            tb.DefineMethod("OnDispose", MethodAttributes.Public | MethodAttributes.Virtual, typeof(void), Type.EmptyTypes)
+              .GetILGenerator().Emit(OpCodes.Ret);
+
+            tb.CreateType();
+        });
+
+        AssemblyInspectionResult? badRes = ModAssemblyInspector.InspectBytes(badOnLoadMod);
+        Assert.NotNull(badRes);
+        UnpatchAllNullEvidence initHit = Assert.Single(badRes.UnpatchAllNullCalls);
+        Assert.Equal(UnpatchAllContext.InitializationOrLifecycle, initHit.Context);
+    }
+
+    [Fact]
+    public void StaticFieldReflection_RequiresSameMethodCoOccurrence()
+    {
+        MethodInfo fieldSetValue = typeof(FieldInfo).GetMethod("SetValue", [typeof(object), typeof(object)])!;
+
+        // 1. 跨方法分处（方法 A 有 "kMapSize" 字符串，方法 B 调 FieldInfo.SetValue，如 MapExt2.dll 自身） -> 0 误报
+        byte[] splitMethodsBytes = SyntheticModBuilder.BuildModAssembly("SplitMapSizeMod", new Version(1, 0, 0), (mod, env) =>
+        {
+            TypeBuilder tb = mod.DefineType("Split.Helper", TypeAttributes.Public | TypeAttributes.Class, env.GameSystemBaseType);
+
+            MethodBuilder mStr = tb.DefineMethod("GetFieldName", MethodAttributes.Public | MethodAttributes.Static, typeof(string), Type.EmptyTypes);
+            ILGenerator ilA = mStr.GetILGenerator();
+            ilA.Emit(OpCodes.Ldstr, "kMapSize");
+            ilA.Emit(OpCodes.Ret);
+
+            MethodBuilder mSet = tb.DefineMethod("WriteOtherField", MethodAttributes.Public | MethodAttributes.Static, typeof(void), [typeof(FieldInfo), typeof(object)]);
+            ILGenerator ilB = mSet.GetILGenerator();
+            ilB.Emit(OpCodes.Ldarg_0);
+            ilB.Emit(OpCodes.Ldnull);
+            ilB.Emit(OpCodes.Ldarg_1);
+            ilB.Emit(OpCodes.Callvirt, fieldSetValue);
+            ilB.Emit(OpCodes.Ret);
+
+            tb.CreateType();
+        });
+
+        AssemblyInspectionResult? splitRes = ModAssemblyInspector.InspectBytes(splitMethodsBytes);
+        Assert.NotNull(splitRes);
+        Assert.Empty(splitRes.ReflectionFieldWrites);
+
+        // 2. 同一方法体内同时包含 "kMapSize" 与 FieldInfo.SetValue -> 命中！
+        byte[] sameMethodBytes = SyntheticModBuilder.BuildModAssembly("OverwriteMapSizeMod", new Version(1, 0, 0), (mod, env) =>
+        {
+            TypeBuilder tb = mod.DefineType("Overwrite.Mutator", TypeAttributes.Public | TypeAttributes.Class, env.GameSystemBaseType);
+
+            MethodBuilder mMutate = tb.DefineMethod("MutateStaticSize", MethodAttributes.Public | MethodAttributes.Static, typeof(void), [typeof(Type), typeof(FieldInfo)]);
+            ILGenerator il = mMutate.GetILGenerator();
+            il.Emit(OpCodes.Ldstr, "kMapSize");
+            il.Emit(OpCodes.Pop);
+            il.Emit(OpCodes.Ldarg_1);
+            il.Emit(OpCodes.Ldnull);
+            il.Emit(OpCodes.Ldc_I4, 57344);
+            il.Emit(OpCodes.Box, typeof(int));
+            il.Emit(OpCodes.Callvirt, fieldSetValue);
+            il.Emit(OpCodes.Ret);
+
+            tb.CreateType();
+        });
+
+        AssemblyInspectionResult? sameRes = ModAssemblyInspector.InspectBytes(sameMethodBytes);
+        Assert.NotNull(sameRes);
+        StaticFieldReflectionWriteEvidence hit = Assert.Single(sameRes.ReflectionFieldWrites);
+        Assert.Equal("kMapSize", hit.FieldNameLiteral);
+    }
+
+    [Fact]
+    public void TwoDimensionalEvaluation_CellOnlyBlocksOneClickInModeA_AllowsInVanilla_AndNeverDowngradesHardRule()
+    {
+        string tempDir = Path.Combine(Path.GetTempPath(), "MapExTools_EvalTests_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempDir);
+        try
+        {
+            var paths = new UserDataPaths(tempDir);
+
+            // 1. 构造一个只改写 RentAdjustSystem.Enabled 的模拟 Mod（检验 C1/D1 CellOnly 双重归属）
+            string rentModDir = Path.Combine(paths.ModsDir, "CustomRentMod");
+            Directory.CreateDirectory(rentModDir);
+            byte[] rentBytes = SyntheticModBuilder.BuildModAssembly("CustomRentMod", new Version(1, 0, 0), (mod, env) =>
+            {
+                TypeBuilder tb = mod.DefineType("CustomRent.ModSys", TypeAttributes.Public | TypeAttributes.Class, env.GameSystemBaseType);
+                MethodBuilder m = tb.DefineMethod("DisableRent", MethodAttributes.Public, typeof(void), [env.WorldType]);
+                ILGenerator il = m.GetILGenerator();
+                il.Emit(OpCodes.Ldarg_1);
+                il.Emit(OpCodes.Callvirt, env.GetOrCreateGeneric.MakeGenericMethod(env.RentAdjustSystemType));
+                il.Emit(OpCodes.Ldc_I4_0);
+                il.Emit(OpCodes.Callvirt, env.EnabledProperty.SetMethod!);
+                il.Emit(OpCodes.Ret);
+                tb.CreateType();
+            });
+            File.WriteAllBytes(Path.Combine(rentModDir, "CustomRentMod.dll"), rentBytes);
+
+            // 2. 构造含跨阶段 UpdateGroupSystem -> GameSimulation 注册的 RealisticPathFinding v0.8.0（高于基准 v0.7.6），检验硬冲突维持 Hard；
+            //    再构造移除了跨阶段注册的 RealisticPathFindingFixed（同用 RealisticPathFinding 程序集名但放到另一独立工作区测自动降级）
+            string rpfDir = Path.Combine(paths.ModsDir, "RealisticPathFinding");
+            Directory.CreateDirectory(rpfDir);
+            byte[] rpfBytes = SyntheticModBuilder.BuildModAssembly("RealisticPathFinding", new Version(0, 8, 0), (mod, env) =>
+            {
+                TypeBuilder dummySys = mod.DefineType("RPF.CustomSys", TypeAttributes.Public | TypeAttributes.Class, env.GameSystemBaseType);
+                Type createdDummy = dummySys.CreateType();
+
+                TypeBuilder tb = mod.DefineType("RPF.Entry", TypeAttributes.Public | TypeAttributes.Class);
+                tb.AddInterfaceImplementation(env.IModType);
+                Type updateSysType = env.GameAsm.GetType("Game.UpdateSystem")!;
+                MethodBuilder onLoad = tb.DefineMethod("OnLoad", MethodAttributes.Public | MethodAttributes.Virtual, typeof(void), [updateSysType]);
+                ILGenerator il = onLoad.GetILGenerator();
+                il.Emit(OpCodes.Ldarg_1);
+                il.Emit(OpCodes.Ldc_I4_S, (sbyte)12); // SystemUpdatePhase.GameSimulation = 12
+                il.Emit(OpCodes.Callvirt, env.UpdateAfterGeneric2Method.MakeGenericMethod(env.UpdateGroupSystemType, createdDummy));
+                il.Emit(OpCodes.Ret);
+
+                tb.DefineMethod("OnDispose", MethodAttributes.Public | MethodAttributes.Virtual, typeof(void), Type.EmptyTypes).GetILGenerator().Emit(OpCodes.Ret);
+                tb.CreateType();
+            });
+            File.WriteAllBytes(Path.Combine(rpfDir, "RealisticPathFinding.dll"), rpfBytes);
+
+            // 3. 构造对模拟核心宿主 CarNavigationSystem+Actions 分别赋 Enabled = false 与 Enabled = true 的两个 Mod（验证 D1 方向乙与 P7-1）
+            string hostDisableDir = Path.Combine(paths.ModsDir, "HostDisableMod");
+            Directory.CreateDirectory(hostDisableDir);
+            byte[] hostDisableBytes = SyntheticModBuilder.BuildModAssembly("HostDisableMod", new Version(1, 0, 0), (mod, env) =>
+            {
+                TypeBuilder tb = mod.DefineType("HostTest.Disabler", TypeAttributes.Public | TypeAttributes.Class, env.GameSystemBaseType);
+                MethodBuilder m = tb.DefineMethod("DisableHost", MethodAttributes.Public, typeof(void), [env.WorldType]);
+                ILGenerator il = m.GetILGenerator();
+                il.Emit(OpCodes.Ldarg_1);
+                il.Emit(OpCodes.Callvirt, env.GetOrCreateGeneric.MakeGenericMethod(env.CarNavActionsType));
+                il.Emit(OpCodes.Ldc_I4_0); // Enabled = false -> Warning (D1 方向乙)
+                il.Emit(OpCodes.Callvirt, env.EnabledProperty.SetMethod!);
+                il.Emit(OpCodes.Ret);
+                tb.CreateType();
+            });
+            File.WriteAllBytes(Path.Combine(hostDisableDir, "HostDisableMod.dll"), hostDisableBytes);
+
+            string hostEnableDir = Path.Combine(paths.ModsDir, "HostEnableOnlyMod");
+            Directory.CreateDirectory(hostEnableDir);
+            byte[] hostEnableBytes = SyntheticModBuilder.BuildModAssembly("HostEnableOnlyMod", new Version(1, 0, 0), (mod, env) =>
+            {
+                TypeBuilder tb = mod.DefineType("HostTest.Enabler", TypeAttributes.Public | TypeAttributes.Class, env.GameSystemBaseType);
+                MethodBuilder m = tb.DefineMethod("EnableHost", MethodAttributes.Public, typeof(void), [env.WorldType]);
+                ILGenerator il = m.GetILGenerator();
+                il.Emit(OpCodes.Ldarg_1);
+                il.Emit(OpCodes.Callvirt, env.GetOrCreateGeneric.MakeGenericMethod(env.CarNavActionsType));
+                il.Emit(OpCodes.Ldc_I4_1); // 常量 Enabled = true -> 对宿主无害，0 误报 (P7-1)
+                il.Emit(OpCodes.Callvirt, env.EnabledProperty.SetMethod!);
+                il.Emit(OpCodes.Ret);
+                tb.CreateType();
+            });
+            File.WriteAllBytes(Path.Combine(hostEnableDir, "HostEnableOnlyMod.dll"), hostEnableBytes);
+
+            // 4. 构造向 NaturalResourceSystem 调用 AddWriter 的 Mod：
+            //    因 CellMapReplacementSystem.Redirect 已透明将原版 GetData/AddWriter 重定向至扩展缓冲区（如 SimpleBrush 与 FertilityControl），必须 0 误报！
+            string bufWriteDir = Path.Combine(paths.ModsDir, "BufferWriterMod");
+            Directory.CreateDirectory(bufWriteDir);
+            byte[] bufWriteBytes = SyntheticModBuilder.BuildModAssembly("BufferWriterMod", new Version(1, 0, 0), (mod, env) =>
+            {
+                TypeBuilder tb = mod.DefineType("BufTest.WriterSys", TypeAttributes.Public | TypeAttributes.Class, env.GameSystemBaseType);
+                MethodBuilder m = tb.DefineMethod("WriteNatRes", MethodAttributes.Public, typeof(void), [env.WorldType]);
+                ILGenerator il = m.GetILGenerator();
+                il.Emit(OpCodes.Ldarg_1);
+                il.Emit(OpCodes.Callvirt, env.GetOrCreateGeneric.MakeGenericMethod(env.NaturalResourceSystemType));
+                il.Emit(OpCodes.Ldc_I4_0);
+                il.Emit(OpCodes.Callvirt, env.NaturalResourceAddWriterMethod);
+                il.Emit(OpCodes.Ret);
+                tb.CreateType();
+            });
+            File.WriteAllBytes(Path.Combine(bufWriteDir, "BufferWriterMod.dll"), bufWriteBytes);
+
+            // 5. 构造跨类字符串字面量动态 TargetMethod() 补丁（验证 ServiceCoverageFix 形态字节码实时检出）
+            string dynPatchDir = Path.Combine(paths.ModsDir, "DynamicStringPatchMod");
+            Directory.CreateDirectory(dynPatchDir);
+            byte[] dynPatchBytes = SyntheticModBuilder.BuildModAssembly("DynamicStringPatchMod", new Version(1, 0, 0), (mod, env) =>
+            {
+                TypeBuilder gateTb = mod.DefineType("DynTest.Gate", TypeAttributes.Public | TypeAttributes.Class);
+                MethodBuilder gateM = gateTb.DefineMethod("GetTargetName", MethodAttributes.Public | MethodAttributes.Static, typeof(string), Type.EmptyTypes);
+                ILGenerator gateIl = gateM.GetILGenerator();
+                gateIl.Emit(OpCodes.Ldstr, "Game.Simulation.ServiceCoverageSystem");
+                gateIl.Emit(OpCodes.Ret);
+                gateTb.CreateType();
+
+                TypeBuilder patchTb = mod.DefineType("DynTest.Patch", TypeAttributes.Public | TypeAttributes.Class);
+                patchTb.SetCustomAttribute(new CustomAttributeBuilder(env.HarmonyPatchAttrType.GetConstructor(Type.EmptyTypes)!, []));
+                MethodBuilder tm = patchTb.DefineMethod("TargetMethod", MethodAttributes.Private | MethodAttributes.Static, typeof(MethodBase), Type.EmptyTypes);
+                ILGenerator tmIl = tm.GetILGenerator();
+                tmIl.Emit(OpCodes.Ldstr, "OnUpdate");
+                tmIl.Emit(OpCodes.Pop);
+                tmIl.Emit(OpCodes.Ldnull);
+                tmIl.Emit(OpCodes.Ret);
+
+                MethodBuilder transpiler = patchTb.DefineMethod("Transpiler", MethodAttributes.Private | MethodAttributes.Static, typeof(object), [typeof(object)]);
+                ILGenerator trIl = transpiler.GetILGenerator();
+                trIl.Emit(OpCodes.Ldarg_0);
+                trIl.Emit(OpCodes.Ret);
+                patchTb.CreateType();
+            });
+            File.WriteAllBytes(Path.Combine(dynPatchDir, "DynamicStringPatchMod.dll"), dynPatchBytes);
+
+            ScannedModWorkspace workspace = ConflictAnalyzer.ScanWorkspace(paths, gameDir: null);
+
+            // A. ModeA 扩展模式（ResourceBuyer 开启）：
+            var modeASettings = new ConflictEvalSettings("ModeA", true, true, true, true, resourceBuyer: true, false, false);
+            ConflictReport modeAReport = ConflictAnalyzer.Evaluate(workspace, modeASettings);
+
+            // CustomRentMod（CellOnlyDualRole）：保留 Hard 且禁止给一键关闭按钮
+            ModConflictItem rentModeA = Assert.Single(modeAReport.Items, i => i.DisplayName == "CustomRentMod");
+            Assert.Equal(ConflictSeverity.Hard, rentModeA.Severity);
+            Assert.False(rentModeA.CanOneClickMitigate);
+            Assert.Empty(rentModeA.OneClickDisableKeys);
+
+            // RealisticPathFinding 含跨阶段 UpdateGroupSystem 注册且版本高于基准 v0.7.6：维持 Hard！
+            ModConflictItem rpfItem = Assert.Single(modeAReport.Items, i => i.DisplayName == "RealisticPathFinding");
+            Assert.True(rpfItem.IsNewerThanAudited);
+            Assert.Equal(ConflictSeverity.Hard, rpfItem.Severity);
+            Assert.Contains(rpfItem.Findings, f => f.Kind == ConflictFindingKind.CrossPhaseSystemSchedule);
+            Assert.False(rpfItem.CanOneClickMitigate);
+
+            // D1 方向乙：模拟核心宿主被设为 Enabled = false 降为 Warning（无一键按钮），常量 Enabled = true 则 0 误报
+            ModConflictItem hostDisItem = Assert.Single(modeAReport.Items, i => i.DisplayName == "HostDisableMod");
+            Assert.Equal(ConflictSeverity.Warning, hostDisItem.Severity);
+            Assert.False(hostDisItem.CanOneClickMitigate);
+            Assert.DoesNotContain(modeAReport.Items, i => i.DisplayName == "HostEnableOnlyMod");
+
+            // NaturalResourceSystem.AddWriter：经 CellMapReplacementSystem.Redirect 透明转发，0 误报
+            Assert.DoesNotContain(modeAReport.Items, i => i.DisplayName == "BufferWriterMod");
+
+            // 跨类字符串动态补丁命中已替换的 ServiceCoverageSystem.OnUpdate：ResourceBuyer 开启时为 Warning 且支持一键关组
+            ModConflictItem dynPatchActive = Assert.Single(modeAReport.Items, i => i.DisplayName == "DynamicStringPatchMod");
+            Assert.Equal(ConflictSeverity.Warning, dynPatchActive.Severity);
+            Assert.True(dynPatchActive.CanOneClickMitigate);
+            Assert.Equal([ConflictTargets.KeyResourceBuyer], dynPatchActive.OneClickDisableKeys);
+
+            // B. None (14km) 模式且 HouseholdProperty 开启、ResourceBuyer 关闭：
+            var vanillaOpen = new ConflictEvalSettings("None", true, true, true, true, resourceBuyer: false, false, false);
+            ConflictReport vanillaOpenReport = ConflictAnalyzer.Evaluate(workspace, vanillaOpen);
+            ModConflictItem rentVanillaOpen = Assert.Single(vanillaOpenReport.Items, i => i.DisplayName == "CustomRentMod");
+            Assert.Equal(ConflictSeverity.Warning, rentVanillaOpen.Severity);
+            Assert.True(rentVanillaOpen.CanOneClickMitigate);
+            Assert.Equal([ConflictTargets.KeyHouseholdProperty], rentVanillaOpen.OneClickDisableKeys);
+            Assert.DoesNotContain(vanillaOpenReport.Items, i => i.DisplayName == "BufferWriterMod");
+
+            ModConflictItem dynPatchMitigated = Assert.Single(vanillaOpenReport.Items, i => i.DisplayName == "DynamicStringPatchMod");
+            Assert.Equal(ConflictSeverity.Mitigated, dynPatchMitigated.Severity);
+
+            // C. None 模式且关闭 EnableHouseholdPropertyEcoSystem 后：变为 Mitigated
+            var vanillaClosed = new ConflictEvalSettings("None", true, true, true, false, false, false, false);
+            ConflictReport vanillaClosedReport = ConflictAnalyzer.Evaluate(workspace, vanillaClosed);
+            ModConflictItem rentVanillaClosed = Assert.Single(vanillaClosedReport.Items, i => i.DisplayName == "CustomRentMod");
+            Assert.Equal(ConflictSeverity.Mitigated, rentVanillaClosed.Severity);
+            Assert.False(rentVanillaClosed.CanOneClickMitigate);
+        }
+        finally
+        {
+            foreach (string f in Directory.GetFiles(tempDir, "*", SearchOption.AllDirectories))
+                File.Delete(f);
+            foreach (string d in Directory.GetDirectories(tempDir, "*", SearchOption.AllDirectories).OrderByDescending(s => s.Length))
+                Directory.Delete(d, recursive: false);
+            Directory.Delete(tempDir, recursive: false);
+        }
+    }
+
+    [Fact]
+    public void RealisticPathFinding_WithoutCrossPhaseSchedule_AutoDowngradesToMitigatableWarning()
+    {
+        string tempDir = Path.Combine(Path.GetTempPath(), "MapExTools_RpfFixedTests_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempDir);
+        try
+        {
+            var paths = new UserDataPaths(tempDir);
+            string rpfDir = Path.Combine(paths.ModsDir, "RealisticPathFinding");
+            Directory.CreateDirectory(rpfDir);
+
+            // 模拟未来修复了跨阶段 UpdateGroupSystem 注册的 RealisticPathFinding v0.9.0（仅合法注册在 Modification5 = 8）
+            byte[] rpfFixedBytes = SyntheticModBuilder.BuildModAssembly("RealisticPathFinding", new Version(0, 9, 0), (mod, env) =>
+            {
+                TypeBuilder dummySys = mod.DefineType("RPF.CustomSys", TypeAttributes.Public | TypeAttributes.Class, env.GameSystemBaseType);
+                Type createdDummy = dummySys.CreateType();
+
+                TypeBuilder tb = mod.DefineType("RPF.Entry", TypeAttributes.Public | TypeAttributes.Class);
+                tb.AddInterfaceImplementation(env.IModType);
+                Type updateSysType = env.GameAsm.GetType("Game.UpdateSystem")!;
+                MethodBuilder onLoad = tb.DefineMethod("OnLoad", MethodAttributes.Public | MethodAttributes.Virtual, typeof(void), [updateSysType]);
+                ILGenerator il = onLoad.GetILGenerator();
+                il.Emit(OpCodes.Ldarg_1);
+                il.Emit(OpCodes.Ldc_I4_8); // SystemUpdatePhase.Modification5 = 8（合法阶段，0 误报）
+                il.Emit(OpCodes.Callvirt, env.UpdateAfterGeneric2Method.MakeGenericMethod(env.UpdateGroupSystemType, createdDummy));
+                il.Emit(OpCodes.Ret);
+
+                tb.DefineMethod("OnDispose", MethodAttributes.Public | MethodAttributes.Virtual, typeof(void), Type.EmptyTypes).GetILGenerator().Emit(OpCodes.Ret);
+                tb.CreateType();
+            });
+            File.WriteAllBytes(Path.Combine(rpfDir, "RealisticPathFinding.dll"), rpfFixedBytes);
+
+            ScannedModWorkspace workspace = ConflictAnalyzer.ScanWorkspace(paths, gameDir: null);
+
+            // 开启 ResidentAI 组时：因未检出跨阶段 ECB 注册，自动从 Hard 降为可通过关闭 ResidentAI 规避的 Warning
+            var activeSettings = new ConflictEvalSettings("ModeA", true, true, true, true, resourceBuyer: false, residentAI: true, false);
+            ConflictReport activeReport = ConflictAnalyzer.Evaluate(workspace, activeSettings);
+            ModConflictItem activeItem = Assert.Single(activeReport.Items);
+            Assert.Equal(ConflictSeverity.Warning, activeItem.Severity);
+            Assert.True(activeItem.CanOneClickMitigate);
+            Assert.Equal([ConflictTargets.KeyResidentAI], activeItem.OneClickDisableKeys);
+
+            // ResidentAI 与 ResourceBuyer 均关闭（默认设定）时：变为 Mitigated
+            var defaultSettings = new ConflictEvalSettings("ModeA", true, true, true, true, resourceBuyer: false, residentAI: false, false);
+            ConflictReport defaultReport = ConflictAnalyzer.Evaluate(workspace, defaultSettings);
+            ModConflictItem mitigatedItem = Assert.Single(defaultReport.Items);
+            Assert.Equal(ConflictSeverity.Mitigated, mitigatedItem.Severity);
+        }
+        finally
+        {
+            foreach (string f in Directory.GetFiles(tempDir, "*", SearchOption.AllDirectories))
+                File.Delete(f);
+            foreach (string d in Directory.GetDirectories(tempDir, "*", SearchOption.AllDirectories).OrderByDescending(s => s.Length))
+                Directory.Delete(d, recursive: false);
+            Directory.Delete(tempDir, recursive: false);
+        }
+    }
+}

@@ -13,6 +13,13 @@ public static class Strings
         ["Tab.Launch"] = ["Launch & Setup", "启动与设定", "啟動與設定"],
         ["Tab.Options"] = ["Mod Settings", "模组设置", "模組設定"],
         ["Tab.OptionsDirty"] = ["Mod Settings ● {0}", "模组设置 ● {0}", "模組設定 ● {0}"],
+        ["Tab.Conflicts"] = ["Conflict Check", "冲突预检", "衝突預檢"],
+        ["Tab.ConflictsAlert"] = ["Conflict Check ● {0}", "冲突预检 ● {0}", "衝突預檢 ● {0}"],
+        ["Cli.Usage.CheckConflicts"] = [
+            "Read-only scan of the active playset and local Mods folder for conflicts",
+            "只读扫描当前激活播放集与本地 Mods 目录的模组冲突",
+            "唯讀掃描目前啟用播放集與本機 Mods 目錄的模組衝突",
+        ],
         ["Tab.Logs"] = ["Log Diagnostics", "日志诊断", "日誌診斷"],
         ["Tab.Saves"] = ["Saves & Maps", "存档与地图", "存檔與地圖"],
         ["Tab.Heightmaps"] = ["Heightmaps", "高度图", "高度圖"],
@@ -1611,6 +1618,204 @@ public static class Strings
             "Also write a headerless 16-bit .raw file when exporting a heightmap in-game (Map Editor imports .png only).",
             "游戏内导出高度图时额外输出一份无档头 16-bit .raw 文件（注：地图编辑器只接受 .png）。",
             "遊戲內匯出高度圖時額外輸出一份無檔頭 16-bit .raw 檔案（註：地圖編輯器只接受 .png）。",
+        ],
+
+        // === 冲突预检（MapExTools v1.1 静态元数据扫描） ===
+        ["Conflicts.Rescan"] = ["Rescan mods", "重新扫描模组", "重新掃描模組"],
+        ["Conflicts.RescanTip"] = [
+            "Read-only scan of the active playset and local Mods folder without modifying any files",
+            "只读重扫当前激活 Playset 与本地 Mods 目录，不修改任何文件",
+            "唯讀重掃目前啟用 Playset 與本機 Mods 目錄，不修改任何檔案",
+        ],
+        ["Conflicts.Scanning"] = [
+            "Scanning enabled mod assemblies in the background…",
+            "正在后台只读扫描已启用的模组程序集…",
+            "正在背景唯讀掃描已啟用的模組組件…",
+        ],
+        ["Conflicts.NoActivePlayset"] = ["None (local Mods only)", "未设置（仅本地 Mods）", "未設定（僅本機 Mods）"],
+        ["Conflicts.HeaderSummary"] = [
+            "Playset: {0} · Enabled code mods: {1} · Basis mode: {2} · Scan time: {3} ms",
+            "激活播放集：{0} · 已启用代码模组：{1} 个 · 评估模式：{2} · 扫描耗时：{3} ms",
+            "啟用播放集：{0} · 已啟用程式碼模組：{1} 個 · 評估模式：{2} · 掃描耗時：{3} ms",
+        ],
+        ["Conflicts.UnsavedBasisNote"] = [
+            "Evaluated against your current unsaved working settings in MapExTools; save them before launching so the game uses the same configuration.",
+            "当前按 MapExTools 中尚未保存的工作设定评估；启动游戏前请先保存设定，确保游戏读取一致的配置。",
+            "目前依 MapExTools 中尚未儲存的工作設定評估；啟動遊戲前請先儲存設定，確保遊戲讀取一致的設定。",
+        ],
+        ["Conflicts.PlaysetReadError"] = [
+            "Could not parse playset_config.json ({0}); only the local Mods folder was scanned.",
+            "无法解析 playset_config.json（{0}），本次仅扫描了本地 Mods 目录。",
+            "無法解析 playset_config.json（{0}），本次僅掃描了本機 Mods 目錄。",
+        ],
+        ["Conflicts.Summary.HasHard"] = [
+            "Detected {0} hard conflict(s) and {1} conditional item(s) under the current MapExt settings.",
+            "当前设定下检测到 {0} 项硬冲突、{1} 项条件冲突或需关注项。",
+            "目前設定下偵測到 {0} 項硬衝突、{1} 項條件衝突或需留意項。",
+        ],
+        ["Conflicts.Summary.HasWarning"] = [
+            "No hard conflicts; {0} conditional item(s) to review ({1} item(s) already mitigated by current settings).",
+            "未检测到硬冲突；有 {0} 项条件冲突或需关注项（另有 {1} 项已被当前设定规避）。",
+            "未偵測到硬衝突；有 {0} 項條件衝突或需留意項（另有 {1} 項已被目前設定規避）。",
+        ],
+        ["Conflicts.Summary.Clean"] = [
+            "No active conflicts detected across {0} enabled code mod(s) ({1} item(s) mitigated by current settings).",
+            "已扫描 {0} 个启用代码模组，当前设定下未检测到生效冲突（{1} 项已被当前设定规避）。",
+            "已掃描 {0} 個啟用程式碼模組，目前設定下未偵測到生效衝突（{1} 項已被目前設定規避）。",
+        ],
+        ["Conflicts.EmptyList"] = [
+            "All scanned code mods have no overlapping targets with the current MapExt configuration.",
+            "已扫描的代码模组与当前 MapExt 配置无重叠目标。",
+            "已掃描的程式碼模組與目前 MapExt 設定無重疊目標。",
+        ],
+        ["Conflicts.Filter.ShowNotes"] = [
+            "Also show mitigated and diagnostic info items",
+            "同时显示已规避项与诊断备注",
+            "同時顯示已規避項與診斷備註",
+        ],
+        ["Conflicts.Badge.Hard"] = ["Hard Conflict", "硬冲突", "硬衝突"],
+        ["Conflicts.Badge.Warning"] = ["Conditional", "条件冲突", "條件衝突"],
+        ["Conflicts.Badge.Mitigated"] = ["Mitigated", "已规避", "已規避"],
+        ["Conflicts.Badge.Info"] = ["Note", "备注", "備註"],
+        ["Conflicts.Badge.Clean"] = ["Compatible", "无冲突", "無衝突"],
+        ["Conflicts.Source.UserMods"] = ["Local Mods/", "本地 Mods/", "本機 Mods/"],
+        ["Conflicts.Source.PdxId"] = ["PDX:{0}", "PDX:{0}", "PDX:{0}"],
+        ["Conflicts.Source.PdxMods"] = ["PDX Mods", "PDX 订阅", "PDX 訂閱"],
+        ["Conflicts.Source.PdxLocal"] = ["PDX Local", "PDX 本地包", "PDX 本機包"],
+        ["Conflicts.Version.WithAudited"] = [
+            "{0} (audited on {1})",
+            "{0}（核对基准 {1}）",
+            "{0}（核對基準 {1}）",
+        ],
+        ["Conflicts.Version.NewerThanAudited"] = [
+            "{0} (rule recorded on {1}; installed version is newer)",
+            "{0}（该记录基于 {1} 核对，当前安装版本较新）",
+            "{0}（該記錄基於 {1} 核對，目前安裝版本較新）",
+        ],
+        ["Conflicts.Action.DisableGroups"] = [
+            "Turn off {0} and save",
+            "关闭「{0}」并保存",
+            "關閉「{0}」並儲存",
+        ],
+        ["Conflicts.Find.EnabledWrite"] = [
+            "Method {0} calls set_Enabled on protected vanilla system {1}.",
+            "方法 {0} 对受保护原版系统 {1} 调用了 set_Enabled。",
+            "方法 {0} 對受保護原版系統 {1} 呼叫了 set_Enabled。",
+        ],
+        ["Conflicts.Find.EnabledWriteReplace"] = [
+            "Method {0} calls set_Enabled on {1} while registering custom ECS system(s) in the same package.",
+            "方法 {0} 对受保护原版系统 {1} 调用了 set_Enabled，且同包注册了自定义 ECS 系统。",
+            "方法 {0} 對受保護原版系統 {1} 呼叫了 set_Enabled，且同包註冊了自訂 ECS 系統。",
+        ],
+        ["Conflicts.Find.ReplacedSystemPatch"] = [
+            "Method {0} applies a {1} patch to vanilla {2}; when MapExt's replacement for that system is active, the vanilla system is disabled so that patch does not execute.",
+            "方法 {0} 对原版 {2} 挂载了 {1} 补丁；当 MapExt 对该系统的替换启用时，原版系统已停用，该补丁不会执行。",
+            "方法 {0} 對原版 {2} 掛載了 {1} 補丁；當 MapExt 對該系統的替換啟用時，原版系統已停用，該補丁不會執行。",
+        ],
+        ["Conflicts.Find.CrossPhaseSchedule"] = [
+            "Method {0} schedules vanilla {1} outside Modification5; running together with MapExt's simulation systems triggers ModificationBarrier5 EntityCommandBuffer errors.",
+            "方法 {0} 将原版 {1} 注册在非 Modification5 阶段；与 MapExt 模拟系统同开时会触发 ModificationBarrier5 的 EntityCommandBuffer 报错。",
+            "方法 {0} 將原版 {1} 註冊於非 Modification5 階段；與 MapExt 模擬系統同開時會觸發 ModificationBarrier5 的 EntityCommandBuffer 報錯。",
+        ],
+        ["Conflicts.ScanFailed"] = [
+            "Conflict scan failed: {0}",
+            "冲突预检扫描失败：{0}",
+            "衝突預檢掃描失敗：{0}",
+        ],
+        ["Conflicts.Find.HarmonyOverlap"] = [
+            "Method {0} declares or applies a {1} patch on {2}, which MapExt also patches.",
+            "方法 {0} 在目标方法 {2} 上挂载了 {1} 补丁，与 MapExt 补丁目标重叠。",
+            "方法 {0} 在目標方法 {2} 上掛載了 {1} 補丁，與 MapExt 補丁目標重疊。",
+        ],
+        ["Conflicts.Find.UnpatchAllHard"] = [
+            "Method {0} calls parameterless Harmony.UnpatchAll(null) on a startup or system lifecycle path, which removes Harmony patches from all mods.",
+            "方法 {0} 在启动或系统生命周期路径调用了无参 Harmony.UnpatchAll(null)，会清除进程内所有模组的补丁。",
+            "方法 {0} 在啟動或系統生命週期路徑呼叫了無參 Harmony.UnpatchAll(null)，會清除行程內所有模組的補丁。",
+        ],
+        ["Conflicts.Find.UnpatchAllCallback"] = [
+            "Method {0} calls parameterless Harmony.UnpatchAll(null) in a callback path; if triggered at runtime, patches from other mods are removed.",
+            "方法 {0} 在回调路径中包含无参 Harmony.UnpatchAll(null)；若在运行期触发会移除其他模组的补丁。",
+            "方法 {0} 在回呼路徑中包含無參 Harmony.UnpatchAll(null)；若在執行期觸發會移除其他模組的補丁。",
+        ],
+        ["Conflicts.Find.UnpatchAllDispose"] = [
+            "Method {0} contains parameterless Harmony.UnpatchAll(null) on the OnDispose path only (not called during a normal game session unless OnLoad throws).",
+            "方法 {0} 仅在 OnDispose 卸载路径包含无参 Harmony.UnpatchAll(null)（正常游戏会话不触发，仅当该模组自身 OnLoad 异常中断时执行）。",
+            "方法 {0} 僅在 OnDispose 卸載路徑包含無參 Harmony.UnpatchAll(null)（正常遊戲會話不觸發，僅當該模組自身 OnLoad 異常中斷時執行）。",
+        ],
+        ["Conflicts.Find.StaticFieldWrite"] = [
+            "Method {0} references \"{1}\" together with FieldInfo.SetValue, indicating possible reflection overwrite of CellMap static size fields.",
+            "方法 {0} 同时包含 \"{1}\" 与 FieldInfo.SetValue 调用，疑似通过反射改写 CellMap 静态尺寸字段。",
+            "方法 {0} 同時包含 \"{1}\" 與 FieldInfo.SetValue 呼叫，疑似透過反射改寫 CellMap 靜態尺寸欄位。",
+        ],
+        ["Conflicts.Find.PendingCloud"] = [
+            "Enabled in the active playset ({0}), but its files have not been downloaded locally yet; bytecode was not inspected.",
+            "已在激活播放集中启用（{0}），但本地尚未下载文件，暂未扫描字节码。",
+            "已在啟用播放集中啟用（{0}），但本機尚未下載檔案，暫未掃描位元組碼。",
+        ],
+        ["Conflicts.Find.MissingDeps"] = [
+            "Missing dependency assembly ({0}); the game skips loading this mod.",
+            "缺少前置依赖程序集（{0}），游戏启动时不会加载该模组。",
+            "缺少前置相依組件（{0}），遊戲啟動時不會載入該模組。",
+        ],
+        ["Conflicts.Find.UnreadableDll"] = [
+            "Could not read assembly metadata for {0}: {1}",
+            "无法读取程序集 {0} 的元数据：{1}",
+            "無法讀取組件 {0} 的中繼資料：{1}",
+        ],
+        ["Conflicts.Find.EconomyExHibernates"] = [
+            "Standalone EconomyEX automatically hibernates when MapExtPDX is present, so no duplicate systems are registered.",
+            "独立版 EconomyEX 在检测到 MapExtPDX 时会自动完全休眠，不会重复注册系统。",
+            "獨立版 EconomyEX 在偵測到 MapExtPDX 時會自動完全休眠，不會重複註冊系統。",
+        ],
+        ["Conflicts.Note.MitigatedBySettings"] = [
+            "[Already mitigated by current MapExt settings.]",
+            "【已被当前 MapExt 设定规避】",
+            "【已被目前 MapExt 設定規避】",
+        ],
+        ["Conflicts.Note.CanDisableGroup"] = [
+            "[Can be avoided by turning off: {0}.]",
+            "【可通过关闭「{0}」规避】",
+            "【可透過關閉「{0}」規避】",
+        ],
+        ["Conflicts.Rule.RealisticPathFinding"] = [
+            "MapExt and RealisticPathFinding replace the same resident/buyer pathfinding systems and are not designed to run together; keeping only one enabled is recommended.",
+            "与 MapExt 替换相同的居民与采购寻路系统，两者未针对同时启用设计，建议只启用其中一个。",
+            "與 MapExt 替換相同的居民與採購尋路系統，兩者未針對同時啟用設計，建議只啟用其中一個。",
+        ],
+        ["Conflicts.Rule.RWH"] = [
+            "Adjusts BuildingPropertyData household counts and EconomyParameterData values; when enabled together, MapExt automatically turns off its Household and Property group for that session (checked on v2.0).",
+            "修改建筑户数（BuildingPropertyData）与经济参数（EconomyParameterData）；同时启用时，MapExt 会在本次游戏中自动停用「找房与租金系统组」（基于 v2.0 核对）。",
+            "修改建築戶數（BuildingPropertyData）與經濟參數（EconomyParameterData）；同時啟用時，MapExt 會在本次遊戲中自動停用「找房與租金系統組」（基於 v2.0 核對）。",
+        ],
+        ["Conflicts.Rule.WaterFeatures"] = [
+            "Includes options that read and write WaterSystem simulation fields (evaporation, fluidness, damping) also used by MapExt's non-vanilla water simulation presets; keep water simulation quality at Vanilla_EveryFrame if water levels behave unexpectedly (checked on v1.4.4).",
+            "包含读写 WaterSystem 模拟参数（蒸发、流速、阻尼）的功能，与 MapExt 非原版水模拟优化档位作用于同一组字段；若同时使用出现水位异常，可将水模拟质量保持为原版每帧档（基于 v1.4.4 核对）。",
+            "包含讀寫 WaterSystem 模擬參數（蒸發、流速、阻尼）的功能，與 MapExt 非原版水模擬優化檔位作用於同一組欄位；若同時使用出現水位異常，可將水模擬品質保持為原版每幀檔（基於 v1.4.4 核對）。",
+        ],
+        ["Conflicts.Rule.RoadBuilderDualInstall"] = [
+            "Both a local Mods/ copy and an enabled PDX subscribed copy of RoadBuilder are present; disable one copy in your playset to avoid duplicate UI module (.mjs) registration.",
+            "同时检测到本地 Mods/ 副本与已启用的 PDX 订阅版 RoadBuilder；请在播放集中停用订阅版（或移除本地副本），避免前端 .mjs 模块重复挂载。",
+            "同時偵測到本機 Mods/ 副本與已啟用的 PDX 訂閱版 RoadBuilder；請在播放集中停用訂閱版（或移除本機副本），避免前端 .mjs 模組重複掛載。",
+        ],
+        ["Conflicts.Launch.CodeModsDisabled"] = [
+            "Code mods are disabled for this launch (--disableCodeModding / --disableModding), so detected mod conflicts will not run.",
+            "本次启动参数已禁用代码模组（--disableCodeModding / --disableModding），检测到的模组冲突在本次启动中不会执行。",
+            "本次啟動參數已停用程式碼模組（--disableCodeModding / --disableModding），偵測到的模組衝突在本次啟動中不會執行。",
+        ],
+        ["Conflicts.Launch.HardBanner"] = [
+            "Conflict check found {0} hard conflict(s): {1}. Review the Conflict Check tab before launching.",
+            "冲突预检发现 {0} 项硬冲突：{1}。建议启动前先查看「冲突预检」页。",
+            "衝突預檢發現 {0} 項硬衝突：{1}。建議啟動前先查看「衝突預檢」頁。",
+        ],
+        ["Conflicts.Launch.WarnBanner"] = [
+            "Conflict check found {0} conditional item(s); see the Conflict Check tab for details or one-click group toggles.",
+            "冲突预检发现 {0} 项条件冲突或提示，可在「冲突预检」页查看详情或一键关闭冲突分组。",
+            "衝突預檢發現 {0} 項條件衝突或提示，可在「衝突預檢」頁查看詳情或一鍵關閉衝突分組。",
+        ],
+        ["Conflicts.Launch.ConfirmHard"] = [
+            "MapExTools detected {0} hard mod conflict(s) under the current MapExt settings:\n{1}\n\nRunning them together may cause CellMap out-of-bounds crashes, broken patches, or save issues.\nLaunch the game anyway?",
+            "MapExTools 在当前 MapExt 设定下检测到 {0} 项硬冲突模组：\n{1}\n\n同时运行可能引发 CellMap 越界闪退、补丁失效或存档问题。\n仍要启动游戏吗？",
+            "MapExTools 在目前 MapExt 設定下偵測到 {0} 項硬衝突模組：\n{1}\n\n同時執行可能引發 CellMap 越界閃退、補丁失效或存檔問題。\n仍要啟動遊戲嗎？",
         ],
     };
 

@@ -113,12 +113,12 @@ public sealed class ToolPinningTests : IDisposable
     [Fact]
     public void Plan_ReadsFileVersions()
     {
-        // 本工程的程序集带版本资源（Directory.Build.props 的 1.0.0）；纯数据文件没有
+        // 本工程的程序集带版本资源（Directory.Build.props 的 1.1.0）；纯数据文件没有
         string assembly = typeof(ToolPinning).Assembly.Location;
         WriteTarget([0]);
 
         PinPlan plan = ToolPinning.Plan(assembly, PinnedDir);
-        Assert.Equal(new Version(1, 0, 0, 0), plan.SourceVersion);
+        Assert.Equal(new Version(1, 1, 0, 0), plan.SourceVersion);
         Assert.Null(plan.TargetVersion);
         Assert.False(plan.IsDowngrade);
     }

@@ -93,6 +93,7 @@ public sealed partial record MapExtLogSummary(
     public const int MaxRecentProblems = 10;
 
     private const string ConflictTag = "ModConflictDetector";
+    private const string RuntimeConflictTag = "ConflictMonitoringSystem";
     private const string GateTag = "SaveEntryGate";
 
     /// <summary>解析日志全文（按行）。</summary>
@@ -154,6 +155,20 @@ public sealed partial record MapExtLogSummary(
                     detected.Add(text);
                 else if (text.StartsWith("Auto-disabled ", StringComparison.Ordinal))
                     autoDisabled.Add(text);
+            }
+            else if (tag == RuntimeConflictTag)
+            {
+                if (text.StartsWith("CRITICAL CellMap 冲突", StringComparison.Ordinal) ||
+                    text.StartsWith("归因定位 |", StringComparison.Ordinal) ||
+                    text.StartsWith("检测到针对 ", StringComparison.Ordinal) ||
+                    text.StartsWith("检测到关键补丁缺失", StringComparison.Ordinal) ||
+                    text.StartsWith("检测到目标方法上的外部重叠补丁", StringComparison.Ordinal) ||
+                    text.StartsWith("运行期检测到", StringComparison.Ordinal))
+                {
+                    scanned = true;
+                    noneDetected = false;
+                    detected.Add(text);
+                }
             }
             else if (tag == GateTag)
             {

@@ -55,6 +55,21 @@ public sealed class MapExtLogSummaryTests
     }
 
     [Fact]
+    public void RuntimeMonitoringAttribution_AppendedToDetectedAndClearsNoneDetected()
+    {
+        ConflictInfo c = MapExtLogSummary.Parse(
+        [
+            "[2026-11-16 21:00:01,000] [INFO]  [MapExt|ModConflictDetector] ✅ 未检测到已知冲突 Mod",
+            "[2026-11-16 21:02:10,000] [WARN]  [MapExt|ConflictMonitoringSystem] ⚠️ 运行期检测到已被替换的原版系统 RentAdjustSystem [HouseholdProperty] 被外部重新启用（存在周期性双跑风险，关联调用方: Realistic Trips v2.9.5 (PDX:77171) [CompanyDisableNightNotificationSystem.OnUpdate]）",
+        ]).Conflicts;
+
+        Assert.True(c.Scanned);
+        Assert.False(c.NoneDetected);
+        Assert.Single(c.Detected);
+        Assert.Contains("RentAdjustSystem", c.Detected[0], StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void Sample_LastGateDecisionIsTheLatestSaveLoad()
     {
         GateDecisionInfo? d = ParseSample().LastGateDecision;

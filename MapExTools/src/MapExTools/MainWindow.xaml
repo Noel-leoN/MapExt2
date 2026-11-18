@@ -5,7 +5,7 @@
         xmlns:views="clr-namespace:MapExTools.Views"
         Title="{Binding [App.Title], Source={x:Static svc:Loc.Instance}}"
         Icon="Assets/MapExTools.ico"
-        Width="1100" Height="720" MinWidth="880" MinHeight="560"
+        Width="1100" Height="720" MinWidth="920" MinHeight="560"
         WindowStartupLocation="CenterScreen">
     <Grid>
         <Grid.RowDefinitions>
@@ -31,13 +31,16 @@
             </DockPanel>
         </Border>
 
-        <!-- 五个功能页 -->
+        <!-- 六个功能页 -->
         <TabControl x:Name="MainTabs" Grid.Row="1" Margin="12,8,12,6">
             <TabItem Header="{Binding [Tab.Launch], Source={x:Static svc:Loc.Instance}}">
                 <views:LaunchSettingsPage x:Name="LaunchPage" />
             </TabItem>
             <TabItem x:Name="OptionsTab">
                 <views:ModSettingsPage x:Name="OptionsPage" />
+            </TabItem>
+            <TabItem x:Name="ConflictsTab">
+                <views:ConflictCheckPage x:Name="ConflictsPage" />
             </TabItem>
             <TabItem Header="{Binding [Tab.Logs], Source={x:Static svc:Loc.Instance}}">
                 <views:LogViewerPage />

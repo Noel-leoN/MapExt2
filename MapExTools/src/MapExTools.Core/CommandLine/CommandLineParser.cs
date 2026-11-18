@@ -60,6 +60,8 @@ public sealed class CommandLineOptions
 
     public bool Launch { get; init; }
 
+    public bool CheckConflicts { get; init; }
+
     /// <summary><c>--lang</c>，已换成规范的语言代码。</summary>
     public string? Language { get; init; }
 
@@ -75,7 +77,7 @@ public sealed class CommandLineOptions
     /// <summary>
     /// 是否在命令行里完成、不开窗口。只带 <c>--lang</c>、<c>--user-data</c>、<c>--game-process</c> 时照常打开界面。
     /// </summary>
-    public bool IsCommandMode => Help || Show || Reset || Launch || Settings.Count > 0;
+    public bool IsCommandMode => Help || Show || Reset || Launch || CheckConflicts || Settings.Count > 0;
 }
 
 /// <summary>
@@ -111,7 +113,7 @@ public static class CommandLineParser
     {
         ArgumentNullException.ThrowIfNull(args);
 
-        bool help = false, show = false, reset = false, launch = false;
+        bool help = false, show = false, reset = false, launch = false, checkConflicts = false;
         string? language = null, userData = null, gameProcess = null;
         var settings = new Dictionary<string, object>(StringComparer.Ordinal);
         var seen = new HashSet<string>(StringComparer.Ordinal);
@@ -134,7 +136,7 @@ public static class CommandLineParser
             string name = written.ToLowerInvariant();
 
             SettingOption? setting = SettingOptions.FirstOrDefault(o => o.Name == name);
-            bool isFlag = name is "--help" or "--show" or "--reset" or "--launch";
+            bool isFlag = name is "--help" or "--show" or "--reset" or "--launch" or "--check-conflicts";
             if (setting == null && !isFlag && name is not ("--lang" or "--user-data" or "--game-process"))
                 throw new CommandLineException(CommandLineErrorKind.Unknown, written);
             if (!seen.Add(name))
@@ -154,6 +156,9 @@ public static class CommandLineParser
                         break;
                     case "--reset":
                         reset = true;
+                        break;
+                    case "--check-conflicts":
+                        checkConflicts = true;
                         break;
                     default:
                         launch = true;
@@ -187,6 +192,7 @@ public static class CommandLineParser
             Show = show,
             Reset = reset,
             Launch = launch,
+            CheckConflicts = checkConflicts,
             Language = language,
             UserData = userData,
             GameProcess = gameProcess,

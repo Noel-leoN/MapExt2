@@ -21,6 +21,7 @@ public static class CommandLineText
         rows.Add(null);
         rows.Add(("--launch", Get(language, "Cli.Usage.Launch")));
         rows.Add(("--show", Get(language, "Cli.Usage.Show")));
+        rows.Add(("--check-conflicts", Get(language, "Cli.Usage.CheckConflicts")));
         rows.Add(("--lang <" + string.Join('|', UiLanguage.All) + ">", Get(language, "Cli.Usage.Lang")));
         rows.Add(("--help", Get(language, "Cli.Usage.Help")));
         rows.Add(null);
