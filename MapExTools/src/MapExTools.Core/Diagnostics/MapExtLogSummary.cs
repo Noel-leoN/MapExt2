@@ -29,7 +29,7 @@ public sealed record AppliedConfigInfo(string Timestamp, string Raw, IReadOnlyDi
 /// <summary><c>ModConflictDetector</c> 的扫描结果。</summary>
 /// <param name="Scanned">日志里有扫描记录。</param>
 /// <param name="NoneDetected">记有"未检测到已知冲突 Mod"。</param>
-/// <param name="Detected">"检测到冲突 Mod"与"检测到潜在冲突 Mod"各行的原文。</param>
+/// <param name="Detected">启动时"检测到冲突 Mod""检测到潜在冲突 Mod"各行，以及读档诊断与运行期轮询结论行的原文；后者原文相同的只留一条。</param>
 /// <param name="AutoDisabled">自动停用经济分组的各行原文。</param>
 public sealed record ConflictInfo(bool Scanned, bool NoneDetected, IReadOnlyList<string> Detected, IReadOnlyList<string> AutoDisabled);
 
@@ -158,16 +158,21 @@ public sealed partial record MapExtLogSummary(
             }
             else if (tag == RuntimeConflictTag)
             {
+                // 读档诊断与运行期轮询的结论行，开头与 ConflictMonitoringSystem 的日志原文逐字一致
                 if (text.StartsWith("CRITICAL CellMap 冲突", StringComparison.Ordinal) ||
                     text.StartsWith("归因定位 |", StringComparison.Ordinal) ||
-                    text.StartsWith("检测到针对 ", StringComparison.Ordinal) ||
+                    text.StartsWith("检测到对 ", StringComparison.Ordinal) ||
+                    text.StartsWith("检测到模拟宿主系统处于停用状态", StringComparison.Ordinal) ||
+                    text.StartsWith("加载时发现被替换的原版系统", StringComparison.Ordinal) ||
                     text.StartsWith("检测到关键补丁缺失", StringComparison.Ordinal) ||
                     text.StartsWith("检测到目标方法上的外部重叠补丁", StringComparison.Ordinal) ||
                     text.StartsWith("运行期检测到", StringComparison.Ordinal))
                 {
                     scanned = true;
                     noneDetected = false;
-                    detected.Add(text);
+                    // 同一次启动内每次读档都会重写仍存在的问题，原文相同的只留一条
+                    if (!detected.Contains(text))
+                        detected.Add(text);
                 }
             }
             else if (tag == GateTag)

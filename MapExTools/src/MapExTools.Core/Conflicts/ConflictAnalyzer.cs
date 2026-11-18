@@ -250,6 +250,25 @@ public static class ConflictAnalyzer
             infoCount);
     }
 
+    /// <summary>
+    /// 同一扫描结果按已保存设定评估比按工作设定评估更严重、且至少为条件冲突的模组（按包键对应，工作设定下没有条目视为无冲突）；
+    /// 顺序沿用 <paramref name="saved"/> 的排序。冲突预检页按工作设定评估，用它点名磁盘上的设定仍冲突的模组。
+    /// </summary>
+    public static IReadOnlyList<ModConflictItem> WorseUnderSavedSettings(ConflictReport working, ConflictReport saved)
+    {
+        ArgumentNullException.ThrowIfNull(working);
+        ArgumentNullException.ThrowIfNull(saved);
+
+        Dictionary<string, ConflictSeverity> workingSeverity = working.Items
+            .GroupBy(i => i.PackageKey, StringComparer.Ordinal)
+            .ToDictionary(g => g.Key, g => g.Max(i => i.Severity), StringComparer.Ordinal);
+
+        return saved.Items
+            .Where(i => i.Severity >= ConflictSeverity.Warning &&
+                        i.Severity > workingSeverity.GetValueOrDefault(i.PackageKey, ConflictSeverity.None))
+            .ToList();
+    }
+
     private static KnownModConflictRule? MatchPackageRule(EnabledModPackage pkg)
     {
         if (ConflictTargets.MatchKnownRule(pkg.PdxModId, null) is { } byId)

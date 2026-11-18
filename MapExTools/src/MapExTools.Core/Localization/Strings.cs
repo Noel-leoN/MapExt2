@@ -1643,6 +1643,12 @@ public static class Strings
             "当前按 MapExTools 中尚未保存的工作设定评估；启动游戏前请先保存设定，确保游戏读取一致的配置。",
             "目前依 MapExTools 中尚未儲存的工作設定評估；啟動遊戲前請先儲存設定，確保遊戲讀取一致的設定。",
         ],
+        ["Conflicts.UnsavedBasisWorse"] = [
+            "Evaluated against your current unsaved working settings in MapExTools. Under the saved settings, which the game will read, these mods still conflict: {0}. Save your changes before launching.",
+            "当前按 MapExTools 中尚未保存的工作设定评估；按已保存的设定（即游戏读取的设定），以下模组仍有冲突：{0}。启动游戏前请先保存设定。",
+            "目前依 MapExTools 中尚未儲存的工作設定評估；依已儲存的設定（即遊戲讀取的設定），下列模組仍有衝突：{0}。啟動遊戲前請先儲存設定。",
+        ],
+        ["Conflicts.SavedSeverityItem"] = ["{0} ({1})", "{0}（{1}）", "{0}（{1}）"],
         ["Conflicts.PlaysetReadError"] = [
             "Could not parse playset_config.json ({0}); only the local Mods folder was scanned.",
             "无法解析 playset_config.json（{0}），本次仅扫描了本地 Mods 目录。",

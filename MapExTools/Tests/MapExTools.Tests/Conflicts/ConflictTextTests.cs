@@ -114,4 +114,69 @@ public sealed class ConflictTextTests
         var runOnceChannelOpts = new LaunchOptions { Channel = LaunchChannel.RunOnce };
         Assert.False(ConflictText.IsCodeModdingDisabledForLaunch(runOnceChannelOpts, "--disableModding"));
     }
+
+    private static ModConflictItem Item(string packageKey, string name, ConflictSeverity severity) =>
+        new(packageKey, name, ModInstallSource.PdxMods, null, "1.0", null, false, severity, [], []);
+
+    private static ConflictReport Report(string mode, params ModConflictItem[] items)
+    {
+        var playset = new PlaysetScanResult("p1", "TestPlayset", true, null, false, [], [], [], new HashSet<string>());
+        var workspace = new ScannedModWorkspace(playset, new Dictionary<string, IReadOnlyList<AssemblyInspectionResult>>(), items.Length, 1, DateTime.UtcNow);
+        return new ConflictReport(
+            workspace,
+            new ConflictEvalSettings(mode, true, true, true, true, false, false, false),
+            items,
+            HardConflictCount: items.Count(i => i.Severity == ConflictSeverity.Hard),
+            WarningCount: items.Count(i => i.Severity == ConflictSeverity.Warning),
+            MitigatedCount: items.Count(i => i.Severity == ConflictSeverity.Mitigated),
+            InfoCount: items.Count(i => i.Severity == ConflictSeverity.Info));
+    }
+
+    // 工作副本里有未保存的模式改动（None），磁盘上仍是 ModeA
+    private static readonly ConflictReport s_working = Report(
+        "None",
+        Item("pdx_mods:1", "ModA", ConflictSeverity.Mitigated),
+        Item("pdx_mods:2", "ModB", ConflictSeverity.Warning),
+        Item("pdx_mods:4", "ModD", ConflictSeverity.Hard));
+
+    private static readonly ConflictReport s_saved = Report(
+        "ModeA",
+        Item("pdx_mods:1", "ModA", ConflictSeverity.Hard),
+        Item("pdx_mods:2", "ModB", ConflictSeverity.Warning),
+        Item("pdx_mods:3", "ModC", ConflictSeverity.Warning),
+        Item("pdx_mods:5", "ModE", ConflictSeverity.Info));
+
+    [Fact]
+    public void WorseUnderSavedSettings_ListsOnlyModsThatConflictMoreOnDisk()
+    {
+        // ModA 工作设定下已规避、磁盘上硬冲突；ModC 工作设定下没有条目；ModB 两边相同；ModD 工作设定更严重；ModE 只是备注
+        string[] expected = ["ModA", "ModC"];
+        Assert.Equal(expected, ConflictAnalyzer.WorseUnderSavedSettings(s_working, s_saved).Select(i => i.DisplayName));
+    }
+
+    [Theory]
+    [InlineData(UiLanguage.English)]
+    [InlineData(UiLanguage.SimplifiedChinese)]
+    [InlineData(UiLanguage.TraditionalChinese)]
+    public void UnsavedBasisNote_NamesModsStillConflictingOnDisk(string lang)
+    {
+        DetailLine plain = ConflictText.UnsavedBasisNote(s_working, saved: null, lang);
+        Assert.Equal(Strings.Get(lang, "Conflicts.UnsavedBasisNote"), plain.Value);
+        Assert.Equal(PackageTone.Warning, plain.Tone);
+
+        // 已保存设定下没有更严重的模组：仍是通用提示
+        Assert.Equal(plain, ConflictText.UnsavedBasisNote(s_working, s_working, lang));
+
+        DetailLine worse = ConflictText.UnsavedBasisNote(s_working, s_saved, lang);
+        Assert.Equal(PackageTone.Error, worse.Tone);
+        Assert.Contains("ModA", worse.Value, StringComparison.Ordinal);
+        Assert.Contains("ModC", worse.Value, StringComparison.Ordinal);
+        Assert.Contains(ConflictText.SeverityBadge(ConflictSeverity.Hard, lang), worse.Value, StringComparison.Ordinal);
+        Assert.DoesNotContain("ModB", worse.Value, StringComparison.Ordinal);
+        Assert.DoesNotContain("{", worse.Value, StringComparison.Ordinal);
+
+        // 只有条件冲突时用警告色
+        ConflictReport savedWarnOnly = Report("ModeA", Item("pdx_mods:3", "ModC", ConflictSeverity.Warning));
+        Assert.Equal(PackageTone.Warning, ConflictText.UnsavedBasisNote(s_working, savedWarnOnly, lang).Tone);
+    }
 }

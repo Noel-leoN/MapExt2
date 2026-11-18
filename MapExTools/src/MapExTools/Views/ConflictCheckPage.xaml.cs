@@ -122,7 +122,12 @@ public partial class ConflictCheckPage : UserControl
 
         if (Coc.HasUnsavedChanges)
         {
-            UnsavedBasisText.DataContext = new ToneLine(Loc.Instance["Conflicts.UnsavedBasisNote"], PackageTone.Warning);
+            // 一键关组只写入对应的键，其他未保存改动仍留在工作副本：另按已保存的设定评估一次，磁盘上仍冲突的模组在提示里点名
+            ConflictReport? savedReport = Coc.State != null
+                ? ConflictAnalyzer.Evaluate(report.Workspace, ConflictEvalSettings.FromDictionary(Coc.State.GetAllValues()))
+                : null;
+            DetailLine note = ConflictText.UnsavedBasisNote(report, savedReport, lang);
+            UnsavedBasisText.DataContext = new ToneLine(note.Value, note.Tone);
             UnsavedBasisText.Visibility = Visibility.Visible;
         }
         else

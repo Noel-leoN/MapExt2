@@ -69,6 +69,55 @@ public sealed class MapExtLogSummaryTests
         Assert.Contains("RentAdjustSystem", c.Detected[0], StringComparison.Ordinal);
     }
 
+    // 三行原文照抄 ConflictMonitoringSystem.RunDiagnostics 的 ModLog.Warn：静态双跑嫌疑、模拟宿主停用、读档时发现原版被重开
+    [Theory]
+    [InlineData("检测到对 RentAdjustSystem 调用 set_Enabled 且含活跃模拟系统的模组: SampleModB v1.0.0 (PDX:12345) [SampleSystem.OnUpdate]")]
+    [InlineData("检测到模拟宿主系统处于停用状态（MapExt 对该宿主的补丁不执行）: AttractionSystem [CellSystem], WindSystem [CellSystem]")]
+    [InlineData("加载时发现被替换的原版系统 RentAdjustSystem 处于启用状态，已重新禁用（可能在上一局游戏中或加载过程中被外部重新启用）")]
+    public void LoadDiagnosisWarnings_AppendedToDetected(string text)
+    {
+        ConflictInfo c = MapExtLogSummary.Parse(
+        [
+            "[2026-11-18 21:00:01,000] [INFO]  [MapExt|ModConflictDetector] ✅ 未检测到已知冲突 Mod",
+            $"[2026-11-18 21:02:10,000] [WARN]  [MapExt|ConflictMonitoringSystem] ⚠️ {text}",
+        ]).Conflicts;
+
+        Assert.True(c.Scanned);
+        Assert.False(c.NoneDetected);
+        Assert.Equal([text], c.Detected);
+    }
+
+    [Fact]
+    public void RepeatedLoadDiagnosis_IsListedOnce()
+    {
+        const string host = "检测到模拟宿主系统处于停用状态（MapExt 对该宿主的补丁不执行）: AttractionSystem [CellSystem]";
+        const string reEnabled = "加载时发现被替换的原版系统 RentAdjustSystem 处于启用状态，已重新禁用（可能在上一局游戏中或加载过程中被外部重新启用）";
+
+        // 同一次启动内先后读两个档：第二次读档诊断把仍存在的宿主停用再写一遍
+        ConflictInfo c = MapExtLogSummary.Parse(
+        [
+            $"[2026-11-18 21:02:10,000] [WARN]  [MapExt|ConflictMonitoringSystem] ⚠️ {host}",
+            $"[2026-11-18 21:10:30,000] [WARN]  [MapExt|ConflictMonitoringSystem] ⚠️ {host}",
+            $"[2026-11-18 21:10:30,500] [WARN]  [MapExt|ConflictMonitoringSystem] ⚠️ {reEnabled}",
+        ]).Conflicts;
+
+        Assert.Equal([host, reEnabled], c.Detected);
+    }
+
+    [Fact]
+    public void LoadDiagnosisProgressLines_AreNotConflicts()
+    {
+        ConflictInfo c = MapExtLogSummary.Parse(
+        [
+            "[2026-11-18 21:00:01,000] [INFO]  [MapExt|ModConflictDetector] ✅ 未检测到已知冲突 Mod",
+            "[2026-11-18 21:02:09,000] [INFO]  [MapExt|ConflictMonitoringSystem] ✅ 游戏加载完成（首次加载），执行系统状态诊断",
+            "[2026-11-18 21:02:10,000] [INFO]  [MapExt|ConflictMonitoringSystem] ✅ 诊断完成: 40/40 OK",
+        ]).Conflicts;
+
+        Assert.True(c.NoneDetected);
+        Assert.Empty(c.Detected);
+    }
+
     [Fact]
     public void Sample_LastGateDecisionIsTheLatestSaveLoad()
     {

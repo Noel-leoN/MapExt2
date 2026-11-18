@@ -98,6 +98,26 @@ public static class ConflictText
             PackageTone.Good);
     }
 
+    /// <summary>
+    /// 有未保存改动时冲突预检页的评估依据提示。页面按工作设定评估；若有模组按已保存的设定（游戏实际读取的）冲突更重，
+    /// 在提示中点名，避免一键关组后页面显示“已规避”、磁盘上的设定却仍冲突时无从察觉。
+    /// </summary>
+    /// <param name="saved">同一扫描结果按已保存设定评估的报告；读不到已保存设定时传 null，只给通用提示。</param>
+    public static DetailLine UnsavedBasisNote(ConflictReport working, ConflictReport? saved, string language)
+    {
+        ArgumentNullException.ThrowIfNull(working);
+
+        IReadOnlyList<ModConflictItem> worse = saved == null ? [] : ConflictAnalyzer.WorseUnderSavedSettings(working, saved);
+        if (worse.Count == 0)
+            return new DetailLine(string.Empty, Strings.Get(language, "Conflicts.UnsavedBasisNote"), PackageTone.Warning);
+
+        string names = string.Join(
+            Strings.Get(language, "Startup.ListSeparator"),
+            worse.Select(i => Format(language, "Conflicts.SavedSeverityItem", i.DisplayName, SeverityBadge(i.Severity, language))));
+        PackageTone tone = worse.Any(i => i.Severity == ConflictSeverity.Hard) ? PackageTone.Error : PackageTone.Warning;
+        return new DetailLine(string.Empty, Format(language, "Conflicts.UnsavedBasisWorse", names), tone);
+    }
+
     public static string DescribeFinding(ConflictFinding finding, ConflictEvalSettings settings, string language)
     {
         ArgumentNullException.ThrowIfNull(finding);
