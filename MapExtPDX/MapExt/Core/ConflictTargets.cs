@@ -266,9 +266,6 @@ namespace MapExtPDX.MapExt.Core
 
         public bool IsExpandedMode => ModeName != "None";
 
-        public bool IsVanillaWaterSimQuality =>
-            string.Equals(WaterSimQuality, DefaultWaterSimQuality, StringComparison.Ordinal);
-
         public bool IsToggleEffective(string toggleKey)
         {
             if (toggleKey == KeyEconomyFix)
@@ -670,6 +667,8 @@ namespace MapExtPDX.MapExt.Core
         /// <summary>
         /// 按名称兜底的补充兼容性规则表（已瘦身为仅保留静态单点字节码无法单独完整表达的 4 项交集说明；
         /// 其余系统替换、宿主停用、<c>CellMapSystem.AddWriter</c>、动态补丁与跨阶段注册一律由字节码从已安装版本实时测定）。
+        /// <c>WaterFeatures</c> 只作备注：两边只共用 <c>WaterSystem.WaterSimSpeed</c>，仅在其水源工具移动水源、
+        /// 或开启其强制水模拟速度、波浪与潮汐选项时相互覆盖，影响限于水模拟推进节奏，与 MapExt 的水模拟档位无关。
         /// </summary>
         public static readonly KnownModConflictRule[] KnownModRules =
         {
@@ -698,8 +697,8 @@ namespace MapExtPDX.MapExt.Core
                 pdxModId: "75613",
                 assemblyNames: new[] { "Water_Features", "WaterFeatures" },
                 auditedVersion: "1.4.4",
-                expandedModeSeverity: ConflictSeverity.Warning,
-                vanillaModeSeverity: ConflictSeverity.Warning,
+                expandedModeSeverity: ConflictSeverity.Info,
+                vanillaModeSeverity: ConflictSeverity.Info,
                 alternatePdxModIds: new[] { "125662" }),
 
             new KnownModConflictRule(
@@ -1203,11 +1202,6 @@ namespace MapExtPDX.MapExt.Core
             bool hasCrossPhaseEcbBug = false)
         {
             oneClickDisableKeys = Array.Empty<string>();
-
-            if (rule.RuleId == "WaterFeatures")
-            {
-                return settings.IsVanillaWaterSimQuality ? ConflictSeverity.Info : ConflictSeverity.Warning;
-            }
 
             ConflictSeverity baseSeverity = settings.IsExpandedMode
                 ? rule.ExpandedModeSeverity

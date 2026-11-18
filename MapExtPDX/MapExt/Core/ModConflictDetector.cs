@@ -39,9 +39,6 @@ namespace MapExtPDX.MapExt.Core
         /// <summary>Realistic Parking — 与下游 AI 组的 PersonalCarAISystem 替换存在交集</summary>
         public static bool HasRealisticParking { get; private set; }
 
-        /// <summary>Water Features — 与非原版水模拟档位共用部分 WaterSystem 参数字段</summary>
-        public static bool HasWaterFeatures { get; private set; }
-
         /// <summary>是否已完成扫描</summary>
         public static bool IsScanned { get; private set; }
 
@@ -107,8 +104,9 @@ namespace MapExtPDX.MapExt.Core
                 string matchedId = MatchStartupFingerprintId(pdxId, asmName);
                 if (matchedId == null) continue;
 
-                anyKnownDetected = true;
-                RecordRuleHit(matchedId, modDisplay);
+                // 只作备注的模组不计入冲突，只有备注时仍输出"未检测到已知冲突 Mod"
+                if (RecordRuleHit(matchedId, modDisplay))
+                    anyKnownDetected = true;
             }
 
             IsScanned = true;
@@ -142,7 +140,8 @@ namespace MapExtPDX.MapExt.Core
             return null;
         }
 
-        private static void RecordRuleHit(string ruleId, string modDisplay)
+        /// <summary>记录一次规则命中并写日志；返回 false 表示该模组只作备注，不计为冲突。</summary>
+        private static bool RecordRuleHit(string ruleId, string modDisplay)
         {
             s_DetectedRuleIds.Add(ruleId);
 
@@ -169,11 +168,13 @@ namespace MapExtPDX.MapExt.Core
                     ModLog.Warn(Tag, $"检测到潜在冲突 Mod: {modDisplay} (与下游 AI 组同样替换 PersonalCarAISystem)");
                     break;
                 case "WaterFeatures":
-                    HasWaterFeatures = true;
-                    AddSummaryUnique("WaterFeatures (WaterSystem params)");
-                    ModLog.Warn(Tag, $"检测到潜在冲突 Mod: {modDisplay} (与非原版水模拟档位共用部分 WaterSystem 参数)");
-                    break;
+                    // 两边只共用 WaterSimSpeed，相互覆盖只影响水模拟推进节奏：记备注，不进冲突报告与设置页冲突列表
+                    ModLog.Info(Tag, $"检测到 Mod（备注）: {modDisplay}（与 MapExt 都会写 WaterSimSpeed，仅在其水源工具移动水源、" +
+                                     "或开启其强制水模拟速度、波浪与潮汐选项时相互覆盖，影响限于水模拟推进节奏）");
+                    return false;
             }
+
+            return true;
         }
 
         private static void AddSummaryUnique(string item)
@@ -216,11 +217,6 @@ namespace MapExtPDX.MapExt.Core
             if (HasRWH && settings.isEnableEconomyFix && settings.EnableHouseholdPropertyEcoSystem)
             {
                 conflicts.Add("RWH (HouseholdProperty)");
-            }
-
-            if (HasWaterFeatures && settings.WaterSimQuality != WaterSimQualitySetting.Vanilla_EveryFrame)
-            {
-                conflicts.Add("WaterFeatures (WaterSystem params)");
             }
 
             return conflicts.Count > 0 ? string.Join(", ", conflicts) : "None";
