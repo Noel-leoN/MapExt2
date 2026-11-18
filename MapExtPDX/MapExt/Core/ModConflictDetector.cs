@@ -47,6 +47,20 @@ namespace MapExtPDX.MapExt.Core
 
         private static readonly List<string> s_DetectedSummaries = new List<string>();
 
+        /// <summary>启动期命中的规则与自动停用目标标识，供 <see cref="AutoDisableConflictGroups"/> 查共用清单。</summary>
+        private static readonly HashSet<string> s_DetectedRuleIds = new HashSet<string>(StringComparer.Ordinal);
+
+        /// <summary>设定页工具提示列出仍启用的经济分组时的顺序。</summary>
+        private static readonly string[] s_EconomyGroupOrder =
+        {
+            AppliedConfig.GroupDemand,
+            AppliedConfig.GroupJobSearch,
+            AppliedConfig.GroupHouseholdProperty,
+            AppliedConfig.GroupResourceBuyer,
+            AppliedConfig.GroupResidentAI,
+            AppliedConfig.GroupDownstreamAI,
+        };
+
         // === 扫描入口 ===
 
         /// <summary>
@@ -130,6 +144,8 @@ namespace MapExtPDX.MapExt.Core
 
         private static void RecordRuleHit(string ruleId, string modDisplay)
         {
+            s_DetectedRuleIds.Add(ruleId);
+
             switch (ruleId)
             {
                 case "RWH":
@@ -222,6 +238,7 @@ namespace MapExtPDX.MapExt.Core
         /// <summary>
         /// 在 <c>Mod.OnLoad</c> 阶段、<c>SystemReplacer.Apply</c> 之前调用。
         /// 根据已检测到的冲突 Mod 指纹，算出本会话要自动停用的经济分组，交给 <see cref="AppliedConfig.Capture"/>。
+        /// 停哪些分组只看共用清单 <see cref="ConflictTargets.RuntimeAutoDisableTargets"/>，此处不另写规则。
         /// 严格保留 <c>"Auto-disabled "</c> 日志前缀。
         /// </summary>
         public static List<string> AutoDisableConflictGroups(ModSettings settings)
@@ -231,59 +248,29 @@ namespace MapExtPDX.MapExt.Core
             var disabled = new List<string>();
             var reasons = new List<string>();
 
-            // RPF 替换 ResidentAISystem + ResourceBuyerSystem
-            if (HasRealisticPathFinding)
+            List<RuntimeAutoDisableDecision> decisions = ConflictTargets.PlanRuntimeAutoDisable(
+                s_DetectedRuleIds,
+                group => IsGroupEnabledInSettings(settings, group));
+            foreach (RuntimeAutoDisableDecision decision in decisions)
             {
-                if (settings.EnableResidentAIEcoSystem)
-                {
-                    disabled.Add(AppliedConfig.GroupResidentAI);
-                    reasons.Add("ResidentAI (RealisticPathFinding)");
-                    ModLog.Warn(Tag, "Auto-disabled ResidentAI group (conflict: RealisticPathFinding)");
-                }
-                if (settings.EnableResourceBuyerEcoSystem)
-                {
-                    disabled.Add(AppliedConfig.GroupResourceBuyer);
-                    reasons.Add("ResourceBuyer (RealisticPathFinding)");
-                    ModLog.Warn(Tag, "Auto-disabled ResourceBuyer group (conflict: RealisticPathFinding)");
-                }
-            }
+                RuntimeAutoDisableTarget target = decision.Target;
+                disabled.Add(decision.Group);
+                reasons.Add($"{decision.Group} ({target.TargetId})");
 
-            // Time2Work 替换 LeisureSystem（属于 DownstreamAI 组）
-            if (HasTime2Work && settings.EnableDownstreamAIEcoSystem)
-            {
-                disabled.Add(AppliedConfig.GroupDownstreamAI);
-                reasons.Add("DownstreamAI (Time2Work)");
-                ModLog.Warn(Tag, "Auto-disabled DownstreamAI group (conflict: Time2Work -> LeisureSystem)");
-            }
-
-            // RealisticParking 替换 PersonalCarAISystem（也属于 DownstreamAI 组）
-            if (HasRealisticParking && settings.EnableDownstreamAIEcoSystem &&
-                !disabled.Contains(AppliedConfig.GroupDownstreamAI))
-            {
-                disabled.Add(AppliedConfig.GroupDownstreamAI);
-                reasons.Add("DownstreamAI (RealisticParking)");
-                ModLog.Warn(Tag, "Auto-disabled DownstreamAI group (conflict: RealisticParking -> PersonalCarAI)");
-            }
-
-            // RWH 修改 BuildingPropertyData（影响 HouseholdProperty 组）
-            if (HasRWH && settings.EnableHouseholdPropertyEcoSystem)
-            {
-                disabled.Add(AppliedConfig.GroupHouseholdProperty);
-                reasons.Add("HouseholdProperty (RWH)");
-                ModLog.Warn(Tag, "Auto-disabled HouseholdProperty group (conflict: RWH -> BuildingPropertyData)");
+                string conflict = target.OverlapNote == null
+                    ? target.TargetId
+                    : $"{target.TargetId} -> {target.OverlapNote}";
+                ModLog.Warn(Tag, $"Auto-disabled {decision.Group} group (conflict: {conflict})");
             }
 
             if (disabled.Count > 0)
             {
-                bool Active(bool enabledInSettings, string group) => enabledInSettings && !disabled.Contains(group);
-
                 var activeGroups = new List<string>();
-                if (Active(settings.EnableDemandEcoSystem, AppliedConfig.GroupDemand)) activeGroups.Add("Demand");
-                if (Active(settings.EnableJobSearchEcoSystem, AppliedConfig.GroupJobSearch)) activeGroups.Add("JobSearch");
-                if (Active(settings.EnableHouseholdPropertyEcoSystem, AppliedConfig.GroupHouseholdProperty)) activeGroups.Add("HouseholdProperty");
-                if (Active(settings.EnableResourceBuyerEcoSystem, AppliedConfig.GroupResourceBuyer)) activeGroups.Add("ResourceBuyer");
-                if (Active(settings.EnableResidentAIEcoSystem, AppliedConfig.GroupResidentAI)) activeGroups.Add("ResidentAI");
-                if (Active(settings.EnableDownstreamAIEcoSystem, AppliedConfig.GroupDownstreamAI)) activeGroups.Add("DownstreamAI");
+                foreach (string group in s_EconomyGroupOrder)
+                {
+                    if (IsGroupEnabledInSettings(settings, group) && !disabled.Contains(group))
+                        activeGroups.Add(group);
+                }
 
                 settings._systemStatusTooltip =
                     $"Disabled: {string.Join(", ", reasons)}\n" +
@@ -297,6 +284,21 @@ namespace MapExtPDX.MapExt.Core
             }
 
             return disabled;
+        }
+
+        /// <summary>经济分组在设定里是否开着（只看分组自身的开关，不看经济修复总开关）。</summary>
+        private static bool IsGroupEnabledInSettings(ModSettings settings, string group)
+        {
+            switch (group)
+            {
+                case AppliedConfig.GroupDemand: return settings.EnableDemandEcoSystem;
+                case AppliedConfig.GroupJobSearch: return settings.EnableJobSearchEcoSystem;
+                case AppliedConfig.GroupHouseholdProperty: return settings.EnableHouseholdPropertyEcoSystem;
+                case AppliedConfig.GroupResourceBuyer: return settings.EnableResourceBuyerEcoSystem;
+                case AppliedConfig.GroupResidentAI: return settings.EnableResidentAIEcoSystem;
+                case AppliedConfig.GroupDownstreamAI: return settings.EnableDownstreamAIEcoSystem;
+                default: return false;
+            }
         }
 
         /// <summary>

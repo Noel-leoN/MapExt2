@@ -27,6 +27,7 @@ namespace MapExtPDX.MapExt.Core
     /// <item>在 <see cref="OnUpdate"/> 中每 240 帧执行一次轻量缓存指针轮询（仅覆盖本会话被禁用的原版系统、扩展模式 18 个模拟核心宿主、Demand 宿主与 MapExt 替换系统；不含工具／UI／音频宿主）；</item>
     /// <item>原版系统被外部周期性重开时将其设回禁用并按需查询内存 IL 归因缓存（不宣称“已修复/已解决”）；模拟宿主或替换系统掉为 <c>false</c> 时<b>只报告不自动重开</b>，避免违背系统自身内部停用逻辑。</item>
     /// </list>
+    /// <para>冲突结论日志的开头被 MapExTools 的 <c>MapExtLogSummary</c> 逐字匹配，改这些措辞时同步那边的前缀与单测。</para>
     /// </summary>
     public partial class ConflictMonitoringSystem : GameSystemBase
     {
@@ -42,6 +43,12 @@ namespace MapExtPDX.MapExt.Core
 
         /// <summary>MainLoop 低频状态轮询帧间隔（120–300 帧区间取 240 帧，约 2–4 秒一次）。</summary>
         private const int kPollFrameInterval = 240;
+
+        /// <summary>轮询发现原版系统被重新启用、层 1 又没查到调用方时的说明。</summary>
+        private const string kNoMutatorReEnabled = "未在已加载模组方法体中检出直接 set_Enabled 调用（可能经反射或间接调用重新启用）";
+
+        /// <summary>轮询发现应保持启用的系统被停用、层 1 又没查到调用方时的说明。</summary>
+        private const string kNoMutatorDisabled = "未在已加载模组方法体中检出直接 set_Enabled 调用（可能由系统内部逻辑自停或反射调用触发）";
 
         #endregion
 
@@ -699,7 +706,7 @@ namespace MapExtPDX.MapExt.Core
                 item.System.Enabled = false;
                 if (_reportedRuntimeAnomalies.Add(item.SystemType))
                 {
-                    string src = LookupSingleSystemMutator(item.SystemType, world);
+                    string src = LookupSingleSystemMutator(item.SystemType, world, kNoMutatorReEnabled);
                     ModLog.Warn(Tag,
                         $"运行期检测到已被替换的原版系统 {ShortTypeName(item.SystemType)} [{item.Group}] 被外部重新启用" +
                         $"（存在周期性双跑风险，关联调用方: {src}）");
@@ -718,7 +725,7 @@ namespace MapExtPDX.MapExt.Core
 
                 if (_reportedRuntimeAnomalies.Add(item.SystemType))
                 {
-                    string src = LookupSingleSystemMutator(item.SystemType, world);
+                    string src = LookupSingleSystemMutator(item.SystemType, world, kNoMutatorDisabled);
                     ModLog.Warn(Tag,
                         $"运行期检测到系统 {ShortTypeName(item.SystemType)} [{item.Group}] 变为已停用状态" +
                         $"（为防异常循环不自动重开，关联调用方或异常排查: {src}）");
@@ -730,7 +737,8 @@ namespace MapExtPDX.MapExt.Core
             }
         }
 
-        private static string LookupSingleSystemMutator(Type sysType, World world)
+        /// <summary>查询单个系统的 <c>set_Enabled</c> 调用方；没查到时返回 <paramref name="notFoundHint"/>（按重新启用或被停用分别说明）。</summary>
+        private static string LookupSingleSystemMutator(Type sysType, World world, string notFoundHint)
         {
             Dictionary<Type, List<string>> map = ModAttributionHelper.FindEnabledMutators(
                 new[] { sysType },
@@ -738,7 +746,7 @@ namespace MapExtPDX.MapExt.Core
                 out _);
             return map.TryGetValue(sysType, out List<string> list) && list.Count > 0
                 ? string.Join("; ", list)
-                : "未在已加载模组方法体中检出直接 set_Enabled 调用（可能由系统内部逻辑自停或反射调用触发）";
+                : notFoundHint;
         }
 
         #endregion

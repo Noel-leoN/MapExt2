@@ -158,7 +158,7 @@ namespace MapExtPDX.MapExt.Core
     /// </summary>
     public sealed class KnownModConflictRule
     {
-        /// <summary>稳定规则标识（如 <c>ResourceLocator</c>、<c>Time2Work</c>），对应三语文案键后缀。</summary>
+        /// <summary>稳定规则标识（如 <c>RealisticPathFinding</c>、<c>WaterFeatures</c>），对应三语文案键后缀。</summary>
         public readonly string RuleId;
 
         /// <summary>Paradox Mods 平台数字 ID（字符串形式，如 <c>"77171"</c>）；有测试分支时见 <see cref="AlternatePdxModIds"/>。</summary>
@@ -186,9 +186,6 @@ namespace MapExtPDX.MapExt.Core
 
         public readonly bool CanMitigateInExpandedModes;
 
-        /// <summary>游戏内 <c>ModConflictDetector.AutoDisableConflictGroups</c> 在启动期自动停用的经济分组名。</summary>
-        public readonly string[] RuntimeAutoDisableGroups;
-
         /// <summary>是否仅当本地 <c>Mods/</c> 与激活 Playset 订阅同时存在启用副本时才触发提示（如 <c>RoadBuilder</c> 双装前端模块冲突）。</summary>
         public readonly bool RequireDualLocalAndPdxInstall;
 
@@ -201,7 +198,6 @@ namespace MapExtPDX.MapExt.Core
             ConflictSeverity vanillaModeSeverity,
             string[]? mitigatingToggleKeys = null,
             bool canMitigateInExpandedModes = false,
-            string[]? runtimeAutoDisableGroups = null,
             string[]? alternatePdxModIds = null,
             bool requireDualLocalAndPdxInstall = false)
         {
@@ -213,7 +209,6 @@ namespace MapExtPDX.MapExt.Core
             VanillaModeSeverity = vanillaModeSeverity;
             MitigatingToggleKeys = mitigatingToggleKeys ?? Array.Empty<string>();
             CanMitigateInExpandedModes = canMitigateInExpandedModes;
-            RuntimeAutoDisableGroups = runtimeAutoDisableGroups ?? Array.Empty<string>();
             AlternatePdxModIds = alternatePdxModIds ?? Array.Empty<string>();
             RequireDualLocalAndPdxInstall = requireDualLocalAndPdxInstall;
         }
@@ -234,7 +229,7 @@ namespace MapExtPDX.MapExt.Core
         }
     }
 
-        /// <summary>用于二维冲突评估的精简 <c>.coc</c> 生效设定快照（Mod 端与外部工具共用）。</summary>
+    /// <summary>用于二维冲突评估的精简 <c>.coc</c> 生效设定快照（Mod 端与外部工具共用）。</summary>
     public sealed class ConflictEvalSettings
     {
         public readonly string ModeName;
@@ -333,24 +328,50 @@ namespace MapExtPDX.MapExt.Core
         private const string KeyWaterSimQuality = "WaterSimQuality";
     }
 
-    /// <summary>游戏启动期（<c>Mod.OnLoad</c>）自动停用重叠经济分组的已知模组标识定义。</summary>
+    /// <summary>
+    /// 游戏启动期（<c>Mod.OnLoad</c>）检测到即自动停用重叠经济分组的已知模组。
+    /// 本类的 <see cref="AutoDisableGroups"/> 是自动停用分组的唯一来源：<c>ModConflictDetector.AutoDisableConflictGroups</c>
+    /// 经 <see cref="ConflictTargets.PlanRuntimeAutoDisable"/> 读取，不另写分组。
+    /// </summary>
     public sealed class RuntimeAutoDisableTarget
     {
+        /// <summary>稳定标识，与 <c>ModConflictDetector</c> 记录的命中标识一致。</summary>
         public readonly string TargetId;
+
         public readonly string PdxModId;
         public readonly string[] AssemblyNames;
+
+        /// <summary>检测到该模组时要停用的经济分组（分组名与 <c>AppliedConfig</c> 一致）；设定里本就关着的分组不受影响。</summary>
         public readonly string[] AutoDisableGroups;
+
+        /// <summary>自动停用日志中箭头后的交集说明（如 <c>LeisureSystem</c>）；为 null 时只写模组标识。</summary>
+        public readonly string? OverlapNote;
 
         public RuntimeAutoDisableTarget(
             string targetId,
             string pdxModId,
             string[] assemblyNames,
-            string[] autoDisableGroups)
+            string[] autoDisableGroups,
+            string? overlapNote = null)
         {
             TargetId = targetId;
             PdxModId = pdxModId;
             AssemblyNames = assemblyNames;
             AutoDisableGroups = autoDisableGroups;
+            OverlapNote = overlapNote;
+        }
+    }
+
+    /// <summary><see cref="ConflictTargets.PlanRuntimeAutoDisable"/> 算出的一个自动停用分组，以及触发它的已知模组。</summary>
+    public sealed class RuntimeAutoDisableDecision
+    {
+        public readonly string Group;
+        public readonly RuntimeAutoDisableTarget Target;
+
+        public RuntimeAutoDisableDecision(string group, RuntimeAutoDisableTarget target)
+        {
+            Group = group;
+            Target = target;
         }
     }
 
@@ -660,8 +681,7 @@ namespace MapExtPDX.MapExt.Core
                 expandedModeSeverity: ConflictSeverity.Hard,
                 vanillaModeSeverity: ConflictSeverity.Hard,
                 mitigatingToggleKeys: new[] { KeyResidentAI, KeyResourceBuyer },
-                canMitigateInExpandedModes: true,
-                runtimeAutoDisableGroups: new[] { GroupResidentAI, GroupResourceBuyer }),
+                canMitigateInExpandedModes: true),
 
             new KnownModConflictRule(
                 ruleId: "RWH",
@@ -671,8 +691,7 @@ namespace MapExtPDX.MapExt.Core
                 expandedModeSeverity: ConflictSeverity.Warning,
                 vanillaModeSeverity: ConflictSeverity.Warning,
                 mitigatingToggleKeys: new[] { KeyHouseholdProperty },
-                canMitigateInExpandedModes: true,
-                runtimeAutoDisableGroups: new[] { GroupHouseholdProperty }),
+                canMitigateInExpandedModes: true),
 
             new KnownModConflictRule(
                 ruleId: "WaterFeatures",
@@ -694,8 +713,9 @@ namespace MapExtPDX.MapExt.Core
         };
 
         /// <summary>
-        /// 供 <c>ModConflictDetector.OnLoad</c> 在注册前自动停用重叠经济分组的已知目标集合
+        /// 游戏启动期（<c>Mod.OnLoad</c>、替换系统注册前）自动停用重叠经济分组的已知模组，游戏内停哪些分组只看这张表
         /// （包含工具端已改由字节码实时测定的 <c>Time2Work</c> 与 <c>RealisticParking</c>）。
+        /// 顺序即判定与日志顺序：同一分组只记在最先命中的模组名下。
         /// </summary>
         public static readonly RuntimeAutoDisableTarget[] RuntimeAutoDisableTargets =
         {
@@ -709,19 +729,22 @@ namespace MapExtPDX.MapExt.Core
                 targetId: "Time2Work",
                 pdxModId: "77171",
                 assemblyNames: new[] { "Time2Work", "NightShift" },
-                autoDisableGroups: new[] { GroupDownstreamAI }),
+                autoDisableGroups: new[] { GroupDownstreamAI },
+                overlapNote: "LeisureSystem"),
 
             new RuntimeAutoDisableTarget(
                 targetId: "RealisticParking",
                 pdxModId: "87313",
                 assemblyNames: new[] { "RealisticParking" },
-                autoDisableGroups: new[] { GroupDownstreamAI }),
+                autoDisableGroups: new[] { GroupDownstreamAI },
+                overlapNote: "PersonalCarAI"),
 
             new RuntimeAutoDisableTarget(
                 targetId: "RWH",
                 pdxModId: "87755",
                 assemblyNames: new[] { "RWH", "RealisticWorkplacesAndHouseholds" },
-                autoDisableGroups: new[] { GroupHouseholdProperty }),
+                autoDisableGroups: new[] { GroupHouseholdProperty },
+                overlapNote: "BuildingPropertyData"),
         };
 
         #endregion
@@ -1135,6 +1158,37 @@ namespace MapExtPDX.MapExt.Core
             }
 
             return null;
+        }
+
+        /// <summary>
+        /// 按启动期检测到的已知模组算出本会话要自动停用的经济分组：按 <see cref="RuntimeAutoDisableTargets"/> 的顺序，
+        /// 只停设定里开着的分组，同一分组只停一次。
+        /// </summary>
+        /// <param name="detectedTargetIds">启动期指纹扫描命中的标识（与 <see cref="RuntimeAutoDisableTarget.TargetId"/> 比对，其他标识忽略）。</param>
+        /// <param name="isGroupEnabled">按分组名返回该分组在设定里是否开着。</param>
+        public static List<RuntimeAutoDisableDecision> PlanRuntimeAutoDisable(
+            ICollection<string> detectedTargetIds,
+            Func<string, bool> isGroupEnabled)
+        {
+            var decisions = new List<RuntimeAutoDisableDecision>();
+            var plannedGroups = new HashSet<string>(StringComparer.Ordinal);
+            foreach (RuntimeAutoDisableTarget target in RuntimeAutoDisableTargets)
+            {
+                if (!detectedTargetIds.Contains(target.TargetId))
+                {
+                    continue;
+                }
+
+                foreach (string group in target.AutoDisableGroups)
+                {
+                    if (isGroupEnabled(group) && plannedGroups.Add(group))
+                    {
+                        decisions.Add(new RuntimeAutoDisableDecision(group, target));
+                    }
+                }
+            }
+
+            return decisions;
         }
 
         /// <summary>
