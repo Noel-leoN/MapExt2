@@ -1,106 +1,175 @@
 // Copyright (c) 2024 Noel2(Noel-leoN)
 // Licensed under the MIT License.
 
+using System;
 using System.Collections.Generic;
+using Colossal.IO.AssetDatabase;
+using Game.Modding;
 using Game.SceneFlow;
 
 namespace MapExtPDX.MapExt.Core
 {
     /// <summary>
-    /// 启动时 Mod 指纹检测器。
-    /// 在 OnLoad 阶段一次性扫描已加载 Mod 列表，识别已知冲突 Mod 的存在。
-    /// 检测结果缓存为静态属性，整个游戏生命周期零运行时开销。
+    /// 启动时 Mod 指纹检测器与已加载代码 Mod 查询入口。
+    ///
+    /// <para><b>两阶段枚举过滤分离约束</b>：
+    /// <list type="number">
+    /// <item><see cref="ScanLoadedMods"/> 在 <c>Mod.OnLoad</c> 阶段运行，此时排在本地 <c>Mods/MapExt2</c> 后面的全部 PDX 订阅 Mod
+    /// 尚处于 <c>State.Unknown</c>，故只过滤 <c>isValid &amp;&amp; asset.isMod &amp;&amp; asset.isUnique &amp;&amp; asset.canBeLoaded</c>，
+    /// <b>严禁附加 <c>state == Loaded</c></b>；</item>
+    /// <item><see cref="GetLoadedModNames"/> 供进城后冲突弹窗兜底展示，在弹窗触发时<b>实时枚举</b>
+    /// <c>state == Loaded &amp;&amp; asset.isMod</c>，既涵盖全部订阅 Mod，又剔除随包引用类库（<c>!isMod</c>）与加载失败项噪音。</item>
+    /// </list></para>
     /// </summary>
     public static class ModConflictDetector
     {
         private const string Tag = nameof(ModConflictDetector);
 
-        // === 检测结果缓存 ===
+        // === 检测结果缓存（仅收录与 MapExt 存在系统替换或共享参数交集的模组） ===
 
-        /// <summary>Realistic Workplaces and Households — Prefab 数据篡改风险</summary>
+        /// <summary>Realistic Workplaces and Households — 与找房与租金系统组的输入参数存在交集</summary>
         public static bool HasRWH { get; private set; }
 
-        /// <summary>Realistic PathFinding — ResidentAI/TripNeeded/ResourceBuyer 系统替换冲突</summary>
+        /// <summary>Realistic PathFinding — 与居民 AI 及消费采购寻路系统组替换同一批原版系统</summary>
         public static bool HasRealisticPathFinding { get; private set; }
 
-        /// <summary>Time2Work — LeisureSystem 系统替换冲突</summary>
+        /// <summary>Time2Work (Realistic Trips) — 与休闲、吸引力及租金调整系统存在运行交集</summary>
         public static bool HasTime2Work { get; private set; }
 
-        /// <summary>Realistic Parking — PersonalCarAISystem 系统替换冲突</summary>
+        /// <summary>Realistic Parking — 与下游 AI 组的 PersonalCarAISystem 替换存在交集</summary>
         public static bool HasRealisticParking { get; private set; }
 
-        /// <summary>UrbanInequality — EconomyParameterData 修改风险</summary>
-        public static bool HasUrbanInequality { get; private set; }
+        /// <summary>Water Features — 与非原版水模拟档位共用部分 WaterSystem 参数字段</summary>
+        public static bool HasWaterFeatures { get; private set; }
 
         /// <summary>是否已完成扫描</summary>
         public static bool IsScanned { get; private set; }
 
-        /// <summary>所有已加载的非官方 Mod 名称（供 CellMap 冲突弹窗展示）</summary>
-        private static readonly List<string> AllLoadedModNames = new List<string>();
+        private static readonly List<string> s_DetectedSummaries = new List<string>();
 
         // === 扫描入口 ===
 
         /// <summary>
-        /// 在 Mod.OnLoad 阶段调用，通过 modManager 名称匹配检测冲突 Mod。
-        /// 仅执行一次，结果缓存到静态属性。
+        /// 在 <c>Mod.OnLoad</c> 阶段调用，通过 <c>modManager</c> 匹配存在系统或参数交集的已知模组指纹。
+        /// 仅执行一次；保留固定日志前缀以向后兼容外部工具 <c>MapExtLogSummary</c>。
         /// </summary>
         public static void ScanLoadedMods()
         {
             if (IsScanned) return;
 
-            foreach (var modInfo in GameManager.instance.modManager)
+            ModManager mm = GameManager.instance?.modManager;
+            if (mm == null)
             {
-                var name = modInfo.asset.name;
-                if (string.IsNullOrEmpty(name)) continue;
+                IsScanned = true;
+                return;
+            }
 
-                // 记录所有非 MapExt 自身的 Mod 名称（排除官方、自身和 Harmony 库）
-                if (!name.Contains("MapExt") && !name.Contains("EconomyEX")
-                    && !name.StartsWith("0Harmony") && !name.StartsWith("Lib.Harmony")
-                    && !AllLoadedModNames.Contains(name))
-                    AllLoadedModNames.Add(name);
+            bool anyKnownDetected = false;
 
-                // RWH: 多种可能的 asset 名称
-                if (name.Contains("RealisticWorkplacesAndHouseholds") || name == "RWH")
+            foreach (ModManager.ModInfo modInfo in mm)
+            {
+                // 启动期过滤谓词：剔除无效项、非代码主入口的随包引用库、同名败选副本与缺前置死 Mod；严禁检查 state == Loaded！
+                if (!modInfo.isValid) continue;
+                ExecutableAsset asset = modInfo.asset;
+                if (asset == null || !asset.isMod || !asset.isUnique || !asset.canBeLoaded) continue;
+
+                string asmName = asset.name;
+                if (string.IsNullOrEmpty(asmName)) continue;
+
+                string pdxId = null;
+                try
                 {
-                    HasRWH = true;
-                    ModLog.Warn(Tag, $"检测到冲突 Mod: {name} (BuildingPropertyData 篡改风险)");
+                    SourceMeta meta = asset.GetMeta();
+                    pdxId = meta.platformID;
                 }
-                else if (name.Contains("RealisticPathFinding"))
+                catch
                 {
-                    HasRealisticPathFinding = true;
-                    ModLog.Warn(Tag, $"检测到冲突 Mod: {name} (ResidentAI/ResourceBuyer 系统替换)");
+                    // 忽略元数据读取异常
                 }
-                else if (name.Contains("Time2Work"))
-                {
-                    HasTime2Work = true;
-                    ModLog.Warn(Tag, $"检测到冲突 Mod: {name} (LeisureSystem 系统替换)");
-                }
-                else if (name.Contains("RealisticParking"))
-                {
-                    HasRealisticParking = true;
-                    ModLog.Warn(Tag, $"检测到冲突 Mod: {name} (PersonalCarAISystem 系统替换)");
-                }
-                else if (name.Contains("UrbanInequality"))
-                {
-                    HasUrbanInequality = true;
-                    ModLog.Warn(Tag, $"检测到潜在冲突 Mod: {name} (EconomyParameterData 修改)");
-                }
+
+                if (ConflictTargets.IsSelfOrCompanion(asmName, pdxId)) continue;
+
+                string modDisplay = ModAttributionHelper.FormatExecutableAsset(asset);
+                string matchedId = MatchStartupFingerprintId(pdxId, asmName);
+                if (matchedId == null) continue;
+
+                anyKnownDetected = true;
+                RecordRuleHit(matchedId, modDisplay);
             }
 
             IsScanned = true;
 
-            if (!HasRWH && !HasRealisticPathFinding && !HasTime2Work &&
-                !HasRealisticParking && !HasUrbanInequality)
+            if (!anyKnownDetected)
             {
                 ModLog.Ok(Tag, "未检测到已知冲突 Mod");
             }
         }
 
+        private static string MatchStartupFingerprintId(string pdxId, string asmName)
+        {
+            RuntimeAutoDisableTarget autoTarget = ConflictTargets.MatchRuntimeAutoDisableTarget(pdxId, asmName);
+            if (autoTarget != null)
+                return autoTarget.TargetId;
+
+            KnownModConflictRule knownRule = ConflictTargets.MatchKnownRule(pdxId, asmName);
+            if (knownRule != null && !knownRule.RequireDualLocalAndPdxInstall)
+                return knownRule.RuleId;
+
+            // 兼容旧版子串匹配兜底
+            if (asmName.Contains("RealisticWorkplacesAndHouseholds"))
+                return "RWH";
+            if (asmName.Contains("RealisticPathFinding"))
+                return "RealisticPathFinding";
+            if (asmName.Contains("Time2Work"))
+                return "Time2Work";
+            if (asmName.Contains("RealisticParking"))
+                return "RealisticParking";
+
+            return null;
+        }
+
+        private static void RecordRuleHit(string ruleId, string modDisplay)
+        {
+            switch (ruleId)
+            {
+                case "RWH":
+                    HasRWH = true;
+                    AddSummaryUnique("RWH (HouseholdProperty)");
+                    ModLog.Warn(Tag, $"检测到潜在冲突 Mod: {modDisplay} (与找房与租金系统组共用建筑与经济参数)");
+                    break;
+                case "RealisticPathFinding":
+                    HasRealisticPathFinding = true;
+                    AddSummaryUnique("RealisticPathFinding (ResidentAI, ResourceBuyer)");
+                    ModLog.Warn(Tag, $"检测到冲突 Mod: {modDisplay} (与居民 AI 及消费采购系统组替换相同原版系统)");
+                    break;
+                case "Time2Work":
+                    HasTime2Work = true;
+                    AddSummaryUnique("Time2Work (LeisureSystem, RentAdjustSystem)");
+                    ModLog.Warn(Tag, $"检测到潜在冲突 Mod: {modDisplay} (与休闲、吸引力及租金调整系统存在交集)");
+                    break;
+                case "RealisticParking":
+                    HasRealisticParking = true;
+                    AddSummaryUnique("RealisticParking (PersonalCarAISystem)");
+                    ModLog.Warn(Tag, $"检测到潜在冲突 Mod: {modDisplay} (与下游 AI 组同样替换 PersonalCarAISystem)");
+                    break;
+                case "WaterFeatures":
+                    HasWaterFeatures = true;
+                    AddSummaryUnique("WaterFeatures (WaterSystem params)");
+                    ModLog.Warn(Tag, $"检测到潜在冲突 Mod: {modDisplay} (与非原版水模拟档位共用部分 WaterSystem 参数)");
+                    break;
+            }
+        }
+
+        private static void AddSummaryUnique(string item)
+        {
+            if (!s_DetectedSummaries.Contains(item))
+                s_DetectedSummaries.Add(item);
+        }
+
         // === 冲突报告生成 ===
 
         /// <summary>
-        /// 返回与 MapExt 当前启用的系统组存在直接冲突的 Mod 列表。
-        /// 格式: "ModName (冲突维度)"，多个以 ", " 分隔。
+        /// 返回与 MapExt 当前启用的系统组或模式存在直接交集的已知 Mod 列表（仅陈述 MapExt 一侧交集事实）。
         /// 无冲突返回 "None"。
         /// </summary>
         public static string GetConflictReport(ModSettings settings)
@@ -108,83 +177,59 @@ namespace MapExtPDX.MapExt.Core
             if (!IsScanned) return "Not scanned";
 
             var conflicts = new List<string>();
+            bool isExpanded = settings.PatchModeChoice != PatchModeSetting.None;
 
             if (HasRealisticPathFinding)
             {
-                if (settings.EnableResidentAIEcoSystem)
-                    conflicts.Add("RealisticPathFinding (ResidentAI)");
-                if (settings.EnableResourceBuyerEcoSystem)
-                    conflicts.Add("RealisticPathFinding (ResourceBuyer)");
+                conflicts.Add("RealisticPathFinding (ResidentAI / ResourceBuyer)");
             }
 
-            if (HasTime2Work && settings.EnableDownstreamAIEcoSystem)
-                conflicts.Add("Time2Work (LeisureSystem)");
-
-            if (HasRealisticParking && settings.EnableDownstreamAIEcoSystem)
-                conflicts.Add("RealisticParking (PersonalCarAI)");
-
-            if (HasRWH && settings.EnableHouseholdPropertyEcoSystem)
-                conflicts.Add("RWH (BuildingPropertyData)");
-
-            // EconomyParameterData 多写冲突检测
-            int ecoParamWriters = 0;
-            var ecoParamMods = new List<string>();
-            if (HasRWH) { ecoParamWriters++; ecoParamMods.Add("RWH"); }
-            if (HasUrbanInequality) { ecoParamWriters++; ecoParamMods.Add("UrbanInequality"); }
-            if (HasTime2Work) { ecoParamWriters++; ecoParamMods.Add("Time2Work"); }
-            if (ecoParamWriters >= 2)
+            if (HasTime2Work)
             {
-                conflicts.Add($"EconomyParameterData ({string.Join("+", ecoParamMods)})");
+                if (isExpanded)
+                    conflicts.Add("Time2Work (RentAdjustSystem / AttractionSystem)");
+                else if (settings.EnableDownstreamAIEcoSystem || settings.EnableHouseholdPropertyEcoSystem)
+                    conflicts.Add("Time2Work (LeisureSystem / RentAdjustSystem)");
             }
-            else if (HasUrbanInequality && settings.isEnableEconomyFix)
+
+            if (HasRealisticParking && settings.isEnableEconomyFix && settings.EnableDownstreamAIEcoSystem)
             {
-                // 单独的 UrbanInequality 也修改 EconomyParameterData
-                conflicts.Add("UrbanInequality (EconomyParameterData)");
+                conflicts.Add("RealisticParking (PersonalCarAISystem)");
+            }
+
+            if (HasRWH && settings.isEnableEconomyFix && settings.EnableHouseholdPropertyEcoSystem)
+            {
+                conflicts.Add("RWH (HouseholdProperty)");
+            }
+
+            if (HasWaterFeatures && settings.WaterSimQuality != WaterSimQualitySetting.Vanilla_EveryFrame)
+            {
+                conflicts.Add("WaterFeatures (WaterSystem params)");
             }
 
             return conflicts.Count > 0 ? string.Join(", ", conflicts) : "None";
         }
 
-        /// <summary>
-        /// 返回所有已检测到的 ruzbeh0 系列 Mod 列表（无论是否与当前设置冲突）。
-        /// 供 OptionUI 的 DetectedConflictMods 字段显示。
-        /// </summary>
+        /// <summary>供 OptionUI 的 DetectedConflictMods 字段显示。</summary>
         public static string GetDetectedModsSummary()
         {
             if (!IsScanned) return "Not scanned";
-
-            var detected = new List<string>();
-
-            if (HasRWH)
-                detected.Add("RWH (data: BuildingPropertyData)");
-            if (HasRealisticPathFinding)
-                detected.Add("RealisticPathFinding (sys: ResidentAI, ResourceBuyer)");
-            if (HasTime2Work)
-                detected.Add("Time2Work (sys: LeisureSystem)");
-            if (HasRealisticParking)
-                detected.Add("RealisticParking (sys: PersonalCarAI)");
-            if (HasUrbanInequality)
-                detected.Add("UrbanInequality (data: EconomyParameterData)");
-
-            return detected.Count > 0 ? string.Join("; ", detected) : "None";
+            return s_DetectedSummaries.Count > 0 ? string.Join("; ", s_DetectedSummaries) : "None";
         }
 
         // === 启动时自动禁用冲突系统组 ===
 
         /// <summary>
-        /// 在 Mod.OnLoad 阶段、SystemReplacer.Apply 之前调用。
-        /// 根据已检测到的冲突 Mod 指纹，算出本会话要自动停用的经济分组，交给 <see cref="AppliedConfig.Capture"/>，
-        /// 确保 SystemReplacer.Apply 不会注册与其他 Mod 冲突的系统替换。
-        /// <para>不改写设定对象：改写的话，玩家之后调任何选项触发保存，自动停用就会被永久写进 .coc。</para>
-        /// 返回被停用的组名列表（与 AppliedConfig.Group* 一致，用于 UI 提示）。
-        /// 同时填充 settings._systemStatusTooltip 供 InGame UI 悬停显示。
+        /// 在 <c>Mod.OnLoad</c> 阶段、<c>SystemReplacer.Apply</c> 之前调用。
+        /// 根据已检测到的冲突 Mod 指纹，算出本会话要自动停用的经济分组，交给 <see cref="AppliedConfig.Capture"/>。
+        /// 严格保留 <c>"Auto-disabled "</c> 日志前缀。
         /// </summary>
         public static List<string> AutoDisableConflictGroups(ModSettings settings)
         {
             if (!IsScanned) return new List<string>();
 
-            var disabled = new List<string>(); // 组名
-            var reasons = new List<string>();   // “组名 (conflict: ModName)”
+            var disabled = new List<string>();
+            var reasons = new List<string>();
 
             // RPF 替换 ResidentAISystem + ResourceBuyerSystem
             if (HasRealisticPathFinding)
@@ -211,8 +256,7 @@ namespace MapExtPDX.MapExt.Core
                 ModLog.Warn(Tag, "Auto-disabled DownstreamAI group (conflict: Time2Work -> LeisureSystem)");
             }
 
-            // RealisticParking 替换 PersonalCarAISystem（也属于 DownstreamAI 组）；
-            // 已被 Time2Work 停用时不再重复处理，与原先改写设定后的行为一致
+            // RealisticParking 替换 PersonalCarAISystem（也属于 DownstreamAI 组）
             if (HasRealisticParking && settings.EnableDownstreamAIEcoSystem &&
                 !disabled.Contains(AppliedConfig.GroupDownstreamAI))
             {
@@ -229,7 +273,6 @@ namespace MapExtPDX.MapExt.Core
                 ModLog.Warn(Tag, "Auto-disabled HouseholdProperty group (conflict: RWH -> BuildingPropertyData)");
             }
 
-            // 填充 tooltip
             if (disabled.Count > 0)
             {
                 bool Active(bool enabledInSettings, string group) => enabledInSettings && !disabled.Contains(group);
@@ -257,14 +300,44 @@ namespace MapExtPDX.MapExt.Core
         }
 
         /// <summary>
-        /// 返回所有已加载的非官方 Mod 名称（排除 MapExt/EcoEX 自身）。
-        /// 供 CellMap 冲突弹窗展示可疑 Mod 列表。
+        /// 进城弹窗兜底列表：<b>在调用时实时枚举</b> <c>state == Loaded &amp;&amp; asset.isMod</c> 的非本工程代码 Mod 显示名，
+        /// 彻底排除 <c>OnLoad</c> 早期的 <c>State.Unknown</c> 截断与随包辅助类库（<c>!isMod</c>）噪音。
         /// </summary>
-        public static string GetAllModNames()
+        public static string GetLoadedModNames()
         {
-            return AllLoadedModNames.Count > 0
-                ? string.Join(", ", AllLoadedModNames)
-                : "(none)";
+            try
+            {
+                ModManager mm = GameManager.instance?.modManager;
+                if (mm == null) return "(none)";
+
+                var names = new List<string>();
+                foreach (ModManager.ModInfo modInfo in mm)
+                {
+                    if (!modInfo.isValid || modInfo.state != ModManager.ModInfo.State.Loaded) continue;
+                    ExecutableAsset asset = modInfo.asset;
+                    if (asset == null || !asset.isMod) continue;
+
+                    string pdxId = null;
+                    try { pdxId = asset.GetMeta().platformID; }
+                    catch { /* ignore */ }
+
+                    if (ConflictTargets.IsSelfOrCompanion(asset.name, pdxId)) continue;
+
+                    string formatted = ModAttributionHelper.FormatExecutableAsset(asset);
+                    if (!names.Contains(formatted))
+                        names.Add(formatted);
+                }
+
+                names.Sort(StringComparer.OrdinalIgnoreCase);
+                return names.Count > 0 ? string.Join(", ", names) : "(none)";
+            }
+            catch
+            {
+                return "(none)";
+            }
         }
+
+        /// <summary>向后兼容别名，转发至实时枚举 <see cref="GetLoadedModNames"/>。</summary>
+        public static string GetAllModNames() => GetLoadedModNames();
     }
 }

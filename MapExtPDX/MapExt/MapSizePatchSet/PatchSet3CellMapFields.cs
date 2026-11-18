@@ -178,6 +178,12 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
 
                 if (rawValue is int originalValue)
                 {
+                    if (field.Name == "kMapSize" && originalValue != PatchManager.OriginalMapSize)
+                    {
+                        ModLog.Warn(Tag,
+                            $"检测到 {field.DeclaringType?.Name}.kMapSize 在补丁注册前已被改写为 {originalValue}（预期原版值 {PatchManager.OriginalMapSize}）");
+                    }
+
                     int newValue = originalValue * multiplier;
 
                     if (!_replacementMap.ContainsKey(field))

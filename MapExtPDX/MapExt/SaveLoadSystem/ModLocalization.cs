@@ -63,6 +63,19 @@ namespace MapExtPDX.SaveLoadSystem
                 { "MAPEXT_CONFLICT.RpfTitle", "MapExt and RealisticPathFinding" },
                 { "MAPEXT_CONFLICT.RpfNotify", "MapExt and RealisticPathFinding are not designed to run together. Keeping only one of them enabled is recommended." },
 
+                // === CellMap 核心系统／补丁严重冲突对话框（v1.1 三语对齐） ===
+                { "MAPEXT_CONFLICT.CellMapTitle", "MapExt: CRITICAL CellMap Conflict" },
+                { "MAPEXT_CONFLICT.CellMapMessage", "Critical CellMap size or patch mismatch detected!\n\nObserved issues:\n{ISSUES}\n\n{SOURCES}\n\nRunning with mismatched CellMap grid sizes or missing core patches may cause out-of-bounds crashes or save data issues. Quit the game and check the mod(s) above." },
+                { "MAPEXT_CONFLICT.CellMapSourcesIdentified", "Associated mod(s):\n{MOD_LIST}" },
+                { "MAPEXT_CONFLICT.CellMapSourcesFallback", "Loaded code mods (fallback list):\n  {MOD_LIST}" },
+                { "MAPEXT_CONFLICT.CellMapQuit", "Quit Game" },
+                { "MAPEXT_CONFLICT.CellMapContinue", "Continue (Risk)" },
+                { "MAPEXT_CONFLICT.IssueReEnabledOnLoad", "{TARGET} (replaced vanilla system was found enabled during loading and has been disabled again)" },
+                { "MAPEXT_CONFLICT.IssueVanillaActive", "{TARGET} (replaced vanilla system is still active)" },
+                { "MAPEXT_CONFLICT.IssueModDisabled", "{TARGET} (MapExt replacement system was disabled)" },
+                { "MAPEXT_CONFLICT.IssuePatchRemoved", "MapExt Harmony patches were removed ({COUNT} target method(s), e.g. {SAMPLE})" },
+                { "MAPEXT_CONFLICT.IssueMapSizeTampered", "CellMapSystem<T>.kMapSize static field was overwritten ({COUNT} field(s), e.g. {SAMPLE})" },
+
                 // === WorldMap Import Warning ===
                 { "MAPEXT_WORLDMAP.WarningTitle", "⚠️ Performance Warning" },
                 { "MAPEXT_WORLDMAP.WarningMessage", "Importing a World Map introduces additional rendering overhead:\n\n• Extra cascade rendering layer (baseLod increased)\n• Per-frame DownSampleHeightMap for backdrop\n• Larger MinMaxMap (1024 vs 512)\n• Increased GPU memory usage\n\nThis may reduce FPS on large maps. Continue?" },
@@ -159,6 +172,19 @@ namespace MapExtPDX.SaveLoadSystem
                 { "MAPEXT_CONFLICT.RpfTitle", "MapExt 与 RealisticPathFinding" },
                 { "MAPEXT_CONFLICT.RpfNotify", "MapExt 与 RealisticPathFinding 未针对同时启用设计，建议只启用其中一个。" },
 
+                // === CellMap 核心系统／补丁严重冲突对话框 ===
+                { "MAPEXT_CONFLICT.CellMapTitle", "MapExt：严重 CellMap 冲突" },
+                { "MAPEXT_CONFLICT.CellMapMessage", "检测到 CellMap 核心系统尺寸或补丁状态异常！\n\n观测到的异常项：\n{ISSUES}\n\n{SOURCES}\n\n在 CellMap 网格尺寸错配或核心补丁缺失的状态下继续运行，可能引发越界崩溃或写入异常尺寸数据。建议退出游戏并检查上述模组。" },
+                { "MAPEXT_CONFLICT.CellMapSourcesIdentified", "关联模组：\n{MOD_LIST}" },
+                { "MAPEXT_CONFLICT.CellMapSourcesFallback", "当前已加载代码模组（兜底列表）：\n  {MOD_LIST}" },
+                { "MAPEXT_CONFLICT.CellMapQuit", "退出游戏" },
+                { "MAPEXT_CONFLICT.CellMapContinue", "冒险继续" },
+                { "MAPEXT_CONFLICT.IssueReEnabledOnLoad", "{TARGET}（加载时发现被替换的原版系统处于启用状态，已重新停用）" },
+                { "MAPEXT_CONFLICT.IssueVanillaActive", "{TARGET}（被替换的原版系统仍处于启用状态）" },
+                { "MAPEXT_CONFLICT.IssueModDisabled", "{TARGET}（MapExt 替换系统被停用）" },
+                { "MAPEXT_CONFLICT.IssuePatchRemoved", "MapExt 的 Harmony 补丁被移除（共 {COUNT} 个目标方法，如 {SAMPLE}）" },
+                { "MAPEXT_CONFLICT.IssueMapSizeTampered", "CellMapSystem<T>.kMapSize 静态字段被外部改写（共 {COUNT} 处，如 {SAMPLE}）" },
+
                 // === 世界地图导入性能警告 ===
                 { "MAPEXT_WORLDMAP.WarningTitle", "⚠️ 性能警告" },
                 { "MAPEXT_WORLDMAP.WarningMessage", "导入世界地图(WorldMap)会引入额外的渲染开销：\n\n• 增加一层级联渲染层（baseLod 提升）\n• 每帧执行 DownSampleHeightMap 降采样\n• MinMaxMap 尺寸增大（1024 vs 512）\n• GPU 显存占用增加\n\n在大地图模式下可能导致帧率下降。是否继续？" },
@@ -249,6 +275,19 @@ namespace MapExtPDX.SaveLoadSystem
                 // === RealisticPathFinding 启动通知 ===
                 { "MAPEXT_CONFLICT.RpfTitle", "MapExt 與 RealisticPathFinding" },
                 { "MAPEXT_CONFLICT.RpfNotify", "MapExt 與 RealisticPathFinding 未針對同時啟用設計，建議只啟用其中一個。" },
+
+                // === CellMap 核心系統／補丁嚴重衝突對話框 ===
+                { "MAPEXT_CONFLICT.CellMapTitle", "MapExt：嚴重 CellMap 衝突" },
+                { "MAPEXT_CONFLICT.CellMapMessage", "偵測到 CellMap 核心系統尺寸或補丁狀態異常！\n\n觀測到的異常項：\n{ISSUES}\n\n{SOURCES}\n\n在 CellMap 網格尺寸錯配或核心補丁缺失的狀態下繼續運行，可能引發越界崩潰或寫入異常尺寸資料。建議退出遊戲並檢查上述模組。" },
+                { "MAPEXT_CONFLICT.CellMapSourcesIdentified", "關聯模組：\n{MOD_LIST}" },
+                { "MAPEXT_CONFLICT.CellMapSourcesFallback", "目前載入的程式碼模組（兜底列表）：\n  {MOD_LIST}" },
+                { "MAPEXT_CONFLICT.CellMapQuit", "退出遊戲" },
+                { "MAPEXT_CONFLICT.CellMapContinue", "冒險繼續" },
+                { "MAPEXT_CONFLICT.IssueReEnabledOnLoad", "{TARGET}（載入時發現被替換的原版系統處於啟用狀態，已重新停用）" },
+                { "MAPEXT_CONFLICT.IssueVanillaActive", "{TARGET}（被替換的原版系統仍處於啟用狀態）" },
+                { "MAPEXT_CONFLICT.IssueModDisabled", "{TARGET}（MapExt 替換系統被停用）" },
+                { "MAPEXT_CONFLICT.IssuePatchRemoved", "MapExt 的 Harmony 補丁被移除（共 {COUNT} 個目標方法，如 {SAMPLE}）" },
+                { "MAPEXT_CONFLICT.IssueMapSizeTampered", "CellMapSystem<T>.kMapSize 靜態欄位被外部改寫（共 {COUNT} 處，如 {SAMPLE}）" },
 
                 // === 世界地图导入性能警告 ===
                 { "MAPEXT_WORLDMAP.WarningTitle", "⚠️ 性能警告" },

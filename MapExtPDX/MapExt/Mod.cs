@@ -264,6 +264,9 @@ namespace MapExtPDX
             // CellMapSystem<T> 和 经济系统 的ECS替换补丁
             SystemReplacer.Apply(updateSystem, _globalPatcher, config);
 
+            // 录制本会话实际已挂的 Dual Harmony 补丁快照并执行 ConflictTargets 单向子集自检
+            ModAttributionHelper.CaptureAndVerifySessionPatches();
+
             // === I. 主菜单通知（冲突提醒） ===
             if (disabledGroups.Count > 0)
             {

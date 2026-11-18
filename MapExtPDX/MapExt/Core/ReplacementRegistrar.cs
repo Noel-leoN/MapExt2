@@ -53,10 +53,14 @@ namespace MapExtPDX.MapExt.Core
 
         private readonly List<Declaration> m_Declarations = new List<Declaration>();
         private readonly List<string> m_Failures = new List<string>();
+        private readonly HashSet<Type> m_ReDisabledSinceLastDiag = new HashSet<Type>();
         private bool m_DispatcherBootstrapped;
 
         /// <summary>已登记的声明数。</summary>
         public int Count => m_Declarations.Count;
+
+        /// <summary>本会话登记的全部替换声明（供运行期冲突归因与状态轮询读取）。</summary>
+        public IReadOnlyList<Declaration> Declarations => m_Declarations;
 
         /// <summary>Apply 中执行失败的声明（"分组/名称: 原因"），供诊断与注册表导出显示；CellMap 组的失败另记入健康状态。</summary>
         public IReadOnlyList<string> Failures => m_Failures;
@@ -161,7 +165,10 @@ namespace MapExtPDX.MapExt.Core
                 ModLog.Error(Tag, $"替换声明 {m_Failures.Count} 条失败、{applied} 条成功：{string.Join("; ", m_Failures)}");
         }
 
-        /// <summary>防御性重新禁用：已被启用的原版系统再禁用一次，返回本次重新禁用的数量。</summary>
+        /// <summary>
+        /// 防御性重新禁用：已被启用的原版系统再禁用一次，返回本次重新禁用的数量。
+        /// 同时将实际发生重禁用的原版系统暂存至待报集合，防止 <c>OnGamePreload</c>/<c>OnGameLoadingComplete</c> 先修复后诊断掩盖外部重开记录。
+        /// </summary>
         public int ReDisable(World world)
         {
             int count = 0;
@@ -173,12 +180,21 @@ namespace MapExtPDX.MapExt.Core
                     if (system == null || !system.Enabled) continue;
 
                     system.Enabled = false;
+                    m_ReDisabledSinceLastDiag.Add(vanilla);
                     ModLog.Info(Tag, $"  重新禁用: {ShortName(vanilla)}");
                     count++;
                 }
             }
 
             return count;
+        }
+
+        /// <summary>取出并清空自上次诊断以来在 <see cref="ReDisable"/> 阶段曾被外部重开的原版系统列表。</summary>
+        public List<Type> ConsumeReDisabledVanillaSystems()
+        {
+            var list = new List<Type>(m_ReDisabledSinceLastDiag);
+            m_ReDisabledSinceLastDiag.Clear();
+            return list;
         }
 
         /// <summary>
