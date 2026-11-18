@@ -1794,9 +1794,9 @@ public static class Strings
             "修改建築戶數（BuildingPropertyData）與經濟參數（EconomyParameterData）；同時啟用時，MapExt 會在本次遊戲中自動停用「找房與租金系統組」（基於 v2.0 核對）。",
         ],
         ["Conflicts.Rule.WaterFeatures"] = [
-            "Includes options that read and write WaterSystem simulation fields (evaporation, fluidness, damping) also used by MapExt's non-vanilla water simulation presets; keep water simulation quality at Vanilla_EveryFrame if water levels behave unexpectedly (checked on v1.4.4).",
-            "包含读写 WaterSystem 模拟参数（蒸发、流速、阻尼）的功能，与 MapExt 非原版水模拟优化档位作用于同一组字段；若同时使用出现水位异常，可将水模拟质量保持为原版每帧档（基于 v1.4.4 核对）。",
-            "包含讀寫 WaterSystem 模擬參數（蒸發、流速、阻尼）的功能，與 MapExt 非原版水模擬優化檔位作用於同一組欄位；若同時使用出現水位異常，可將水模擬品質保持為原版每幀檔（基於 v1.4.4 核對）。",
+            "Both write the water simulation speed (WaterSimSpeed). They only override each other while its water tool is moving a water source, or with its Force Water Simulation Speed or Waves and Tides options on (both off by default); the effect is limited to how water simulation advances (checked on v1.4.4).",
+            "两者都会写水模拟速度（WaterSimSpeed）。只在其水源工具移动水源时，或开启其「强制水模拟速度」「波浪与潮汐」选项时（默认均关闭）相互覆盖，影响限于水模拟的推进节奏（基于 v1.4.4 核对）。",
+            "兩者都會寫水模擬速度（WaterSimSpeed）。只在其水源工具移動水源時，或開啟其「強制水模擬速度」「波浪與潮汐」選項時（預設均關閉）相互覆蓋，影響限於水模擬的推進節奏（基於 v1.4.4 核對）。",
         ],
         ["Conflicts.Rule.RoadBuilderDualInstall"] = [
             "Both a local Mods/ copy and an enabled PDX subscribed copy of RoadBuilder are present; disable one copy in your playset to avoid duplicate UI module (.mjs) registration.",

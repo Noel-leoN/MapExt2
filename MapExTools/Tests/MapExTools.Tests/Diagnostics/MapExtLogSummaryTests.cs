@@ -69,6 +69,21 @@ public sealed class MapExtLogSummaryTests
         Assert.Contains("RentAdjustSystem", c.Detected[0], StringComparison.Ordinal);
     }
 
+    [Fact]
+    public void ModNote_IsNotAConflict()
+    {
+        // 只作备注的模组记 Info，扫描结束仍写"未检测到已知冲突 Mod"（措辞照抄 ModConflictDetector）
+        ConflictInfo c = MapExtLogSummary.Parse(
+        [
+            "[2026-11-19 00:03:34,813] [INFO]  [MapExt|ModConflictDetector] 🔹 检测到 Mod（备注）: SampleModC v1.0.0 (PDX:12345)（与 MapExt 都会写 WaterSimSpeed，仅在其水源工具移动水源、或开启其强制水模拟速度、波浪与潮汐选项时相互覆盖，影响限于水模拟推进节奏）",
+            "[2026-11-19 00:03:34,814] [INFO]  [MapExt|ModConflictDetector] ✅ 未检测到已知冲突 Mod",
+        ]).Conflicts;
+
+        Assert.True(c.Scanned);
+        Assert.True(c.NoneDetected);
+        Assert.Empty(c.Detected);
+    }
+
     // 三行原文照抄 ConflictMonitoringSystem.RunDiagnostics 的 ModLog.Warn：静态双跑嫌疑、模拟宿主停用、读档时发现原版被重开
     [Theory]
     [InlineData("检测到对 RentAdjustSystem 调用 set_Enabled 且含活跃模拟系统的模组: SampleModB v1.0.0 (PDX:12345) [SampleSystem.OnUpdate]")]

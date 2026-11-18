@@ -67,6 +67,24 @@ public sealed class ConflictTargetsTests
         Assert.Empty(ConflictTargets.PlanRuntimeAutoDisable(["WaterFeatures", "RoadBuilderDualInstall", "Unknown"], _ => true));
     }
 
+    // 两边只共用 WaterSimSpeed，MapExt 在各档位都会写它：定级与水模拟档位、地图模式都无关
+    [Theory]
+    [InlineData("Vanilla_EveryFrame")]
+    [InlineData("Reduced_NoBackdrop")]
+    [InlineData("Minimal_Every4Frames")]
+    [InlineData("Paused_NoFlow")]
+    public void WaterFeaturesRule_IsNoteUnderEveryWaterQuality(string waterSimQuality)
+    {
+        KnownModConflictRule rule = Assert.Single(ConflictTargets.KnownModRules, r => r.RuleId == "WaterFeatures");
+
+        foreach (string mode in new[] { "ModeA", "None" })
+        {
+            var settings = new ConflictEvalSettings(mode, true, true, true, true, true, true, true, waterSimQuality);
+            Assert.Equal(ConflictSeverity.Info, ConflictTargets.EvaluateKnownRule(rule, settings, out string[] keys));
+            Assert.Empty(keys);
+        }
+    }
+
     [Fact]
     public void AutoDisableTargets_UseEconomyGroupsAndAgreeWithKnownRules()
     {
