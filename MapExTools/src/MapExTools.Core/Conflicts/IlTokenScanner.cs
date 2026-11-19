@@ -67,10 +67,14 @@ public sealed record StaticFieldReflectionWriteEvidence(
     string CallerTypeAndMethod,
     string FieldNameLiteral);
 
+/// <summary>方法体内调用原版 <c>WaterSystem.set_WaterSimSpeed</c>（写水模拟速度）的静态证据。</summary>
+public sealed record WaterSimSpeedWriteEvidence(
+    string CallerTypeAndMethod);
+
 /// <summary>
 /// 基于 <see cref="MetadataReader"/> 的单遍 ECMA-335 IL 指令与签名扫描器：
 /// 包含轻量求值栈接收者标签追踪（防 <c>this.Enabled = false</c> 误报并支持非常量布尔实参与局部变量中转）、
-/// 同方法静态字段反射改写识别及 <c>UnpatchAll(null)</c> 调用图上下文分级。
+/// 同方法静态字段反射改写识别、<c>WaterSimSpeed</c> 写入识别及 <c>UnpatchAll(null)</c> 调用图上下文分级。
 /// </summary>
 internal static class IlTokenScanner
 {
@@ -164,7 +168,7 @@ internal static class IlTokenScanner
         return map;
     }
 
-    /// <summary>对单个方法体执行单遍扫描：提取受保护系统 <c>set_Enabled</c> 写入、跨阶段注册、<c>UnpatchAll(null)</c>、同方法 <c>kMapSize</c> 反射写及方法内调用边。</summary>
+    /// <summary>对单个方法体执行单遍扫描：提取受保护系统 <c>set_Enabled</c> 写入、跨阶段注册、<c>UnpatchAll(null)</c>、同方法 <c>kMapSize</c> 反射写、<c>WaterSimSpeed</c> 写入及方法内调用边。</summary>
     public static void ScanMethodBody(
         MetadataReader md,
         MethodDefinitionHandle methodHandle,
@@ -177,6 +181,7 @@ internal static class IlTokenScanner
         List<CrossPhaseScheduleEvidence> crossPhaseSchedules,
         List<(MethodDefinitionHandle Handle, string Caller)> unpatchAllNullCalls,
         List<StaticFieldReflectionWriteEvidence> reflectionWrites,
+        List<WaterSimSpeedWriteEvidence> waterSimSpeedWrites,
         HashSet<(MethodDefinitionHandle Caller, MethodDefinitionHandle Callee)> internalEdges,
         HashSet<string> assemblySensitiveTypeLiterals,
         out List<string>? referencedTypesInMethod,
@@ -432,6 +437,15 @@ internal static class IlTokenScanner
                         callInfo.DeclaringType is "HarmonyLib.Harmony" or "HarmonyLib.PatchProcessor")
                     {
                         callsImperativeHarmonyPatch = true;
+                    }
+
+                    // 9b-2. 检查写原版 WaterSystem.WaterSimSpeed（只记录调用方法，求值栈仍按 9f 常规路径弹出实参与接收者）
+                    if (callInfo.MethodName == ConflictTargets.WaterSimSpeedSetterName &&
+                        callInfo.DeclaringType == ConflictTargets.WaterSystemTypeName &&
+                        callInfo.IsInstance &&
+                        opVal != OpCodes.Newobj.Value)
+                    {
+                        waterSimSpeedWrites.Add(new WaterSimSpeedWriteEvidence(callerDisplayName));
                     }
 
                     // 9c. 检查 Harmony.UnpatchAll(string) 且栈顶参数为 ldnull

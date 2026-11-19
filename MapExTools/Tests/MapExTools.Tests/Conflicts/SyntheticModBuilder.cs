@@ -59,7 +59,9 @@ internal static class SyntheticModBuilder
         Type HarmonyPostfixAttrType,
         Type HarmonyTranspilerAttrType,
         Type HarmonyTargetMethodAttrType,
-        Type HarmonyMethodTypeEnum);
+        Type HarmonyMethodTypeEnum,
+        MethodInfo WaterSimSpeedGetter,
+        MethodInfo WaterSimSpeedSetter);
 
     /// <summary>将一个 <see cref="PersistedAssemblyBuilder"/> 序列化为完整的托管 PE <c>.dll</c> 字节数组。</summary>
     public static byte[] EmitDllBytes(PersistedAssemblyBuilder pab)
@@ -199,7 +201,21 @@ internal static class SyntheticModBuilder
         DefineSimpleSystem(gameMod, "Game.Simulation.RentAdjustSystem", gsbCreated);
         DefineSimpleSystem(gameMod, "Game.Simulation.HouseholdFindPropertySystem", gsbCreated);
         DefineSimpleSystem(gameMod, "Game.Simulation.ServiceCoverageSystem", gsbCreated);
-        DefineSimpleSystem(gameMod, "Game.Simulation.WaterSystem", gsbCreated);
+
+        // WaterSystem 带 WaterSimSpeed 读写属性（原版为自动属性，外部写入编译为 set_WaterSimSpeed 调用）
+        TypeBuilder waterTb = gameMod.DefineType("Game.Simulation.WaterSystem", TypeAttributes.Public | TypeAttributes.Class, gsbCreated);
+        waterTb.DefineDefaultConstructor(MethodAttributes.Public);
+        PropertyBuilder simSpeedProp = waterTb.DefineProperty("WaterSimSpeed", PropertyAttributes.None, typeof(int), Type.EmptyTypes);
+        MethodBuilder getSimSpeed = waterTb.DefineMethod("get_WaterSimSpeed", MethodAttributes.Public | MethodAttributes.SpecialName | MethodAttributes.HideBySig, typeof(int), Type.EmptyTypes);
+        ILGenerator getSimSpeedIl = getSimSpeed.GetILGenerator();
+        getSimSpeedIl.Emit(OpCodes.Ldc_I4_1);
+        getSimSpeedIl.Emit(OpCodes.Ret);
+        MethodBuilder setSimSpeed = waterTb.DefineMethod("set_WaterSimSpeed", MethodAttributes.Public | MethodAttributes.SpecialName | MethodAttributes.HideBySig, typeof(void), [typeof(int)]);
+        setSimSpeed.GetILGenerator().Emit(OpCodes.Ret);
+        simSpeedProp.SetGetMethod(getSimSpeed);
+        simSpeedProp.SetSetMethod(setSimSpeed);
+        waterTb.CreateType();
+
         DefineSimpleSystem(gameMod, "Game.Simulation.TerrainSystem", gsbCreated);
         DefineSimpleSystem(gameMod, "Game.Simulation.PathfindSetupSystem", gsbCreated);
         DefineSimpleSystem(gameMod, "Game.Tools.AreaToolSystem", gsbCreated);
@@ -290,6 +306,7 @@ internal static class SyntheticModBuilder
 
         Type landValueType = gameAsm.GetType("Game.Simulation.LandValueSystem")!;
         Type natResType = gameAsm.GetType("Game.Simulation.NaturalResourceSystem")!;
+        Type waterSystemType = gameAsm.GetType("Game.Simulation.WaterSystem")!;
         Type updateSysRuntime = gameAsm.GetType("Game.UpdateSystem")!;
         Type harmonyType = harmAsm.GetType("HarmonyLib.Harmony")!;
         Type hpAttrType = harmAsm.GetType("HarmonyLib.HarmonyPatch")!;
@@ -319,7 +336,7 @@ internal static class SyntheticModBuilder
             gameAsm.GetType("Game.Simulation.RentAdjustSystem")!,
             gameAsm.GetType("Game.Simulation.HouseholdFindPropertySystem")!,
             gameAsm.GetType("Game.Simulation.ServiceCoverageSystem")!,
-            gameAsm.GetType("Game.Simulation.WaterSystem")!,
+            waterSystemType,
             gameAsm.GetType("Game.Simulation.TerrainSystem")!,
             gameAsm.GetType("Game.Tools.AreaToolSystem")!,
             gameAsm.GetType("Game.Simulation.CarNavigationSystem+Actions")!,
@@ -337,6 +354,8 @@ internal static class SyntheticModBuilder
             harmAsm.GetType("HarmonyLib.HarmonyPostfix")!,
             harmAsm.GetType("HarmonyLib.HarmonyTranspiler")!,
             harmAsm.GetType("HarmonyLib.HarmonyTargetMethod")!,
-            mtEnumType);
+            mtEnumType,
+            waterSystemType.GetProperty("WaterSimSpeed")!.GetMethod!,
+            waterSystemType.GetProperty("WaterSimSpeed")!.SetMethod!);
     }
 }

@@ -17,7 +17,8 @@ public sealed record AssemblyInspectionResult(
     IReadOnlyList<UnpatchAllNullEvidence> UnpatchAllNullCalls,
     IReadOnlyList<StaticFieldReflectionWriteEvidence> ReflectionFieldWrites,
     IReadOnlyList<PatchedReplacedSystemEvidence>? ReplacedSystemPatches = null,
-    IReadOnlyList<CrossPhaseScheduleEvidence>? CrossPhaseSchedules = null);
+    IReadOnlyList<CrossPhaseScheduleEvidence>? CrossPhaseSchedules = null,
+    IReadOnlyList<WaterSimSpeedWriteEvidence>? WaterSimSpeedWrites = null);
 
 /// <summary>
 /// 基于 <see cref="PEReader"/> 与 <see cref="MetadataReader"/> 的三级漏斗静态字节码检测器（无需反编译 C# 源码）。
@@ -121,6 +122,7 @@ public static class ModAssemblyInspector
         var replacedSystemPatches = new List<PatchedReplacedSystemEvidence>();
         var rawUnpatchCalls = new List<(MethodDefinitionHandle Handle, string Caller)>();
         var reflectionWrites = new List<StaticFieldReflectionWriteEvidence>();
+        var waterSimSpeedWrites = new List<WaterSimSpeedWriteEvidence>();
         var internalEdges = new HashSet<(MethodDefinitionHandle Caller, MethodDefinitionHandle Callee)>();
         var assemblySensitiveTypeLiterals = new HashSet<string>(StringComparer.Ordinal);
         var pendingDynamicHooks = new List<(string Display, DetectedPatchKind Kind, List<string> RefTypes, List<string> StrLiterals)>();
@@ -237,6 +239,7 @@ public static class ModAssemblyInspector
                     crossPhaseSchedules,
                     rawUnpatchCalls,
                     reflectionWrites,
+                    waterSimSpeedWrites,
                     internalEdges,
                     assemblySensitiveTypeLiterals,
                     out List<string>? refTypes,
@@ -291,7 +294,8 @@ public static class ModAssemblyInspector
             Deduplicate(classifiedUnpatch),
             Deduplicate(reflectionWrites),
             Deduplicate(replacedSystemPatches),
-            Deduplicate(crossPhaseSchedules));
+            Deduplicate(crossPhaseSchedules),
+            Deduplicate(waterSimSpeedWrites));
     }
 
     private sealed record PatchTargetSpec(

@@ -1753,6 +1753,11 @@ public static class Strings
             "方法 {0} 同时包含 \"{1}\" 与 FieldInfo.SetValue 调用，疑似通过反射改写 CellMap 静态尺寸字段。",
             "方法 {0} 同時包含 \"{1}\" 與 FieldInfo.SetValue 呼叫，疑似透過反射改寫 CellMap 靜態尺寸欄位。",
         ],
+        ["Conflicts.Find.WaterSimSpeedWrite"] = [
+            "Methods that write the water simulation speed (WaterSystem.WaterSimSpeed): {0}. MapExt also writes it under every water simulation quality setting; when the two override each other, only the pace of water simulation is affected, and the value is not saved.",
+            "以下方法会写水模拟速度（WaterSystem.WaterSimSpeed）：{0}。MapExt 在各水模拟档位也会写它，两边相互覆盖只影响水模拟的推进节奏，该值不写入存档。",
+            "以下方法會寫水模擬速度（WaterSystem.WaterSimSpeed）：{0}。MapExt 在各水模擬檔位也會寫它，兩邊相互覆蓋只影響水模擬的推進節奏，該值不寫入存檔。",
+        ],
         ["Conflicts.Find.PendingCloud"] = [
             "Enabled in the active playset ({0}), but its files have not been downloaded locally yet; bytecode was not inspected.",
             "已在激活播放集中启用（{0}），但本地尚未下载文件，暂未扫描字节码。",
@@ -1792,11 +1797,6 @@ public static class Strings
             "Adjusts BuildingPropertyData household counts and EconomyParameterData values; when enabled together, MapExt automatically turns off its Household and Property group for that session (checked on v2.0).",
             "修改建筑户数（BuildingPropertyData）与经济参数（EconomyParameterData）；同时启用时，MapExt 会在本次游戏中自动停用「找房与租金系统组」（基于 v2.0 核对）。",
             "修改建築戶數（BuildingPropertyData）與經濟參數（EconomyParameterData）；同時啟用時，MapExt 會在本次遊戲中自動停用「找房與租金系統組」（基於 v2.0 核對）。",
-        ],
-        ["Conflicts.Rule.WaterFeatures"] = [
-            "Both write the water simulation speed (WaterSimSpeed). They only override each other while its water tool is moving a water source, or with its Force Water Simulation Speed or Waves and Tides options on (both off by default); the effect is limited to how water simulation advances (checked on v1.4.4).",
-            "两者都会写水模拟速度（WaterSimSpeed）。只在其水源工具移动水源时，或开启其「强制水模拟速度」「波浪与潮汐」选项时（默认均关闭）相互覆盖，影响限于水模拟的推进节奏（基于 v1.4.4 核对）。",
-            "兩者都會寫水模擬速度（WaterSimSpeed）。只在其水源工具移動水源時，或開啟其「強制水模擬速度」「波浪與潮汐」選項時（預設均關閉）相互覆蓋，影響限於水模擬的推進節奏（基於 v1.4.4 核對）。",
         ],
         ["Conflicts.Rule.RoadBuilderDualInstall"] = [
             "Both a local Mods/ copy and an enabled PDX subscribed copy of RoadBuilder are present; disable one copy in your playset to avoid duplicate UI module (.mjs) registration.",

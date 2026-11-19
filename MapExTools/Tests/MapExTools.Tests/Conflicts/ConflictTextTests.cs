@@ -27,8 +27,8 @@ public sealed class ConflictTextTests
             new(ConflictFindingKind.StaticFieldReflectionWrite, ConflictSeverity.Warning, "kMapSize", "Mutator.Apply"),
             new(ConflictFindingKind.KnownAuditRule, ConflictSeverity.Warning, "RWH", "2.0", null, [ConflictTargets.KeyHouseholdProperty]),
             new(ConflictFindingKind.KnownAuditRule, ConflictSeverity.Hard, "RealisticPathFinding", "0.7.6"),
-            new(ConflictFindingKind.KnownAuditRule, ConflictSeverity.Info, "WaterFeatures", "1.4.4"),
             new(ConflictFindingKind.KnownAuditRule, ConflictSeverity.Warning, "RoadBuilderDualInstall", "0.8.0"),
+            new(ConflictFindingKind.WaterSimSpeedWrite, ConflictSeverity.Info, "CustomWaterToolSystem.OnUpdate, TidesAndWavesSystem.OnUpdate"),
             new(ConflictFindingKind.PendingCloudDownload, ConflictSeverity.Info, "86944"),
             new(ConflictFindingKind.MissingDependencies, ConflictSeverity.Info, "ExtraLib"),
             new(ConflictFindingKind.UnreadableAssembly, ConflictSeverity.Info, "Broken.dll", "Bad PE header"),
@@ -40,6 +40,10 @@ public sealed class ConflictTextTests
             string desc = ConflictText.DescribeFinding(f, settings, lang);
             Assert.False(string.IsNullOrWhiteSpace(desc));
             Assert.DoesNotContain("Conflicts.", desc, StringComparison.Ordinal);
+
+            // 写 WaterSimSpeed 的发现原样列出全部调用方法
+            if (f.Kind == ConflictFindingKind.WaterSimSpeedWrite)
+                Assert.Contains(f.Arg0, desc, StringComparison.Ordinal);
         }
 
         var item = new ModConflictItem(
@@ -60,6 +64,24 @@ public sealed class ConflictTextTests
 
         string btnLabel = ConflictText.OneClickButtonLabel(item.OneClickDisableKeys, lang);
         Assert.False(string.IsNullOrWhiteSpace(btnLabel));
+    }
+
+    // 每条补充规则都有文案，删掉的规则不留文案键
+    [Fact]
+    public void RuleTexts_MatchKnownRulesOneToOne()
+    {
+        const string prefix = "Conflicts.Rule.";
+        string[] textIds = Strings.Keys
+            .Where(k => k.StartsWith(prefix, StringComparison.Ordinal))
+            .Select(k => k[prefix.Length..])
+            .Order(StringComparer.Ordinal)
+            .ToArray();
+        string[] ruleIds = ConflictTargets.KnownModRules
+            .Select(r => r.RuleId)
+            .Order(StringComparer.Ordinal)
+            .ToArray();
+
+        Assert.Equal(ruleIds, textIds);
     }
 
     [Fact]

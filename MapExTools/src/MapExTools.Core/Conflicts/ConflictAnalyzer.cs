@@ -174,7 +174,7 @@ public static class ConflictAnalyzer
                 EvaluateBytecodeInspections(inspections, settings, findings);
             }
 
-            // 5. 补充兼容性规则评估（仅覆盖单点字节码未涵盖的交互项，如 RWH 参数口径、水参数、双装与待下载兜底）
+            // 5. 补充兼容性规则评估（仅覆盖单点字节码未涵盖的交互项，如 RWH 参数口径、双装与待下载兜底）
             if (matchedRule != null && pkg.MissingDependencies.Count == 0)
             {
                 bool dualSatisfied = !matchedRule.RequireDualLocalAndPdxInstall ||
@@ -293,6 +293,7 @@ public static class ConflictAnalyzer
         var seenPatchTargets = new HashSet<string>(StringComparer.Ordinal);
         var seenReplacedSysPatches = new HashSet<string>(StringComparer.Ordinal);
         var seenCrossPhaseTargets = new HashSet<string>(StringComparer.Ordinal);
+        var waterSimSpeedWriters = new List<string>();
 
         foreach (AssemblyInspectionResult ins in inspections)
         {
@@ -432,6 +433,26 @@ public static class ConflictAnalyzer
                     rw.FieldNameLiteral,
                     ShortenMember(rw.CallerTypeAndMethod)));
             }
+
+            // 4e. 写原版 WaterSystem.WaterSimSpeed：同包内跨程序集按方法去重，循环后汇成一条
+            if (ins.WaterSimSpeedWrites != null)
+            {
+                foreach (WaterSimSpeedWriteEvidence ws in ins.WaterSimSpeedWrites)
+                {
+                    string caller = ShortenMember(ws.CallerTypeAndMethod);
+                    if (!waterSimSpeedWriters.Contains(caller, StringComparer.Ordinal))
+                        waterSimSpeedWriters.Add(caller);
+                }
+            }
+        }
+
+        // MapExt 在各模式、各水模拟档位都会写 WaterSimSpeed，相互覆盖只影响水模拟推进节奏：定级与设定无关，一律备注
+        if (waterSimSpeedWriters.Count > 0)
+        {
+            findings.Add(new ConflictFinding(
+                ConflictFindingKind.WaterSimSpeedWrite,
+                ConflictSeverity.Info,
+                string.Join(", ", waterSimSpeedWriters)));
         }
     }
 

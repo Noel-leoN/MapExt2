@@ -148,6 +148,9 @@ public static class ConflictText
             ConflictFindingKind.StaticFieldReflectionWrite =>
                 Format(language, "Conflicts.Find.StaticFieldWrite", finding.Arg1 ?? "?", finding.Arg0),
 
+            ConflictFindingKind.WaterSimSpeedWrite =>
+                Format(language, "Conflicts.Find.WaterSimSpeedWrite", finding.Arg0),
+
             ConflictFindingKind.KnownAuditRule =>
                 Strings.Get(language, "Conflicts.Rule." + finding.Arg0),
 

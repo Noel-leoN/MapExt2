@@ -303,6 +303,72 @@ public sealed class ModAssemblyInspectorTests
     }
 
     [Fact]
+    public void WaterSimSpeedWrites_ListEachWritingMethodOnce_AndIgnoreReadsAndOtherTypes()
+    {
+        byte[] bytes = SyntheticModBuilder.BuildModAssembly("WaterSpeedMod", new Version(1, 0, 0), (mod, env) =>
+        {
+            // 自有类型上的同名 setter：声明类型不是原版 WaterSystem，不计入
+            TypeBuilder fakeTb = mod.DefineType("WaterSpeed.FakeWater", TypeAttributes.Public | TypeAttributes.Class);
+            fakeTb.DefineDefaultConstructor(MethodAttributes.Public);
+            MethodBuilder fakeSetter = fakeTb.DefineMethod("set_WaterSimSpeed", MethodAttributes.Public | MethodAttributes.SpecialName | MethodAttributes.HideBySig, typeof(void), [typeof(int)]);
+            fakeSetter.GetILGenerator().Emit(OpCodes.Ret);
+            Type fakeType = fakeTb.CreateType();
+
+            TypeBuilder tb = mod.DefineType("WaterSpeed.ToolSystem", TypeAttributes.Public | TypeAttributes.Class, env.GameSystemBaseType);
+            FieldBuilder waterField = tb.DefineField("_water", env.WaterSystemType, FieldAttributes.Private);
+
+            // 1. 同一方法内先冻结再恢复：写两次只记一次
+            MethodBuilder onUpdate = tb.DefineMethod("OnUpdate", MethodAttributes.Family | MethodAttributes.Virtual, typeof(void), Type.EmptyTypes);
+            ILGenerator il1 = onUpdate.GetILGenerator();
+            il1.Emit(OpCodes.Ldarg_0);
+            il1.Emit(OpCodes.Ldfld, waterField);
+            il1.Emit(OpCodes.Ldc_I4_0);
+            il1.Emit(OpCodes.Callvirt, env.WaterSimSpeedSetter);
+            il1.Emit(OpCodes.Ldarg_0);
+            il1.Emit(OpCodes.Ldfld, waterField);
+            il1.Emit(OpCodes.Ldc_I4_1);
+            il1.Emit(OpCodes.Callvirt, env.WaterSimSpeedSetter);
+            il1.Emit(OpCodes.Ret);
+
+            // 2. 只读 getter：不计入
+            MethodBuilder read = tb.DefineMethod("ReadSpeed", MethodAttributes.Public, typeof(int), Type.EmptyTypes);
+            ILGenerator il2 = read.GetILGenerator();
+            il2.Emit(OpCodes.Ldarg_0);
+            il2.Emit(OpCodes.Ldfld, waterField);
+            il2.Emit(OpCodes.Callvirt, env.WaterSimSpeedGetter);
+            il2.Emit(OpCodes.Ret);
+
+            // 3. 写自有类型的同名属性：不计入
+            MethodBuilder writeFake = tb.DefineMethod("WriteFake", MethodAttributes.Public, typeof(void), [fakeType]);
+            ILGenerator il3 = writeFake.GetILGenerator();
+            il3.Emit(OpCodes.Ldarg_1);
+            il3.Emit(OpCodes.Ldc_I4_1);
+            il3.Emit(OpCodes.Callvirt, fakeSetter);
+            il3.Emit(OpCodes.Ret);
+            tb.CreateType();
+
+            // 4. 静态辅助方法链式写：world.GetOrCreateSystemManaged<WaterSystem>().WaterSimSpeed = speed
+            TypeBuilder helperTb = mod.DefineType("WaterSpeed.Helper", TypeAttributes.Public | TypeAttributes.Class | TypeAttributes.Abstract | TypeAttributes.Sealed);
+            MethodBuilder force = helperTb.DefineMethod("Force", MethodAttributes.Public | MethodAttributes.Static, typeof(void), [env.WorldType, typeof(int)]);
+            ILGenerator il4 = force.GetILGenerator();
+            il4.Emit(OpCodes.Ldarg_0);
+            il4.Emit(OpCodes.Callvirt, env.GetOrCreateGeneric.MakeGenericMethod(env.WaterSystemType));
+            il4.Emit(OpCodes.Ldarg_1);
+            il4.Emit(OpCodes.Callvirt, env.WaterSimSpeedSetter);
+            il4.Emit(OpCodes.Ret);
+            helperTb.CreateType();
+        });
+
+        AssemblyInspectionResult? res = ModAssemblyInspector.InspectBytes(bytes);
+        Assert.NotNull(res);
+        Assert.NotNull(res.WaterSimSpeedWrites);
+
+        string[] expected = ["WaterSpeed.Helper.Force", "WaterSpeed.ToolSystem.OnUpdate"];
+        Assert.Equal(expected, res.WaterSimSpeedWrites.Select(w => w.CallerTypeAndMethod).Order(StringComparer.Ordinal));
+        Assert.Empty(res.EnabledWrites);
+    }
+
+    [Fact]
     public void TwoDimensionalEvaluation_CellOnlyBlocksOneClickInModeA_AllowsInVanilla_AndNeverDowngradesHardRule()
     {
         string tempDir = Path.Combine(Path.GetTempPath(), "MapExTools_EvalTests_" + Guid.NewGuid().ToString("N"));
@@ -542,6 +608,88 @@ public sealed class ModAssemblyInspectorTests
             ConflictReport defaultReport = ConflictAnalyzer.Evaluate(workspace, defaultSettings);
             ModConflictItem mitigatedItem = Assert.Single(defaultReport.Items);
             Assert.Equal(ConflictSeverity.Mitigated, mitigatedItem.Severity);
+        }
+        finally
+        {
+            foreach (string f in Directory.GetFiles(tempDir, "*", SearchOption.AllDirectories))
+                File.Delete(f);
+            foreach (string d in Directory.GetDirectories(tempDir, "*", SearchOption.AllDirectories).OrderByDescending(s => s.Length))
+                Directory.Delete(d, recursive: false);
+            Directory.Delete(tempDir, recursive: false);
+        }
+    }
+
+    [Fact]
+    public void WaterSimSpeedWriter_IsNoteInEveryMode_WithoutKnownRuleOrAuditedVersion()
+    {
+        string tempDir = Path.Combine(Path.GetTempPath(), "MapExTools_WaterSpeedTests_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempDir);
+        try
+        {
+            var paths = new UserDataPaths(tempDir);
+
+            static void WriteSpeedInOnUpdate(ModuleBuilder mod, SyntheticModBuilder.StubEnvironment env, string typeName, OpCode speedConst)
+            {
+                TypeBuilder tb = mod.DefineType(typeName, TypeAttributes.Public | TypeAttributes.Class, env.GameSystemBaseType);
+                FieldBuilder waterField = tb.DefineField("m_WaterSystem", env.WaterSystemType, FieldAttributes.Private);
+                MethodBuilder onUpdate = tb.DefineMethod("OnUpdate", MethodAttributes.Family | MethodAttributes.Virtual, typeof(void), Type.EmptyTypes);
+                ILGenerator il = onUpdate.GetILGenerator();
+                il.Emit(OpCodes.Ldarg_0);
+                il.Emit(OpCodes.Ldfld, waterField);
+                il.Emit(speedConst);
+                il.Emit(OpCodes.Callvirt, env.WaterSimSpeedSetter);
+                il.Emit(OpCodes.Ret);
+                tb.CreateType();
+            }
+
+            // 程序集名沿用已删除的按名规则 Water_Features：只由字节码给出备注，不再命中按名规则
+            string writerDir = Path.Combine(paths.ModsDir, "Water_Features");
+            Directory.CreateDirectory(writerDir);
+            byte[] writerBytes = SyntheticModBuilder.BuildModAssembly("Water_Features", new Version(1, 4, 5), (mod, env) =>
+            {
+                WriteSpeedInOnUpdate(mod, env, "WaterTest.Tools.CustomWaterToolSystem", OpCodes.Ldc_I4_0);
+                WriteSpeedInOnUpdate(mod, env, "WaterTest.Systems.TidesAndWavesSystem", OpCodes.Ldc_I4_1);
+            });
+            File.WriteAllBytes(Path.Combine(writerDir, "Water_Features.dll"), writerBytes);
+
+            // 只读 WaterSimSpeed 的模组：不出卡片
+            string readerDir = Path.Combine(paths.ModsDir, "WaterSpeedReader");
+            Directory.CreateDirectory(readerDir);
+            byte[] readerBytes = SyntheticModBuilder.BuildModAssembly("WaterSpeedReader", new Version(1, 0, 0), (mod, env) =>
+            {
+                TypeBuilder tb = mod.DefineType("WaterTest.ReaderSystem", TypeAttributes.Public | TypeAttributes.Class, env.GameSystemBaseType);
+                FieldBuilder waterField = tb.DefineField("m_WaterSystem", env.WaterSystemType, FieldAttributes.Private);
+                MethodBuilder read = tb.DefineMethod("ReadSpeed", MethodAttributes.Public, typeof(int), Type.EmptyTypes);
+                ILGenerator il = read.GetILGenerator();
+                il.Emit(OpCodes.Ldarg_0);
+                il.Emit(OpCodes.Ldfld, waterField);
+                il.Emit(OpCodes.Callvirt, env.WaterSimSpeedGetter);
+                il.Emit(OpCodes.Ret);
+                tb.CreateType();
+            });
+            File.WriteAllBytes(Path.Combine(readerDir, "WaterSpeedReader.dll"), readerBytes);
+
+            ScannedModWorkspace workspace = ConflictAnalyzer.ScanWorkspace(paths, gameDir: null);
+
+            // MapExt 在各模式、各水模拟档位都会写 WaterSimSpeed：定级与模式、经济分组都无关
+            foreach (string mode in new[] { "ModeA", "None" })
+            {
+                ConflictReport report = ConflictAnalyzer.Evaluate(workspace, new ConflictEvalSettings(mode, true, true, true, true, true, true, true));
+
+                ModConflictItem item = Assert.Single(report.Items);
+                Assert.Equal("Water_Features", item.DisplayName);
+                Assert.Equal(ConflictSeverity.Info, item.Severity);
+                Assert.Null(item.AuditedVersion);
+                Assert.False(item.CanOneClickMitigate);
+
+                ConflictFinding finding = Assert.Single(item.Findings);
+                Assert.Equal(ConflictFindingKind.WaterSimSpeedWrite, finding.Kind);
+                Assert.Equal("CustomWaterToolSystem.OnUpdate, TidesAndWavesSystem.OnUpdate", finding.Arg0);
+
+                Assert.Equal(1, report.InfoCount);
+                Assert.False(report.HasHardConflicts);
+                Assert.False(report.HasWarnings);
+            }
         }
         finally
         {

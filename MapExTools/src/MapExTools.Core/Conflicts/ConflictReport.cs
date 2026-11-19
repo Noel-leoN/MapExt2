@@ -26,6 +26,9 @@ public enum ConflictFindingKind
     /// <summary>同一方法体内同时包含 <c>"kMapSize"</c>/<c>"kTextureSize"</c> 字符串与 <c>FieldInfo.SetValue</c>。</summary>
     StaticFieldReflectionWrite,
 
+    /// <summary>写原版 <c>WaterSystem.WaterSimSpeed</c>（MapExt 也会写，只作备注；<c>Arg0</c> 为逗号分隔的调用方法）。</summary>
+    WaterSimSpeedWrite,
+
     /// <summary>命中审计与存量指纹规则表（<c>Arg0</c> 为 <c>RuleId</c>）。</summary>
     KnownAuditRule,
 
