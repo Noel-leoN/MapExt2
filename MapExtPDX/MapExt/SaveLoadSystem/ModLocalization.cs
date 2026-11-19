@@ -59,10 +59,6 @@ namespace MapExtPDX.SaveLoadSystem
                 { "MAPEXT_MAPSIZE.StretchEditorMessage", "This map has vanilla 14 km terrain, but MapExt is set to '{CURRENT_MODE}', so the editor shows it stretched to the current map size. Its map tiles were not rebuilt and still cover only the central 14 km.\n\nSaved like this, it becomes a map with '{CURRENT_MODE}' terrain whose buyable area is only the central 14 km. To edit the map at its original size, switch MapExt's MapSize Mode to '{NONE_MODE}' and restart the game." },
                 { "MAPEXT_MAPSIZE.StretchEditorNotify", "This vanilla 14 km map is shown stretched to '{CURRENT_MODE}', and its map tiles still cover only the central 14 km. To edit it at its original size, switch MapExt to '{NONE_MODE}'." },
 
-                // === RealisticPathFinding 启动通知：中性提示，只写本 Mod 的事实（v4.12.0 发版 R1）===
-                { "MAPEXT_CONFLICT.RpfTitle", "MapExt and RealisticPathFinding" },
-                { "MAPEXT_CONFLICT.RpfNotify", "MapExt and RealisticPathFinding are not designed to run together. Keeping only one of them enabled is recommended." },
-
                 // === CellMap 核心系统／补丁严重冲突对话框（v1.1 三语对齐） ===
                 { "MAPEXT_CONFLICT.CellMapTitle", "MapExt: CRITICAL CellMap Conflict" },
                 { "MAPEXT_CONFLICT.CellMapMessage", "Critical CellMap size or patch mismatch detected!\n\nObserved issues:\n{ISSUES}\n\n{SOURCES}\n\nRunning with mismatched CellMap grid sizes or missing core patches may cause out-of-bounds crashes or save data issues. Quit the game and check the mod(s) above." },
@@ -168,10 +164,6 @@ namespace MapExtPDX.SaveLoadSystem
                 { "MAPEXT_MAPSIZE.StretchEditorMessage", "这张地图是原版 14 km 地形，但 MapExt 当前为「{CURRENT_MODE}」，编辑器里显示的是按当前尺寸拉伸后的地形；地图分块没有重建，仍只覆盖中央 14 km。\n\n照这样存回去，会得到一张地形为「{CURRENT_MODE}」、可购买范围却只有中央 14 km 的地图。如果只想按原版尺寸编辑，请把 MapExt 的地图尺寸模式切到「{NONE_MODE}」并重启游戏。" },
                 { "MAPEXT_MAPSIZE.StretchEditorNotify", "这张原版 14 km 地图按「{CURRENT_MODE}」拉伸显示，地图分块仍只覆盖中央 14 km。要按原版尺寸编辑，请把 MapExt 切到「{NONE_MODE}」。" },
 
-                // === RealisticPathFinding 启动通知 ===
-                { "MAPEXT_CONFLICT.RpfTitle", "MapExt 与 RealisticPathFinding" },
-                { "MAPEXT_CONFLICT.RpfNotify", "MapExt 与 RealisticPathFinding 未针对同时启用设计，建议只启用其中一个。" },
-
                 // === CellMap 核心系统／补丁严重冲突对话框 ===
                 { "MAPEXT_CONFLICT.CellMapTitle", "MapExt：严重 CellMap 冲突" },
                 { "MAPEXT_CONFLICT.CellMapMessage", "检测到 CellMap 核心系统尺寸或补丁状态异常！\n\n观测到的异常项：\n{ISSUES}\n\n{SOURCES}\n\n在 CellMap 网格尺寸错配或核心补丁缺失的状态下继续运行，可能引发越界崩溃或写入异常尺寸数据。建议退出游戏并检查上述模组。" },
@@ -271,10 +263,6 @@ namespace MapExtPDX.SaveLoadSystem
                 { "MAPEXT_MAPSIZE.StretchNotify", "這座城市的原版 14 km 地形已按「{CURRENT_MODE}」拉伸：坡度變緩，只有中央 14 km 能夠購買。" },
                 { "MAPEXT_MAPSIZE.StretchEditorMessage", "這張地圖是原版 14 km 地形，但 MapExt 當前為「{CURRENT_MODE}」，編輯器裡顯示的是按當前尺寸拉伸後的地形；地圖分塊沒有重建，仍只覆蓋中央 14 km。\n\n照這樣存回去，會得到一張地形為「{CURRENT_MODE}」、可購買範圍卻只有中央 14 km 的地圖。如果只想按原版尺寸編輯，請把 MapExt 的地圖尺寸模式切到「{NONE_MODE}」並重啟遊戲。" },
                 { "MAPEXT_MAPSIZE.StretchEditorNotify", "這張原版 14 km 地圖按「{CURRENT_MODE}」拉伸顯示，地圖分塊仍只覆蓋中央 14 km。要按原版尺寸編輯，請把 MapExt 切到「{NONE_MODE}」。" },
-
-                // === RealisticPathFinding 启动通知 ===
-                { "MAPEXT_CONFLICT.RpfTitle", "MapExt 與 RealisticPathFinding" },
-                { "MAPEXT_CONFLICT.RpfNotify", "MapExt 與 RealisticPathFinding 未針對同時啟用設計，建議只啟用其中一個。" },
 
                 // === CellMap 核心系統／補丁嚴重衝突對話框 ===
                 { "MAPEXT_CONFLICT.CellMapTitle", "MapExt：嚴重 CellMap 衝突" },

@@ -291,21 +291,6 @@ namespace MapExtPDX
                     }
                 );
             }
-
-            // === J. RealisticPathFinding 提示 ===
-            // 两者同时运行时，系统注册的更新阶段不一致，会引发 EntityCommandBuffer 报错，所以提示只启用其中一个。
-            // 对外文字只写本 Mod 的事实、不评价对方，三语文本见 ModLocalization 的 MAPEXT_CONFLICT.*（v4.12.0 发版 R1）；
-            // 状态用原版普通通知的 None，不用失败样式
-            if (ModConflictDetector.HasRealisticPathFinding)
-            {
-                NotificationSystem.Push(
-                    identifier: "mapext.rpf_incompatible",
-                    title: LocalizedString.Id("MAPEXT_CONFLICT.RpfTitle"),
-                    text: LocalizedString.Id("MAPEXT_CONFLICT.RpfNotify"),
-                    progressState: Colossal.PSI.Common.ProgressState.None
-                );
-                ModLog.Warn(Tag, "检测到 RealisticPathFinding：两者未针对同时启用设计，已提示只启用其中一个");
-            }
         }
 
         /// <summary>

@@ -66,7 +66,7 @@ The original save or map is never modified. The result is saved as `{Name}_MapEx
 ## ⚠️ Important: Read Before Use
 
 * **Use at Your Own Risk:** This mod makes deep modifications to core game simulation systems.
-* **Mod Compatibility:** Mods that also rework the economy or pathfinding may change the same systems. MapExt detects known ones at startup and turns off its overlapping feature groups for that session. MapExt and RealisticPathFinding are not designed to run together; keep only one of them enabled.
+* **Mod Compatibility:** Mods that also rework the economy or pathfinding may change the same systems. MapExt detects known ones at startup and turns off its overlapping feature groups for that session.
 * **Backup Saves Frequently:** Always use "Save As" to keep backups. Never overwrite a MapExt save if the mod fails to load or is uninstalled.
 * **Hardware Requirements:** 10GB+ VRAM recommended (the mod uses 1-2GB extra VRAM). If you experience crashes during loading, consider reducing custom assets.
 
@@ -220,7 +220,7 @@ Import heightmaps and worldmaps corresponding to your chosen mode in the Map Edi
 ## ⚠️ 必读注意事项
 
 * **风险自负**：本模组深度修改游戏底层模拟系统。
-* **模组兼容性**：同样改动经济或寻路的模组可能替换相同的系统。本模组启动时会识别已知的这类模组，并在本次游戏中停用重叠的功能分组。MapExt 与 RealisticPathFinding（真实寻路）未针对同时启用设计，请只启用其中一个。
+* **模组兼容性**：同样改动经济或寻路的模组可能替换相同的系统。本模组启动时会识别已知的这类模组，并在本次游戏中停用重叠的功能分组。
 * **勤备份存档**：务必使用“另存为”保存副本。切勿在模组未生效或卸载后覆盖 MapExt 存档。
 * **硬件要求**：建议显存 10GB 以上（模组额外占用 1-2GB 显存）。若加载时遇到显存不足，请精简自定义资产。
 
