@@ -16,9 +16,11 @@ The core mod responsible for map size expansion (up to 57km) and foundational si
   - **In-Game Dashboard**: Real-time city statistics monitoring, key economic metrics, and dynamic tuning of rent and pathfinding parameters.
 - **Documentation**: [MapExtPDX/README.md](./MapExtPDX/README.md)
 
-### 2. [EconomyEX](./EconomyEX) (Sub-Mod)
+### 2. [EconomyEX](./EconomyEX) (Sub-Mod — Maintenance Paused)
 
-An advanced economy and performance optimization module, extracted from MapExt for standalone use on standard maps.
+> **Status:** Updates to standalone `EconomyEX` are currently **paused**. All economy and performance features have been migrated to and are actively maintained in **MapExtPDX** (including the vanilla 14km map mode). New users should use [MapExtPDX](./MapExtPDX) directly.
+
+An advanced economy and performance optimization module previously extracted from MapExt for standalone use on standard maps.
 
 - **Key Features**: Proportional demand calculation, job-seeking CPU optimization, and fair rent systems.
 - **Compatibility**: Automatically yields to MapExtPDX when both are present to prevent conflicts.
@@ -69,9 +71,11 @@ A lightweight resource brush tool that unlocks hidden natural resource brushes a
   - **游戏内控制面板 (In-Game Dashboard)**：包含实时城市统计数据监控、关键经济指标快查，以及租金与寻路参数动态调节功能。
 - **文档**：[MapExtPDX/README.md](./MapExtPDX/README.md)
 
-### 2. [EconomyEX](./EconomyEX) (子模组)
+### 2. [EconomyEX](./EconomyEX)（子模组 — 暂停更新）
 
-从 MapExt 核心中提取的高级经济与性能优化模块，专为标准尺寸地图的独立使用而设计。
+> **当前状态**：独立版 `EconomyEX` 已**暂停更新**，其全部经济与性能优化功能已迁移并全面集成至 **MapExtPDX**（原生支持 14km 原版尺寸模式），推荐直接使用 [MapExtPDX](./MapExtPDX)。
+
+早期从 MapExt 核心中提取的高级经济与性能优化模块，面向标准尺寸地图的独立使用。
 
 - **核心功能**：比例需求计算、求职逻辑 CPU 性能优化，以及公平租金系统。
 - **兼容性**：当与 MapExtPDX 同时启用时，会自动让权以防止系统冲突。

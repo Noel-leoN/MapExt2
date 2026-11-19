@@ -55,10 +55,10 @@ The original save or map is never modified. The result is saved as `{Name}_MapEx
 > **Without conversion**: if the option is off or you choose "Continue Anyway", a new city on a vanilla map is stretched to the selected size — slopes become flatter and natural resources are randomly generated.
 
 ### 🔗 Other Mods by the Author
-* **[EconomyEX](https://mods.paradoxplaza.com/mods/137149/Windows):** Standalone economy and performance subset for vanilla-size (14km) maps. Automatically disables itself when MapExt is also installed.
 * **[SimpleRadio](https://mods.paradoxplaza.com/mods/145663/Windows):** Drop music files into a folder and they show up as an in-game radio station. No configuration needed.
 * **[SimpleBrush](https://mods.paradoxplaza.com/mods/145932/Windows):** Unlocks the hidden natural resource brushes and restores depleted resources with one click.
 
+> **Note on EconomyEX:** Updates to the standalone [EconomyEX](https://mods.paradoxplaza.com/mods/137149/Windows) mod are paused — all of its economy and performance features have been migrated into **MapExt** (including full support for vanilla 14km maps). You do not need to install EconomyEX separately.
 > The author's Paradox Mods page also hosts sample maps and save files you can use as a reference.
 
 ---
@@ -90,7 +90,7 @@ The original save or map is never modified. The result is saved as `{Name}_MapEx
 * **No Through-Traffic:** Disables through-traffic vehicle spawning to reduce transit routing pressure.
 * **Ghost Vehicle Cleanup:** The base game leaves a car bought with no parking space nearby stranded without a parking lane, turning it into a permanent "ghost". Vehicle Purchase Rescue (Debug tab, default off) re-parks these near the owner's home, deletes orphans whose household is gone, and works through the backlog in existing saves in batches. Use the "Scan Ghost Vehicles" button to check your save first.
 
-> **📖 More detail on the economy patches:** MapExt shares its economy and land value rework with [EconomyEX](https://mods.paradoxplaza.com/mods/137149/Windows), whose description documents each system change and every tunable slider (range and default) in full. Refer to it for details — the sliders live in MapExt's own settings panel, no need to install EconomyEX.
+> **📖 EconomyEX Migration Note:** Standalone [EconomyEX](https://mods.paradoxplaza.com/mods/137149/Windows) is currently paused and all of its economy and land value features have been migrated into **MapExt** (including the 14km vanilla mode). All tunable sliders live directly in MapExt's own settings panel — no need to install EconomyEX (its old page still lists per-slider ranges and defaults for reference).
 
 ### 🛠️ In-Game Tools and Performance
 * **HUD Dashboard:** Click the **MAP/EXT** button on the in-game HUD to open the dashboard, featuring city statistics, rent control, and pathfinding sliders. Zero overhead when closed.
@@ -209,10 +209,10 @@ Import heightmaps and worldmaps corresponding to your chosen mode in the Map Edi
 > **不转换时**：选项关闭或选择“仍要继续”时，用原版地图开的新城会按所选尺寸拉伸——坡度变缓，自然资源随机生成。
 
 ### 🔗 作者的其他模组
-* **[EconomyEX](https://mods.paradoxplaza.com/mods/137149/Windows)：** 适用于原版地图（14km）的独立经济与性能子集。两者同时安装时 EconomyEX 会自动休眠。
 * **[SimpleRadio](https://mods.paradoxplaza.com/mods/145663/Windows)：** 将音乐文件放入文件夹即可成为游戏内电台，无需任何配置。
 * **[SimpleBrush](https://mods.paradoxplaza.com/mods/145932/Windows)：** 解锁游戏内置的自然资源笔刷，并可一键恢复已耗尽的资源。
 
+> **关于 EconomyEX**：独立版 [EconomyEX](https://mods.paradoxplaza.com/mods/137149/Windows) 已暂停更新，其全部经济与性能优化功能均已迁移整合至 **MapExt**（含原版 14km 地图模式），无需单独安装。
 > 作者的 Paradox Mods 主页另有示范地图与存档，可供参考。
 
 ---
@@ -244,7 +244,7 @@ Import heightmaps and worldmaps corresponding to your chosen mode in the Map Edi
 * **过境交通控制**：禁止过境交通车辆生成，降低道路寻路计算量。
 * **幽灵车清理**：原版在购车时若附近无停车位，车辆不会被分配车道，从此成为永久“幽灵车”。购车救援（调试面板，默认关闭）将其移至车主住宅附近重新停放，家庭已消失的孤儿车则直接删除；存档中的存量幽灵车分批处理。可先用“扫描幽灵车”按钮查看存档内数量。
 
-> **📖 经济补丁的详细说明**：MapExt 的经济与地价改动与 [EconomyEX](https://mods.paradoxplaza.com/mods/137149/Windows) 同源，后者的说明页逐项记录了各系统的改动内容，以及每个可调滑块的范围与默认值。需要细节时可参阅该页——滑块本身就在 MapExt 的设置面板中，无需安装 EconomyEX。
+> **📖 EconomyEX 功能迁移说明**：独立版 [EconomyEX](https://mods.paradoxplaza.com/mods/137149/Windows) 已暂停更新，其全部经济与地价改动均已迁移至 **MapExt** 统一维护（含原版 14km 模式）。所有可调滑块均在 MapExt 的设置面板中提供，无需再安装 EconomyEX（各滑块的范围与默认值说明仍可参阅旧页）。
 
 ### 🛠️ 游戏内工具与性能
 * **HUD 仪表盘**：点击游戏内 HUD 的 **MAP/EXT** 按钮可展开面板，包含城市统计、租金调控与寻路参数。面板关闭时零开销。

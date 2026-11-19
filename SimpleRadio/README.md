@@ -89,7 +89,6 @@ Open **Options > SimpleRadio** to access:
 ## Other Mods by the Author
 
 - **[MapExt](https://mods.paradoxplaza.com/mods/107939/Windows)** — 28/43/57km map size expansion, plus economy and pathfinding rework for large cities.
-- **[EconomyEX](https://mods.paradoxplaza.com/mods/137149/Windows)** — The economy and performance subset of MapExt, for vanilla-size (14km) maps.
 - **[SimpleBrush](https://mods.paradoxplaza.com/mods/145932/Windows)** — Unlocks the hidden natural resource brushes and restores depleted resources with one click.
 
 ---
@@ -185,6 +184,5 @@ MP3 和 WAV 可在 **选项 > SimpleRadio > 格式** 中分别启用或禁用；
 ## 作者的其他模组
 
 - **[MapExt](https://mods.paradoxplaza.com/mods/107939/Windows)** — 28/43/57km 地图尺寸扩展，附带面向大城市的经济与寻路改良。
-- **[EconomyEX](https://mods.paradoxplaza.com/mods/137149/Windows)** — MapExt 的经济与性能子集，适用于原版尺寸（14km）地图。
 - **[SimpleBrush](https://mods.paradoxplaza.com/mods/145932/Windows)** — 解锁游戏内置的自然资源笔刷，并可一键恢复已耗尽的资源。
 
