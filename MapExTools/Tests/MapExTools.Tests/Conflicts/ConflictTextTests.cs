@@ -26,7 +26,6 @@ public sealed class ConflictTextTests
             new(ConflictFindingKind.UnpatchAllDisposeOnly, ConflictSeverity.Info, "Mod.OnDispose"),
             new(ConflictFindingKind.StaticFieldReflectionWrite, ConflictSeverity.Warning, "kMapSize", "Mutator.Apply"),
             new(ConflictFindingKind.KnownAuditRule, ConflictSeverity.Warning, "RWH", "2.0", null, [ConflictTargets.KeyHouseholdProperty]),
-            new(ConflictFindingKind.KnownAuditRule, ConflictSeverity.Hard, "RealisticPathFinding", "0.7.6"),
             new(ConflictFindingKind.KnownAuditRule, ConflictSeverity.Warning, "RoadBuilderDualInstall", "0.8.0"),
             new(ConflictFindingKind.WaterSimSpeedWrite, ConflictSeverity.Info, "CustomWaterToolSystem.OnUpdate, TidesAndWavesSystem.OnUpdate"),
             new(ConflictFindingKind.PendingCloudDownload, ConflictSeverity.Info, "86944"),
@@ -105,10 +104,10 @@ public sealed class ConflictTextTests
             ModInstallSource.PdxMods,
             "121226",
             "0.7.6",
-            "0.7.6",
+            null,
             false,
             ConflictSeverity.Hard,
-            [new ConflictFinding(ConflictFindingKind.KnownAuditRule, ConflictSeverity.Hard, "RealisticPathFinding", "0.7.6")],
+            [new ConflictFinding(ConflictFindingKind.CrossPhaseSystemSchedule, ConflictSeverity.Hard, "UpdateGroupSystem", "Mod.OnLoad")],
             []);
         var report = new ConflictReport(workspace, settings, [hardItem], HardConflictCount: 1, WarningCount: 0, MitigatedCount: 0, InfoCount: 0);
 

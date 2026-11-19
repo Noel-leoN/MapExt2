@@ -61,7 +61,11 @@ internal static class SyntheticModBuilder
         Type HarmonyTargetMethodAttrType,
         Type HarmonyMethodTypeEnum,
         MethodInfo WaterSimSpeedGetter,
-        MethodInfo WaterSimSpeedSetter);
+        MethodInfo WaterSimSpeedSetter,
+        Type ResidentAISystemType,
+        Type ResidentAIActionsType,
+        Type TripNeededSystemType,
+        Type ResourceBuyerSystemType);
 
     /// <summary>将一个 <see cref="PersistedAssemblyBuilder"/> 序列化为完整的托管 PE <c>.dll</c> 字节数组。</summary>
     public static byte[] EmitDllBytes(PersistedAssemblyBuilder pab)
@@ -227,6 +231,16 @@ internal static class SyntheticModBuilder
         actionsTb.CreateType();
         carNavTb.CreateType();
 
+        // RealisticPathFinding 停用的 4 个原版系统（居民 AI 组 2 个、消费采购组 2 个）
+        TypeBuilder residentAiTb = gameMod.DefineType("Game.Simulation.ResidentAISystem", TypeAttributes.Public | TypeAttributes.Class, gsbCreated);
+        residentAiTb.DefineDefaultConstructor(MethodAttributes.Public);
+        TypeBuilder residentActionsTb = residentAiTb.DefineNestedType("Actions", TypeAttributes.NestedPublic | TypeAttributes.Class, gsbCreated);
+        residentActionsTb.DefineDefaultConstructor(MethodAttributes.Public);
+        residentActionsTb.CreateType();
+        residentAiTb.CreateType();
+        DefineSimpleSystem(gameMod, "Game.Simulation.TripNeededSystem", gsbCreated);
+        DefineSimpleSystem(gameMod, "Game.Simulation.ResourceBuyerSystem", gsbCreated);
+
         byte[] gameBytes = EmitDllBytes(gamePab);
         Assembly gameAsm = alc.LoadFromStream(new MemoryStream(gameBytes));
 
@@ -356,6 +370,10 @@ internal static class SyntheticModBuilder
             harmAsm.GetType("HarmonyLib.HarmonyTargetMethod")!,
             mtEnumType,
             waterSystemType.GetProperty("WaterSimSpeed")!.GetMethod!,
-            waterSystemType.GetProperty("WaterSimSpeed")!.SetMethod!);
+            waterSystemType.GetProperty("WaterSimSpeed")!.SetMethod!,
+            gameAsm.GetType("Game.Simulation.ResidentAISystem")!,
+            gameAsm.GetType("Game.Simulation.ResidentAISystem+Actions")!,
+            gameAsm.GetType("Game.Simulation.TripNeededSystem")!,
+            gameAsm.GetType("Game.Simulation.ResourceBuyerSystem")!);
     }
 }

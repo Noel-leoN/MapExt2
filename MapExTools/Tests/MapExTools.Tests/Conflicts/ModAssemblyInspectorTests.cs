@@ -394,29 +394,11 @@ public sealed class ModAssemblyInspectorTests
             });
             File.WriteAllBytes(Path.Combine(rentModDir, "CustomRentMod.dll"), rentBytes);
 
-            // 2. 构造含跨阶段 UpdateGroupSystem -> GameSimulation 注册的 RealisticPathFinding v0.8.0（高于基准 v0.7.6），检验硬冲突维持 Hard；
-            //    再构造移除了跨阶段注册的 RealisticPathFindingFixed（同用 RealisticPathFinding 程序集名但放到另一独立工作区测自动降级）
+            // 2. 构造按 RealisticPathFinding 0.7.6 形态停用 4 个原版系统、并把 UpdateGroupSystem 跨阶段注册到 GameSimulation 的 v0.8.0，
+            //    检验硬冲突由字节码给出（已无按名规则）；修复了跨阶段注册的版本放到另一独立工作区测试
             string rpfDir = Path.Combine(paths.ModsDir, "RealisticPathFinding");
             Directory.CreateDirectory(rpfDir);
-            byte[] rpfBytes = SyntheticModBuilder.BuildModAssembly("RealisticPathFinding", new Version(0, 8, 0), (mod, env) =>
-            {
-                TypeBuilder dummySys = mod.DefineType("RPF.CustomSys", TypeAttributes.Public | TypeAttributes.Class, env.GameSystemBaseType);
-                Type createdDummy = dummySys.CreateType();
-
-                TypeBuilder tb = mod.DefineType("RPF.Entry", TypeAttributes.Public | TypeAttributes.Class);
-                tb.AddInterfaceImplementation(env.IModType);
-                Type updateSysType = env.GameAsm.GetType("Game.UpdateSystem")!;
-                MethodBuilder onLoad = tb.DefineMethod("OnLoad", MethodAttributes.Public | MethodAttributes.Virtual, typeof(void), [updateSysType]);
-                ILGenerator il = onLoad.GetILGenerator();
-                il.Emit(OpCodes.Ldarg_1);
-                il.Emit(OpCodes.Ldc_I4_S, (sbyte)12); // SystemUpdatePhase.GameSimulation = 12
-                il.Emit(OpCodes.Callvirt, env.UpdateAfterGeneric2Method.MakeGenericMethod(env.UpdateGroupSystemType, createdDummy));
-                il.Emit(OpCodes.Ret);
-
-                tb.DefineMethod("OnDispose", MethodAttributes.Public | MethodAttributes.Virtual, typeof(void), Type.EmptyTypes).GetILGenerator().Emit(OpCodes.Ret);
-                tb.CreateType();
-            });
-            File.WriteAllBytes(Path.Combine(rpfDir, "RealisticPathFinding.dll"), rpfBytes);
+            File.WriteAllBytes(Path.Combine(rpfDir, "RealisticPathFinding.dll"), BuildRealisticPathFindingLike(new Version(0, 8, 0), phaseCode: 12));
 
             // 3. 构造对模拟核心宿主 CarNavigationSystem+Actions 分别赋 Enabled = false 与 Enabled = true 的两个 Mod（验证 D1 方向乙与 P7-1）
             string hostDisableDir = Path.Combine(paths.ModsDir, "HostDisableMod");
@@ -510,11 +492,13 @@ public sealed class ModAssemblyInspectorTests
             Assert.False(rentModeA.CanOneClickMitigate);
             Assert.Empty(rentModeA.OneClickDisableKeys);
 
-            // RealisticPathFinding 含跨阶段 UpdateGroupSystem 注册且版本高于基准 v0.7.6：维持 Hard！
+            // RealisticPathFinding：跨阶段注册由字节码定为 Hard；4 处停用原版系统各记一条，没有按名规则与核对基准版本
             ModConflictItem rpfItem = Assert.Single(modeAReport.Items, i => i.DisplayName == "RealisticPathFinding");
-            Assert.True(rpfItem.IsNewerThanAudited);
             Assert.Equal(ConflictSeverity.Hard, rpfItem.Severity);
             Assert.Contains(rpfItem.Findings, f => f.Kind == ConflictFindingKind.CrossPhaseSystemSchedule);
+            Assert.Equal(4, rpfItem.Findings.Count(f => f.Kind == ConflictFindingKind.SystemEnabledWrite));
+            Assert.DoesNotContain(rpfItem.Findings, f => f.Kind == ConflictFindingKind.KnownAuditRule);
+            Assert.Null(rpfItem.AuditedVersion);
             Assert.False(rpfItem.CanOneClickMitigate);
 
             // D1 方向乙：模拟核心宿主被设为 Enabled = false 降为 Warning（无一键按钮），常量 Enabled = true 则 0 误报
@@ -562,7 +546,7 @@ public sealed class ModAssemblyInspectorTests
     }
 
     [Fact]
-    public void RealisticPathFinding_WithoutCrossPhaseSchedule_AutoDowngradesToMitigatableWarning()
+    public void RealisticPathFinding_WithoutCrossPhaseSchedule_IsMitigatableWarningFromBytecodeAlone()
     {
         string tempDir = Path.Combine(Path.GetTempPath(), "MapExTools_RpfFixedTests_" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(tempDir);
@@ -572,36 +556,19 @@ public sealed class ModAssemblyInspectorTests
             string rpfDir = Path.Combine(paths.ModsDir, "RealisticPathFinding");
             Directory.CreateDirectory(rpfDir);
 
-            // 模拟未来修复了跨阶段 UpdateGroupSystem 注册的 RealisticPathFinding v0.9.0（仅合法注册在 Modification5 = 8）
-            byte[] rpfFixedBytes = SyntheticModBuilder.BuildModAssembly("RealisticPathFinding", new Version(0, 9, 0), (mod, env) =>
-            {
-                TypeBuilder dummySys = mod.DefineType("RPF.CustomSys", TypeAttributes.Public | TypeAttributes.Class, env.GameSystemBaseType);
-                Type createdDummy = dummySys.CreateType();
-
-                TypeBuilder tb = mod.DefineType("RPF.Entry", TypeAttributes.Public | TypeAttributes.Class);
-                tb.AddInterfaceImplementation(env.IModType);
-                Type updateSysType = env.GameAsm.GetType("Game.UpdateSystem")!;
-                MethodBuilder onLoad = tb.DefineMethod("OnLoad", MethodAttributes.Public | MethodAttributes.Virtual, typeof(void), [updateSysType]);
-                ILGenerator il = onLoad.GetILGenerator();
-                il.Emit(OpCodes.Ldarg_1);
-                il.Emit(OpCodes.Ldc_I4_8); // SystemUpdatePhase.Modification5 = 8（合法阶段，0 误报）
-                il.Emit(OpCodes.Callvirt, env.UpdateAfterGeneric2Method.MakeGenericMethod(env.UpdateGroupSystemType, createdDummy));
-                il.Emit(OpCodes.Ret);
-
-                tb.DefineMethod("OnDispose", MethodAttributes.Public | MethodAttributes.Virtual, typeof(void), Type.EmptyTypes).GetILGenerator().Emit(OpCodes.Ret);
-                tb.CreateType();
-            });
-            File.WriteAllBytes(Path.Combine(rpfDir, "RealisticPathFinding.dll"), rpfFixedBytes);
+            // 模拟未来修复了跨阶段注册的 v0.9.0：UpdateGroupSystem 只注册在合法的 Modification5 = 8，仍停用那 4 个原版系统
+            File.WriteAllBytes(Path.Combine(rpfDir, "RealisticPathFinding.dll"), BuildRealisticPathFindingLike(new Version(0, 9, 0), phaseCode: 8));
 
             ScannedModWorkspace workspace = ConflictAnalyzer.ScanWorkspace(paths, gameDir: null);
 
-            // 开启 ResidentAI 组时：因未检出跨阶段 ECB 注册，自动从 Hard 降为可通过关闭 ResidentAI 规避的 Warning
+            // 开启 ResidentAI 组时：没有跨阶段注册，只剩停用原版系统的交集，可通过关闭 ResidentAI 规避
             var activeSettings = new ConflictEvalSettings("ModeA", true, true, true, true, resourceBuyer: false, residentAI: true, false);
             ConflictReport activeReport = ConflictAnalyzer.Evaluate(workspace, activeSettings);
             ModConflictItem activeItem = Assert.Single(activeReport.Items);
             Assert.Equal(ConflictSeverity.Warning, activeItem.Severity);
             Assert.True(activeItem.CanOneClickMitigate);
             Assert.Equal([ConflictTargets.KeyResidentAI], activeItem.OneClickDisableKeys);
+            Assert.DoesNotContain(activeItem.Findings, f => f.Kind is ConflictFindingKind.KnownAuditRule or ConflictFindingKind.CrossPhaseSystemSchedule);
 
             // ResidentAI 与 ResourceBuyer 均关闭（默认设定）时：变为 Mitigated
             var defaultSettings = new ConflictEvalSettings("ModeA", true, true, true, true, resourceBuyer: false, residentAI: false, false);
@@ -700,4 +667,38 @@ public sealed class ModAssemblyInspectorTests
             Directory.Delete(tempDir, recursive: false);
         }
     }
+
+    /// <summary>
+    /// 按 RealisticPathFinding 0.7.6 的 <c>Mod.OnLoad</c> 形态构造程序集：停用居民 AI 与消费采购的 4 个原版系统，
+    /// 并把 <c>UpdateGroupSystem</c> 注册在 <paramref name="phaseCode"/> 阶段（12 = GameSimulation 为跨阶段，8 = Modification5 为合法）。
+    /// </summary>
+    private static byte[] BuildRealisticPathFindingLike(Version version, sbyte phaseCode) =>
+        SyntheticModBuilder.BuildModAssembly("RealisticPathFinding", version, (mod, env) =>
+        {
+            TypeBuilder dummySys = mod.DefineType("RPF.CustomSys", TypeAttributes.Public | TypeAttributes.Class, env.GameSystemBaseType);
+            Type createdDummy = dummySys.CreateType();
+
+            TypeBuilder tb = mod.DefineType("RPF.Entry", TypeAttributes.Public | TypeAttributes.Class);
+            tb.AddInterfaceImplementation(env.IModType);
+            Type updateSysType = env.GameAsm.GetType("Game.UpdateSystem")!;
+            MethodBuilder onLoad = tb.DefineMethod("OnLoad", MethodAttributes.Public | MethodAttributes.Virtual, typeof(void), [updateSysType]);
+            ILGenerator il = onLoad.GetILGenerator();
+
+            // new World().GetOrCreateSystemManaged<T>().Enabled = false（真实代码经 World.DefaultGameObjectInjectionWorld 取得世界）
+            foreach (Type vanilla in new[] { env.ResidentAISystemType, env.ResidentAIActionsType, env.TripNeededSystemType, env.ResourceBuyerSystemType })
+            {
+                il.Emit(OpCodes.Newobj, env.WorldType.GetConstructor(Type.EmptyTypes)!);
+                il.Emit(OpCodes.Callvirt, env.GetOrCreateGeneric.MakeGenericMethod(vanilla));
+                il.Emit(OpCodes.Ldc_I4_0);
+                il.Emit(OpCodes.Callvirt, env.EnabledProperty.SetMethod!);
+            }
+
+            il.Emit(OpCodes.Ldarg_1);
+            il.Emit(OpCodes.Ldc_I4_S, phaseCode);
+            il.Emit(OpCodes.Callvirt, env.UpdateAfterGeneric2Method.MakeGenericMethod(env.UpdateGroupSystemType, createdDummy));
+            il.Emit(OpCodes.Ret);
+
+            tb.DefineMethod("OnDispose", MethodAttributes.Public | MethodAttributes.Virtual, typeof(void), Type.EmptyTypes).GetILGenerator().Emit(OpCodes.Ret);
+            tb.CreateType();
+        });
 }

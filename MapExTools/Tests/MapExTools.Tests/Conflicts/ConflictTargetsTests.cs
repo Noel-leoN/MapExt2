@@ -67,6 +67,23 @@ public sealed class ConflictTargetsTests
         Assert.Empty(ConflictTargets.PlanRuntimeAutoDisable(["RoadBuilderDualInstall", "Unknown"], _ => true));
     }
 
+    // RWH 只剩按名规则（字节码测不出交集）：找房与租金系统组开着为可一键关组的条件冲突，关着为已规避，与地图模式无关
+    [Theory]
+    [InlineData("ModeA")]
+    [InlineData("None")]
+    public void RwhRule_WarnsWithHouseholdPropertyKey_OrIsMitigatedWhenGroupOff(string mode)
+    {
+        KnownModConflictRule rule = Assert.Single(ConflictTargets.KnownModRules, r => r.RuleId == "RWH");
+
+        var groupOn = new ConflictEvalSettings(mode, true, true, true, householdProperty: true, false, false, false);
+        Assert.Equal(ConflictSeverity.Warning, ConflictTargets.EvaluateKnownRule(rule, groupOn, out string[] keys));
+        Assert.Equal([ConflictTargets.KeyHouseholdProperty], keys);
+
+        var groupOff = new ConflictEvalSettings(mode, true, true, true, householdProperty: false, false, false, false);
+        Assert.Equal(ConflictSeverity.Mitigated, ConflictTargets.EvaluateKnownRule(rule, groupOff, out string[] offKeys));
+        Assert.Empty(offKeys);
+    }
+
     [Fact]
     public void AutoDisableTargets_UseEconomyGroupsAndAgreeWithKnownRules()
     {

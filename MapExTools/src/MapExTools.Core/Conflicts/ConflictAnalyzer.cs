@@ -164,17 +164,13 @@ public static class ConflictAnalyzer
             }
 
             // 4. 字节码静态特征评估（仅对可正常加载的包执行）
-            bool hasScannedAssemblies = false;
-            bool hasCrossPhaseEcbBug = false;
             if (pkg.MissingDependencies.Count == 0 &&
                 workspace.InspectionsByPackageKey.TryGetValue(pkg.PackageKey, out IReadOnlyList<AssemblyInspectionResult>? inspections))
             {
-                hasScannedAssemblies = inspections.Count > 0;
-                hasCrossPhaseEcbBug = inspections.Any(i => i.CrossPhaseSchedules is { Count: > 0 });
                 EvaluateBytecodeInspections(inspections, settings, findings);
             }
 
-            // 5. 补充兼容性规则评估（仅覆盖单点字节码未涵盖的交互项，如 RWH 参数口径、双装与待下载兜底）
+            // 5. 补充兼容性规则评估（仅覆盖单点字节码未涵盖的交互项：RWH 的游戏内按名自动停用、双装与待下载兜底）
             if (matchedRule != null && pkg.MissingDependencies.Count == 0)
             {
                 bool dualSatisfied = !matchedRule.RequireDualLocalAndPdxInstall ||
@@ -185,9 +181,7 @@ public static class ConflictAnalyzer
                     ConflictSeverity ruleSev = ConflictTargets.EvaluateKnownRule(
                         matchedRule,
                         settings,
-                        out string[] ruleKeys,
-                        hasScannedAssemblies,
-                        hasCrossPhaseEcbBug);
+                        out string[] ruleKeys);
                     if (ruleSev != ConflictSeverity.None)
                     {
                         findings.Add(new ConflictFinding(

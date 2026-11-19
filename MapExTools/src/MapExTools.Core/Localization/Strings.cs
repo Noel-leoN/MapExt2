@@ -1788,11 +1788,6 @@ public static class Strings
             "【可通过关闭「{0}」规避】",
             "【可透過關閉「{0}」規避】",
         ],
-        ["Conflicts.Rule.RealisticPathFinding"] = [
-            "MapExt and RealisticPathFinding replace the same resident/buyer pathfinding systems and are not designed to run together; keeping only one enabled is recommended.",
-            "与 MapExt 替换相同的居民与采购寻路系统，两者未针对同时启用设计，建议只启用其中一个。",
-            "與 MapExt 替換相同的居民與採購尋路系統，兩者未針對同時啟用設計，建議只啟用其中一個。",
-        ],
         ["Conflicts.Rule.RWH"] = [
             "Adjusts BuildingPropertyData household counts and EconomyParameterData values; when enabled together, MapExt automatically turns off its Household and Property group for that session (checked on v2.0).",
             "修改建筑户数（BuildingPropertyData）与经济参数（EconomyParameterData）；同时启用时，MapExt 会在本次游戏中自动停用「找房与租金系统组」（基于 v2.0 核对）。",

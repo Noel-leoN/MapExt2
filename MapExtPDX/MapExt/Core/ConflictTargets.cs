@@ -158,7 +158,7 @@ namespace MapExtPDX.MapExt.Core
     /// </summary>
     public sealed class KnownModConflictRule
     {
-        /// <summary>稳定规则标识（如 <c>RealisticPathFinding</c>、<c>RWH</c>），对应三语文案键后缀。</summary>
+        /// <summary>稳定规则标识（如 <c>RWH</c>、<c>RoadBuilderDualInstall</c>），对应三语文案键后缀。</summary>
         public readonly string RuleId;
 
         /// <summary>Paradox Mods 平台数字 ID（字符串形式，如 <c>"77171"</c>）；有测试分支时见 <see cref="AlternatePdxModIds"/>。</summary>
@@ -655,22 +655,14 @@ namespace MapExtPDX.MapExt.Core
         #region Known Mod Compatibility & Runtime Auto-Disable Rules
 
         /// <summary>
-        /// 按名称兜底的补充兼容性规则表（已瘦身为仅保留静态单点字节码无法单独完整表达的 3 项交集说明；
+        /// 按名称兜底的补充兼容性规则表（已瘦身为仅保留静态单点字节码无法单独完整表达的 2 项交集说明；
         /// 其余系统替换、宿主停用、<c>CellMapSystem.AddWriter</c>、动态补丁、跨阶段注册与写 <c>WaterSystem.WaterSimSpeed</c>
         /// 一律由字节码从已安装版本实时测定）。
+        /// <c>RWH</c> 不停用受保护系统，只持续改写 MapExt 只读的建筑户数与经济参数，字节码测不出交集；
+        /// 规则说明的是游戏内按名自动停用找房与租金系统组（见 <see cref="RuntimeAutoDisableTargets"/>）。
         /// </summary>
         public static readonly KnownModConflictRule[] KnownModRules =
         {
-            new KnownModConflictRule(
-                ruleId: "RealisticPathFinding",
-                pdxModId: "121226",
-                assemblyNames: new[] { "RealisticPathFinding" },
-                auditedVersion: "0.7.6",
-                expandedModeSeverity: ConflictSeverity.Hard,
-                vanillaModeSeverity: ConflictSeverity.Hard,
-                mitigatingToggleKeys: new[] { KeyResidentAI, KeyResourceBuyer },
-                canMitigateInExpandedModes: true),
-
             new KnownModConflictRule(
                 ruleId: "RWH",
                 pdxModId: "87755",
@@ -693,7 +685,7 @@ namespace MapExtPDX.MapExt.Core
 
         /// <summary>
         /// 游戏启动期（<c>Mod.OnLoad</c>、替换系统注册前）自动停用重叠经济分组的已知模组，游戏内停哪些分组只看这张表
-        /// （包含工具端已改由字节码实时测定的 <c>Time2Work</c> 与 <c>RealisticParking</c>）。
+        /// （包含工具端已改由字节码实时测定的 <c>RealisticPathFinding</c>、<c>Time2Work</c> 与 <c>RealisticParking</c>）。
         /// 顺序即判定与日志顺序：同一分组只记在最先命中的模组名下。
         /// </summary>
         public static readonly RuntimeAutoDisableTarget[] RuntimeAutoDisableTargets =
@@ -1179,27 +1171,17 @@ namespace MapExtPDX.MapExt.Core
             return decisions;
         }
 
-        /// <summary>
-        /// 按当前 <c>.coc</c> 设定与是否已实测扫描字节码评估补充规则的等级与可一键关闭开关。
-        /// 对 <c>RealisticPathFinding</c>：若已扫描本地 DLL 且未检出跨阶段 <c>UpdateGroupSystem</c> 注册（例如作者未来版本修复），自动按普通经济组重叠定级。
-        /// </summary>
+        /// <summary>按当前 <c>.coc</c> 设定评估补充规则的等级与可一键关闭开关。</summary>
         public static ConflictSeverity EvaluateKnownRule(
             KnownModConflictRule rule,
             ConflictEvalSettings settings,
-            out string[] oneClickDisableKeys,
-            bool hasScannedAssemblies = false,
-            bool hasCrossPhaseEcbBug = false)
+            out string[] oneClickDisableKeys)
         {
             oneClickDisableKeys = Array.Empty<string>();
 
             ConflictSeverity baseSeverity = settings.IsExpandedMode
                 ? rule.ExpandedModeSeverity
                 : rule.VanillaModeSeverity;
-
-            if (rule.RuleId == "RealisticPathFinding" && hasScannedAssemblies && !hasCrossPhaseEcbBug)
-            {
-                baseSeverity = ConflictSeverity.Warning;
-            }
 
             if (baseSeverity == ConflictSeverity.Hard || baseSeverity == ConflictSeverity.None || baseSeverity == ConflictSeverity.Info)
             {
