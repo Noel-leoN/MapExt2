@@ -104,9 +104,8 @@ namespace MapExtPDX.MapExt.Core
                 string matchedId = MatchStartupFingerprintId(pdxId, asmName);
                 if (matchedId == null) continue;
 
-                // 只作备注的模组不计入冲突，只有备注时仍输出"未检测到已知冲突 Mod"
-                if (RecordRuleHit(matchedId, modDisplay))
-                    anyKnownDetected = true;
+                RecordRuleHit(matchedId, modDisplay);
+                anyKnownDetected = true;
             }
 
             IsScanned = true;
@@ -140,8 +139,8 @@ namespace MapExtPDX.MapExt.Core
             return null;
         }
 
-        /// <summary>记录一次规则命中并写日志；返回 false 表示该模组只作备注，不计为冲突。</summary>
-        private static bool RecordRuleHit(string ruleId, string modDisplay)
+        /// <summary>记录一次规则命中并写日志。</summary>
+        private static void RecordRuleHit(string ruleId, string modDisplay)
         {
             s_DetectedRuleIds.Add(ruleId);
 
@@ -167,14 +166,7 @@ namespace MapExtPDX.MapExt.Core
                     AddSummaryUnique("RealisticParking (PersonalCarAISystem)");
                     ModLog.Warn(Tag, $"检测到潜在冲突 Mod: {modDisplay} (与下游 AI 组同样替换 PersonalCarAISystem)");
                     break;
-                case "WaterFeatures":
-                    // 两边只共用 WaterSimSpeed，相互覆盖只影响水模拟推进节奏：记备注，不进冲突报告与设置页冲突列表
-                    ModLog.Info(Tag, $"检测到 Mod（备注）: {modDisplay}（与 MapExt 都会写 WaterSimSpeed，仅在其水源工具移动水源、" +
-                                     "或开启其强制水模拟速度、波浪与潮汐选项时相互覆盖，影响限于水模拟推进节奏）");
-                    return false;
             }
-
-            return true;
         }
 
         private static void AddSummaryUnique(string item)

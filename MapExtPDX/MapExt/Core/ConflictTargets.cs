@@ -158,7 +158,7 @@ namespace MapExtPDX.MapExt.Core
     /// </summary>
     public sealed class KnownModConflictRule
     {
-        /// <summary>稳定规则标识（如 <c>RealisticPathFinding</c>、<c>WaterFeatures</c>），对应三语文案键后缀。</summary>
+        /// <summary>稳定规则标识（如 <c>RealisticPathFinding</c>、<c>RWH</c>），对应三语文案键后缀。</summary>
         public readonly string RuleId;
 
         /// <summary>Paradox Mods 平台数字 ID（字符串形式，如 <c>"77171"</c>）；有测试分支时见 <see cref="AlternatePdxModIds"/>。</summary>
@@ -240,7 +240,6 @@ namespace MapExtPDX.MapExt.Core
         public readonly bool ResourceBuyer;
         public readonly bool ResidentAI;
         public readonly bool DownstreamAI;
-        public readonly string WaterSimQuality;
 
         public ConflictEvalSettings(
             string modeName,
@@ -250,8 +249,7 @@ namespace MapExtPDX.MapExt.Core
             bool householdProperty,
             bool resourceBuyer,
             bool residentAI,
-            bool downstreamAI,
-            string waterSimQuality = DefaultWaterSimQuality)
+            bool downstreamAI)
         {
             ModeName = string.IsNullOrEmpty(modeName) ? "ModeA" : modeName;
             EconomyFix = economyFix;
@@ -261,7 +259,6 @@ namespace MapExtPDX.MapExt.Core
             ResourceBuyer = resourceBuyer;
             ResidentAI = residentAI;
             DownstreamAI = downstreamAI;
-            WaterSimQuality = string.IsNullOrEmpty(waterSimQuality) ? DefaultWaterSimQuality : waterSimQuality;
         }
 
         public bool IsExpandedMode => ModeName != "None";
@@ -295,9 +292,6 @@ namespace MapExtPDX.MapExt.Core
             string mode = values.TryGetValue(StartupKeys.ModeKey, out object? m) && m is string ms && ms.Length > 0
                 ? ms
                 : "ModeA";
-            string waterSim = values.TryGetValue(KeyWaterSimQuality, out object? w) && w is string ws && ws.Length > 0
-                ? ws
-                : DefaultWaterSimQuality;
             bool BoolOf(string key, bool fallback) =>
                 values.TryGetValue(key, out object? v) && v is bool b ? b : fallback;
 
@@ -309,11 +303,8 @@ namespace MapExtPDX.MapExt.Core
                 BoolOf(KeyHouseholdProperty, true),
                 BoolOf(KeyResourceBuyer, false),
                 BoolOf(KeyResidentAI, false),
-                BoolOf(KeyDownstreamAI, false),
-                waterSim);
+                BoolOf(KeyDownstreamAI, false));
         }
-
-        public const string DefaultWaterSimQuality = "Vanilla_EveryFrame";
 
         private const string KeyEconomyFix = "isEnableEconomyFix";
         private const string KeyDemand = "EnableDemandEcoSystem";
@@ -322,7 +313,6 @@ namespace MapExtPDX.MapExt.Core
         private const string KeyResourceBuyer = "EnableResourceBuyerEcoSystem";
         private const string KeyResidentAI = "EnableResidentAIEcoSystem";
         private const string KeyDownstreamAI = "EnableDownstreamAIEcoSystem";
-        private const string KeyWaterSimQuality = "WaterSimQuality";
     }
 
     /// <summary>
@@ -665,10 +655,9 @@ namespace MapExtPDX.MapExt.Core
         #region Known Mod Compatibility & Runtime Auto-Disable Rules
 
         /// <summary>
-        /// 按名称兜底的补充兼容性规则表（已瘦身为仅保留静态单点字节码无法单独完整表达的 4 项交集说明；
-        /// 其余系统替换、宿主停用、<c>CellMapSystem.AddWriter</c>、动态补丁与跨阶段注册一律由字节码从已安装版本实时测定）。
-        /// <c>WaterFeatures</c> 只作备注：两边只共用 <c>WaterSystem.WaterSimSpeed</c>，仅在其水源工具移动水源、
-        /// 或开启其强制水模拟速度、波浪与潮汐选项时相互覆盖，影响限于水模拟推进节奏，与 MapExt 的水模拟档位无关。
+        /// 按名称兜底的补充兼容性规则表（已瘦身为仅保留静态单点字节码无法单独完整表达的 3 项交集说明；
+        /// 其余系统替换、宿主停用、<c>CellMapSystem.AddWriter</c>、动态补丁、跨阶段注册与写 <c>WaterSystem.WaterSimSpeed</c>
+        /// 一律由字节码从已安装版本实时测定）。
         /// </summary>
         public static readonly KnownModConflictRule[] KnownModRules =
         {
@@ -691,15 +680,6 @@ namespace MapExtPDX.MapExt.Core
                 vanillaModeSeverity: ConflictSeverity.Warning,
                 mitigatingToggleKeys: new[] { KeyHouseholdProperty },
                 canMitigateInExpandedModes: true),
-
-            new KnownModConflictRule(
-                ruleId: "WaterFeatures",
-                pdxModId: "75613",
-                assemblyNames: new[] { "Water_Features", "WaterFeatures" },
-                auditedVersion: "1.4.4",
-                expandedModeSeverity: ConflictSeverity.Info,
-                vanillaModeSeverity: ConflictSeverity.Info,
-                alternatePdxModIds: new[] { "125662" }),
 
             new KnownModConflictRule(
                 ruleId: "RoadBuilderDualInstall",
@@ -752,6 +732,15 @@ namespace MapExtPDX.MapExt.Core
 
         public const string UpdateSystemTypeName = "Game.UpdateSystem";
         public const string UpdateGroupSystemTypeName = "Game.Simulation.UpdateGroupSystem";
+
+        /// <summary>
+        /// 原版 <c>WaterSystem.WaterSimSpeed</c>（自动属性）的声明类型与 setter 名，供工具端字节码检测外部写入。
+        /// MapExt 在各模式、各水模拟档位都会写它（<c>PatchSet2WaterOpt</c> 的档位节流、暂停冻结与后置恢复），
+        /// 定级与 <c>.coc</c> 设定无关：外部模组写同一属性时只作备注。该值只决定每帧推进的模拟步数，不写入存档。
+        /// </summary>
+        public const string WaterSystemTypeName = "Game.Simulation.WaterSystem";
+
+        public const string WaterSimSpeedSetterName = "set_WaterSimSpeed";
 
         private static readonly Dictionary<string, ProtectedSystemTarget> s_SystemsByName = BuildSystemMap();
         private static readonly HashSet<string> s_SensitiveTypes = BuildSensitiveTypeSet();
