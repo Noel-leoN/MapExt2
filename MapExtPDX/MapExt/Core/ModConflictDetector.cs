@@ -179,7 +179,7 @@ namespace MapExtPDX.MapExt.Core
 
         /// <summary>
         /// 返回与 MapExt 当前启用的系统组或模式存在直接交集的已知 Mod 列表（仅陈述 MapExt 一侧交集事实）。
-        /// 无冲突返回 "None"。
+        /// 无冲突返回 "None"。经济分组只在经济修复总开关也开着时才算启用（总开关关闭时共用经济系统一个都不注册）。
         /// </summary>
         public static string GetConflictReport(ModSettings settings)
         {
@@ -187,17 +187,21 @@ namespace MapExtPDX.MapExt.Core
 
             var conflicts = new List<string>();
             bool isExpanded = settings.PatchModeChoice != PatchModeSetting.None;
+            bool economyFix = settings.isEnableEconomyFix;
 
-            if (HasRealisticPathFinding)
+            // 交集只在居民 AI 与消费采购两组替换的 4 个原版系统
+            if (HasRealisticPathFinding && economyFix &&
+                (settings.EnableResidentAIEcoSystem || settings.EnableResourceBuyerEcoSystem))
             {
                 conflicts.Add("RealisticPathFinding (ResidentAI / ResourceBuyer)");
             }
 
             if (HasTime2Work)
             {
+                // 扩展模式下 RentAdjustSystem 必替（CellOnly），与分组无关；原版尺寸下只随下游 AI 与找房两组出现
                 if (isExpanded)
                     conflicts.Add("Time2Work (RentAdjustSystem / AttractionSystem)");
-                else if (settings.EnableDownstreamAIEcoSystem || settings.EnableHouseholdPropertyEcoSystem)
+                else if (economyFix && (settings.EnableDownstreamAIEcoSystem || settings.EnableHouseholdPropertyEcoSystem))
                     conflicts.Add("Time2Work (LeisureSystem / RentAdjustSystem)");
             }
 
@@ -226,7 +230,8 @@ namespace MapExtPDX.MapExt.Core
         /// <summary>
         /// 在 <c>Mod.OnLoad</c> 阶段、<c>SystemReplacer.Apply</c> 之前调用。
         /// 根据已检测到的冲突 Mod 指纹，算出本会话要自动停用的经济分组，交给 <see cref="AppliedConfig.Capture"/>。
-        /// 停哪些分组只看共用清单 <see cref="ConflictTargets.RuntimeAutoDisableTargets"/>，此处不另写规则。
+        /// 停哪些分组只看共用清单 <see cref="ConflictTargets.RuntimeAutoDisableTargets"/>，此处不另写规则；
+        /// 只停本会话会生效的分组（见 <see cref="IsGroupEffective"/>），经济修复总开关关闭时不停用、不推通知。
         /// 严格保留 <c>"Auto-disabled "</c> 日志前缀。
         /// </summary>
         public static List<string> AutoDisableConflictGroups(ModSettings settings)
@@ -238,7 +243,7 @@ namespace MapExtPDX.MapExt.Core
 
             List<RuntimeAutoDisableDecision> decisions = ConflictTargets.PlanRuntimeAutoDisable(
                 s_DetectedRuleIds,
-                group => IsGroupEnabledInSettings(settings, group));
+                group => IsGroupEffective(settings, group));
             foreach (RuntimeAutoDisableDecision decision in decisions)
             {
                 RuntimeAutoDisableTarget target = decision.Target;
@@ -256,7 +261,7 @@ namespace MapExtPDX.MapExt.Core
                 var activeGroups = new List<string>();
                 foreach (string group in s_EconomyGroupOrder)
                 {
-                    if (IsGroupEnabledInSettings(settings, group) && !disabled.Contains(group))
+                    if (IsGroupEffective(settings, group) && !disabled.Contains(group))
                         activeGroups.Add(group);
                 }
 
@@ -266,6 +271,10 @@ namespace MapExtPDX.MapExt.Core
 
                 ModLog.Warn(Tag, $"共自动禁用 {disabled.Count} 个系统组: {string.Join(", ", disabled)}");
             }
+            else if (!settings.isEnableEconomyFix)
+            {
+                settings._systemStatusTooltip = "Economy fix is off. No economy system groups are active.";
+            }
             else
             {
                 settings._systemStatusTooltip = "All economy system groups active. No conflicts.";
@@ -274,9 +283,15 @@ namespace MapExtPDX.MapExt.Core
             return disabled;
         }
 
-        /// <summary>经济分组在设定里是否开着（只看分组自身的开关，不看经济修复总开关）。</summary>
-        private static bool IsGroupEnabledInSettings(ModSettings settings, string group)
+        /// <summary>
+        /// 经济分组在本会话是否会生效：经济修复总开关与分组自身的开关都开着。
+        /// 总开关关闭时 <c>SystemReplacer</c> 不注册任何共用经济系统，此时停用分组或报冲突都只是误报。
+        /// </summary>
+        private static bool IsGroupEffective(ModSettings settings, string group)
         {
+            if (!settings.isEnableEconomyFix)
+                return false;
+
             switch (group)
             {
                 case AppliedConfig.GroupDemand: return settings.EnableDemandEcoSystem;
