@@ -234,8 +234,11 @@ public sealed class CommandLineRunner
         ConflictEvalSettings evalSettings = ConflictEvalSettings.FromDictionary(state.GetAllValues());
         ConflictReport report = ConflictAnalyzer.Evaluate(ws, evalSettings);
 
-        _output.WriteLine(ConflictText.HeaderSummary(report, _language));
+        // 与冲突预检页一致：摘要句以评估模式开头，另一类模式结果不同时补一行，再写扫描概况
         _output.WriteLine(ConflictText.StatusBanner(report, _language).Value);
+        if (ConflictText.CrossModeSummary(report, _language) is { } crossMode)
+            _output.WriteLine(crossMode);
+        _output.WriteLine(ConflictText.HeaderSummary(report, _language));
 
         foreach (ModConflictItem item in report.Items)
         {

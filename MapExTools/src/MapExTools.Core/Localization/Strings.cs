@@ -1634,9 +1634,9 @@ public static class Strings
         ],
         ["Conflicts.NoActivePlayset"] = ["None (local Mods only)", "未设置（仅本地 Mods）", "未設定（僅本機 Mods）"],
         ["Conflicts.HeaderSummary"] = [
-            "Playset: {0} · Enabled code mods: {1} · Basis mode: {2} · Scan time: {3} ms",
-            "激活播放集：{0} · 已启用代码模组：{1} 个 · 评估模式：{2} · 扫描耗时：{3} ms",
-            "啟用播放集：{0} · 已啟用程式碼模組：{1} 個 · 評估模式：{2} · 掃描耗時：{3} ms",
+            "Playset: {0} · Enabled code mods: {1} · Scan time: {2} ms",
+            "激活播放集：{0} · 已启用代码模组：{1} 个 · 扫描耗时：{2} ms",
+            "啟用播放集：{0} · 已啟用程式碼模組：{1} 個 · 掃描耗時：{2} ms",
         ],
         ["Conflicts.UnsavedBasisNote"] = [
             "Evaluated against your current unsaved working settings in MapExTools; save them before launching so the game uses the same configuration.",
@@ -1655,20 +1655,57 @@ public static class Strings
             "無法解析 playset_config.json（{0}），本次僅掃描了本機 Mods 目錄。",
         ],
         ["Conflicts.Summary.HasHard"] = [
-            "Detected {0} hard conflict(s) and {1} conditional item(s) under the current MapExt settings.",
-            "当前设定下检测到 {0} 项硬冲突、{1} 项条件冲突或需关注项。",
-            "目前設定下偵測到 {0} 項硬衝突、{1} 項條件衝突或需留意項。",
+            "Evaluated for {2}: {0} hard conflict(s) and {1} conditional item(s).",
+            "按 {2}评估：检测到 {0} 项硬冲突、{1} 项条件冲突或需关注项。",
+            "依 {2}評估：偵測到 {0} 項硬衝突、{1} 項條件衝突或需留意項。",
         ],
         ["Conflicts.Summary.HasWarning"] = [
-            "No hard conflicts; {0} conditional item(s) to review ({1} item(s) already mitigated by current settings).",
-            "未检测到硬冲突；有 {0} 项条件冲突或需关注项（另有 {1} 项已被当前设定规避）。",
-            "未偵測到硬衝突；有 {0} 項條件衝突或需留意項（另有 {1} 項已被目前設定規避）。",
+            "Evaluated for {2}: no hard conflicts; {0} conditional item(s) to review ({1} item(s) already mitigated by current settings).",
+            "按 {2}评估：未检测到硬冲突；有 {0} 项条件冲突或需关注项（另有 {1} 项已被当前设定规避）。",
+            "依 {2}評估：未偵測到硬衝突；有 {0} 項條件衝突或需留意項（另有 {1} 項已被目前設定規避）。",
         ],
         ["Conflicts.Summary.Clean"] = [
-            "No active conflicts detected across {0} enabled code mod(s) ({1} item(s) mitigated by current settings).",
-            "已扫描 {0} 个启用代码模组，当前设定下未检测到生效冲突（{1} 项已被当前设定规避）。",
-            "已掃描 {0} 個啟用程式碼模組，目前設定下未偵測到生效衝突（{1} 項已被目前設定規避）。",
+            "Evaluated for {2}: no active conflicts across {0} enabled code mod(s) ({1} item(s) mitigated by current settings).",
+            "按 {2}评估：已扫描 {0} 个启用代码模组，未检测到生效冲突（{1} 项已被当前设定规避）。",
+            "依 {2}評估：已掃描 {0} 個啟用程式碼模組，未偵測到生效衝突（{1} 項已被目前設定規避）。",
         ],
+        ["Conflicts.ModeLabel"] = ["{0} ({1})", "{0}（{1}）", "{0}（{1}）"],
+        ["Conflicts.ModeClass.Expanded"] = ["extended map", "扩展地图", "擴展地圖"],
+        ["Conflicts.ModeClass.Vanilla"] = ["vanilla size", "原版尺寸", "原版尺寸"],
+        ["Conflicts.ModeScope.Expanded"] = [
+            "These results apply only to extended map modes (every extended size gives the same results) and to the current group settings; they are re-evaluated automatically when you change the mode or groups.",
+            "结果只适用于扩展地图模式（各扩展尺寸相同）和当前分组设定；改模式或分组后会自动重新评估。",
+            "結果只適用於擴展地圖模式（各擴展尺寸相同）和目前分組設定；改模式或分組後會自動重新評估。",
+        ],
+        ["Conflicts.ModeScope.Vanilla"] = [
+            "These results apply only to the vanilla size mode and to the current group settings; they are re-evaluated automatically when you change the mode or groups.",
+            "结果只适用于原版尺寸模式和当前分组设定；改模式或分组后会自动重新评估。",
+            "結果只適用於原版尺寸模式和目前分組設定；改模式或分組後會自動重新評估。",
+        ],
+        ["Conflicts.CrossMode.Vanilla"] = [
+            "In the vanilla size mode ({0}): {1}.",
+            "原版尺寸模式（{0}）下：{1}。",
+            "原版尺寸模式（{0}）下：{1}。",
+        ],
+        ["Conflicts.CrossMode.Expanded"] = [
+            "In extended map modes: {0}.",
+            "扩展地图模式下：{0}。",
+            "擴展地圖模式下：{0}。",
+        ],
+        ["Conflicts.CrossMode.Hard"] = [
+            "{0} hard conflict(s), {1} conditional item(s)",
+            "{0} 项硬冲突、{1} 项条件冲突",
+            "{0} 項硬衝突、{1} 項條件衝突",
+        ],
+        ["Conflicts.CrossMode.WarningOnly"] = [
+            "no hard conflicts, {0} conditional item(s)",
+            "无硬冲突，{0} 项条件冲突",
+            "無硬衝突，{0} 項條件衝突",
+        ],
+        ["Conflicts.CrossMode.Clean"] = ["no active conflicts", "无生效冲突", "無生效衝突"],
+        ["Conflicts.Scope.Expanded"] = ["[Extended map modes]", "【扩展地图模式】", "【擴展地圖模式】"],
+        ["Conflicts.Scope.EconomyGroups"] = ["[Economy group: {0}]", "【经济分组：{0}】", "【經濟分組：{0}】"],
+        ["Conflicts.Scope.AllModes"] = ["[All modes]", "【所有模式】", "【所有模式】"],
         ["Conflicts.EmptyList"] = [
             "All scanned code mods have no overlapping targets with the current MapExt configuration.",
             "已扫描的代码模组与当前 MapExt 配置无重叠目标。",
@@ -1704,14 +1741,54 @@ public static class Strings
             "關閉「{0}」並儲存",
         ],
         ["Conflicts.Find.EnabledWrite"] = [
-            "Method {0} calls set_Enabled on protected vanilla system {1}.",
-            "方法 {0} 对受保护原版系统 {1} 调用了 set_Enabled。",
-            "方法 {0} 對受保護原版系統 {1} 呼叫了 set_Enabled。",
+            "Method {0} toggles vanilla system {1}, which MapExt replaces or modifies (set_Enabled).",
+            "方法 {0} 会开关 MapExt 替换或修改的原版系统 {1}（set_Enabled）。",
+            "方法 {0} 會開關 MapExt 替換或修改的原版系統 {1}（set_Enabled）。",
         ],
-        ["Conflicts.Find.EnabledWriteReplace"] = [
-            "Method {0} calls set_Enabled on {1} while registering custom ECS system(s) in the same package.",
-            "方法 {0} 对受保护原版系统 {1} 调用了 set_Enabled，且同包注册了自定义 ECS 系统。",
-            "方法 {0} 對受保護原版系統 {1} 呼叫了 set_Enabled，且同包註冊了自訂 ECS 系統。",
+        ["Conflicts.Find.EnabledWrite.Replaced"] = [
+            "Method {0} toggles {1}, a vanilla system that MapExt replaces (set_Enabled).",
+            "方法 {0} 会开关 MapExt 替换的原版系统 {1}（set_Enabled）。",
+            "方法 {0} 會開關 MapExt 替換的原版系統 {1}（set_Enabled）。",
+        ],
+        ["Conflicts.Find.EnabledWrite.Modified"] = [
+            "Method {0} toggles {1}, a vanilla system that MapExt modifies (set_Enabled).",
+            "方法 {0} 会开关 MapExt 修改的原版系统 {1}（set_Enabled）。",
+            "方法 {0} 會開關 MapExt 修改的原版系統 {1}（set_Enabled）。",
+        ],
+        ["Conflicts.Find.EnabledWrite.CustomSystem"] = [
+            "The same package also registers its own ECS systems.",
+            "同包还注册了自定义 ECS 系统。",
+            "同包還註冊了自訂 ECS 系統。",
+        ],
+        ["Conflicts.Effect.CellMapReplaced"] = [
+            "If the vanilla system runs again, its grid size no longer matches MapExt's maps, which can cause out-of-bounds crashes or write data of the wrong size.",
+            "原版一旦重新运行，会与 MapExt 的地图网格尺寸错配，可能越界闪退或写入尺寸错误的数据。",
+            "原版一旦重新執行，會與 MapExt 的地圖網格尺寸錯配，可能越界閃退或寫入尺寸錯誤的資料。",
+        ],
+        ["Conflicts.Effect.CellOnlyExpanded"] = [
+            "In extended map modes MapExt must replace it, so turning off groups cannot avoid this; once the vanilla system's enabled state changes, both versions may run (when the vanilla one runs again, some values are read from the wrong cells, but it does not go out of bounds). In the vanilla size mode this conflict only exists while \"{0}\" is on.",
+            "扩展地图模式下 MapExt 必须替换它，关闭任何分组都无法避免；改动原版的启用状态后，两边的版本可能同时运行（原版重新运行时部分取值错位，但不会越界闪退）。原版尺寸模式下，只有开启「{0}」时才有这项冲突。",
+            "擴展地圖模式下 MapExt 必須替換它，關閉任何分組都無法避免；改動原版的啟用狀態後，兩邊的版本可能同時執行（原版重新執行時部分取值錯位，但不會越界閃退）。原版尺寸模式下，只有開啟「{0}」時才有這項衝突。",
+        ],
+        ["Conflicts.Effect.CellOnlyVanilla"] = [
+            "In the vanilla size mode MapExt replaces it only while \"{0}\" is on; once the vanilla system's enabled state changes, both versions may run.",
+            "原版尺寸模式下，MapExt 只在开启「{0}」时替换它；改动原版的启用状态后，两边的版本可能同时运行。",
+            "原版尺寸模式下，MapExt 只在開啟「{0}」時替換它；改動原版的啟用狀態後，兩邊的版本可能同時執行。",
+        ],
+        ["Conflicts.Effect.EconomyReplaced"] = [
+            "MapExt replaces it while \"{0}\" is on; once the vanilla system's enabled state changes, both versions may run.",
+            "MapExt 在开启「{0}」时替换它；改动原版的启用状态后，两边的版本可能同时运行。",
+            "MapExt 在開啟「{0}」時替換它；改動原版的啟用狀態後，兩邊的版本可能同時執行。",
+        ],
+        ["Conflicts.Effect.ExpandedHost"] = [
+            "In extended map modes MapExt modifies its calculations for the larger map; while it is disabled, those changes do not apply.",
+            "扩展地图模式下 MapExt 修改了它的计算以适配扩展地图；它被停用时，这些修改不起作用。",
+            "擴展地圖模式下 MapExt 修改了它的計算以適配擴展地圖；它被停用時，這些修改不起作用。",
+        ],
+        ["Conflicts.Effect.DemandHost"] = [
+            "MapExt modifies its calculations while \"{0}\" is on; while it is disabled, those changes do not apply.",
+            "MapExt 在开启「{0}」时修改它的计算；它被停用时，这些修改不起作用。",
+            "MapExt 在開啟「{0}」時修改它的計算；它被停用時，這些修改不起作用。",
         ],
         ["Conflicts.Find.ReplacedSystemPatch"] = [
             "Method {0} applies a {1} patch to vanilla {2}; when MapExt's replacement for that system is active, the vanilla system is disabled so that patch does not execute.",
@@ -1814,9 +1891,35 @@ public static class Strings
             "衝突預檢發現 {0} 項條件衝突或提示，可在「衝突預檢」頁查看詳情或一鍵關閉衝突分組。",
         ],
         ["Conflicts.Launch.ConfirmHard"] = [
-            "MapExTools detected {0} hard mod conflict(s) under the current MapExt settings:\n{1}\n\nRunning them together may cause CellMap out-of-bounds crashes, broken patches, or save issues.\nLaunch the game anyway?",
-            "MapExTools 在当前 MapExt 设定下检测到 {0} 项硬冲突模组：\n{1}\n\n同时运行可能引发 CellMap 越界闪退、补丁失效或存档问题。\n仍要启动游戏吗？",
-            "MapExTools 在目前 MapExt 設定下偵測到 {0} 項硬衝突模組：\n{1}\n\n同時執行可能引發 CellMap 越界閃退、補丁失效或存檔問題。\n仍要啟動遊戲嗎？",
+            "Evaluated for {0}, MapExTools found {1} mod(s) with hard conflicts:\n{2}\n\nLaunch the game anyway?",
+            "按 {0}评估，MapExTools 检测到 {1} 项硬冲突模组：\n{2}\n\n仍要启动游戏吗？",
+            "依 {0}評估，MapExTools 偵測到 {1} 項硬衝突模組：\n{2}\n\n仍要啟動遊戲嗎？",
+        ],
+        ["Conflicts.Launch.ConfirmHardItem"] = ["• {0} ({1}): {2}", "• {0}（{1}）：{2}", "• {0}（{1}）：{2}"],
+        ["Conflicts.Impact.CellMap"] = [
+            "toggles CellMap systems that MapExt replaces ({0}), which can cause out-of-bounds crashes or write data of the wrong size",
+            "会开关 MapExt 替换的 CellMap 系统（{0}），可能越界闪退或写入尺寸错误的数据",
+            "會開關 MapExt 替換的 CellMap 系統（{0}），可能越界閃退或寫入尺寸錯誤的資料",
+        ],
+        ["Conflicts.Impact.CellOnly"] = [
+            "toggles a system that MapExt must replace in extended map modes ({0}), which turning off groups cannot avoid, so both versions may run, but it does not go out of bounds",
+            "会开关 MapExt 在扩展地图模式下必须替换的系统（{0}），关闭分组也无法避免，两边的版本可能同时运行，但不会越界闪退",
+            "會開關 MapExt 在擴展地圖模式下必須替換的系統（{0}），關閉分組也無法避免，兩邊的版本可能同時執行，但不會越界閃退",
+        ],
+        ["Conflicts.Impact.CrossPhase"] = [
+            "schedules vanilla {0} in another update phase, which triggers EntityCommandBuffer errors",
+            "把原版 {0} 注册到其他更新阶段，会触发 EntityCommandBuffer 报错",
+            "把原版 {0} 註冊到其他更新階段，會觸發 EntityCommandBuffer 報錯",
+        ],
+        ["Conflicts.Impact.UnpatchAll"] = [
+            "removes the Harmony patches of all mods, so MapExt's changes stop working",
+            "会清除所有模组的 Harmony 补丁，MapExt 的修改随之失效",
+            "會清除所有模組的 Harmony 補丁，MapExt 的修改隨之失效",
+        ],
+        ["Conflicts.Impact.SeeConflictTab"] = [
+            "see the Conflict Check tab for details",
+            "详见「冲突预检」页",
+            "詳見「衝突預檢」頁",
         ],
     };
 

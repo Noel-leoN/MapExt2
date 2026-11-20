@@ -184,13 +184,16 @@ public static class ConflictAnalyzer
                         out string[] ruleKeys);
                     if (ruleSev != ConflictSeverity.None)
                     {
+                        (ConflictScope ruleScope, IReadOnlyList<string>? ruleGroups) = ScopeOf(matchedRule, settings);
                         findings.Add(new ConflictFinding(
                             ConflictFindingKind.KnownAuditRule,
                             ruleSev,
                             matchedRule.RuleId,
                             matchedRule.AuditedVersion,
                             null,
-                            ruleKeys.Length > 0 ? ruleKeys : null));
+                            ruleKeys.Length > 0 ? ruleKeys : null,
+                            ruleScope,
+                            ruleGroups));
                     }
                 }
             }
@@ -291,7 +294,7 @@ public static class ConflictAnalyzer
 
         foreach (AssemblyInspectionResult ins in inspections)
         {
-            // 4a. 受保护系统 set_Enabled 篡改（先定级剔除对宿主无害的常量 Enabled = true，再按目标系统去重归并）
+            // 4a. 对 MapExt 替换或修改的原版系统调用 set_Enabled（先定级剔除对宿主无害的常量 Enabled = true，再按目标系统去重归并）
             foreach (EnabledWriteEvidence ew in ins.EnabledWrites)
             {
                 ProtectedSystemTarget? target = ConflictTargets.FindProtectedSystem(ew.TargetSystemTypeName);
@@ -305,13 +308,17 @@ public static class ConflictAnalyzer
                 if (!seenSystemTargets.Add(ew.TargetSystemTypeName))
                     continue;
 
+                (ConflictScope scope, IReadOnlyList<string>? scopeGroups) = ScopeOf(target, settings);
                 findings.Add(new ConflictFinding(
                     ConflictFindingKind.SystemEnabledWrite,
                     eval.Severity,
                     ShortenType(ew.TargetSystemTypeName),
                     ShortenMember(ew.CallerTypeAndMethod),
                     hasCustomSystems ? "WithCustomSystem" : null,
-                    eval.MitigatingToggleKey != null ? [eval.MitigatingToggleKey] : null));
+                    eval.MitigatingToggleKey != null ? [eval.MitigatingToggleKey] : null,
+                    scope,
+                    scopeGroups,
+                    target.Role));
             }
 
             // 4a-2. 跨阶段将原版 UpdateGroupSystem 注册至非 Modification5 阶段（引发 ModificationBarrier5 异常）
@@ -326,7 +333,8 @@ public static class ConflictAnalyzer
                         ConflictFindingKind.CrossPhaseSystemSchedule,
                         ConflictSeverity.Hard,
                         ShortenType(cp.TargetSystemTypeName),
-                        ShortenMember(cp.CallerTypeAndMethod)));
+                        ShortenMember(cp.CallerTypeAndMethod),
+                        Scope: ConflictScope.AllModes));
                 }
             }
 
@@ -355,13 +363,16 @@ public static class ConflictAnalyzer
                 if (eval.Severity == ConflictSeverity.None)
                     continue;
 
+                (ConflictScope patchScope, IReadOnlyList<string>? patchGroups) = ScopeOf(target, settings);
                 findings.Add(new ConflictFinding(
                     ConflictFindingKind.HarmonyPatchOverlap,
                     eval.Severity,
                     displayTarget,
                     FormatPatchKindLabel(ho.Kind),
                     ShortenMember(ho.PatchTypeAndMethod),
-                    eval.MitigatingToggleKey != null ? [eval.MitigatingToggleKey] : null));
+                    eval.MitigatingToggleKey != null ? [eval.MitigatingToggleKey] : null,
+                    patchScope,
+                    patchGroups));
             }
 
             // 4b-2. 对已被 MapExt 替换停用的原版系统生命周期方法（如 ServiceCoverageSystem.OnUpdate）挂载补丁
@@ -381,13 +392,16 @@ public static class ConflictAnalyzer
                     if (eval.Severity == ConflictSeverity.None)
                         continue;
 
+                    (ConflictScope replacedScope, IReadOnlyList<string>? replacedGroups) = ScopeOf(target, settings);
                     findings.Add(new ConflictFinding(
                         ConflictFindingKind.ReplacedSystemPatch,
                         eval.Severity,
                         displayTarget,
                         FormatPatchKindLabel(rp.Kind),
                         ShortenMember(rp.PatchTypeAndMethod),
-                        eval.MitigatingToggleKey != null ? [eval.MitigatingToggleKey] : null));
+                        eval.MitigatingToggleKey != null ? [eval.MitigatingToggleKey] : null,
+                        replacedScope,
+                        replacedGroups));
                 }
             }
 
@@ -400,24 +414,27 @@ public static class ConflictAnalyzer
                         findings.Add(new ConflictFinding(
                             ConflictFindingKind.UnpatchAllNull,
                             ConflictSeverity.Hard,
-                            ShortenMember(ua.CallerTypeAndMethod)));
+                            ShortenMember(ua.CallerTypeAndMethod),
+                            Scope: ConflictScope.AllModes));
                         break;
                     case UnpatchAllContext.UnknownCallback:
                         findings.Add(new ConflictFinding(
                             ConflictFindingKind.UnpatchAllNull,
                             ConflictSeverity.Warning,
-                            ShortenMember(ua.CallerTypeAndMethod)));
+                            ShortenMember(ua.CallerTypeAndMethod),
+                            Scope: ConflictScope.AllModes));
                         break;
                     case UnpatchAllContext.DisposeOnly:
                         findings.Add(new ConflictFinding(
                             ConflictFindingKind.UnpatchAllDisposeOnly,
                             ConflictSeverity.Info,
-                            ShortenMember(ua.CallerTypeAndMethod)));
+                            ShortenMember(ua.CallerTypeAndMethod),
+                            Scope: ConflictScope.AllModes));
                         break;
                 }
             }
 
-            // 4d. 同方法体内 "kMapSize" / "kTextureSize" + FieldInfo.SetValue
+            // 4d. 同方法体内 "kMapSize" / "kTextureSize" + FieldInfo.SetValue（只有扩展地图模式改写这两个尺寸）
             foreach (StaticFieldReflectionWriteEvidence rw in ins.ReflectionFieldWrites)
             {
                 ConflictSeverity sev = settings.IsExpandedMode ? ConflictSeverity.Warning : ConflictSeverity.Info;
@@ -425,7 +442,8 @@ public static class ConflictAnalyzer
                     ConflictFindingKind.StaticFieldReflectionWrite,
                     sev,
                     rw.FieldNameLiteral,
-                    ShortenMember(rw.CallerTypeAndMethod)));
+                    ShortenMember(rw.CallerTypeAndMethod),
+                    Scope: ConflictScope.ExpandedMapModes));
             }
 
             // 4e. 写原版 WaterSystem.WaterSimSpeed：同包内跨程序集按方法去重，循环后汇成一条
@@ -446,8 +464,55 @@ public static class ConflictAnalyzer
             findings.Add(new ConflictFinding(
                 ConflictFindingKind.WaterSimSpeedWrite,
                 ConflictSeverity.Info,
-                string.Join(", ", waterSimSpeedWriters)));
+                string.Join(", ", waterSimSpeedWriters),
+                Scope: ConflictScope.AllModes));
         }
+    }
+
+    /// <summary>
+    /// 目标原版系统的适用范围，按 MapExt 在哪种地图模式、哪些分组下替换或修改它：
+    /// CellOnly 双重归属系统在扩展地图模式下必替、与分组无关，原版尺寸模式下只随找房与租金系统组替换。
+    /// </summary>
+    private static (ConflictScope Scope, IReadOnlyList<string>? GroupKeys) ScopeOf(
+        ProtectedSystemTarget target,
+        ConflictEvalSettings settings) => target.Role switch
+    {
+        ProtectedSystemRole.AlwaysReplacedCellMap => (ConflictScope.AllModes, null),
+        ProtectedSystemRole.ExpandedOnlyCellMap
+            or ProtectedSystemRole.ExpandedOnlyCellMapCoreHost
+            or ProtectedSystemRole.ExpandedOnlyCellMapAuxHost => (ConflictScope.ExpandedMapModes, null),
+        ProtectedSystemRole.CellOnlyDualRole when settings.IsExpandedMode => (ConflictScope.ExpandedMapModes, null),
+        _ when target.MitigatingToggleKey != null => (ConflictScope.EconomyGroups, [target.MitigatingToggleKey]),
+        _ => (ConflictScope.AllModes, null),
+    };
+
+    /// <summary>MapExt 补丁目标方法的适用范围，与 <see cref="ConflictTargets.EvaluatePatchOverlap"/> 的挂载条件一致。</summary>
+    private static (ConflictScope Scope, IReadOnlyList<string>? GroupKeys) ScopeOf(
+        PatchedMethodTarget target,
+        ConflictEvalSettings settings) => target.Scope switch
+    {
+        PatchTargetScope.AllModes => (ConflictScope.AllModes, null),
+        PatchTargetScope.ExpandedModesOnly => (ConflictScope.ExpandedMapModes, null),
+        PatchTargetScope.EconomyDemand => (ConflictScope.EconomyGroups, [ConflictTargets.KeyDemand]),
+        PatchTargetScope.EconomyHouseholdProperty => (ConflictScope.EconomyGroups, [ConflictTargets.KeyHouseholdProperty]),
+        PatchTargetScope.EconomyResourceBuyer => (ConflictScope.EconomyGroups, [ConflictTargets.KeyResourceBuyer]),
+        PatchTargetScope.FindTargets when settings.IsExpandedMode => (ConflictScope.ExpandedMapModes, null),
+        PatchTargetScope.FindTargets => (ConflictScope.EconomyGroups,
+            [ConflictTargets.KeyHouseholdProperty, ConflictTargets.KeyResourceBuyer, ConflictTargets.KeyDownstreamAI]),
+        _ => (ConflictScope.Unspecified, null),
+    };
+
+    /// <summary>补充规则的适用范围：只在扩展地图模式定级的归扩展；可按分组规避的归经济分组；其余（如双装）归所有模式。</summary>
+    private static (ConflictScope Scope, IReadOnlyList<string>? GroupKeys) ScopeOf(
+        KnownModConflictRule rule,
+        ConflictEvalSettings settings)
+    {
+        if (rule.VanillaModeSeverity == ConflictSeverity.None && rule.ExpandedModeSeverity != ConflictSeverity.None)
+            return (ConflictScope.ExpandedMapModes, null);
+
+        bool byGroups = rule.MitigatingToggleKeys.Length > 0 &&
+                        (!settings.IsExpandedMode || rule.CanMitigateInExpandedModes);
+        return byGroups ? (ConflictScope.EconomyGroups, rule.MitigatingToggleKeys) : (ConflictScope.AllModes, null);
     }
 
     private static IReadOnlyList<string> ComputeSafeOneClickKeys(List<ConflictFinding> findings, ConflictSeverity maxSeverity)

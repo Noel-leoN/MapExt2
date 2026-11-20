@@ -88,6 +88,7 @@ public partial class ConflictCheckPage : UserControl
         if (scanning && report == null)
         {
             BannerStatusText.DataContext = new ToneLine(Loc.Instance["Conflicts.Scanning"], PackageTone.Accent);
+            ClearModeLines();
             HeaderMetaText.Text = string.Empty;
             UnsavedBasisText.Visibility = Visibility.Collapsed;
             PlaysetErrorText.Visibility = Visibility.Collapsed;
@@ -109,15 +110,22 @@ public partial class ConflictCheckPage : UserControl
                 BannerStatusText.DataContext = new ToneLine(Loc.Instance["Conflicts.Scanning"], PackageTone.Muted);
             }
 
+            ClearModeLines();
             HeaderMetaText.Text = string.Empty;
             return;
         }
 
+        // 摘要句以评估模式开头；下面两行说明结果只适用于该类模式，另一类模式结果不同时给出那边的结论
         DetailLine banner = ConflictText.StatusBanner(report, lang);
         string bannerText = scanning
             ? $"{banner.Value} ({Loc.Instance["Conflicts.Scanning"]})"
             : banner.Value;
         BannerStatusText.DataContext = new ToneLine(bannerText, banner.Tone);
+        ModeScopeText.Text = ConflictText.ModeScopeNote(report.Settings, lang);
+        ModeScopeText.Visibility = Visibility.Visible;
+        string? crossMode = ConflictText.CrossModeSummary(report, lang);
+        CrossModeText.Text = crossMode ?? string.Empty;
+        CrossModeText.Visibility = crossMode != null ? Visibility.Visible : Visibility.Collapsed;
         HeaderMetaText.Text = ConflictText.HeaderSummary(report, lang);
 
         if (Coc.HasUnsavedChanges)
@@ -168,6 +176,15 @@ public partial class ConflictCheckPage : UserControl
         {
             CardsHost.Children.Add(BuildConflictCard(item, report.Settings, lang));
         }
+    }
+
+    /// <summary>扫描中或没有报告时收起适用范围与另一类模式两行。</summary>
+    private void ClearModeLines()
+    {
+        ModeScopeText.Text = string.Empty;
+        ModeScopeText.Visibility = Visibility.Collapsed;
+        CrossModeText.Text = string.Empty;
+        CrossModeText.Visibility = Visibility.Collapsed;
     }
 
     private Border BuildConflictCard(ModConflictItem item, ConflictEvalSettings settings, string lang)

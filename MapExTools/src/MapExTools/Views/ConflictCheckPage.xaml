@@ -31,10 +31,14 @@
                             ToolTip="{Binding [Conflicts.RescanTip], Source={x:Static svc:Loc.Instance}}" />
                 </StackPanel>
 
-                <!-- 左侧：扫描状态、Playset 摘要与未保存基准说明 -->
+                <!-- 左侧：评估模式与冲突摘要、适用范围、另一类模式的结果、Playset 摘要与未保存基准说明 -->
                 <StackPanel VerticalAlignment="Center">
                     <TextBlock x:Name="BannerStatusText" FontSize="13" FontWeight="SemiBold"
                                TextWrapping="Wrap" Text="{Binding Text}" Style="{StaticResource ToneText}" />
+                    <TextBlock x:Name="ModeScopeText" FontSize="12" Margin="0,3,0,0" TextWrapping="Wrap"
+                               Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                    <TextBlock x:Name="CrossModeText" FontSize="12" Margin="0,3,0,0" TextWrapping="Wrap" Visibility="Collapsed"
+                               Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
                     <TextBlock x:Name="HeaderMetaText" FontSize="12" Margin="0,3,0,0"
                                Foreground="{DynamicResource TextFillColorSecondaryBrush}"
                                TextTrimming="CharacterEllipsis" />

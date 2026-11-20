@@ -1,6 +1,8 @@
+using System.Globalization;
 using System.Reflection;
 using System.Reflection.Emit;
 using MapExTools.Core.Conflicts;
+using MapExTools.Core.Localization;
 using MapExTools.Core.Paths;
 using MapExtPDX.MapExt.Core;
 
@@ -492,11 +494,43 @@ public sealed class ModAssemblyInspectorTests
             Assert.False(rentModeA.CanOneClickMitigate);
             Assert.Empty(rentModeA.OneClickDisableKeys);
 
+            // 扩展地图模式下 CellOnly 与分组无关：标为扩展地图模式，并带上角色供文案区分“替换”与“修改”
+            ConflictFinding rentModeAFinding = Assert.Single(rentModeA.Findings, f => f.Kind == ConflictFindingKind.SystemEnabledWrite);
+            Assert.Equal(ConflictScope.ExpandedMapModes, rentModeAFinding.Scope);
+            Assert.Null(rentModeAFinding.ScopeGroupKeys);
+            Assert.Equal(ProtectedSystemRole.CellOnlyDualRole, rentModeAFinding.SystemRole);
+
+            // 换原版尺寸、沿用同一组分组设定：CustomRentMod 降为条件冲突，扩展专属的宿主停用项消失，故给出跨模式摘要
+            var vanillaSameGroups = new ConflictEvalSettings("None", true, true, true, true, resourceBuyer: true, false, false);
+            ConflictReport vanillaSameGroupsReport = ConflictAnalyzer.Evaluate(workspace, vanillaSameGroups);
+            Assert.Equal(ConflictSeverity.Warning, Assert.Single(vanillaSameGroupsReport.Items, i => i.DisplayName == "CustomRentMod").Severity);
+            Assert.DoesNotContain(vanillaSameGroupsReport.Items, i => i.DisplayName == "HostDisableMod");
+            Assert.True(vanillaSameGroupsReport.HardConflictCount > 0); // 跨阶段注册的 RealisticPathFinding 在两类模式下都是硬冲突
+            const string zh = UiLanguage.SimplifiedChinese;
+            string expectedCounts = string.Format(
+                CultureInfo.InvariantCulture,
+                Strings.Get(zh, "Conflicts.CrossMode.Hard"),
+                vanillaSameGroupsReport.HardConflictCount,
+                vanillaSameGroupsReport.WarningCount);
+            Assert.Equal(
+                string.Format(CultureInfo.InvariantCulture, Strings.Get(zh, "Conflicts.CrossMode.Vanilla"), "None 14km", expectedCounts),
+                ConflictText.CrossModeSummary(modeAReport, zh));
+
             // RealisticPathFinding：跨阶段注册由字节码定为 Hard；4 处停用原版系统各记一条，没有按名规则与核对基准版本
             ModConflictItem rpfItem = Assert.Single(modeAReport.Items, i => i.DisplayName == "RealisticPathFinding");
             Assert.Equal(ConflictSeverity.Hard, rpfItem.Severity);
             Assert.Contains(rpfItem.Findings, f => f.Kind == ConflictFindingKind.CrossPhaseSystemSchedule);
             Assert.Equal(4, rpfItem.Findings.Count(f => f.Kind == ConflictFindingKind.SystemEnabledWrite));
+            Assert.Equal(ConflictScope.AllModes, Assert.Single(rpfItem.Findings, f => f.Kind == ConflictFindingKind.CrossPhaseSystemSchedule).Scope);
+            // 停用的 4 个原版系统都是经济分组替换：按各自分组标注（居民 AI 与消费采购）
+            Assert.All(
+                rpfItem.Findings.Where(f => f.Kind == ConflictFindingKind.SystemEnabledWrite),
+                f =>
+                {
+                    Assert.Equal(ConflictScope.EconomyGroups, f.Scope);
+                    Assert.Equal(ProtectedSystemRole.SharedEconomyReplaced, f.SystemRole);
+                    Assert.Contains(Assert.Single(f.ScopeGroupKeys!), new[] { ConflictTargets.KeyResidentAI, ConflictTargets.KeyResourceBuyer });
+                });
             Assert.DoesNotContain(rpfItem.Findings, f => f.Kind == ConflictFindingKind.KnownAuditRule);
             Assert.Null(rpfItem.AuditedVersion);
             Assert.False(rpfItem.CanOneClickMitigate);
@@ -523,6 +557,11 @@ public sealed class ModAssemblyInspectorTests
             Assert.Equal(ConflictSeverity.Warning, rentVanillaOpen.Severity);
             Assert.True(rentVanillaOpen.CanOneClickMitigate);
             Assert.Equal([ConflictTargets.KeyHouseholdProperty], rentVanillaOpen.OneClickDisableKeys);
+
+            // 原版尺寸模式下 CellOnly 只随找房与租金系统组出现：标为该经济分组
+            ConflictFinding rentVanillaFinding = Assert.Single(rentVanillaOpen.Findings, f => f.Kind == ConflictFindingKind.SystemEnabledWrite);
+            Assert.Equal(ConflictScope.EconomyGroups, rentVanillaFinding.Scope);
+            Assert.Equal([ConflictTargets.KeyHouseholdProperty], rentVanillaFinding.ScopeGroupKeys!);
             Assert.DoesNotContain(vanillaOpenReport.Items, i => i.DisplayName == "BufferWriterMod");
 
             ModConflictItem dynPatchMitigated = Assert.Single(vanillaOpenReport.Items, i => i.DisplayName == "DynamicStringPatchMod");
@@ -569,6 +608,9 @@ public sealed class ModAssemblyInspectorTests
             Assert.True(activeItem.CanOneClickMitigate);
             Assert.Equal([ConflictTargets.KeyResidentAI], activeItem.OneClickDisableKeys);
             Assert.DoesNotContain(activeItem.Findings, f => f.Kind is ConflictFindingKind.KnownAuditRule or ConflictFindingKind.CrossPhaseSystemSchedule);
+
+            // 只剩经济分组的交集：换原版尺寸模式结果相同，不给跨模式摘要
+            Assert.Null(ConflictText.CrossModeSummary(activeReport, UiLanguage.SimplifiedChinese));
 
             // ResidentAI 与 ResourceBuyer 均关闭（默认设定）时：变为 Mitigated
             var defaultSettings = new ConflictEvalSettings("ModeA", true, true, true, true, resourceBuyer: false, residentAI: false, false);

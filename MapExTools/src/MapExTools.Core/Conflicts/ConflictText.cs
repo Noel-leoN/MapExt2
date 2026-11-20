@@ -54,33 +54,45 @@ public static class ConflictText
             : Format(language, "Conflicts.Version.WithAudited", installed, audited);
     }
 
+    /// <summary>扫描概况：激活播放集、启用的代码模组数与扫描耗时（评估模式放在 <see cref="StatusBanner"/> 句首）。</summary>
     public static string HeaderSummary(ConflictReport report, string language)
     {
         ArgumentNullException.ThrowIfNull(report);
 
         string playset = report.Workspace.Playset.ActivePlaysetName
                          ?? Strings.Get(language, "Conflicts.NoActivePlayset");
-        StartupModeInfo? modeInfo = StartupKeys.Modes.FirstOrDefault(m => m.Name == report.Settings.ModeName);
-        string modeLabel = modeInfo != null ? PackageText.ModeLabel(modeInfo, language) : report.Settings.ModeName;
 
         return Format(
             language,
             "Conflicts.HeaderSummary",
             playset,
             report.Workspace.EnabledCodeModCount,
-            modeLabel,
             report.Workspace.ScanElapsedMs);
     }
 
+    /// <summary>评估所用模式的标签并附模式类别，如“ModeA 57km（扩展地图）”“None 14km（原版尺寸）”。</summary>
+    public static string EvalModeLabel(ConflictEvalSettings settings, string language)
+    {
+        ArgumentNullException.ThrowIfNull(settings);
+
+        string modeClass = Strings.Get(
+            language,
+            settings.IsExpandedMode ? "Conflicts.ModeClass.Expanded" : "Conflicts.ModeClass.Vanilla");
+        return Format(language, "Conflicts.ModeLabel", ModeNameWithSize(settings.ModeName), modeClass);
+    }
+
+    /// <summary>冲突摘要句，以评估模式开头：同一批模组换一类模式评估，结果可能不同。</summary>
     public static DetailLine StatusBanner(ConflictReport report, string language)
     {
         ArgumentNullException.ThrowIfNull(report);
+
+        string mode = EvalModeLabel(report.Settings, language);
 
         if (report.HardConflictCount > 0)
         {
             return new DetailLine(
                 string.Empty,
-                Format(language, "Conflicts.Summary.HasHard", report.HardConflictCount, report.WarningCount),
+                Format(language, "Conflicts.Summary.HasHard", report.HardConflictCount, report.WarningCount, mode),
                 PackageTone.Error);
         }
 
@@ -88,14 +100,61 @@ public static class ConflictText
         {
             return new DetailLine(
                 string.Empty,
-                Format(language, "Conflicts.Summary.HasWarning", report.WarningCount, report.MitigatedCount),
+                Format(language, "Conflicts.Summary.HasWarning", report.WarningCount, report.MitigatedCount, mode),
                 PackageTone.Warning);
         }
 
         return new DetailLine(
             string.Empty,
-            Format(language, "Conflicts.Summary.Clean", report.Workspace.EnabledCodeModCount, report.MitigatedCount),
+            Format(language, "Conflicts.Summary.Clean", report.Workspace.EnabledCodeModCount, report.MitigatedCount, mode),
             PackageTone.Good);
+    }
+
+    /// <summary>冲突预检页顶部说明：结果只适用于评估所用的模式类别与当前分组设定。</summary>
+    public static string ModeScopeNote(ConflictEvalSettings settings, string language)
+    {
+        ArgumentNullException.ThrowIfNull(settings);
+
+        return Strings.Get(
+            language,
+            settings.IsExpandedMode ? "Conflicts.ModeScope.Expanded" : "Conflicts.ModeScope.Vanilla");
+    }
+
+    /// <summary>
+    /// 换另一类模式（扩展地图与原版尺寸互换）、沿用同一组分组设定再评估一次；条件冲突及以上的结果与当前不同时给出一行摘要，相同时返回 null。
+    /// 只陈述另一类模式下的结果，不作建议：已有的扩展存档不能改用原版尺寸读取。
+    /// </summary>
+    public static string? CrossModeSummary(ConflictReport report, string language)
+    {
+        ArgumentNullException.ThrowIfNull(report);
+
+        ConflictEvalSettings current = report.Settings;
+        string altMode = current.IsExpandedMode
+            ? VanillaModeName
+            : StartupKeys.Modes.FirstOrDefault(m => m.Name != VanillaModeName)?.Name ?? "ModeA";
+        var alt = new ConflictEvalSettings(
+            altMode,
+            current.EconomyFix,
+            current.Demand,
+            current.JobSearch,
+            current.HouseholdProperty,
+            current.ResourceBuyer,
+            current.ResidentAI,
+            current.DownstreamAI);
+        ConflictReport altReport = ConflictAnalyzer.Evaluate(report.Workspace, alt);
+
+        if (ActiveConflictKeys(report).SetEquals(ActiveConflictKeys(altReport)))
+            return null;
+
+        string counts = altReport.HardConflictCount > 0
+            ? Format(language, "Conflicts.CrossMode.Hard", altReport.HardConflictCount, altReport.WarningCount)
+            : altReport.WarningCount > 0
+                ? Format(language, "Conflicts.CrossMode.WarningOnly", altReport.WarningCount)
+                : Strings.Get(language, "Conflicts.CrossMode.Clean");
+
+        return current.IsExpandedMode
+            ? Format(language, "Conflicts.CrossMode.Vanilla", ModeNameWithSize(altMode), counts)
+            : Format(language, "Conflicts.CrossMode.Expanded", counts);
     }
 
     /// <summary>
@@ -118,6 +177,7 @@ public static class ConflictText
         return new DetailLine(string.Empty, Format(language, "Conflicts.UnsavedBasisWorse", names), tone);
     }
 
+    /// <summary>单条发现的文字：句首标注适用范围，句末附定级说明（已规避、可关闭某分组规避）。</summary>
     public static string DescribeFinding(ConflictFinding finding, ConflictEvalSettings settings, string language)
     {
         ArgumentNullException.ThrowIfNull(finding);
@@ -125,9 +185,7 @@ public static class ConflictText
 
         string text = finding.Kind switch
         {
-            ConflictFindingKind.SystemEnabledWrite => finding.Arg2 == "WithCustomSystem"
-                ? Format(language, "Conflicts.Find.EnabledWriteReplace", finding.Arg1 ?? "?", finding.Arg0)
-                : Format(language, "Conflicts.Find.EnabledWrite", finding.Arg1 ?? "?", finding.Arg0),
+            ConflictFindingKind.SystemEnabledWrite => DescribeEnabledWrite(finding, settings, language),
 
             ConflictFindingKind.ReplacedSystemPatch =>
                 Format(language, "Conflicts.Find.ReplacedSystemPatch", finding.Arg2 ?? "?", finding.Arg1 ?? "Patch", finding.Arg0),
@@ -169,18 +227,77 @@ public static class ConflictText
             _ => finding.Arg0,
         };
 
+        string gap = Gap(language);
         if (finding.Severity == ConflictSeverity.Mitigated)
         {
-            text += " " + Strings.Get(language, "Conflicts.Note.MitigatedBySettings");
+            text += gap + Strings.Get(language, "Conflicts.Note.MitigatedBySettings");
         }
         else if (finding.Severity == ConflictSeverity.Warning &&
                  finding.MitigatingToggleKeys is { Count: > 0 } keys)
         {
             string toggleNames = JoinToggleNames(keys, language);
-            text += " " + Format(language, "Conflicts.Note.CanDisableGroup", toggleNames);
+            text += gap + Format(language, "Conflicts.Note.CanDisableGroup", toggleNames);
         }
 
-        return text;
+        return ScopeTag(finding, language) is { } tag ? tag + gap + text : text;
+    }
+
+    /// <summary>适用范围标签；诊断类发现（待下载、缺前置等）不标注。</summary>
+    private static string? ScopeTag(ConflictFinding finding, string language) => finding.Scope switch
+    {
+        ConflictScope.ExpandedMapModes => Strings.Get(language, "Conflicts.Scope.Expanded"),
+        ConflictScope.EconomyGroups when finding.ScopeGroupKeys is { Count: > 0 } keys =>
+            Format(language, "Conflicts.Scope.EconomyGroups", JoinToggleNames(keys, language)),
+        ConflictScope.AllModes => Strings.Get(language, "Conflicts.Scope.AllModes"),
+        _ => null,
+    };
+
+    /// <summary>
+    /// <c>set_Enabled</c> 发现：按目标系统的角色称为“MapExt 替换的”或“MapExt 修改的”原版系统，再写 MapExt 何时介入及后果。
+    /// 角色未知（如手工构造的发现）时用不区分角色的说法。
+    /// </summary>
+    private static string DescribeEnabledWrite(ConflictFinding finding, ConflictEvalSettings settings, string language)
+    {
+        string baseKey = finding.SystemRole switch
+        {
+            null => "Conflicts.Find.EnabledWrite",
+            ProtectedSystemRole.ExpandedOnlyCellMapCoreHost
+                or ProtectedSystemRole.ExpandedOnlyCellMapAuxHost
+                or ProtectedSystemRole.SharedDemandHost => "Conflicts.Find.EnabledWrite.Modified",
+            _ => "Conflicts.Find.EnabledWrite.Replaced",
+        };
+
+        var parts = new List<string>(3) { Format(language, baseKey, finding.Arg1 ?? "?", finding.Arg0) };
+        if (EnabledWriteEffect(finding, settings, language) is { } effect)
+            parts.Add(effect);
+        if (finding.Arg2 == "WithCustomSystem")
+            parts.Add(Strings.Get(language, "Conflicts.Find.EnabledWrite.CustomSystem"));
+
+        return string.Join(Gap(language), parts);
+    }
+
+    /// <summary>
+    /// 按角色与评估模式写后果。CellOnly 双重归属系统的说法依据冲突检测审计 §8.7（N1）：原版重新运行时取格有边界检查或钳制，
+    /// 结果是取值错位与重复结算、不会越界；扩展地图模式下关闭分组也无法避免，原版尺寸模式下只随找房与租金系统组出现。
+    /// </summary>
+    private static string? EnabledWriteEffect(ConflictFinding finding, ConflictEvalSettings settings, string language)
+    {
+        string householdGroup = Strings.Get(language, "Startup.Key." + ConflictTargets.KeyHouseholdProperty);
+        return finding.SystemRole switch
+        {
+            ProtectedSystemRole.AlwaysReplacedCellMap or ProtectedSystemRole.ExpandedOnlyCellMap =>
+                Strings.Get(language, "Conflicts.Effect.CellMapReplaced"),
+            ProtectedSystemRole.CellOnlyDualRole => settings.IsExpandedMode
+                ? Format(language, "Conflicts.Effect.CellOnlyExpanded", householdGroup)
+                : Format(language, "Conflicts.Effect.CellOnlyVanilla", householdGroup),
+            ProtectedSystemRole.SharedEconomyReplaced when finding.ScopeGroupKeys is { Count: > 0 } keys =>
+                Format(language, "Conflicts.Effect.EconomyReplaced", JoinToggleNames(keys, language)),
+            ProtectedSystemRole.ExpandedOnlyCellMapCoreHost or ProtectedSystemRole.ExpandedOnlyCellMapAuxHost =>
+                Strings.Get(language, "Conflicts.Effect.ExpandedHost"),
+            ProtectedSystemRole.SharedDemandHost when finding.ScopeGroupKeys is { Count: > 0 } keys =>
+                Format(language, "Conflicts.Effect.DemandHost", JoinToggleNames(keys, language)),
+            _ => null,
+        };
     }
 
     public static string OneClickButtonLabel(IReadOnlyList<string> toggleKeys, string language)
@@ -276,17 +393,108 @@ public static class ConflictText
         return null;
     }
 
-    /// <summary>点击启动时的硬冲突二次确认弹窗文本。</summary>
+    /// <summary>点击启动时的硬冲突二次确认弹窗文本：以评估模式开头，逐个模组写出硬冲突的后果。</summary>
     public static string BuildLaunchHardConfirmMessage(ConflictReport report, string language)
     {
+        ArgumentNullException.ThrowIfNull(report);
+
         string list = string.Join(
             Environment.NewLine,
             report.Items
                 .Where(i => i.Severity == ConflictSeverity.Hard)
-                .Select(i => $"• {i.DisplayName} ({SourceLabel(i, language)})"));
+                .Select(i => Format(
+                    language,
+                    "Conflicts.Launch.ConfirmHardItem",
+                    i.DisplayName,
+                    SourceLabel(i, language),
+                    HardImpacts(i, language))));
 
-        return Format(language, "Conflicts.Launch.ConfirmHard", report.HardConflictCount, list);
+        return Format(
+            language,
+            "Conflicts.Launch.ConfirmHard",
+            EvalModeLabel(report.Settings, language),
+            report.HardConflictCount,
+            list);
     }
+
+    /// <summary>
+    /// 一个模组各项硬冲突的后果，按种类归并：CellMap 替换系统被开关可能越界；CellOnly 系统是重复运行、不越界（审计 §8.7）；
+    /// 跨阶段注册触发 ECB 报错；清除全部补丁使 MapExt 的修改失效。其余种类请玩家看冲突预检页。
+    /// </summary>
+    private static string HardImpacts(ModConflictItem item, string language)
+    {
+        var cellMapSystems = new List<string>();
+        var cellOnlySystems = new List<string>();
+        var crossPhaseSystems = new List<string>();
+        bool removesAllPatches = false;
+        bool other = false;
+
+        foreach (ConflictFinding f in item.Findings.Where(f => f.Severity == ConflictSeverity.Hard))
+        {
+            switch (f.Kind)
+            {
+                case ConflictFindingKind.SystemEnabledWrite
+                    when f.SystemRole is ProtectedSystemRole.AlwaysReplacedCellMap or ProtectedSystemRole.ExpandedOnlyCellMap:
+                    AddOnce(cellMapSystems, f.Arg0);
+                    break;
+                case ConflictFindingKind.SystemEnabledWrite when f.SystemRole == ProtectedSystemRole.CellOnlyDualRole:
+                    AddOnce(cellOnlySystems, f.Arg0);
+                    break;
+                case ConflictFindingKind.CrossPhaseSystemSchedule:
+                    AddOnce(crossPhaseSystems, f.Arg0);
+                    break;
+                case ConflictFindingKind.UnpatchAllNull:
+                    removesAllPatches = true;
+                    break;
+                default:
+                    other = true;
+                    break;
+            }
+        }
+
+        var phrases = new List<string>();
+        if (cellMapSystems.Count > 0)
+            phrases.Add(Format(language, "Conflicts.Impact.CellMap", string.Join(", ", cellMapSystems)));
+        if (cellOnlySystems.Count > 0)
+            phrases.Add(Format(language, "Conflicts.Impact.CellOnly", string.Join(", ", cellOnlySystems)));
+        if (crossPhaseSystems.Count > 0)
+            phrases.Add(Format(language, "Conflicts.Impact.CrossPhase", string.Join(", ", crossPhaseSystems)));
+        if (removesAllPatches)
+            phrases.Add(Strings.Get(language, "Conflicts.Impact.UnpatchAll"));
+        if (other || phrases.Count == 0)
+            phrases.Add(Strings.Get(language, "Conflicts.Impact.SeeConflictTab"));
+
+        return string.Join(Strings.Get(language, "Startup.ListSeparator"), phrases);
+
+        static void AddOnce(List<string> list, string value)
+        {
+            if (!list.Contains(value, StringComparer.Ordinal))
+                list.Add(value);
+        }
+    }
+
+    /// <summary>原版尺寸模式在 <c>.coc</c> 中的模式名（评估时以此区分扩展地图模式与原版尺寸）。</summary>
+    private const string VanillaModeName = "None";
+
+    /// <summary>模式名加地图边长，如“ModeA 57km”；不是现行模式时原样返回模式名。</summary>
+    private static string ModeNameWithSize(string modeName)
+    {
+        StartupModeInfo? mode = StartupKeys.Modes.FirstOrDefault(m => m.Name == modeName);
+        return mode != null
+            ? string.Create(CultureInfo.InvariantCulture, $"{mode.Name} {mode.MapSize / 1000}km")
+            : modeName;
+    }
+
+    /// <summary>条件冲突及以上的模组与等级，用于比较两类模式的评估结果是否相同。</summary>
+    private static HashSet<(string PackageKey, ConflictSeverity Severity)> ActiveConflictKeys(ConflictReport report) =>
+        report.Items
+            .Where(i => i.Severity >= ConflictSeverity.Warning)
+            .Select(i => (i.PackageKey, i.Severity))
+            .ToHashSet();
+
+    /// <summary>相邻两段文字之间的间隔：中文句读自带停顿，不加空格；英文加一个空格。</summary>
+    private static string Gap(string language) =>
+        language is UiLanguage.SimplifiedChinese or UiLanguage.TraditionalChinese ? string.Empty : " ";
 
     private static string Format(string language, string key, params object?[] args) =>
         string.Format(CultureInfo.InvariantCulture, Strings.Get(language, key), args);

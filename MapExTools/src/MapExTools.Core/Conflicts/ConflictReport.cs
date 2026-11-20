@@ -5,7 +5,7 @@ namespace MapExTools.Core.Conflicts;
 /// <summary>单条冲突或备注发现的事实机理种类（供 <see cref="ConflictText"/> 三语渲染）。</summary>
 public enum ConflictFindingKind
 {
-    /// <summary>方法对受保护原版系统调用了 <c>ComponentSystemBase.set_Enabled</c>。</summary>
+    /// <summary>方法对 MapExt 替换或修改的原版系统调用了 <c>ComponentSystemBase.set_Enabled</c>。</summary>
     SystemEnabledWrite,
 
     /// <summary>对已被替换停用的原版系统生命周期方法（如 <c>OnUpdate</c>）挂载了 Harmony 补丁。</summary>
@@ -45,14 +45,36 @@ public enum ConflictFindingKind
     CompanionAutoHibernates,
 }
 
+/// <summary>发现的适用范围：在哪种地图模式、哪些设定下出现，界面据此在条目前标注。</summary>
+public enum ConflictScope
+{
+    /// <summary>不标注（待下载、缺前置、无法读取等诊断项）。</summary>
+    Unspecified,
+
+    /// <summary>只在扩展地图模式出现，与经济分组开关无关。</summary>
+    ExpandedMapModes,
+
+    /// <summary>开启对应经济分组时出现，与地图模式无关（分组见 <see cref="ConflictFinding.ScopeGroupKeys"/>）。</summary>
+    EconomyGroups,
+
+    /// <summary>任何地图模式、任何分组设定下都会出现。</summary>
+    AllModes,
+}
+
 /// <summary>单条结构化观测事实发现。</summary>
+/// <param name="Scope">适用范围，由分析器按 MapExt 介入该目标的模式与分组推出。</param>
+/// <param name="ScopeGroupKeys"><see cref="ConflictScope.EconomyGroups"/> 时相关的经济分组键。</param>
+/// <param name="SystemRole"><see cref="ConflictFindingKind.SystemEnabledWrite"/> 时目标系统在共用清单中的角色（区分 MapExt 替换还是修改它）。</param>
 public sealed record ConflictFinding(
     ConflictFindingKind Kind,
     ConflictSeverity Severity,
     string Arg0,
     string? Arg1 = null,
     string? Arg2 = null,
-    IReadOnlyList<string>? MitigatingToggleKeys = null);
+    IReadOnlyList<string>? MitigatingToggleKeys = null,
+    ConflictScope Scope = ConflictScope.Unspecified,
+    IReadOnlyList<string>? ScopeGroupKeys = null,
+    ProtectedSystemRole? SystemRole = null);
 
 /// <summary>按模组包聚合后的单张冲突评估卡片数据。</summary>
 public sealed record ModConflictItem(
