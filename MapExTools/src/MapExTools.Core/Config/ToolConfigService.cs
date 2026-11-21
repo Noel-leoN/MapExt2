@@ -61,15 +61,15 @@ public sealed class ToolConfigService
         {
             string json = File.ReadAllText(ConfigPath, Encoding.UTF8);
             ToolConfig config = JsonSerializer.Deserialize<ToolConfig>(json, s_jsonOptions)
-                                ?? throw new JsonException("配置文件内容为 null");
+                                ?? throw new JsonException("Configuration JSON is null.");
 
             // 手改成 "launch": null 时反序列化会给 null，按默认值处理
             config.Launch ??= new LaunchOptions();
 
             if (!Enum.IsDefined(config.Theme))
-                throw new JsonException($"未定义的主题枚举值：{config.Theme}");
+                throw new JsonException($"Undefined enum value for {nameof(ThemePreference)}: {config.Theme}.");
             if (!Enum.IsDefined(config.Launch.Channel))
-                throw new JsonException($"未定义的启动通道枚举值：{config.Launch.Channel}");
+                throw new JsonException($"Undefined enum value for {nameof(LaunchChannel)}: {config.Launch.Channel}.");
 
             return new ToolConfigLoadResult(config, ToolConfigLoadStatus.Loaded);
         }
@@ -149,11 +149,11 @@ public sealed class ToolConfigService
             public override TEnum Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
             {
                 if (reader.TokenType != JsonTokenType.String)
-                    throw new JsonException($"枚举 {typeof(TEnum).Name} 必须为字符串名称。");
+                    throw new JsonException($"Enum {typeof(TEnum).Name} must be a string name.");
 
                 string? raw = reader.GetString();
                 if (raw == null || !s_byName.TryGetValue(raw, out TEnum value))
-                    throw new JsonException($"枚举 {typeof(TEnum).Name} 不存在成员 '{raw}'。");
+                    throw new JsonException($"Unknown enum value '{raw}' for {typeof(TEnum).Name}.");
 
                 return value;
             }

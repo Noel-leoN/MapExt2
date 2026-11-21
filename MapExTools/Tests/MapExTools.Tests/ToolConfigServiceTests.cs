@@ -175,6 +175,8 @@ public sealed class ToolConfigServiceTests : IDisposable
         ToolConfigLoadResult result = service.Load();
         Assert.Equal(ToolConfigLoadStatus.Corrupt, result.Status);
         Assert.Equal(service.CorruptBackupPath, result.BackupPath);
+        Assert.False(string.IsNullOrEmpty(result.Error));
+        Assert.All(result.Error!, c => Assert.True(c < 0x80));
         Assert.True(File.Exists(service.CorruptBackupPath));
         Assert.Equal(json, File.ReadAllText(service.CorruptBackupPath));
     }

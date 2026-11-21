@@ -24,8 +24,10 @@ internal static class HeightmapDecoder
     /// <exception cref="NotSupportedException">浮点等无法按 16 位显示的格式。</exception>
     /// <exception cref="IOException">读文件出错。</exception>
     /// <exception cref="FileFormatException">不是能解码的图片。</exception>
-    public static DecodedHeightmap? Decode(string path)
+    public static DecodedHeightmap? Decode(string path, CancellationToken cancellationToken = default)
     {
+        cancellationToken.ThrowIfCancellationRequested();
+
         // 不缓存整图（None）：像素在流打开期间一次复制出来，省掉解码器自己那份全尺寸缓存
         using var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
         BitmapFrame frame = BitmapDecoder.Create(stream,
@@ -46,21 +48,23 @@ internal static class HeightmapDecoder
             throw new NotSupportedException(format.ToString());
         }
 
+        cancellationToken.ThrowIfCancellationRequested();
+
         // 不超过 4096×4096 原样 1:1 解码；超过时按最大边等比盒式降采样到 4096 以内（内存上限恒定约 32 MB）
         if (srcWidth <= HeightmapRules.MaxRenderSize && srcHeight <= HeightmapRules.MaxRenderSize)
         {
-            ushort[] samples = DecodeFullResolution(frame, format, srcWidth, srcHeight);
+            ushort[] samples = DecodeFullResolution(frame, format, srcWidth, srcHeight, cancellationToken);
             return new DecodedHeightmap(srcWidth, srcHeight, samples, HeightmapStats.Compute(samples), srcWidth, srcHeight);
         }
 
         double scale = Math.Min((double)HeightmapRules.MaxRenderSize / srcWidth, (double)HeightmapRules.MaxRenderSize / srcHeight);
         int dstWidth = Math.Max(1, (int)Math.Round(srcWidth * scale));
         int dstHeight = Math.Max(1, (int)Math.Round(srcHeight * scale));
-        (ushort[] downsampled, HeightmapStats stats) = DecodeBoxDownsampled(frame, format, srcWidth, srcHeight, dstWidth, dstHeight);
+        (ushort[] downsampled, HeightmapStats stats) = DecodeBoxDownsampled(frame, format, srcWidth, srcHeight, dstWidth, dstHeight, cancellationToken);
         return new DecodedHeightmap(dstWidth, dstHeight, downsampled, stats, srcWidth, srcHeight);
     }
 
-    private static ushort[] DecodeFullResolution(BitmapFrame frame, PixelFormat format, int width, int height)
+    private static ushort[] DecodeFullResolution(BitmapFrame frame, PixelFormat format, int width, int height, CancellationToken cancellationToken)
     {
         ushort[] samples = new ushort[width * height];
         if (format == PixelFormats.Gray16)
@@ -69,11 +73,11 @@ internal static class HeightmapDecoder
         }
         else if (format == PixelFormats.Rgba64 || format == PixelFormats.Prgba64)
         {
-            CopyFirstChannel(frame, samples, channels: 4);
+            CopyFirstChannel(frame, samples, channels: 4, cancellationToken);
         }
         else if (format == PixelFormats.Rgb48)
         {
-            CopyFirstChannel(frame, samples, channels: 3);
+            CopyFirstChannel(frame, samples, channels: 3, cancellationToken);
         }
         else
         {
@@ -82,6 +86,7 @@ internal static class HeightmapDecoder
             byte[] row = new byte[width * 4];
             for (int y = 0; y < height; y++)
             {
+                cancellationToken.ThrowIfCancellationRequested();
                 converted.CopyPixels(new Int32Rect(0, y, width, 1), row, width * 4, 0);
                 for (int x = 0; x < width; x++)
                 {
@@ -104,7 +109,8 @@ internal static class HeightmapDecoder
         int srcWidth,
         int srcHeight,
         int dstWidth,
-        int dstHeight)
+        int dstHeight,
+        CancellationToken cancellationToken)
     {
         BitmapSource source;
         int mode; // 0 = Gray16, 1 = Rgba64/Prgba64 (4ch), 2 = Rgb48 (3ch), 3 = Bgra32 (8-bit)
@@ -144,6 +150,7 @@ internal static class HeightmapDecoder
 
         for (int dy = 0; dy < dstHeight; dy++)
         {
+            cancellationToken.ThrowIfCancellationRequested();
             int sy0 = (int)((long)dy * srcHeight / dstHeight);
             int sy1 = Math.Max(sy0 + 1, (int)((long)(dy + 1) * srcHeight / dstHeight));
             Array.Clear(acc);
@@ -151,6 +158,7 @@ internal static class HeightmapDecoder
 
             for (int sy = sy0; sy < sy1 && sy < srcHeight; sy++)
             {
+                cancellationToken.ThrowIfCancellationRequested();
                 if (mode == 0)
                     source.CopyPixels(new Int32Rect(0, sy, srcWidth, 1), srcU16, srcWidth * 2, 0);
                 else if (mode == 1)
@@ -191,12 +199,13 @@ internal static class HeightmapDecoder
     }
 
     /// <summary>多通道 16 位：逐行复制，只留第一个通道（R，与 <c>TerrainSystem.ToR16</c> 一致）。</summary>
-    private static void CopyFirstChannel(BitmapSource frame, ushort[] samples, int channels)
+    private static void CopyFirstChannel(BitmapSource frame, ushort[] samples, int channels, CancellationToken cancellationToken)
     {
         int width = frame.PixelWidth;
         ushort[] row = new ushort[width * channels];
         for (int y = 0; y < frame.PixelHeight; y++)
         {
+            cancellationToken.ThrowIfCancellationRequested();
             frame.CopyPixels(new Int32Rect(0, y, width, 1), row, width * channels * 2, 0);
             for (int x = 0; x < width; x++)
                 samples[y * width + x] = row[x * channels];

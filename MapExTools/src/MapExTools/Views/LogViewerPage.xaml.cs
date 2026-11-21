@@ -215,8 +215,13 @@ public partial class LogViewerPage : UserControl
         }
     }
 
-    private void ShowWarning(string text) =>
-        MessageBox.Show(Window.GetWindow(this), text, Loc.Instance["App.Title"], MessageBoxButton.OK, MessageBoxImage.Warning);
+    private void ShowWarning(string text)
+    {
+        if (Window.GetWindow(this) is { } owner)
+            MessageBox.Show(owner, text, Loc.Instance["App.Title"], MessageBoxButton.OK, MessageBoxImage.Warning);
+        else
+            MessageBox.Show(text, Loc.Instance["App.Title"], MessageBoxButton.OK, MessageBoxImage.Warning);
+    }
 
     // === 日志浏览 ===
 

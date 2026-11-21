@@ -273,7 +273,7 @@ public partial class HeightmapViewerPage : UserControl
 
         try
         {
-            DecodedHeightmap? decoded = await Task.Run(() => HeightmapDecoder.Decode(file.Path), cts.Token);
+            DecodedHeightmap? decoded = await Task.Run(() => HeightmapDecoder.Decode(file.Path, cts.Token), cts.Token);
             if (cts.IsCancellationRequested || !ReferenceEquals(file, _current))
                 return;
 
@@ -595,8 +595,13 @@ public partial class HeightmapViewerPage : UserControl
     private string ZoomLabel(double zoom)
     {
         double percent = zoom * VisualTreeHelper.GetDpi(this).DpiScaleX * 100;
-        if (_image is { SourceWidth: > 0 } image && image.SourceWidth != image.Width)
-            return Loc.Instance.Format("Heightmaps.ZoomDownsampled", percent * image.Width / image.SourceWidth, image.Width, image.Height);
+        if (_image is { SourceWidth: > 0, SourceHeight: > 0 } image
+            && (image.SourceWidth != image.Width || image.SourceHeight != image.Height))
+        {
+            double ratio = Math.Min((double)image.Width / image.SourceWidth, (double)image.Height / image.SourceHeight);
+            return Loc.Instance.Format("Heightmaps.ZoomDownsampled", percent * ratio, image.Width, image.Height);
+        }
+
         return Loc.Instance.Format("Heightmaps.Zoom", percent);
     }
 
