@@ -104,4 +104,21 @@ public sealed class ConflictTargetsTests
             }
         }
     }
+
+    [Fact]
+    public void EvaluatePatchOverlap_NonBlockingPatch_IsInfoWhenActive_AndNoneWhenInactive()
+    {
+        PatchedMethodTarget demandPatch = ConflictTargets.FindPatchedMethod("Game.Simulation.ResidentialDemandSystem", "OnUpdate")!;
+
+        var ecoOn = new ConflictEvalSettings("ModeA", economyFix: true, demand: true, true, true, true, true, true);
+        var ecoOff = new ConflictEvalSettings("ModeA", economyFix: true, demand: false, true, true, true, true, true);
+
+        // 活跃时：非阻断补丁为 Info，阻断/Transpiler 为 Warning
+        Assert.Equal(ConflictSeverity.Info, ConflictTargets.EvaluatePatchOverlap(demandPatch, ecoOn, isTranspilerOrBlockingPrefix: false).Severity);
+        Assert.Equal(ConflictSeverity.Warning, ConflictTargets.EvaluatePatchOverlap(demandPatch, ecoOn, isTranspilerOrBlockingPrefix: true).Severity);
+
+        // 未挂载时：非阻断补丁直接为 None（不再误标 Mitigated），阻断/Transpiler 记为 Mitigated
+        Assert.Equal(ConflictSeverity.None, ConflictTargets.EvaluatePatchOverlap(demandPatch, ecoOff, isTranspilerOrBlockingPrefix: false).Severity);
+        Assert.Equal(ConflictSeverity.Mitigated, ConflictTargets.EvaluatePatchOverlap(demandPatch, ecoOff, isTranspilerOrBlockingPrefix: true).Severity);
+    }
 }

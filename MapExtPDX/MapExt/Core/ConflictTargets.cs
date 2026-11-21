@@ -1054,6 +1054,12 @@ namespace MapExtPDX.MapExt.Core
 
             if (!active)
             {
+                // 非阻断补丁（Postfix / void Prefix / Finalizer）在 MapExt 未挂载目标补丁时完全无交集，不再标为已规避
+                if (!isTranspilerOrBlockingPrefix)
+                {
+                    return new SystemConflictEvaluation(ConflictSeverity.None, null);
+                }
+
                 // 若因关闭对应经济组而未挂载，记为已规避；因 None 模式未挂扩展补丁则记为无交集
                 bool isEcoScope = target.Scope == PatchTargetScope.EconomyDemand
                                   || target.Scope == PatchTargetScope.EconomyHouseholdProperty
