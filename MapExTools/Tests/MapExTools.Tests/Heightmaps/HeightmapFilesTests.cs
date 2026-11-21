@@ -40,7 +40,7 @@ public sealed class HeightmapFilesTests : IDisposable
         Assert.Null(files[1].Header);
         Assert.Null(files[1].Issues);
         Assert.Equal(HeightmapIssues.WrongFormat, files[2].Issues);
-        Assert.Equal(HeightmapIssues.WrongSize, files[3].Issues);
+        Assert.Equal(HeightmapIssues.ResampledSize, files[3].Issues);
     }
 
     [Fact]
@@ -59,7 +59,7 @@ public sealed class HeightmapFilesTests : IDisposable
         HeightmapFileInfo info = HeightmapFiles.Describe(path, Path.Combine(_root, "Heightmaps"));
 
         Assert.Equal("outside.png", info.RelativeName);
-        Assert.Equal(HeightmapIssues.WrongSize, info.Issues);
+        Assert.Equal(HeightmapIssues.ResampledSize, info.Issues);
     }
 
     [Fact]

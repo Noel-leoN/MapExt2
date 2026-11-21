@@ -77,6 +77,7 @@ public sealed class ToolConfigServiceTests : IDisposable
         string json = File.ReadAllText(service.ConfigPath);
         Assert.Contains("futureFeature", json);
         Assert.Contains("\"theme\": \"Light\"", json);
+        Assert.Contains("\"schemaVersion\": 2", json);
     }
 
     [Fact]
@@ -156,5 +157,46 @@ public sealed class ToolConfigServiceTests : IDisposable
         File.WriteAllText(service.ConfigPath, """{ "theme": "Purple" }""", Encoding.UTF8);
 
         Assert.Equal(ToolConfigLoadStatus.Corrupt, service.Load().Status);
+    }
+
+    [Theory]
+    [InlineData("""{ "launch": { "channel": 99 } }""")]
+    [InlineData("""{ "launch": { "channel": "99" } }""")]
+    [InlineData("""{ "launch": { "channel": "Direct, Steam" } }""")]
+    [InlineData("""{ "theme": 99 }""")]
+    [InlineData("""{ "theme": "System, Dark" }""")]
+    [InlineData("""{ "theme": "Light, Dark" }""")]
+    public void Load_NumericOrFlagsEnumValue_IsTreatedAsCorruptWithBackup(string json)
+    {
+        ToolConfigService service = CreateService();
+        Directory.CreateDirectory(Path.GetDirectoryName(service.ConfigPath)!);
+        File.WriteAllText(service.ConfigPath, json, Encoding.UTF8);
+
+        ToolConfigLoadResult result = service.Load();
+        Assert.Equal(ToolConfigLoadStatus.Corrupt, result.Status);
+        Assert.Equal(service.CorruptBackupPath, result.BackupPath);
+        Assert.True(File.Exists(service.CorruptBackupPath));
+        Assert.Equal(json, File.ReadAllText(service.CorruptBackupPath));
+    }
+
+    [Fact]
+    public void Load_LockedFile_ReturnsReadFailedWithoutModifyingFile()
+    {
+        ToolConfigService service = CreateService();
+        Directory.CreateDirectory(Path.GetDirectoryName(service.ConfigPath)!);
+        const string original = """{ "language": "zh-HANS", "theme": "Dark" }""";
+        File.WriteAllText(service.ConfigPath, original, Encoding.UTF8);
+
+        using (new FileStream(service.ConfigPath, FileMode.Open, FileAccess.ReadWrite, FileShare.None))
+        {
+            ToolConfigLoadResult result = service.Load();
+            Assert.Equal(ToolConfigLoadStatus.ReadFailed, result.Status);
+            Assert.Null(result.BackupPath);
+            Assert.False(string.IsNullOrEmpty(result.Error));
+            Assert.Equal(ThemePreference.System, result.Config.Theme);
+        }
+
+        Assert.False(File.Exists(service.CorruptBackupPath));
+        Assert.Equal(original, File.ReadAllText(service.ConfigPath));
     }
 }

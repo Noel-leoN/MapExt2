@@ -109,8 +109,12 @@ public sealed class GameLauncher
                     WorkingDirectory = game.GameDir,
                     Arguments = args,
                 };
-                start.Environment["SteamAppId"] = GameLocator.SteamAppId;
-                start.Environment["SteamGameId"] = GameLocator.SteamAppId;
+                if (game.IsSteamBuild)
+                {
+                    start.Environment["SteamAppId"] = GameLocator.SteamAppId;
+                    start.Environment["SteamGameId"] = GameLocator.SteamAppId;
+                }
+
                 return new LaunchRequest(channel, start, null, args);
             }
 
@@ -151,9 +155,47 @@ public sealed class GameLauncher
             return new LaunchResult(block, null);
 
         LaunchRequest request = CreateRequest(location, options, channel);
+        bool wroteRunOnce = false;
+        bool hadPreviousRunOnce = false;
+        byte[]? previousRunOnceBytes = null;
         if (request.RunOnceText != null)
+        {
+            if (File.Exists(RunOncePath))
+            {
+                hadPreviousRunOnce = true;
+                previousRunOnceBytes = File.ReadAllBytes(RunOncePath);
+            }
+
             RunOnceFile.Write(RunOncePath, request.RunOnceText);
-        _startProcess(request.StartInfo);
+            wroteRunOnce = true;
+        }
+
+        try
+        {
+            _startProcess(request.StartInfo);
+        }
+        catch
+        {
+            if (wroteRunOnce)
+                TryRollbackRunOnce(RunOncePath, hadPreviousRunOnce, previousRunOnceBytes);
+            throw;
+        }
+
         return new LaunchResult(LaunchBlock.None, request);
+    }
+
+    private static void TryRollbackRunOnce(string path, bool hadPrevious, byte[]? previousBytes)
+    {
+        try
+        {
+            if (hadPrevious && previousBytes != null)
+                File.WriteAllBytes(path, previousBytes);
+            else if (File.Exists(path))
+                File.Delete(path);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            // 回滚失败时不掩盖原始启动异常
+        }
     }
 }

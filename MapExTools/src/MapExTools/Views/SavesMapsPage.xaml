@@ -36,17 +36,24 @@
         </DockPanel>
 
         <!-- === 存档／地图、关系筛选、关键词 === -->
-        <DockPanel Grid.Row="1" Margin="0,0,0,8" LastChildFill="False">
-            <RadioButton x:Name="SavesToggle" GroupName="PackageKind" IsChecked="True" Style="{StaticResource KindToggle}"
+        <Grid Grid.Row="1" Margin="0,0,0,8">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" MinWidth="120" />
+            </Grid.ColumnDefinitions>
+            <RadioButton x:Name="SavesToggle" Grid.Column="0" GroupName="PackageKind" IsChecked="True" Style="{StaticResource KindToggle}"
                          Checked="OnKindChecked" />
-            <RadioButton x:Name="MapsToggle" GroupName="PackageKind" Style="{StaticResource KindToggle}"
+            <RadioButton x:Name="MapsToggle" Grid.Column="1" GroupName="PackageKind" Style="{StaticResource KindToggle}"
                          Checked="OnKindChecked" />
-            <ComboBox x:Name="RelationBox" MinWidth="170" Margin="12,0,0,0" DisplayMemberPath="Display"
+            <ComboBox x:Name="RelationBox" Grid.Column="2" MinWidth="160" Margin="10,0,0,0" DisplayMemberPath="Display"
                       SelectionChanged="OnRelationFilterChanged" />
-            <TextBlock Text="{Binding [Saves.Keyword], Source={x:Static svc:Loc.Instance}}"
-                       VerticalAlignment="Center" Margin="16,0,6,0" />
-            <TextBox x:Name="KeywordBox" MinWidth="200" TextChanged="OnKeywordChanged" />
-        </DockPanel>
+            <TextBlock Grid.Column="3" Text="{Binding [Saves.Keyword], Source={x:Static svc:Loc.Instance}}"
+                       VerticalAlignment="Center" Margin="14,0,6,0" />
+            <TextBox x:Name="KeywordBox" Grid.Column="4" TextChanged="OnKeywordChanged" />
+        </Grid>
 
         <Grid Grid.Row="2">
             <Grid.ColumnDefinitions>

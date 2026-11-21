@@ -28,6 +28,19 @@ public sealed class HeightmapRendererTests
     }
 
     [Fact]
+    public void Stats_Accumulator_MatchesCompute()
+    {
+        var random = new Random(20261121);
+        ushort[] samples = Enumerable.Range(0, 5000).Select(_ => (ushort)random.Next(0, 65536)).ToArray();
+        var accumulator = new HeightmapStats.Accumulator();
+        foreach (ushort value in samples)
+            accumulator.Add(value);
+
+        Assert.Equal(HeightmapStats.Compute(samples), accumulator.Build());
+        Assert.Throws<InvalidOperationException>(() => new HeightmapStats.Accumulator().Build());
+    }
+
+    [Fact]
     public void Stats_MostlyFlat_FallsBackToMinMax()
     {
         ushort[] samples = [.. Enumerable.Repeat((ushort)100, 1000), 60000, 60000];

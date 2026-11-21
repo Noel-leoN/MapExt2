@@ -57,6 +57,7 @@ public partial class ModSettingsPage : UserControl
     private readonly Dictionary<OptionGroup, GroupCardWidgets> _groupCards = [];
     private readonly Dictionary<string, KeyControlBinding> _bindings = new(StringComparer.Ordinal);
     private readonly List<TextBlock> _matrixTexts = [];
+    private readonly HashSet<string> _dirtyNumberBoxes = new(StringComparer.Ordinal);
 
     private OptionCategory _selectedCategory = OptionCategory.Core;
     private bool _populating;
@@ -566,29 +567,37 @@ public partial class ModSettingsPage : UserControl
     private KeyControlBinding CreateMatrixCell(StartupKeyInfo key)
     {
         var grid = new Grid();
+        grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+        grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
         grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
         grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(24) });
 
+        // 第一行：滑块独占整行，避免窄窗下被数字框遮挡
         var slider = CreateSlider(key);
-        slider.Margin = new Thickness(0, 0, 6, 0);
-        Grid.SetColumn(slider, 0);
+        slider.Margin = new Thickness(0, 0, 0, 3);
+        Grid.SetRow(slider, 0);
+        Grid.SetColumnSpan(slider, 4);
 
-        var box = CreateNumberBox(key, width: 46);
-        Grid.SetColumn(box, 1);
+        // 第二行：数字框 + % 单位 + 右侧重置按钮
+        var box = CreateNumberBox(key, width: 54);
+        Grid.SetRow(box, 1);
+        Grid.SetColumn(box, 0);
 
         var unit = new TextBlock
         {
             Text = "%",
             FontSize = 12,
             VerticalAlignment = VerticalAlignment.Center,
-            Margin = new Thickness(3, 0, 2, 0),
+            Margin = new Thickness(4, 0, 2, 0),
         };
         unit.SetResourceReference(TextBlock.ForegroundProperty, "TextFillColorSecondaryBrush");
-        Grid.SetColumn(unit, 2);
+        Grid.SetRow(unit, 1);
+        Grid.SetColumn(unit, 1);
 
         Button reset = CreateItemResetButton(key);
+        Grid.SetRow(reset, 1);
         Grid.SetColumn(reset, 3);
 
         grid.Children.Add(slider);
@@ -755,6 +764,7 @@ public partial class ModSettingsPage : UserControl
             VerticalAlignment = VerticalAlignment.Center,
             VerticalContentAlignment = VerticalAlignment.Center,
         };
+        box.TextChanged += OnNumberBoxTextChanged;
         box.LostKeyboardFocus += OnNumberBoxLostFocus;
         box.KeyDown += OnNumberBoxKeyDown;
         return box;
@@ -792,6 +802,7 @@ public partial class ModSettingsPage : UserControl
     private void UpdateTexts()
     {
         string lang = CurrentLanguage;
+        ResetAllButton.ToolTip = Loc.Instance.Format("Options.ResetAllTip", StartupKeys.AllKeys.Length);
 
         foreach ((OptionCategory cat, NavWidgets nav) in _navItems)
         {
@@ -954,7 +965,10 @@ public partial class ModSettingsPage : UserControl
                     b.NumberBox.IsEnabled = enabled;
                     b.NumberBox.FontWeight = isDefault ? FontWeights.Normal : FontWeights.SemiBold;
                     if (!b.NumberBox.IsKeyboardFocusWithin)
+                    {
                         b.NumberBox.Text = StartupSettingsText.FormatInputNumber(key, val);
+                        _dirtyNumberBoxes.Remove(key.Name);
+                    }
                 }
             }
         }
@@ -1036,7 +1050,7 @@ public partial class ModSettingsPage : UserControl
             PendingStatusText.ToolTip = Loc.Instance.Format("Startup.File", Coc.CocPath);
         }
 
-        SaveButton.IsEnabled = usable && !running && pending.Count > 0;
+        SaveButton.IsEnabled = usable && !running && (pending.Count > 0 || _dirtyNumberBoxes.Count > 0);
         ResetAllButton.IsEnabled = usable && StartupKeys.AllKeys.Any(k => !Coc.IsDefaultValue(k));
 
         string cocPath = Coc.CocPath;
@@ -1048,21 +1062,30 @@ public partial class ModSettingsPage : UserControl
     private (string? Text, bool Caution) GetGroupContextNote(OptionGroup group)
     {
         bool ecoMaster = Coc.GetBool(StartupSettingsText.EconomyMasterKey);
+        bool isVanillaMode = Coc.GetString(StartupKeys.ModeKey) == "None";
         return group switch
         {
             OptionGroup.ModeAndConvert when Coc.GetBool(SaveGateRules.ValidationKey) =>
-                (Loc.Instance["Startup.ValidationOff"], true),
+                (Loc.Instance["Startup.ValidationOff"] + Environment.NewLine + Loc.Instance["Startup.MutualExclusion"], true),
+            OptionGroup.ModeAndConvert =>
+                (Loc.Instance["Startup.MutualExclusion"], false),
             OptionGroup.EcoToggles when !ecoMaster =>
                 (Loc.Instance["Startup.EconomyOff"], false),
-            OptionGroup.TerrainWater when Coc.GetString(StartupKeys.ModeKey) == "None" =>
+            OptionGroup.TerrainWater when isVanillaMode =>
                 (Loc.Instance["Options.Note.VanillaTerrain"], true),
             OptionGroup.EntitiesTraffic =>
                 (Loc.Instance["Options.Note.NoDogsPurgeInGame"], false),
             OptionGroup.PathfindDaily or OptionGroup.EcoThroughput or OptionGroup.EcoConsumption or OptionGroup.EcoCandidates
                 when !ecoMaster =>
                 (Loc.Instance["Options.Note.EcoMasterOff"], false),
-            OptionGroup.PathfindSchool when !ecoMaster || !Coc.GetBool("EnableDownstreamAIEcoSystem") =>
+            OptionGroup.PathfindSchool when !ecoMaster =>
+                (Loc.Instance["Options.Note.EcoMasterOff"], false),
+            OptionGroup.PathfindSchool when !Coc.GetBool("EnableDownstreamAIEcoSystem") =>
                 (Loc.Instance["Options.Note.SchoolSubgroupOff"], false),
+            OptionGroup.RentMatrix when isVanillaMode && !ecoMaster =>
+                (Loc.Instance["Options.Note.EcoMasterOff"], false),
+            OptionGroup.RentMatrix when isVanillaMode && !Coc.GetBool("EnableHouseholdPropertyEcoSystem") =>
+                (Loc.Instance["Options.Note.RentMatrixVanillaOff"], false),
             _ => (null, false),
         };
     }
@@ -1207,6 +1230,38 @@ public partial class ModSettingsPage : UserControl
         Coc.SetValue(keyName, newValue);
     }
 
+    /// <summary>提交当前尚未失焦的数字框输入（用于保存与关窗前确认）。</summary>
+    internal void CommitPendingNumberBoxes()
+    {
+        if (_dirtyNumberBoxes.Count == 0)
+            return;
+
+        foreach (string keyName in _dirtyNumberBoxes.ToArray())
+        {
+            if (_bindings.TryGetValue(keyName, out KeyControlBinding? binding) && binding.NumberBox != null)
+                CommitNumberBox(binding.NumberBox);
+        }
+
+        _dirtyNumberBoxes.Clear();
+    }
+
+    private void OnNumberBoxTextChanged(object sender, TextChangedEventArgs e)
+    {
+        if (_populating || sender is not TextBox { Tag: string keyName } box)
+            return;
+
+        if (StartupKeys.FindKey(keyName) is not { } key)
+            return;
+
+        string current = StartupSettingsText.FormatInputNumber(key, Coc.GetValue(keyName));
+        if (!string.Equals(box.Text.Trim(), current, StringComparison.Ordinal))
+            _dirtyNumberBoxes.Add(keyName);
+        else
+            _dirtyNumberBoxes.Remove(keyName);
+
+        SaveButton.IsEnabled = Coc.IsUsable && !Coc.GameRunning && (Coc.HasUnsavedChanges || _dirtyNumberBoxes.Count > 0);
+    }
+
     private void OnNumberBoxKeyDown(object sender, KeyEventArgs e)
     {
         if (e.Key != Key.Enter || sender is not TextBox box)
@@ -1227,6 +1282,8 @@ public partial class ModSettingsPage : UserControl
     {
         if (_populating || box.Tag is not string keyName)
             return;
+
+        _dirtyNumberBoxes.Remove(keyName);
 
         StartupKeyInfo key = StartupKeys.FindKey(keyName)!;
         string text = box.Text.Trim();
@@ -1260,28 +1317,49 @@ public partial class ModSettingsPage : UserControl
         {
             _populating = false;
         }
+
+        SaveButton.IsEnabled = Coc.IsUsable && !Coc.GameRunning && (Coc.HasUnsavedChanges || _dirtyNumberBoxes.Count > 0);
     }
 
     private void OnResetItemClick(object sender, RoutedEventArgs e)
     {
         if (Coc.IsUsable && sender is Button { Tag: string keyName } && StartupKeys.FindKey(keyName) is { } key)
+        {
+            _dirtyNumberBoxes.Remove(keyName);
             Coc.ResetKey(key);
+        }
     }
 
     private void OnResetGroupClick(object sender, RoutedEventArgs e)
     {
         if (Coc.IsUsable && sender is Button { Tag: OptionGroup group })
+        {
+            _dirtyNumberBoxes.Clear();
             Coc.ResetGroup(group);
+        }
     }
 
-    private void OnSaveClick(object sender, RoutedEventArgs e) => Coc.Save(Window.GetWindow(this));
+    private void OnSaveClick(object sender, RoutedEventArgs e)
+    {
+        CommitPendingNumberBoxes();
+        Coc.Save(Window.GetWindow(this));
+    }
 
-    private void OnReloadClick(object sender, RoutedEventArgs e) => Coc.ReloadManual();
+    private void OnReloadClick(object sender, RoutedEventArgs e)
+    {
+        _dirtyNumberBoxes.Clear();
+        Keyboard.ClearFocus();
+        Coc.ReloadManual();
+    }
 
     private void OnResetAllClick(object sender, RoutedEventArgs e)
     {
         if (Coc.IsUsable)
+        {
+            _dirtyNumberBoxes.Clear();
+            Keyboard.ClearFocus();
             Coc.ResetAllDefaults();
+        }
     }
 
     private void OnEditClick(object sender, RoutedEventArgs e) => Coc.OpenInNotepad(Window.GetWindow(this));

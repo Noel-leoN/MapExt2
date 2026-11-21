@@ -42,6 +42,15 @@ public partial class LocalizationTests
         Assert.Equal(Strings.Get(UiLanguage.English, "Tab.Logs"), Strings.Get("fr-FR", "Tab.Logs"));
     }
 
+    [Fact]
+    public void Get_LanguageIsCaseInsensitive()
+    {
+        Assert.Equal(Strings.Get(UiLanguage.SimplifiedChinese, "Tab.Logs"), Strings.Get("zh-hans", "Tab.Logs"));
+        Assert.Equal(Strings.Get(UiLanguage.TraditionalChinese, "Tab.Logs"), Strings.Get("ZH-HANT", "Tab.Logs"));
+        Assert.Equal(1, UiLanguage.IndexOf("zh-hans"));
+        Assert.Equal(2, UiLanguage.IndexOf("zh-hant"));
+    }
+
     [Theory]
     [InlineData("zh-HANS", "zh-HANS")]
     [InlineData("ZH-hant", "zh-HANT")]

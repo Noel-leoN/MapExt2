@@ -25,14 +25,23 @@ public sealed class HeightmapRulesTests
     [Theory]
     [InlineData(4096, 4096, HeightmapPixelKind.Gray16, HeightmapIssues.None)]
     [InlineData(4096, 4096, HeightmapPixelKind.Rgba16, HeightmapIssues.None)]
-    [InlineData(8192, 8192, HeightmapPixelKind.Gray16, HeightmapIssues.WrongSize)]
-    [InlineData(4096, 2048, HeightmapPixelKind.Gray16, HeightmapIssues.WrongSize)]
+    [InlineData(8192, 8192, HeightmapPixelKind.Gray16, HeightmapIssues.ResampledSize)]
+    [InlineData(4096, 2048, HeightmapPixelKind.Gray16, HeightmapIssues.ResampledSize)]
+    [InlineData(8193, 4096, HeightmapPixelKind.Gray16, HeightmapIssues.WrongSize)]
+    [InlineData(16384, 16384, HeightmapPixelKind.Gray16, HeightmapIssues.WrongSize)]
     [InlineData(4096, 4096, HeightmapPixelKind.Other16, HeightmapIssues.WrongFormat)]
     [InlineData(4096, 4096, HeightmapPixelKind.EightBit, HeightmapIssues.WrongFormat)]
-    [InlineData(8192, 8192, HeightmapPixelKind.Other16, HeightmapIssues.WrongSize | HeightmapIssues.WrongFormat)]
+    [InlineData(8192, 8192, HeightmapPixelKind.Other16, HeightmapIssues.ResampledSize | HeightmapIssues.WrongFormat)]
+    [InlineData(16384, 16384, HeightmapPixelKind.Other16, HeightmapIssues.WrongSize | HeightmapIssues.WrongFormat)]
     public void Validate(int width, int height, HeightmapPixelKind kind, HeightmapIssues expected)
     {
         Assert.Equal(expected, HeightmapRules.Validate(width, height, kind));
+    }
+
+    [Fact]
+    public void Classify_Signed16Bit_IsUnsupported()
+    {
+        Assert.Equal(HeightmapPixelKind.Unsupported, HeightmapRules.Classify(1, 16, isFloat: false, isSigned: true));
     }
 
     [Theory]

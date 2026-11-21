@@ -70,7 +70,7 @@ public static class UiLanguage
     {
         for (int i = 0; i < All.Count; i++)
         {
-            if (All[i] == language)
+            if (string.Equals(All[i], language, StringComparison.OrdinalIgnoreCase))
                 return i;
         }
 

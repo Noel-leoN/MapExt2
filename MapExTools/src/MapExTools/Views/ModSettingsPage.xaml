@@ -33,60 +33,61 @@
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
 
-        <!-- === 顶部常驻工具与状态栏 === -->
+        <!-- === 顶部常驻工具与状态栏（工具行 + 独立状态行，窄窗不挤压状态文案） === -->
         <Border Grid.Row="0" Style="{StaticResource ToolbarCard}">
-            <DockPanel LastChildFill="True">
-                <!-- 右侧：保存／重读／全部默认 -->
-                <WrapPanel DockPanel.Dock="Right" VerticalAlignment="Center" Margin="14,0,0,0">
-                    <Button x:Name="SaveButton" Style="{DynamicResource AccentButtonStyle}" MinWidth="84" Margin="0,0,6,0"
-                            Click="OnSaveClick" Content="{Binding [Startup.Save], Source={x:Static svc:Loc.Instance}}" />
-                    <Button x:Name="ReloadButton" Style="{StaticResource ActionButton}" Click="OnReloadClick"
-                            Content="{Binding [Startup.Reload], Source={x:Static svc:Loc.Instance}}"
-                            ToolTip="{Binding [Startup.ReloadTip], Source={x:Static svc:Loc.Instance}}" />
-                    <Button x:Name="ResetAllButton" Style="{StaticResource ActionButton}" Margin="0" Click="OnResetAllClick"
-                            Content="{Binding [Options.ResetAll], Source={x:Static svc:Loc.Instance}}"
-                            ToolTip="{Binding [Options.ResetAllTip], Source={x:Static svc:Loc.Instance}}" />
-                </WrapPanel>
+            <StackPanel>
+                <DockPanel LastChildFill="True">
+                    <!-- 右侧：保存／重读／全部默认 -->
+                    <WrapPanel DockPanel.Dock="Right" VerticalAlignment="Center" Margin="14,0,0,0">
+                        <Button x:Name="SaveButton" Style="{DynamicResource AccentButtonStyle}" MinWidth="84" Margin="0,0,6,0"
+                                Click="OnSaveClick" Content="{Binding [Startup.Save], Source={x:Static svc:Loc.Instance}}" />
+                        <Button x:Name="ReloadButton" Style="{StaticResource ActionButton}" Click="OnReloadClick"
+                                Content="{Binding [Startup.Reload], Source={x:Static svc:Loc.Instance}}"
+                                ToolTip="{Binding [Startup.ReloadTip], Source={x:Static svc:Loc.Instance}}" />
+                        <Button x:Name="ResetAllButton" Style="{StaticResource ActionButton}" Margin="0" Click="OnResetAllClick"
+                                Content="{Binding [Options.ResetAll], Source={x:Static svc:Loc.Instance}}" />
+                    </WrapPanel>
 
-                <!-- 左侧：实时搜索过滤框 -->
-                <StackPanel DockPanel.Dock="Left" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,16,0">
-                    <Grid Width="236">
-                        <TextBox x:Name="SearchBox" VerticalContentAlignment="Center" Padding="8,4" MinHeight="30"
-                                 TextChanged="OnSearchTextChanged"
-                                 AutomationProperties.Name="{Binding [Options.SearchPlaceholder], Source={x:Static svc:Loc.Instance}}" />
-                        <TextBlock x:Name="SearchPlaceholder" Margin="10,0,8,0" VerticalAlignment="Center" IsHitTestVisible="False"
-                                   Foreground="{DynamicResource TextFillColorTertiaryBrush}" FontSize="12"
-                                   TextTrimming="CharacterEllipsis"
-                                   Text="{Binding [Options.SearchPlaceholder], Source={x:Static svc:Loc.Instance}}" />
-                    </Grid>
-                    <Button x:Name="ClearSearchButton" Visibility="Collapsed" Margin="6,0,0,0" Padding="8,4" MinHeight="30"
-                            Click="OnClearSearchClick"
-                            Content="{Binding [Options.ClearSearch], Source={x:Static svc:Loc.Instance}}" />
-                </StackPanel>
+                    <!-- 左侧：实时搜索过滤框 -->
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                        <Grid Width="260">
+                            <TextBox x:Name="SearchBox" VerticalContentAlignment="Center" Padding="8,4" MinHeight="30"
+                                     TextChanged="OnSearchTextChanged"
+                                     AutomationProperties.Name="{Binding [Options.SearchPlaceholder], Source={x:Static svc:Loc.Instance}}" />
+                            <TextBlock x:Name="SearchPlaceholder" Margin="10,0,8,0" VerticalAlignment="Center" IsHitTestVisible="False"
+                                       Foreground="{DynamicResource TextFillColorTertiaryBrush}" FontSize="12"
+                                       TextTrimming="CharacterEllipsis"
+                                       Text="{Binding [Options.SearchPlaceholder], Source={x:Static svc:Loc.Instance}}" />
+                        </Grid>
+                        <Button x:Name="ClearSearchButton" Visibility="Collapsed" Margin="6,0,0,0" Padding="8,4" MinHeight="30"
+                                Click="OnClearSearchClick"
+                                Content="{Binding [Options.ClearSearch], Source={x:Static svc:Loc.Instance}}" />
+                    </StackPanel>
+                </DockPanel>
 
-                <!-- 中间：设定文件状态、待保存改动与文件链接 -->
-                <StackPanel VerticalAlignment="Center">
-                    <DockPanel>
-                        <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center" Margin="12,0,0,0">
-                            <TextBlock FontSize="12" VerticalAlignment="Center" Margin="0,0,10,0">
-                                <Hyperlink x:Name="EditLink" Click="OnEditClick"
-                                           ToolTip="{Binding [Startup.EditTip], Source={x:Static svc:Loc.Instance}}">
-                                    <Run Text="{Binding [Startup.EditFile], Source={x:Static svc:Loc.Instance}, Mode=OneWay}" />
-                                </Hyperlink>
-                            </TextBlock>
-                            <TextBlock FontSize="12" VerticalAlignment="Center">
-                                <Hyperlink x:Name="ShowFileLink" Click="OnShowFileClick">
-                                    <Run Text="{Binding [Startup.ShowInExplorer], Source={x:Static svc:Loc.Instance}, Mode=OneWay}" />
-                                </Hyperlink>
-                            </TextBlock>
-                        </StackPanel>
-                        <TextBlock x:Name="PrimaryStatusText" FontSize="12" VerticalAlignment="Center"
+                <!-- 第二行：设定文件状态、待保存改动与文件链接 -->
+                <DockPanel Margin="0,6,0,0" LastChildFill="True">
+                    <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Top" Margin="14,0,0,0">
+                        <TextBlock FontSize="12" VerticalAlignment="Center" Margin="0,0,10,0">
+                            <Hyperlink x:Name="EditLink" Click="OnEditClick"
+                                       ToolTip="{Binding [Startup.EditTip], Source={x:Static svc:Loc.Instance}}">
+                                <Run Text="{Binding [Startup.EditFile], Source={x:Static svc:Loc.Instance}, Mode=OneWay}" />
+                            </Hyperlink>
+                        </TextBlock>
+                        <TextBlock FontSize="12" VerticalAlignment="Center">
+                            <Hyperlink x:Name="ShowFileLink" Click="OnShowFileClick">
+                                <Run Text="{Binding [Startup.ShowInExplorer], Source={x:Static svc:Loc.Instance}, Mode=OneWay}" />
+                            </Hyperlink>
+                        </TextBlock>
+                    </StackPanel>
+                    <StackPanel VerticalAlignment="Center">
+                        <TextBlock x:Name="PrimaryStatusText" FontSize="12"
                                    TextTrimming="CharacterEllipsis" Text="{Binding Text}" Style="{StaticResource ToneText}" />
-                    </DockPanel>
-                    <TextBlock x:Name="PendingStatusText" FontSize="12" Margin="0,1,0,0"
-                               TextTrimming="CharacterEllipsis" Text="{Binding Text}" Style="{StaticResource ToneText}" />
-                </StackPanel>
-            </DockPanel>
+                        <TextBlock x:Name="PendingStatusText" FontSize="12" Margin="0,1,0,0"
+                                   TextTrimming="CharacterEllipsis" Text="{Binding Text}" Style="{StaticResource ToneText}" />
+                    </StackPanel>
+                </DockPanel>
+            </StackPanel>
         </Border>
 
         <!-- === 主体：左分类导航 + 右分组卡片区 === -->

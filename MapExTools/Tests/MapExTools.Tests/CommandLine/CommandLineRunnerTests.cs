@@ -20,6 +20,7 @@ public sealed class CommandLineRunnerTests : IDisposable
     private bool _gameRunning;
     private bool _steamRunning = true;
     private Exception? _startFailure;
+    private int _locateFailures;
     private GameLocateResult _location = new(
         new GameLocation(GameExe, GameLocationSource.Steam, true),
         new SteamInfo(@"D:\Games\Steam", @"D:\Games\Steam\steam.exe"),
@@ -38,7 +39,7 @@ public sealed class CommandLineRunnerTests : IDisposable
 
     private UserDataPaths Paths { get; }
 
-    private (int Code, string Output) Run(params string[] args)
+    private CommandLineContext CreateContext()
     {
         var launcher = new GameLauncher(Paths.RunOnceFile, () => _gameRunning, () => _steamRunning, start =>
         {
@@ -46,18 +47,31 @@ public sealed class CommandLineRunnerTests : IDisposable
                 throw _startFailure;
             _started.Add(start);
         });
-        var context = new CommandLineContext
+        return new CommandLineContext
         {
             Paths = Paths,
             Config = _config,
             IsGameRunning = () => _gameRunning,
-            LocateGame = () => _location,
+            LocateGame = () => _locateFailures-- > 0 ? throw new InvalidOperationException("定位失败（测试）") : _location,
             Launcher = launcher,
         };
+    }
 
+    /// <summary>正常结果与错误合用一个输出（按时间先后核对文字）。</summary>
+    private (int Code, string Output) Run(params string[] args)
+    {
         var output = new StringWriter();
-        int code = new CommandLineRunner(context, output, Lang).Run(CommandLineParser.Parse(args));
+        int code = new CommandLineRunner(CreateContext(), output, Lang).Run(CommandLineParser.Parse(args));
         return (code, output.ToString());
+    }
+
+    /// <summary>正常结果与错误分开（界面程序分别接到 stdout 与 stderr）。</summary>
+    private (int Code, string Output, string Error) RunSplit(params string[] args)
+    {
+        var output = new StringWriter();
+        var error = new StringWriter();
+        int code = new CommandLineRunner(CreateContext(), output, Lang, error).Run(CommandLineParser.Parse(args));
+        return (code, output.ToString(), error.ToString());
     }
 
     private static string Text(string key) => Strings.Get(Lang, key);
@@ -221,6 +235,28 @@ public sealed class CommandLineRunnerTests : IDisposable
     }
 
     [Fact]
+    public void CheckConflicts_EmptyUserData_Exits0AndPrintsBanner()
+    {
+        (int code, string output) = Run("--check-conflicts");
+
+        Assert.Equal(ExitCodes.Success, code);
+        Assert.Contains("ModeA", output, StringComparison.Ordinal);
+        Assert.Empty(_started);
+    }
+
+    [Fact]
+    public void CheckConflicts_WithLaunch_OutputsConflictsBeforeLaunching()
+    {
+        (int code, string output) = Run("--check-conflicts", "--launch");
+
+        Assert.Equal(ExitCodes.Success, code);
+        int conflictPos = output.IndexOf("ModeA", StringComparison.Ordinal);
+        int launchPos = output.IndexOf("已启动", StringComparison.Ordinal);
+        Assert.True(conflictPos >= 0 && launchPos > conflictPos, $"预期先输出冲突再启动，实际输出：\n{output}");
+        Assert.Single(_started);
+    }
+
+    [Fact]
     public void Launch_SteamNotRunning_FallsBackToApplaunch()
     {
         _steamRunning = false;
@@ -296,5 +332,59 @@ public sealed class CommandLineRunnerTests : IDisposable
 
         Assert.Equal(ExitCodes.Error, code);
         Assert.Contains("无法启动游戏：找不到文件", output);
+    }
+
+    [Fact]
+    public void ShowFails_WithLaunch_StillLaunches_Exit1()
+    {
+        // --show 里定位游戏失败；启动时再定位就正常：与调整顺序前一样照常启动，退出码记为出错
+        _locateFailures = 1;
+
+        (int code, string output, string error) = RunSplit("--show", "--launch");
+
+        Assert.Equal(ExitCodes.Error, code);
+        Assert.Single(_started);
+        Assert.Contains("定位失败（测试）", error);
+        Assert.Contains("已启动", output);
+    }
+
+    // === 输出分流 ===
+
+    [Fact]
+    public void SplitStreams_SavedToOutput_LaunchProblemsToError()
+    {
+        _location = new GameLocateResult(null, null, @"D:\Old\Cities2.exe");
+
+        (int code, string output, string error) = RunSplit("--mode", "ModeB", "--launch");
+
+        Assert.Equal(ExitCodes.Error, code);
+        Assert.Contains("已写入", output);
+        Assert.DoesNotContain("没有启动游戏", output);
+        Assert.Contains(@"手动指定的路径已不存在（D:\Old\Cities2.exe）", error);
+        Assert.Contains("没有启动游戏：" + Text("Launch.Block.GameNotFound"), error);
+        Assert.DoesNotContain("已写入", error);
+    }
+
+    [Fact]
+    public void SplitStreams_GameRunning_OnlyError()
+    {
+        _gameRunning = true;
+
+        (int code, string output, string error) = RunSplit("--mode", "ModeB");
+
+        Assert.Equal(ExitCodes.GameRunning, code);
+        Assert.Equal(string.Empty, output);
+        Assert.Contains(Text("Cli.GameRunning"), error);
+    }
+
+    [Fact]
+    public void SplitStreams_ShowAndConflictReportGoToOutput()
+    {
+        (int code, string output, string error) = RunSplit("--show", "--check-conflicts");
+
+        Assert.Equal(ExitCodes.Success, code);
+        Assert.Contains(Text("Status.GameNotRunning"), output);
+        Assert.Contains("ModeA", output, StringComparison.Ordinal);
+        Assert.Equal(string.Empty, error);
     }
 }

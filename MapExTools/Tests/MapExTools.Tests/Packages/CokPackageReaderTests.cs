@@ -77,6 +77,38 @@ public sealed class CokPackageReaderTests : IDisposable
     }
 
     [Fact]
+    public void Read_PreviewThenPreviewAsset_LaterKeyWins()
+    {
+        // 游戏按键的先后逐个赋值：后出现的 previewAsset 覆盖前面的空 preview
+        string json = CokTestData.SaveJson(["MapExt2"], preview: "", extra: $",\"previewAsset\":\"{CokTestData.PreviewGuid}\"");
+        string path = new CokBuilder()
+            .Asset("Fallback.SaveGameMetadata", CokTestData.Utf8WithBom(json), CokTestData.SaveGuid)
+            .Asset("Fallback.Texture", CokTestData.Texture(4, 4, 2, 8, CokTestData.RgbaPattern(4, 2)), CokTestData.PreviewGuid)
+            .Save(PathOf("Fallback.cok"));
+
+        CokPackageInfo info = CokPackageReader.Read(path, PackageFolder.Saves);
+
+        Assert.Equal("Fallback.Texture", info.PreviewEntry);
+        Assert.Equal(CokTestData.PreviewGuid, info.PreviewGuid);
+    }
+
+    [Fact]
+    public void Read_PreviewAssetThenEmptyPreview_LaterEmptyKeyWins()
+    {
+        // 反过来：后出现的空 preview 覆盖前面的 previewAsset，游戏里这份存档没有预览图
+        string json = CokTestData.SaveJson(["MapExt2"], preview: CokTestData.PreviewGuid, previewKey: "previewAsset", extra: ",\"preview\":\"\"");
+        string path = new CokBuilder()
+            .Asset("Later.SaveGameMetadata", CokTestData.Utf8WithBom(json), CokTestData.SaveGuid)
+            .Asset("Later.Texture", CokTestData.Texture(4, 4, 2, 8, CokTestData.RgbaPattern(4, 2)), CokTestData.PreviewGuid)
+            .Save(PathOf("Later.cok"));
+
+        CokPackageInfo info = CokPackageReader.Read(path, PackageFolder.Saves);
+
+        Assert.Null(info.PreviewGuid);
+        Assert.Null(info.PreviewEntry);
+    }
+
+    [Fact]
     public void Read_PreviewGuidWithoutEntry_LeavesEntryNull()
     {
         string path = new CokBuilder()

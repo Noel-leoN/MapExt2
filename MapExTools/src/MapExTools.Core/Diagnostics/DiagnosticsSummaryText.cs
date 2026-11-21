@@ -95,7 +95,10 @@ public static class DiagnosticsSummaryText
             });
 
             if (m.Conflicts.Detected.Count > 0)
-                mapExtLines.Add(new SummaryLine(F("Logs.Conflicts.Found", string.Join("；", m.Conflicts.Detected)), SummarySeverity.Warning));
+            {
+                string sep = language == UiLanguage.English ? "; " : "；";
+                mapExtLines.Add(new SummaryLine(F("Logs.Conflicts.Found", string.Join(sep, m.Conflicts.Detected)), SummarySeverity.Warning));
+            }
             else if (m.Conflicts.NoneDetected)
                 mapExtLines.Add(new SummaryLine(T("Logs.Conflicts.None")));
             else
@@ -218,13 +221,13 @@ public static class DiagnosticsSummaryText
     private static string Shorten(string text) =>
         text.Length <= MaxLineLength ? text : text[..MaxLineLength] + "…";
 
-    /// <summary>转义会改变 Markdown 排版的字符（星号、下划线、反引号、尖括号、方括号、竖线）。</summary>
+    /// <summary>转义会改变 Markdown 排版的字符（反斜杠、星号、下划线、反引号、尖括号、方括号、竖线）。</summary>
     private static string Escape(string text)
     {
         var sb = new StringBuilder(text.Length);
         foreach (char c in text)
         {
-            if (c is '*' or '_' or '`' or '<' or '>' or '[' or ']' or '|')
+            if (c is '\\' or '*' or '_' or '`' or '<' or '>' or '[' or ']' or '|')
                 sb.Append('\\');
             sb.Append(c);
         }
@@ -238,7 +241,30 @@ public static class DiagnosticsSummaryText
             return text;
 
         string trimmed = userProfile.TrimEnd('\\', '/');
+        string forward = trimmed.Replace('\\', '/');
+        string escapedBackslash = trimmed.Replace("\\", "\\\\", StringComparison.Ordinal);
+
+        // 先替换更长的双反斜杠形式，再替换普通与正斜杠形式，最后处理 URL 编码形式（如 file:/// URI 中含空格/中文用户名）
+        text = text.Replace(escapedBackslash, "%USERPROFILE%", StringComparison.OrdinalIgnoreCase);
         text = text.Replace(trimmed, "%USERPROFILE%", StringComparison.OrdinalIgnoreCase);
-        return text.Replace(trimmed.Replace('\\', '/'), "%USERPROFILE%", StringComparison.OrdinalIgnoreCase);
+        text = text.Replace(forward, "%USERPROFILE%", StringComparison.OrdinalIgnoreCase);
+
+        string[] segments = forward.Split('/', StringSplitOptions.None);
+        for (int i = 0; i < segments.Length; i++)
+        {
+            // 保留 Windows 盘符段（如 "C:"）不转义冒号，其余路径段按 URI 百分号编码
+            if (i == 0 && segments[i].Length == 2 && segments[i][1] == ':')
+                continue;
+            segments[i] = Uri.EscapeDataString(segments[i]);
+        }
+
+        string urlForward = string.Join('/', segments);
+        if (!string.Equals(urlForward, forward, StringComparison.OrdinalIgnoreCase))
+        {
+            text = text.Replace(urlForward, "%USERPROFILE%", StringComparison.OrdinalIgnoreCase);
+            text = text.Replace(urlForward.Replace('/', '\\'), "%USERPROFILE%", StringComparison.OrdinalIgnoreCase);
+        }
+
+        return text;
     }
 }

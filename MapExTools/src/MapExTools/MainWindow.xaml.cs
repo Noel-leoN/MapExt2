@@ -1,7 +1,8 @@
 using System.ComponentModel;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Media;
+using System.Windows.Input;
+using System.Windows.Shapes;
 using System.Windows.Threading;
 using MapExTools.Core.Config;
 using MapExTools.Core.Game;
@@ -74,6 +75,8 @@ public partial class MainWindow : Window
     /// </summary>
     internal void PinAndRestart()
     {
+        OptionsPage.CommitPendingNumberBoxes();
+        Keyboard.ClearFocus();
         if (!InstallLocationService.PinAndStart(this, confirm: true, App.Services.Coc.HasUnsavedChanges))
             return;
 
@@ -83,7 +86,13 @@ public partial class MainWindow : Window
 
     private void OnClosing(object? sender, CancelEventArgs e)
     {
-        if (_closeConfirmed || !App.Services.Coc.HasUnsavedChanges)
+        if (_closeConfirmed)
+            return;
+
+        // 关窗前先让聚焦的数字框失焦并提交待定文本，避免未按回车的输入被静默丢弃
+        OptionsPage.CommitPendingNumberBoxes();
+        Keyboard.ClearFocus();
+        if (!App.Services.Coc.HasUnsavedChanges)
             return;
 
         if (MessageBox.Show(this, Loc.Instance["Startup.ConfirmClose"], Loc.Instance["App.Title"],
@@ -219,7 +228,7 @@ public partial class MainWindow : Window
 
         _gameRunning = running;
         GameStateText.Text = Loc.Instance[running ? "Status.GameRunning" : "Status.GameNotRunning"];
-        GameStateDot.Fill = running ? Brushes.OrangeRed : Brushes.SeaGreen;
+        GameStateDot.SetResourceReference(Shape.FillProperty, running ? "SystemFillColorCautionBrush" : "SystemFillColorSuccessBrush");
     }
 
     private void RefreshUserDataText()

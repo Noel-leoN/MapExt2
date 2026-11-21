@@ -44,7 +44,7 @@ public sealed class DiagnosticsSummaryTextTests : IDisposable
 
         Assert.StartsWith("本会话生效配置：Mode=ModeA, CV=4", Find(sections, "本会话生效配置").Text, StringComparison.Ordinal);
         Assert.Equal(SummarySeverity.Normal, Find(sections, "Burst：已启用").Severity);
-        Assert.Equal(SummarySeverity.Warning, Find(sections, "已知冲突 Mod：检测到冲突 Mod: SampleModA").Severity);
+        Assert.Equal(SummarySeverity.Warning, Find(sections, "冲突与诊断：检测到冲突 Mod: SampleModA").Severity);
         Assert.Equal("本会话自动停用：ResidentAI", Find(sections, "本会话自动停用").Text);
         Assert.Contains("MenuLoad 'Sample City'", Find(sections, "最近一次读档判定").Text, StringComparison.Ordinal);
         Assert.Equal(SummarySeverity.Error, Find(sections, "警告 3 条，错误 1 条").Severity);
@@ -104,12 +104,41 @@ public sealed class DiagnosticsSummaryTextTests : IDisposable
         Assert.StartsWith("## MapExTools 诊断摘要", markdown, StringComparison.Ordinal);
         Assert.Contains("### 上次运行", markdown, StringComparison.Ordinal);
         Assert.Contains("- ❌ Player.log：闪退（有 Unity 崩溃标记）", markdown, StringComparison.Ordinal);
-        Assert.Contains("- ⚠️ 已知冲突 Mod：", markdown, StringComparison.Ordinal);
+        Assert.Contains("- ⚠️ 冲突与诊断：", markdown, StringComparison.Ordinal);
         Assert.Contains(@"logsEffectiveness=\*\*\*", markdown, StringComparison.Ordinal);
         Assert.Contains(@"\<00000000000000000000000000000000\>", markdown, StringComparison.Ordinal);
 
-        // 用户名里有下划线也能换掉，且不留原名
-        Assert.Contains(@"%USERPROFILE%\Games\CS2\logs\crash.log", markdown, StringComparison.Ordinal);
+        // 用户名里有下划线也能换掉，且不留原名；反斜杠也会转义
+        Assert.Contains(@"%USERPROFILE%\\Games\\CS2\\logs\\crash.log", markdown, StringComparison.Ordinal);
         Assert.DoesNotContain("Some", markdown, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void ToMarkdown_HidesDoubleBackslashAndUrlEncodedProfile_AndUsesEnglishSeparator()
+    {
+        Directory.CreateDirectory(Paths.LogsDir);
+        const string profile = @"C:\Users\My User";
+        File.WriteAllLines(Paths.MapExtLog,
+        [
+            "[2026-11-21 10:00:00,000] [WARN]  [MapExt|ModConflictDetector] ⚠️ 检测到冲突 Mod: ModA",
+            "[2026-11-21 10:00:01,000] [WARN]  [MapExt|ModConflictDetector] ⚠️ 检测到冲突 Mod: ModB",
+        ]);
+        File.WriteAllLines(Paths.PlayerLog,
+        [
+            "Game version: 1.6.4f1",
+            @"InvalidOperationException: json C:\\Users\\My User\\foo and file:///C:/Users/My%20User/bar",
+        ]);
+
+        DiagnosticsReport report = LogDiagnostics.Collect(Paths, gameRunning: false);
+        IReadOnlyList<SummarySection> sections = DiagnosticsSummaryText.Build(report, UiLanguage.English, crashLogPath: null);
+
+        SummaryLine conflictLine = Find(sections, "Conflicts & diagnostics:");
+        Assert.Contains("; ", conflictLine.Text, StringComparison.Ordinal);
+        Assert.DoesNotContain("；", conflictLine.Text, StringComparison.Ordinal);
+
+        string markdown = DiagnosticsSummaryText.ToMarkdown(report, sections, UiLanguage.English, profile);
+        Assert.DoesNotContain("My User", markdown, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("My%20User", markdown, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("%USERPROFILE%", markdown, StringComparison.Ordinal);
     }
 }

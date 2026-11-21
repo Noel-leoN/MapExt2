@@ -26,11 +26,15 @@ public partial class HeightmapViewerPage : UserControl
     private const double MaxZoom = 32;
     private const double WheelStep = 1.25;
 
+    /// <summary>"解码中"占位提示的文案键；停在这个键上表示当前文件还没解出来。</summary>
+    private const string DecodingMessageKey = "Heightmaps.Decoding";
+
     private static readonly TimeSpan s_inputDelay = TimeSpan.FromMilliseconds(400);
 
     private readonly DispatcherTimer _inputTimer = new() { Interval = s_inputDelay };
 
     private IReadOnlyList<HeightmapFileInfo> _files = [];
+    private string? _scanError;
     private bool _scanned;
     private bool _scanning;
 
@@ -44,7 +48,11 @@ public partial class HeightmapViewerPage : UserControl
     private CancellationTokenSource? _decodeCts;
     private bool _rendering;
     private bool _renderAgain;
+    private bool _renderPending;
     private bool _fitPending;
+
+    // 解码途中切走：OnUnloaded 取消后结果会被丢弃，回到本页时据此重新解码
+    private bool _resumeDecode;
 
     private HeightmapView _view = HeightmapView.Stretched;
     private double _heightScale = HeightmapRules.DefaultHeightScale;
@@ -83,12 +91,34 @@ public partial class HeightmapViewerPage : UserControl
         RefreshTexts();
         if (!_scanned)
             _ = RescanAsync();
+
+        // 切走时还在解码：上次的结果已丢弃，重新解码当前文件，否则会一直停在"解码中"（解码完会自行重画）
+        if (_resumeDecode)
+        {
+            _resumeDecode = false;
+            _renderPending = false;
+            if (_current is { } file)
+                Show(file);
+        }
+        else if (_renderPending && _image != null)
+        {
+            _renderPending = false;
+            Render();
+        }
     }
 
     private void OnUnloaded(object sender, RoutedEventArgs e)
     {
         Loc.Instance.LanguageChanged -= OnLanguageChanged;
-        _inputTimer.Stop();
+        _resumeDecode = _current != null && _image == null && _imageMessageKey == DecodingMessageKey;
+        _decodeCts?.Cancel();
+        _decodeCts?.Dispose();
+        _decodeCts = null;
+        if (_inputTimer.IsEnabled)
+        {
+            _inputTimer.Stop();
+            ApplyInputs(renderNow: false);
+        }
     }
 
     private void OnLanguageChanged(object? sender, EventArgs e)
@@ -112,7 +142,12 @@ public partial class HeightmapViewerPage : UserControl
         {
             var paths = App.Services.Paths;
             _files = await Task.Run(() => HeightmapFiles.Scan(paths));
+            _scanError = null;
             _scanned = true;
+        }
+        catch (Exception ex) when (ex is not OutOfMemoryException)
+        {
+            _scanError = ex.Message;
         }
         finally
         {
@@ -215,7 +250,7 @@ public partial class HeightmapViewerPage : UserControl
 
     // === 解码与渲染 ===
 
-    /// <summary>显示一个文件：先显示文件头信息，再在后台解码；比 4096×4096 大的不解码。</summary>
+    /// <summary>显示一个文件：先显示文件头信息，再在后台解码；超过 8192×8192 的不解码。</summary>
     private async void Show(HeightmapFileInfo file)
     {
         _decodeCts?.Cancel();
@@ -228,8 +263,10 @@ public partial class HeightmapViewerPage : UserControl
         _legend = [];
         HeightImage.Source = null;
         HoverText.Text = string.Empty;
-        bool tooLarge = file.Header != null && (long)file.Header.Width * file.Header.Height > HeightmapRules.MaxDisplayPixels;
-        SetImageMessage(tooLarge ? "Heightmaps.TooLarge" : "Heightmaps.Decoding");
+        bool tooLarge = file.Header != null && (file.Header.Width > HeightmapRules.MaxImportSize
+                                                || file.Header.Height > HeightmapRules.MaxImportSize
+                                                || (long)file.Header.Width * file.Header.Height > HeightmapRules.MaxDisplayPixels);
+        SetImageMessage(tooLarge ? "Heightmaps.TooLarge" : DecodingMessageKey);
         RefreshTexts();
         if (tooLarge)
             return;
@@ -315,6 +352,12 @@ public partial class HeightmapViewerPage : UserControl
                 break;
             }
         }
+        catch (Exception ex) when (ex is not OutOfMemoryException)
+        {
+            HeightImage.Source = null;
+            SetImageMessage("Heightmaps.DecodeFailed", ex.Message);
+            RefreshTexts();
+        }
         finally
         {
             _rendering = false;
@@ -390,7 +433,7 @@ public partial class HeightmapViewerPage : UserControl
     }
 
     /// <summary>读高度比例与海平面；不合法时提示并沿用上一个值。分层视图要重画，灰度视图只改文字。</summary>
-    private void ApplyInputs()
+    private void ApplyInputs(bool renderNow = true)
     {
         var errors = new List<string>();
         double heightScale = _heightScale;
@@ -400,7 +443,7 @@ public partial class HeightmapViewerPage : UserControl
             errors.Add(Loc.Instance["Heightmaps.BadHeightScale"]);
 
         double seaLevel = _seaLevel;
-        if (TryParse(SeaLevelBox.Text, out double sea))
+        if (TryParse(SeaLevelBox.Text, out double sea) && double.IsFinite(sea))
             seaLevel = sea;
         else
             errors.Add(Loc.Instance["Heightmaps.BadSeaLevel"]);
@@ -413,6 +456,13 @@ public partial class HeightmapViewerPage : UserControl
 
         _heightScale = heightScale;
         _seaLevel = seaLevel;
+        if (!renderNow)
+        {
+            if (_image != null)
+                _renderPending = true;
+            return;
+        }
+
         RefreshTexts();
         if (_view == HeightmapView.Layered)
         {
@@ -436,7 +486,11 @@ public partial class HeightmapViewerPage : UserControl
         string language = CurrentLanguage;
         FolderText.Text = Loc.Instance.Format("Heightmaps.Folder", App.Services.Paths.HeightmapsDir);
         if (!_scanning)
-            StatusText.Text = HeightmapText.Status(_files, language);
+        {
+            StatusText.Text = _scanError != null
+                ? Loc.Instance.Format("Heightmaps.ScanFailed", _scanError)
+                : HeightmapText.Status(_files, language);
+        }
 
         HeightmapFileInfo? file = _current;
         if (file == null)
@@ -457,6 +511,8 @@ public partial class HeightmapViewerPage : UserControl
         IssuesText.Text = issues;
         IssuesText.DataContext = new DetailLine(string.Empty, issues, HeightmapText.IssuesTone(file.Issues));
         StatsText.Text = _image == null ? string.Empty : string.Join(" · ", HeightmapText.Stats(_image.Stats, _heightScale, language));
+        if (_image != null)
+            ZoomText.Text = ZoomLabel(_zoom);
         PlaceholderText.Text = _imageMessageKey == null ? string.Empty
             : _imageMessageArg == null ? Loc.Instance[_imageMessageKey]
             : Loc.Instance.Format(_imageMessageKey, _imageMessageArg);
@@ -510,17 +566,38 @@ public partial class HeightmapViewerPage : UserControl
     {
         zoom = Math.Clamp(zoom, MinZoom, MaxZoom);
         Point point = anchor ?? new Point(Viewport.ViewportWidth / 2, Viewport.ViewportHeight / 2);
-        double contentX = (Viewport.HorizontalOffset + point.X) / _zoom;
-        double contentY = (Viewport.VerticalOffset + point.Y) / _zoom;
+
+        // 缩放前先取锚点在图像坐标系下的像素位置，自然扣除居中留白
+        Point? imagePoint = _image != null && HeightImage.ActualWidth > 0 && HeightImage.ActualHeight > 0
+            ? Viewport.TranslatePoint(point, HeightImage)
+            : null;
 
         _zoom = zoom;
         ImageScale.ScaleX = zoom;
         ImageScale.ScaleY = zoom;
         Viewport.UpdateLayout();
-        Viewport.ScrollToHorizontalOffset(contentX * zoom - point.X);
-        Viewport.ScrollToVerticalOffset(contentY * zoom - point.Y);
-        ZoomText.Text = Loc.Instance.Format("Heightmaps.Zoom", zoom * VisualTreeHelper.GetDpi(this).DpiScaleX * 100);
+
+        if (imagePoint is Point imgPt)
+        {
+            Point afterInViewport = HeightImage.TranslatePoint(imgPt, Viewport);
+            Viewport.ScrollToHorizontalOffset(Viewport.HorizontalOffset + (afterInViewport.X - point.X));
+            Viewport.ScrollToVerticalOffset(Viewport.VerticalOffset + (afterInViewport.Y - point.Y));
+        }
+
+        ZoomText.Text = ZoomLabel(zoom);
         UpdateScalingMode();
+    }
+
+    /// <summary>
+    /// 缩放比例按源图算：一个源图像素对几个屏幕像素。降采样预览（如 8192² 缩成 4096²）"实际像素"只能做到预览图的 1:1，
+    /// 相对源图是 50%，因此按源图折算并注明预览尺寸，免得把 100% 误读成看到了源图的每个像素。
+    /// </summary>
+    private string ZoomLabel(double zoom)
+    {
+        double percent = zoom * VisualTreeHelper.GetDpi(this).DpiScaleX * 100;
+        if (_image is { SourceWidth: > 0 } image && image.SourceWidth != image.Width)
+            return Loc.Instance.Format("Heightmaps.ZoomDownsampled", percent * image.Width / image.SourceWidth, image.Width, image.Height);
+        return Loc.Instance.Format("Heightmaps.Zoom", percent);
     }
 
     /// <summary>放大到能看清像素时用最近邻，缩小时用高质量缩放。</summary>
@@ -555,6 +632,12 @@ public partial class HeightmapViewerPage : UserControl
         HeightImage.Cursor = Cursors.Cross;
     }
 
+    private void OnImageLostMouseCapture(object sender, MouseEventArgs e)
+    {
+        _dragStart = null;
+        HeightImage.Cursor = Cursors.Cross;
+    }
+
     private void OnImageMouseMove(object sender, MouseEventArgs e)
     {
         if (_dragStart is Point start && e.LeftButton == MouseButtonState.Pressed)
@@ -575,7 +658,13 @@ public partial class HeightmapViewerPage : UserControl
             return;
         }
 
-        HoverText.Text = HeightmapText.Hover(x, y, image.Samples[y * image.Width + x], _heightScale, _seaLevel, CurrentLanguage);
+        int displayX = image.SourceWidth > 0 && image.SourceWidth != image.Width
+            ? (int)((long)x * image.SourceWidth / image.Width)
+            : x;
+        int displayY = image.SourceHeight > 0 && image.SourceHeight != image.Height
+            ? (int)((long)y * image.SourceHeight / image.Height)
+            : y;
+        HoverText.Text = HeightmapText.Hover(displayX, displayY, image.Samples[y * image.Width + x], _heightScale, _seaLevel, CurrentLanguage);
     }
 
     private void OnImageMouseLeave(object sender, MouseEventArgs e)
@@ -584,6 +673,11 @@ public partial class HeightmapViewerPage : UserControl
             HoverText.Text = string.Empty;
     }
 
-    private void ShowWarning(string text) =>
-        MessageBox.Show(Window.GetWindow(this)!, text, Loc.Instance["App.Title"], MessageBoxButton.OK, MessageBoxImage.Warning);
+    private void ShowWarning(string text)
+    {
+        if (Window.GetWindow(this) is { } owner)
+            MessageBox.Show(owner, text, Loc.Instance["App.Title"], MessageBoxButton.OK, MessageBoxImage.Warning);
+        else
+            MessageBox.Show(text, Loc.Instance["App.Title"], MessageBoxButton.OK, MessageBoxImage.Warning);
+    }
 }

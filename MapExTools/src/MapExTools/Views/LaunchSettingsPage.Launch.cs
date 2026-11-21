@@ -429,5 +429,7 @@ public partial class LaunchSettingsPage
     }
 
     private MessageBoxResult Ask(string text, MessageBoxButton buttons, MessageBoxImage image) =>
-        MessageBox.Show(Window.GetWindow(this)!, text, Loc.Instance["App.Title"], buttons, image);
+        Window.GetWindow(this) is { } owner
+            ? MessageBox.Show(owner, text, Loc.Instance["App.Title"], buttons, image)
+            : MessageBox.Show(text, Loc.Instance["App.Title"], buttons, image);
 }

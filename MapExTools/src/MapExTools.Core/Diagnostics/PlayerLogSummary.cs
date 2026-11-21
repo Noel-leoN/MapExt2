@@ -71,19 +71,31 @@ public sealed partial record PlayerLogSummary(
         : sessionInProgress ? PlayerLogEndState.InProgress
         : PlayerLogEndState.NoExitRecord;
 
-    /// <summary>解析日志全文（按行）。</summary>
-    public static PlayerLogSummary Parse(IReadOnlyList<string> lines)
+    /// <summary>单遍流式解析日志（支持直接传入流式行序列，无需把整份日志载入 <see cref="List{T}"/>）。</summary>
+    public static PlayerLogSummary Parse(IEnumerable<string> lines)
     {
         ArgumentNullException.ThrowIfNull(lines);
 
+        const int lookahead = 5;
         string? version = null;
         int count = 0;
         var recent = new Queue<PlayerLogProblem>();
         bool exitRecord = false, crashMarker = false;
 
-        for (int i = 0; i < lines.Count; i++)
+        // 窗口先装前 5 行；每轮取出当前行后补进 1 行，判定当前行时窗口里恰好是其后 5 行
+        using IEnumerator<string> enumerator = lines.GetEnumerator();
+        var window = new Queue<string>(lookahead);
+        while (window.Count < lookahead && enumerator.MoveNext())
+            window.Enqueue(enumerator.Current);
+
+        int lineNumber = 0;
+        while (window.Count > 0)
         {
-            string line = lines[i];
+            string line = window.Dequeue();
+            lineNumber++;
+            if (enumerator.MoveNext())
+                window.Enqueue(enumerator.Current);
+
             if (line.StartsWith("Game version: ", StringComparison.Ordinal))
             {
                 version = line["Game version: ".Length..].Trim();
@@ -106,13 +118,13 @@ public sealed partial record PlayerLogSummary(
             Match exception = ExceptionRegex().Match(line);
             if (exception.Success)
             {
-                problem = new PlayerLogProblem(i + 1, PlayerLogProblemKind.Exception, exception.Groups["type"].Value, line, FindFirstFrame(lines, i));
+                problem = new PlayerLogProblem(lineNumber, PlayerLogProblemKind.Exception, exception.Groups["type"].Value, line, FindFirstFrame(window));
             }
             else
             {
                 Match logged = LoggedErrorRegex().Match(line);
                 if (logged.Success)
-                    problem = new PlayerLogProblem(i + 1, PlayerLogProblemKind.LoggedError, logged.Groups["logger"].Value, line, FindFirstFrame(lines, i));
+                    problem = new PlayerLogProblem(lineNumber, PlayerLogProblemKind.LoggedError, logged.Groups["logger"].Value, line, FindFirstFrame(window));
             }
 
             if (problem == null)
@@ -127,12 +139,12 @@ public sealed partial record PlayerLogSummary(
         return new PlayerLogSummary(version, count, recent.ToArray(), exitRecord, crashMarker);
     }
 
-    /// <summary>在其后几行里找第一行 <c>at …</c> 堆栈。</summary>
-    private static string? FindFirstFrame(IReadOnlyList<string> lines, int index)
+    /// <summary>在紧随其后的最多 5 行前瞻窗口里找第一行 <c>at …</c> 堆栈。</summary>
+    private static string? FindFirstFrame(Queue<string> lookaheadWindow)
     {
-        for (int j = index + 1; j < lines.Count && j <= index + 5; j++)
+        foreach (string next in lookaheadWindow)
         {
-            string trimmed = lines[j].TrimStart();
+            string trimmed = next.TrimStart();
             if (trimmed.StartsWith("at ", StringComparison.Ordinal))
                 return trimmed.TrimEnd();
         }

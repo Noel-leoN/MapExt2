@@ -83,6 +83,11 @@ foreach ($v in $variants) {
     $stageDir = Join-Path $outRoot "stage-$suffix"
 
     if ([IO.Directory]::Exists($stageDir)) {
+        $leftoverDirs = @([IO.Directory]::GetDirectories($stageDir))
+        if ($leftoverDirs.Count -gt 0) {
+            $names = ($leftoverDirs | ForEach-Object { [IO.Path]::GetFileName($_) }) -join ', '
+            throw "暂存目录 '$stageDir' 中存在残留子目录（$names），本脚本不执行递归删除，请先手动清空该目录后重试。"
+        }
         foreach ($oldFile in [IO.Directory]::GetFiles($stageDir)) {
             [IO.File]::Delete($oldFile)
         }

@@ -29,6 +29,7 @@ public sealed class ImageFileHeaderTests
     {
         Assert.Null(Read(HeightmapTestData.Png(4096, 4096, 16, 0, ihdrLength: 12)));
         Assert.Null(Read(HeightmapTestData.Png(4096, 4096, 16, 5)));
+        Assert.Null(Read(HeightmapTestData.Png(4096, 4096, 16, 3))); // 调色板不支持 16 位
         Assert.Null(Read(HeightmapTestData.Png(4096, 4096, 16, 0)[..20]));
     }
 
@@ -61,7 +62,28 @@ public sealed class ImageFileHeaderTests
         ImageFileHeader? header = Read(HeightmapTestData.Tiff(true, 4096, 4096, 32, 1, sampleFormat: 3));
 
         Assert.True(header!.IsFloat);
+        Assert.False(header.IsSigned);
         Assert.Equal(HeightmapPixelKind.Unsupported, header.Kind);
+    }
+
+    [Fact]
+    public void Tiff_SignedSampleFormat_IsMarkedSignedAndUnsupported()
+    {
+        ImageFileHeader? header = Read(HeightmapTestData.Tiff(true, 4096, 4096, 16, 1, sampleFormat: 2));
+
+        Assert.NotNull(header);
+        Assert.True(header.IsSigned);
+        Assert.False(header.IsFloat);
+        Assert.Equal(HeightmapPixelKind.Unsupported, header.Kind);
+        Assert.Equal(HeightmapIssues.WrongFormat, header.Issues);
+    }
+
+    [Fact]
+    public void Jpeg_SofShorterThan8_IsNull()
+    {
+        // SOI + SOF0 marker + length=6（小于最小 8 字节）
+        byte[] badSof = [0xFF, 0xD8, 0xFF, 0xC0, 0x00, 0x06, 8, 0x10, 0x00, 0x10, 0x00, 3];
+        Assert.Null(Read(badSof));
     }
 
     [Fact]

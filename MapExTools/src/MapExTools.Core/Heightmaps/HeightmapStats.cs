@@ -25,10 +25,15 @@ public sealed record HeightmapStats(ushort Min, ushort Max, double Mean, long Co
             sum += value;
         }
 
+        return FromHistogram(histogram, sum, samples.Length);
+    }
+
+    private static HeightmapStats FromHistogram(int[] histogram, long sum, long count)
+    {
         int min = Array.FindIndex(histogram, c => c > 0);
         int max = Array.FindLastIndex(histogram, c => c > 0);
-        long lowCount = (long)Math.Ceiling(samples.Length * StretchClip);
-        long highCount = (long)Math.Ceiling(samples.Length * (1 - StretchClip));
+        long lowCount = (long)Math.Ceiling(count * StretchClip);
+        long highCount = (long)Math.Ceiling(count * (1 - StretchClip));
         int low = Percentile(histogram, lowCount);
         int high = Percentile(histogram, highCount);
         if (high <= low)
@@ -38,7 +43,29 @@ public sealed record HeightmapStats(ushort Min, ushort Max, double Mean, long Co
             high = max;
         }
 
-        return new HeightmapStats((ushort)min, (ushort)max, (double)sum / samples.Length, samples.Length, (ushort)low, (ushort)high);
+        return new HeightmapStats((ushort)min, (ushort)max, (double)sum / count, count, (ushort)low, (ushort)high);
+    }
+
+    /// <summary>
+    /// 逐个累计像素的统计。超过预览尺寸的高度图解码时只保留降采样后的像素，统计要在降采样的同时按源图全部像素累计，
+    /// 否则盒式平均会抹平最高、最低点与分位数。结果与对同一批像素调用 <see cref="Compute"/> 相同。
+    /// </summary>
+    public sealed class Accumulator
+    {
+        private readonly int[] _histogram = new int[HeightmapRules.MaxRaw + 1];
+        private long _sum;
+        private long _count;
+
+        public void Add(ushort value)
+        {
+            _histogram[value]++;
+            _sum += value;
+            _count++;
+        }
+
+        /// <exception cref="InvalidOperationException">还没有累计任何像素。</exception>
+        public HeightmapStats Build() =>
+            _count == 0 ? throw new InvalidOperationException("没有像素") : FromHistogram(_histogram, _sum, _count);
     }
 
     public double MinElevation(double heightScale) => HeightmapRules.ToElevation(Min, heightScale);

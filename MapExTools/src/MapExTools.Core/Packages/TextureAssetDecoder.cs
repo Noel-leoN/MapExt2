@@ -35,8 +35,11 @@ public enum TextureDecodeStatus
     /// <summary>像素格式不支持（如 BC 块压缩），只显示文字信息。</summary>
     UnsupportedFormat,
 
-    /// <summary>不是单层二维贴图，或尺寸超出上限。</summary>
+    /// <summary>不是单层二维贴图。</summary>
     UnsupportedLayout,
+
+    /// <summary>像素数据尺寸超出解码上限。</summary>
+    TooLarge,
 
     /// <summary>文件头或像素数据不完整、解压失败。</summary>
     Corrupt,
@@ -135,7 +138,7 @@ public static class TextureAssetDecoder
         long levelBytes = (long)header.Width * header.Height * 4;
         long chainBytes = ComputeMipChainBytes(header.Width, header.Height, Math.Max(header.MipCount, 1));
         if (chainBytes > MaxDataBytes)
-            return Fail(TextureDecodeStatus.UnsupportedLayout, header, compressed, "too large");
+            return Fail(TextureDecodeStatus.TooLarge, header, compressed, "too large");
 
         ReadOnlySpan<byte> pixels;
         byte[]? buffer = null;

@@ -46,6 +46,8 @@
                                TextWrapping="Wrap" Text="{Binding Text}" Style="{StaticResource ToneText}" />
                     <TextBlock x:Name="PlaysetErrorText" FontSize="12" Margin="0,3,0,0" Visibility="Collapsed"
                                TextWrapping="Wrap" Text="{Binding Text}" Style="{StaticResource ToneText}" />
+                    <TextBlock x:Name="RescanErrorText" FontSize="12" Margin="0,3,0,0" Visibility="Collapsed"
+                               TextWrapping="Wrap" Text="{Binding Text}" Style="{StaticResource ToneText}" />
                 </StackPanel>
             </DockPanel>
         </Border>

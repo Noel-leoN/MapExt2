@@ -16,6 +16,7 @@ public enum ModInstallSource
 /// <summary>无法读取或损坏的托管程序集记录。</summary>
 public sealed record UnreadableAssemblyEntry(
     string FilePath,
+    string PackageKey,
     string PackageDisplayName,
     string ErrorMessage);
 

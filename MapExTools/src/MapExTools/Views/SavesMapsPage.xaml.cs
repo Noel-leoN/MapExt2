@@ -100,6 +100,7 @@ public partial class SavesMapsPage : UserControl
         Loc.Instance.LanguageChanged -= OnLanguageChanged;
         _pollTimer.Stop();
         _filterTimer.Stop();
+        CancelPreview();
     }
 
     private void OnLanguageChanged(object? sender, EventArgs e)
@@ -146,6 +147,8 @@ public partial class SavesMapsPage : UserControl
             _cocState = null;
             _settings = null;
             _cocError = ex;
+            if (ex is not CocFormatException)
+                _cocStamp = default;
         }
     }
 
@@ -206,7 +209,7 @@ public partial class SavesMapsPage : UserControl
                 .ThenBy(i => i.Package.Name, StringComparer.CurrentCultureIgnoreCase)
                 .ToList();
         }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        catch (Exception ex) when (ex is not OutOfMemoryException)
         {
             _scanError = ex.Message;
         }
@@ -335,7 +338,7 @@ public partial class SavesMapsPage : UserControl
 
     // === 详情 ===
 
-    /// <summary>显示选中项；同一项只刷新文字，不重新读预览图。</summary>
+    /// <summary>显示选中项；同一项只刷新文字，不重新读预览图（切走时被打断的读取除外）。</summary>
     private void ShowDetails(PackageListItem? item)
     {
         bool sameItem = ReferenceEquals(item, _shownItem);
@@ -354,11 +357,18 @@ public partial class SavesMapsPage : UserControl
         DetailLines.ItemsSource = PackageText.Details(item.Package, _settings, CurrentLanguage, App.Services.Paths.Root);
         UpdateSwitchButton(item);
 
-        if (sameItem)
+        if (sameItem && !IsPreviewInterrupted(item))
             RenderPreviewCaption(item);
         else
             LoadPreview(item);
     }
+
+    /// <summary>
+    /// 预览读取被 <see cref="OnUnloaded"/> 取消、结果已丢弃：有预览条目，却既没有进行中的读取也没有结果。
+    /// 这时同一项也要重新读，否则切回本页后一直停在"读取中"。
+    /// </summary>
+    private bool IsPreviewInterrupted(PackageListItem item) =>
+        item.Package.PreviewEntry != null && _previewCts == null && _previewLoad == null;
 
     private async void LoadPreview(PackageListItem item)
     {
@@ -384,6 +394,14 @@ public partial class SavesMapsPage : UserControl
         catch (OperationCanceledException)
         {
             // 已换了选中项
+        }
+        catch (Exception ex) when (ex is not OutOfMemoryException)
+        {
+            if (ReferenceEquals(item, _shownItem))
+            {
+                _previewLoad = new PreviewLoad(null, null, ex.Message);
+                RenderPreviewCaption(item);
+            }
         }
     }
 
@@ -434,36 +452,22 @@ public partial class SavesMapsPage : UserControl
         string from = PackageText.CoreValueLabel(_settings.CurrentCoreValue, CurrentLanguage);
         string to = PackageText.ModeLabel(target, CurrentLanguage);
         Window? owner = Window.GetWindow(this);
-        if (MessageBox.Show(owner!, Loc.Instance.Format("Saves.SwitchConfirm", from, to), Loc.Instance["App.Title"],
-                MessageBoxButton.YesNo, MessageBoxImage.Question) != MessageBoxResult.Yes)
-        {
+        string confirmText = Loc.Instance.Format("Saves.SwitchConfirm", from, to);
+        MessageBoxResult answer = owner != null
+            ? MessageBox.Show(owner, confirmText, Loc.Instance["App.Title"], MessageBoxButton.YesNo, MessageBoxImage.Question)
+            : MessageBox.Show(confirmText, Loc.Instance["App.Title"], MessageBoxButton.YesNo, MessageBoxImage.Question);
+        if (answer != MessageBoxResult.Yes)
             return;
-        }
 
-        try
-        {
-            var manager = new CocSettingsManager(App.Services.Paths.CocFile);
-            CocSaveResult result = manager.Save(_cocState, new Dictionary<string, object> { [StartupKeys.ModeKey] = target.Name });
-            if (result.Status == CocSaveStatus.GameRunning)
-            {
-                ShowMessage(Loc.Instance["Saves.SwitchGameRunning"], MessageBoxImage.Warning);
-            }
-            else
-            {
-                App.Services.Coc.NotifyExternalWrite();
-                ShowMessage(Loc.Instance.Format("Saves.SwitchDone", to), MessageBoxImage.Information);
-            }
-        }
-        catch (Exception ex) when (ex is CocFormatException or CocSaveException or IOException or UnauthorizedAccessException)
-        {
-            string message = ex switch
-            {
-                CocFormatException format => format.GetMessage(CurrentLanguage),
-                CocSaveException save => save.GetMessage(CurrentLanguage),
-                _ => ex.Message,
-            };
-            ShowMessage(Loc.Instance.Format("Saves.SwitchFailed", message), MessageBoxImage.Warning);
-        }
+        bool saved = App.Services.Coc.SaveSpecificKeys(
+            new Dictionary<string, object> { [StartupKeys.ModeKey] = target.Name },
+            owner,
+            notifyGameRunning: false,
+            failureMessageKey: "Saves.SwitchFailed");
+        if (saved)
+            ShowMessage(Loc.Instance.Format("Saves.SwitchDone", to), MessageBoxImage.Information);
+        else if (App.Services.Coc.GameRunning)
+            ShowMessage(Loc.Instance["Saves.SwitchGameRunning"], MessageBoxImage.Warning);
 
         ReloadSettings();
         ApplySettings();
@@ -484,6 +488,11 @@ public partial class SavesMapsPage : UserControl
         }
     }
 
-    private void ShowMessage(string text, MessageBoxImage image) =>
-        MessageBox.Show(Window.GetWindow(this)!, text, Loc.Instance["App.Title"], MessageBoxButton.OK, image);
+    private void ShowMessage(string text, MessageBoxImage image)
+    {
+        if (Window.GetWindow(this) is { } owner)
+            MessageBox.Show(owner, text, Loc.Instance["App.Title"], MessageBoxButton.OK, image);
+        else
+            MessageBox.Show(text, Loc.Instance["App.Title"], MessageBoxButton.OK, image);
+    }
 }

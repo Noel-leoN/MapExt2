@@ -24,12 +24,17 @@ public sealed class HeightmapTextTests
     {
         Assert.Equal("可导入", HeightmapText.Issues(HeightmapIssues.None, Hans, brief: true));
         Assert.Equal("可以导入游戏", HeightmapText.Issues(HeightmapIssues.None, Hans, brief: false));
+        Assert.Equal("自动重采样", HeightmapText.Issues(HeightmapIssues.ResampledSize, Hans, brief: true));
+        Assert.Contains("4096×4096", HeightmapText.Issues(HeightmapIssues.ResampledSize, Hans, brief: false), StringComparison.Ordinal);
         Assert.Equal("尺寸不符 · 格式不符", HeightmapText.Issues(HeightmapIssues.WrongSize | HeightmapIssues.WrongFormat, Hans, brief: true));
-        Assert.Equal("尺寸不符：游戏要求 4096×4096；格式不符：游戏要求 16 位灰度或 16 位 RGBA",
-            HeightmapText.Issues(HeightmapIssues.WrongSize | HeightmapIssues.WrongFormat, Hans, brief: false));
+        Assert.Contains("；", HeightmapText.Issues(HeightmapIssues.WrongSize | HeightmapIssues.WrongFormat, Hans, brief: false), StringComparison.Ordinal);
+        Assert.Contains("; ", HeightmapText.Issues(HeightmapIssues.WrongSize | HeightmapIssues.WrongFormat, En, brief: false), StringComparison.Ordinal);
+        Assert.DoesNotContain("；", HeightmapText.Issues(HeightmapIssues.WrongSize | HeightmapIssues.WrongFormat, En, brief: false), StringComparison.Ordinal);
         Assert.Equal("认不出的图片文件", HeightmapText.Issues(null, Hans, brief: true));
         Assert.Equal(PackageTone.Good, HeightmapText.IssuesTone(HeightmapIssues.None));
+        Assert.Equal(PackageTone.Accent, HeightmapText.IssuesTone(HeightmapIssues.ResampledSize));
         Assert.Equal(PackageTone.Error, HeightmapText.IssuesTone(HeightmapIssues.WrongSize));
+        Assert.Equal(PackageTone.Error, HeightmapText.IssuesTone(HeightmapIssues.ResampledSize | HeightmapIssues.WrongFormat));
         Assert.Equal(PackageTone.Warning, HeightmapText.IssuesTone(null));
     }
 
@@ -66,9 +71,10 @@ public sealed class HeightmapTextTests
         {
             new HeightmapFileInfo("a", "a", 0, default, new ImageFileHeader(ImageContainer.Png, 4096, 4096, 1, 16, false), null),
             new HeightmapFileInfo("b", "b", 0, default, new ImageFileHeader(ImageContainer.Png, 8192, 8192, 1, 16, false), null),
-            new HeightmapFileInfo("c", "c", 0, default, null, null),
+            new HeightmapFileInfo("c", "c", 0, default, new ImageFileHeader(ImageContainer.Png, 16384, 16384, 1, 16, false), null),
+            new HeightmapFileInfo("d", "d", 0, default, null, null),
         };
 
-        Assert.Equal("共 3 张图：可导入 1、不可导入 2", HeightmapText.Status(files, Hans));
+        Assert.Equal("共 4 张图：可导入 2、不可导入 2", HeightmapText.Status(files, Hans));
     }
 }

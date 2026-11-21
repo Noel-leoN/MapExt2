@@ -10,11 +10,12 @@ namespace MapExTools.Services;
 /// <summary>主程序共用的服务与当前配置。</summary>
 public sealed class AppServices
 {
-    public AppServices(UserDataPaths paths, ToolConfigService configService, ToolConfig config)
+    public AppServices(UserDataPaths paths, ToolConfigService configService, ToolConfig config, bool configReadOnly = false)
     {
         Paths = paths;
         ConfigService = configService;
         Config = config;
+        ConfigReadOnly = configReadOnly;
         Launcher = CreateLauncher(paths);
         Coc = new CocSession(paths);
         RefreshGameLocation();
@@ -26,6 +27,9 @@ public sealed class AppServices
     public ToolConfigService ConfigService { get; }
 
     public ToolConfig Config { get; }
+
+    /// <summary>启动读取配置失败（如文件被占用或无权限）时为 true：本次会话跳过写回，避免用默认值覆盖原文件。</summary>
+    public bool ConfigReadOnly { get; }
 
     /// <summary>启动游戏（计划 2.2）。</summary>
     public GameLauncher Launcher { get; }
@@ -58,9 +62,12 @@ public sealed class AppServices
     public static GameLauncher CreateLauncher(UserDataPaths paths) =>
         new(paths.RunOnceFile, GameProcess.IsRunning, SteamRegistry.IsSteamRunning);
 
-    /// <summary>保存当前配置；失败时弹窗说明，不抛出。</summary>
+    /// <summary>保存当前配置；启动读盘失败时本次会话跳过写入，写盘失败时弹窗说明，不抛出。</summary>
     public bool TrySaveConfig(Window? owner)
     {
+        if (ConfigReadOnly)
+            return false;
+
         try
         {
             ConfigService.Save(Config);

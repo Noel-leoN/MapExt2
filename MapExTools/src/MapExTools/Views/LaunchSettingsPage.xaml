@@ -205,7 +205,7 @@
                         <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center" Margin="12,0,0,0">
                             <TextBlock FontSize="12" FontWeight="SemiBold" VerticalAlignment="Center" Margin="0,0,14,0">
                                 <Hyperlink x:Name="OpenAllOptionsLink" Click="OnOpenAllOptionsClick">
-                                    <Run Text="{Binding [Startup.OpenAllOptions], Source={x:Static svc:Loc.Instance}, Mode=OneWay}" />
+                                    <Run x:Name="OpenAllOptionsRun" />
                                 </Hyperlink>
                             </TextBlock>
                             <TextBlock FontSize="12" VerticalAlignment="Center" Margin="0,0,12,0">
@@ -228,16 +228,16 @@
                     <!-- 三栏并排：左 地图尺寸模式 · 中 存档转换与安全校验 · 右 经济系统开关 -->
                     <Grid Margin="0,8,0,0">
                         <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="Auto" />
-                            <ColumnDefinition Width="Auto" />
-                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="1*" MinWidth="210" />
+                            <ColumnDefinition Width="1.05*" MinWidth="220" />
+                            <ColumnDefinition Width="1.25*" MinWidth="240" />
                         </Grid.ColumnDefinitions>
-                        <StackPanel Grid.Column="0" Margin="0,0,26,0" MaxWidth="270">
+                        <StackPanel Grid.Column="0" Margin="0,0,18,0">
                             <TextBlock Style="{StaticResource GroupTitle}"
                                        Text="{Binding [Startup.Group.Mode], Source={x:Static svc:Loc.Instance}}" />
                             <StackPanel x:Name="ModePanel" />
                         </StackPanel>
-                        <StackPanel Grid.Column="1" Margin="0,0,26,0" MaxWidth="290">
+                        <StackPanel Grid.Column="1" Margin="0,0,18,0">
                             <TextBlock Style="{StaticResource GroupTitle}"
                                        Text="{Binding [Startup.Group.ConvertAndCheck], Source={x:Static svc:Loc.Instance}}" />
                             <StackPanel x:Name="OtherPanel" />

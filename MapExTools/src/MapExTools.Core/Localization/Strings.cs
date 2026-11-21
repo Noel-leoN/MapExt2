@@ -10,6 +10,12 @@ public static class Strings
     {
         // === 窗口与标签页 ===
         ["App.Title"] = ["MapExTools", "MapExTools", "MapExTools"],
+        ["App.UnhandledErrorTitle"] = ["Unexpected error", "发生未预期的错误", "發生未預期的錯誤"],
+        ["App.UnhandledError"] = [
+            "An unexpected error occurred ({0}):\n{1}",
+            "程序遇到了未预期的错误（{0}）：\n{1}",
+            "程式遇到了未預期的錯誤（{0}）：\n{1}",
+        ],
         ["Tab.Launch"] = ["Launch & Setup", "启动与设定", "啟動與設定"],
         ["Tab.Options"] = ["Mod Settings", "模组设置", "模組設定"],
         ["Tab.OptionsDirty"] = ["Mod Settings ● {0}", "模组设置 ● {0}", "模組設定 ● {0}"],
@@ -50,6 +56,12 @@ public static class Strings
             "MapExTools.json could not be read and the defaults are used instead.\n{0}\nA copy of the damaged file was kept at:\n{1}",
             "无法读取 MapExTools.json，已改用默认值。\n{0}\n损坏的文件已另存一份：\n{1}",
             "無法讀取 MapExTools.json，已改用預設值。\n{0}\n損毀的檔案已另存一份：\n{1}",
+        ],
+        ["Config.ReadFailedTitle"] = ["Could not read settings file", "无法读取配置文件", "無法讀取設定檔"],
+        ["Config.ReadFailed"] = [
+            "MapExTools.json could not be opened, so default settings are used for this session and changes to tool preferences will not be saved:\n{0}",
+            "无法打开 MapExTools.json，本次运行改用默认配置，且不会将工具偏好写回磁盘（避免覆盖原文件）：\n{0}",
+            "無法開啟 MapExTools.json，本次執行改用預設設定，且不會將工具偏好寫回磁碟（避免覆蓋原檔）：\n{0}",
         ],
         ["Config.SaveFailed"] = [
             "Could not save MapExTools.json: {0}",
@@ -148,7 +160,6 @@ public static class Strings
         ["Startup.OpenFailed"] = ["Could not open: {0}", "无法打开：{0}", "無法開啟：{0}"],
         ["Startup.Group.Mode"] = ["Map size mode", "地图尺寸模式", "地圖尺寸模式"],
         ["Startup.Group.Economy"] = ["Economy systems (EconomyEX)", "经济系统（EconomyEX）", "經濟系統（EconomyEX）"],
-        ["Startup.Group.Other"] = ["Other", "其他", "其他"],
         ["Startup.Mode.ModeA"] = ["ModeA 57km (4x4)", "ModeA 57km (4x4)", "ModeA 57km (4x4)"],
         ["Startup.Mode.ModeB"] = ["ModeB 28km (2x2)", "ModeB 28km (2x2)", "ModeB 28km (2x2)"],
         ["Startup.Mode.ModeC"] = ["ModeC 114km (8x8) (not recommended)", "ModeC 114km (8x8)（不推荐）", "ModeC 114km (8x8)（不推薦）"],
@@ -595,6 +606,11 @@ public static class Strings
             "无法读取 MapExTools.json，已改用默认值：{0}",
             "無法讀取 MapExTools.json，已改用預設值：{0}",
         ],
+        ["Cli.ConfigReadFailed"] = [
+            "MapExTools.json could not be opened, so the defaults are used: {0}",
+            "无法打开 MapExTools.json，已改用默认值：{0}",
+            "無法開啟 MapExTools.json，已改用預設值：{0}",
+        ],
         ["Cli.Launched"] = ["Launched ({0}): {1}", "已启动（{0}）：{1}", "已啟動（{0}）：{1}"],
         ["Cli.NotLaunched"] = ["The game was not launched: {0}", "没有启动游戏：{0}", "沒有啟動遊戲：{0}"],
         ["Cli.SteamFallback"] = [
@@ -671,6 +687,11 @@ public static class Strings
             "无法复制到剪贴板：{0}",
             "無法複製到剪貼簿：{0}",
         ],
+        ["Logs.RefreshFailed"] = [
+            "Could not refresh log summary: {0}",
+            "刷新日志摘要失败：{0}",
+            "重新整理日誌摘要失敗：{0}",
+        ],
         ["Logs.OpenFolder"] = ["Open log folder", "打开日志目录", "開啟日誌資料夾"],
         ["Logs.FolderMissing"] = ["The folder does not exist: {0}", "目录不存在：{0}", "資料夾不存在：{0}"],
         ["Logs.Title"] = ["MapExTools diagnostics", "MapExTools 诊断摘要", "MapExTools 診斷摘要"],
@@ -736,16 +757,16 @@ public static class Strings
             "Burst：沒有紀錄（MapExt 早於 v4.12.0）",
         ],
         ["Logs.Conflicts.None"] = [
-            "Known conflicting mods: none detected",
-            "已知冲突 Mod：未检测到",
-            "已知衝突 Mod：未偵測到",
+            "Conflicts & diagnostics: none detected",
+            "冲突与诊断：未检测到",
+            "衝突與診斷：未偵測到",
         ],
         ["Logs.Conflicts.NotScanned"] = [
-            "Known conflicting mods: not recorded",
-            "已知冲突 Mod：没有记录",
-            "已知衝突 Mod：沒有紀錄",
+            "Conflicts & diagnostics: not recorded",
+            "冲突与诊断：没有记录",
+            "衝突與診斷：沒有紀錄",
         ],
-        ["Logs.Conflicts.Found"] = ["Known conflicting mods: {0}", "已知冲突 Mod：{0}", "已知衝突 Mod：{0}"],
+        ["Logs.Conflicts.Found"] = ["Conflicts & diagnostics: {0}", "冲突与诊断：{0}", "衝突與診斷：{0}"],
         ["Logs.Conflicts.AutoDisabled"] = [
             "Groups disabled for this session: {0}",
             "本会话自动停用：{0}",
@@ -1008,6 +1029,11 @@ public static class Strings
             "不是单层二维贴图",
             "不是單層二維貼圖",
         ],
+        ["Saves.Preview.TooLarge"] = [
+            "{0}×{1}: too large to decode",
+            "{0}×{1}，尺寸过大，不解码",
+            "{0}×{1}，尺寸過大，不解碼",
+        ],
         ["Saves.Preview.Corrupt"] = ["Damaged: {0}", "已损坏：{0}", "已損毀：{0}"],
         ["Saves.Preview.Loading"] = ["Loading…", "读取中…", "讀取中…"],
         ["Saves.Preview.Error"] = ["Cannot read: {0}", "无法读取：{0}", "無法讀取：{0}"],
@@ -1034,6 +1060,11 @@ public static class Strings
             "共 {0} 張圖：可匯入 {1}、不可匯入 {2}",
         ],
         ["Heightmaps.Scanning"] = ["Reading the Heightmaps folder…", "正在读取高度图目录…", "正在讀取高度圖目錄…"],
+        ["Heightmaps.ScanFailed"] = [
+            "Could not scan the Heightmaps folder: {0}",
+            "扫描高度图目录失败：{0}",
+            "掃描高度圖目錄失敗：{0}",
+        ],
         ["Heightmaps.View"] = ["View", "视图", "檢視"],
         ["Heightmaps.View.Raw"] = ["Grayscale (raw)", "原始灰度", "原始灰階"],
         ["Heightmaps.View.Stretched"] = ["Stretched contrast", "自动拉伸", "自動拉伸"],
@@ -1043,6 +1074,11 @@ public static class Strings
         ["Heightmaps.Fit"] = ["Fit", "适应窗口", "符合視窗"],
         ["Heightmaps.ActualPixels"] = ["Actual pixels", "实际像素", "實際像素"],
         ["Heightmaps.Zoom"] = ["{0:0}%", "{0:0}%", "{0:0}%"],
+        ["Heightmaps.ZoomDownsampled"] = [
+            "{0:0}% of source (preview downsampled to {1}×{2})",
+            "{0:0}%（相对原图；预览已降采样至 {1}×{2}）",
+            "{0:0}%（相對原圖；預覽已降採樣至 {1}×{2}）",
+        ],
         ["Heightmaps.Legend"] = ["Legend", "图例", "圖例"],
         ["Heightmaps.Decoding"] = ["Decoding…", "解码中…", "解碼中…"],
         ["Heightmaps.BadHeightScale"] = [
@@ -1065,26 +1101,42 @@ public static class Strings
         ],
         ["Heightmaps.Kind.Bits"] = ["{0}-bit, {1} channel(s)", "{0} 位 · {1} 通道", "{0} 位元 · {1} 通道"],
         ["Heightmaps.Kind.Float"] = ["{0}-bit floating point, {1} channel(s)", "{0} 位浮点 · {1} 通道", "{0} 位元浮點 · {1} 通道"],
+        ["Heightmaps.Kind.Signed"] = [
+            "{0}-bit signed integer, {1} channel(s) (negative values would be read as extreme terrain heights)",
+            "{0} 位有符号整数 · {1} 通道（负值会被当成极高地形）",
+            "{0} 位元有號整數 · {1} 通道（負值會被當成極高地形）",
+        ],
         ["Heightmaps.Ok"] = ["Can be imported", "可以导入游戏", "可以匯入遊戲"],
         ["Heightmaps.OkShort"] = ["OK", "可导入", "可匯入"],
+        ["Heightmaps.ResampledOk"] = [
+            "Can be imported (MapExt automatically bilinearly resamples to 4096×4096; fine detail may be softened)",
+            "可以导入（MapExt 会自动双线性重采样为 4096×4096，可能损失细节）",
+            "可以匯入（MapExt 會自動雙線性重取樣為 4096×4096，可能損失細節）",
+        ],
+        ["Heightmaps.ResampledOkShort"] = ["Resampled", "自动重采样", "自動重取樣"],
+        ["Heightmaps.ResampledNote"] = [
+            "Size will be bilinearly resampled to 4096×4096 by MapExt (may soften detail)",
+            "尺寸将由 MapExt 双线性重采样为 4096×4096（可能损失细节）",
+            "尺寸將由 MapExt 雙線性重取樣為 4096×4096（可能損失細節）",
+        ],
         ["Heightmaps.WrongSize"] = [
-            "Wrong size: the game needs 4096×4096",
-            "尺寸不符：游戏要求 4096×4096",
-            "尺寸不符：遊戲要求 4096×4096",
+            "Wrong size: exceeds 8192×8192 (4096×4096 native; up to 8192×8192 via MapExt resampling)",
+            "尺寸不符：超过 8192×8192 不可导入（原生 4096×4096，MapExt 最高支持 8192×8192 自动重采样）",
+            "尺寸不符：超過 8192×8192 不可匯入（原生 4096×4096，MapExt 最高支援 8192×8192 自動重取樣）",
         ],
         ["Heightmaps.WrongSizeShort"] = ["Wrong size", "尺寸不符", "尺寸不符"],
         ["Heightmaps.WrongFormat"] = [
-            "Wrong format: the game needs 16-bit grayscale or 16-bit RGBA",
-            "格式不符：游戏要求 16 位灰度或 16 位 RGBA",
-            "格式不符：遊戲要求 16 位元灰階或 16 位元 RGBA",
+            "Wrong format: the game needs unsigned 16-bit grayscale or 16-bit RGBA",
+            "格式不符：游戏要求无符号 16 位灰度或 16 位 RGBA",
+            "格式不符：遊戲要求無號 16 位元灰階或 16 位元 RGBA",
         ],
         ["Heightmaps.WrongFormatShort"] = ["Wrong format", "格式不符", "格式不符"],
         ["Heightmaps.Unrecognized"] = ["Unrecognized image file", "认不出的图片文件", "無法辨識的圖片檔"],
         ["Heightmaps.ReadError"] = ["Cannot read: {0}", "无法读取：{0}", "無法讀取：{0}"],
         ["Heightmaps.TooLarge"] = [
-            "Larger than 4096×4096: the content is not shown.",
-            "大于 4096×4096，不显示内容。",
-            "大於 4096×4096，不顯示內容。",
+            "Larger than 8192×8192: the content is not shown.",
+            "大于 8192×8192，不显示内容。",
+            "大於 8192×8192，不顯示內容。",
         ],
         ["Heightmaps.DecodeFailed"] = ["Could not decode the image: {0}", "无法解码图片：{0}", "無法解碼圖片：{0}"],
 
@@ -1114,8 +1166,8 @@ public static class Strings
         ["Heightmaps.Legend.BlackAtMost"] = ["Black: {0:N0} m and below", "黑：{0:N0} 米及以下", "黑：{0:N0} 公尺及以下"],
         ["Heightmaps.Legend.WhiteAtLeast"] = ["White: {0:N0} m and above", "白：{0:N0} 米及以上", "白：{0:N0} 公尺及以上"],
 
-        // === 模组设置中心（全量 65 项 OptionUI 持久化配置） ===
-        ["Startup.OpenAllOptions"] = ["All mod settings (65) →", "全部模组设置 (65项) →", "全部模組設定 (65項) →"],
+        // === 模组设置中心（全量 OptionUI 持久化配置） ===
+        ["Startup.OpenAllOptions"] = ["All mod settings ({0}) →", "全部模组设置 ({0}项) →", "全部模組設定 ({0}項) →"],
         ["Startup.Group.ConvertAndCheck"] = ["Save conversion & check", "存档转换与安全校验", "存檔轉換與安全驗證"],
         ["Startup.MutualExclusion"] = [
             "Map Extension Conversion and Disable World Backdrop are mutually exclusive.",
@@ -1138,9 +1190,9 @@ public static class Strings
         ],
         ["Options.ResetAll"] = ["All defaults", "全部默认", "全部預設"],
         ["Options.ResetAllTip"] = [
-            "Restore all 65 options to MapExt defaults (save to write)",
-            "将全部 65 项恢复为 MapExt 默认值（需点击保存写入）",
-            "將全部 65 項恢復為 MapExt 預設值（需點擊儲存寫入）",
+            "Restore all {0} options to MapExt defaults (save to write)",
+            "将全部 {0} 项恢复为 MapExt 默认值（需点击保存写入）",
+            "將全部 {0} 項恢復為 MapExt 預設值（需點擊儲存寫入）",
         ],
         ["Options.ResetItemTip"] = ["Reset to default ({0})", "恢复默认值（{0}）", "恢復預設值（{0}）"],
         ["Options.ChangesMore"] = ["{0} (total {1} changes)", "{0}（共 {1} 项改动）", "{0}（共 {1} 項變更）"],
@@ -1158,7 +1210,7 @@ public static class Strings
         ["Options.Group.EcoToggles"] = ["EconomyEX System Toggles", "经济子系统开关（EconomyEX）", "經濟子系統開關（EconomyEX）"],
         ["Options.Group.TerrainWater"] = ["Terrain, Water & Snow GPU Optimization", "地形、水体与积雪 GPU 优化", "地形、水體與積雪 GPU 優化"],
         ["Options.Group.EntitiesTraffic"] = ["Pets (NoDogs) & Through-Traffic", "宠物控制（NoDogs）与过境交通", "寵物控制（NoDogs）與過境交通"],
-        ["Options.Group.EditorBrush"] = ["Map Editor & Terrain Brush", "地图编辑器与道路笔刷", "地圖編輯器與道路筆刷"],
+        ["Options.Group.EditorBrush"] = ["Map Editor & Terrain Brush", "地图编辑器与地形笔刷", "地圖編輯器與地形筆刷"],
         ["Options.Group.VehicleRescue"] = ["Stuck Vehicle Rescue", "购车停放救援（幽灵车清理）", "購車停放救援（幽靈車清理）"],
         ["Options.Group.PathfindDaily"] = ["Daily Travel, Cargo, Jobs & Housing", "日常出行、货运、求职与找房", "日常出行、貨運、求職與找房"],
         ["Options.Group.PathfindSchool"] = ["Education Pathfinding (4 Tiers)", "四级教育就学范围", "四級教育就學範圍"],
@@ -1183,7 +1235,7 @@ public static class Strings
             "目前選擇的是 None（14km 原版）模式：地形緩衝預分配、級聯降頻與背景降採樣事件化僅在擴展模式（28～114km）下掛載生效。",
         ],
         ["Options.Note.EcoMasterOff"] = [
-            "Economy master switch is OFF: economy pathfinding and throughput parameters below remain saved as presets and take effect once EconomyEX is enabled.",
+            "Economy master switch is OFF: economy pathfinding and throughput parameters below remain saved as presets and take effect once the master switch and corresponding groups are enabled.",
             "经济系统修复总开关当前已关闭：下方参数可预先配置保存，开启总开关及对应子系统后生效。",
             "經濟系統修復總開關目前已關閉：下方參數可預先配置儲存，開啟總開關及對應子系統後生效。",
         ],
@@ -1191,6 +1243,11 @@ public static class Strings
             "\"Vehicle AI and Pathfind Systems\" is currently unchecked: school pathfind limits apply once that group is enabled.",
             "「载具AI与寻路系统组」当前未勾选：四级学校寻路上限需启用该分组后生效（此处可预先保存）。",
             "「載具AI與尋路系統組」目前未勾選：四級學校尋路上限需啟用該分組後生效（此處可預先儲存）。",
+        ],
+        ["Options.Note.RentMatrixVanillaOff"] = [
+            "In None (14km vanilla) mode, \"Household, Property and Rent Systems\" is currently unchecked: the rent formula matrix below remains saved as presets and takes effect once that group is enabled.",
+            "当前为 None（14km 原版）模式且「找房与租金系统组」未勾选：下方租金公式矩阵可预先配置保存，开启该分组后生效。",
+            "目前為 None（14km 原版）模式且「找房與租金系統組」未勾選：下方租金公式矩陣可預先配置儲存，開啟該分組後生效。",
         ],
         ["Options.Note.NoDogsPurgeInGame"] = [
             "Note: one-shot \"Purge All Existing Pets\" requires a loaded city and must be triggered inside the game's Options screen.",
@@ -1234,7 +1291,7 @@ public static class Strings
         ["Startup.Key.TerrainBufferPrealloc"] = ["Terrain Buffer Pre-allocation", "地形缓冲预分配", "地形緩衝預分配"],
         ["Startup.Key.TerrainCascadeThrottle"] = ["Terrain Cascade Throttle (Experimental)", "地形级联降频（实验性）", "地形級聯降頻（實驗性）"],
         ["Startup.Key.TerrainDownsampleThrottle"] = ["Backdrop Terrain Downsample Gate", "背景地形降采样事件化", "背景地形降採樣事件化"],
-        ["Startup.Key.WaterSimQuality"] = ["Water Simulation Quality", "水体模拟质量", "水體模擬質量"],
+        ["Startup.Key.WaterSimQuality"] = ["Water Simulation Quality", "水体模拟质量", "水體模擬品質"],
         ["Startup.Key.WaterPauseFreeze"] = ["Freeze Water Simulation While Paused", "暂停时冻结水模拟", "暫停時凍結水模擬"],
         ["Startup.Key.SnowSimFreeze"] = ["Freeze Snow Simulation", "冻结雪模拟", "凍結雪模擬"],
 
@@ -1247,7 +1304,7 @@ public static class Strings
         ["Startup.Key.TerrainBrushRoadMargin"] = ["Road Block Margin", "道路阻挡宽度余量", "道路阻擋寬度餘量"],
 
         ["Startup.Key.EnableVehicleRescue"] = ["Enable Stuck Vehicle Rescue", "启用购车停放救援", "啟用購車停放救援"],
-        ["Startup.Key.EnableRescueDebugLog"] = ["Enable Vehicle Rescue Debug Log", "启用购车救援调试日志", "啟用購車救援偵測日誌"],
+        ["Startup.Key.EnableRescueDebugLog"] = ["Enable Vehicle Rescue Debug Log", "启用购车救援调试日志", "啟用購車救援偵錯日誌"],
 
         ["Startup.Key.ShoppingMaxCost"] = ["Max Shopping Pathfind Cost", "购物最高寻路成本", "購物最高尋路成本"],
         ["Startup.Key.CompanyShoppingMaxCost"] = ["Company Max Delivery Pathfind Cost", "公司货运最高寻路成本", "公司貨運最高尋路成本"],
@@ -1290,7 +1347,7 @@ public static class Strings
         ["Startup.Key.DashboardDefaultCommercial"] = ["Commercial Market", "商业市场", "商業市場"],
         ["Startup.Key.DashboardDefaultActivity"] = ["Population Activity", "人口活动", "人口活動"],
         ["Startup.Key.DashboardDefaultMisc"] = ["Misc", "其他", "其他"],
-        ["Startup.Key.HeightmapExportDirection"] = ["Heightmap Export Orientation", "高程图导出方向", "高度圖匯出方向"],
+        ["Startup.Key.HeightmapExportDirection"] = ["Heightmap Export Orientation", "高度图导出方向", "高度圖匯出方向"],
         ["Startup.Key.HeightmapExportRaw"] = ["Also Export Headerless 16-bit RAW", "额外导出无档头 16-bit RAW", "額外匯出無檔頭 16-bit RAW"],
 
         // === 全部 65 个设定项的悬停提示（Startup.Tip.<Name>） ===
@@ -1805,6 +1862,11 @@ public static class Strings
             "冲突预检扫描失败：{0}",
             "衝突預檢掃描失敗：{0}",
         ],
+        ["Conflicts.RescanFailed"] = [
+            "Rescan failed: {0}. Showing the previous scan result below.",
+            "重新扫描失败：{0}，以下仍为上次扫描结果。",
+            "重新掃描失敗：{0}，以下仍為上次掃描結果。",
+        ],
         ["Conflicts.Find.HarmonyOverlap"] = [
             "Method {0} declares or applies a {1} patch on {2}, which MapExt also patches.",
             "方法 {0} 在目标方法 {2} 上挂载了 {1} 补丁，与 MapExt 补丁目标重叠。",
@@ -1866,9 +1928,9 @@ public static class Strings
             "【可透過關閉「{0}」規避】",
         ],
         ["Conflicts.Rule.RWH"] = [
-            "Adjusts BuildingPropertyData household counts and EconomyParameterData values; when enabled together, MapExt automatically turns off its Household and Property group for that session (checked on v2.0).",
-            "修改建筑户数（BuildingPropertyData）与经济参数（EconomyParameterData）；同时启用时，MapExt 会在本次游戏中自动停用「找房与租金系统组」（基于 v2.0 核对）。",
-            "修改建築戶數（BuildingPropertyData）與經濟參數（EconomyParameterData）；同時啟用時，MapExt 會在本次遊戲中自動停用「找房與租金系統組」（基於 v2.0 核對）。",
+            "Adjusts BuildingPropertyData household counts and EconomyParameterData values; when enabled together, MapExt automatically turns off its Household and Property group for that session.",
+            "修改建筑户数（BuildingPropertyData）与经济参数（EconomyParameterData）；同时启用时，MapExt 会在本次游戏中自动停用「找房与租金系统组」。",
+            "修改建築戶數（BuildingPropertyData）與經濟參數（EconomyParameterData）；同時啟用時，MapExt 會在本次遊戲中自動停用「找房與租金系統組」。",
         ],
         ["Conflicts.Rule.RoadBuilderDualInstall"] = [
             "Both a local Mods/ copy and an enabled PDX subscribed copy of RoadBuilder are present; disable one copy in your playset to avoid duplicate UI module (.mjs) registration.",

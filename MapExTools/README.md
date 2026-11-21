@@ -2,14 +2,16 @@
 
 **English** | **[简体中文](#-mapextools--mapext都市天际线-2桌面配套工具)**
 
-`MapExTools` is a standalone Windows desktop app (`WPF`, `.NET 11`) distributed exclusively via GitHub Releases (not bundled inside the Paradox Mods package). It combines four tools for **Map Extended (MapExt)** players and map creators:
+`MapExTools` is a standalone Windows desktop app (`WPF`, `.NET 11`) distributed exclusively via GitHub Releases (not bundled inside the Paradox Mods package). It combines six tools for **Map Extended (MapExt)** players and map creators:
 
 1. **Launch and Startup Settings:** Switch MapExt's map size mode (`57km` / `43km` / `28km` / `114km` / vanilla `14km`), toggle the 6 economy system groups, and launch `Cities2.exe` straight to the Main Menu while skipping the Paradox Launcher — no Steam `%command%` setup required.
-2. **Log Diagnostics:** One-screen session summary (`MapExtPDX.log` active mode/CoreValue, Burst compiler state, conflict auto-disables, save entry gate results, `SceneFlow.log` command line, and `Player.log` errors/exit state), live tailing viewer, and one-click Markdown diagnostic report copy.
-3. **Saves and Maps Inspector (`.cok`):** Read-only scan of local `.cok` saves and maps with ZSTD preview rendering, localized map titles, mode compatibility status (`Match` / `Convertible` / `Stretched` / `Mismatch`), and one-click mode switching before starting the game.
-4. **16-bit Heightmap Viewer:** Inspect `4096x4096` 16-bit grayscale/RGBA `.png` and `.tif`/`.tiff` heightmaps before importing into the Map Editor, with header format validation, raw grayscale, 0.5%–99.5% auto-stretched contrast, sea-level layered hypsometric tinting, zoom/pan, and per-pixel elevation readout.
+2. **Mod Settings Center:** Edit all 65 persistent MapExt OptionUI settings offline before starting the game (Core and Conversion, Performance and Tools, Pathfinding Limits, Economy and Throughput, Land Value and Rent), with search by label or `.coc` key, per-item/per-group/full reset, and safe atomic writes to `MapExtPDX.coc`.
+3. **Conflict Pre-check:** Read-only static metadata and IL inspection of the active playset and local `Mods\` folder against MapExt's replaced systems, patch targets, and lifecycle rules. Dynamically re-evaluates findings for the selected map mode and economy toggles, offers one-click toggles for avoidable economy groups, and warns before launch when hard conflicts are present.
+4. **Log Diagnostics:** One-screen session summary (`MapExtPDX.log` active mode/CoreValue, Burst compiler state, runtime conflicts and diagnostics, auto-disabled groups, save entry gate results, `SceneFlow.log` command line, and `Player.log` errors/exit state), live tailing viewer, and one-click Markdown diagnostic report copy.
+5. **Saves and Maps Inspector (`.cok`):** Read-only scan of local `.cok` saves and maps with ZSTD preview rendering, localized map titles, mode compatibility status (`Match` / `Convertible` / `Stretched` / `Mismatch`), and one-click mode switching before starting the game.
+6. **16-bit Heightmap Viewer:** Inspect 16-bit unsigned grayscale/RGBA `.png` and `.tif`/`.tiff` heightmaps before importing into the Map Editor — validating native `4096x4096` files as well as non-`4096` sizes up to `8192x8192` that MapExt automatically bilinearly resamples (noting possible detail softening) — with raw grayscale, 0.5%–99.5% auto-stretched contrast, sea-level layered hypsometric tinting, zoom/pan, and per-pixel elevation readout.
 
-> **Compatible Mod Version:** MapExTools v1.0 is built for **MapExt v4.12.0 and later** (sharing its startup keys, save conversion rules, and session Burst status log line). If you use MapExTools before MapExt v4.12.0 is live on Paradox Mods, features introduced in v4.12.0 (such as save conversion status and the Burst log line) will only take effect once your MapExt installation updates to v4.12.0+.
+> **Compatible Mod Version:** MapExTools v1.1 is built for **MapExt v4.12.0 and later** (sharing its startup keys, OptionUI schema, save conversion rules, conflict target catalog, and session Burst status log line). Features introduced in v4.12.0 require MapExt v4.12.0+.
 
 ---
 
@@ -19,8 +21,8 @@ Download from [GitHub Releases](https://github.com/Noel-leoN/MapExt2/releases) (
 
 | Package | Who Should Pick It | Requirements |
 |:---|:---|:---|
-| **`MapExTools-v1.0.0-win-x64-portable.zip` (Recommended)** | Most players — works out of the box with zero runtime installation | Windows 10 / 11 (64-bit) |
-| **`MapExTools-v1.0.0-win-x64-lite.zip`** | Smaller download if you already have the .NET 11 Desktop Runtime installed | Windows 10 / 11 (64-bit) + [.NET 11 Desktop Runtime (x64)](https://dotnet.microsoft.com/download/dotnet/11.0) |
+| **`MapExTools-v1.1.0-win-x64-portable.zip` (Recommended)** | Most players — works out of the box with zero runtime installation | Windows 10 / 11 (64-bit) |
+| **`MapExTools-v1.1.0-win-x64-lite.zip`** | Smaller download if you already have the .NET 11 Desktop Runtime installed | Windows 10 / 11 (64-bit) + [.NET 11 Desktop Runtime (x64)](https://dotnet.microsoft.com/download/dotnet/11.0) |
 
 Both archives contain a **single `MapExTools.exe` file** — no installer, no registry entries, no background services, and no administrator privileges required. On first launch the portable package unpacks its bundled runtime to `%TEMP%\.net\MapExTools\` (about 120 MB); the lite package does not.
 
@@ -38,7 +40,7 @@ Both archives contain a **single `MapExTools.exe` file** — no installer, no re
 
 ### Non-Steam Builds (Xbox / Microsoft Store / Game Pass)
 
-If the game cannot be located automatically via Steam, click **Choose Cities2.exe…** on the Launch card and select your game executable manually (for example, `C:\XboxGames\Cities Skylines II\Content\Cities2.exe`). Non-Steam builds use the **Direct launch** channel only. Even without a game executable configured, `.coc` settings editing, log diagnostics, `.cok` save/map inspection, and heightmap viewing all work normally.
+If the game cannot be located automatically via Steam, click **Choose Cities2.exe…** on the Launch card and select your game executable manually (for example, `C:\XboxGames\Cities Skylines II\Content\Cities2.exe`). Non-Steam builds use the **Direct launch** channel only. Even without a game executable configured, `.coc` settings editing, conflict pre-check, log diagnostics, `.cok` save/map inspection, and heightmap viewing all work normally.
 
 ---
 
@@ -61,7 +63,7 @@ If you double-click `MapExTools.exe` directly inside a `.zip` viewer (`%TEMP%`) 
 
 ## ⌨️ Command-Line Usage and Exit Codes
 
-`MapExTools.exe` can be driven from scripts or custom shortcuts without opening the GUI whenever a setting, `--launch`, `--show`, or `--help` flag is passed. The options below are the output of `MapExTools.exe --help --lang en-US` (test-only options omitted):
+`MapExTools.exe` can be driven from scripts or custom shortcuts without opening the GUI whenever a setting, `--launch`, `--show`, `--check-conflicts`, or `--help` flag is passed. The options below are the output of `MapExTools.exe --help --lang en-US` (test-only options omitted):
 
 ```text
 MapExt startup settings (written to MapExtPDX.coc; refused while the game is running):
@@ -79,11 +81,12 @@ MapExt startup settings (written to MapExtPDX.coc; refused while the game is run
 Other:
   --launch                                 After saving, launch the game with the launch method and options set in the window
   --show                                   Show the settings, the configuration in effect at the latest launch, and where the game is
+  --check-conflicts                        Read-only scan of the active playset and local Mods folder for conflicts
   --lang <en-US|zh-HANS|zh-HANT>           Language for this run (not saved)
   --help                                   Show this help
 ```
 
-`--launch` uses the launch method and options last set in the window, which are saved in `MapExTools.json`.
+`--launch` uses the launch method and options last set in the window, which are saved in `MapExTools.json`. When `--check-conflicts` or `--show` is combined with `--launch`, the diagnostics are printed before launching.
 
 **Exit codes:** `0` = success · `1` = invalid arguments, malformed `.coc`, or launch failure · `2` = game is currently running (no changes made).
 
@@ -111,10 +114,10 @@ Other:
 
 ## 🔒 Source Code, Building from Source, and SHA-256
 
-* **Source directory:** [`MapExTools/`](https://github.com/Noel-leoN/MapExt2/tree/mapextools-v1.0.0/MapExTools) in the [Noel-leoN/MapExt2](https://github.com/Noel-leoN/MapExt2) repository (tag `mapextools-v1.0.0`).
-* **Verify SHA-256:** Compare your downloaded `.zip` against `MapExTools-v1.0.0-SHA256SUMS.txt` attached to the GitHub Release:
+* **Source directory:** [`MapExTools/`](https://github.com/Noel-leoN/MapExt2/tree/mapextools-v1.1.0/MapExTools) in the [Noel-leoN/MapExt2](https://github.com/Noel-leoN/MapExt2) repository (tag `mapextools-v1.1.0`).
+* **Verify SHA-256:** Compare your downloaded `.zip` against `MapExTools-v1.1.0-SHA256SUMS.txt` attached to the GitHub Release:
   ```powershell
-  Get-FileHash .\MapExTools-v1.0.0-win-x64-portable.zip -Algorithm SHA256
+  Get-FileHash .\MapExTools-v1.1.0-win-x64-portable.zip -Algorithm SHA256
   ```
 * **Build from source** (requires .NET 11 SDK on Windows):
   ```powershell
@@ -131,14 +134,16 @@ Other:
 
 # 🧰 MapExTools — MapExt（都市：天际线 2）桌面配套工具
 
-`MapExTools` 是在 GitHub Releases 单独发布的 Windows 桌面配套程序（`WPF` + `.NET 11`，不随 Paradox Mods 模组包分发），集成了 **MapExt** 常用的四项外部能力：
+`MapExTools` 是在 GitHub Releases 单独发布的 Windows 桌面配套程序（`WPF` + `.NET 11`，不随 Paradox Mods 模组包分发），集成了 **MapExt** 常用的六项外部能力：
 
 1. **启动与设定**：在游戏关闭时修改 `MapExtPDX.coc` 的 9 个启动期设定（地图尺寸模式 `57km` / `43km` / `28km` / `114km` / 原版 `14km`、经济总开关与 6 个子系统分组、读档校验开关），并可**跳过 Paradox 启动器直接启动 `Cities2.exe` 进入游戏主菜单**（无需在 Steam 中配置 `%command%`）。
-2. **日志诊断**：单屏汇总上次会话摘要（`MapExtPDX.log` 实际生效配置与 CoreValue、本会话 Burst 编译状态、冲突自动停用记录、存档入口判定，`SceneFlow.log` 启动参数，`Player.log` 异常与退出状态），支持实时跟随浏览、按级别/关键词过滤及一键复制脱敏 Markdown 诊断报告。
-3. **存档与地图检视（`.cok`）**：只读扫描本地存档与地图包，解码 ZSTD 预览图与多语言 `.loc` 地图标题，按闸门规则显示与当前设定模式的关系（`匹配` / `可转换` / `开启转换后可转换` / `会拉伸` / `不符`），支持一键将设定切到对应模式后再进游戏主菜单载入。
-4. **高度图查看**：在导入地图编辑器前检视 `4096x4096` 16 位灰度 / RGBA `.png`、`.tif`/`.tiff` 高度图，按文件头校验能否被游戏导入，提供原始灰度、0.5%–99.5% 分位自动拉伸对比度、按海平面分层着色（含海岸线描边与图例）三种视图，支持缩放平移与悬停坐标/海拔读数。
+2. **模组设置中心**：游戏外一站式编辑 MapExt 全部 65 项持久化 OptionUI 设置（核心模式与转换、性能与工具、寻路成本上限、经济吞吐与候选、地价与租金管控），支持按名称或 `.coc` 键名实时检索、单项/分组/全量重置，以及带备份的安全原子写入。
+3. **冲突预检**：只读静态扫描当前激活播放集（Playset）与本地 `Mods\` 目录的代码模组元数据与 IL 字节码，对照 MapExt 替换的系统、补丁目标与生命周期规则进行评估；随所选地图模式与经济分组开关动态重算，对可规避的经济分组提供一键关闭入口，并在检测到硬冲突时于启动前提示确认。
+4. **日志诊断**：单屏汇总上次会话摘要（`MapExtPDX.log` 实际生效配置与 CoreValue、本会话 Burst 编译状态、运行期冲突与诊断、自动停用分组、存档入口判定，`SceneFlow.log` 启动参数，`Player.log` 异常与退出状态），支持实时跟随浏览、按级别/关键词过滤及一键复制脱敏 Markdown 诊断报告。
+5. **存档与地图检视（`.cok`）**：只读扫描本地存档与地图包，解码 ZSTD 预览图与多语言 `.loc` 地图标题，按闸门规则显示与当前设定模式的关系（`匹配` / `可转换` / `开启转换后可转换` / `会拉伸` / `不符`），支持一键将设定切到对应模式后再进游戏主菜单载入。
+6. **高度图查看**：在导入地图编辑器前检视 16 位无符号灰度 / RGBA `.png`、`.tif`/`.tiff` 高度图，按三档规则校验导入条件（原生 `4096x4096` 直接可导入、`1..8192` 非 `4096` 尺寸由 MapExt 自动双线性重采样并提示可能损失细节、超过 `8192x8192` 不可导入），提供原始灰度、0.5%–99.5% 分位自动拉伸对比度、按海平面分层着色（含海岸线描边与图例）三种视图，支持缩放平移与悬停坐标/海拔读数。
 
-> **配套的 Mod 版本**：MapExTools v1.0 按 **MapExt v4.12.0** 的设定键与存档判定规则（如“可转换”判定、本会话 Burst 状态日志）编写，请配合 **MapExt v4.12.0 及以上版本**使用。若本工具先于 v4.12.0 在 GitHub 发布，PDX 上的旧版 MapExt 尚无存档转换与 Burst 状态日志行，相关提示需待 MapExt 升级至 v4.12.0 后一并生效。
+> **配套的 Mod 版本**：MapExTools v1.1 按 **MapExt v4.12.0** 的全量设定键、冲突目标清单与存档判定规则编写，请配合 **MapExt v4.12.0 及以上版本**使用。
 
 ---
 
@@ -148,8 +153,8 @@ Other:
 
 | 发布包 | 适用场景 | 运行环境要求 |
 |:---|:---|:---|
-| **`MapExTools-v1.0.0-win-x64-portable.zip`（推荐）** | 开箱即用，自带运行时，无需额外安装任何组件 | Windows 10 / 11（64 位） |
-| **`MapExTools-v1.0.0-win-x64-lite.zip`** | 体积更小，适合本机已安装 .NET 11 桌面运行时的玩家 | Windows 10 / 11（64 位）+ [.NET 11 Desktop Runtime (x64)](https://dotnet.microsoft.com/download/dotnet/11.0) |
+| **`MapExTools-v1.1.0-win-x64-portable.zip`（推荐）** | 开箱即用，自带运行时，无需额外安装任何组件 | Windows 10 / 11（64 位） |
+| **`MapExTools-v1.1.0-win-x64-lite.zip`** | 体积更小，适合本机已安装 .NET 11 桌面运行时的玩家 | Windows 10 / 11（64 位）+ [.NET 11 Desktop Runtime (x64)](https://dotnet.microsoft.com/download/dotnet/11.0) |
 
 两个压缩包解压后都**只有一个 `MapExTools.exe` 单文件**——绿色免安装、不写注册表、不装后台服务、不需要管理员权限。portable 包首次运行时会把自带的运行时解压到 `%TEMP%\.net\MapExTools\`（约 120 MB）；lite 包不会。
 
@@ -167,7 +172,7 @@ Other:
 
 ### 非 Steam 版本（Xbox / Microsoft Store / Game Pass）
 
-若工具未能通过 Steam 自动找到游戏，请在“启动游戏”卡片点击 **“选择 Cities2.exe…”** 手动指定游戏程序路径（例如 `C:\XboxGames\Cities Skylines II\Content\Cities2.exe`）；非 Steam 版仅支持“直接启动 Cities2.exe”通道。即使未指定游戏路径，MapExt 设定修改、日志诊断、存档与地图检视、高度图查看四个模块仍可照常使用。
+若工具未能通过 Steam 自动找到游戏，请在“启动游戏”卡片点击 **“选择 Cities2.exe…”** 手动指定游戏程序路径（例如 `C:\XboxGames\Cities Skylines II\Content\Cities2.exe`）；非 Steam 版仅支持“直接启动 Cities2.exe”通道。即使未指定游戏路径，MapExt 设定修改、冲突预检、日志诊断、存档与地图检视、高度图查看等模块仍可照常使用。
 
 ---
 
@@ -190,7 +195,7 @@ Other:
 
 ## ⌨️ 命令行用法与退出码
 
-传入任意设定项、`--launch`、`--show` 或 `--help` 时，工具会在命令行中执行完毕并退出，不打开图形窗口。以下选项取自 `MapExTools.exe --help --lang zh-HANS` 的输出（略去测试用选项）：
+传入任意设定项、`--launch`、`--show`、`--check-conflicts` 或 `--help` 时，工具会在命令行中执行完毕并退出，不打开图形窗口。以下选项取自 `MapExTools.exe --help --lang zh-HANS` 的输出（略去测试用选项）：
 
 ```text
 MapExt 启动设定（写入 MapExtPDX.coc；游戏运行时拒绝）：
@@ -208,11 +213,12 @@ MapExt 启动设定（写入 MapExtPDX.coc；游戏运行时拒绝）：
 其他：
   --launch                                 保存后按窗口里设定的启动方式与参数启动游戏
   --show                                   显示当前设定、最近一次启动时生效的配置与游戏位置
+  --check-conflicts                        只读扫描当前激活播放集与本地 Mods 目录的模组冲突
   --lang <en-US|zh-HANS|zh-HANT>           本次使用的语言（不保存）
   --help                                   显示本说明
 ```
 
-`--launch` 用的是窗口里最近一次设定的启动方式与参数，保存在 `MapExTools.json` 里。
+`--launch` 用的是窗口里最近一次设定的启动方式与参数，保存在 `MapExTools.json` 里。同时传入 `--check-conflicts` 或 `--show` 与 `--launch` 时，会先输出诊断结果再启动游戏。
 
 **退出码**：`0` = 成功 · `1` = 参数有误、`.coc` 格式错误或启动失败 · `2` = 游戏正在运行（未做任何改动）。
 
@@ -240,10 +246,10 @@ MapExt 启动设定（写入 MapExtPDX.coc；游戏运行时拒绝）：
 
 ## 🔒 源码位置、从源码构建与 SHA-256 校验
 
-* **源码目录**：位于公开仓库 [Noel-leoN/MapExt2](https://github.com/Noel-leoN/MapExt2) 的 [`MapExTools/`](https://github.com/Noel-leoN/MapExt2/tree/mapextools-v1.0.0/MapExTools) 目录（标签 `mapextools-v1.0.0`）。
-* **核对 SHA-256**：下载后可与 Release 附件中的 `MapExTools-v1.0.0-SHA256SUMS.txt` 比对哈希：
+* **源码目录**：位于公开仓库 [Noel-leoN/MapExt2](https://github.com/Noel-leoN/MapExt2) 的 [`MapExTools/`](https://github.com/Noel-leoN/MapExt2/tree/mapextools-v1.1.0/MapExTools) 目录（标签 `mapextools-v1.1.0`）。
+* **核对 SHA-256**：下载后可与 Release 附件中的 `MapExTools-v1.1.0-SHA256SUMS.txt` 比对哈希：
   ```powershell
-  Get-FileHash .\MapExTools-v1.0.0-win-x64-portable.zip -Algorithm SHA256
+  Get-FileHash .\MapExTools-v1.1.0-win-x64-portable.zip -Algorithm SHA256
   ```
 * **从源码构建发布包**（需 Windows 与 .NET 11 SDK）：
   ```powershell

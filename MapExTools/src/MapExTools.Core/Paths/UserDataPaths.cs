@@ -1,3 +1,4 @@
+using System.Runtime.InteropServices;
 using MapExtPDX;
 
 namespace MapExTools.Core.Paths;
@@ -7,17 +8,57 @@ namespace MapExTools.Core.Paths;
 /// </summary>
 public sealed class UserDataPaths
 {
+    private static readonly Guid s_folderIdLocalAppDataLow = new("A520A1A4-1780-4FF6-BD18-167343C5AF16");
+
     public UserDataPaths(string root)
     {
         Root = Path.GetFullPath(root);
     }
 
-    /// <summary>默认根目录：<c>%USERPROFILE%\AppData\LocalLow\Colossal Order\Cities Skylines II</c>。</summary>
-    public static string DefaultRoot => Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
-        "AppData", "LocalLow", "Colossal Order", "Cities Skylines II");
+    /// <summary>默认根目录：优先通过 Windows Known Folder <c>FOLDERID_LocalAppDataLow</c> 定位，取不到时退回 <c>%USERPROFILE%\AppData\LocalLow</c>。</summary>
+    public static string DefaultRoot => Path.Combine(GetLocalAppDataLowDir(), "Colossal Order", "Cities Skylines II");
 
     public static UserDataPaths CreateDefault() => new(DefaultRoot);
+
+    private static string GetLocalAppDataLowDir()
+    {
+        if (OperatingSystem.IsWindows() && TryGetKnownFolderPath(s_folderIdLocalAppDataLow, out string? localLow))
+            return localLow;
+
+        return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "AppData", "LocalLow");
+    }
+
+    private static bool TryGetKnownFolderPath(Guid folderId, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out string? path)
+    {
+        path = null;
+        IntPtr ptr = IntPtr.Zero;
+        try
+        {
+            if (SHGetKnownFolderPath(in folderId, 0, IntPtr.Zero, out ptr) == 0 && ptr != IntPtr.Zero)
+            {
+                string? resolved = Marshal.PtrToStringUni(ptr);
+                if (!string.IsNullOrWhiteSpace(resolved))
+                {
+                    path = resolved;
+                    return true;
+                }
+            }
+        }
+        catch (Exception ex) when (ex is DllNotFoundException or EntryPointNotFoundException)
+        {
+            // 非桌面 Windows 环境退回默认拼接
+        }
+        finally
+        {
+            if (ptr != IntPtr.Zero)
+                Marshal.FreeCoTaskMem(ptr);
+        }
+
+        return false;
+    }
+
+    [DllImport("shell32.dll")]
+    private static extern int SHGetKnownFolderPath(in Guid rfid, uint dwFlags, IntPtr hToken, out IntPtr ppszPath);
 
     public string Root { get; }
 

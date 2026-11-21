@@ -125,7 +125,7 @@ public static class ModAssemblyInspector
         var waterSimSpeedWrites = new List<WaterSimSpeedWriteEvidence>();
         var internalEdges = new HashSet<(MethodDefinitionHandle Caller, MethodDefinitionHandle Callee)>();
         var assemblySensitiveTypeLiterals = new HashSet<string>(StringComparer.Ordinal);
-        var pendingDynamicHooks = new List<(string Display, DetectedPatchKind Kind, List<string> RefTypes, List<string> StrLiterals)>();
+        var pendingDynamicHooks = new List<(string Display, DetectedPatchKind Kind, bool IsImperativeOnly, List<string> RefTypes, List<string> StrLiterals, List<(string TargetType, string MethodName)> ReflectedTargets)>();
 
         var disposeRoots = new HashSet<MethodDefinitionHandle>();
         var lifecycleRoots = new HashSet<MethodDefinitionHandle>();
@@ -155,7 +155,7 @@ public static class ModAssemblyInspector
 
             // 用于动态 TargetMethod() 关联类上的补丁种类
             var classPatchKinds = new List<(string MethodDisplay, DetectedPatchKind Kind)>();
-            var dynamicTargetCandidates = new List<(string MethodDisplay, List<string> Types, List<string> Strings)>();
+            var dynamicTargetCandidates = new List<(string MethodDisplay, bool IsTargetMethodHook, bool CallsImperativePatch, List<string> Types, List<string> Strings, List<(string TargetType, string MethodName)> ReflectedTargets)>();
 
             foreach (MethodDefinitionHandle mh in td.GetMethods())
             {
@@ -244,34 +244,50 @@ public static class ModAssemblyInspector
                     assemblySensitiveTypeLiterals,
                     out List<string>? refTypes,
                     out List<string>? strLiterals,
+                    out List<(string TargetType, string MethodName)>? reflectedTargets,
                     out bool callsImperativePatch);
 
-                if ((isTargetMethodHook || callsImperativePatch) && (refTypes != null || strLiterals != null))
+                if ((isTargetMethodHook || callsImperativePatch) &&
+                    (refTypes != null || strLiterals != null || reflectedTargets != null))
                 {
-                    dynamicTargetCandidates.Add((callerDisplay, refTypes ?? [], strLiterals ?? []));
+                    dynamicTargetCandidates.Add((
+                        callerDisplay,
+                        isTargetMethodHook,
+                        callsImperativePatch,
+                        refTypes ?? [],
+                        strLiterals ?? [],
+                        reflectedTargets ?? []));
                 }
             }
 
-            // 暂存本类的 TargetMethod() / 命令式 Harmony.Patch 候选，待全程序集字符串字面量收齐后统一匹配（支持跨类常量字符串，如 ServiceCoverageFix）
-            foreach ((string hookCaller, List<string> refTypes, List<string> strLiterals) in dynamicTargetCandidates)
+            // 暂存本类的 TargetMethod() / 命令式 Harmony.Patch 候选，待全程序集字符串字面量收齐后统一匹配
+            (string MethodDisplay, DetectedPatchKind Kind)? highestRiskPatch = PickHighestRiskPatch(classPatchKinds);
+            foreach ((string hookCaller, bool isTargetMethodHook, bool callsImperativePatch, List<string> refTypes, List<string> strLiterals, List<(string TargetType, string MethodName)> reflectedTargets) in dynamicTargetCandidates)
             {
-                DetectedPatchKind inferredKind = classPatchKinds.Count > 0
-                    ? classPatchKinds[0].Kind
-                    : DetectedPatchKind.DynamicOrImperative;
-                string display = classPatchKinds.Count > 0 ? classPatchKinds[0].MethodDisplay : hookCaller;
-                pendingDynamicHooks.Add((display, inferredKind, refTypes, strLiterals));
+                if (isTargetMethodHook)
+                {
+                    DetectedPatchKind inferredKind = highestRiskPatch?.Kind ?? DetectedPatchKind.DynamicOrImperative;
+                    string display = highestRiskPatch?.MethodDisplay ?? hookCaller;
+                    pendingDynamicHooks.Add((display, inferredKind, false, refTypes, strLiterals, reflectedTargets));
+                }
+                else if (callsImperativePatch)
+                {
+                    pendingDynamicHooks.Add((hookCaller, DetectedPatchKind.DynamicOrImperative, true, refTypes, strLiterals, reflectedTargets));
+                }
             }
         }
 
         // === 全程序集扫描完毕后统一匹配动态 TargetMethod() 与命令式补丁目标 ===
-        foreach ((string display, DetectedPatchKind inferredKind, List<string> refTypes, List<string> strLiterals) in pendingDynamicHooks)
+        foreach ((string display, DetectedPatchKind inferredKind, bool isImperativeOnly, List<string> refTypes, List<string> strLiterals, List<(string TargetType, string MethodName)> reflectedTargets) in pendingDynamicHooks)
         {
             MatchDynamicHarmonyTargets(
                 display,
                 inferredKind,
+                isImperativeOnly,
                 refTypes,
                 assemblySensitiveTypeLiterals,
                 strLiterals,
+                reflectedTargets,
                 harmonyOverlaps,
                 replacedSystemPatches);
         }
@@ -401,6 +417,7 @@ public static class ModAssemblyInspector
                 string? genericArg = null;
                 string? methodName = null;
                 int methodTypeCode = 0;
+                List<string>? fixedStrings = null;
 
                 foreach (CustomAttributeTypedArgument<string?> arg in decoded.FixedArguments)
                 {
@@ -410,12 +427,24 @@ public static class ModAssemblyInspector
                     }
                     else if (arg.Type == "System.String" && arg.Value is string s)
                     {
-                        methodName = s;
+                        fixedStrings ??= [];
+                        fixedStrings.Add(s);
                     }
                     else if (arg.Type == "HarmonyLib.MethodType" && arg.Value is int mt)
                     {
                         methodTypeCode = mt;
                     }
+                }
+
+                // [HarmonyPatch(string typeName, string methodName, ...)]：无 Type 固定实参且有两个及以上字符串时，第 1 个为类型全名、第 2 个为方法名
+                if (targetType == null && fixedStrings is { Count: >= 2 })
+                {
+                    (targetType, genericArg) = ParseSerializedTypeString(fixedStrings[0]);
+                    methodName = fixedStrings[1];
+                }
+                else if (fixedStrings is { Count: > 0 })
+                {
+                    methodName = fixedStrings[^1];
                 }
 
                 foreach (CustomAttributeNamedArgument<string?> named in decoded.NamedArguments)
@@ -602,51 +631,120 @@ public static class ModAssemblyInspector
     private static bool IsReplacedSystemLifecycleMethod(string methodName) =>
         methodName is "OnUpdate" or "OnCreate" or "OnStartRunning" or "OnStopRunning";
 
-    private static void MatchDynamicHarmonyTargets(
-        string callerDisplay,
-        DetectedPatchKind kind,
-        List<string> refTypes,
-        HashSet<string> assemblySensitiveTypeLiterals,
-        List<string> strLiterals,
-        List<HarmonyOverlapEvidence> overlapSink,
-        List<PatchedReplacedSystemEvidence> replacedSystemSink)
+    private static (string MethodDisplay, DetectedPatchKind Kind)? PickHighestRiskPatch(
+        List<(string MethodDisplay, DetectedPatchKind Kind)> classPatchKinds)
     {
-        var expandedTypes = new List<(string BaseType, string? GenArg)>(refTypes.Count + assemblySensitiveTypeLiterals.Count);
-        foreach (string rt in refTypes)
+        if (classPatchKinds.Count == 0)
+            return null;
+
+        (string MethodDisplay, DetectedPatchKind Kind) best = classPatchKinds[0];
+        int bestRank = PatchKindRiskRank(best.Kind);
+        for (int i = 1; i < classPatchKinds.Count; i++)
         {
-            int lt = rt.IndexOf('<');
-            if (lt > 0 && rt.EndsWith('>'))
+            int rank = PatchKindRiskRank(classPatchKinds[i].Kind);
+            if (rank > bestRank)
             {
-                expandedTypes.Add((rt[..lt], rt[(lt + 1)..^1]));
-            }
-            else
-            {
-                expandedTypes.Add((rt, null));
+                best = classPatchKinds[i];
+                bestRank = rank;
             }
         }
 
-        foreach (string typeLit in assemblySensitiveTypeLiterals)
+        return best;
+    }
+
+    private static int PatchKindRiskRank(DetectedPatchKind kind) => kind switch
+    {
+        DetectedPatchKind.Transpiler => 6,
+        DetectedPatchKind.PrefixBlockingCapable => 5,
+        DetectedPatchKind.DynamicOrImperative => 4,
+        DetectedPatchKind.PrefixVoid => 3,
+        DetectedPatchKind.Postfix => 2,
+        DetectedPatchKind.Finalizer => 1,
+        _ => 0,
+    };
+
+    private static void MatchDynamicHarmonyTargets(
+        string callerDisplay,
+        DetectedPatchKind kind,
+        bool isImperativeOnly,
+        List<string> refTypes,
+        HashSet<string> assemblySensitiveTypeLiterals,
+        List<string> strLiterals,
+        List<(string TargetType, string MethodName)> reflectedTargets,
+        List<HarmonyOverlapEvidence> overlapSink,
+        List<PatchedReplacedSystemEvidence> replacedSystemSink)
+    {
+        // 1. 优先匹配反射调用点精确配对的 (类型, 方法名)（如 AccessTools.Method / Type.GetMethod）
+        foreach ((string rawType, string rawMethod) in reflectedTargets)
         {
-            expandedTypes.Add((typeLit, null));
+            (string baseType, string? genArg) = SplitGenericType(rawType);
+            EmitMatchingTarget(callerDisplay, kind, baseType, genArg, rawMethod, overlapSink, replacedSystemSink);
+        }
+
+        // 命令式 harmony.Patch 仅信赖精确反射配对，不再对方法内全部 refTypes × strLiterals 做笛卡尔积
+        if (isImperativeOnly)
+            return;
+
+        // 2. TargetMethod()：若未在反射调用点直接解析出配对，则用本方法引用的类型匹配字符串字面量；
+        //    仅当本方法未直接引用任何敏感目标类型时，才用程序集级敏感类型字面量兜底（如跨类常量字符串 ServiceCoverageFix）。
+        if (reflectedTargets.Count > 0)
+            return;
+
+        var expandedTypes = new List<(string BaseType, string? GenArg)>(refTypes.Count);
+        bool methodRefsSensitiveType = false;
+        foreach (string rt in refTypes)
+        {
+            (string baseType, string? genArg) = SplitGenericType(rt);
+            expandedTypes.Add((baseType, genArg));
+            if (ConflictTargets.IsTargetSystemOrPatchTypeName(baseType))
+                methodRefsSensitiveType = true;
+        }
+
+        if (!methodRefsSensitiveType)
+        {
+            foreach (string typeLit in assemblySensitiveTypeLiterals)
+            {
+                expandedTypes.Add((typeLit, null));
+            }
         }
 
         foreach ((string baseType, string? genArg) in expandedTypes)
         {
             foreach (string rawStr in strLiterals)
             {
-                foreach (string candidateMethod in ExpandCandidateMethodNames(rawStr))
-                {
-                    if (ConflictTargets.FindPatchedMethod(baseType, candidateMethod, genArg) != null)
-                    {
-                        overlapSink.Add(new HarmonyOverlapEvidence(callerDisplay, baseType, candidateMethod, genArg, kind));
-                    }
-                    else if (genArg == null &&
-                             IsReplacedSystemLifecycleMethod(candidateMethod) &&
-                             ConflictTargets.FindProtectedSystem(baseType) != null)
-                    {
-                        replacedSystemSink.Add(new PatchedReplacedSystemEvidence(callerDisplay, baseType, candidateMethod, kind));
-                    }
-                }
+                EmitMatchingTarget(callerDisplay, kind, baseType, genArg, rawStr, overlapSink, replacedSystemSink);
+            }
+        }
+    }
+
+    private static (string BaseType, string? GenArg) SplitGenericType(string rawType)
+    {
+        int lt = rawType.IndexOf('<');
+        if (lt > 0 && rawType.EndsWith('>'))
+            return (rawType[..lt], rawType[(lt + 1)..^1]);
+        return (rawType, null);
+    }
+
+    private static void EmitMatchingTarget(
+        string callerDisplay,
+        DetectedPatchKind kind,
+        string baseType,
+        string? genArg,
+        string rawMethod,
+        List<HarmonyOverlapEvidence> overlapSink,
+        List<PatchedReplacedSystemEvidence> replacedSystemSink)
+    {
+        foreach (string candidateMethod in ExpandCandidateMethodNames(rawMethod))
+        {
+            if (ConflictTargets.FindPatchedMethod(baseType, candidateMethod, genArg) != null)
+            {
+                overlapSink.Add(new HarmonyOverlapEvidence(callerDisplay, baseType, candidateMethod, genArg, kind));
+            }
+            else if (genArg == null &&
+                     IsReplacedSystemLifecycleMethod(candidateMethod) &&
+                     ConflictTargets.FindProtectedSystem(baseType) != null)
+            {
+                replacedSystemSink.Add(new PatchedReplacedSystemEvidence(callerDisplay, baseType, candidateMethod, kind));
             }
         }
     }

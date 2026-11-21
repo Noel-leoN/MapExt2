@@ -153,7 +153,13 @@ public static partial class CocParser
         return index;
     }
 
-    /// <summary><paramref name="index"/> 指向开引号，返回闭引号之后的位置；JSON 字符串里不能有原样的换行。</summary>
+    /// <summary>
+    /// <paramref name="index"/> 指向开引号，返回闭引号之后的位置。按严格 JSON：字符串里不能有原样的控制字符（含 Tab、CR、LF），
+    /// 反斜杠后不能紧跟控制字符或文本结尾。
+    /// <para>游戏其实更宽松：<c>Colossal.Json.Decoder</c> 原样收下控制字符、把未知转义直接丢掉；但切块的 <c>COCParser</c>
+    /// 跳空白时会把"反斜杠＋换行＋引号"里的引号当成被转义，两层解析结果不一致。这里与缺逗号同样从严报错，
+    /// 原样换行多半是漏了闭引号。</para>
+    /// </summary>
     private static int SkipString(string text, int index)
     {
         int i = index + 1;
@@ -162,13 +168,15 @@ public static partial class CocParser
             char c = text[i];
             if (c == '\\')
             {
+                if (i + 1 >= text.Length || text[i + 1] < 0x20)
+                    break;
                 i += 2;
                 continue;
             }
 
             if (c == '"')
                 return i + 1;
-            if (c == '\n')
+            if (c < 0x20)
                 break;
             i++;
         }
@@ -176,10 +184,10 @@ public static partial class CocParser
         throw CocFormatException.At(CocErrorKind.StringUnclosed, text, index);
     }
 
-    /// <summary><paramref name="index"/> 指向 <c>{</c> 或 <c>[</c>，返回配对闭括号的位置；字符串里的括号不计。</summary>
+    /// <summary><paramref name="index"/> 指向 <c>{</c> 或 <c>[</c>，用栈严格校验配对闭括号的位置；字符串里的括号不计。</summary>
     private static int FindClosingBracket(string text, int index)
     {
-        int depth = 0;
+        var expected = new Stack<(char Close, int OpenIndex)>();
         int i = index;
         while (i < text.Length)
         {
@@ -190,14 +198,23 @@ public static partial class CocParser
                 continue;
             }
 
-            if (c is '{' or '[')
+            if (c == '{')
             {
-                depth++;
+                expected.Push(('}', i));
+            }
+            else if (c == '[')
+            {
+                expected.Push((']', i));
             }
             else if (c is '}' or ']')
             {
-                depth--;
-                if (depth == 0)
+                if (expected.Count == 0)
+                    throw CocFormatException.At(CocErrorKind.BracketUnclosed, text, index);
+
+                (char want, int openAt) = expected.Pop();
+                if (want != c)
+                    throw CocFormatException.At(CocErrorKind.BracketUnclosed, text, openAt);
+                if (expected.Count == 0)
                     return i;
             }
 

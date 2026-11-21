@@ -226,9 +226,15 @@ public static class CokPackageReader
         return builder == null ? json : builder.Append(json, copied, json.Length - copied).ToString();
     }
 
+    private static readonly string[] s_nonFiniteTokens = ["-Infinity", "+Infinity", "Infinity", "NaN"];
+
     private static int MatchNonFinite(string json, int index)
     {
-        foreach (string token in new[] { "-Infinity", "+Infinity", "Infinity", "NaN" })
+        char first = json[index];
+        if (first is not ('-' or '+' or 'I' or 'N'))
+            return 0;
+
+        foreach (string token in s_nonFiniteTokens)
         {
             if (string.CompareOrdinal(json, index, token, 0, token.Length) != 0)
                 continue;
@@ -325,8 +331,9 @@ public static class CokPackageReader
             GetLong(root, "money"),
             GetBool(root, "autoSave") ?? false,
             GetStringArray(root, "modsEnabled"),
-            // 旧版字段名 previewAsset（SaveInfo.preview 的 DecodeAlias）
-            NormalizeGuid(GetString(root, "preview") ?? GetString(root, "previewAsset")));
+            // 旧版字段名 previewAsset 是 SaveInfo.preview 的 DecodeAlias：游戏按键在文件里的先后逐个赋值
+            // （JSON.DecodeTypeInPlace 遍历按插入顺序的 Dictionary），两个键都在时以后出现的为准，空串也照样覆盖
+            NormalizeGuid(GetLastString(root, "preview", "previewAsset")));
     }
 
     private static MapMetadata ReadMap(JsonElement root, List<(ZipArchiveEntry Entry, string? Guid)> assets)
@@ -399,14 +406,39 @@ public static class CokPackageReader
         if (entry.Length > maxBytes)
             throw new InvalidDataException($"entry too large: {entry.FullName} ({entry.Length} bytes)");
 
-        byte[] bytes = new byte[entry.Length];
+        // 分块读取并按累计读取量强控上限，避免被畸形中央目录头的超大声明长度诱导一次性预分配大数组
+        int initialCapacity = (int)Math.Min(Math.Max(entry.Length, 0), 64 * 1024);
+        using var ms = new MemoryStream(initialCapacity);
         using Stream stream = entry.Open();
-        stream.ReadExactly(bytes);
-        return bytes;
+        byte[] buffer = new byte[16 * 1024];
+        long total = 0;
+        int read;
+        while ((read = stream.Read(buffer, 0, buffer.Length)) > 0)
+        {
+            total += read;
+            if (total > maxBytes)
+                throw new InvalidDataException($"entry too large: {entry.FullName} (exceeded {maxBytes} bytes)");
+            ms.Write(buffer, 0, read);
+        }
+
+        return ms.ToArray();
     }
 
     private static string? GetString(JsonElement obj, string name) =>
         obj.TryGetProperty(name, out JsonElement value) && value.ValueKind == JsonValueKind.String ? value.GetString() : null;
+
+    /// <summary>两个键名（区分大小写）里在对象中最后出现的那个的字符串值；取值不是字符串或两个键都不在时为 null。</summary>
+    private static string? GetLastString(JsonElement obj, string name, string alias)
+    {
+        string? value = null;
+        foreach (JsonProperty property in obj.EnumerateObject())
+        {
+            if (property.NameEquals(name) || property.NameEquals(alias))
+                value = property.Value.ValueKind == JsonValueKind.String ? property.Value.GetString() : null;
+        }
+
+        return value;
+    }
 
     private static int? GetInt(JsonElement obj, string name) =>
         obj.TryGetProperty(name, out JsonElement value) && value.ValueKind == JsonValueKind.Number && value.TryGetInt32(out int number) ? number : null;

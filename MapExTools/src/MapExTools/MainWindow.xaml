@@ -10,6 +10,7 @@
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
@@ -31,8 +32,21 @@
             </DockPanel>
         </Border>
 
+        <!-- 顶部独立紧凑栏：界面语言与主题，与下方页签栏彻底分离（避免窄窗重叠） -->
+        <StackPanel Grid.Row="1" Orientation="Horizontal"
+                    HorizontalAlignment="Right" VerticalAlignment="Center" Margin="16,6,16,0">
+            <TextBlock Text="{Binding [Settings.Language], Source={x:Static svc:Loc.Instance}}"
+                       VerticalAlignment="Center" Margin="0,0,6,0" />
+            <ComboBox x:Name="LanguageBox" MinWidth="118" DisplayMemberPath="Display"
+                      SelectionChanged="OnLanguageChanged" />
+            <TextBlock Text="{Binding [Settings.Theme], Source={x:Static svc:Loc.Instance}}"
+                       VerticalAlignment="Center" Margin="14,0,6,0" />
+            <ComboBox x:Name="ThemeBox" MinWidth="112" DisplayMemberPath="Display"
+                      SelectionChanged="OnThemeChanged" />
+        </StackPanel>
+
         <!-- 六个功能页 -->
-        <TabControl x:Name="MainTabs" Grid.Row="1" Margin="12,8,12,6">
+        <TabControl x:Name="MainTabs" Grid.Row="2" Margin="12,4,12,6">
             <TabItem Header="{Binding [Tab.Launch], Source={x:Static svc:Loc.Instance}}">
                 <views:LaunchSettingsPage x:Name="LaunchPage" />
             </TabItem>
@@ -53,22 +67,9 @@
             </TabItem>
         </TabControl>
 
-        <!-- 顶部右侧（与页签栏同行，节省一行垂直空间）：界面语言与主题 -->
-        <StackPanel Grid.Row="1" Orientation="Horizontal"
-                    HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,6,16,0">
-            <TextBlock Text="{Binding [Settings.Language], Source={x:Static svc:Loc.Instance}}"
-                       VerticalAlignment="Center" Margin="0,0,6,0" />
-            <ComboBox x:Name="LanguageBox" MinWidth="118" DisplayMemberPath="Display"
-                      SelectionChanged="OnLanguageChanged" />
-            <TextBlock Text="{Binding [Settings.Theme], Source={x:Static svc:Loc.Instance}}"
-                       VerticalAlignment="Center" Margin="14,0,6,0" />
-            <ComboBox x:Name="ThemeBox" MinWidth="112" DisplayMemberPath="Display"
-                      SelectionChanged="OnThemeChanged" />
-        </StackPanel>
-
         <!-- 底部常驻：游戏运行状态与用户数据目录 -->
-        <Border Grid.Row="2" BorderThickness="0,1,0,0" Padding="16,6"
-                BorderBrush="{DynamicResource {x:Static SystemColors.ActiveBorderBrushKey}}">
+        <Border Grid.Row="3" BorderThickness="0,1,0,0" Padding="16,6"
+                BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}">
             <DockPanel>
                 <Ellipse x:Name="GameStateDot" Width="10" Height="10" Margin="0,0,8,0" VerticalAlignment="Center" />
                 <TextBlock x:Name="GameStateText" VerticalAlignment="Center" />

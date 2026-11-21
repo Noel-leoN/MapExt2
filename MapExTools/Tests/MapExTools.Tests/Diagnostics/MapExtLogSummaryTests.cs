@@ -119,6 +119,43 @@ public sealed class MapExtLogSummaryTests
     }
 
     [Fact]
+    public void RuntimeSummaryAndAttributionKMapSize_AppendedToDetected()
+    {
+        const string summary = "[!] 38/40 OK, 2 conflict(s) (1 CRITICAL CellMap)";
+        const string kMapSize = "CellMapSystem<T>.kMapSize 静态字段被外部改写 (1 处，如 LandValueSystem.kMapSize=57344；疑似改写源: BadMod)";
+
+        ConflictInfo c = MapExtLogSummary.Parse(
+        [
+            "[2026-11-21 10:00:01,000] [INFO]  [MapExt|ModConflictDetector] ✅ 未检测到已知冲突 Mod",
+            $"[2026-11-21 10:01:00,000] [ERROR] [MapExt|ModAttributionHelper] ❌ {kMapSize}",
+            $"[2026-11-21 10:01:00,100] [WARN]  [MapExt|ConflictMonitoringSystem] ⚠️ {summary}",
+        ]).Conflicts;
+
+        Assert.True(c.Scanned);
+        Assert.False(c.NoneDetected);
+        Assert.Equal([kMapSize, summary], c.Detected);
+    }
+
+    [Fact]
+    public void GateDecision_DegradedWithoutValidationAndIgnoresLookupWarnings()
+    {
+        MapExtLogSummary s = MapExtLogSummary.Parse(
+        [
+            Line("INFO", "SaveEntryGate", "MenuLoad 'OldSave'（ID User/1111）：存档 CV=4，当前 CV=4，结果 Success"),
+            Line("WARN", "SaveEntryGate", "存档列表里找不到 ID User/2222，交给汇合点判定"),
+            Line("WARN", "SaveEntryGate", "MenuLoad 'NextSave'：本会话降级（Burst 未启用），需要玩家确认"),
+            Line("WARN", "SaveEntryGate", "降级状态下玩家选择仍要加载（Burst 未启用）"),
+        ]);
+
+        GateDecisionInfo? d = s.LastGateDecision;
+        Assert.NotNull(d);
+        Assert.Equal(GateSubject.Save, d.Subject);
+        Assert.Equal("MenuLoad", d.Entry);
+        Assert.Equal("NextSave", d.Name);
+        Assert.Equal(["降级状态下玩家选择仍要加载（Burst 未启用）"], d.FollowUps);
+    }
+
+    [Fact]
     public void Sample_LastGateDecisionIsTheLatestSaveLoad()
     {
         GateDecisionInfo? d = ParseSample().LastGateDecision;

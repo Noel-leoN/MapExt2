@@ -123,6 +123,19 @@ public sealed class TextureAssetDecoderTests
     }
 
     [Fact]
+    public void Decode_ExceedsMaxDataBytes_IsTooLarge()
+    {
+        byte[] data = CokTestData.Texture(5, 16384, 16384, 8, []);
+
+        TextureDecodeResult result = TextureAssetDecoder.Decode(data);
+
+        Assert.Equal(TextureDecodeStatus.TooLarge, result.Status);
+        Assert.Equal(16384, result.Header!.Width);
+        Assert.Equal(16384, result.Header.Height);
+        Assert.Null(result.Image);
+    }
+
+    [Fact]
     public void Decode_TruncatedPixels_IsCorrupt()
     {
         byte[] data = CokTestData.Texture(5, 4, 2, 8, CokTestData.RgbaPattern(4, 2));

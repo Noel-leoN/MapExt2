@@ -32,6 +32,12 @@ public sealed class CocParserTests
         // 全角空格、不换行空格不是游戏认可的空白
         { "MapExtPDX\r\n{\n    \"A\": 1,\u3000\"B\": 2\n}\r\n", CocErrorKind.KeyExpected, 3, 12, null },
         { "MapExtPDX\r\n{\n    \"A\": 1\u00A0\n}\r\n", CocErrorKind.BadLiteral, 3, 10, "1\u00A0" },
+
+        // 5.4 严格括号配对与字符串控制字符/转义换行校验
+        { "MapExtPDX\r\n{\n    \"List\": [1, 2}\n}\r\n", CocErrorKind.BracketUnclosed, 3, 13, null },
+        { "MapExtPDX\r\n{\n    \"S\": \"a\\\nb\"\n}\r\n", CocErrorKind.StringUnclosed, 3, 10, null },
+        { "MapExtPDX\r\n{\n    \"S\": \"a\rb\"\n}\r\n", CocErrorKind.StringUnclosed, 3, 10, null },
+        { "MapExtPDX\r\n{\n    \"S\": \"a\\", CocErrorKind.StringUnclosed, 3, 10, null },
     };
 
     [Theory]

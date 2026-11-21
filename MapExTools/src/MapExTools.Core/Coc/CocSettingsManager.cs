@@ -162,16 +162,17 @@ public sealed class CocSettingsManager
         IReadOnlyList<StartupSettingChange> changes = GetChanges(baseline, target);
         if (_isGameRunning())
             return new CocSaveResult(CocSaveStatus.GameRunning, changes, null);
-        if (changes.Count == 0)
-            return new CocSaveResult(CocSaveStatus.NoChanges, changes, null);
 
-        // 读取之后文件被改过就不写：照旧的原文改写会冲掉别人的改动
+        // 读取之后文件被改过就不写：即便本次目标值恰好等于旧基准，磁盘上也可能已被外部改成其他值
         StartupSettingsState current = Read();
         if (current.Exists != baseline.Exists || current.HasBom != baseline.HasBom
             || !string.Equals(current.Text, baseline.Text, StringComparison.Ordinal))
         {
             throw new CocSaveException(CocSaveFailure.FileChanged);
         }
+
+        if (changes.Count == 0)
+            return new CocSaveResult(CocSaveStatus.NoChanges, changes, null);
 
         Dictionary<string, object> updates = changes.ToDictionary(c => c.Key.Name, c => c.NewValue, StringComparer.Ordinal);
         string text = BuildText(current, updates);

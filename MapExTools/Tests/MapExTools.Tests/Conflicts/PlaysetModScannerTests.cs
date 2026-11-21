@@ -190,6 +190,107 @@ public sealed class PlaysetModScannerTests : IDisposable
         Assert.EndsWith("CorruptedHelper.dll", bad.FilePath, StringComparison.OrdinalIgnoreCase);
     }
 
+    [Theory]
+    [InlineData("null")]
+    [InlineData("[]")]
+    public void Scan_NonObjectPlaysetConfigRoot_RecordsErrorWithoutThrowing(string rootJson)
+    {
+        Directory.CreateDirectory(_paths.ModsCacheDir);
+        File.WriteAllText(_paths.PlaysetConfigFile, rootJson);
+        File.WriteAllText(_paths.ModsDirectoryFile, "[]");
+        File.WriteAllText(_paths.PdxModsCacheFile, "[]");
+
+        PlaysetScanResult result = PlaysetModScanner.Scan(_paths, gameDir: null);
+
+        Assert.NotNull(result.PlaysetConfigError);
+        Assert.Empty(result.Packages);
+    }
+
+    [Fact]
+    public void Scan_NullElementsInPlaysetAndNonObjectCacheRoots_SkipsCleanlyWithoutThrowing()
+    {
+        string pdxRoot = Path.Combine(_paths.ModsCacheDir, "pdx_mods");
+        string v1Dir = Path.Combine(pdxRoot, "86944_1");
+        Directory.CreateDirectory(v1Dir);
+        File.WriteAllBytes(Path.Combine(v1Dir, "GoodMod.dll"), BuildSimpleIMod("GoodMod", new Version(1, 0, 0)));
+
+        File.WriteAllText(_paths.ModsDirectoryFile, "[]");
+        File.WriteAllText(_paths.PdxModsCacheFile, "[]");
+        File.WriteAllText(_paths.PlaysetConfigFile, """
+            {
+              "activePlaysetId": "p1",
+              "playsets": [
+                null,
+                "invalid-entry",
+                {
+                  "id": "p1",
+                  "presentation": null,
+                  "mods": [
+                    null,
+                    123,
+                    { "source": "pdx_mods", "sourceId": "86944", "isEnabled": true }
+                  ]
+                }
+              ]
+            }
+            """);
+
+        PlaysetScanResult result = PlaysetModScanner.Scan(_paths, gameDir: null);
+
+        Assert.Null(result.PlaysetConfigError);
+        EnabledModPackage pkg = Assert.Single(result.Packages, p => p.PdxModId == "86944");
+        Assert.Single(pkg.WinningAssemblies);
+    }
+
+    [Fact]
+    public void Scan_LooseRootDll_WithSameStemAsSubfolder_KeptAsSeparatePackage()
+    {
+        Directory.CreateDirectory(_paths.ModsDir);
+        string subDir = Path.Combine(_paths.ModsDir, "SameName");
+        Directory.CreateDirectory(subDir);
+
+        File.WriteAllBytes(Path.Combine(subDir, "FolderMod.dll"), BuildSimpleIMod("FolderMod", new Version(1, 0, 0)));
+        File.WriteAllBytes(Path.Combine(_paths.ModsDir, "SameName.dll"), BuildSimpleIMod("LooseRootMod", new Version(1, 0, 0)));
+
+        PlaysetScanResult result = PlaysetModScanner.Scan(_paths, gameDir: null);
+
+        Assert.Contains(result.Packages, p => p.PackageKey == "usermods:SameName");
+        Assert.Contains(result.Packages, p => p.PackageKey == "usermods-file:SameName.dll");
+        Assert.Contains(result.WinningAssemblies, a => a.AssemblyName == "FolderMod");
+        Assert.Contains(result.WinningAssemblies, a => a.AssemblyName == "LooseRootMod");
+    }
+
+    [Fact]
+    public void Scan_PreferredVersionMissingOnDisk_DoesNotFallbackToOtherVersion()
+    {
+        string pdxRoot = Path.Combine(_paths.ModsCacheDir, "pdx_mods");
+        string v9Dir = Path.Combine(pdxRoot, "86944_9");
+        Directory.CreateDirectory(v9Dir);
+        File.WriteAllBytes(Path.Combine(v9Dir, "SampleMod.dll"), BuildSimpleIMod("SampleMod", new Version(1, 9, 0)));
+
+        File.WriteAllText(_paths.PlaysetConfigFile, """
+            {
+              "activePlaysetId": "p1",
+              "playsets": [
+                {
+                  "id": "p1",
+                  "presentation": { "name": "PinnedVersion" },
+                  "mods": [
+                    { "source": "pdx_mods", "sourceId": "86944", "sourceVersion": "10", "isEnabled": true }
+                  ]
+                }
+              ]
+            }
+            """);
+
+        PlaysetScanResult result = PlaysetModScanner.Scan(_paths, gameDir: null);
+
+        EnabledModPackage pkg = Assert.Single(result.Packages, p => p.PdxModId == "86944");
+        Assert.True(pkg.IsPendingCloudDownload);
+        Assert.Equal(10, pkg.PlatformVersion);
+        Assert.Empty(pkg.WinningAssemblies);
+    }
+
     private static byte[] BuildSimpleIMod(string asmName, Version version) =>
         SyntheticModBuilder.BuildModAssembly(asmName, version, (mod, env) =>
         {

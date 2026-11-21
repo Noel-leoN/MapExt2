@@ -39,23 +39,28 @@ public sealed class CommandLineContext
 }
 
 /// <summary>
-/// 执行命令行（计划 2.2）：按选项改 <c>MapExtPDX.coc</c>、启动游戏、显示状态。流程沿用开发版：
+/// 执行命令行（计划 2.2）：按选项改 <c>MapExtPDX.coc</c>、显示状态与冲突报告、启动游戏。流程沿用开发版：
 /// 要写入或启动时先查游戏是否在运行，在运行就什么都不做、返回 2；写入只改有改动的键（2.1 的
-/// <see cref="CocSettingsManager"/>）；最后按需显示状态。逻辑都在这里，界面程序只负责接上控制台。
+/// <see cref="CocSettingsManager"/>）；写入后按需输出状态与冲突报告，最后才启动（审计修复 D5）。
+/// 正常结果写 output，错误与警告写 error。逻辑都在这里，界面程序只负责接上控制台。
 /// </summary>
 public sealed class CommandLineRunner
 {
     private readonly CommandLineContext _context;
     private readonly TextWriter _output;
+    private readonly TextWriter _error;
     private readonly string _language;
 
-    public CommandLineRunner(CommandLineContext context, TextWriter output, string language)
+    /// <param name="output">正常结果：已写入、状态、冲突报告、已启动。</param>
+    /// <param name="error">错误与警告（游戏在运行、设定文件有误、没能启动等）；为 null 时与 <paramref name="output"/> 合用一个。</param>
+    public CommandLineRunner(CommandLineContext context, TextWriter output, string language, TextWriter? error = null)
     {
         ArgumentNullException.ThrowIfNull(context);
         ArgumentNullException.ThrowIfNull(output);
 
         _context = context;
         _output = output;
+        _error = error ?? output;
         _language = UiLanguage.Normalize(language) ?? UiLanguage.English;
     }
 
@@ -82,7 +87,7 @@ public sealed class CommandLineRunner
 
         if ((target.Count > 0 || options.Launch) && _context.IsGameRunning())
         {
-            Line("Cli.GameRunning");
+            ErrorLine("Cli.GameRunning");
             return ExitCodes.GameRunning;
         }
 
@@ -97,7 +102,7 @@ public sealed class CommandLineRunner
                 switch (result.Status)
                 {
                     case CocSaveStatus.GameRunning:
-                        Line("Cli.GameRunning");
+                        ErrorLine("Cli.GameRunning");
                         return ExitCodes.GameRunning;
                     case CocSaveStatus.NoChanges:
                         Line("Startup.NoChanges");
@@ -111,23 +116,25 @@ public sealed class CommandLineRunner
         }
         catch (CocFormatException ex)
         {
-            Line("Cli.FileError", ex.GetMessage(_language));
+            ErrorLine("Cli.FileError", ex.GetMessage(_language));
             if (options.Launch)
-                Line("Cli.LaunchRefusedCoc");
+                ErrorLine("Cli.LaunchRefusedCoc");
             return ExitCodes.Error;
         }
         catch (CocSaveException ex)
         {
-            Line("Cli.Error", ex.GetMessage(_language));
+            ErrorLine("Cli.Error", ex.GetMessage(_language));
             return ExitCodes.Error;
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
-            Line("Cli.Error", ex.Message);
+            ErrorLine("Cli.Error", ex.Message);
             return ExitCodes.Error;
         }
 
-        int code = options.Launch ? Launch() : ExitCodes.Success;
+        // 按 D5 约定：同时带 --check-conflicts／--show 与 --launch 时先输出诊断再启动。
+        // 诊断输出失败不拦启动（与调整顺序前一样照常启动），退出码仍记为出错
+        bool diagnosticsFailed = false;
         try
         {
             if (options.Show)
@@ -137,11 +144,12 @@ public sealed class CommandLineRunner
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidOperationException)
         {
-            Line("Cli.Error", ex.Message);
-            return ExitCodes.Error;
+            ErrorLine("Cli.Error", ex.Message);
+            diagnosticsFailed = true;
         }
 
-        return code;
+        int code = options.Launch ? Launch() : ExitCodes.Success;
+        return diagnosticsFailed ? ExitCodes.Error : code;
     }
 
     // === 启动 ===
@@ -153,16 +161,16 @@ public sealed class CommandLineRunner
         LaunchChannel channel = options.Channel;
 
         if (location.MissingManualPath != null)
-            Line("Launch.ManualMissing", location.MissingManualPath);
+            ErrorLine("Launch.ManualMissing", location.MissingManualPath);
 
         // 直启与 -applaunch 时游戏同样会读 runOnce.txt；命令行不询问，照常启动并说明
         if (channel != LaunchChannel.RunOnce && RunOnceFile.ReadPending(_context.Launcher.RunOncePath) is { } pending)
-            Line("Cli.RunOnceKept", pending);
+            ErrorLine("Cli.RunOnceKept", pending);
 
         // 直启 Steam 版要 Steam 在后台运行；没运行时按通道顺序改走 -applaunch（它会先打开 Steam）
         if (_context.Launcher.Check(location, channel) == LaunchBlock.SteamNotRunning && location.SteamChannelsAvailable)
         {
-            Line("Cli.SteamFallback");
+            ErrorLine("Cli.SteamFallback");
             channel = LaunchChannel.Steam;
         }
 
@@ -171,7 +179,7 @@ public sealed class CommandLineRunner
             LaunchResult result = _context.Launcher.Launch(location, options, channel);
             if (result.Block != LaunchBlock.None)
             {
-                Line("Cli.NotLaunched", LaunchText.Block(result.Block, _language));
+                ErrorLine("Cli.NotLaunched", LaunchText.Block(result.Block, _language));
                 return result.Block == LaunchBlock.GameRunning ? ExitCodes.GameRunning : ExitCodes.Error;
             }
 
@@ -181,7 +189,7 @@ public sealed class CommandLineRunner
         }
         catch (Exception ex) when (ex is Win32Exception or IOException or UnauthorizedAccessException or InvalidOperationException)
         {
-            Line("Launch.Failed", ex.Message);
+            ErrorLine("Launch.Failed", ex.Message);
             return ExitCodes.Error;
         }
     }
@@ -268,6 +276,10 @@ public sealed class CommandLineRunner
 
     private void Line(string key, params object[] args) =>
         _output.WriteLine(args.Length == 0 ? Strings.Get(_language, key) : Format(key, args));
+
+    /// <summary>错误与警告：写到错误输出（界面程序接到 stderr）。</summary>
+    private void ErrorLine(string key, params object[] args) =>
+        _error.WriteLine(args.Length == 0 ? Strings.Get(_language, key) : Format(key, args));
 
     private string Format(string key, params object[] args) =>
         string.Format(CultureInfo.InvariantCulture, Strings.Get(_language, key), args);

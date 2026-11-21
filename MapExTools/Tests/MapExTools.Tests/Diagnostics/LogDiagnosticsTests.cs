@@ -103,4 +103,49 @@ public sealed class LogDiagnosticsTests : IDisposable
 
         Assert.Equal(["第一行", "第二行"], LogDiagnostics.ReadLines(Paths.MapExtLog));
     }
+
+    [Fact]
+    public void Summarize_FileDeletedMidRead_FallsBackToCachedMetadataWithoutThrowing()
+    {
+        Directory.CreateDirectory(Path.GetDirectoryName(Paths.MapExtLog)!);
+        File.WriteAllText(Paths.MapExtLog, "line1\nline2\n", Encoding.UTF8);
+        var before = new FileInfo(Paths.MapExtLog);
+        long expectedLength = before.Length;
+        DateTime expectedWriteTime = before.LastWriteTime;
+
+        (LogFileStatus file, string? summary) = LogDiagnostics.Summarize(Paths.MapExtLog, lines =>
+        {
+            // 模拟日志在读取完毕后、Refresh 前被游戏轮转删除
+            File.Delete(Paths.MapExtLog);
+            return string.Join("|", lines);
+        });
+
+        Assert.True(file.IsReadable);
+        Assert.Equal(expectedLength, file.Length);
+        Assert.Equal(expectedWriteTime, file.LastWriteTime);
+        Assert.Equal("line1|line2", summary);
+    }
+
+    [Fact]
+    public void StreamPlayerLogLines_ExceedingThreshold_KeepsHeaderVersionAndTailWindow()
+    {
+        Directory.CreateDirectory(_root);
+        var sb = new StringBuilder();
+        sb.Append("Initialize engine version: 2022.3.71f1\n");
+        sb.Append("Game version: 1.6.4f1 (1000.0001) [6400.20000]\n");
+        for (int i = 0; i < 500; i++)
+            sb.Append($"filler-{i:0000}-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n");
+        sb.Append("NullReferenceException: boom at tail\n");
+        sb.Append("  at Game.Tail.Method ()\n");
+        sb.Append("Crash!!!\n");
+        File.WriteAllText(Paths.PlayerLog, sb.ToString(), Encoding.UTF8);
+
+        PlayerLogSummary summary = PlayerLogSummary.Parse(LogDiagnostics.StreamPlayerLogLines(Paths.PlayerLog, maxFullReadBytes: 512));
+
+        Assert.Equal("1.6.4f1 (1000.0001) [6400.20000]", summary.GameVersion);
+        Assert.True(summary.HasCrashMarker);
+        PlayerLogProblem problem = Assert.Single(summary.RecentProblems);
+        Assert.Equal("NullReferenceException", problem.Source);
+        Assert.Equal("at Game.Tail.Method ()", problem.FirstFrame);
+    }
 }

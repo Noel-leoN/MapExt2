@@ -11,6 +11,13 @@ namespace MapExTools.Core.Conflicts;
 /// </summary>
 public static class ConflictAnalyzer
 {
+    private static readonly string[] s_findTargetsEconomyKeys =
+    [
+        ConflictTargets.KeyHouseholdProperty,
+        ConflictTargets.KeyResourceBuyer,
+        ConflictTargets.KeyDownstreamAI,
+    ];
+
     /// <summary>只读扫描激活 Playset 与本地 <c>Mods/</c> 并完成胜出程序集的字节码特征提取。</summary>
     public static ScannedModWorkspace ScanWorkspace(UserDataPaths paths, string? gameDir = null)
     {
@@ -52,7 +59,7 @@ public static class ConflictAnalyzer
                 }
                 catch (Exception ex) when (ex is BadImageFormatException or InvalidOperationException or IOException or UnauthorizedAccessException)
                 {
-                    unreadableExtra.Add(new UnreadableAssemblyEntry(asm.FilePath, pkg.DisplayName, ex.Message));
+                    unreadableExtra.Add(new UnreadableAssemblyEntry(asm.FilePath, pkg.PackageKey, pkg.DisplayName, ex.Message));
                 }
             }
 
@@ -85,10 +92,10 @@ public static class ConflictAnalyzer
         var items = new List<ModConflictItem>();
         PlaysetScanResult playset = workspace.Playset;
 
-        // 按包索引损坏 DLL
-        Dictionary<string, List<UnreadableAssemblyEntry>> unreadableByPkgName = playset.UnreadableAssemblies
-            .GroupBy(u => u.PackageDisplayName, StringComparer.OrdinalIgnoreCase)
-            .ToDictionary(g => g.Key, g => g.ToList(), StringComparer.OrdinalIgnoreCase);
+        // 按包键索引损坏 DLL（避免不同源的同名模组串归）
+        Dictionary<string, List<UnreadableAssemblyEntry>> unreadableByPkgKey = playset.UnreadableAssemblies
+            .GroupBy(u => u.PackageKey, StringComparer.Ordinal)
+            .ToDictionary(g => g.Key, g => g.ToList(), StringComparer.Ordinal);
 
         var emittedDualInstallRules = new HashSet<string>(StringComparer.Ordinal);
 
@@ -151,7 +158,7 @@ public static class ConflictAnalyzer
             }
 
             // 3. 损坏 / 非法元数据 DLL
-            if (unreadableByPkgName.TryGetValue(pkg.DisplayName, out List<UnreadableAssemblyEntry>? badList))
+            if (unreadableByPkgKey.TryGetValue(pkg.PackageKey, out List<UnreadableAssemblyEntry>? badList))
             {
                 foreach (UnreadableAssemblyEntry bad in badList)
                 {
@@ -163,15 +170,15 @@ public static class ConflictAnalyzer
                 }
             }
 
-            // 4. 字节码静态特征评估（仅对可正常加载的包执行）
-            if (pkg.MissingDependencies.Count == 0 &&
-                workspace.InspectionsByPackageKey.TryGetValue(pkg.PackageKey, out IReadOnlyList<AssemblyInspectionResult>? inspections))
+            // 4. 字节码静态特征评估（InspectionsByPackageKey 只包含胜出且可加载的程序集；包内另有辅助 DLL 缺可选依赖时不再跳过主程序集）
+            if (workspace.InspectionsByPackageKey.TryGetValue(pkg.PackageKey, out IReadOnlyList<AssemblyInspectionResult>? inspections))
             {
                 EvaluateBytecodeInspections(inspections, settings, findings);
             }
 
             // 5. 补充兼容性规则评估（仅覆盖单点字节码未涵盖的交互项：RWH 的游戏内按名自动停用、双装与待下载兜底）
-            if (matchedRule != null && pkg.MissingDependencies.Count == 0)
+            bool packageWillNotLoad = pkg.HasManagedAssemblies && pkg.WinningAssemblies.Count == 0 && !pkg.IsPendingCloudDownload;
+            if (matchedRule != null && !packageWillNotLoad)
             {
                 bool dualSatisfied = !matchedRule.RequireDualLocalAndPdxInstall ||
                                      matchedRule.AssemblyNames.Any(playset.DualLocalAndPdxAssemblyNames.Contains);
@@ -209,7 +216,9 @@ public static class ConflictAnalyzer
             // 仅当最高等级为 Warning，且每一条 Severity >= Warning 的发现均具备可一键关闭的纯经济分组键时才开放！
             IReadOnlyList<string> oneClickKeys = ComputeSafeOneClickKeys(findings, maxSeverity);
 
-            string? auditedVer = matchedRule?.AuditedVersion;
+            // 仅当真正产出了已知审计规则发现时才标注审计基准版本，避免单靠字节码或仅缺依赖/损坏 DLL 误带核对版本
+            bool hasKnownRuleFinding = findings.Any(f => f.Kind == ConflictFindingKind.KnownAuditRule);
+            string? auditedVer = hasKnownRuleFinding ? matchedRule?.AuditedVersion : null;
             bool newerThanAudited = auditedVer != null &&
                                     ConflictTargets.IsVersionNewerThanAudited(pkg.DisplayVersion, auditedVer);
 
@@ -364,13 +373,14 @@ public static class ConflictAnalyzer
                     continue;
 
                 (ConflictScope patchScope, IReadOnlyList<string>? patchGroups) = ScopeOf(target, settings);
+                IReadOnlyList<string>? patchMitigatingKeys = MitigatingKeysOf(target, settings, eval);
                 findings.Add(new ConflictFinding(
                     ConflictFindingKind.HarmonyPatchOverlap,
                     eval.Severity,
                     displayTarget,
                     FormatPatchKindLabel(ho.Kind),
                     ShortenMember(ho.PatchTypeAndMethod),
-                    eval.MitigatingToggleKey != null ? [eval.MitigatingToggleKey] : null,
+                    patchMitigatingKeys,
                     patchScope,
                     patchGroups));
             }
@@ -497,10 +507,34 @@ public static class ConflictAnalyzer
         PatchTargetScope.EconomyHouseholdProperty => (ConflictScope.EconomyGroups, [ConflictTargets.KeyHouseholdProperty]),
         PatchTargetScope.EconomyResourceBuyer => (ConflictScope.EconomyGroups, [ConflictTargets.KeyResourceBuyer]),
         PatchTargetScope.FindTargets when settings.IsExpandedMode => (ConflictScope.ExpandedMapModes, null),
-        PatchTargetScope.FindTargets => (ConflictScope.EconomyGroups,
-            [ConflictTargets.KeyHouseholdProperty, ConflictTargets.KeyResourceBuyer, ConflictTargets.KeyDownstreamAI]),
+        PatchTargetScope.FindTargets => (ConflictScope.EconomyGroups, s_findTargetsEconomyKeys),
         _ => (ConflictScope.Unspecified, null),
     };
+
+    /// <summary>
+    /// 补丁重叠发现的可一键关闭分组键：<c>EvaluatePatchOverlap</c> 的返回结构只含单键，
+    /// 原版尺寸模式下的 <c>PathfindSetupSystem.FindTargets</c> 由三个经济分组以或关系控制挂载，
+    /// 此处补齐当前实际生效的分组键，使单条说明与整卡一键关闭按钮保持完整。
+    /// </summary>
+    private static IReadOnlyList<string>? MitigatingKeysOf(
+        PatchedMethodTarget target,
+        ConflictEvalSettings settings,
+        SystemConflictEvaluation eval)
+    {
+        if (eval.Severity != ConflictSeverity.Warning)
+            return null;
+
+        if (eval.MitigatingToggleKey != null)
+            return [eval.MitigatingToggleKey];
+
+        if (!settings.IsExpandedMode && target.Scope == PatchTargetScope.FindTargets)
+        {
+            string[] activeKeys = s_findTargetsEconomyKeys.Where(settings.IsToggleEffective).ToArray();
+            return activeKeys.Length > 0 ? activeKeys : null;
+        }
+
+        return null;
+    }
 
     /// <summary>补充规则的适用范围：只在扩展地图模式定级的归扩展；可按分组规避的归经济分组；其余（如双装）归所有模式。</summary>
     private static (ConflictScope Scope, IReadOnlyList<string>? GroupKeys) ScopeOf(

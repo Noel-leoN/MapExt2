@@ -36,6 +36,7 @@ public class CommandLineParserTests
     [InlineData("--show")]
     [InlineData("--reset")]
     [InlineData("--launch")]
+    [InlineData("--check-conflicts")]
     [InlineData("--help")]
     [InlineData("-h")]
     [InlineData("-?")]
@@ -49,10 +50,11 @@ public class CommandLineParserTests
     [Fact]
     public void Flags_SetTheirProperty()
     {
-        CommandLineOptions options = Parse("--show", "--reset", "--launch", "--help");
+        CommandLineOptions options = Parse("--show", "--reset", "--launch", "--check-conflicts", "--help");
         Assert.True(options.Show);
         Assert.True(options.Reset);
         Assert.True(options.Launch);
+        Assert.True(options.CheckConflicts);
         Assert.True(options.Help);
     }
 
@@ -137,8 +139,10 @@ public class CommandLineParserTests
     [InlineData(CommandLineErrorKind.InvalidValue, "--game-process", ".exe")]
     [InlineData(CommandLineErrorKind.UnexpectedValue, "--show=1")]
     [InlineData(CommandLineErrorKind.UnexpectedValue, "--launch=yes")]
+    [InlineData(CommandLineErrorKind.UnexpectedValue, "--check-conflicts=1")]
     [InlineData(CommandLineErrorKind.Duplicate, "--mode", "ModeA", "--MODE", "ModeB")]
     [InlineData(CommandLineErrorKind.Duplicate, "--show", "--show")]
+    [InlineData(CommandLineErrorKind.Duplicate, "--check-conflicts", "--check-conflicts")]
     public void Errors(CommandLineErrorKind kind, params string[] args)
     {
         Assert.Equal(kind, Fails(args).Kind);
@@ -160,6 +164,7 @@ public class CommandLineParserTests
     {
         Assert.Equal(("zh-HANT", @"D:\UD"), CommandLineParser.PeekOptions(["--mode", "ModeX", "--LANG=zh-tw", "--user-data", @"D:\UD"]));
         Assert.Equal((null, null), CommandLineParser.PeekOptions(["--lang", "fr", "--user-data"]));
+        Assert.Equal(("zh-HANS", null), CommandLineParser.PeekOptions(["--user-data", "--lang", "zh"]));
         Assert.Equal(((string?)null, (string?)null), CommandLineParser.PeekOptions([]));
     }
 }

@@ -710,6 +710,83 @@ public sealed class ModAssemblyInspectorTests
         }
     }
 
+    [Fact]
+    public void FindTargetsPatchOverlap_BlocksOneClickInExpanded_AllowsActiveGroupsOneClickInVanilla()
+    {
+        string tempDir = Path.Combine(Path.GetTempPath(), "MapExTools_FindTargetsTests_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempDir);
+        try
+        {
+            var paths = new UserDataPaths(tempDir);
+            string modDir = Path.Combine(paths.ModsDir, "TripsLikeMod");
+            Directory.CreateDirectory(modDir);
+
+            // 模拟同时开关 RentAdjustSystem 并对 PathfindSetupSystem.FindTargets 挂载拦截型 Prefix (bool) 的模组（如 Realistic Trips）
+            byte[] dllBytes = SyntheticModBuilder.BuildModAssembly("TripsLikeMod", new Version(2, 9, 5), (mod, env) =>
+            {
+                TypeBuilder sysTb = mod.DefineType("TripsLike.NightSystem", TypeAttributes.Public | TypeAttributes.Class, env.GameSystemBaseType);
+                MethodBuilder m = sysTb.DefineMethod("OnUpdate", MethodAttributes.Family | MethodAttributes.Virtual, typeof(void), Type.EmptyTypes);
+                ILGenerator il = m.GetILGenerator();
+                il.Emit(OpCodes.Newobj, env.WorldType.GetConstructor(Type.EmptyTypes)!);
+                il.Emit(OpCodes.Callvirt, env.GetOrCreateGeneric.MakeGenericMethod(env.RentAdjustSystemType));
+                il.Emit(OpCodes.Ldc_I4_1);
+                il.Emit(OpCodes.Callvirt, env.EnabledProperty.SetMethod!);
+                il.Emit(OpCodes.Ret);
+                sysTb.CreateType();
+
+                Type pathfindSetupType = env.GameAsm.GetType("Game.Simulation.PathfindSetupSystem")!;
+                TypeBuilder patchTb = mod.DefineType("TripsLike.FindTargetsPatch", TypeAttributes.Public | TypeAttributes.Class);
+                patchTb.SetCustomAttribute(new CustomAttributeBuilder(
+                    env.HarmonyPatchTypeAndMethodCtor,
+                    [pathfindSetupType, "FindTargets"]));
+                MethodBuilder prefix = patchTb.DefineMethod("Prefix", MethodAttributes.Public | MethodAttributes.Static, typeof(bool), Type.EmptyTypes);
+                ILGenerator preIl = prefix.GetILGenerator();
+                preIl.Emit(OpCodes.Ldc_I4_1);
+                preIl.Emit(OpCodes.Ret);
+                patchTb.CreateType();
+            });
+            File.WriteAllBytes(Path.Combine(modDir, "TripsLikeMod.dll"), dllBytes);
+
+            ScannedModWorkspace workspace = ConflictAnalyzer.ScanWorkspace(paths, gameDir: null);
+
+            // 1. 扩展地图模式：FindTargets 无论分组均必挂，无规避键，整卡因 CellOnly 为 Hard 且无一键按钮
+            var modeA = new ConflictEvalSettings("ModeA", true, true, true, true, false, false, false);
+            ModConflictItem modeAItem = Assert.Single(ConflictAnalyzer.Evaluate(workspace, modeA).Items);
+            Assert.Equal(ConflictSeverity.Hard, modeAItem.Severity);
+            Assert.False(modeAItem.CanOneClickMitigate);
+            ConflictFinding modeAFindTargets = Assert.Single(modeAItem.Findings, f => f.Kind == ConflictFindingKind.HarmonyPatchOverlap);
+            Assert.Equal(ConflictScope.ExpandedMapModes, modeAFindTargets.Scope);
+            Assert.Null(modeAFindTargets.MitigatingToggleKeys);
+
+            // 2. 原版尺寸模式（开启找房组与下游 AI 组，关闭消费采购组）：FindTargets 只列出当前生效的两个分组键，整卡支持一键关闭
+            var vanillaOpen = new ConflictEvalSettings("None", true, true, true, householdProperty: true, resourceBuyer: false, residentAI: false, downstreamAI: true);
+            ModConflictItem vanillaItem = Assert.Single(ConflictAnalyzer.Evaluate(workspace, vanillaOpen).Items);
+            Assert.Equal(ConflictSeverity.Warning, vanillaItem.Severity);
+            Assert.True(vanillaItem.CanOneClickMitigate);
+            Assert.Equal([ConflictTargets.KeyHouseholdProperty, ConflictTargets.KeyDownstreamAI], vanillaItem.OneClickDisableKeys);
+
+            ConflictFinding vanillaFindTargets = Assert.Single(vanillaItem.Findings, f => f.Kind == ConflictFindingKind.HarmonyPatchOverlap);
+            Assert.Equal(ConflictScope.EconomyGroups, vanillaFindTargets.Scope);
+            Assert.Equal([ConflictTargets.KeyHouseholdProperty, ConflictTargets.KeyDownstreamAI], vanillaFindTargets.MitigatingToggleKeys);
+            string desc = ConflictText.DescribeFinding(vanillaFindTargets, vanillaOpen, UiLanguage.SimplifiedChinese);
+            Assert.Contains("可通过关闭", desc, StringComparison.Ordinal);
+
+            // 3. 原版尺寸模式关闭相关分组或关闭经济总开关后：两条均变为已规避
+            var masterOff = new ConflictEvalSettings("None", economyFix: false, true, true, householdProperty: true, true, true, downstreamAI: true);
+            ModConflictItem mitigatedItem = Assert.Single(ConflictAnalyzer.Evaluate(workspace, masterOff).Items);
+            Assert.Equal(ConflictSeverity.Mitigated, mitigatedItem.Severity);
+            Assert.False(mitigatedItem.CanOneClickMitigate);
+        }
+        finally
+        {
+            foreach (string f in Directory.GetFiles(tempDir, "*", SearchOption.AllDirectories))
+                File.Delete(f);
+            foreach (string d in Directory.GetDirectories(tempDir, "*", SearchOption.AllDirectories).OrderByDescending(s => s.Length))
+                Directory.Delete(d, recursive: false);
+            Directory.Delete(tempDir, recursive: false);
+        }
+    }
+
     /// <summary>
     /// 按 RealisticPathFinding 0.7.6 的 <c>Mod.OnLoad</c> 形态构造程序集：停用居民 AI 与消费采购的 4 个原版系统，
     /// 并把 <c>UpdateGroupSystem</c> 注册在 <paramref name="phaseCode"/> 阶段（12 = GameSimulation 为跨阶段，8 = Modification5 为合法）。
@@ -743,4 +820,269 @@ public sealed class ModAssemblyInspectorTests
             tb.DefineMethod("OnDispose", MethodAttributes.Public | MethodAttributes.Virtual, typeof(void), Type.EmptyTypes).GetILGenerator().Emit(OpCodes.Ret);
             tb.CreateType();
         });
+
+    [Fact]
+    public void InspectBytes_MalformedIl_UndefinedOpcodeAtEnd_ReturnsCleanly()
+    {
+        const int marker = 0x13572468;
+        // ldc.i4 marker (5B) + pop (1B) + ret (1B) -> 替换为 6 个 nop + 末尾未定义操作码 0x24
+        byte[] pattern = [0x20, 0x68, 0x24, 0x57, 0x13, 0x26, 0x2A];
+        byte[] replacement = [0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x24];
+
+        byte[] dll = SyntheticModBuilder.BuildModAssemblyWithIlPatch(
+            "MalformedUndefinedOpMod",
+            new Version(1, 0, 0),
+            (mod, env) =>
+            {
+                TypeBuilder tb = mod.DefineType("Malformed.Sys", TypeAttributes.Public | TypeAttributes.Class, env.GameSystemBaseType);
+                tb.DefineField("_land", env.LandValueSystemType, FieldAttributes.Private);
+                MethodBuilder mb = tb.DefineMethod("OnUpdate", MethodAttributes.Family | MethodAttributes.Virtual, typeof(void), Type.EmptyTypes);
+                ILGenerator il = mb.GetILGenerator();
+                il.Emit(OpCodes.Ldc_I4, marker);
+                il.Emit(OpCodes.Pop);
+                il.Emit(OpCodes.Ret);
+                tb.CreateType();
+            },
+            pattern,
+            replacement);
+
+        AssemblyInspectionResult? result = ModAssemblyInspector.InspectBytes(dll);
+        Assert.NotNull(result);
+        Assert.Equal("MalformedUndefinedOpMod", result.AssemblyName);
+    }
+
+    [Theory]
+    [InlineData(0)] // 起点 < 3：switch 位于方法体首字节，(int)(0x3FFFFFFE * 4) == -8 回绕成负偏移
+    [InlineData(4)] // 起点 >= 3：前有 4 个 nop，若用 int 计算会跳回方法体开头形成死循环
+    public async Task InspectBytes_MalformedIl_OverflowInlineSwitch_DoesNotHangOrThrow(int leadingNops)
+    {
+        const int marker = 0x24681357;
+        // ldc.i4 marker (5B) + pop (1B) + ret (1B) -> switch (0x45) + count 0x3FFFFFFE (FE FF FF 3F) + nop + ret
+        byte[] pattern = [0x20, 0x57, 0x13, 0x68, 0x24, 0x26, 0x2A];
+        byte[] replacement = [0x45, 0xFE, 0xFF, 0xFF, 0x3F, 0x00, 0x2A];
+
+        byte[] dll = SyntheticModBuilder.BuildModAssemblyWithIlPatch(
+            $"MalformedSwitchMod_{leadingNops}",
+            new Version(1, 0, 0),
+            (mod, env) =>
+            {
+                TypeBuilder tb = mod.DefineType("Malformed.SwitchSys", TypeAttributes.Public | TypeAttributes.Class, env.GameSystemBaseType);
+                tb.DefineField("_land", env.LandValueSystemType, FieldAttributes.Private);
+                MethodBuilder mb = tb.DefineMethod("OnUpdate", MethodAttributes.Family | MethodAttributes.Virtual, typeof(void), Type.EmptyTypes);
+                ILGenerator il = mb.GetILGenerator();
+                for (int i = 0; i < leadingNops; i++)
+                    il.Emit(OpCodes.Nop);
+                il.Emit(OpCodes.Ldc_I4, marker);
+                il.Emit(OpCodes.Pop);
+                il.Emit(OpCodes.Ret);
+                tb.CreateType();
+            },
+            pattern,
+            replacement);
+
+        CancellationToken ct = TestContext.Current.CancellationToken;
+        AssemblyInspectionResult? result = await Task.Run(() => ModAssemblyInspector.InspectBytes(dll), ct)
+            .WaitAsync(TimeSpan.FromSeconds(5), ct);
+        Assert.NotNull(result);
+        Assert.Equal($"MalformedSwitchMod_{leadingNops}", result.AssemblyName);
+    }
+
+    [Fact]
+    public void HarmonyDetection_StringTypeNameOverload_DetectsProtectedSystemPatch()
+    {
+        byte[] dll = SyntheticModBuilder.BuildModAssembly("StringTypePatchMod", new Version(1, 0, 0), (mod, env) =>
+        {
+            TypeBuilder tb = mod.DefineType("StrPatch.Hook", TypeAttributes.Public | TypeAttributes.Class);
+            tb.SetCustomAttribute(new CustomAttributeBuilder(
+                env.HarmonyPatchStringAndMethodCtor,
+                ["Game.Simulation.ServiceCoverageSystem", "OnUpdate"]));
+            MethodBuilder prefix = tb.DefineMethod("Prefix", MethodAttributes.Public | MethodAttributes.Static, typeof(bool), Type.EmptyTypes);
+            ILGenerator il = prefix.GetILGenerator();
+            il.Emit(OpCodes.Ldc_I4_1);
+            il.Emit(OpCodes.Ret);
+            tb.CreateType();
+        });
+
+        AssemblyInspectionResult? res = ModAssemblyInspector.InspectBytes(dll);
+        Assert.NotNull(res);
+        Assert.NotNull(res.ReplacedSystemPatches);
+        PatchedReplacedSystemEvidence hit = Assert.Single(res.ReplacedSystemPatches);
+        Assert.Equal("Game.Simulation.ServiceCoverageSystem", hit.TargetTypeName);
+        Assert.Equal("OnUpdate", hit.TargetMethodName);
+        Assert.Equal(DetectedPatchKind.PrefixBlockingCapable, hit.Kind);
+    }
+
+    [Fact]
+    public void ImperativeHarmonyPatch_RequiresPairedReflectionLookup_AvoidsCartesianFalsePositive()
+    {
+        // 反例：方法内有 GameManager 类型引用、命令式 harmony.Patch 调用以及无关字面量 "Load"，但并未对 GameManager 取 "Load" -> 0 误报
+        byte[] benignDll = SyntheticModBuilder.BuildModAssembly("ImperativeBenignMod", new Version(1, 0, 0), (mod, env) =>
+        {
+            TypeBuilder otherTb = mod.DefineType("Benign.OwnTarget", TypeAttributes.Public | TypeAttributes.Class);
+            otherTb.DefineMethod("DoWork", MethodAttributes.Public, typeof(void), Type.EmptyTypes).GetILGenerator().Emit(OpCodes.Ret);
+            Type otherType = otherTb.CreateType();
+
+            TypeBuilder tb = mod.DefineType("Benign.Patcher", TypeAttributes.Public | TypeAttributes.Class);
+            MethodBuilder mb = tb.DefineMethod("Apply", MethodAttributes.Public | MethodAttributes.Static, typeof(void), [env.GameManagerType]);
+            ILGenerator il = mb.GetILGenerator();
+            il.Emit(OpCodes.Ldstr, "Load"); // 无关字面量（如日志或按钮名）
+            il.Emit(OpCodes.Pop);
+            il.Emit(OpCodes.Ldstr, "benign.id");
+            il.Emit(OpCodes.Newobj, env.HarmonyCtor);
+            il.Emit(OpCodes.Ldtoken, otherType);
+            il.Emit(OpCodes.Call, typeof(Type).GetMethod(nameof(Type.GetTypeFromHandle))!);
+            il.Emit(OpCodes.Ldstr, "DoWork");
+            il.Emit(OpCodes.Call, env.AccessToolsMethodMethod);
+            il.Emit(OpCodes.Callvirt, env.HarmonyPatchImperativeMethod);
+            il.Emit(OpCodes.Pop);
+            il.Emit(OpCodes.Ret);
+            tb.CreateType();
+        });
+
+        AssemblyInspectionResult? benignRes = ModAssemblyInspector.InspectBytes(benignDll);
+        Assert.NotNull(benignRes);
+        Assert.Empty(benignRes.HarmonyOverlaps);
+
+        // 正例：显式 AccessTools.Method(typeof(GameManager), "Load") + harmony.Patch -> 精准检出
+        byte[] overlapDll = SyntheticModBuilder.BuildModAssembly("ImperativeOverlapMod", new Version(1, 0, 0), (mod, env) =>
+        {
+            TypeBuilder tb = mod.DefineType("Overlap.Patcher", TypeAttributes.Public | TypeAttributes.Class);
+            MethodBuilder mb = tb.DefineMethod("Apply", MethodAttributes.Public | MethodAttributes.Static, typeof(void), Type.EmptyTypes);
+            ILGenerator il = mb.GetILGenerator();
+            il.Emit(OpCodes.Ldstr, "overlap.id");
+            il.Emit(OpCodes.Newobj, env.HarmonyCtor);
+            il.Emit(OpCodes.Ldtoken, env.GameManagerType);
+            il.Emit(OpCodes.Call, typeof(Type).GetMethod(nameof(Type.GetTypeFromHandle))!);
+            il.Emit(OpCodes.Ldstr, "Load");
+            il.Emit(OpCodes.Call, env.AccessToolsMethodMethod);
+            il.Emit(OpCodes.Callvirt, env.HarmonyPatchImperativeMethod);
+            il.Emit(OpCodes.Pop);
+            il.Emit(OpCodes.Ret);
+            tb.CreateType();
+        });
+
+        AssemblyInspectionResult? overlapRes = ModAssemblyInspector.InspectBytes(overlapDll);
+        Assert.NotNull(overlapRes);
+        HarmonyOverlapEvidence hit = Assert.Single(overlapRes.HarmonyOverlaps);
+        Assert.Equal("Game.SceneFlow.GameManager", hit.TargetTypeName);
+        Assert.Equal("Load", hit.TargetMethodName);
+        Assert.Equal(DetectedPatchKind.DynamicOrImperative, hit.Kind);
+    }
+
+    [Fact]
+    public void TargetMethod_MultiplePatchMethodsInClass_PicksHighestRiskKind()
+    {
+        // Postfix 声明在 Transpiler 之前：动态 TargetMethod 仍应按风险更高的 Transpiler 定级
+        byte[] dll = SyntheticModBuilder.BuildModAssembly("MultiPatchKindMod", new Version(1, 0, 0), (mod, env) =>
+        {
+            TypeBuilder tb = mod.DefineType("Multi.Patch", TypeAttributes.Public | TypeAttributes.Class);
+            tb.SetCustomAttribute(new CustomAttributeBuilder(env.HarmonyPatchAttrType.GetConstructor(Type.EmptyTypes)!, []));
+
+            MethodBuilder postfix = tb.DefineMethod("Postfix", MethodAttributes.Private | MethodAttributes.Static, typeof(void), Type.EmptyTypes);
+            postfix.GetILGenerator().Emit(OpCodes.Ret);
+
+            MethodBuilder tm = tb.DefineMethod("TargetMethod", MethodAttributes.Private | MethodAttributes.Static, typeof(MethodBase), Type.EmptyTypes);
+            ILGenerator tmIl = tm.GetILGenerator();
+            tmIl.Emit(OpCodes.Ldtoken, env.GameManagerType);
+            tmIl.Emit(OpCodes.Call, typeof(Type).GetMethod(nameof(Type.GetTypeFromHandle))!);
+            tmIl.Emit(OpCodes.Ldstr, "Load");
+            tmIl.Emit(OpCodes.Call, env.AccessToolsMethodMethod);
+            tmIl.Emit(OpCodes.Ret);
+
+            MethodBuilder transpiler = tb.DefineMethod("Transpiler", MethodAttributes.Private | MethodAttributes.Static, typeof(object), [typeof(object)]);
+            ILGenerator trIl = transpiler.GetILGenerator();
+            trIl.Emit(OpCodes.Ldarg_0);
+            trIl.Emit(OpCodes.Ret);
+
+            tb.CreateType();
+        });
+
+        AssemblyInspectionResult? res = ModAssemblyInspector.InspectBytes(dll);
+        Assert.NotNull(res);
+        HarmonyOverlapEvidence hit = Assert.Single(res.HarmonyOverlaps);
+        Assert.Equal(DetectedPatchKind.Transpiler, hit.Kind);
+        Assert.Equal("Multi.Patch.Transpiler", hit.PatchTypeAndMethod);
+    }
+
+    [Fact]
+    public void StackTracking_LocalsAndBranchMerge_HandlesPhaseNullAndConditionalBool()
+    {
+        Type updateSysType = SyntheticModBuilder.Env.GameAsm.GetType("Game.UpdateSystem")!;
+        byte[] dll = SyntheticModBuilder.BuildModAssembly("StackTrackMod", new Version(1, 0, 0), (mod, env) =>
+        {
+            TypeBuilder dummySys = mod.DefineType("StackTest.Dummy", TypeAttributes.Public | TypeAttributes.Class, env.GameSystemBaseType);
+            Type createdDummy = dummySys.CreateType();
+
+            TypeBuilder tb = mod.DefineType("StackTest.Entry", TypeAttributes.Public | TypeAttributes.Class);
+            tb.AddInterfaceImplementation(env.IModType);
+
+            // 1. 经局部变量传 Modification5 (8) -> 不应误报跨阶段
+            // 2. 经局部变量传 null 给 UnpatchAll -> 必须检出
+            // 3. 条件分支 UnpatchAll(cond ? null : "myId") -> 必须保守检出
+            // 4. 条件分支 Enabled = cond ? false : true -> ConstantEnabledValue 必须为 null（不误判为常量）
+            MethodBuilder onLoad = tb.DefineMethod("OnLoad", MethodAttributes.Public | MethodAttributes.Virtual, typeof(void), [updateSysType]);
+            ILGenerator il = onLoad.GetILGenerator();
+
+            LocalBuilder phaseLoc = il.DeclareLocal(typeof(int));
+            il.Emit(OpCodes.Ldc_I4_8);
+            il.Emit(OpCodes.Stloc, phaseLoc);
+            il.Emit(OpCodes.Ldarg_1);
+            il.Emit(OpCodes.Ldloc, phaseLoc);
+            il.Emit(OpCodes.Callvirt, env.UpdateAfterGeneric2Method.MakeGenericMethod(env.UpdateGroupSystemType, createdDummy));
+
+            LocalBuilder nullIdLoc = il.DeclareLocal(typeof(string));
+            il.Emit(OpCodes.Ldnull);
+            il.Emit(OpCodes.Stloc, nullIdLoc);
+            il.Emit(OpCodes.Ldstr, "stack.id");
+            il.Emit(OpCodes.Newobj, env.HarmonyCtor);
+            il.Emit(OpCodes.Ldloc, nullIdLoc);
+            il.Emit(OpCodes.Callvirt, env.UnpatchAllMethod);
+            il.Emit(OpCodes.Ret);
+
+            MethodBuilder condUnpatch = tb.DefineMethod("CondUnpatch", MethodAttributes.Public | MethodAttributes.Static, typeof(void), [typeof(bool)]);
+            ILGenerator cil = condUnpatch.GetILGenerator();
+            Label strBranch = cil.DefineLabel();
+            Label callUnpatch = cil.DefineLabel();
+            cil.Emit(OpCodes.Ldstr, "cond.id");
+            cil.Emit(OpCodes.Newobj, env.HarmonyCtor);
+            cil.Emit(OpCodes.Ldarg_0);
+            cil.Emit(OpCodes.Brfalse_S, strBranch);
+            cil.Emit(OpCodes.Ldnull);
+            cil.Emit(OpCodes.Br_S, callUnpatch);
+            cil.MarkLabel(strBranch);
+            cil.Emit(OpCodes.Ldstr, "myId");
+            cil.MarkLabel(callUnpatch);
+            cil.Emit(OpCodes.Callvirt, env.UnpatchAllMethod);
+            cil.Emit(OpCodes.Ret);
+
+            MethodBuilder condEnable = tb.DefineMethod("CondEnable", MethodAttributes.Public | MethodAttributes.Static, typeof(void), [env.WorldType, typeof(bool)]);
+            ILGenerator eil = condEnable.GetILGenerator();
+            Label trueBranch = eil.DefineLabel();
+            Label setCall = eil.DefineLabel();
+            eil.Emit(OpCodes.Ldarg_0);
+            eil.Emit(OpCodes.Callvirt, env.GetOrCreateGeneric.MakeGenericMethod(env.CarNavActionsType));
+            eil.Emit(OpCodes.Ldarg_1);
+            eil.Emit(OpCodes.Brtrue_S, trueBranch);
+            eil.Emit(OpCodes.Ldc_I4_0);
+            eil.Emit(OpCodes.Br_S, setCall);
+            eil.MarkLabel(trueBranch);
+            eil.Emit(OpCodes.Ldc_I4_1);
+            eil.MarkLabel(setCall);
+            eil.Emit(OpCodes.Callvirt, env.EnabledProperty.SetMethod!);
+            eil.Emit(OpCodes.Ret);
+
+            tb.DefineMethod("OnDispose", MethodAttributes.Public | MethodAttributes.Virtual, typeof(void), Type.EmptyTypes)
+              .GetILGenerator().Emit(OpCodes.Ret);
+            tb.CreateType();
+        });
+
+        AssemblyInspectionResult? res = ModAssemblyInspector.InspectBytes(dll);
+        Assert.NotNull(res);
+        Assert.Empty(res.CrossPhaseSchedules!);
+        Assert.Contains(res.UnpatchAllNullCalls, u => u.CallerTypeAndMethod == "StackTest.Entry.OnLoad");
+        Assert.Contains(res.UnpatchAllNullCalls, u => u.CallerTypeAndMethod == "StackTest.Entry.CondUnpatch");
+
+        EnabledWriteEvidence write = Assert.Single(res.EnabledWrites, w => w.CallerTypeAndMethod == "StackTest.Entry.CondEnable");
+        Assert.Null(write.ConstantEnabledValue);
+    }
 }

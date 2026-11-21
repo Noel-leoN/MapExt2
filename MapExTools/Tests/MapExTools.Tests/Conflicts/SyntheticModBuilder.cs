@@ -65,7 +65,10 @@ internal static class SyntheticModBuilder
         Type ResidentAISystemType,
         Type ResidentAIActionsType,
         Type TripNeededSystemType,
-        Type ResourceBuyerSystemType);
+        Type ResourceBuyerSystemType,
+        Type GameManagerType,
+        ConstructorInfo HarmonyPatchStringAndMethodCtor,
+        MethodInfo AccessToolsMethodMethod);
 
     /// <summary>将一个 <see cref="PersistedAssemblyBuilder"/> 序列化为完整的托管 PE <c>.dll</c> 字节数组。</summary>
     public static byte[] EmitDllBytes(PersistedAssemblyBuilder pab)
@@ -92,6 +95,48 @@ internal static class SyntheticModBuilder
         ModuleBuilder mod = pab.DefineDynamicModule(assemblyName + ".dll");
         configure(mod, Env);
         return EmitDllBytes(pab);
+    }
+
+    /// <summary>
+    /// 构造测试程序集并在序列化为 PE 前将 <c>ilStream</c> 中匹配 <paramref name="markerPattern"/> 的等长字节序列覆写为
+    /// <paramref name="replacement"/>，用于注入未定义操作码或畸形 switch 跳转表等边界 IL。
+    /// </summary>
+    public static byte[] BuildModAssemblyWithIlPatch(
+        string assemblyName,
+        Version? version,
+        Action<ModuleBuilder, StubEnvironment> configure,
+        byte[] markerPattern,
+        byte[] replacement)
+    {
+        ArgumentNullException.ThrowIfNull(markerPattern);
+        ArgumentNullException.ThrowIfNull(replacement);
+        if (markerPattern.Length == 0 || markerPattern.Length != replacement.Length)
+            throw new ArgumentException("markerPattern 与 replacement 必须非空且等长。");
+
+        var asmName = new AssemblyName(assemblyName) { Version = version ?? new Version(1, 0, 0, 0) };
+        var pab = new PersistedAssemblyBuilder(asmName, typeof(object).Assembly);
+        ModuleBuilder mod = pab.DefineDynamicModule(assemblyName + ".dll");
+        configure(mod, Env);
+
+        MetadataBuilder mdBuilder = pab.GenerateMetadata(out BlobBuilder ilStream, out BlobBuilder fieldData);
+        byte[] ilBytes = ilStream.ToArray();
+        int idx = ilBytes.AsSpan().IndexOf(markerPattern);
+        if (idx < 0)
+            throw new InvalidOperationException("未在生成的 IL 流中定位到目标标记字节序列。");
+
+        replacement.CopyTo(ilBytes, idx);
+        var patchedIl = new BlobBuilder();
+        patchedIl.WriteBytes(ilBytes);
+
+        var peBuilder = new ManagedPEBuilder(
+            PEHeaderBuilder.CreateLibraryHeader(),
+            new MetadataRootBuilder(mdBuilder),
+            patchedIl,
+            fieldData);
+
+        var peBlob = new BlobBuilder();
+        peBuilder.Serialize(peBlob);
+        return peBlob.ToArray();
     }
 
     private static StubEnvironment CreateStubEnvironment()
@@ -241,6 +286,11 @@ internal static class SyntheticModBuilder
         DefineSimpleSystem(gameMod, "Game.Simulation.TripNeededSystem", gsbCreated);
         DefineSimpleSystem(gameMod, "Game.Simulation.ResourceBuyerSystem", gsbCreated);
 
+        TypeBuilder gmTb = gameMod.DefineType("Game.SceneFlow.GameManager", TypeAttributes.Public | TypeAttributes.Class);
+        gmTb.DefineDefaultConstructor(MethodAttributes.Public);
+        gmTb.DefineMethod("Load", MethodAttributes.Public, typeof(void), Type.EmptyTypes).GetILGenerator().Emit(OpCodes.Ret);
+        gmTb.CreateType();
+
         byte[] gameBytes = EmitDllBytes(gamePab);
         Assembly gameAsm = alc.LoadFromStream(new MemoryStream(gameBytes));
 
@@ -307,8 +357,16 @@ internal static class SyntheticModBuilder
         hpTb.DefineConstructor(MethodAttributes.Public, CallingConventions.Standard, [typeof(Type)]).GetILGenerator().Emit(OpCodes.Ret);
         hpTb.DefineConstructor(MethodAttributes.Public, CallingConventions.Standard, [typeof(string)]).GetILGenerator().Emit(OpCodes.Ret);
         hpTb.DefineConstructor(MethodAttributes.Public, CallingConventions.Standard, [typeof(Type), typeof(string)]).GetILGenerator().Emit(OpCodes.Ret);
+        hpTb.DefineConstructor(MethodAttributes.Public, CallingConventions.Standard, [typeof(string), typeof(string)]).GetILGenerator().Emit(OpCodes.Ret);
         hpTb.DefineConstructor(MethodAttributes.Public, CallingConventions.Standard, [typeof(Type), typeof(string), mtCleanType]).GetILGenerator().Emit(OpCodes.Ret);
         hpTb.CreateType();
+
+        TypeBuilder atTb = hm.DefineType("HarmonyLib.AccessTools", TypeAttributes.Public | TypeAttributes.Abstract | TypeAttributes.Sealed | TypeAttributes.Class);
+        MethodBuilder atMethodMb = atTb.DefineMethod("Method", MethodAttributes.Public | MethodAttributes.Static, typeof(MethodInfo), [typeof(Type), typeof(string)]);
+        ILGenerator atIl = atMethodMb.GetILGenerator();
+        atIl.Emit(OpCodes.Ldnull);
+        atIl.Emit(OpCodes.Ret);
+        atTb.CreateType();
 
         DefineMarkerAttr(hm, "HarmonyLib.HarmonyPrefix");
         DefineMarkerAttr(hm, "HarmonyLib.HarmonyPostfix");
@@ -374,6 +432,9 @@ internal static class SyntheticModBuilder
             gameAsm.GetType("Game.Simulation.ResidentAISystem")!,
             gameAsm.GetType("Game.Simulation.ResidentAISystem+Actions")!,
             gameAsm.GetType("Game.Simulation.TripNeededSystem")!,
-            gameAsm.GetType("Game.Simulation.ResourceBuyerSystem")!);
+            gameAsm.GetType("Game.Simulation.ResourceBuyerSystem")!,
+            gameAsm.GetType("Game.SceneFlow.GameManager")!,
+            hpAttrType.GetConstructor([typeof(string), typeof(string)])!,
+            harmAsm.GetType("HarmonyLib.AccessTools")!.GetMethod("Method", [typeof(Type), typeof(string)])!);
     }
 }

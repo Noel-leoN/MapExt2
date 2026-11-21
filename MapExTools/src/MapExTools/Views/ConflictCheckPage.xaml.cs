@@ -15,7 +15,7 @@ namespace MapExTools.Views;
 public partial class ConflictCheckPage : UserControl
 {
     private static readonly SolidColorBrush s_hardBadgeBrush = CreateFrozenBrush(0xDC, 0x26, 0x26);
-    private static readonly SolidColorBrush s_warnBadgeBrush = CreateFrozenBrush(0xD9, 0x77, 0x06);
+    private static readonly SolidColorBrush s_warnBadgeBrush = CreateFrozenBrush(0xB4, 0x53, 0x09);
     private static readonly SolidColorBrush s_mitigatedBadgeBrush = CreateFrozenBrush(0x25, 0x63, 0xEB);
     private static readonly SolidColorBrush s_infoBadgeBrush = CreateFrozenBrush(0x6B, 0x72, 0x80);
 
@@ -92,6 +92,7 @@ public partial class ConflictCheckPage : UserControl
             HeaderMetaText.Text = string.Empty;
             UnsavedBasisText.Visibility = Visibility.Collapsed;
             PlaysetErrorText.Visibility = Visibility.Collapsed;
+            RescanErrorText.Visibility = Visibility.Collapsed;
             CardsHost.Children.Clear();
             EmptyStateText.Visibility = Visibility.Collapsed;
             return;
@@ -112,6 +113,7 @@ public partial class ConflictCheckPage : UserControl
 
             ClearModeLines();
             HeaderMetaText.Text = string.Empty;
+            RescanErrorText.Visibility = Visibility.Collapsed;
             return;
         }
 
@@ -153,6 +155,18 @@ public partial class ConflictCheckPage : UserControl
         else
         {
             PlaysetErrorText.Visibility = Visibility.Collapsed;
+        }
+
+        if (!string.IsNullOrEmpty(ScanService.LastScanError))
+        {
+            RescanErrorText.DataContext = new ToneLine(
+                Loc.Instance.Format("Conflicts.RescanFailed", ScanService.LastScanError),
+                PackageTone.Warning);
+            RescanErrorText.Visibility = Visibility.Visible;
+        }
+        else
+        {
+            RescanErrorText.Visibility = Visibility.Collapsed;
         }
 
         bool showNotes = ShowNotesCheckBox.IsChecked == true;

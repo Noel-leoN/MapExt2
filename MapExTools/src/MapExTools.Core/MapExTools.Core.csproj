@@ -7,6 +7,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <InternalsVisibleTo Include="MapExTools.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
     <!-- 与 Mod 共用的启动期设定定义与冲突检测目标单源清单（同一份源文件，纯 C# 9 零引擎引用） -->
     <Compile Include="..\..\..\MapExtPDX\MapExt\Setting\StartupKeys.cs" Link="Shared\StartupKeys.cs" />
     <Compile Include="..\..\..\MapExtPDX\MapExt\Core\ConflictTargets.cs" Link="Shared\ConflictTargets.cs" />

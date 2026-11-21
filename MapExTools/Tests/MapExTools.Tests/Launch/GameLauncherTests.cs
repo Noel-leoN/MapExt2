@@ -93,6 +93,18 @@ public sealed class GameLauncherTests : IDisposable
     }
 
     [Fact]
+    public void Direct_NonSteamBuild_DoesNotSetSteamIds()
+    {
+        LaunchRequest request = GameLauncher.CreateRequest(
+            SteamGame(steamBuild: false, withSteam: false),
+            new LaunchOptions { DeveloperMode = true },
+            LaunchChannel.Direct);
+
+        Assert.False(request.StartInfo.Environment.ContainsKey("SteamAppId"));
+        Assert.False(request.StartInfo.Environment.ContainsKey("SteamGameId"));
+    }
+
+    [Fact]
     public void Steam_UsesApplaunch()
     {
         LaunchRequest request = GameLauncher.CreateRequest(SteamGame(), new LaunchOptions { NoSplash = true }, LaunchChannel.Steam);
@@ -186,5 +198,29 @@ public sealed class GameLauncherTests : IDisposable
 
         Assert.Empty(_started);
         Assert.False(File.Exists(RunOncePath));
+    }
+
+    [Fact]
+    public void Launch_RunOnce_StartThrows_RemovesNewlyCreatedFile()
+    {
+        var launcher = new GameLauncher(RunOncePath, () => false, () => true, _ => throw new InvalidOperationException("boom"));
+
+        Assert.Throws<InvalidOperationException>(() =>
+            launcher.Launch(SteamGame(), new LaunchOptions { NoSplash = true }, LaunchChannel.RunOnce));
+
+        Assert.False(File.Exists(RunOncePath));
+    }
+
+    [Fact]
+    public void Launch_RunOnce_StartThrows_RestoresPreviousFile()
+    {
+        Directory.CreateDirectory(_root);
+        File.WriteAllText(RunOncePath, "--previous-flag");
+        var launcher = new GameLauncher(RunOncePath, () => false, () => true, _ => throw new InvalidOperationException("boom"));
+
+        Assert.Throws<InvalidOperationException>(() =>
+            launcher.Launch(SteamGame(), new LaunchOptions { DeveloperMode = true }, LaunchChannel.RunOnce));
+
+        Assert.Equal("--previous-flag", File.ReadAllText(RunOncePath));
     }
 }

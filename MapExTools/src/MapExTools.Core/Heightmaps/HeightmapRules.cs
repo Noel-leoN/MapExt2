@@ -25,28 +25,37 @@ public enum HeightmapPixelKind
     Unsupported,
 }
 
-/// <summary>高度图不能导入游戏的原因，可同时有两个。</summary>
+/// <summary>高度图导入校验标记，可组合出现。</summary>
 [Flags]
 public enum HeightmapIssues
 {
     None = 0,
 
-    /// <summary>尺寸不是 4096×4096。</summary>
+    /// <summary>尺寸超过 MapExt 允许上限（8192×8192）或非正，不可导入。</summary>
     WrongSize = 1,
 
-    /// <summary>不是 16 位灰度或 16 位 RGBA。</summary>
+    /// <summary>不是无符号 16 位灰度或 16 位 RGBA，不可导入。</summary>
     WrongFormat = 2,
+
+    /// <summary>尺寸在 1..8192 范围内但非 4096×4096：MapExt 会自动双线性重采样为 4096×4096（可导入，但可能损失细节）。</summary>
+    ResampledSize = 4,
 }
 
 /// <summary>
-/// 高度图规则，照游戏的地形导入（计划 4.2）：<c>TerrainSystem.IsValidHeightmapFormat</c>（4096×4096，R16 或 RGBA64）、
-/// <c>kDefaultHeightScaleOffset</c>（高度比例 4096 m、偏移 0）、编辑器高度比例输入框的范围（200–10000 m）、
-/// <c>ImageAsset.kExtensions</c>（可选的扩展名）。
+/// 高度图规则，对照原版与 MapExt 的地形导入补丁（<c>PatchSet1TerrainR16.cs</c>）：
+/// 原生尺寸为 4096×4096（R16 或 RGBA64）；MapExt 在全模式挂载重采样补丁，支持 1..8192 × 1..8192 自动双线性重采样至 4096×4096，
+/// 超过 8192 不可导入；高度比例默认 4096 m（200–10000 m）。
 /// </summary>
 public static class HeightmapRules
 {
-    /// <summary>游戏要求的边长（<c>TerrainSystem.kDefaultHeightmapWidth</c>／<c>Height</c>）。</summary>
+    /// <summary>游戏原生高度图边长（<c>TerrainSystem.kDefaultHeightmapWidth</c>／<c>Height</c>）。</summary>
     public const int RequiredSize = 4096;
+
+    /// <summary>MapExt 重采样补丁允许导入的最大边长（<c>PatchSet1TerrainR16.cs</c>）。</summary>
+    public const int MaxImportSize = 8192;
+
+    /// <summary>预览渲染缓冲区允许的最大边长；超过 4096 且不大于 8192 的图解码时逐行盒式降采样到此上限以内。</summary>
+    public const int MaxRenderSize = 4096;
 
     /// <summary>原版默认高度比例（米），即 16 位最大值对应的海拔。</summary>
     public const double DefaultHeightScale = 4096;
@@ -60,16 +69,16 @@ public static class HeightmapRules
     /// <summary>16 位原始值的最大值。</summary>
     public const int MaxRaw = ushort.MaxValue;
 
-    /// <summary>显示内容的像素上限：比 4096×4096 大的图只显示文件头信息，游戏本来也不认。</summary>
-    public const long MaxDisplayPixels = (long)RequiredSize * RequiredSize;
+    /// <summary>允许解码预览的源图像素上限（8192×8192）；更大的图只显示文件头信息。</summary>
+    public const long MaxDisplayPixels = (long)MaxImportSize * MaxImportSize;
 
     /// <summary>游戏认的图片扩展名（<c>ImageAsset.kExtensions</c>）。JPG 只有 8 位，列出来但一定不符。</summary>
     public static readonly IReadOnlyList<string> Extensions = [".png", ".tif", ".tiff", ".jpg", ".jpeg"];
 
-    /// <summary>按通道数与每通道位数归类。</summary>
-    public static HeightmapPixelKind Classify(int channels, int bitsPerChannel, bool isFloat)
+    /// <summary>按通道数、每通道位数及样本格式归类（浮点与有符号 TIFF 均判为不支持）。</summary>
+    public static HeightmapPixelKind Classify(int channels, int bitsPerChannel, bool isFloat, bool isSigned = false)
     {
-        if (isFloat)
+        if (isFloat || isSigned)
             return HeightmapPixelKind.Unsupported;
         if (bitsPerChannel is > 0 and <= 8)
             return HeightmapPixelKind.EightBit;
@@ -85,16 +94,23 @@ public static class HeightmapRules
         };
     }
 
-    /// <summary>能否导入游戏：尺寸须为 4096×4096，格式须为 16 位灰度或 16 位 RGBA。</summary>
+    /// <summary>三档尺寸与像素格式校验：4096² 原生可导入，1..8192 非 4096 由 MapExt 自动重采样可导入，超 8192 不可导入。</summary>
     public static HeightmapIssues Validate(int width, int height, HeightmapPixelKind kind)
     {
         HeightmapIssues issues = HeightmapIssues.None;
-        if (width != RequiredSize || height != RequiredSize)
+        if (width <= 0 || height <= 0 || width > MaxImportSize || height > MaxImportSize)
             issues |= HeightmapIssues.WrongSize;
+        else if (width != RequiredSize || height != RequiredSize)
+            issues |= HeightmapIssues.ResampledSize;
+
         if (kind is not (HeightmapPixelKind.Gray16 or HeightmapPixelKind.Rgba16))
             issues |= HeightmapIssues.WrongFormat;
         return issues;
     }
+
+    /// <summary>是否可导入游戏（含 4096² 原生与 1..8192 自动重采样，不含格式不符、超限尺寸或无法识别文件头）。</summary>
+    public static bool CanImport(HeightmapIssues? issues) =>
+        issues is { } value && (value & (HeightmapIssues.WrongSize | HeightmapIssues.WrongFormat)) == 0;
 
     /// <summary>高度比例是否在编辑器允许的范围内。</summary>
     public static bool IsValidHeightScale(double heightScale) =>

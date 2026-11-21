@@ -16,13 +16,21 @@ public enum ImageContainer
 /// 在游戏里却是双通道。
 /// </summary>
 /// <param name="Channels">通道数：PNG 按颜色类型（调色板记 1），TIFF 取 SamplesPerPixel，JPEG 取分量数。</param>
-/// <param name="BitsPerChannel">每通道位数：PNG 取位深，TIFF 取第一个 BitsPerSample，JPEG 取精度。</param>
-/// <param name="IsFloat">TIFF 的 SampleFormat 为浮点。</param>
-public sealed record ImageFileHeader(ImageContainer Container, int Width, int Height, int Channels, int BitsPerChannel, bool IsFloat)
+/// <param name="BitsPerChannel">每通道位数：PNG 取位深，TIFF 取 BitsPerSample，JPEG 取精度。</param>
+/// <param name="IsFloat">TIFF 的 SampleFormat 为浮点（3）。</param>
+/// <param name="IsSigned">TIFF 的 SampleFormat 为有符号整数（2）。</param>
+public sealed record ImageFileHeader(
+    ImageContainer Container,
+    int Width,
+    int Height,
+    int Channels,
+    int BitsPerChannel,
+    bool IsFloat,
+    bool IsSigned = false)
 {
     private static readonly byte[] s_pngSignature = [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A];
 
-    public HeightmapPixelKind Kind => HeightmapRules.Classify(Channels, BitsPerChannel, IsFloat);
+    public HeightmapPixelKind Kind => HeightmapRules.Classify(Channels, BitsPerChannel, IsFloat, IsSigned);
 
     public HeightmapIssues Issues => HeightmapRules.Validate(Width, Height, Kind);
 
@@ -70,7 +78,12 @@ public sealed record ImageFileHeader(ImageContainer Container, int Width, int He
         int width = BinaryPrimitives.ReadInt32BigEndian(chunk[8..]);
         int height = BinaryPrimitives.ReadInt32BigEndian(chunk[12..]);
         int depth = chunk[16];
-        int channels = chunk[17] switch
+        byte colorType = chunk[17];
+        // PNG 规范：调色板图位深只能是 1/2/4/8，出现 16 位属非法文件头
+        if (colorType == 3 && depth is not (1 or 2 or 4 or 8))
+            return null;
+
+        int channels = colorType switch
         {
             0 => 1, // 灰度
             2 => 3, // RGB
@@ -93,7 +106,8 @@ public sealed record ImageFileHeader(ImageContainer Container, int Width, int He
 
         stream.Position = ifd;
         int count = reader.UInt16();
-        int width = 0, height = 0, channels = 1, bits = 1, sampleFormat = 1;
+        int width = 0, height = 0, channels = 1, bits = 1;
+        bool isFloat = false, isSigned = false;
         for (int i = 0; i < count; i++)
         {
             long entry = ifd + 2 + i * 12L;
@@ -110,25 +124,61 @@ public sealed record ImageFileHeader(ImageContainer Container, int Width, int He
                     height = (int)reader.Value(type);
                     break;
                 case 258:
-                    // 多个通道时 BitsPerSample 有多个值：放得进 4 字节就在条目里，否则是偏移；只取第一个
+                {
+                    // BitsPerSample 必须为 SHORT(3)，且多通道各通道位深须一致
+                    if (type != 3 || valueCount is <= 0 or > 16)
+                        return null;
                     if (valueCount * 2 > 4)
-                        stream.Position = reader.UInt32();
-                    bits = reader.UInt16();
+                    {
+                        long offset = reader.UInt32();
+                        if (offset < 8 || offset + valueCount * 2 > stream.Length)
+                            return null;
+                        stream.Position = offset;
+                    }
+
+                    int firstBits = reader.UInt16();
+                    for (int ch = 1; ch < valueCount; ch++)
+                    {
+                        if (reader.UInt16() != firstBits)
+                            return null;
+                    }
+
+                    bits = firstBits;
                     break;
+                }
                 case 277:
                     channels = (int)reader.Value(type);
                     break;
                 case 339:
+                {
+                    // SampleFormat (SHORT=3)：1=无符号整型，2=有符号整型，3=浮点
+                    if (type != 3 || valueCount is <= 0 or > 16)
+                        return null;
                     if (valueCount * 2 > 4)
-                        stream.Position = reader.UInt32();
-                    sampleFormat = reader.UInt16();
+                    {
+                        long offset = reader.UInt32();
+                        if (offset < 8 || offset + valueCount * 2 > stream.Length)
+                            return null;
+                        stream.Position = offset;
+                    }
+
+                    for (int ch = 0; ch < valueCount; ch++)
+                    {
+                        int sf = reader.UInt16();
+                        if (sf == 3)
+                            isFloat = true;
+                        else if (sf == 2)
+                            isSigned = true;
+                    }
+
                     break;
+                }
             }
         }
 
         return width <= 0 || height <= 0 || channels <= 0
             ? null
-            : new ImageFileHeader(ImageContainer.Tiff, width, height, channels, bits, sampleFormat == 3);
+            : new ImageFileHeader(ImageContainer.Tiff, width, height, channels, bits, isFloat, isSigned);
     }
 
     /// <summary>JPEG：找第一个 SOF 段（精度、高、宽、分量数）。</summary>
@@ -158,9 +208,15 @@ public sealed record ImageFileHeader(ImageContainer Container, int Width, int He
 
             stream.ReadExactly(buffer[..2]);
             int length = BinaryPrimitives.ReadUInt16BigEndian(buffer);
+            if (length < 2)
+                return null;
+
             bool isSof = marker is (>= 0xC0 and <= 0xCF) and not (0xC4 or 0xC8 or 0xCC);
             if (isSof)
             {
+                // SOF 段长度至少 8 字节（2 长度 + 1 精度 + 2 高 + 2 宽 + 1 分量数）
+                if (length < 8)
+                    return null;
                 stream.ReadExactly(buffer[..6]);
                 int precision = buffer[0];
                 int height = BinaryPrimitives.ReadUInt16BigEndian(buffer[1..]);
@@ -169,8 +225,6 @@ public sealed record ImageFileHeader(ImageContainer Container, int Width, int He
                 return width <= 0 || height <= 0 ? null : new ImageFileHeader(ImageContainer.Jpeg, width, height, components, precision, false);
             }
 
-            if (length < 2)
-                return null;
             stream.Position += length - 2;
         }
     }

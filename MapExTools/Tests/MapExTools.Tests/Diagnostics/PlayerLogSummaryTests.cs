@@ -64,6 +64,22 @@ public sealed class PlayerLogSummaryTests
     }
 
     [Theory]
+    [InlineData(4, true)]  // 堆栈行是其后第 5 行：在前瞻范围内
+    [InlineData(5, false)] // 第 6 行：超出前瞻范围
+    public void FirstFrame_LooksAtMostFiveLinesAhead(int fillerLines, bool found)
+    {
+        var lines = new List<string> { "System.InvalidOperationException: boom" };
+        lines.AddRange(Enumerable.Range(1, fillerLines).Select(i => $"filler {i}"));
+        lines.Add("  at Game.Sample.Method () [0x00000] in <hash>:0");
+
+        PlayerLogProblem problem = Assert.Single(PlayerLogSummary.Parse(lines).RecentProblems);
+        if (found)
+            Assert.Equal("at Game.Sample.Method () [0x00000] in <hash>:0", problem.FirstFrame);
+        else
+            Assert.Null(problem.FirstFrame);
+    }
+
+    [Theory]
     [InlineData("  at Some.Method () [0x00000] in <hash>:0")] // 堆栈行缩进
     [InlineData("An Exception: happened")]                    // 有空格，不是类型名
     [InlineData("[SampleMod] [WARN]  only a warning")]

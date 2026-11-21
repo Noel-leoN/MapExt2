@@ -217,7 +217,20 @@ public static class CommandLineParser
             if (name is not ("--lang" or "--user-data"))
                 continue;
 
-            string? value = eq >= 0 ? arg[(eq + 1)..] : i + 1 < args.Count ? args[i + 1] : null;
+            string? value;
+            if (eq >= 0)
+            {
+                value = arg[(eq + 1)..];
+            }
+            else if (i + 1 < args.Count && !args[i + 1].StartsWith("--", StringComparison.Ordinal))
+            {
+                value = args[++i];
+            }
+            else
+            {
+                value = null;
+            }
+
             if (name == "--lang")
                 language ??= NormalizeLanguage(value);
             else if (!string.IsNullOrWhiteSpace(value))

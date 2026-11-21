@@ -16,6 +16,9 @@ public enum ToolConfigLoadStatus
 
     /// <summary>文件损坏，已复制一份到 <see cref="ToolConfigLoadResult.BackupPath"/>，使用默认值。</summary>
     Corrupt,
+
+    /// <summary>读取失败（如被占用或无权限），未改动磁盘文件，本次会话使用默认值且不自动回写。</summary>
+    ReadFailed,
 }
 
 public sealed record ToolConfigLoadResult(
@@ -34,7 +37,7 @@ public sealed class ToolConfigService
         WriteIndented = true,
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
         DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
-        Converters = { new JsonStringEnumConverter() },
+        Converters = { new StrictStringEnumConverterFactory() },
         ReadCommentHandling = JsonCommentHandling.Skip,
         AllowTrailingCommas = true,
     };
@@ -62,6 +65,12 @@ public sealed class ToolConfigService
 
             // 手改成 "launch": null 时反序列化会给 null，按默认值处理
             config.Launch ??= new LaunchOptions();
+
+            if (!Enum.IsDefined(config.Theme))
+                throw new JsonException($"未定义的主题枚举值：{config.Theme}");
+            if (!Enum.IsDefined(config.Launch.Channel))
+                throw new JsonException($"未定义的启动通道枚举值：{config.Launch.Channel}");
+
             return new ToolConfigLoadResult(config, ToolConfigLoadStatus.Loaded);
         }
         catch (Exception ex) when (ex is JsonException or NotSupportedException)
@@ -82,12 +91,16 @@ public sealed class ToolConfigService
 
             return new ToolConfigLoadResult(new ToolConfig(), ToolConfigLoadStatus.Corrupt, backup, ex.Message);
         }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            return new ToolConfigLoadResult(new ToolConfig(), ToolConfigLoadStatus.ReadFailed, null, ex.Message);
+        }
     }
 
     public void Save(ToolConfig config)
     {
         ArgumentNullException.ThrowIfNull(config);
-        config.SchemaVersion = ToolConfig.CurrentSchemaVersion;
+        config.SchemaVersion = Math.Max(config.SchemaVersion, ToolConfig.CurrentSchemaVersion);
 
         string dir = Path.GetDirectoryName(ConfigPath)!;
         Directory.CreateDirectory(dir);
@@ -102,6 +115,51 @@ public sealed class ToolConfigService
         {
             if (File.Exists(temp))
                 File.Delete(temp);
+        }
+    }
+
+    /// <summary>
+    /// 严格字符串枚举转换器：只接受已定义的单个枚举成员名称（不区分大小写），
+    /// 拒绝整数、数字字符串以及带逗号的按位组合（例如 <c>"Direct, Steam"</c> 在 <c>Enum.TryParse</c> 中会按位或成 <c>Steam</c>）。
+    /// </summary>
+    private sealed class StrictStringEnumConverterFactory : JsonConverterFactory
+    {
+        public override bool CanConvert(Type typeToConvert) => typeToConvert.IsEnum;
+
+        public override JsonConverter CreateConverter(Type typeToConvert, JsonSerializerOptions options) =>
+            (JsonConverter)Activator.CreateInstance(typeof(StrictStringEnumConverter<>).MakeGenericType(typeToConvert))!;
+
+        private sealed class StrictStringEnumConverter<TEnum> : JsonConverter<TEnum>
+            where TEnum : struct, Enum
+        {
+            private static readonly Dictionary<string, TEnum> s_byName = BuildLookup();
+
+            private static Dictionary<string, TEnum> BuildLookup()
+            {
+                var map = new Dictionary<string, TEnum>(StringComparer.OrdinalIgnoreCase);
+                foreach (TEnum value in Enum.GetValues<TEnum>())
+                {
+                    string name = value.ToString();
+                    map[name] = value;
+                }
+
+                return map;
+            }
+
+            public override TEnum Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+            {
+                if (reader.TokenType != JsonTokenType.String)
+                    throw new JsonException($"枚举 {typeof(TEnum).Name} 必须为字符串名称。");
+
+                string? raw = reader.GetString();
+                if (raw == null || !s_byName.TryGetValue(raw, out TEnum value))
+                    throw new JsonException($"枚举 {typeof(TEnum).Name} 不存在成员 '{raw}'。");
+
+                return value;
+            }
+
+            public override void Write(Utf8JsonWriter writer, TEnum value, JsonSerializerOptions options) =>
+                writer.WriteStringValue(value.ToString());
         }
     }
 }

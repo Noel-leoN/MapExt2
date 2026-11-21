@@ -47,59 +47,68 @@ public static class PlaysetModScanner
                 using Stream stream = OpenSharedRead(paths.PlaysetConfigFile);
                 using JsonDocument doc = JsonDocument.Parse(stream);
                 JsonElement root = doc.RootElement;
-
-                activePlaysetId = GetOptionalString(root, "activePlaysetId");
-                if (!string.IsNullOrEmpty(activePlaysetId) &&
-                    root.TryGetProperty("playsets", out JsonElement playsetsEl) &&
-                    playsetsEl.ValueKind == JsonValueKind.Array)
+                if (root.ValueKind != JsonValueKind.Object)
                 {
-                    foreach (JsonElement playset in playsetsEl.EnumerateArray())
+                    playsetError = "playset_config.json root is not a JSON object.";
+                }
+                else
+                {
+                    activePlaysetId = GetOptionalString(root, "activePlaysetId");
+                    if (!string.IsNullOrEmpty(activePlaysetId) &&
+                        root.TryGetProperty("playsets", out JsonElement playsetsEl) &&
+                        playsetsEl.ValueKind == JsonValueKind.Array)
                     {
-                        string? id = GetOptionalString(playset, "id");
-                        if (!string.Equals(id, activePlaysetId, StringComparison.OrdinalIgnoreCase))
-                            continue;
-
-                        if (playset.TryGetProperty("presentation", out JsonElement pres) &&
-                            pres.ValueKind == JsonValueKind.Object)
+                        foreach (JsonElement playset in playsetsEl.EnumerateArray())
                         {
-                            activePlaysetName = GetOptionalString(pres, "name");
-                        }
+                            if (playset.ValueKind != JsonValueKind.Object)
+                                continue;
 
-                        activePlaysetName = string.IsNullOrWhiteSpace(activePlaysetName) ? activePlaysetId : activePlaysetName;
+                            string? id = GetOptionalString(playset, "id");
+                            if (!string.Equals(id, activePlaysetId, StringComparison.OrdinalIgnoreCase))
+                                continue;
 
-                        if (playset.TryGetProperty("mods", out JsonElement modsEl) &&
-                            modsEl.ValueKind == JsonValueKind.Array)
-                        {
-                            var seenPlaysetMods = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-                            foreach (JsonElement modEl in modsEl.EnumerateArray())
+                            if (playset.TryGetProperty("presentation", out JsonElement pres) &&
+                                pres.ValueKind == JsonValueKind.Object)
                             {
-                                if (!GetOptionalBool(modEl, "isEnabled"))
-                                    continue;
+                                activePlaysetName = GetOptionalString(pres, "name");
+                            }
 
-                                string? source = GetOptionalString(modEl, "source");
-                                string? sourceId = GetOptionalString(modEl, "sourceId");
-                                if (string.IsNullOrWhiteSpace(source) || string.IsNullOrWhiteSpace(sourceId))
-                                    continue;
+                            activePlaysetName = string.IsNullOrWhiteSpace(activePlaysetName) ? activePlaysetId : activePlaysetName;
 
-                                string dedupKey = $"{source}:{sourceId}";
-                                if (!seenPlaysetMods.Add(dedupKey))
-                                    continue;
-
-                                string? preferredVersion = GetOptionalString(modEl, "sourceVersion")
-                                                           ?? GetOptionalString(modEl, "preferredVersion");
-
-                                if (string.Equals(source, "pdx_mods", StringComparison.OrdinalIgnoreCase))
+                            if (playset.TryGetProperty("mods", out JsonElement modsEl) &&
+                                modsEl.ValueKind == JsonValueKind.Array)
+                            {
+                                var seenPlaysetMods = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                                foreach (JsonElement modEl in modsEl.EnumerateArray())
                                 {
-                                    packages.Add(ResolvePdxSubscribedPackage(pdxRoots, sourceId, preferredVersion, cacheMap));
-                                }
-                                else if (string.Equals(source, "local", StringComparison.OrdinalIgnoreCase))
-                                {
-                                    packages.Add(ResolvePdxLocalPackage(localRoots, sourceId, preferredVersion, cacheMap));
+                                    if (modEl.ValueKind != JsonValueKind.Object || !GetOptionalBool(modEl, "isEnabled"))
+                                        continue;
+
+                                    string? source = GetOptionalString(modEl, "source");
+                                    string? sourceId = GetOptionalString(modEl, "sourceId");
+                                    if (string.IsNullOrWhiteSpace(source) || string.IsNullOrWhiteSpace(sourceId))
+                                        continue;
+
+                                    string dedupKey = $"{source}:{sourceId}";
+                                    if (!seenPlaysetMods.Add(dedupKey))
+                                        continue;
+
+                                    string? preferredVersion = GetOptionalString(modEl, "sourceVersion")
+                                                               ?? GetOptionalString(modEl, "preferredVersion");
+
+                                    if (string.Equals(source, "pdx_mods", StringComparison.OrdinalIgnoreCase))
+                                    {
+                                        packages.Add(ResolvePdxSubscribedPackage(pdxRoots, sourceId, preferredVersion, cacheMap));
+                                    }
+                                    else if (string.Equals(source, "local", StringComparison.OrdinalIgnoreCase))
+                                    {
+                                        packages.Add(ResolvePdxLocalPackage(localRoots, sourceId, preferredVersion, cacheMap));
+                                    }
                                 }
                             }
-                        }
 
-                        break;
+                            break;
+                        }
                     }
                 }
             }
@@ -110,40 +119,62 @@ public static class PlaysetModScanner
         }
 
         // === 2. 扫描本地 {UserData}/Mods/ 目录（跳过 . 与 ~ 前缀，复用 UserDataFiles） ===
+        var localPackageDlls = new Dictionary<string, List<string>>(StringComparer.Ordinal);
         IReadOnlyList<string> localModDlls = UserDataFiles.Enumerate(paths.ModsDir, [".dll"]);
         if (localModDlls.Count > 0)
         {
             string normalizedModsRoot = Path.GetFullPath(paths.ModsDir);
-            var groupedByFolder = new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
+            var folderGroups = new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
+            var rootLooseDlls = new List<string>();
 
             foreach (string dllPath in localModDlls)
             {
                 string rel = Path.GetRelativePath(normalizedModsRoot, dllPath);
                 int sep = rel.IndexOfAny([Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar]);
-                string groupFolder = sep > 0
-                    ? Path.Combine(normalizedModsRoot, rel[..sep])
-                    : Path.Combine(normalizedModsRoot, Path.GetFileNameWithoutExtension(dllPath));
-
-                if (!groupedByFolder.TryGetValue(groupFolder, out List<string>? list))
+                if (sep > 0)
                 {
-                    list = [];
-                    groupedByFolder[groupFolder] = list;
-                }
+                    string folderName = rel[..sep];
+                    if (!folderGroups.TryGetValue(folderName, out List<string>? list))
+                    {
+                        list = [];
+                        folderGroups[folderName] = list;
+                    }
 
-                list.Add(dllPath);
+                    list.Add(dllPath);
+                }
+                else
+                {
+                    // 根目录散落 DLL 各自独立成包，不再与同名子目录合并
+                    rootLooseDlls.Add(dllPath);
+                }
             }
 
-            foreach ((string folderKey, _) in groupedByFolder.OrderBy(kv => kv.Key, StringComparer.OrdinalIgnoreCase))
+            foreach ((string folderName, List<string> dlls) in folderGroups.OrderBy(kv => kv.Key, StringComparer.OrdinalIgnoreCase))
             {
-                string folderName = Path.GetFileName(folderKey);
-                bool dirExists = Directory.Exists(folderKey);
+                string pkgKey = $"usermods:{folderName}";
                 packages.Add(new EnabledModPackage
                 {
-                    PackageKey = $"usermods:{folderName}",
+                    PackageKey = pkgKey,
                     Source = ModInstallSource.UserMods,
                     DisplayName = folderName,
-                    DirectoryPath = dirExists ? folderKey : normalizedModsRoot,
+                    DirectoryPath = Path.Combine(normalizedModsRoot, folderName),
                 });
+                localPackageDlls[pkgKey] = dlls;
+            }
+
+            foreach (string dllPath in rootLooseDlls.OrderBy(p => p, StringComparer.OrdinalIgnoreCase))
+            {
+                string fileName = Path.GetFileName(dllPath);
+                string stem = Path.GetFileNameWithoutExtension(fileName);
+                string pkgKey = $"usermods-file:{fileName}";
+                packages.Add(new EnabledModPackage
+                {
+                    PackageKey = pkgKey,
+                    Source = ModInstallSource.UserMods,
+                    DisplayName = stem,
+                    DirectoryPath = normalizedModsRoot,
+                });
+                localPackageDlls[pkgKey] = [dllPath];
             }
         }
 
@@ -154,25 +185,14 @@ public static class PlaysetModScanner
         var candidates = new List<CandidateAssembly>();
         var unreadable = new List<UnreadableAssemblyEntry>();
 
-        // 针对直接在 Mods/ 根目录下的散落单文件 DLL，按文件精确归属；子目录包则枚举目录内全部 .dll
-        var handledRootDlls = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-
         foreach (EnabledModPackage pkg in packages)
         {
             if (pkg.IsPendingCloudDownload || string.IsNullOrEmpty(pkg.DirectoryPath))
                 continue;
 
-            IReadOnlyList<string> dllFiles;
-            if (pkg.Source == ModInstallSource.UserMods &&
-                string.Equals(pkg.DirectoryPath, Path.GetFullPath(paths.ModsDir), StringComparison.OrdinalIgnoreCase))
-            {
-                string expectedDll = Path.Combine(pkg.DirectoryPath, pkg.DisplayName + ".dll");
-                dllFiles = File.Exists(expectedDll) && handledRootDlls.Add(expectedDll) ? [expectedDll] : [];
-            }
-            else
-            {
-                dllFiles = UserDataFiles.Enumerate(pkg.DirectoryPath, [".dll"]);
-            }
+            IReadOnlyList<string> dllFiles = localPackageDlls.TryGetValue(pkg.PackageKey, out List<string>? preCollected)
+                ? preCollected
+                : UserDataFiles.Enumerate(pkg.DirectoryPath, [".dll"]);
 
             foreach (string dllPath in dllFiles)
             {
@@ -185,7 +205,7 @@ public static class PlaysetModScanner
                 if (builtInManagedNames != null && builtInManagedNames.Contains(bareFileName))
                     continue;
 
-                if (!TryReadManagedHeader(dllPath, pkg.DisplayName, unreadable, out ManagedHeader? header) || header == null)
+                if (!TryReadManagedHeader(dllPath, pkg.PackageKey, pkg.DisplayName, unreadable, out ManagedHeader? header) || header == null)
                     continue;
 
                 if (builtInManagedNames != null && builtInManagedNames.Contains(header.AssemblyName))
@@ -323,11 +343,14 @@ public static class PlaysetModScanner
             {
                 using Stream stream = OpenSharedRead(paths.ModsDirectoryFile);
                 using JsonDocument doc = JsonDocument.Parse(stream);
-                if (doc.RootElement.TryGetProperty("modsSources", out JsonElement sources) &&
+                if (doc.RootElement.ValueKind == JsonValueKind.Object &&
+                    doc.RootElement.TryGetProperty("modsSources", out JsonElement sources) &&
                     sources.ValueKind == JsonValueKind.Array)
                 {
                     foreach (JsonElement src in sources.EnumerateArray())
                     {
+                        if (src.ValueKind != JsonValueKind.Object)
+                            continue;
                         string? name = GetOptionalString(src, "source");
                         string[] roots = ReadStringArray(src, "rootPaths");
                         if (roots.Length == 0)
@@ -421,7 +444,8 @@ public static class PlaysetModScanner
 
     /// <summary>
     /// 对齐 <c>ModsCache.FindModVersion</c> 与 <c>ModsAndPlaysetsCache.UpdateModsCache</c>：
-    /// 指定版本非空时取 <c>{sourceId}_{preferredVersion}</c>，为空时枚举 <c>{sourceId}_*</c> 并按后缀整数取最大版本。
+    /// 指定版本非空时只查找 <c>{sourceId}_{preferredVersion}</c>，目录缺失则返回 <c>(null, 版本)</c> 按待下载处理，不回退其他版本；
+    /// 指定版本为空时枚举 <c>{sourceId}_*</c> 并按后缀整数取最大版本。
     /// </summary>
     private static (string? DirectoryPath, int? PlatformVersion) FindVersionedDirectory(
         string[] roots,
@@ -430,7 +454,11 @@ public static class PlaysetModScanner
     {
         if (!string.IsNullOrWhiteSpace(preferredVersion))
         {
-            string targetName = $"{sourceId}_{preferredVersion.Trim()}";
+            string trimmed = preferredVersion.Trim();
+            int? parsed = int.TryParse(trimmed, NumberStyles.Integer, CultureInfo.InvariantCulture, out int v)
+                ? v
+                : null;
+            string targetName = $"{sourceId}_{trimmed}";
             foreach (string root in roots)
             {
                 if (!Directory.Exists(root))
@@ -438,12 +466,12 @@ public static class PlaysetModScanner
                 string candidate = Path.Combine(root, targetName);
                 if (Directory.Exists(candidate))
                 {
-                    int? parsed = int.TryParse(preferredVersion.Trim(), NumberStyles.Integer, CultureInfo.InvariantCulture, out int v)
-                        ? v
-                        : null;
                     return (Path.GetFullPath(candidate), parsed);
                 }
             }
+
+            // PDX SDK 指定版本不存在时不回退到其他版本目录，按云端待下载处理
+            return (null, parsed);
         }
 
         string prefix = sourceId + "_";
@@ -535,11 +563,15 @@ public static class PlaysetModScanner
         {
             using Stream stream = OpenSharedRead(cacheFile);
             using JsonDocument doc = JsonDocument.Parse(stream);
-            if (!doc.RootElement.TryGetProperty("items", out JsonElement items) || items.ValueKind != JsonValueKind.Array)
+            if (doc.RootElement.ValueKind != JsonValueKind.Object ||
+                !doc.RootElement.TryGetProperty("items", out JsonElement items) ||
+                items.ValueKind != JsonValueKind.Array)
                 return map;
 
             foreach (JsonElement item in items.EnumerateArray())
             {
+                if (item.ValueKind != JsonValueKind.Object)
+                    continue;
                 string? source = GetOptionalString(item, "source");
                 string? id = GetOptionalString(item, "id");
                 if (string.IsNullOrWhiteSpace(source) || string.IsNullOrWhiteSpace(id))
@@ -642,6 +674,7 @@ public static class PlaysetModScanner
 
     private static bool TryReadManagedHeader(
         string dllPath,
+        string packageKey,
         string packageName,
         List<UnreadableAssemblyEntry> unreadable,
         out ManagedHeader? header)
@@ -678,7 +711,7 @@ public static class PlaysetModScanner
         }
         catch (Exception ex) when (ex is BadImageFormatException or InvalidOperationException or IOException or UnauthorizedAccessException)
         {
-            unreadable.Add(new UnreadableAssemblyEntry(dllPath, packageName, ex.Message));
+            unreadable.Add(new UnreadableAssemblyEntry(dllPath, packageKey, packageName, ex.Message));
             return false;
         }
     }
@@ -765,7 +798,7 @@ public static class PlaysetModScanner
 
     private static string? GetOptionalString(JsonElement obj, string propName)
     {
-        if (!obj.TryGetProperty(propName, out JsonElement prop))
+        if (obj.ValueKind != JsonValueKind.Object || !obj.TryGetProperty(propName, out JsonElement prop))
             return null;
 
         return prop.ValueKind switch
@@ -777,11 +810,11 @@ public static class PlaysetModScanner
     }
 
     private static bool GetOptionalBool(JsonElement obj, string propName) =>
-        obj.TryGetProperty(propName, out JsonElement prop) && prop.ValueKind == JsonValueKind.True;
+        obj.ValueKind == JsonValueKind.Object && obj.TryGetProperty(propName, out JsonElement prop) && prop.ValueKind == JsonValueKind.True;
 
     private static string[] ReadStringArray(JsonElement obj, string propName)
     {
-        if (!obj.TryGetProperty(propName, out JsonElement prop) || prop.ValueKind != JsonValueKind.Array)
+        if (obj.ValueKind != JsonValueKind.Object || !obj.TryGetProperty(propName, out JsonElement prop) || prop.ValueKind != JsonValueKind.Array)
             return [];
 
         var result = new List<string>();

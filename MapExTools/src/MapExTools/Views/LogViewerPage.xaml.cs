@@ -44,7 +44,7 @@ public partial class LogViewerPage : UserControl
     private bool _polling;
 
     private DiagnosticsReport? _report;
-    private bool _collecting;
+    private Task? _collectTask;
     private bool? _gameRunning;
 
     // 填充下拉框时会触发 SelectionChanged，这段时间不当作用户操作
@@ -95,7 +95,11 @@ public partial class LogViewerPage : UserControl
     {
         Loc.Instance.LanguageChanged -= OnLanguageChanged;
         _pollTimer.Stop();
-        _filterTimer.Stop();
+        if (_filterTimer.IsEnabled)
+        {
+            _filterTimer.Stop();
+            RebuildVisible();
+        }
     }
 
     private void OnLanguageChanged(object? sender, EventArgs e)
@@ -118,12 +122,17 @@ public partial class LogViewerPage : UserControl
 
     // === 会话摘要 ===
 
-    private async Task RefreshSummaryAsync()
+    private Task RefreshSummaryAsync()
     {
-        if (_collecting)
-            return;
+        if (_collectTask is { IsCompleted: false } running)
+            return running;
 
-        _collecting = true;
+        _collectTask = RunCollectAsync();
+        return _collectTask;
+    }
+
+    private async Task RunCollectAsync()
+    {
         try
         {
             var paths = App.Services.Paths;
@@ -132,9 +141,9 @@ public partial class LogViewerPage : UserControl
             _report = await Task.Run(() => LogDiagnostics.Collect(paths, running));
             RenderSummary();
         }
-        finally
+        catch (Exception ex) when (ex is not OutOfMemoryException)
         {
-            _collecting = false;
+            SummaryNote.Text = Loc.Instance.Format("Logs.RefreshFailed", ex.Message);
         }
     }
 
@@ -153,28 +162,35 @@ public partial class LogViewerPage : UserControl
 
     private async void OnRefreshClick(object sender, RoutedEventArgs e)
     {
-        PopulateLogBox();
-        await RefreshSummaryAsync();
+        try
+        {
+            PopulateLogBox();
+            await RefreshSummaryAsync();
+        }
+        catch (Exception ex) when (ex is not OutOfMemoryException)
+        {
+            SummaryNote.Text = Loc.Instance.Format("Logs.RefreshFailed", ex.Message);
+        }
     }
 
     private async void OnCopyClick(object sender, RoutedEventArgs e)
     {
-        await RefreshSummaryAsync();
-        if (_report == null)
-            return;
-
-        string language = Loc.Instance.Language;
-        string markdown = DiagnosticsSummaryText.ToMarkdown(
-            _report,
-            DiagnosticsSummaryText.Build(_report, language, CrashLogPath),
-            language,
-            Environment.GetFolderPath(Environment.SpecialFolder.UserProfile));
         try
         {
+            await RefreshSummaryAsync();
+            if (_report == null)
+                return;
+
+            string language = Loc.Instance.Language;
+            string markdown = DiagnosticsSummaryText.ToMarkdown(
+                _report,
+                DiagnosticsSummaryText.Build(_report, language, CrashLogPath),
+                language,
+                Environment.GetFolderPath(Environment.SpecialFolder.UserProfile));
             Clipboard.SetText(markdown);
             SummaryNote.Text = Loc.Instance["Logs.Copied"];
         }
-        catch (ExternalException ex)
+        catch (Exception ex) when (ex is not OutOfMemoryException)
         {
             ShowWarning(Loc.Instance.Format("Logs.CopyFailed", ex.Message));
         }
@@ -284,7 +300,7 @@ public partial class LogViewerPage : UserControl
                 AppendLines(result);
             }
         }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        catch (Exception ex) when (ex is not OutOfMemoryException)
         {
             if (tail == _tail)
             {

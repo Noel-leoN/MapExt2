@@ -108,6 +108,8 @@ internal static class IlTokenScanner
         ProtectedSystem = 2,
         NullLiteral = 3,
         IntConstant = 4,
+        TypeToken = 5,
+        StringLiteral = 6,
     }
 
     private readonly record struct SlotTag(TagKind Kind, string? SystemType, int IntValue = 0)
@@ -117,6 +119,8 @@ internal static class IlTokenScanner
         public static readonly SlotTag Null = new(TagKind.NullLiteral, null);
         public static SlotTag Protected(string systemType) => new(TagKind.ProtectedSystem, systemType);
         public static SlotTag IntConst(int value) => new(TagKind.IntConstant, null, value);
+        public static SlotTag Type(string typeName) => new(TagKind.TypeToken, typeName);
+        public static SlotTag Str(string literal) => new(TagKind.StringLiteral, literal);
     }
 
     /// <summary>预扫描类型内的字段写入，找出存有受保护系统引用的字段（即使声明类型为基类 <c>ComponentSystemBase</c> 也能追踪）。</summary>
@@ -186,10 +190,12 @@ internal static class IlTokenScanner
         HashSet<string> assemblySensitiveTypeLiterals,
         out List<string>? referencedTypesInMethod,
         out List<string>? stringLiteralsInMethod,
+        out List<(string TargetType, string MethodName)>? reflectedMethodTargets,
         out bool callsImperativeHarmonyPatch)
     {
         referencedTypesInMethod = null;
         stringLiteralsInMethod = null;
+        reflectedMethodTargets = null;
         callsImperativeHarmonyPatch = false;
 
         byte[]? il = body.GetILBytes();
@@ -250,6 +256,9 @@ internal static class IlTokenScanner
             }
 
             OpCode op = info.Code;
+            if (op.Size == 0)
+                break;
+
             int operandStart = pos;
 
             if (op.OperandType == OperandType.InlineSwitch)
@@ -309,7 +318,7 @@ internal static class IlTokenScanner
                 continue;
             }
 
-            // 4. stloc 系列
+            // 4. stloc 系列（保留 ProtectedSystem，同时传递 IntConstant / NullLiteral / TypeToken / StringLiteral / Self）
             if (TryGetStlocIndex(opVal, il, operandStart, out int stlocIdx))
             {
                 SlotTag val = PopSafe(stack);
@@ -318,13 +327,9 @@ internal static class IlTokenScanner
                 {
                     localTags[stlocIdx] = val;
                 }
-                else if (val.Kind == TagKind.Self && localTags[stlocIdx].Kind != TagKind.ProtectedSystem)
+                else if (localTags[stlocIdx].Kind != TagKind.ProtectedSystem)
                 {
-                    localTags[stlocIdx] = SlotTag.Self;
-                }
-                else if (val.Kind == TagKind.Other && localTags[stlocIdx].Kind != TagKind.ProtectedSystem)
-                {
-                    localTags[stlocIdx] = SlotTag.Other;
+                    localTags[stlocIdx] = val;
                 }
 
                 continue;
@@ -348,6 +353,7 @@ internal static class IlTokenScanner
             {
                 int token = BitConverter.ToInt32(il, operandStart);
                 UserStringHandle ush = System.Reflection.Metadata.Ecma335.MetadataTokens.UserStringHandle(token);
+                string? pushedLiteral = null;
                 if (!ush.IsNil)
                 {
                     string str = md.GetUserString(ush);
@@ -364,14 +370,17 @@ internal static class IlTokenScanner
 
                     stringLiteralsInMethod ??= [];
                     if (str.Length is > 0 and <= 120)
+                    {
                         stringLiteralsInMethod.Add(str);
+                        pushedLiteral = str;
+                    }
                 }
 
-                stack.Add(SlotTag.Other);
+                stack.Add(pushedLiteral != null ? SlotTag.Str(pushedLiteral) : SlotTag.Other);
                 continue;
             }
 
-            // 7. ldtoken / castclass / isinst：记录引用的类型并透传 typeof(TVanilla) 标签
+            // 7. ldtoken / castclass / isinst：记录引用的类型并透传 typeof(T) 标签
             if (opVal == OpCodes.Ldtoken.Value || opVal == OpCodes.Castclass.Value || opVal == OpCodes.Isinst.Value)
             {
                 int token = BitConverter.ToInt32(il, operandStart);
@@ -388,6 +397,8 @@ internal static class IlTokenScanner
 
                 if (typeName != null && ConflictTargets.IsProtectedEnabledTarget(typeName))
                     stack.Add(SlotTag.Protected(typeName));
+                else if (opVal == OpCodes.Ldtoken.Value && typeName != null)
+                    stack.Add(SlotTag.Type(typeName));
                 else
                     stack.Add(SlotTag.Other);
                 continue;
@@ -491,28 +502,35 @@ internal static class IlTokenScanner
                         continue;
                     }
 
-                    // 9e. Type.GetTypeFromHandle(RuntimeTypeHandle)：透传 ldtoken TVanilla 标记
+                    // 9e. Type.GetTypeFromHandle(RuntimeTypeHandle)：透传 ldtoken T 标记（ProtectedSystem 与普通 TypeToken）
                     if (callInfo.MethodName == "GetTypeFromHandle" &&
                         callInfo.DeclaringType == "System.Type" &&
                         callInfo.ParameterCount == 1 &&
                         !callInfo.IsInstance)
                     {
                         SlotTag handleTag = PopSafe(stack);
-                        stack.Add(handleTag.Kind == TagKind.ProtectedSystem ? handleTag : SlotTag.Other);
+                        stack.Add(handleTag.Kind is TagKind.ProtectedSystem or TagKind.TypeToken ? handleTag : SlotTag.Other);
                         continue;
                     }
 
-                    // 9f. 常规方法参数与 this 弹出 + 跨阶段注册检测 + 系统获取方法压入 ProtectedSystem 标签
+                    // 9f. 常规方法参数与 this 弹出 + 反射方法配对追踪 + 跨阶段注册检测 + 系统获取方法压入标签
                     SlotTag firstArgTag = SlotTag.Other;
+                    SlotTag secondArgTag = SlotTag.Other;
                     for (int p = callInfo.ParameterCount - 1; p >= 0; p--)
                     {
                         SlotTag popped = PopSafe(stack);
                         if (p == 0)
                             firstArgTag = popped;
+                        else if (p == 1)
+                            secondArgTag = popped;
                     }
 
-                    if (callInfo.IsInstance && opVal != OpCodes.Newobj.Value)
-                        PopSafe(stack);
+                    SlotTag receiverTag = callInfo.IsInstance && opVal != OpCodes.Newobj.Value
+                        ? PopSafe(stack)
+                        : SlotTag.Other;
+
+                    // 追踪反射查找目标方法的配对 (类型, 方法名)，用于命令式 harmony.Patch 精确归因（避免笛卡尔积误报）
+                    RecordReflectedMethodTarget(callInfo, receiverTag, firstArgTag, secondArgTag, ref reflectedMethodTargets);
 
                     // 检测将原版 UpdateGroupSystem 注册到非 Modification5 (8) 阶段（如 GameSimulation = 12，引发 ModificationBarrier5 异常）
                     if (callInfo.DeclaringType == ConflictTargets.UpdateSystemTypeName &&
@@ -552,6 +570,17 @@ internal static class IlTokenScanner
                         stack.Add(sysType != null && ConflictTargets.IsProtectedEnabledTarget(sysType)
                             ? SlotTag.Protected(sysType)
                             : SlotTag.Other);
+                    }
+                    else if (callInfo.HasReturnValue &&
+                             firstArgTag.Kind == TagKind.StringLiteral &&
+                             firstArgTag.SystemType is { } resolvedTypeStr &&
+                             ((callInfo.DeclaringType == "HarmonyLib.AccessTools" && callInfo.MethodName == "TypeByName") ||
+                              (callInfo.DeclaringType == "System.Type" && callInfo.MethodName == "GetType" && !callInfo.IsInstance)))
+                    {
+                        (string parsedType, _) = ModAssemblyInspector.ParseSerializedTypeString(resolvedTypeStr);
+                        stack.Add(ConflictTargets.IsProtectedEnabledTarget(parsedType)
+                            ? SlotTag.Protected(parsedType)
+                            : SlotTag.Type(parsedType));
                     }
                     else if (callInfo.HasReturnValue)
                     {
@@ -636,12 +665,18 @@ internal static class IlTokenScanner
                 info = s_oneByteOps[b];
             }
 
+            if (info.Code.Size == 0)
+                break;
+
             int operandStart = pos;
             if (info.Code.OperandType == OperandType.InlineSwitch)
             {
                 if (pos + 4 > il.Length) break;
                 uint count = BitConverter.ToUInt32(il, pos);
-                pos += 4 + (int)(count * 4);
+                pos += 4;
+                long jumpBytes = (long)count * 4;
+                if (pos + jumpBytes > il.Length) break;
+                pos += (int)jumpBytes;
                 pendingProtected = null;
                 continue;
             }
@@ -915,6 +950,104 @@ internal static class IlTokenScanner
         MergeIntoCurrentStack(existing, current);
     }
 
+    private static void RecordReflectedMethodTarget(
+        CalledMethodInfo callInfo,
+        SlotTag receiverTag,
+        SlotTag firstArgTag,
+        SlotTag secondArgTag,
+        ref List<(string TargetType, string MethodName)>? sink)
+    {
+        if (callInfo.DeclaringType == "HarmonyLib.AccessTools")
+        {
+            if (callInfo.MethodName is "Method" or "DeclaredMethod")
+            {
+                if (TryGetTypeName(firstArgTag, out string? targetType) &&
+                    secondArgTag.Kind == TagKind.StringLiteral &&
+                    !string.IsNullOrEmpty(secondArgTag.SystemType))
+                {
+                    sink ??= [];
+                    sink.Add((targetType, secondArgTag.SystemType));
+                }
+                else if (firstArgTag.Kind == TagKind.StringLiteral &&
+                         firstArgTag.SystemType is { } combined)
+                {
+                    int colon = combined.IndexOf(':');
+                    if (colon > 0 && colon < combined.Length - 1)
+                    {
+                        string tName = ModAssemblyInspector.ParseSerializedTypeString(combined[..colon]).TypeName;
+                        string mName = combined[(colon + 1)..].Trim();
+                        if (tName.Length > 0 && mName.Length > 0)
+                        {
+                            sink ??= [];
+                            sink.Add((tName, mName));
+                        }
+                    }
+                }
+            }
+            else if (callInfo.MethodName is "PropertyGetter" or "DeclaredPropertyGetter")
+            {
+                if (TryGetTypeName(firstArgTag, out string? targetType) &&
+                    secondArgTag.Kind == TagKind.StringLiteral &&
+                    !string.IsNullOrEmpty(secondArgTag.SystemType))
+                {
+                    sink ??= [];
+                    sink.Add((targetType, "get_" + secondArgTag.SystemType));
+                }
+            }
+            else if (callInfo.MethodName is "PropertySetter" or "DeclaredPropertySetter")
+            {
+                if (TryGetTypeName(firstArgTag, out string? targetType) &&
+                    secondArgTag.Kind == TagKind.StringLiteral &&
+                    !string.IsNullOrEmpty(secondArgTag.SystemType))
+                {
+                    sink ??= [];
+                    sink.Add((targetType, "set_" + secondArgTag.SystemType));
+                }
+            }
+            else if (callInfo.MethodName is "Property" or "DeclaredProperty")
+            {
+                if (TryGetTypeName(firstArgTag, out string? targetType) &&
+                    secondArgTag.Kind == TagKind.StringLiteral &&
+                    !string.IsNullOrEmpty(secondArgTag.SystemType))
+                {
+                    sink ??= [];
+                    sink.Add((targetType, secondArgTag.SystemType));
+                }
+            }
+            else if (callInfo.MethodName is "Constructor" or "DeclaredConstructor")
+            {
+                if (TryGetTypeName(firstArgTag, out string? targetType))
+                {
+                    sink ??= [];
+                    sink.Add((targetType, ".ctor"));
+                }
+            }
+        }
+        else if (callInfo.DeclaringType == "System.Type" && callInfo.IsInstance &&
+                 callInfo.MethodName is "GetMethod" or "GetProperty")
+        {
+            if (TryGetTypeName(receiverTag, out string? targetType) &&
+                firstArgTag.Kind == TagKind.StringLiteral &&
+                !string.IsNullOrEmpty(firstArgTag.SystemType))
+            {
+                sink ??= [];
+                sink.Add((targetType, firstArgTag.SystemType));
+            }
+        }
+    }
+
+    private static bool TryGetTypeName(SlotTag tag, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out string? typeName)
+    {
+        if (tag.Kind is TagKind.ProtectedSystem or TagKind.TypeToken && !string.IsNullOrEmpty(tag.SystemType))
+        {
+            typeName = tag.SystemType;
+            return true;
+        }
+
+        typeName = null;
+        return false;
+    }
+
     private static void MergeIntoCurrentStack(List<SlotTag> current, List<SlotTag> incoming)
     {
         if (current.Count == 0)
@@ -926,9 +1059,25 @@ internal static class IlTokenScanner
         int count = Math.Min(current.Count, incoming.Count);
         for (int i = 0; i < count; i++)
         {
-            if (current[i].Kind != TagKind.ProtectedSystem && incoming[i].Kind == TagKind.ProtectedSystem)
-                current[i] = incoming[i];
+            current[i] = MergeSlot(current[i], incoming[i]);
         }
+    }
+
+    private static SlotTag MergeSlot(SlotTag a, SlotTag b)
+    {
+        if (a == b)
+            return a;
+
+        // ProtectedSystem 与 NullLiteral 保守并集：任一分支可能传入受保护系统或 null 都必须保留，避免条件路径漏报
+        if (a.Kind == TagKind.ProtectedSystem)
+            return a;
+        if (b.Kind == TagKind.ProtectedSystem)
+            return b;
+        if (a.Kind == TagKind.NullLiteral || b.Kind == TagKind.NullLiteral)
+            return SlotTag.Null;
+
+        // IntConstant 等其他标签在两分支不一致时降为 Other（如 Enabled = cond ? false : true 不判为常量）
+        return SlotTag.Other;
     }
 
     private static void ApplyDefaultStackPop(List<SlotTag> stack, StackBehaviour pop)

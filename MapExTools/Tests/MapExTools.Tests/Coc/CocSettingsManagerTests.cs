@@ -229,6 +229,23 @@ public sealed class CocSettingsManagerTests : IDisposable
     }
 
     [Fact]
+    public void Save_NoChangesRelativeToBaseline_ButFileChangedOnDisk_ThrowsFileChanged()
+    {
+        WriteCoc(CocSamples.ReadBytes(GameFormatInput));
+        CocSettingsManager manager = CreateManager();
+        StartupSettingsState baseline = manager.Read();
+
+        // 外部已将磁盘模式改为 ModeC；此时提交目标恰好等于旧基准 ModeA，仍须检出外部改动而不静默返 NoChanges
+        string external = Block("    \"PatchModeChoice\": \"ModeC\"");
+        WriteCoc(external);
+
+        CocSaveException ex = Assert.Throws<CocSaveException>(() =>
+            manager.Save(baseline, new Dictionary<string, object> { [StartupKeys.ModeKey] = "ModeA" }));
+        Assert.Equal(CocSaveFailure.FileChanged, ex.Failure);
+        Assert.Equal(external, File.ReadAllText(CocPath));
+    }
+
+    [Fact]
     public void Save_FileDeletedAfterRead_Throws()
     {
         WriteCoc(CocSamples.ReadBytes(GameFormatInput));

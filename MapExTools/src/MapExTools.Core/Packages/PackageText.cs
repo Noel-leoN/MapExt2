@@ -239,6 +239,7 @@ public static class PackageText
             TextureDecodeStatus.UnsupportedFormat => new DetailLine(label,
                 Format(language, "Saves.Preview.UnsupportedFormat", h!.Width, h.Height, (object?)h.FormatName ?? h.Format), PackageTone.Muted),
             TextureDecodeStatus.UnsupportedLayout => new DetailLine(label, Strings.Get(language, "Saves.Preview.UnsupportedLayout"), PackageTone.Muted),
+            TextureDecodeStatus.TooLarge => new DetailLine(label, Format(language, "Saves.Preview.TooLarge", h!.Width, h.Height), PackageTone.Muted),
             _ => new DetailLine(label, Format(language, "Saves.Preview.Corrupt", result.Detail ?? string.Empty), PackageTone.Warning),
         };
     }

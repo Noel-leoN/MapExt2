@@ -133,6 +133,8 @@ public sealed class PackageTextTests
             PackageText.Preview(package, new TextureDecodeResult(TextureDecodeStatus.Decoded, header, true, null, null), null, Hans).Value);
         Assert.Equal("680×383，像素格式 109，不支持显示",
             PackageText.Preview(package, new TextureDecodeResult(TextureDecodeStatus.UnsupportedFormat, header with { Format = 109 }, true, null, null), null, Hans).Value);
+        Assert.Equal("16384×16384，尺寸过大，不解码",
+            PackageText.Preview(package, new TextureDecodeResult(TextureDecodeStatus.TooLarge, header with { Width = 16384, Height = 16384 }, false, null, "too large"), null, Hans).Value);
         Assert.Equal("无法读取：locked", PackageText.Preview(package, null, "locked", Hans).Value);
         Assert.Equal("缺失：包里没有 guid 为 " + CokTestData.PreviewGuid + " 的条目", PackageText.Preview(SavePackage(null, previewEntry: null), null, null, Hans).Value);
     }

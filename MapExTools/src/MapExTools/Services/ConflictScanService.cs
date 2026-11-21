@@ -26,6 +26,7 @@ public sealed class ConflictScanService
     private bool _isScanning;
     private bool _rescanQueued;
     private bool _hasAttemptedOnce;
+    private bool _stampChecking;
 
     public ConflictScanService(UserDataPaths paths, CocSession coc, Func<string?> gameDirProvider)
     {
@@ -75,28 +76,52 @@ public sealed class ConflictScanService
         _ = RunScanLoopAsync();
     }
 
-    /// <summary>由主窗口 1.5 秒定时器调用：仅比对轻量目录/配置文件时间戳，变化时才排入后台扫描。</summary>
+    /// <summary>由主窗口 1.5 秒定时器调用：仅在后台比对轻量目录/配置文件时间戳，变化时才排入后台扫描。</summary>
     public void Poll()
     {
         bool hasAttempted;
-        bool scanning;
         lock (_gate)
         {
+            if (_isScanning || _stampChecking)
+                return;
+
             hasAttempted = _workspace != null || _hasAttemptedOnce;
-            scanning = _isScanning;
+            if (hasAttempted)
+                _stampChecking = true;
         }
 
         if (!hasAttempted)
         {
-            if (!scanning)
-                TriggerScan();
+            TriggerScan();
             return;
         }
 
-        DiskStamp current = CaptureDiskStamp();
-        if (current != _lastStamp)
+        // 在 UI 线程先读好 GameDir 传入后台，避免与 AppServices.RefreshGameLocation 跨线程读写 GameLocation
+        string? gameDir = _gameDirProvider();
+        _ = CheckDiskStampAsync(gameDir);
+    }
+
+    private async Task CheckDiskStampAsync(string? gameDir)
+    {
+        try
         {
-            TriggerScan();
+            DiskStamp current = await Task.Run(() => CaptureDiskStamp(gameDir));
+            bool changed;
+            lock (_gate)
+            {
+                _stampChecking = false;
+                changed = !_isScanning && current != _lastStamp;
+            }
+
+            if (changed)
+                DispatchToUi(TriggerScan);
+        }
+        catch (Exception ex) when (ex is not OutOfMemoryException)
+        {
+            lock (_gate)
+            {
+                _stampChecking = false;
+            }
         }
     }
 
@@ -132,8 +157,12 @@ public sealed class ConflictScanService
     {
         while (true)
         {
-            DiskStamp stampBefore = CaptureDiskStamp();
-            string? gameDir = stampBefore.GameDir;
+            string? gameDir = _gameDirProvider();
+            DiskStamp stampBefore = await Task.Run(() => CaptureDiskStamp(gameDir));
+            lock (_gate)
+            {
+                _lastStamp = stampBefore;
+            }
 
             ScannedModWorkspace workspace;
             try
@@ -191,9 +220,8 @@ public sealed class ConflictScanService
         }
     }
 
-    private DiskStamp CaptureDiskStamp()
+    private DiskStamp CaptureDiskStamp(string? gameDir)
     {
-        string? gameDir = _gameDirProvider();
         return new DiskStamp(
             ReadFileStamp(_paths.PlaysetConfigFile),
             ReadFileStamp(_paths.ModsDirectoryFile),

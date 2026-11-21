@@ -111,7 +111,8 @@
                                 <Image x:Name="HeightImage" Stretch="None" HorizontalAlignment="Center" VerticalAlignment="Center" Cursor="Cross"
                                        RenderOptions.BitmapScalingMode="HighQuality"
                                        MouseMove="OnImageMouseMove" MouseLeave="OnImageMouseLeave"
-                                       MouseLeftButtonDown="OnImageMouseDown" MouseLeftButtonUp="OnImageMouseUp">
+                                       MouseLeftButtonDown="OnImageMouseDown" MouseLeftButtonUp="OnImageMouseUp"
+                                       LostMouseCapture="OnImageLostMouseCapture">
                                     <Image.LayoutTransform>
                                         <ScaleTransform x:Name="ImageScale" ScaleX="1" ScaleY="1" />
                                     </Image.LayoutTransform>

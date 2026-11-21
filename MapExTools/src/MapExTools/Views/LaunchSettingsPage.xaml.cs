@@ -95,7 +95,14 @@ public partial class LaunchSettingsPage : UserControl
     {
         foreach (string mode in StartupKeys.ModeNames)
         {
-            var radio = new RadioButton { GroupName = "LaunchPatchMode", Tag = mode, Margin = new Thickness(0, 1, 0, 1) };
+            var radio = new RadioButton
+            {
+                GroupName = "LaunchPatchMode",
+                Tag = mode,
+                Margin = new Thickness(0, 1, 0, 1),
+                HorizontalAlignment = HorizontalAlignment.Stretch,
+                Content = new TextBlock { TextWrapping = TextWrapping.Wrap },
+            };
             radio.Checked += OnModeChecked;
             _modeButtons[mode] = radio;
             ModePanel.Children.Add(radio);
@@ -121,6 +128,8 @@ public partial class LaunchSettingsPage : UserControl
         {
             Tag = key.Name,
             Margin = new Thickness(key.EcoGroup ? 24 : 0, 1, 0, 1),
+            HorizontalAlignment = HorizontalAlignment.Stretch,
+            Content = new TextBlock { TextWrapping = TextWrapping.Wrap },
         };
         box.Checked += OnCheckChanged;
         box.Unchecked += OnCheckChanged;
@@ -131,12 +140,13 @@ public partial class LaunchSettingsPage : UserControl
     private void UpdateOptionTexts()
     {
         string lang = CurrentLanguage;
+        OpenAllOptionsRun.Text = Loc.Instance.Format("Startup.OpenAllOptions", StartupKeys.AllKeys.Length);
         foreach ((string mode, RadioButton radio) in _modeButtons)
-            radio.Content = StartupSettingsText.ModeChoice(mode, lang);
+            ((TextBlock)radio.Content).Text = StartupSettingsText.ModeChoice(mode, lang);
         foreach ((string name, CheckBox box) in _checkBoxes)
         {
             StartupKeyInfo key = StartupKeys.FindKey(name)!;
-            box.Content = StartupSettingsText.KeyLabel(key, lang);
+            ((TextBlock)box.Content).Text = StartupSettingsText.KeyLabel(key, lang);
             box.ToolTip = StartupSettingsText.KeyTip(key, lang);
         }
     }
@@ -332,6 +342,11 @@ public partial class LaunchSettingsPage : UserControl
 
     private static string Localized(string language, string key) => Core.Localization.Strings.Get(language, key);
 
-    private void ShowMessage(string text, MessageBoxImage image) =>
-        MessageBox.Show(Window.GetWindow(this)!, text, Loc.Instance["App.Title"], MessageBoxButton.OK, image);
+    private void ShowMessage(string text, MessageBoxImage image)
+    {
+        if (Window.GetWindow(this) is { } owner)
+            MessageBox.Show(owner, text, Loc.Instance["App.Title"], MessageBoxButton.OK, image);
+        else
+            MessageBox.Show(text, Loc.Instance["App.Title"], MessageBoxButton.OK, image);
+    }
 }

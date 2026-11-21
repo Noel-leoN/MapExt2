@@ -94,6 +94,7 @@ public sealed partial record MapExtLogSummary(
 
     private const string ConflictTag = "ModConflictDetector";
     private const string RuntimeConflictTag = "ConflictMonitoringSystem";
+    private const string AttributionTag = "ModAttributionHelper";
     private const string GateTag = "SaveEntryGate";
 
     /// <summary>解析日志全文（按行）。</summary>
@@ -166,7 +167,8 @@ public sealed partial record MapExtLogSummary(
                     text.StartsWith("加载时发现被替换的原版系统", StringComparison.Ordinal) ||
                     text.StartsWith("检测到关键补丁缺失", StringComparison.Ordinal) ||
                     text.StartsWith("检测到目标方法上的外部重叠补丁", StringComparison.Ordinal) ||
-                    text.StartsWith("运行期检测到", StringComparison.Ordinal))
+                    text.StartsWith("运行期检测到", StringComparison.Ordinal) ||
+                    text.StartsWith("[!] ", StringComparison.Ordinal))
                 {
                     scanned = true;
                     noneDetected = false;
@@ -175,9 +177,24 @@ public sealed partial record MapExtLogSummary(
                         detected.Add(text);
                 }
             }
+            else if (tag == AttributionTag)
+            {
+                // ModAttributionHelper 层 3 核验：CellMapSystem<T>.kMapSize 被外部反射改写
+                if (text.StartsWith("CellMapSystem<T>.kMapSize 静态字段被外部改写", StringComparison.Ordinal))
+                {
+                    scanned = true;
+                    noneDetected = false;
+                    if (!detected.Contains(text))
+                        detected.Add(text);
+                }
+            }
             else if (tag == GateTag)
             {
-                GateDecisionInfo? next = ParseGateDecision(entry.Timestamp, text);
+                // 忽略主判定之前的列表查找或菜单绑定告警，不把它们污染进上一次读档判定的后续行
+                if (IsPreDecisionLookupWarning(text))
+                    continue;
+
+                GateDecisionInfo? next = ParseGateDecision(entry.Timestamp, text, decision);
                 if (next != null)
                 {
                     decision = next;
@@ -223,6 +240,20 @@ public sealed partial record MapExtLogSummary(
     [GeneratedRegex(@"^(?<entry>\w+) (?:地图 )?'(?<name>.*)'：转换请求绑定的(?:存档|地图)，放行$", RegexOptions.CultureInvariant)]
     private static partial Regex ConversionDecisionRegex();
 
+    // SaveEntryGate.cs:240 降级确认行（禁用读档校验时无主行直接输出，须作为独立主判定）
+    [GeneratedRegex(@"^(?<entry>\w+) '(?<name>.*)'：本会话降级（.*），需要玩家确认$", RegexOptions.CultureInvariant)]
+    private static partial Regex DegradedSaveDecisionRegex();
+
+    // SaveEntryGate 地图分支行（当未出现主面积推断行时，作为独立地图主判定）
+    [GeneratedRegex(@"^(?<entry>\w+) (?:原版)?地图 '(?<name>.*)'：", RegexOptions.CultureInvariant)]
+    private static partial Regex MapBranchDecisionRegex();
+
+    private static bool IsPreDecisionLookupWarning(string text) =>
+        text.StartsWith("存档列表里找不到 ID ", StringComparison.Ordinal) ||
+        text.StartsWith("地图列表里找不到 ID ", StringComparison.Ordinal) ||
+        text.StartsWith("取不到 MenuUISystem.", StringComparison.Ordinal) ||
+        text.StartsWith("故障注入：假装取不到 MenuUISystem.", StringComparison.Ordinal);
+
     private static AppliedConfigInfo ParseAppliedConfig(string timestamp, string raw)
     {
         var values = new Dictionary<string, string>(StringComparer.Ordinal);
@@ -231,7 +262,7 @@ public sealed partial record MapExtLogSummary(
         return new AppliedConfigInfo(timestamp, raw, values);
     }
 
-    private static GateDecisionInfo? ParseGateDecision(string timestamp, string text)
+    private static GateDecisionInfo? ParseGateDecision(string timestamp, string text, GateDecisionInfo? current)
     {
         Match save = SaveDecisionRegex().Match(text);
         if (save.Success)
@@ -258,6 +289,39 @@ public sealed partial record MapExtLogSummary(
             return new GateDecisionInfo(
                 timestamp, conversion.Groups["entry"].Value, GateSubject.ConversionRequest, conversion.Groups["name"].Value,
                 null, null, text, null, null, null, null, null, []);
+        }
+
+        Match degradedSave = DegradedSaveDecisionRegex().Match(text);
+        if (degradedSave.Success)
+        {
+            string entry = degradedSave.Groups["entry"].Value;
+            string name = degradedSave.Groups["name"].Value;
+            // 若紧跟在同一存档的主判定之后，仍作为其后续行以保留 ID/CV/Result 字段；否则（如禁用校验或另一存档）开启新主判定
+            if (current is { Subject: GateSubject.Save } &&
+                current.Entry == entry &&
+                current.Name == name)
+            {
+                return null;
+            }
+
+            return new GateDecisionInfo(
+                timestamp, entry, GateSubject.Save, name, null, null, text, null, null, null, null, null, []);
+        }
+
+        Match mapBranch = MapBranchDecisionRegex().Match(text);
+        if (mapBranch.Success)
+        {
+            string entry = mapBranch.Groups["entry"].Value;
+            string name = mapBranch.Groups["name"].Value;
+            if (current is { Subject: GateSubject.Map } &&
+                current.Entry == entry &&
+                current.Name == name)
+            {
+                return null;
+            }
+
+            return new GateDecisionInfo(
+                timestamp, entry, GateSubject.Map, name, null, null, text, null, null, null, null, null, []);
         }
 
         return null;

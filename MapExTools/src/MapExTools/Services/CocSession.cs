@@ -26,6 +26,7 @@ public sealed class CocSession
     private CocStamp _stamp;
     private bool? _gameRunning;
     private Func<string, string>? _note;
+    private int _appliedGeneration;
 
     public CocSession(UserDataPaths paths)
     {
@@ -177,20 +178,28 @@ public sealed class CocSession
         _ = LoadAppliedAsync();
     }
 
-    /// <summary>外部组件（如存档页"切到该模式"）直接写盘后通知同步基准，同时保留其他未保存改动。</summary>
-    public void NotifyExternalWrite()
-    {
-        Reload(keepEdits: true, notify: true);
-    }
-
     /// <summary>
-    /// 仅将指定的几个键写入磁盘基准（例如冲突预检页一键关闭单个经济分组），
+    /// 仅将指定的几个键写入磁盘基准（例如冲突预检页一键关闭单个经济分组、存档页“切到该模式”），
     /// 同时保留其他页签上尚未保存的改动，避免连带保存玩家未确认的其他设置。
+    /// <paramref name="failureMessageKey"/> 是写入失败时弹窗文案的键（含一个 {0} 填失败原因），调用方可换成贴合场景的说法。
     /// </summary>
-    public bool SaveSpecificKeys(IReadOnlyDictionary<string, object> updates, Window? owner)
+    public bool SaveSpecificKeys(IReadOnlyDictionary<string, object> updates, Window? owner, bool notifyGameRunning = true,
+        string failureMessageKey = "Startup.SaveFailed")
     {
-        if (State == null || !IsUsable || updates.Count == 0)
+        if (updates.Count == 0)
             return false;
+
+        if (State == null || !IsUsable)
+            Reload(keepEdits: true, notify: false);
+        if (State == null || !IsUsable)
+        {
+            string lang = Loc.Instance.Language;
+            string reason = FormatError?.GetMessage(lang) ?? ReadError ?? string.Empty;
+            if (!string.IsNullOrEmpty(reason))
+                ShowMessage(owner, Loc.Instance.Format(failureMessageKey, reason), MessageBoxImage.Warning);
+            RaiseChanged();
+            return false;
+        }
 
         bool saved = false;
         try
@@ -201,9 +210,18 @@ public sealed class CocSession
             {
                 case CocSaveStatus.GameRunning:
                     _gameRunning = true;
+                    _note = lang => Strings.Get(lang, "Startup.Running");
+                    if (notifyGameRunning)
+                        ShowMessage(owner, Loc.Instance["Startup.Running"], MessageBoxImage.Warning);
                     break;
                 case CocSaveStatus.NoChanges:
-                    SetValues(updates);
+                    foreach ((string name, object val) in updates)
+                    {
+                        if (StartupKeys.FindKey(name) != null)
+                            _working[name] = val;
+                    }
+
+                    Reload(keepEdits: true, notify: false);
                     _note = lang => Strings.Get(lang, "Startup.NoChanges");
                     saved = true;
                     break;
@@ -231,7 +249,7 @@ public sealed class CocSession
                 CocSaveException save => save.GetMessage(lang),
                 _ => ex.Message,
             };
-            ShowMessage(owner, Loc.Instance.Format("Startup.SaveFailed", message), MessageBoxImage.Warning);
+            ShowMessage(owner, Loc.Instance.Format(failureMessageKey, message), MessageBoxImage.Warning);
             Reload(keepEdits: true, notify: false);
         }
 
@@ -320,8 +338,7 @@ public sealed class CocSession
         if (!File.Exists(CocPath))
             return;
         if (GameProcess.IsRunning()
-            && MessageBox.Show(owner!, Loc.Instance["Startup.ConfirmEditWhileRunning"], Loc.Instance["App.Title"],
-                MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes)
+            && ShowConfirm(owner, Loc.Instance["Startup.ConfirmEditWhileRunning"], MessageBoxImage.Warning) != MessageBoxResult.Yes)
         {
             return;
         }
@@ -397,17 +414,23 @@ public sealed class CocSession
 
     private async Task LoadAppliedAsync()
     {
+        int generation = ++_appliedGeneration;
         string log = _paths.MapExtLog;
+        AppliedConfigInfo? result;
         try
         {
-            Applied = await Task.Run(() =>
+            result = await Task.Run(() =>
                 File.Exists(log) ? MapExtLogSummary.Parse(LogDiagnostics.ReadLines(log)).AppliedConfig : null);
         }
         catch (Exception ex) when (ex is not OutOfMemoryException)
         {
-            Applied = null;
+            result = null;
         }
 
+        if (generation != _appliedGeneration)
+            return;
+
+        Applied = result;
         RaiseChanged();
     }
 
@@ -432,4 +455,9 @@ public sealed class CocSession
         else
             MessageBox.Show(text, Loc.Instance["App.Title"], MessageBoxButton.OK, image);
     }
+
+    private static MessageBoxResult ShowConfirm(Window? owner, string text, MessageBoxImage image) =>
+        owner != null
+            ? MessageBox.Show(owner, text, Loc.Instance["App.Title"], MessageBoxButton.YesNo, image)
+            : MessageBox.Show(text, Loc.Instance["App.Title"], MessageBoxButton.YesNo, image);
 }

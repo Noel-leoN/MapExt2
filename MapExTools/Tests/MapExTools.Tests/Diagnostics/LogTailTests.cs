@@ -147,4 +147,30 @@ public sealed class LogTailTests : IDisposable
         writer.Flush();
         Assert.Equal(["live 2"], tail.Poll().Lines);
     }
+
+    [Fact]
+    public void InitialLargeFile_SkipsHeadAndAlignsToNextLine()
+    {
+        var sb = new StringBuilder();
+        for (int i = 0; i < 200; i++)
+            sb.Append($"old-line-{i:0000}-padding-padding-padding\n");
+        sb.Append("tail-keep-1\n");
+        sb.Append("tail-keep-2\n");
+        Append(sb.ToString());
+
+        // 使用小窗口（128 字节）验证首读仅取末尾并丢弃窗口边界处的半截行
+        var tail = new LogTail(LogPath, maxInitialBytes: 128);
+        LogTailResult first = tail.Poll();
+
+        Assert.True(first.Exists);
+        Assert.False(first.Reset);
+        Assert.DoesNotContain("old-line-0000-padding-padding-padding", first.Lines);
+        Assert.Equal("tail-keep-1", first.Lines[^2]);
+        Assert.Equal("tail-keep-2", first.Lines[^1]);
+
+        Append("tail-keep-3\n");
+        LogTailResult next = tail.Poll();
+        Assert.False(next.Reset);
+        Assert.Equal(["tail-keep-3"], next.Lines);
+    }
 }
