@@ -56,7 +56,7 @@ If you double-click `MapExTools.exe` directly inside a `.zip` viewer (`%TEMP%`) 
 
 ### Updating and Uninstalling
 
-* **Updating:** Tool preferences (language, theme, game path, launch flags) are stored separately at `%USERPROFILE%\AppData\LocalLow\Colossal Order\Cities Skylines II\ModsData\MapExt2\MapExTools.json`, and every edit to `MapExtPDX.coc` writes a `MapExtPDX.coc.bak` backup first. Overwriting `MapExTools.exe` (or clicking **Pin locally and create a desktop shortcut** from a newer download) preserves all settings.
+* **Updating:** Tool preferences (language, theme, font, game path, launch flags) are stored separately at `%USERPROFILE%\AppData\LocalLow\Colossal Order\Cities Skylines II\ModsData\MapExt2\MapExTools.json`, and every edit to `MapExtPDX.coc` writes a `MapExtPDX.coc.bak` backup first. Overwriting `MapExTools.exe` (or clicking **Pin locally and create a desktop shortcut** from a newer download) preserves all settings.
 * **Uninstalling:** Delete the folder containing `MapExTools.exe` (e.g., `%LOCALAPPDATA%\Programs\MapExTools\`), delete `MapExTools.lnk` on your Desktop, and optionally delete `%USERPROFILE%\AppData\LocalLow\Colossal Order\Cities Skylines II\ModsData\MapExt2\MapExTools.json`. If you used the portable package, also delete `%TEMP%\.net\MapExTools\` (the unpacked runtime, one subfolder of about 120 MB per version).
 
 ---

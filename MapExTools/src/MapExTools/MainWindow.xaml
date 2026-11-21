@@ -32,10 +32,11 @@
             </DockPanel>
         </Border>
 
-        <!-- 顶部独立紧凑栏：界面语言与主题，与下方页签栏彻底分离（避免窄窗重叠） -->
+        <!-- 顶部独立紧凑栏：界面语言、主题与字体，与下方页签栏彻底分离（避免窄窗重叠） -->
         <StackPanel Grid.Row="1" Orientation="Horizontal"
                     HorizontalAlignment="Right" VerticalAlignment="Center" Margin="16,6,16,0">
-            <TextBlock Text="{Binding [Settings.Language], Source={x:Static svc:Loc.Instance}}"
+            <TextBlock x:Name="LanguageLabel"
+                       Text="{Binding [Settings.Language], Source={x:Static svc:Loc.Instance}}"
                        VerticalAlignment="Center" Margin="0,0,6,0" />
             <ComboBox x:Name="LanguageBox" MinWidth="118" DisplayMemberPath="Display"
                       SelectionChanged="OnLanguageChanged" />
@@ -43,6 +44,21 @@
                        VerticalAlignment="Center" Margin="14,0,6,0" />
             <ComboBox x:Name="ThemeBox" MinWidth="112" DisplayMemberPath="Display"
                       SelectionChanged="OnThemeChanged" />
+            <TextBlock Text="{Binding [Settings.Font], Source={x:Static svc:Loc.Instance}}"
+                       VerticalAlignment="Center" Margin="14,0,6,0" />
+            <ComboBox x:Name="FontBox" Width="220" TextSearch.TextPath="DisplayName"
+                      DropDownOpened="OnFontDropDownOpened" SelectionChanged="OnFontChanged">
+                <ComboBox.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <VirtualizingStackPanel />
+                    </ItemsPanelTemplate>
+                </ComboBox.ItemsPanel>
+                <ComboBox.ItemTemplate>
+                    <DataTemplate>
+                        <TextBlock Text="{Binding DisplayName}" TextTrimming="CharacterEllipsis" />
+                    </DataTemplate>
+                </ComboBox.ItemTemplate>
+            </ComboBox>
         </StackPanel>
 
         <!-- 六个功能页 -->

@@ -33,6 +33,9 @@ public static class Strings
         // === 界面设置 ===
         ["Settings.Language"] = ["Language", "语言", "語言"],
         ["Settings.Theme"] = ["Theme", "主题", "主題"],
+        ["Settings.Font"] = ["Font", "字体", "字體"],
+        ["Settings.FontDefault"] = ["Default (Follow Language)", "默认（跟随语言）", "預設（跟隨語言）"],
+        ["Settings.FontMissing"] = ["{0} (not installed)", "{0}（未安装）", "{0}（未安裝）"],
         ["Theme.System"] = ["System", "跟随系统", "跟隨系統"],
         ["Theme.Light"] = ["Light", "浅色", "淺色"],
         ["Theme.Dark"] = ["Dark", "深色", "深色"],

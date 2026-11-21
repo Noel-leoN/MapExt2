@@ -1,6 +1,7 @@
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using MapExTools.Core.Appearance;
 using MapExTools.Core.Launch;
 
 namespace MapExTools.Core.Config;
@@ -65,6 +66,7 @@ public sealed class ToolConfigService
 
             // 手改成 "launch": null 时反序列化会给 null，按默认值处理
             config.Launch ??= new LaunchOptions();
+            config.FontFamily = FontSpec.NormalizeConfiguredFamily(config.FontFamily);
 
             if (!Enum.IsDefined(config.Theme))
                 throw new JsonException($"Undefined enum value for {nameof(ThemePreference)}: {config.Theme}.");

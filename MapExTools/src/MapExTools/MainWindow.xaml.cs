@@ -1,7 +1,9 @@
 using System.ComponentModel;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 using System.Windows.Input;
+using System.Windows.Media;
 using System.Windows.Shapes;
 using System.Windows.Threading;
 using MapExTools.Core.Config;
@@ -29,12 +31,18 @@ public partial class MainWindow : Window
     // 玩家关掉了横幅：只在本次运行中隐藏，不写配置
     private bool _bannerHidden;
 
+    // 系统字体列表在首次展开 FontBox 时才懒加载；记下加载时的界面语言以便切语言后同步显示名与排序
+    private bool _fontListLoaded;
+    private string? _fontListLanguage;
+
     public MainWindow()
     {
         InitializeComponent();
 
+        ApplyCurrentFont();
         PopulateLanguageBox();
         PopulateThemeBox();
+        PopulateFontBox(loadAll: false);
         Loc.Instance.LanguageChanged += OnUiLanguageChanged;
         App.Services.Coc.Changed += OnCocSessionChanged;
         App.Services.Conflicts.Changed += OnConflictsChanged;
@@ -179,10 +187,96 @@ public partial class MainWindow : Window
         ThemeService.Apply(choice.Value);
     }
 
+    private void ApplyCurrentFont() =>
+        FontService.Apply(this, App.Services.Config.FontFamily, Loc.Instance.Language);
+
+    private void PopulateFontBox(bool loadAll)
+    {
+        _populating = true;
+        try
+        {
+            string lang = Loc.Instance.Language;
+            string? configured = App.Services.Config.FontFamily;
+            if (loadAll)
+            {
+                (IReadOnlyList<FontOption> options, FontOption selected) = FontService.GetOptions(lang, configured);
+                FontBox.ItemsSource = options;
+                FontBox.SelectedItem = selected;
+                _fontListLoaded = true;
+                _fontListLanguage = lang;
+            }
+            else
+            {
+                FontOption placeholder = FontService.CreateSelectedPlaceholder(lang, configured);
+                FontBox.ItemsSource = new[] { placeholder };
+                FontBox.SelectedIndex = 0;
+                _fontListLoaded = false;
+                _fontListLanguage = null;
+            }
+        }
+        finally
+        {
+            _populating = false;
+        }
+    }
+
+    private void OnFontDropDownOpened(object? sender, EventArgs e)
+    {
+        // Fluent ComboBox 弹层内 ScrollViewer.CanContentScroll 默认为 False（切换主题重建模板后也会复位），
+        // 每次展开先开启以让 VirtualizingStackPanel 生效，再按需懒加载完整系统字体列表
+        if (FontBox.Template?.FindName("PART_Popup", FontBox) is Popup { Child: { } child }
+            && FindVisualChild<ScrollViewer>(child) is { } scrollViewer)
+        {
+            scrollViewer.CanContentScroll = true;
+        }
+
+        if (!_fontListLoaded || _fontListLanguage != Loc.Instance.Language)
+        {
+            PopulateFontBox(loadAll: true);
+        }
+    }
+
+    private void OnFontChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (_populating || FontBox.SelectedItem is not FontOption choice)
+            return;
+
+        App.Services.Config.FontFamily = choice.ConfigName;
+        App.Services.TrySaveConfig(this);
+        ApplyCurrentFont();
+
+        // 若此前列表含未安装字体的临时占位项且已改选正常项，从内存缓存重生成列表移除残留占位
+        if (_fontListLoaded && !choice.IsMissing
+            && FontBox.ItemsSource is IEnumerable<FontOption> current
+            && current.Any(o => o.IsMissing))
+        {
+            PopulateFontBox(loadAll: true);
+        }
+    }
+
+    private static T? FindVisualChild<T>(DependencyObject root)
+        where T : DependencyObject
+    {
+        if (root is T match)
+            return match;
+
+        int count = VisualTreeHelper.GetChildrenCount(root);
+        for (int i = 0; i < count; i++)
+        {
+            if (FindVisualChild<T>(VisualTreeHelper.GetChild(root, i)) is { } found)
+                return found;
+        }
+
+        return null;
+    }
+
     private void OnUiLanguageChanged(object? sender, EventArgs e)
     {
+        ApplyCurrentFont();
+
         // 代码里拼出的文字不走绑定，手动刷新
         PopulateThemeBox();
+        PopulateFontBox(loadAll: _fontListLoaded);
         _gameRunning = null;
         RefreshGameState();
         RefreshUserDataText();

@@ -31,6 +31,7 @@ public sealed class ToolConfigServiceTests : IDisposable
         ToolConfigLoadResult result = CreateService().Load();
         Assert.Equal(ToolConfigLoadStatus.Missing, result.Status);
         Assert.Null(result.Config.Language);
+        Assert.Null(result.Config.FontFamily);
         Assert.Equal(ThemePreference.System, result.Config.Theme);
         Assert.False(result.Config.LaunchOptionsExpanded);
     }
@@ -56,6 +57,7 @@ public sealed class ToolConfigServiceTests : IDisposable
 
         string json = File.ReadAllText(service.ConfigPath);
         Assert.Contains("\"theme\": \"Dark\"", json);
+        Assert.DoesNotContain("\"fontFamily\"", json);
 
         // BOM 要看原始字节：ReadAllText 会去掉 BOM，而按区域比较字符串时 U+FEFF 会被忽略，在任何位置都算"找到"
         byte[] bytes = File.ReadAllBytes(service.ConfigPath);
@@ -200,5 +202,48 @@ public sealed class ToolConfigServiceTests : IDisposable
 
         Assert.False(File.Exists(service.CorruptBackupPath));
         Assert.Equal(original, File.ReadAllText(service.ConfigPath));
+    }
+
+    [Fact]
+    public void FontFamily_SaveThenLoad_RoundTrips()
+    {
+        ToolConfigService service = CreateService();
+        service.Save(new ToolConfig { FontFamily = "Noto Sans SC" });
+
+        string json = File.ReadAllText(service.ConfigPath);
+        Assert.Contains("\"fontFamily\": \"Noto Sans SC\"", json);
+
+        ToolConfigLoadResult loaded = service.Load();
+        Assert.Equal(ToolConfigLoadStatus.Loaded, loaded.Status);
+        Assert.Equal("Noto Sans SC", loaded.Config.FontFamily);
+    }
+
+    [Theory]
+    [InlineData("""{ "fontFamily": "   " }""", null)]
+    [InlineData("""{ "fontFamily": "./Fonts/#My Font" }""", null)]
+    [InlineData("""{ "fontFamily": " Segoe UI, Arial " }""", "Segoe UI")]
+    public void FontFamily_Load_NormalizesHandEditedValues(string json, string? expected)
+    {
+        ToolConfigService service = CreateService();
+        Directory.CreateDirectory(Path.GetDirectoryName(service.ConfigPath)!);
+        File.WriteAllText(service.ConfigPath, json, Encoding.UTF8);
+
+        ToolConfigLoadResult loaded = service.Load();
+        Assert.Equal(ToolConfigLoadStatus.Loaded, loaded.Status);
+        Assert.Equal(expected, loaded.Config.FontFamily);
+    }
+
+    [Fact]
+    public void FontFamily_NonStringJsonValue_IsTreatedAsCorruptWithBackup()
+    {
+        ToolConfigService service = CreateService();
+        Directory.CreateDirectory(Path.GetDirectoryName(service.ConfigPath)!);
+        const string json = """{ "fontFamily": 123 }""";
+        File.WriteAllText(service.ConfigPath, json, Encoding.UTF8);
+
+        ToolConfigLoadResult result = service.Load();
+        Assert.Equal(ToolConfigLoadStatus.Corrupt, result.Status);
+        Assert.Equal(service.CorruptBackupPath, result.BackupPath);
+        Assert.True(File.Exists(service.CorruptBackupPath));
     }
 }

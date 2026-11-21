@@ -28,6 +28,9 @@ public sealed class ToolConfig
 
     public ThemePreference Theme { get; set; } = ThemePreference.System;
 
+    /// <summary>自定义界面字体（存储 <c>en-US</c> 规范字族名）；null 表示跟随界面语言默认。</summary>
+    public string? FontFamily { get; set; }
+
     /// <summary>手动指定的 <c>Cities2.exe</c> 路径；null 表示自动定位。</summary>
     public string? GameExePath { get; set; }
 
