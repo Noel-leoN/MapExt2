@@ -477,4 +477,135 @@ public sealed class CommandLineRunnerTests : IDisposable
         Assert.Contains("--playset", roErr, StringComparison.Ordinal);
         Assert.Single(_started);
     }
+
+    // === Phase 4：--activate-playset ===
+
+    [Fact]
+    public void ActivatePlayset_PrecheckFailure_LeavesCocAndConfigUntouched()
+    {
+        Directory.CreateDirectory(Paths.ModsCacheDir);
+        const string cocBefore = "MapExtPDX\r\n{\n    \"PatchModeChoice\": \"ModeA\"\n}\r\n";
+        WriteCoc(cocBefore);
+        const string cfgBefore =
+            "{\"configVersion\":1,\"activePlaysetId\":\"ps-a\",\"playsets\":[" +
+            "{\"id\":\"ps-a\",\"isOffdisk\":false,\"presentation\":{\"name\":\"Alpha\"},\"mods\":[]}," +
+            "{\"id\":\"ps-b\",\"isOffdisk\":false,\"presentation\":{\"name\":\"Beta\"},\"mods\":[]}]}";
+        File.WriteAllText(Paths.PlaysetConfigFile, cfgBefore);
+
+        // 1. 存在外部有效写锁时预检失败：不改 .coc、不改 playset_config.json、不启动游戏
+        string recentUtc = DateTimeOffset.UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ");
+        File.WriteAllText(Paths.PlaysetConfigLockFile,
+            $$"""{"configVersion":1,"lockHolder":"OtherTool","updatedAt":"{{recentUtc}}"}""");
+
+        (int lockCode, _, string lockErr) = RunSplit("--mode", "ModeB", "--activate-playset", "Beta", "--launch");
+        Assert.Equal(ExitCodes.Error, lockCode);
+        Assert.Contains("OtherTool", lockErr, StringComparison.Ordinal);
+        Assert.Equal(cocBefore, ReadCoc());
+        Assert.Equal(cfgBefore, File.ReadAllText(Paths.PlaysetConfigFile));
+        Assert.Empty(_started);
+
+        // 2. 移除写锁，但同时传入无效的 --playset：预检阶段合并拦下，同样不改 .coc 也不切换激活项
+        File.Delete(Paths.PlaysetConfigLockFile);
+        (int badInspectCode, _, string badInspectErr) = RunSplit("--mode", "ModeB", "--activate-playset", "Beta", "--list-mods", "--playset", "NoSuchSet");
+        Assert.Equal(ExitCodes.Error, badInspectCode);
+        Assert.Contains("NoSuchSet", badInspectErr, StringComparison.Ordinal);
+        Assert.Equal(cocBefore, ReadCoc());
+        Assert.Equal(cfgBefore, File.ReadAllText(Paths.PlaysetConfigFile));
+    }
+
+    [Fact]
+    public void ActivatePlayset_PureMode_SucceedsEvenWhenCocIsMalformed_AndAlreadyActiveExits0()
+    {
+        Directory.CreateDirectory(Paths.ModsCacheDir);
+        const string brokenCoc = "MapExtPDX\r\n{\n    \"PatchModeChoice\": \"ModeA\"\n    \"EnableDemandEcoSystem\": true\n}\r\n";
+        WriteCoc(brokenCoc);
+        File.WriteAllText(Paths.PlaysetConfigFile,
+            "{\"configVersion\":1,\"activePlaysetId\":\"ps-a\",\"playsets\":[" +
+            "{\"id\":\"ps-a\",\"isOffdisk\":false,\"presentation\":{\"name\":\"Alpha\"},\"mods\":[]}," +
+            "{\"id\":\"ps-b\",\"isOffdisk\":true,\"presentation\":{\"name\":\"Beta\"},\"mods\":[]}]}");
+
+        // 纯 --activate-playset 不读 .coc：成功切换，且因目标未启用 MapEx 向 stderr 输出警告，退出码仍为 0
+        (int code, string stdout, string stderr) = RunSplit("--activate-playset", "Beta");
+        Assert.Equal(ExitCodes.Success, code);
+        Assert.Contains("Beta", stdout, StringComparison.Ordinal);
+        Assert.Contains("未启用 MapEx", stderr, StringComparison.Ordinal);
+        Assert.Contains("\"activePlaysetId\":\"ps-b\"", File.ReadAllText(Paths.PlaysetConfigFile), StringComparison.Ordinal);
+        Assert.True(File.Exists(Paths.PlaysetConfigFile + ".bak"));
+
+        // 再次激活已是当前激活项的 Beta：AlreadyActive，退出码 0
+        (int alreadyCode, string alreadyOut, _) = RunSplit("--activate-playset", "Beta");
+        Assert.Equal(ExitCodes.Success, alreadyCode);
+        Assert.Contains("已经是当前激活播放集", alreadyOut, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void ActivatePlayset_GameRunning_Exits2WithoutWriting()
+    {
+        Directory.CreateDirectory(Paths.ModsCacheDir);
+        const string cfgBefore =
+            "{\"configVersion\":1,\"activePlaysetId\":\"ps-a\",\"playsets\":[" +
+            "{\"id\":\"ps-a\",\"presentation\":{\"name\":\"Alpha\"},\"mods\":[]}," +
+            "{\"id\":\"ps-b\",\"presentation\":{\"name\":\"Beta\"},\"mods\":[]}]}";
+        File.WriteAllText(Paths.PlaysetConfigFile, cfgBefore);
+        _gameRunning = true;
+
+        (int code, string stdout, string stderr) = RunSplit("--activate-playset", "Beta");
+        Assert.Equal(ExitCodes.GameRunning, code);
+        Assert.Equal(string.Empty, stdout);
+        Assert.Contains(Text("Cli.GameRunning"), stderr);
+        Assert.Equal(cfgBefore, File.ReadAllText(Paths.PlaysetConfigFile));
+    }
+
+    [Fact]
+    public void ActivatePlayset_PendingMapExWarning_AndDiagnosticsReadNewActivePlayset()
+    {
+        Directory.CreateDirectory(Paths.ModsCacheDir);
+        WriteCoc("MapExtPDX\r\n{\n    \"PatchModeChoice\": \"ModeA\"\n}\r\n");
+        File.WriteAllText(Paths.PdxModsCacheFile, """
+            {
+              "items": [
+                { "source": "pdx_mods", "id": "107939", "version": "1", "displayName": "MapExt2" },
+                { "source": "pdx_mods", "id": "99999", "version": "1", "displayName": "Alpha Only Mod" }
+              ]
+            }
+            """);
+        File.WriteAllText(Paths.PlaysetConfigFile,
+            "{\"configVersion\":1,\"activePlaysetId\":\"ps-a\",\"playsets\":[" +
+            "{\"id\":\"ps-a\",\"presentation\":{\"name\":\"Alpha\"},\"mods\":[{\"source\":\"pdx_mods\",\"sourceId\":\"99999\",\"isEnabled\":true}]}," +
+            "{\"id\":\"ps-b\",\"presentation\":{\"name\":\"BetaPending\"},\"mods\":[{\"source\":\"pdx_mods\",\"sourceId\":\"107939\",\"isEnabled\":true}]}]}");
+
+        // 激活 BetaPending 并附带 --list-mods（不传 --playset）：
+        // 复用诊断扫描，向 stderr 发出 MapEx 待下载警告，并列出新激活项 BetaPending 的模组列表，退出码 0
+        (int code, string stdout, string stderr) = RunSplit("--activate-playset", "BetaPending", "--list-mods");
+        Assert.Equal(ExitCodes.Success, code);
+        Assert.Contains("BetaPending", stdout, StringComparison.Ordinal);
+        Assert.Contains("MapExt2", stdout, StringComparison.Ordinal);
+        Assert.DoesNotContain("Alpha Only Mod", stdout, StringComparison.Ordinal);
+        Assert.Contains("尚未下载到本地", stderr, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void ActivatePlayset_WithUnsupportedVersionAndLaunch_RefusesLaunchAndExits1()
+    {
+        Directory.CreateDirectory(Paths.ModsCacheDir);
+        WriteCoc("MapExtPDX\r\n{\n    \"PatchModeChoice\": \"ModeA\"\n}\r\n");
+        File.WriteAllText(Paths.PlaysetConfigFile,
+            "{\"configVersion\":2,\"activePlaysetId\":\"ps-a\",\"playsets\":[" +
+            "{\"id\":\"ps-a\",\"presentation\":{\"name\":\"Alpha\"},\"mods\":[]}," +
+            "{\"id\":\"ps-b\",\"presentation\":{\"name\":\"Beta\"},\"mods\":[]}]}");
+
+        (int code, _, string stderr) = RunSplit("--activate-playset", "Beta", "--launch");
+        Assert.Equal(ExitCodes.Error, code);
+        Assert.Contains("configVersion", stderr, StringComparison.Ordinal);
+        Assert.Empty(_started);
+    }
+
+    [Fact]
+    public void ActivatePlayset_MissingConfig_EmitsDedicatedMissingMessageAndExits1()
+    {
+        (int code, string stdout, string stderr) = RunSplit("--activate-playset", "Beta");
+        Assert.Equal(ExitCodes.Error, code);
+        Assert.Equal(string.Empty, stdout);
+        Assert.Contains(Text("Conflicts.Activate.Err.ConfigMissing"), stderr, StringComparison.Ordinal);
+    }
 }

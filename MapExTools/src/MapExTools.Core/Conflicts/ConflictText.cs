@@ -558,6 +558,51 @@ public static class ConflictText
         return false;
     }
 
+    /// <summary>格式化 <see cref="PlaysetActivationResult"/> 的面向用户说明文案（GUI 与 CLI 共用）。</summary>
+    public static string FormatActivationResult(PlaysetActivationResult result, bool hasPendingMods, string language)
+    {
+        ArgumentNullException.ThrowIfNull(result);
+
+        string displayName = !string.IsNullOrWhiteSpace(result.TargetPlaysetName)
+            ? result.TargetPlaysetName
+            : (result.TargetPlaysetId ?? "?");
+
+        return result.Status switch
+        {
+            PlaysetActivationStatus.Activated => Format(
+                language,
+                hasPendingMods ? "Conflicts.Activate.SuccessWithPending" : "Conflicts.Activate.Success",
+                displayName),
+            PlaysetActivationStatus.AlreadyActive => Format(language, "Conflicts.Activate.AlreadyActive", displayName),
+            PlaysetActivationStatus.GameRunning => Strings.Get(language, "Conflicts.Activate.Err.GameRunning"),
+            PlaysetActivationStatus.ConfigLocked when !string.IsNullOrWhiteSpace(result.LockUpdatedAt) => Format(
+                language,
+                "Conflicts.Activate.Err.Locked",
+                !string.IsNullOrWhiteSpace(result.LockHolder)
+                    ? result.LockHolder
+                    : Strings.Get(language, "Conflicts.Activate.UnknownLockHolder"),
+                result.LockUpdatedAt),
+            PlaysetActivationStatus.ConfigLocked => Strings.Get(language, "Conflicts.Activate.Err.LockedFileInUse"),
+            PlaysetActivationStatus.ConfigMissing => Strings.Get(language, "Conflicts.Activate.Err.ConfigMissing"),
+            PlaysetActivationStatus.ConfigMalformed => Format(
+                language,
+                "Conflicts.Activate.Err.ConfigMalformed",
+                result.ErrorMessage ?? "?"),
+            PlaysetActivationStatus.UnsupportedConfigVersion => Strings.Get(language, "Conflicts.Activate.Err.UnsupportedVersion"),
+            PlaysetActivationStatus.PlaysetNotFound => Format(language, "Conflicts.Activate.Err.NotFound", displayName),
+            PlaysetActivationStatus.InvalidPlaysetId => Format(language, "Conflicts.Activate.Err.InvalidId", result.TargetPlaysetId ?? string.Empty),
+            _ => Format(language, "Conflicts.Activate.Err.WriteFailed", result.ErrorMessage ?? "?"),
+        };
+    }
+
+    /// <summary>激活后重扫失败且没有可用报告时的启动页提示（告知本次启动前不会做冲突确认）。</summary>
+    public static DetailLine BuildLaunchScanErrorHint(string scanError, string language) =>
+        new(string.Empty, Format(language, "Conflicts.Launch.ScanError", scanError), PackageTone.Warning);
+
+    /// <summary>激活播放集后新一轮扫描完成前的启动页提示。</summary>
+    public static DetailLine BuildLaunchRescanningHint(string language) =>
+        new(string.Empty, Strings.Get(language, "Conflicts.Launch.RescanningActive"), PackageTone.Accent);
+
     /// <summary>启动页状态行摘要：代码 Mod 被禁用时说明冲突本次不生效；存在硬冲突时给出红色提示。</summary>
     public static DetailLine? BuildLaunchPageHint(
         ConflictReport? report,

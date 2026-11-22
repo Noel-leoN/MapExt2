@@ -72,6 +72,9 @@ public sealed class CommandLineOptions
     /// <summary><c>--playset</c>：只读检查目标播放集的 ID 或名称（仅配合 <c>--check-conflicts</c> 或 <c>--list-mods</c> 使用）。</summary>
     public string? Playset { get; init; }
 
+    /// <summary><c>--activate-playset</c>：切换游戏当前激活的本地播放集 ID 或名称（游戏运行时拒绝）。</summary>
+    public string? ActivatePlayset { get; init; }
+
     /// <summary><c>--lang</c>，已换成规范的语言代码。</summary>
     public string? Language { get; init; }
 
@@ -88,7 +91,8 @@ public sealed class CommandLineOptions
     /// 是否在命令行里完成、不开窗口。只带 <c>--lang</c>、<c>--user-data</c>、<c>--game-process</c> 时照常打开界面。
     /// </summary>
     public bool IsCommandMode =>
-        Help || Show || Reset || Launch || CheckConflicts || ListPlaysets || ListMods || Playset != null || Settings.Count > 0;
+        Help || Show || Reset || Launch || CheckConflicts || ListPlaysets || ListMods
+        || Playset != null || ActivatePlayset != null || Settings.Count > 0;
 }
 
 /// <summary>
@@ -126,7 +130,7 @@ public static class CommandLineParser
 
         bool help = false, show = false, reset = false, launch = false, checkConflicts = false;
         bool listPlaysets = false, listMods = false;
-        string? language = null, userData = null, gameProcess = null, playset = null, playsetWritten = null;
+        string? language = null, userData = null, gameProcess = null, playset = null, playsetWritten = null, activatePlayset = null;
         var settings = new Dictionary<string, object>(StringComparer.Ordinal);
         var seen = new HashSet<string>(StringComparer.Ordinal);
 
@@ -150,7 +154,7 @@ public static class CommandLineParser
             SettingOption? setting = SettingOptions.FirstOrDefault(o => o.Name == name);
             bool isFlag = name is "--help" or "--show" or "--reset" or "--launch"
                           or "--check-conflicts" or "--list-playsets" or "--list-mods";
-            if (setting == null && !isFlag && name is not ("--lang" or "--user-data" or "--game-process" or "--playset"))
+            if (setting == null && !isFlag && name is not ("--lang" or "--user-data" or "--game-process" or "--playset" or "--activate-playset"))
                 throw new CommandLineException(CommandLineErrorKind.Unknown, written);
             if (!seen.Add(name))
                 throw new CommandLineException(CommandLineErrorKind.Duplicate, written);
@@ -203,6 +207,9 @@ public static class CommandLineParser
                     playset = string.IsNullOrWhiteSpace(value) ? throw Invalid(written, value) : value.Trim();
                     playsetWritten = written;
                     break;
+                case "--activate-playset":
+                    activatePlayset = string.IsNullOrWhiteSpace(value) ? throw Invalid(written, value) : value.Trim();
+                    break;
                 default:
                     settings[setting!.Key.Name] = ParseSettingValue(setting, written, value);
                     break;
@@ -227,6 +234,7 @@ public static class CommandLineParser
             ListPlaysets = listPlaysets,
             ListMods = listMods,
             Playset = playset,
+            ActivatePlayset = activatePlayset,
             Language = language,
             UserData = userData,
             GameProcess = gameProcess,

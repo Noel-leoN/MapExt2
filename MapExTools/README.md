@@ -5,8 +5,8 @@
 `MapExTools` is a standalone Windows desktop app (`WPF`, `.NET 11`) distributed exclusively via GitHub Releases (not bundled inside the Paradox Mods package). It combines six tools for **Map Extended (MapExt)** players and map creators:
 
 1. **Launch and Startup Settings:** Switch MapExt's map size mode (`57km` / `43km` / `28km` / `114km` / vanilla `14km`), toggle the 6 economy system groups, and launch `Cities2.exe` straight to the Main Menu while skipping the Paradox Launcher — no Steam `%command%` setup required.
-2. **Mod Settings Center:** Edit all 65 persistent MapExt OptionUI settings offline before starting the game (Core and Conversion, Performance and Tools, Pathfinding Limits, Economy and Throughput, Land Value and Rent), with search by label or `.coc` key, per-item/per-group/full reset, and safe atomic writes to `MapExtPDX.coc`.
-3. **Mods and Conflict Pre-check:** Read-only static metadata and IL inspection of the active playset (or any local inactive playset) and local `Mods\` folder against MapExt's replaced systems, patch targets, and lifecycle rules, plus a full virtualized mod list (with status/source filtering and one-click Markdown export). Dynamically re-evaluates findings for the selected map mode and economy toggles, offers one-click toggles for avoidable economy groups, and warns before launch when hard conflicts are present in the active playset.
+2. **MapEx Settings Center:** Edit all 65 persistent MapEx OptionUI settings offline before starting the game (Core and Conversion, Performance and Tools, Pathfinding Limits, Economy and Throughput, Land Value and Rent), with search by label or `.coc` key, per-item/per-group/full reset, and safe atomic writes to `MapExtPDX.coc`.
+3. **Mod List and Conflict Pre-check:** Preview any local playset (active or inactive) together with the local `Mods\` folder, switch the game's active playset locally while the game is closed (with `.bak` backup, SDK lock/version checks, and a direct link to Paradox Mods on the web), browse a full virtualized mod list (with status/source filtering and one-click Markdown export), and run static metadata and IL conflict pre-checks against MapExt's replaced systems, patch targets, and lifecycle rules. Dynamically re-evaluates findings for the selected map mode and economy toggles, offers one-click toggles for avoidable economy groups, and warns before launch when hard conflicts are present in the active playset.
 4. **Log Diagnostics:** One-screen session summary (`MapExtPDX.log` active mode/CoreValue, Burst compiler state, runtime conflicts and diagnostics, auto-disabled groups, save entry gate results, `SceneFlow.log` command line, and `Player.log` errors/exit state), live tailing viewer, and one-click Markdown diagnostic report copy.
 5. **Saves and Maps Inspector (`.cok`):** Read-only scan of local `.cok` saves and maps with ZSTD preview rendering, localized map titles, mode compatibility status (`Match` / `Convertible` / `Stretched` / `Mismatch`), and one-click mode switching before starting the game.
 6. **16-bit Heightmap Viewer:** Inspect 16-bit unsigned grayscale/RGBA `.png` and `.tif`/`.tiff` heightmaps before importing into the Map Editor — validating native `4096x4096` files as well as non-`4096` sizes up to `8192x8192` that MapExt automatically bilinearly resamples (noting possible detail softening) — with raw grayscale, 0.5%–99.5% auto-stretched contrast, sea-level layered hypsometric tinting, zoom/pan, and per-pixel elevation readout.
@@ -56,14 +56,14 @@ If you double-click `MapExTools.exe` directly inside a `.zip` viewer (`%TEMP%`) 
 
 ### Updating and Uninstalling
 
-* **Updating:** Tool preferences (language, theme, font, game path, launch flags) are stored separately at `%USERPROFILE%\AppData\LocalLow\Colossal Order\Cities Skylines II\ModsData\MapExt2\MapExTools.json`, and every edit to `MapExtPDX.coc` writes a `MapExtPDX.coc.bak` backup first. Overwriting `MapExTools.exe` (or clicking **Pin locally and create a desktop shortcut** from a newer download) preserves all settings.
+* **Updating:** Tool preferences (language, theme, font, game path, launch flags) are stored separately at `%USERPROFILE%\AppData\LocalLow\Colossal Order\Cities Skylines II\ModsData\MapExt2\MapExTools.json`. Every edit to `MapExtPDX.coc` writes a `MapExtPDX.coc.bak` backup first, and switching the active playset writes a `playset_config.json.bak` backup under `.cache\Mods\` first (close the game and other mod management tools before switching playsets). Overwriting `MapExTools.exe` (or clicking **Pin locally and create a desktop shortcut** from a newer download) preserves all settings.
 * **Uninstalling:** Delete the folder containing `MapExTools.exe` (e.g., `%LOCALAPPDATA%\Programs\MapExTools\`), delete `MapExTools.lnk` on your Desktop, and optionally delete `%USERPROFILE%\AppData\LocalLow\Colossal Order\Cities Skylines II\ModsData\MapExt2\MapExTools.json`. If you used the portable package, also delete `%TEMP%\.net\MapExTools\` (the unpacked runtime, one subfolder of about 120 MB per version).
 
 ---
 
 ## ⌨️ Command-Line Usage and Exit Codes
 
-`MapExTools.exe` can be driven from scripts or custom shortcuts without opening the GUI whenever a setting, `--launch`, `--show`, `--check-conflicts`, or `--help` flag is passed. The options below are the output of `MapExTools.exe --help --lang en-US` (test-only options omitted):
+`MapExTools.exe` can be driven from scripts or custom shortcuts without opening the GUI whenever a setting, `--launch`, `--show`, `--check-conflicts`, `--list-playsets`, `--list-mods`, `--playset`, `--activate-playset`, or `--help` flag is passed. The options below are the output of `MapExTools.exe --help --lang en-US` (test-only options omitted):
 
 ```text
 MapExt startup settings (written to MapExtPDX.coc; refused while the game is running):
@@ -85,13 +85,14 @@ Other:
   --list-playsets                          List all local playsets found in playset_config.json (read-only)
   --list-mods                              List all mods in the target or active playset and local Mods folder
   --playset <id|name>                      Target local playset for --check-conflicts or --list-mods (read-only; does not change the active playset)
+  --activate-playset <id|name>             Set the game's active local playset (refused while the game is running)
   --lang <en-US|zh-HANS|zh-HANT>           Language for this run (not saved)
   --help                                   Show this help
 ```
 
 `--launch` uses the launch method and options last set in the window, which are saved in `MapExTools.json`. When `--check-conflicts` or `--show` is combined with `--launch`, the diagnostics are printed before launching.
 
-**Exit codes:** `0` = success · `1` = invalid arguments, malformed `.coc`, or launch failure · `2` = game is currently running (no changes made).
+**Exit codes:** `0` = success · `1` = invalid arguments, malformed `.coc`, playset activation failure, or launch failure · `2` = game is currently running (no changes made).
 
 > **Important for PowerShell and `cmd`:** Because `MapExTools.exe` is a Windows GUI executable (`WinExe`), an interactive shell returns immediately without waiting for it to finish, so `$LASTEXITCODE` / `%ERRORLEVEL%` will not reflect its exit code unless you wait explicitly:
 >
@@ -140,8 +141,8 @@ Other:
 `MapExTools` 是在 GitHub Releases 单独发布的 Windows 桌面配套程序（`WPF` + `.NET 11`，不随 Paradox Mods 模组包分发），集成了 **MapExt** 常用的六项外部能力：
 
 1. **启动与设定**：在游戏关闭时修改 `MapExtPDX.coc` 的 9 个启动期设定（地图尺寸模式 `57km` / `43km` / `28km` / `114km` / 原版 `14km`、经济总开关与 6 个子系统分组、读档校验开关），并可**跳过 Paradox 启动器直接启动 `Cities2.exe` 进入游戏主菜单**（无需在 Steam 中配置 `%command%`）。
-2. **模组设置中心**：游戏外一站式编辑 MapExt 全部 65 项持久化 OptionUI 设置（核心模式与转换、性能与工具、寻路成本上限、经济吞吐与候选、地价与租金管控），支持按名称或 `.coc` 键名实时检索、单项/分组/全量重置，以及带备份的安全原子写入。
-3. **模组与冲突预检**：支持在本地只读切换查看任意未激活播放集（Playset）或当前激活播放集与本地 `Mods\` 目录，提供完整模组列表检视（支持按启用/来源筛选与一键导出 Markdown 清单）及代码模组元数据与 IL 字节码冲突预检；随所选地图模式与经济分组开关动态重算，对可规避的经济分组提供一键关闭入口，并在当前激活播放集检测到硬冲突时于启动前提示确认。
+2. **MapEx 设置中心**：游戏外一站式编辑 MapEx 全部 65 项持久化 OptionUI 设置（核心模式与转换、性能与工具、寻路成本上限、经济吞吐与候选、地价与租金管控），支持按名称或 `.coc` 键名实时检索、单项/分组/全量重置，以及带备份的安全原子写入。
+3. **模组列表与冲突预检**：支持在本地只读预览任意未激活播放集（Playset）或当前激活播放集与本地 `Mods\` 目录，并可在游戏关闭时安全切换当前激活播放集（含 SDK 锁/版本校验、`.bak` 备份与 Paradox Mods 官方网页入口）；提供完整虚拟化模组列表检视（支持按启用/来源筛选与一键导出 Markdown 清单）及代码模组元数据与 IL 字节码冲突预检；随所选地图模式与经济分组开关动态重算，对可规避的经济分组提供一键关闭入口，并在当前激活播放集检测到硬冲突时于启动前提示确认。
 4. **日志诊断**：单屏汇总上次会话摘要（`MapExtPDX.log` 实际生效配置与 CoreValue、本会话 Burst 编译状态、运行期冲突与诊断、自动停用分组、存档入口判定，`SceneFlow.log` 启动参数，`Player.log` 异常与退出状态），支持实时跟随浏览、按级别/关键词过滤及一键复制脱敏 Markdown 诊断报告。
 5. **存档与地图检视（`.cok`）**：只读扫描本地存档与地图包，解码 ZSTD 预览图与多语言 `.loc` 地图标题，按闸门规则显示与当前设定模式的关系（`匹配` / `可转换` / `开启转换后可转换` / `会拉伸` / `不符`），支持一键将设定切到对应模式后再进游戏主菜单载入。
 6. **高度图查看**：在导入地图编辑器前检视 16 位无符号灰度 / RGBA `.png`、`.tif`/`.tiff` 高度图，按三档规则校验导入条件（原生 `4096x4096` 直接可导入、`1..8192` 非 `4096` 尺寸由 MapExt 自动双线性重采样并提示可能损失细节、超过 `8192x8192` 不可导入），提供原始灰度、0.5%–99.5% 分位自动拉伸对比度、按海平面分层着色（含海岸线描边与图例）三种视图，支持缩放平移与悬停坐标/海拔读数。
@@ -191,14 +192,14 @@ Other:
 
 ### 覆盖升级与卸载
 
-* **覆盖升级不丢配置**：工具配置保存在 `%USERPROFILE%\AppData\LocalLow\Colossal Order\Cities Skylines II\ModsData\MapExt2\MapExTools.json`（与 `exe` 位置无关），且每次修改 `MapExtPDX.coc` 前都会自动备份 `MapExtPDX.coc.bak`。升级时直接用新版 `MapExTools.exe` 覆盖旧文件（或在新包里再次点“固定到本地”）不会丢失已有配置。
+* **覆盖升级不丢配置**：工具配置保存在 `%USERPROFILE%\AppData\LocalLow\Colossal Order\Cities Skylines II\ModsData\MapExt2\MapExTools.json`（与 `exe` 位置无关）。每次修改 `MapExtPDX.coc` 前都会自动备份 `MapExtPDX.coc.bak`，切换激活播放集前也会自动备份 `.cache\Mods\playset_config.json.bak`（切换播放集前请先关闭游戏和其他模组管理工具）。升级时直接用新版 `MapExTools.exe` 覆盖旧文件（或在新包里再次点“固定到本地”）不会丢失已有配置。
 * **干净卸载**：删除存放 `MapExTools.exe` 的目录（如 `%LOCALAPPDATA%\Programs\MapExTools\`）、桌面快捷方式 `MapExTools.lnk`，以及配置文件 `%USERPROFILE%\AppData\LocalLow\Colossal Order\Cities Skylines II\ModsData\MapExt2\MapExTools.json` 即可。用过 portable 包的话，再删除 `%TEMP%\.net\MapExTools\`（解压出来的运行时，每个版本一个子目录，约 120 MB）。
 
 ---
 
 ## ⌨️ 命令行用法与退出码
 
-传入任意设定项、`--launch`、`--show`、`--check-conflicts` 或 `--help` 时，工具会在命令行中执行完毕并退出，不打开图形窗口。以下选项取自 `MapExTools.exe --help --lang zh-HANS` 的输出（略去测试用选项）：
+传入任意设定项、`--launch`、`--show`、`--check-conflicts`、`--list-playsets`、`--list-mods`、`--playset`、`--activate-playset` 或 `--help` 时，工具会在命令行中执行完毕并退出，不打开图形窗口。以下选项取自 `MapExTools.exe --help --lang zh-HANS` 的输出（略去测试用选项）：
 
 ```text
 MapExt 启动设定（写入 MapExtPDX.coc；游戏运行时拒绝）：
@@ -220,13 +221,14 @@ MapExt 启动设定（写入 MapExtPDX.coc；游戏运行时拒绝）：
   --list-playsets                          列出本地 playset_config.json 中的全部播放集（只读）
   --list-mods                              列出指定或当前激活播放集与本地 Mods 目录的模组列表
   --playset <编号|名称>                    指定 --check-conflicts 或 --list-mods 要读取的本地播放集（只读，不切换游戏激活项）
+  --activate-playset <编号|名称>           切换游戏当前激活的本地播放集（游戏运行时拒绝）
   --lang <en-US|zh-HANS|zh-HANT>           本次使用的语言（不保存）
   --help                                   显示本说明
 ```
 
 `--launch` 用的是窗口里最近一次设定的启动方式与参数，保存在 `MapExTools.json` 里。同时传入 `--check-conflicts` 或 `--show` 与 `--launch` 时，会先输出诊断结果再启动游戏。
 
-**退出码**：`0` = 成功 · `1` = 参数有误、`.coc` 格式错误或启动失败 · `2` = 游戏正在运行（未做任何改动）。
+**退出码**：`0` = 成功 · `1` = 参数有误、`.coc` 格式错误、切换播放集失败或启动失败 · `2` = 游戏正在运行（未做任何改动）。
 
 > **获取退出码说明**：`MapExTools.exe` 是窗口程序（`WinExe`），在交互式 PowerShell 或 `cmd` 中直接输入命令时，外壳不会等待窗口程序结束，因此直接读 `$LASTEXITCODE` 或 `%ERRORLEVEL%` 拿不到退出码。脚本调用请照下面的写法等它结束：
 >

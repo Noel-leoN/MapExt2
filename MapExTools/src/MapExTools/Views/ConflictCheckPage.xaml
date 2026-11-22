@@ -27,24 +27,43 @@
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
 
-        <!-- === 第 0 行：播放集选择器、冲突摘要与环境提示卡片 === -->
+        <!-- === 第 0 行：播放集选择器、激活切换、网页入口、冲突摘要与环境提示卡片 === -->
         <Border Grid.Row="0" Style="{StaticResource ToolbarCard}">
             <StackPanel>
-                <DockPanel LastChildFill="True">
-                    <Button x:Name="RescanButton" DockPanel.Dock="Right" MinWidth="108" Padding="12,5"
-                            VerticalAlignment="Center" Margin="12,0,0,0" Click="OnRescanClick"
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" MinWidth="160" />
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+
+                    <TextBlock x:Name="PlaysetLabel" Grid.Column="0"
+                               Text="{Binding [Conflicts.Playset.Label], Source={x:Static svc:Loc.Instance}}"
+                               VerticalAlignment="Center" Margin="0,0,8,0" FontWeight="SemiBold" />
+
+                    <ComboBox x:Name="PlaysetBox" Grid.Column="1"
+                              HorizontalAlignment="Stretch" VerticalAlignment="Center"
+                              DisplayMemberPath="Display"
+                              AutomationProperties.Name="{Binding [Conflicts.Playset.Label], Source={x:Static svc:Loc.Instance}}"
+                              SelectionChanged="OnPlaysetSelectionChanged" />
+
+                    <Button x:Name="ActivatePlaysetButton" Grid.Column="2" Padding="10,5"
+                            VerticalAlignment="Center" Margin="8,0,0,0" Click="OnActivatePlaysetClick"
+                            Content="{Binding [Conflicts.Activate.Button], Source={x:Static svc:Loc.Instance}}"
+                            ToolTip="{Binding [Conflicts.Activate.Tip], Source={x:Static svc:Loc.Instance}}" />
+
+                    <Button x:Name="OpenPdxWebButton" Grid.Column="3" Padding="10,5"
+                            VerticalAlignment="Center" Margin="8,0,0,0" Click="OnOpenPdxWebClick"
+                            Content="{Binding [Conflicts.OpenPdxWeb], Source={x:Static svc:Loc.Instance}}"
+                            ToolTip="{Binding [Conflicts.OpenPdxWebTip], Source={x:Static svc:Loc.Instance}}" />
+
+                    <Button x:Name="RescanButton" Grid.Column="4" Padding="10,5"
+                            VerticalAlignment="Center" Margin="8,0,0,0" Click="OnRescanClick"
                             Content="{Binding [Conflicts.Rescan], Source={x:Static svc:Loc.Instance}}"
                             ToolTip="{Binding [Conflicts.RescanTip], Source={x:Static svc:Loc.Instance}}" />
-
-                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                        <TextBlock Text="{Binding [Conflicts.Playset.Label], Source={x:Static svc:Loc.Instance}}"
-                                   VerticalAlignment="Center" Margin="0,0,8,0" FontWeight="SemiBold" />
-                        <ComboBox x:Name="PlaysetBox" MinWidth="260" MaxWidth="520"
-                                  DisplayMemberPath="Display"
-                                  AutomationProperties.Name="{Binding [Conflicts.Playset.Label], Source={x:Static svc:Loc.Instance}}"
-                                  SelectionChanged="OnPlaysetSelectionChanged" />
-                    </StackPanel>
-                </DockPanel>
+                </Grid>
 
                 <StackPanel Margin="0,8,0,0">
                     <TextBlock x:Name="BannerStatusText" FontSize="13" FontWeight="SemiBold"
@@ -56,6 +75,8 @@
                     <TextBlock x:Name="HeaderMetaText" FontSize="12" Margin="0,3,0,0"
                                Foreground="{DynamicResource TextFillColorSecondaryBrush}"
                                TextTrimming="CharacterEllipsis" />
+                    <TextBlock x:Name="ActivationNoticeText" FontSize="12" Margin="0,3,0,0" Visibility="Collapsed"
+                               TextWrapping="Wrap" Text="{Binding Text}" Style="{StaticResource ToneText}" />
                     <TextBlock x:Name="PreviewNoticeText" FontSize="12" Margin="0,3,0,0" Visibility="Collapsed"
                                TextWrapping="Wrap" Text="{Binding Text}" Style="{StaticResource ToneText}" />
                     <TextBlock x:Name="OffdiskNoticeText" FontSize="12" Margin="0,3,0,0" Visibility="Collapsed"
@@ -68,6 +89,9 @@
                                TextWrapping="Wrap" Text="{Binding Text}" Style="{StaticResource ToneText}" />
                     <TextBlock x:Name="RescanErrorText" FontSize="12" Margin="0,3,0,0" Visibility="Collapsed"
                                TextWrapping="Wrap" Text="{Binding Text}" Style="{StaticResource ToneText}" />
+                    <TextBlock x:Name="EditHintText" FontSize="11.5" Margin="0,5,0,0" TextWrapping="Wrap"
+                               Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                               Text="{Binding [Conflicts.EditHint], Source={x:Static svc:Loc.Instance}}" />
                 </StackPanel>
             </StackPanel>
         </Border>

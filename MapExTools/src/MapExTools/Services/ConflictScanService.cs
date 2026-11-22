@@ -11,8 +11,9 @@ namespace MapExTools.Services;
 /// 窗口级共享的后台模组与冲突预检服务（激活态与预览态双轨隔离）：
 /// <list type="bullet">
 /// <item><see cref="Report"/> 与 <see cref="EvaluateWith"/> 始终锚定游戏当前激活 Playset，专供顶层页签角标与「启动与设定」页拦截使用；</item>
-/// <item><see cref="PreviewReport"/>、<see cref="EvaluatePreviewWith"/> 与 <see cref="SelectPlayset"/> 供「模组与冲突预检」页切换浏览任意本地播放集（选中激活项时零开销复用主工作区）；</item>
-/// <item>磁盘读取与 <c>MetadataReader</c> 扫描统一放入后台 <see cref="Task.Run"/> 执行，跨播放集切换按文件指纹缓存字节码解析结果，并在磁盘快照变化或手动重扫时自动清空。</item>
+/// <item><see cref="PreviewReport"/>、<see cref="EvaluatePreviewWith"/> 与 <see cref="SelectPlayset"/> 供「模组列表与冲突预检」页切换浏览任意本地播放集（选中激活项时零开销复用主工作区）；</item>
+/// <item><see cref="ActivatePlaysetAsync"/> 在后台调用 <see cref="PlaysetActivator"/> 切换激活播放集；成功后丢弃旧报告、置 <see cref="IsActiveStale"/> 并触发不清字节码缓存的重扫，重扫完成前启动页禁止启动；</item>
+/// <item>磁盘读取与 <c>MetadataReader</c> 扫描统一放入后台 <see cref="Task.Run"/> 执行，跨播放集切换与自动重扫按文件指纹复用字节码解析结果，仅手动“重新扫描模组”时清空缓存。</item>
 /// </list>
 /// </summary>
 public sealed class ConflictScanService
@@ -28,8 +29,11 @@ public sealed class ConflictScanService
     private ScannedModWorkspace? _previewWorkspace;
     private string? _selectedPlaysetId;
     private long _previewRequestId;
+    private long _activationSeq;
     private bool _isScanning;
     private bool _isPreviewScanning;
+    private bool _isActivating;
+    private bool _isActiveStale;
     private bool _rescanQueued;
     private bool _hasAttemptedOnce;
     private bool _stampChecking;
@@ -60,7 +64,19 @@ public sealed class ConflictScanService
         get { lock (_gate) return _isScanning; }
     }
 
-    /// <summary>「模组与冲突预检」页当前预览目标是否正在扫描中。</summary>
+    /// <summary>是否正在执行激活播放集切换的落盘操作。</summary>
+    public bool IsActivating
+    {
+        get { lock (_gate) return _isActivating; }
+    }
+
+    /// <summary>激活播放集成功后，在对应的新一轮激活扫描结束前为 <c>true</c>（此时启动页禁用启动按钮）。</summary>
+    public bool IsActiveStale
+    {
+        get { lock (_gate) return _isActiveStale; }
+    }
+
+    /// <summary>「模组列表与冲突预检」页当前预览目标是否正在扫描中。</summary>
     public bool IsPreviewScanning
     {
         get
@@ -81,17 +97,22 @@ public sealed class ConflictScanService
     /// <summary>当前激活播放集的评估报告（供主窗口顶层角标与启动页拦截读取）。</summary>
     public ConflictReport? Report { get; private set; }
 
-    /// <summary>「模组与冲突预检」页所选目标播放集的评估报告（跟随激活项时与 <see cref="Report"/> 相同）。</summary>
+    /// <summary>「模组列表与冲突预检」页所选目标播放集的评估报告（跟随激活项时与 <see cref="Report"/> 相同）。</summary>
     public ConflictReport? PreviewReport { get; private set; }
 
     public string? LastScanError { get; private set; }
 
     public string? LastPreviewError { get; private set; }
 
-    /// <summary>主动请求一次全量后台重扫（首次启动窗口或用户点击“重新扫描模组”时调用）。</summary>
-    public void TriggerScan()
+    /// <summary>
+    /// 主动请求一次全量后台重扫。
+    /// <paramref name="clearInspectionCache"/> 仅在用户手动点击“重新扫描模组”时传 <c>true</c>；激活切换后与轮询发现磁盘变化时传 <c>false</c> 以复用字节码缓存。
+    /// </summary>
+    public void TriggerScan(bool clearInspectionCache = true)
     {
-        _inspectionCache.Clear();
+        if (clearInspectionCache)
+            _inspectionCache.Clear();
+
         lock (_gate)
         {
             if (_isScanning)
@@ -108,7 +129,118 @@ public sealed class ConflictScanService
         _ = RunScanLoopAsync();
     }
 
-    /// <summary>切换「模组与冲突预检」页预览的目标播放集（传 <c>null</c> 或当前激活播放集 ID 时归位为自动跟随激活项）。</summary>
+    /// <summary>
+    /// 在后台线程执行本地播放集激活切换。
+    /// 成功后将预览归位到新激活项、立即丢弃旧的激活工作区与报告、置 <see cref="IsActiveStale"/> 并递增激活序号，随后触发不清字节码缓存的重扫。
+    /// </summary>
+    public async Task<PlaysetActivationResult> ActivatePlaysetAsync(string playsetId)
+    {
+        lock (_gate)
+        {
+            if (_isActivating)
+            {
+                return new PlaysetActivationResult(
+                    PlaysetActivationStatus.WriteFailed,
+                    playsetId,
+                    ErrorMessage: "Playset activation is already in progress.");
+            }
+
+            _isActivating = true;
+        }
+
+        NotifyChangedOnUiThread();
+
+        PlaysetActivationResult result;
+        try
+        {
+            result = await Task.Run(() => PlaysetActivator.Activate(_paths, playsetId));
+        }
+        catch (Exception ex) when (ex is not OutOfMemoryException)
+        {
+            result = new PlaysetActivationResult(
+                PlaysetActivationStatus.WriteFailed,
+                playsetId,
+                ErrorMessage: ex.Message);
+        }
+
+        bool needRescan = false;
+        bool startLoop = false;
+        bool resetPreviewOnly = false;
+
+        lock (_gate)
+        {
+            _isActivating = false;
+
+            bool diskMatchesMemory = result.Status == PlaysetActivationStatus.AlreadyActive &&
+                                     _workspace?.Playset.ActivePlaysetId is { } memActive &&
+                                     string.Equals(memActive, result.TargetPlaysetId, StringComparison.Ordinal);
+
+            if (result.Status == PlaysetActivationStatus.Activated ||
+                (result.Status == PlaysetActivationStatus.AlreadyActive && !diskMatchesMemory))
+            {
+                _selectedPlaysetId = null;
+                _isPreviewScanning = false;
+                ++_previewRequestId;
+                _workspace = null;
+                _previewWorkspace = null;
+                _isActiveStale = true;
+                ++_activationSeq;
+                needRescan = true;
+
+                if (_isScanning)
+                {
+                    _rescanQueued = true;
+                    startLoop = false;
+                }
+                else
+                {
+                    _isScanning = true;
+                    _rescanQueued = false;
+                    startLoop = true;
+                }
+            }
+            else if (result.Status == PlaysetActivationStatus.AlreadyActive)
+            {
+                _selectedPlaysetId = null;
+                _isPreviewScanning = false;
+                ++_previewRequestId;
+                _previewWorkspace = _workspace;
+                resetPreviewOnly = true;
+            }
+        }
+
+        if (needRescan)
+        {
+            DispatchToUi(() =>
+            {
+                Report = null;
+                PreviewReport = null;
+                LastScanError = null;
+                LastPreviewError = null;
+                Changed?.Invoke(this, EventArgs.Empty);
+            });
+
+            if (startLoop)
+                _ = RunScanLoopAsync();
+        }
+        else if (resetPreviewOnly)
+        {
+            DispatchToUi(() =>
+            {
+                LastPreviewError = null;
+                PreviewReport = Report;
+                Changed?.Invoke(this, EventArgs.Empty);
+            });
+        }
+        else
+        {
+            NotifyChangedOnUiThread();
+        }
+
+        return result;
+    }
+
+    /// <summary>切换「模组列表与冲突预检」页预览的目标播放集（传 <c>null</c> 或当前已激活播放集精确 ID 时归位为自动跟随激活项）。</summary>
     public void SelectPlayset(string? playsetId)
     {
         string? normalized = string.IsNullOrWhiteSpace(playsetId) ? null : playsetId.Trim();
@@ -119,13 +251,12 @@ public sealed class ConflictScanService
         {
             activeWs = _workspace;
             if (normalized != null &&
-                activeWs?.Playset.ActivePlaysetId is { } activeId &&
-                string.Equals(normalized, activeId, StringComparison.OrdinalIgnoreCase))
+                activeWs?.Playset.EffectiveAvailablePlaysets.Any(p => p.IsActive && string.Equals(p.Id, normalized, StringComparison.Ordinal)) == true)
             {
                 normalized = null;
             }
 
-            if (string.Equals(_selectedPlaysetId, normalized, StringComparison.OrdinalIgnoreCase) &&
+            if (string.Equals(_selectedPlaysetId, normalized, StringComparison.Ordinal) &&
                 (normalized == null || _previewWorkspace != null || _isPreviewScanning))
             {
                 return;
@@ -173,7 +304,7 @@ public sealed class ConflictScanService
         bool hasAttempted;
         lock (_gate)
         {
-            if (_isScanning || _stampChecking)
+            if (_isScanning || _stampChecking || _isActivating)
                 return;
 
             hasAttempted = _workspace != null || _hasAttemptedOnce;
@@ -183,7 +314,7 @@ public sealed class ConflictScanService
 
         if (!hasAttempted)
         {
-            TriggerScan();
+            TriggerScan(clearInspectionCache: false);
             return;
         }
 
@@ -201,11 +332,11 @@ public sealed class ConflictScanService
             lock (_gate)
             {
                 _stampChecking = false;
-                changed = !_isScanning && current != _lastStamp;
+                changed = !_isScanning && !_isActivating && current != _lastStamp;
             }
 
             if (changed)
-                DispatchToUi(TriggerScan);
+                DispatchToUi(() => TriggerScan(clearInspectionCache: false));
         }
         catch (Exception ex) when (ex is not OutOfMemoryException)
         {
@@ -269,6 +400,12 @@ public sealed class ConflictScanService
     {
         while (true)
         {
+            long scanActivationSeq;
+            lock (_gate)
+            {
+                scanActivationSeq = _activationSeq;
+            }
+
             string? gameDir = _gameDirProvider();
             DiskStamp stampBefore = await Task.Run(() => CaptureDiskStamp(gameDir));
             lock (_gate)
@@ -283,17 +420,41 @@ public sealed class ConflictScanService
             }
             catch (Exception ex) when (ex is not OutOfMemoryException)
             {
+                bool runAgainAfterError;
                 lock (_gate)
                 {
                     _lastStamp = stampBefore;
                     _hasAttemptedOnce = true;
-                    _isScanning = false;
-                    _rescanQueued = false;
+                    if (_rescanQueued || scanActivationSeq < _activationSeq)
+                    {
+                        // 扫描中途有新的重扫或激活请求：继续下一轮，不提前解锁 IsActiveStale
+                        _rescanQueued = false;
+                        runAgainAfterError = true;
+                    }
+                    else
+                    {
+                        _isScanning = false;
+                        runAgainAfterError = false;
+                    }
                 }
+
+                if (runAgainAfterError)
+                    continue;
 
                 string errMsg = ex.Message;
                 DispatchToUi(() =>
                 {
+                    bool stillCurrent;
+                    lock (_gate)
+                    {
+                        stillCurrent = scanActivationSeq >= _activationSeq;
+                        if (stillCurrent)
+                            _isActiveStale = false;
+                    }
+
+                    if (!stillCurrent)
+                        return;
+
                     LastScanError = errMsg;
                     if (SelectedPlaysetId == null)
                         LastPreviewError = errMsg;
@@ -303,56 +464,81 @@ public sealed class ConflictScanService
             }
 
             bool runAgain;
+            bool discardedStale = false;
             string? previewToRefresh = null;
             long previewReqId = 0;
 
             lock (_gate)
             {
-                _workspace = workspace;
-                _lastStamp = stampBefore;
-                _hasAttemptedOnce = true;
-
-                // 若此前正在预览某个非激活播放集：检查它是否仍在列表中且仍处于非激活状态；若已删除或已成为新的激活项则自动归位
-                if (_selectedPlaysetId != null)
+                if (scanActivationSeq < _activationSeq)
                 {
-                    PlaysetSummary? stillValidInactive = workspace.Playset.EffectiveAvailablePlaysets
-                        .FirstOrDefault(p => !p.IsActive && string.Equals(p.Id, _selectedPlaysetId, StringComparison.OrdinalIgnoreCase));
-                    if (stillValidInactive == null)
+                    // 本轮扫描开始于最新激活之前：丢弃旧结果、不提前解锁 IsActiveStale，强制进入下一轮扫描新激活项
+                    _rescanQueued = false;
+                    runAgain = true;
+                    discardedStale = true;
+                }
+                else
+                {
+                    _workspace = workspace;
+                    _lastStamp = stampBefore;
+                    _hasAttemptedOnce = true;
+
+                    // 若此前正在预览某个非激活播放集：检查它是否仍在列表中且仍处于非激活状态；若已删除或已成为新的激活项则自动归位
+                    if (_selectedPlaysetId != null)
                     {
-                        _selectedPlaysetId = null;
-                        _isPreviewScanning = false;
-                        _previewWorkspace = workspace;
-                        ++_previewRequestId;
+                        PlaysetSummary? stillValidInactive = workspace.Playset.EffectiveAvailablePlaysets
+                            .FirstOrDefault(p => !p.IsActive && string.Equals(p.Id, _selectedPlaysetId, StringComparison.Ordinal));
+                        if (stillValidInactive == null)
+                        {
+                            _selectedPlaysetId = null;
+                            _isPreviewScanning = false;
+                            _previewWorkspace = workspace;
+                            ++_previewRequestId;
+                        }
+                        else
+                        {
+                            previewToRefresh = stillValidInactive.Id;
+                            _selectedPlaysetId = previewToRefresh;
+                            _isPreviewScanning = true;
+                            previewReqId = ++_previewRequestId;
+                        }
                     }
                     else
                     {
-                        previewToRefresh = stillValidInactive.Id;
-                        _selectedPlaysetId = previewToRefresh;
-                        _isPreviewScanning = true;
-                        previewReqId = ++_previewRequestId;
+                        _previewWorkspace = workspace;
                     }
-                }
-                else
-                {
-                    _previewWorkspace = workspace;
-                }
 
-                if (_rescanQueued)
-                {
-                    _rescanQueued = false;
-                    runAgain = true;
-                }
-                else
-                {
-                    _isScanning = false;
-                    runAgain = false;
+                    if (_rescanQueued)
+                    {
+                        _rescanQueued = false;
+                        runAgain = true;
+                    }
+                    else
+                    {
+                        _isScanning = false;
+                        runAgain = false;
+                    }
                 }
             }
 
-            // 在 UI 线程读取最新 Coc 工作副本完成瞬时定级并广播
+            if (discardedStale)
+                continue;
+
+            // 在 UI 线程读取最新 Coc 工作副本完成瞬时定级、清除 IsActiveStale 并广播
             bool followActiveNow = previewToRefresh == null;
             DispatchToUi(() =>
             {
+                bool stillCurrent;
+                lock (_gate)
+                {
+                    stillCurrent = scanActivationSeq >= _activationSeq;
+                    if (stillCurrent)
+                        _isActiveStale = false;
+                }
+
+                if (!stillCurrent)
+                    return;
+
                 LastScanError = null;
                 ConflictEvalSettings evalSettings = ConflictEvalSettings.FromDictionary(_coc.WorkingValues);
                 ConflictReport activeReport = ConflictAnalyzer.Evaluate(workspace, evalSettings);
@@ -388,7 +574,7 @@ public sealed class ConflictScanService
             lock (_gate)
             {
                 stillCurrent = requestId == _previewRequestId &&
-                               string.Equals(_selectedPlaysetId, targetPlaysetId, StringComparison.OrdinalIgnoreCase);
+                               string.Equals(_selectedPlaysetId, targetPlaysetId, StringComparison.Ordinal);
                 if (stillCurrent)
                     _isPreviewScanning = false;
             }
@@ -410,7 +596,7 @@ public sealed class ConflictScanService
         lock (_gate)
         {
             apply = requestId == _previewRequestId &&
-                    string.Equals(_selectedPlaysetId, targetPlaysetId, StringComparison.OrdinalIgnoreCase);
+                    string.Equals(_selectedPlaysetId, targetPlaysetId, StringComparison.Ordinal);
             if (apply)
             {
                 _previewWorkspace = previewWs;

@@ -182,6 +182,7 @@ public partial class LaunchSettingsPage
 
         // 状态
         var lines = new List<ToneLine>();
+        bool activeStale = App.Services.Conflicts.IsActiveStale;
         if (running)
         {
             lines.Add(new ToneLine(Loc.Instance["Launch.Status.Running"], PackageTone.Warning));
@@ -190,8 +191,20 @@ public partial class LaunchSettingsPage
         {
             if (o.Channel == LaunchChannel.Direct && location.Game is { IsSteamBuild: true } && _steamRunning == false)
                 lines.Add(new ToneLine(Loc.Instance["Launch.Status.SteamNotRunning"], PackageTone.Warning));
-            if (ConflictText.BuildLaunchPageHint(App.Services.Conflicts.Report, o, _runOncePending, lang) is { } conflictHint)
+            if (activeStale)
+            {
+                DetailLine rescanHint = ConflictText.BuildLaunchRescanningHint(lang);
+                lines.Add(new ToneLine(rescanHint.Value, rescanHint.Tone));
+            }
+            else if (ConflictText.BuildLaunchPageHint(App.Services.Conflicts.Report, o, _runOncePending, lang) is { } conflictHint)
+            {
                 lines.Add(new ToneLine(conflictHint.Value, conflictHint.Tone));
+            }
+            else if (App.Services.Conflicts.Report == null && !string.IsNullOrEmpty(App.Services.Conflicts.LastScanError))
+            {
+                DetailLine scanErrHint = ConflictText.BuildLaunchScanErrorHint(App.Services.Conflicts.LastScanError, lang);
+                lines.Add(new ToneLine(scanErrHint.Value, scanErrHint.Tone));
+            }
         }
 
         if (_launchNote != null)
@@ -203,7 +216,7 @@ public partial class LaunchSettingsPage
 
         bool starting = _launchStartedUtc != null;
         LaunchButton.Content = Loc.Instance[starting ? "Launch.Starting" : "Launch.Button"];
-        LaunchButton.IsEnabled = location.Game != null && !running && !starting;
+        LaunchButton.IsEnabled = location.Game != null && !running && !starting && !activeStale;
     }
 
     // === 参数 ===
@@ -318,6 +331,12 @@ public partial class LaunchSettingsPage
 
     private void OnLaunchClick(object sender, RoutedEventArgs e)
     {
+        if (App.Services.Conflicts.IsActiveStale)
+        {
+            UpdateLaunchState();
+            return;
+        }
+
         SaveCustomArguments();
         GameLocateResult location = App.Services.RefreshGameLocation();
         LaunchChannel channel = Options.Channel;

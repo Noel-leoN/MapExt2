@@ -49,10 +49,22 @@ public static class PlaysetModScanner
         if (trimmed == null || playsets.Count == 0)
             return new PlaysetLookupResult(PlaysetLookupKind.NotFound, null, []);
 
-        // 1. 本地 ID 精确匹配
-        PlaysetSummary? byLocalId = playsets.FirstOrDefault(p => string.Equals(p.Id, trimmed, StringComparison.OrdinalIgnoreCase));
-        if (byLocalId != null)
-            return new PlaysetLookupResult(PlaysetLookupKind.Matched, byLocalId, [byLocalId]);
+        // 1. 本地 ID 匹配（对齐 PDX SDK 区分大小写优先，未命中再做不区分大小写唯一匹配）
+        List<PlaysetSummary> byExactLocalId = playsets
+            .Where(p => string.Equals(p.Id, trimmed, StringComparison.Ordinal))
+            .ToList();
+        if (byExactLocalId.Count == 1)
+            return new PlaysetLookupResult(PlaysetLookupKind.Matched, byExactLocalId[0], byExactLocalId);
+        if (byExactLocalId.Count > 1)
+            return new PlaysetLookupResult(PlaysetLookupKind.Ambiguous, null, byExactLocalId);
+
+        List<PlaysetSummary> byCiLocalId = playsets
+            .Where(p => string.Equals(p.Id, trimmed, StringComparison.OrdinalIgnoreCase))
+            .ToList();
+        if (byCiLocalId.Count == 1)
+            return new PlaysetLookupResult(PlaysetLookupKind.Matched, byCiLocalId[0], byCiLocalId);
+        if (byCiLocalId.Count > 1)
+            return new PlaysetLookupResult(PlaysetLookupKind.Ambiguous, null, byCiLocalId);
 
         // 2. 商店后端数字 ID 精确匹配
         List<PlaysetSummary> byBackendId = playsets
@@ -356,10 +368,14 @@ public static class PlaysetModScanner
             allModItems.Add(BuildListItemFromEnabledPackage(localPkg, loadOrder: null, lockedVersion: null, unreadablePkgKeys));
         }
 
-        bool isMapExtEnabled = packages.Any(p => p.PdxModId == ConflictTargets.MapExtPdxModId && p.MissingDependencies.Count == 0) ||
-                               winners.Any(a =>
-                                   string.Equals(a.AssemblyName, "MapExt2", StringComparison.OrdinalIgnoreCase) ||
-                                   string.Equals(a.AssemblyName, "MapExtPDX", StringComparison.OrdinalIgnoreCase));
+        bool hasDiskMapExt = winners.Any(a => IsMapExtAssemblyName(a.AssemblyName));
+        bool hasPdxMapExtEnabled = packages.Any(p => p.PdxModId == ConflictTargets.MapExtPdxModId && p.MissingDependencies.Count == 0);
+        bool isMapExtEnabled = hasDiskMapExt || hasPdxMapExtEnabled;
+        bool isMapExtPendingDownload = !hasDiskMapExt &&
+                                       packages.Any(p =>
+                                           p.PdxModId == ConflictTargets.MapExtPdxModId &&
+                                           p.IsPendingCloudDownload &&
+                                           p.MissingDependencies.Count == 0);
 
         return new PlaysetScanResult(
             parsed.ActivePlaysetId,
@@ -378,8 +394,13 @@ public static class PlaysetModScanner
             parsed.TargetFound,
             isMapExtEnabled,
             parsed.Playsets,
-            allModItems);
+            allModItems,
+            isMapExtPendingDownload);
     }
+
+    internal static bool IsMapExtAssemblyName(string? assemblyName) =>
+        string.Equals(assemblyName, "MapExt2", StringComparison.OrdinalIgnoreCase) ||
+        string.Equals(assemblyName, "MapExtPDX", StringComparison.OrdinalIgnoreCase);
 
     private sealed record RawModSpec(int LoadOrder, string Source, string SourceId, string? PreferredVersion, bool IsEnabled);
 
@@ -470,7 +491,7 @@ public static class PlaysetModScanner
         string? activeId = null;
         string? activeName = null;
         var summaries = new List<PlaysetSummary>();
-        var modsByPlaysetId = new Dictionary<string, List<RawModSpec>>(StringComparer.OrdinalIgnoreCase);
+        var modsByPlaysetId = new Dictionary<string, List<RawModSpec>>(StringComparer.Ordinal);
 
         try
         {
@@ -487,7 +508,7 @@ public static class PlaysetModScanner
                 if (root.TryGetProperty("playsets", out JsonElement playsetsEl) &&
                     playsetsEl.ValueKind == JsonValueKind.Array)
                 {
-                    var seenPlaysets = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                    var seenPlaysets = new HashSet<string>(StringComparer.Ordinal);
                     foreach (JsonElement playset in playsetsEl.EnumerateArray())
                     {
                         if (playset.ValueKind != JsonValueKind.Object)
@@ -505,7 +526,8 @@ public static class PlaysetModScanner
                         }
 
                         string resolvedName = name ?? id;
-                        bool isActive = activeId != null && string.Equals(id, activeId, StringComparison.OrdinalIgnoreCase);
+                        // 对齐 PDX SDK ModsLocalConfigurationService.LoadPlaysetConfigurationInner：LocalId == activePlaysetId 区分大小写
+                        bool isActive = activeId != null && string.Equals(id, activeId, StringComparison.Ordinal);
                         // 对齐 PDX SDK ModsLocalConfigurationService：激活播放集强制视为在磁盘保留模组（isOffdisk = false）
                         bool isOffdisk = !isActive && GetOptionalBool(playset, "isOffdisk");
                         bool isImmutable = GetOptionalBool(playset, "isImmutable");
@@ -589,10 +611,26 @@ public static class PlaysetModScanner
                 TargetMods: activeMods);
         }
 
-        PlaysetSummary? matched = orderedPlaysets.FirstOrDefault(p => string.Equals(p.Id, requested, StringComparison.OrdinalIgnoreCase))
-                                  ?? orderedPlaysets.FirstOrDefault(p =>
-                                      !string.IsNullOrEmpty(p.BackendPlaysetId) &&
-                                      string.Equals(p.BackendPlaysetId, requested, StringComparison.OrdinalIgnoreCase));
+        PlaysetSummary? matched = orderedPlaysets.FirstOrDefault(p => string.Equals(p.Id, requested, StringComparison.Ordinal));
+        if (matched == null)
+        {
+            List<PlaysetSummary> ciMatches = orderedPlaysets
+                .Where(p => string.Equals(p.Id, requested, StringComparison.OrdinalIgnoreCase))
+                .ToList();
+            if (ciMatches.Count == 1)
+                matched = ciMatches[0];
+        }
+
+        if (matched == null)
+        {
+            List<PlaysetSummary> backendMatches = orderedPlaysets
+                .Where(p => !string.IsNullOrEmpty(p.BackendPlaysetId) &&
+                            string.Equals(p.BackendPlaysetId, requested, StringComparison.OrdinalIgnoreCase))
+                .ToList();
+            if (backendMatches.Count == 1)
+                matched = backendMatches[0];
+        }
+
         if (matched == null)
         {
             return new ParsedPlaysetConfig(
@@ -628,7 +666,7 @@ public static class PlaysetModScanner
 
     private static Dictionary<string, string> ReadPlaysetSyncBackendIds(string syncFile)
     {
-        var result = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        var result = new Dictionary<string, string>(StringComparer.Ordinal);
         if (!File.Exists(syncFile))
             return result;
 

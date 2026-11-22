@@ -44,8 +44,8 @@ public partial class CommandLineTextTests
             columns.Add(CommandLineText.DisplayWidth(line[..match.Groups["text"].Index]));
         }
 
-        // 9 个设定、--reset、--launch、--show、--check-conflicts、--list-playsets、--list-mods、--playset、--lang、--help、--user-data、--game-process
-        Assert.Equal(CommandLineParser.SettingOptions.Count + 11, rows);
+        // 9 个设定、--reset、--launch、--show、--check-conflicts、--list-playsets、--list-mods、--playset、--activate-playset、--lang、--help、--user-data、--game-process
+        Assert.Equal(CommandLineParser.SettingOptions.Count + 12, rows);
         Assert.Single(columns);
     }
 }

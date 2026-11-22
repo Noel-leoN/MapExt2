@@ -1,9 +1,13 @@
+using System.ComponentModel;
+using System.Diagnostics;
 using System.Globalization;
+using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 using MapExTools.Core.Conflicts;
 using MapExTools.Core.Packages;
+using MapExTools.Core.Paths;
 using MapExTools.Services;
 using MapExtPDX.MapExt.Core;
 
@@ -45,8 +49,8 @@ public sealed class ModListRowViewModel
 }
 
 /// <summary>
-/// 模组与冲突预检页：支持只读切换本地任意 Playset（含未激活播放集），
-/// 提供「冲突预检」分级卡片（支持一键关闭可规避纯经济分组）与「模组列表」虚拟化清单双视图。
+/// 模组列表与冲突预检页：支持只读预览本地任意 Playset（含未激活播放集）、在游戏关闭时安全切换当前激活播放集，
+/// 提供「冲突预检」分级卡片（支持一键关闭可规避纯经济分组）与「模组列表」虚拟化清单双视图，以及官方 Paradox Mods 网页入口。
 /// </summary>
 public partial class ConflictCheckPage : UserControl
 {
@@ -60,6 +64,8 @@ public partial class ConflictCheckPage : UserControl
     private bool _populatingPlaysetBox;
     private bool _populatingModFilterBox;
     private ModListFilterKind _modFilter = ModListFilterKind.All;
+    private Func<string, ToneLine>? _activationNotice;
+    private string? _activatedPlaysetId;
 
     public ConflictCheckPage()
     {
@@ -131,8 +137,9 @@ public partial class ConflictCheckPage : UserControl
     private void OnRescanClick(object sender, RoutedEventArgs e)
     {
         ClearCopyNote();
+        ClearActivationNotice();
         App.Services.RefreshGameLocation();
-        ScanService.TriggerScan();
+        ScanService.TriggerScan(clearInspectionCache: true);
     }
 
     private void OnPlaysetSelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -141,8 +148,88 @@ public partial class ConflictCheckPage : UserControl
             return;
 
         ClearCopyNote();
+        ClearActivationNotice();
         ScanService.SelectPlayset(choice.PlaysetId);
     }
+
+    private async void OnActivatePlaysetClick(object sender, RoutedEventArgs e)
+    {
+        ConflictReport? report = ScanService.PreviewReport;
+        if (report == null || ScanService.IsPreviewScanning || ScanService.IsActivating || Coc.GameRunning)
+            return;
+
+        PlaysetScanResult playset = report.Workspace.Playset;
+        string? targetId = playset.EffectivePlaysetId;
+        if (playset.IsTargetActivePlayset || string.IsNullOrWhiteSpace(targetId))
+            return;
+
+        string targetName = playset.EffectivePlaysetName ?? targetId;
+        bool hasPendingMods = playset.Packages.Any(p => p.IsPendingCloudDownload);
+
+        // 决策 D5 / 护栏 ⑥：常规切换一键执行；仅目标未启用 MapEx 或 MapEx 待下载时弹二次确认框
+        string? confirmKey = !playset.IsMapExtEnabledInTarget
+            ? "Conflicts.Activate.ConfirmNoMapEx"
+            : playset.IsMapExtPendingDownloadInTarget
+                ? "Conflicts.Activate.ConfirmPendingMapEx"
+                : null;
+        if (confirmKey != null)
+        {
+            MessageBoxResult answer = ShowOwnerMessage(
+                Loc.Instance.Format(confirmKey, targetName),
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Warning);
+            if (answer != MessageBoxResult.Yes)
+                return;
+        }
+
+        ClearCopyNote();
+        ClearActivationNotice();
+
+        PlaysetActivationResult result = await ScanService.ActivatePlaysetAsync(targetId);
+        if (!IsLoaded)
+            return;
+
+        if (result.IsSuccess)
+        {
+            PackageTone tone = result.Status == PlaysetActivationStatus.Activated && hasPendingMods
+                ? PackageTone.Warning
+                : PackageTone.Good;
+            _activatedPlaysetId = result.TargetPlaysetId ?? targetId;
+            _activationNotice = lang => new ToneLine(ConflictText.FormatActivationResult(result, hasPendingMods, lang), tone);
+            RefreshView();
+        }
+        else
+        {
+            RefreshView();
+            ShowOwnerMessage(
+                ConflictText.FormatActivationResult(result, hasPendingMods: false, CurrentLanguage),
+                MessageBoxButton.OK,
+                MessageBoxImage.Warning);
+        }
+    }
+
+    private void OnOpenPdxWebClick(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            using Process? proc = Process.Start(new ProcessStartInfo(UserDataPaths.ParadoxModsSubscriptionsUrl)
+            {
+                UseShellExecute = true,
+            });
+        }
+        catch (Exception ex) when (ex is Win32Exception or IOException or InvalidOperationException)
+        {
+            ShowOwnerMessage(
+                Loc.Instance.Format("Conflicts.OpenPdxWebFailed", ex.Message),
+                MessageBoxButton.OK,
+                MessageBoxImage.Warning);
+        }
+    }
+
+    private MessageBoxResult ShowOwnerMessage(string message, MessageBoxButton buttons, MessageBoxImage image) =>
+        Window.GetWindow(this) is { } owner
+            ? MessageBox.Show(owner, message, Loc.Instance["App.Title"], buttons, image)
+            : MessageBox.Show(message, Loc.Instance["App.Title"], buttons, image);
 
     private void OnSubViewChecked(object sender, RoutedEventArgs e)
     {
@@ -230,12 +317,22 @@ public partial class ConflictCheckPage : UserControl
         ApplySubViewVisibility();
 
         bool scanning = ScanService.IsPreviewScanning;
+        bool activating = ScanService.IsActivating;
         ConflictReport? activeReport = ScanService.Report;
         ConflictReport? report = ScanService.PreviewReport;
         string? previewError = ScanService.LastPreviewError ?? (ScanService.SelectedPlaysetId == null ? ScanService.LastScanError : null);
 
-        RescanButton.IsEnabled = !ScanService.IsScanning && !scanning;
-        PopulatePlaysetBox(report?.Workspace.Playset ?? activeReport?.Workspace.Playset, lang, enabled: !ScanService.IsScanning);
+        if (report != null &&
+            _activatedPlaysetId != null &&
+            !string.Equals(report.Workspace.Playset.EffectivePlaysetId, _activatedPlaysetId, StringComparison.Ordinal))
+        {
+            ClearActivationNotice();
+        }
+
+        RescanButton.IsEnabled = !ScanService.IsScanning && !scanning && !activating;
+        PopulatePlaysetBox(report?.Workspace.Playset ?? activeReport?.Workspace.Playset, lang, enabled: !ScanService.IsScanning && !activating);
+        UpdateActivateButtonState(report, scanning);
+        UpdateActivationNotice(lang);
 
         if (scanning && report == null)
         {
@@ -356,6 +453,64 @@ public partial class ConflictCheckPage : UserControl
             totalModCount);
     }
 
+    private void UpdateActivateButtonState(ConflictReport? report, bool scanning)
+    {
+        bool activating = ScanService.IsActivating;
+        PlaysetScanResult? playset = report?.Workspace.Playset;
+
+        if (activating)
+        {
+            ActivatePlaysetButton.Content = Loc.Instance["Conflicts.Activate.Activating"];
+            ActivatePlaysetButton.IsEnabled = false;
+            ActivatePlaysetButton.ToolTip = Loc.Instance["Conflicts.Activate.Tip"];
+            return;
+        }
+
+        if (playset != null &&
+            playset.IsTargetActivePlayset &&
+            !string.IsNullOrWhiteSpace(playset.EffectivePlaysetId) &&
+            playset.TargetPlaysetFound)
+        {
+            ActivatePlaysetButton.Content = Loc.Instance["Conflicts.Activate.Active"];
+            ActivatePlaysetButton.IsEnabled = false;
+            ActivatePlaysetButton.ToolTip = Loc.Instance["Conflicts.Activate.Tip"];
+            return;
+        }
+
+        bool canActivate = playset != null &&
+                           !playset.IsTargetActivePlayset &&
+                           !string.IsNullOrWhiteSpace(playset.EffectivePlaysetId) &&
+                           playset.TargetPlaysetFound &&
+                           !Coc.GameRunning &&
+                           !scanning &&
+                           !ScanService.IsScanning;
+
+        ActivatePlaysetButton.Content = Loc.Instance["Conflicts.Activate.Button"];
+        ActivatePlaysetButton.IsEnabled = canActivate;
+        ActivatePlaysetButton.ToolTip = Coc.GameRunning
+            ? Loc.Instance["Startup.Running"]
+            : Loc.Instance["Conflicts.Activate.Tip"];
+    }
+
+    private void ClearActivationNotice()
+    {
+        _activationNotice = null;
+        _activatedPlaysetId = null;
+    }
+
+    private void UpdateActivationNotice(string lang)
+    {
+        if (_activationNotice == null)
+        {
+            ActivationNoticeText.DataContext = null;
+            ActivationNoticeText.Visibility = Visibility.Collapsed;
+            return;
+        }
+
+        ActivationNoticeText.DataContext = _activationNotice(lang);
+        ActivationNoticeText.Visibility = Visibility.Visible;
+    }
+
     private void PopulatePlaysetBox(PlaysetScanResult? playset, string lang, bool enabled)
     {
         _populatingPlaysetBox = true;
@@ -396,7 +551,7 @@ public partial class ConflictCheckPage : UserControl
             string? selectedId = ScanService.SelectedPlaysetId;
             int idx = selectedId == null
                 ? 0
-                : choices.FindIndex(c => string.Equals(c.PlaysetId, selectedId, StringComparison.OrdinalIgnoreCase));
+                : choices.FindIndex(c => string.Equals(c.PlaysetId, selectedId, StringComparison.Ordinal));
             if (idx < 0)
                 idx = 0;
 

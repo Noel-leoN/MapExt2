@@ -91,11 +91,17 @@ public sealed class UserDataPaths
     /// <summary>本地 Mod 目录。工具的 exe 不能放在这里，否则会被游戏当作 Mod 扫描。</summary>
     public string ModsDir => Combine("Mods");
 
+    /// <summary>Paradox Mods 官方 Cities: Skylines II 订阅与播放集管理页（D4 定稿）。</summary>
+    public const string ParadoxModsSubscriptionsUrl = "https://mods.paradoxplaza.com/subscriptions/cities_skylines_2";
+
     /// <summary>PDX SDK 本地模组与 Playset 配置缓存目录 <c>.cache/Mods</c>。</summary>
     public string ModsCacheDir => Combine(".cache/Mods");
 
-    /// <summary>PDX SDK 激活 Playset 与启用模组列表 <c>.cache/Mods/playset_config.json</c>（只读）。</summary>
+    /// <summary>PDX SDK 播放集配置 <c>.cache/Mods/playset_config.json</c>（读取播放集与模组列表；切换激活播放集时会带 <c>.bak</c> 备份原子写入）。</summary>
     public string PlaysetConfigFile => Combine(".cache/Mods/playset_config.json");
+
+    /// <summary>PDX SDK 播放集配置写锁 <c>.cache/Mods/playset_config_lock.json</c>（只读检查，不修改）。</summary>
+    public string PlaysetConfigLockFile => Combine(".cache/Mods/playset_config_lock.json");
 
     /// <summary>PDX SDK 播放集云同步元数据（含商店后端数字 ID）<c>.cache/Mods/playset_sync.json</c>（只读）。</summary>
     public string PlaysetSyncFile => Combine(".cache/Mods/playset_sync.json");

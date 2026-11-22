@@ -175,7 +175,8 @@ public partial class App : Application
 
         CliConsole.Write(output.ToString(), error.ToString(),
             dialogWithoutConsole: code != ExitCodes.Success || options.Show || options.Help
-                                  || options.CheckConflicts || options.ListPlaysets || options.ListMods,
+                                  || options.CheckConflicts || options.ListPlaysets || options.ListMods
+                                  || options.ActivatePlayset != null,
             isError: code != ExitCodes.Success);
         return code;
     }

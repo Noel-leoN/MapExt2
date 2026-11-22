@@ -455,6 +455,91 @@ public sealed class PlaysetModScannerTests : IDisposable
         Assert.Equal("Carol", disabledItem.Author);
     }
 
+    [Fact]
+    public void Scan_MapExtPendingDownloadInTarget_CoversAllFourBranches()
+    {
+        Directory.CreateDirectory(_paths.ModsCacheDir);
+        File.WriteAllText(_paths.PlaysetConfigFile, """
+            {
+              "configVersion": 1,
+              "activePlaysetId": "ps-pending",
+              "playsets": [
+                {
+                  "id": "ps-pending",
+                  "presentation": { "name": "Pending MapExt" },
+                  "mods": [ { "source": "pdx_mods", "sourceId": "107939", "isEnabled": true } ]
+                },
+                {
+                  "id": "ps-none",
+                  "presentation": { "name": "No MapExt" },
+                  "mods": []
+                }
+              ]
+            }
+            """);
+
+        // 1. 订阅版 107939 尚未下载到本地：IsMapExtEnabledInTarget 与 IsMapExtPendingDownloadInTarget 均为真
+        PlaysetScanResult pending = PlaysetModScanner.Scan(_paths, targetPlaysetId: "ps-pending");
+        Assert.True(pending.IsMapExtEnabledInTarget);
+        Assert.True(pending.IsMapExtPendingDownloadInTarget);
+
+        // 2. 目标未启用 MapExt 且本地 Mods/ 无 MapExt：两者均为假
+        PlaysetScanResult none = PlaysetModScanner.Scan(_paths, targetPlaysetId: "ps-none");
+        Assert.False(none.IsMapExtEnabledInTarget);
+        Assert.False(none.IsMapExtPendingDownloadInTarget);
+
+        // 3. 本地 Mods/ 有 MapExt2.dll，同时订阅版 107939 仍待下载：已落盘优先，IsMapExtPendingDownloadInTarget 为假
+        string localMapExtDir = Path.Combine(_paths.ModsDir, "MapExt2");
+        Directory.CreateDirectory(localMapExtDir);
+        File.WriteAllBytes(Path.Combine(localMapExtDir, "MapExt2.dll"), BuildSimpleIMod("MapExt2", new Version(4, 12, 0)));
+
+        PlaysetScanResult localAndPending = PlaysetModScanner.Scan(_paths, targetPlaysetId: "ps-pending");
+        Assert.True(localAndPending.IsMapExtEnabledInTarget);
+        Assert.False(localAndPending.IsMapExtPendingDownloadInTarget);
+
+        // 4. 清理本地 Mods/，改为订阅版 107939 已落盘：IsMapExtEnabledInTarget 为真、IsMapExtPendingDownloadInTarget 为假
+        RemoveDirectorySafe(localMapExtDir);
+        string pdxMapExtDir = Path.Combine(_paths.ModsCacheDir, "pdx_mods", "107939_1");
+        Directory.CreateDirectory(pdxMapExtDir);
+        File.WriteAllBytes(Path.Combine(pdxMapExtDir, "MapExt2.dll"), BuildSimpleIMod("MapExt2", new Version(4, 12, 0)));
+
+        PlaysetScanResult pdxOnDisk = PlaysetModScanner.Scan(_paths, targetPlaysetId: "ps-pending");
+        Assert.True(pdxOnDisk.IsMapExtEnabledInTarget);
+        Assert.False(pdxOnDisk.IsMapExtPendingDownloadInTarget);
+    }
+
+    [Fact]
+    public void ListPlaysets_AndResolvePlayset_MatchSdkCaseSensitivityAndDetectCaseAmbiguity()
+    {
+        Directory.CreateDirectory(_paths.ModsCacheDir);
+        // activePlaysetId 故意写成错误大小写 "ps-beta"：对齐 SDK（LocalId == activePlaysetId 区分大小写），不应将 "ps-Beta" 误判为已激活
+        File.WriteAllText(_paths.PlaysetConfigFile, """
+            {
+              "configVersion": 1,
+              "activePlaysetId": "ps-beta",
+              "playsets": [
+                { "id": "ps-Beta", "presentation": { "name": "Beta" }, "mods": [] },
+                { "id": "ps-A", "presentation": { "name": "Upper A" }, "mods": [] },
+                { "id": "ps-a", "presentation": { "name": "Lower A" }, "mods": [] }
+              ]
+            }
+            """);
+
+        PlaysetCatalogResult catalog = PlaysetModScanner.ListPlaysets(_paths);
+        Assert.Equal(3, catalog.Playsets.Count);
+        Assert.DoesNotContain(catalog.Playsets, p => p.IsActive);
+
+        // 精确大小写匹配优先
+        PlaysetLookupResult exactLower = PlaysetModScanner.ResolvePlayset(catalog.Playsets, "ps-a");
+        Assert.Equal(PlaysetLookupKind.Matched, exactLower.Kind);
+        Assert.Equal("ps-a", exactLower.Match!.Id);
+
+        // 两者都不是精确匹配（全大写 "PS-A"）且存在多个忽略大小写匹配时返回 Ambiguous
+        PlaysetLookupResult ciAmbiguous = PlaysetModScanner.ResolvePlayset(catalog.Playsets, "PS-A");
+        Assert.Equal(PlaysetLookupKind.Ambiguous, ciAmbiguous.Kind);
+        Assert.Equal(2, ciAmbiguous.Candidates.Count);
+    }
+
     private static byte[] BuildSimpleIMod(string asmName, Version version) =>
         SyntheticModBuilder.BuildModAssembly(asmName, version, (mod, env) =>
         {

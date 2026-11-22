@@ -176,7 +176,8 @@ public sealed record PlaysetScanResult(
     bool TargetPlaysetFound = true,
     bool IsMapExtEnabledInTarget = true,
     IReadOnlyList<PlaysetSummary>? AvailablePlaysets = null,
-    IReadOnlyList<PlaysetModListItem>? AllModItems = null)
+    IReadOnlyList<PlaysetModListItem>? AllModItems = null,
+    bool IsMapExtPendingDownloadInTarget = false)
 {
     /// <summary>本次实际扫描的目标播放集 ID（未显式传入时退回 <see cref="ActivePlaysetId"/>）。</summary>
     public string? EffectivePlaysetId => IsTargetActivePlayset ? (TargetPlaysetId ?? ActivePlaysetId) : TargetPlaysetId;

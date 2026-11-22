@@ -16,7 +16,7 @@ public static class ExitCodes
 {
     public const int Success = 0;
 
-    /// <summary>出错，含设定文件格式有误、参数有误、启动失败。</summary>
+    /// <summary>出错，含设定文件格式有误、参数有误、切换播放集失败、启动失败。</summary>
     public const int Error = 1;
 
     /// <summary>游戏正在运行，未做任何改动。</summary>
@@ -39,9 +39,8 @@ public sealed class CommandLineContext
 }
 
 /// <summary>
-/// 执行命令行（计划 2.2）：按选项改 <c>MapExtPDX.coc</c>、显示状态、播放集、模组列表与冲突报告、启动游戏。流程沿用开发版：
-/// 要写入或启动时先查游戏是否在运行，在运行就什么都不做、返回 2；写入只改有改动的键（2.1 的
-/// <see cref="CocSettingsManager"/>）；写入后按需输出状态与冲突报告，最后才启动（审计修复 D5）。
+/// 执行命令行（计划 2.2 / Phase 4）：按选项改 <c>MapExtPDX.coc</c>、切换激活播放集、显示状态／播放集／模组列表与冲突报告、启动游戏。
+/// 要写入设定、切换播放集或启动时先查游戏是否在运行，在运行就什么都不做、返回 2；所有播放集参数均在写盘前完成预检以防半截写盘；
 /// 正常结果写 output，错误与警告写 error。逻辑都在这里，界面程序只负责接上控制台。
 /// </summary>
 public sealed class CommandLineRunner
@@ -51,8 +50,8 @@ public sealed class CommandLineRunner
     private readonly TextWriter _error;
     private readonly string _language;
 
-    /// <param name="output">正常结果：已写入、状态、播放集、模组列表、冲突报告、已启动。</param>
-    /// <param name="error">错误与警告（游戏在运行、设定文件有误、没能启动等）；为 null 时与 <paramref name="output"/> 合用一个。</param>
+    /// <param name="output">正常结果：已写入、已切换、状态、播放集、模组列表、冲突报告、已启动。</param>
+    /// <param name="error">错误与警告（游戏在运行、设定文件有误、锁冲突、没能启动等）；为 null 时与 <paramref name="output"/> 合用一个。</param>
     public CommandLineRunner(CommandLineContext context, TextWriter output, string language, TextWriter? error = null)
     {
         ArgumentNullException.ThrowIfNull(context);
@@ -67,6 +66,7 @@ public sealed class CommandLineRunner
     public int Run(CommandLineOptions options)
     {
         ArgumentNullException.ThrowIfNull(options);
+        _activationOutcomePrinted = false;
 
         if (options.Help)
         {
@@ -85,14 +85,45 @@ public sealed class CommandLineRunner
         foreach ((string key, object value) in options.Settings)
             target[key] = value;
 
-        if ((target.Count > 0 || options.Launch) && _context.IsGameRunning())
+        // 1. 任何写操作（设定、激活播放集）或启动在游戏运行时立即拒绝，返回退出码 2
+        if ((target.Count > 0 || options.Launch || options.ActivatePlayset != null) && _context.IsGameRunning())
         {
             ErrorLine("Cli.GameRunning");
             return ExitCodes.GameRunning;
         }
 
-        // 仅当写设定、--show、--check-conflicts 或 --launch 时严格要求 MapExtPDX.coc 合法；
-        // 纯 --list-playsets 不读 .coc，纯 --list-mods 在 .coc 损坏时降级跳过冲突定级仍正常输出列表
+        // 2. 统一前置校验：在写任何文件前，把 --activate-playset 与 --playset 的解析和锁/版本预检全部跑完，杜绝半截写盘
+        string? activateTargetId = null;
+        if (options.ActivatePlayset != null)
+        {
+            if (!TryResolveTargetPlayset(options.ActivatePlayset, forActivation: true, out activateTargetId, out _))
+                return ExitCodes.Error;
+
+            PlaysetActivationResult precheck = PlaysetActivator.Check(_context.Paths, activateTargetId, _context.IsGameRunning);
+            if (!precheck.IsSuccess)
+            {
+                _error.WriteLine(ConflictText.FormatActivationResult(precheck, hasPendingMods: false, _language));
+                return precheck.Status == PlaysetActivationStatus.GameRunning ? ExitCodes.GameRunning : ExitCodes.Error;
+            }
+        }
+
+        string? resolvedInspectPlaysetId = null;
+        bool inspectIsActive = false;
+        if (options.Playset != null)
+        {
+            if (!TryResolveTargetPlayset(options.Playset, forActivation: false, out resolvedInspectPlaysetId, out inspectIsActive))
+                return ExitCodes.Error;
+
+            // 若同时激活了别的播放集，判断最终将要激活的是否就是 --playset 目标
+            bool effectiveInspectIsActive = activateTargetId != null
+                ? string.Equals(resolvedInspectPlaysetId, activateTargetId, StringComparison.Ordinal)
+                : inspectIsActive;
+            if (options.Launch && !effectiveInspectIsActive)
+                ErrorLine("Cli.Playset.ReadOnlyLaunchNote", options.Playset);
+        }
+
+        // 3. 读写 MapExtPDX.coc：仅当写设定、--reset、--show、--check-conflicts 或 --launch 时要求合法；
+        // 纯 --list-playsets / --activate-playset 不读 .coc，纯 --list-mods 遇 .coc 损坏时降级跳过冲突定级
         bool strictCoc = target.Count > 0 || options.Reset || options.Show || options.CheckConflicts || options.Launch;
         var manager = new CocSettingsManager(_context.Paths.CocFile, _context.IsGameRunning);
         StartupSettingsState? state = null;
@@ -154,31 +185,51 @@ public sealed class CommandLineRunner
             }
         }
 
-        // 若显式指定了 --playset，先校验该目标播放集是否存在且无重名歧义；目标无效时不启动游戏直接返回错误码
-        string? resolvedTargetPlaysetId = null;
-        if (options.Playset != null)
+        // 4. 执行播放集激活（若失败直接返回，不继续启动游戏）
+        PlaysetActivationResult? activationResult = null;
+        if (activateTargetId != null)
         {
-            if (!TryResolveTargetPlayset(options.Playset, out resolvedTargetPlaysetId, out bool isTargetActive))
-                return ExitCodes.Error;
-
-            if (options.Launch && !isTargetActive)
-                ErrorLine("Cli.Playset.ReadOnlyLaunchNote", options.Playset);
+            activationResult = PlaysetActivator.Activate(_context.Paths, activateTargetId, _context.IsGameRunning);
+            if (!activationResult.IsSuccess)
+            {
+                _error.WriteLine(ConflictText.FormatActivationResult(activationResult, hasPendingMods: false, _language));
+                return activationResult.Status == PlaysetActivationStatus.GameRunning ? ExitCodes.GameRunning : ExitCodes.Error;
+            }
         }
 
-        // 按 D5 约定：同时带诊断选项与 --launch 时先输出诊断再启动；诊断异常不拦启动，退出码仍记为出错
+        // 5. MapEx 判定与诊断：
+        // 有 --check-conflicts / --list-mods 且未另传 --playset 时，先做诊断扫描并复用其 Playset 判定输出激活结果与护栏 ⑥ 警告（只扫一遍）；
+        // 否则（无诊断，或 --playset 指向另一播放集）对激活目标单独跑轻量的 PlaysetModScanner.Scan（不解析方法体 IL）
         bool diagnosticsFailed = false;
         try
         {
+            bool hasDiagScan = options.CheckConflicts || options.ListMods;
+            bool reuseDiagForActivation = activationResult != null && hasDiagScan && resolvedInspectPlaysetId == null;
+
+            GameLocateResult? cachedLocation = null;
+            GameLocateResult GetLocation() => cachedLocation ??= _context.LocateGame();
+
+            if (activationResult != null && !reuseDiagForActivation)
+            {
+                string? gameDir = TryGetGameDirQuietly(GetLocation);
+                PlaysetScanResult activatedScan = PlaysetModScanner.Scan(_context.Paths, gameDir, activationResult.TargetPlaysetId);
+                EmitActivationOutcomeAndWarnings(activationResult, activatedScan);
+            }
+
             if (options.Show)
                 WriteStatus(state!);
 
             if (options.ListPlaysets && !WritePlaysets())
                 diagnosticsFailed = true;
 
-            if (options.CheckConflicts || options.ListMods)
+            if (hasDiagScan)
             {
-                GameLocateResult location = _context.LocateGame();
-                ScannedModWorkspace ws = ConflictAnalyzer.ScanWorkspace(_context.Paths, location.Game?.GameDir, resolvedTargetPlaysetId);
+                GameLocateResult location = GetLocation();
+                ScannedModWorkspace ws = ConflictAnalyzer.ScanWorkspace(_context.Paths, location.Game?.GameDir, resolvedInspectPlaysetId);
+
+                if (reuseDiagForActivation && activationResult != null)
+                    EmitActivationOutcomeAndWarnings(activationResult, ws.Playset);
+
                 if (!string.IsNullOrEmpty(ws.Playset.PlaysetConfigError))
                 {
                     ErrorLine("Conflicts.PlaysetReadError", ws.Playset.PlaysetConfigError);
@@ -202,15 +253,47 @@ public sealed class CommandLineRunner
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidOperationException)
         {
+            // 若在复用诊断分支中定位游戏失败导致尚未打印激活成功消息，先补齐激活输出
+            if (activationResult != null && !_activationOutcomePrinted)
+                _output.WriteLine(ConflictText.FormatActivationResult(activationResult, hasPendingMods: false, _language));
+
             ErrorLine("Cli.Error", ex.Message);
             diagnosticsFailed = true;
         }
 
+        // 6. 执行启动
         int code = options.Launch ? Launch() : ExitCodes.Success;
         return diagnosticsFailed ? ExitCodes.Error : code;
     }
 
-    private bool TryResolveTargetPlayset(string query, out string? resolvedId, out bool isActive)
+    private bool _activationOutcomePrinted;
+
+    private void EmitActivationOutcomeAndWarnings(PlaysetActivationResult activation, PlaysetScanResult scan)
+    {
+        bool hasPendingMods = scan.Packages.Any(p => p.IsPendingCloudDownload);
+        _output.WriteLine(ConflictText.FormatActivationResult(activation, hasPendingMods, _language));
+        _activationOutcomePrinted = true;
+
+        string targetName = activation.TargetPlaysetName ?? activation.TargetPlaysetId ?? "?";
+        if (!scan.IsMapExtEnabledInTarget)
+            ErrorLine("Cli.Activate.WarnNoMapEx", targetName);
+        else if (scan.IsMapExtPendingDownloadInTarget)
+            ErrorLine("Cli.Activate.WarnPendingMapEx", targetName);
+    }
+
+    private static string? TryGetGameDirQuietly(Func<GameLocateResult> getLocation)
+    {
+        try
+        {
+            return getLocation().Game?.GameDir;
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidOperationException)
+        {
+            return null;
+        }
+    }
+
+    private bool TryResolveTargetPlayset(string query, bool forActivation, out string? resolvedId, out bool isActive)
     {
         resolvedId = null;
         isActive = false;
@@ -222,7 +305,16 @@ public sealed class CommandLineRunner
             return false;
         }
 
-        if (!catalog.ConfigExists || catalog.Playsets.Count == 0)
+        if (!catalog.ConfigExists)
+        {
+            if (forActivation)
+                ErrorLine("Conflicts.Activate.Err.ConfigMissing");
+            else
+                ErrorLine("Cli.Playset.NotFound", query, string.Empty);
+            return false;
+        }
+
+        if (catalog.Playsets.Count == 0)
         {
             ErrorLine("Cli.Playset.NotFound", query, string.Empty);
             return false;
@@ -386,7 +478,7 @@ public sealed class CommandLineRunner
 
     private void WriteConflicts(ConflictReport report, ConflictEvalSettings evalSettings)
     {
-        // 与模组与冲突预检页一致：摘要句以评估模式开头，另一类模式结果不同时补一行，再写扫描概况与提示
+        // 与模组列表与冲突预检页一致：摘要句以评估模式开头，另一类模式结果不同时补一行，再写扫描概况与提示
         _output.WriteLine(ConflictText.StatusBanner(report, _language).Value);
         if (ConflictText.CrossModeSummary(report, _language) is { } crossMode)
             _output.WriteLine(crossMode);

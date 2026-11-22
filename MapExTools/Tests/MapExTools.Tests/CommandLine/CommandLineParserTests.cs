@@ -52,7 +52,7 @@ public class CommandLineParserTests
     [Fact]
     public void Flags_SetTheirProperty()
     {
-        CommandLineOptions options = Parse("--show", "--reset", "--launch", "--check-conflicts", "--list-playsets", "--list-mods", "--playset", "MySet", "--help");
+        CommandLineOptions options = Parse("--show", "--reset", "--launch", "--check-conflicts", "--list-playsets", "--list-mods", "--playset", "MySet", "--activate-playset", "TargetSet", "--help");
         Assert.True(options.Show);
         Assert.True(options.Reset);
         Assert.True(options.Launch);
@@ -60,7 +60,20 @@ public class CommandLineParserTests
         Assert.True(options.ListPlaysets);
         Assert.True(options.ListMods);
         Assert.Equal("MySet", options.Playset);
+        Assert.Equal("TargetSet", options.ActivatePlayset);
         Assert.True(options.Help);
+    }
+
+    [Fact]
+    public void ActivatePlayset_IsCommandMode_AndSupportsEqualsSyntax()
+    {
+        CommandLineOptions a = Parse("--activate-playset", "My Set");
+        Assert.True(a.IsCommandMode);
+        Assert.Equal("My Set", a.ActivatePlayset);
+
+        CommandLineOptions b = Parse("--ACTIVATE-PLAYSET=ps-2");
+        Assert.True(b.IsCommandMode);
+        Assert.Equal("ps-2", b.ActivatePlayset);
     }
 
     [Theory]
@@ -149,6 +162,9 @@ public class CommandLineParserTests
     [InlineData(CommandLineErrorKind.UnexpectedValue, "--list-mods=1")]
     [InlineData(CommandLineErrorKind.MissingValue, "--playset")]
     [InlineData(CommandLineErrorKind.InvalidValue, "--playset", "   ")]
+    [InlineData(CommandLineErrorKind.MissingValue, "--activate-playset")]
+    [InlineData(CommandLineErrorKind.InvalidValue, "--activate-playset", "   ")]
+    [InlineData(CommandLineErrorKind.InvalidValue, "--activate-playset=")]
     [InlineData(CommandLineErrorKind.RequiresOption, "--playset", "OtherSet")]
     [InlineData(CommandLineErrorKind.RequiresOption, "--playset", "OtherSet", "--launch")]
     [InlineData(CommandLineErrorKind.RequiresOption, "--playset", "OtherSet", "--mode", "ModeA")]
@@ -156,6 +172,7 @@ public class CommandLineParserTests
     [InlineData(CommandLineErrorKind.Duplicate, "--show", "--show")]
     [InlineData(CommandLineErrorKind.Duplicate, "--check-conflicts", "--check-conflicts")]
     [InlineData(CommandLineErrorKind.Duplicate, "--playset", "A", "--playset", "B", "--list-mods")]
+    [InlineData(CommandLineErrorKind.Duplicate, "--activate-playset", "A", "--activate-playset", "B")]
     public void Errors(CommandLineErrorKind kind, params string[] args)
     {
         Assert.Equal(kind, Fails(args).Kind);
