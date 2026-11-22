@@ -6,7 +6,7 @@
 
 1. **Launch and Startup Settings:** Switch MapExt's map size mode (`57km` / `43km` / `28km` / `114km` / vanilla `14km`), toggle the 6 economy system groups, and launch `Cities2.exe` straight to the Main Menu while skipping the Paradox Launcher — no Steam `%command%` setup required.
 2. **Mod Settings Center:** Edit all 65 persistent MapExt OptionUI settings offline before starting the game (Core and Conversion, Performance and Tools, Pathfinding Limits, Economy and Throughput, Land Value and Rent), with search by label or `.coc` key, per-item/per-group/full reset, and safe atomic writes to `MapExtPDX.coc`.
-3. **Conflict Pre-check:** Read-only static metadata and IL inspection of the active playset and local `Mods\` folder against MapExt's replaced systems, patch targets, and lifecycle rules. Dynamically re-evaluates findings for the selected map mode and economy toggles, offers one-click toggles for avoidable economy groups, and warns before launch when hard conflicts are present.
+3. **Mods and Conflict Pre-check:** Read-only static metadata and IL inspection of the active playset (or any local inactive playset) and local `Mods\` folder against MapExt's replaced systems, patch targets, and lifecycle rules, plus a full virtualized mod list (with status/source filtering and one-click Markdown export). Dynamically re-evaluates findings for the selected map mode and economy toggles, offers one-click toggles for avoidable economy groups, and warns before launch when hard conflicts are present in the active playset.
 4. **Log Diagnostics:** One-screen session summary (`MapExtPDX.log` active mode/CoreValue, Burst compiler state, runtime conflicts and diagnostics, auto-disabled groups, save entry gate results, `SceneFlow.log` command line, and `Player.log` errors/exit state), live tailing viewer, and one-click Markdown diagnostic report copy.
 5. **Saves and Maps Inspector (`.cok`):** Read-only scan of local `.cok` saves and maps with ZSTD preview rendering, localized map titles, mode compatibility status (`Match` / `Convertible` / `Stretched` / `Mismatch`), and one-click mode switching before starting the game.
 6. **16-bit Heightmap Viewer:** Inspect 16-bit unsigned grayscale/RGBA `.png` and `.tif`/`.tiff` heightmaps before importing into the Map Editor — validating native `4096x4096` files as well as non-`4096` sizes up to `8192x8192` that MapExt automatically bilinearly resamples (noting possible detail softening) — with raw grayscale, 0.5%–99.5% auto-stretched contrast, sea-level layered hypsometric tinting, zoom/pan, and per-pixel elevation readout.
@@ -81,7 +81,10 @@ MapExt startup settings (written to MapExtPDX.coc; refused while the game is run
 Other:
   --launch                                 After saving, launch the game with the launch method and options set in the window
   --show                                   Show the settings, the configuration in effect at the latest launch, and where the game is
-  --check-conflicts                        Read-only scan of the active playset and local Mods folder for conflicts
+  --check-conflicts                        Read-only scan of the target or active playset and local Mods folder for conflicts
+  --list-playsets                          List all local playsets found in playset_config.json (read-only)
+  --list-mods                              List all mods in the target or active playset and local Mods folder
+  --playset <id|name>                      Target local playset for --check-conflicts or --list-mods (read-only; does not change the active playset)
   --lang <en-US|zh-HANS|zh-HANT>           Language for this run (not saved)
   --help                                   Show this help
 ```
@@ -138,7 +141,7 @@ Other:
 
 1. **启动与设定**：在游戏关闭时修改 `MapExtPDX.coc` 的 9 个启动期设定（地图尺寸模式 `57km` / `43km` / `28km` / `114km` / 原版 `14km`、经济总开关与 6 个子系统分组、读档校验开关），并可**跳过 Paradox 启动器直接启动 `Cities2.exe` 进入游戏主菜单**（无需在 Steam 中配置 `%command%`）。
 2. **模组设置中心**：游戏外一站式编辑 MapExt 全部 65 项持久化 OptionUI 设置（核心模式与转换、性能与工具、寻路成本上限、经济吞吐与候选、地价与租金管控），支持按名称或 `.coc` 键名实时检索、单项/分组/全量重置，以及带备份的安全原子写入。
-3. **冲突预检**：只读静态扫描当前激活播放集（Playset）与本地 `Mods\` 目录的代码模组元数据与 IL 字节码，对照 MapExt 替换的系统、补丁目标与生命周期规则进行评估；随所选地图模式与经济分组开关动态重算，对可规避的经济分组提供一键关闭入口，并在检测到硬冲突时于启动前提示确认。
+3. **模组与冲突预检**：支持在本地只读切换查看任意未激活播放集（Playset）或当前激活播放集与本地 `Mods\` 目录，提供完整模组列表检视（支持按启用/来源筛选与一键导出 Markdown 清单）及代码模组元数据与 IL 字节码冲突预检；随所选地图模式与经济分组开关动态重算，对可规避的经济分组提供一键关闭入口，并在当前激活播放集检测到硬冲突时于启动前提示确认。
 4. **日志诊断**：单屏汇总上次会话摘要（`MapExtPDX.log` 实际生效配置与 CoreValue、本会话 Burst 编译状态、运行期冲突与诊断、自动停用分组、存档入口判定，`SceneFlow.log` 启动参数，`Player.log` 异常与退出状态），支持实时跟随浏览、按级别/关键词过滤及一键复制脱敏 Markdown 诊断报告。
 5. **存档与地图检视（`.cok`）**：只读扫描本地存档与地图包，解码 ZSTD 预览图与多语言 `.loc` 地图标题，按闸门规则显示与当前设定模式的关系（`匹配` / `可转换` / `开启转换后可转换` / `会拉伸` / `不符`），支持一键将设定切到对应模式后再进游戏主菜单载入。
 6. **高度图查看**：在导入地图编辑器前检视 16 位无符号灰度 / RGBA `.png`、`.tif`/`.tiff` 高度图，按三档规则校验导入条件（原生 `4096x4096` 直接可导入、`1..8192` 非 `4096` 尺寸由 MapExt 自动双线性重采样并提示可能损失细节、超过 `8192x8192` 不可导入），提供原始灰度、0.5%–99.5% 分位自动拉伸对比度、按海平面分层着色（含海岸线描边与图例）三种视图，支持缩放平移与悬停坐标/海拔读数。
@@ -213,7 +216,10 @@ MapExt 启动设定（写入 MapExtPDX.coc；游戏运行时拒绝）：
 其他：
   --launch                                 保存后按窗口里设定的启动方式与参数启动游戏
   --show                                   显示当前设定、最近一次启动时生效的配置与游戏位置
-  --check-conflicts                        只读扫描当前激活播放集与本地 Mods 目录的模组冲突
+  --check-conflicts                        只读扫描指定或当前激活播放集与本地 Mods 目录的模组冲突
+  --list-playsets                          列出本地 playset_config.json 中的全部播放集（只读）
+  --list-mods                              列出指定或当前激活播放集与本地 Mods 目录的模组列表
+  --playset <编号|名称>                    指定 --check-conflicts 或 --list-mods 要读取的本地播放集（只读，不切换游戏激活项）
   --lang <en-US|zh-HANS|zh-HANT>           本次使用的语言（不保存）
   --help                                   显示本说明
 ```

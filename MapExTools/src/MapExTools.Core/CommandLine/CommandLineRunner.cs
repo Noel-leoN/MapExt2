@@ -39,7 +39,7 @@ public sealed class CommandLineContext
 }
 
 /// <summary>
-/// 执行命令行（计划 2.2）：按选项改 <c>MapExtPDX.coc</c>、显示状态与冲突报告、启动游戏。流程沿用开发版：
+/// 执行命令行（计划 2.2）：按选项改 <c>MapExtPDX.coc</c>、显示状态、播放集、模组列表与冲突报告、启动游戏。流程沿用开发版：
 /// 要写入或启动时先查游戏是否在运行，在运行就什么都不做、返回 2；写入只改有改动的键（2.1 的
 /// <see cref="CocSettingsManager"/>）；写入后按需输出状态与冲突报告，最后才启动（审计修复 D5）。
 /// 正常结果写 output，错误与警告写 error。逻辑都在这里，界面程序只负责接上控制台。
@@ -51,7 +51,7 @@ public sealed class CommandLineRunner
     private readonly TextWriter _error;
     private readonly string _language;
 
-    /// <param name="output">正常结果：已写入、状态、冲突报告、已启动。</param>
+    /// <param name="output">正常结果：已写入、状态、播放集、模组列表、冲突报告、已启动。</param>
     /// <param name="error">错误与警告（游戏在运行、设定文件有误、没能启动等）；为 null 时与 <paramref name="output"/> 合用一个。</param>
     public CommandLineRunner(CommandLineContext context, TextWriter output, string language, TextWriter? error = null)
     {
@@ -91,56 +91,114 @@ public sealed class CommandLineRunner
             return ExitCodes.GameRunning;
         }
 
+        // 仅当写设定、--show、--check-conflicts 或 --launch 时严格要求 MapExtPDX.coc 合法；
+        // 纯 --list-playsets 不读 .coc，纯 --list-mods 在 .coc 损坏时降级跳过冲突定级仍正常输出列表
+        bool strictCoc = target.Count > 0 || options.Reset || options.Show || options.CheckConflicts || options.Launch;
         var manager = new CocSettingsManager(_context.Paths.CocFile, _context.IsGameRunning);
-        StartupSettingsState state;
-        try
+        StartupSettingsState? state = null;
+
+        if (strictCoc)
         {
-            state = manager.Read();
-            if (target.Count > 0)
+            try
             {
-                CocSaveResult result = manager.Save(state, target);
-                switch (result.Status)
+                state = manager.Read();
+                if (target.Count > 0)
                 {
-                    case CocSaveStatus.GameRunning:
-                        ErrorLine("Cli.GameRunning");
-                        return ExitCodes.GameRunning;
-                    case CocSaveStatus.NoChanges:
-                        Line("Startup.NoChanges");
-                        break;
-                    default:
-                        Line("Cli.Saved", StartupSettingsText.ChangeList(result.Changes, _language));
-                        state = manager.Read();
-                        break;
+                    CocSaveResult result = manager.Save(state, target);
+                    switch (result.Status)
+                    {
+                        case CocSaveStatus.GameRunning:
+                            ErrorLine("Cli.GameRunning");
+                            return ExitCodes.GameRunning;
+                        case CocSaveStatus.NoChanges:
+                            Line("Startup.NoChanges");
+                            break;
+                        default:
+                            Line("Cli.Saved", StartupSettingsText.ChangeList(result.Changes, _language));
+                            state = manager.Read();
+                            break;
+                    }
                 }
             }
+            catch (CocFormatException ex)
+            {
+                ErrorLine("Cli.FileError", ex.GetMessage(_language));
+                if (options.Launch)
+                    ErrorLine("Cli.LaunchRefusedCoc");
+                return ExitCodes.Error;
+            }
+            catch (CocSaveException ex)
+            {
+                ErrorLine("Cli.Error", ex.GetMessage(_language));
+                return ExitCodes.Error;
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+                ErrorLine("Cli.Error", ex.Message);
+                return ExitCodes.Error;
+            }
         }
-        catch (CocFormatException ex)
+        else if (options.ListMods)
         {
-            ErrorLine("Cli.FileError", ex.GetMessage(_language));
-            if (options.Launch)
-                ErrorLine("Cli.LaunchRefusedCoc");
-            return ExitCodes.Error;
-        }
-        catch (CocSaveException ex)
-        {
-            ErrorLine("Cli.Error", ex.GetMessage(_language));
-            return ExitCodes.Error;
-        }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
-        {
-            ErrorLine("Cli.Error", ex.Message);
-            return ExitCodes.Error;
+            try
+            {
+                state = manager.Read();
+            }
+            catch (CocFormatException ex)
+            {
+                ErrorLine("Cli.Mods.CocSkippedWarning", ex.GetMessage(_language));
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+                ErrorLine("Cli.Mods.CocSkippedWarning", ex.Message);
+            }
         }
 
-        // 按 D5 约定：同时带 --check-conflicts／--show 与 --launch 时先输出诊断再启动。
-        // 诊断输出失败不拦启动（与调整顺序前一样照常启动），退出码仍记为出错
+        // 若显式指定了 --playset，先校验该目标播放集是否存在且无重名歧义；目标无效时不启动游戏直接返回错误码
+        string? resolvedTargetPlaysetId = null;
+        if (options.Playset != null)
+        {
+            if (!TryResolveTargetPlayset(options.Playset, out resolvedTargetPlaysetId, out bool isTargetActive))
+                return ExitCodes.Error;
+
+            if (options.Launch && !isTargetActive)
+                ErrorLine("Cli.Playset.ReadOnlyLaunchNote", options.Playset);
+        }
+
+        // 按 D5 约定：同时带诊断选项与 --launch 时先输出诊断再启动；诊断异常不拦启动，退出码仍记为出错
         bool diagnosticsFailed = false;
         try
         {
             if (options.Show)
-                WriteStatus(state);
-            if (options.CheckConflicts)
-                WriteConflicts(state);
+                WriteStatus(state!);
+
+            if (options.ListPlaysets && !WritePlaysets())
+                diagnosticsFailed = true;
+
+            if (options.CheckConflicts || options.ListMods)
+            {
+                GameLocateResult location = _context.LocateGame();
+                ScannedModWorkspace ws = ConflictAnalyzer.ScanWorkspace(_context.Paths, location.Game?.GameDir, resolvedTargetPlaysetId);
+                if (!string.IsNullOrEmpty(ws.Playset.PlaysetConfigError))
+                {
+                    ErrorLine("Conflicts.PlaysetReadError", ws.Playset.PlaysetConfigError);
+                    diagnosticsFailed = true;
+                }
+
+                ConflictReport? report = null;
+                ConflictEvalSettings? evalSettings = null;
+                if (state != null)
+                {
+                    evalSettings = ConflictEvalSettings.FromDictionary(state.GetAllValues());
+                    report = ConflictAnalyzer.Evaluate(ws, evalSettings);
+                }
+
+                if (options.CheckConflicts && report != null && evalSettings != null)
+                    WriteConflicts(report, evalSettings);
+
+                if (options.ListMods)
+                    WriteModList(ws, report);
+            }
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidOperationException)
         {
@@ -150,6 +208,53 @@ public sealed class CommandLineRunner
 
         int code = options.Launch ? Launch() : ExitCodes.Success;
         return diagnosticsFailed ? ExitCodes.Error : code;
+    }
+
+    private bool TryResolveTargetPlayset(string query, out string? resolvedId, out bool isActive)
+    {
+        resolvedId = null;
+        isActive = false;
+
+        PlaysetCatalogResult catalog = PlaysetModScanner.ListPlaysets(_context.Paths);
+        if (!string.IsNullOrEmpty(catalog.ConfigError))
+        {
+            ErrorLine("Conflicts.PlaysetReadError", catalog.ConfigError);
+            return false;
+        }
+
+        if (!catalog.ConfigExists || catalog.Playsets.Count == 0)
+        {
+            ErrorLine("Cli.Playset.NotFound", query, string.Empty);
+            return false;
+        }
+
+        PlaysetLookupResult lookup = PlaysetModScanner.ResolvePlayset(catalog.Playsets, query);
+        switch (lookup.Kind)
+        {
+            case PlaysetLookupKind.Matched when lookup.Match != null:
+                resolvedId = lookup.Match.Id;
+                isActive = lookup.Match.IsActive;
+                return true;
+
+            case PlaysetLookupKind.Ambiguous:
+            {
+                string candidates = string.Join(
+                    ", ",
+                    lookup.Candidates.Select(p => $"{p.Name} (ID: {p.Id})"));
+                ErrorLine("Cli.Playset.Ambiguous", query, candidates);
+                return false;
+            }
+
+            default:
+            {
+                string available = string.Join(
+                    ", ",
+                    catalog.Playsets.Select(p => $"{p.Name} ({p.Id})"));
+                string hint = Format("Cli.Playset.AvailableHint", available);
+                ErrorLine("Cli.Playset.NotFound", query, hint);
+                return false;
+            }
+        }
     }
 
     // === 启动 ===
@@ -194,7 +299,7 @@ public sealed class CommandLineRunner
         }
     }
 
-    // === 状态 ===
+    // === 状态、播放集与模组清单 ===
 
     /// <summary>当前设定、最近一次启动生效的配置、runOnce.txt、游戏位置与启动方式、游戏是否在运行。</summary>
     private void WriteStatus(StartupSettingsState state)
@@ -235,18 +340,61 @@ public sealed class CommandLineRunner
         Line(_context.IsGameRunning() ? "Status.GameRunning" : "Status.GameNotRunning");
     }
 
-    private void WriteConflicts(StartupSettingsState state)
+    private bool WritePlaysets()
     {
-        GameLocateResult location = _context.LocateGame();
-        ScannedModWorkspace ws = ConflictAnalyzer.ScanWorkspace(_context.Paths, location.Game?.GameDir);
-        ConflictEvalSettings evalSettings = ConflictEvalSettings.FromDictionary(state.GetAllValues());
-        ConflictReport report = ConflictAnalyzer.Evaluate(ws, evalSettings);
+        PlaysetCatalogResult catalog = PlaysetModScanner.ListPlaysets(_context.Paths);
+        if (!string.IsNullOrEmpty(catalog.ConfigError))
+        {
+            ErrorLine("Conflicts.PlaysetReadError", catalog.ConfigError);
+            return false;
+        }
 
-        // 与冲突预检页一致：摘要句以评估模式开头，另一类模式结果不同时补一行，再写扫描概况
+        if (!catalog.ConfigExists)
+        {
+            Line("Cli.Playsets.NoConfig", _context.Paths.PlaysetConfigFile);
+            return true;
+        }
+
+        if (catalog.Playsets.Count == 0)
+        {
+            Line("Cli.Playsets.Empty");
+            return true;
+        }
+
+        Line("Cli.Playsets.Header", catalog.Playsets.Count);
+        string activeTag = Strings.Get(_language, "Cli.Playsets.ActiveTag");
+        string offdiskTag = Strings.Get(_language, "Cli.Playsets.OffdiskTag");
+
+        foreach (PlaysetSummary p in catalog.Playsets)
+        {
+            string backend = !string.IsNullOrWhiteSpace(p.BackendPlaysetId)
+                ? Format("Cli.Playsets.BackendId", p.BackendPlaysetId)
+                : string.Empty;
+            Line(
+                "Cli.Playsets.Row",
+                p.Name,
+                p.IsActive ? activeTag : string.Empty,
+                p.IsOffdisk ? offdiskTag : string.Empty,
+                p.Id,
+                backend,
+                p.EnabledModCount,
+                p.TotalModCount);
+        }
+
+        return true;
+    }
+
+    private void WriteConflicts(ConflictReport report, ConflictEvalSettings evalSettings)
+    {
+        // 与模组与冲突预检页一致：摘要句以评估模式开头，另一类模式结果不同时补一行，再写扫描概况与提示
         _output.WriteLine(ConflictText.StatusBanner(report, _language).Value);
         if (ConflictText.CrossModeSummary(report, _language) is { } crossMode)
             _output.WriteLine(crossMode);
         _output.WriteLine(ConflictText.HeaderSummary(report, _language));
+        if (ConflictText.OffdiskNote(report.Workspace.Playset, _language) is { } offdiskNote)
+            _output.WriteLine(offdiskNote);
+        if (ConflictText.MapExtMissingNote(report.Workspace.Playset, _language) is { } missingMapExt)
+            _output.WriteLine(missingMapExt);
 
         foreach (ModConflictItem item in report.Items)
         {
@@ -256,6 +404,43 @@ public sealed class CommandLineRunner
             {
                 _output.WriteLine("  - " + ConflictText.DescribeFinding(finding, evalSettings, _language));
             }
+        }
+    }
+
+    private void WriteModList(ScannedModWorkspace ws, ConflictReport? report)
+    {
+        PlaysetScanResult playset = ws.Playset;
+        IReadOnlyList<PlaysetModListItem> items = playset.EffectiveAllModItems;
+        string name = playset.EffectivePlaysetName ?? Strings.Get(_language, "Conflicts.NoActivePlayset");
+        int enabledCount = items.Count(m => m.IsEnabled);
+
+        Line("Cli.Mods.Header", name, items.Count, enabledCount, ws.EnabledCodeModCount);
+        if (items.Count == 0)
+        {
+            Line("Conflicts.Mods.Empty");
+            return;
+        }
+
+        string localOrder = Strings.Get(_language, "Conflicts.Mods.OrderLocal");
+        foreach (PlaysetModListItem m in items)
+        {
+            string orderTag = m.LoadOrder.HasValue
+                ? "#" + m.LoadOrder.Value.ToString(CultureInfo.InvariantCulture)
+                : localOrder;
+            string ver = ConflictText.ModItemVersionLabel(m, _language);
+            string verPart = string.IsNullOrEmpty(ver) ? string.Empty : " " + ver;
+            string src = ConflictText.SourceLabel(m.Source, m.PdxModId, _language);
+            string loadState = ConflictText.LoadStateLabel(m.LoadState, _language);
+
+            string conflictPart = string.Empty;
+            if (report != null && m.IsEnabled)
+            {
+                ConflictSeverity sev = report.GetPackageSeverity(m.PackageKey);
+                if (sev != ConflictSeverity.None)
+                    conflictPart = $" · [{ConflictText.SeverityBadge(sev, _language)}]";
+            }
+
+            _output.WriteLine($"  [{orderTag}] {m.DisplayName}{verPart} · {src} · {loadState}{conflictPart}");
         }
     }
 

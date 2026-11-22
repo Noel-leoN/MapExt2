@@ -37,6 +37,8 @@ public class CommandLineParserTests
     [InlineData("--reset")]
     [InlineData("--launch")]
     [InlineData("--check-conflicts")]
+    [InlineData("--list-playsets")]
+    [InlineData("--list-mods")]
     [InlineData("--help")]
     [InlineData("-h")]
     [InlineData("-?")]
@@ -50,11 +52,14 @@ public class CommandLineParserTests
     [Fact]
     public void Flags_SetTheirProperty()
     {
-        CommandLineOptions options = Parse("--show", "--reset", "--launch", "--check-conflicts", "--help");
+        CommandLineOptions options = Parse("--show", "--reset", "--launch", "--check-conflicts", "--list-playsets", "--list-mods", "--playset", "MySet", "--help");
         Assert.True(options.Show);
         Assert.True(options.Reset);
         Assert.True(options.Launch);
         Assert.True(options.CheckConflicts);
+        Assert.True(options.ListPlaysets);
+        Assert.True(options.ListMods);
+        Assert.Equal("MySet", options.Playset);
         Assert.True(options.Help);
     }
 
@@ -140,9 +145,17 @@ public class CommandLineParserTests
     [InlineData(CommandLineErrorKind.UnexpectedValue, "--show=1")]
     [InlineData(CommandLineErrorKind.UnexpectedValue, "--launch=yes")]
     [InlineData(CommandLineErrorKind.UnexpectedValue, "--check-conflicts=1")]
+    [InlineData(CommandLineErrorKind.UnexpectedValue, "--list-playsets=1")]
+    [InlineData(CommandLineErrorKind.UnexpectedValue, "--list-mods=1")]
+    [InlineData(CommandLineErrorKind.MissingValue, "--playset")]
+    [InlineData(CommandLineErrorKind.InvalidValue, "--playset", "   ")]
+    [InlineData(CommandLineErrorKind.RequiresOption, "--playset", "OtherSet")]
+    [InlineData(CommandLineErrorKind.RequiresOption, "--playset", "OtherSet", "--launch")]
+    [InlineData(CommandLineErrorKind.RequiresOption, "--playset", "OtherSet", "--mode", "ModeA")]
     [InlineData(CommandLineErrorKind.Duplicate, "--mode", "ModeA", "--MODE", "ModeB")]
     [InlineData(CommandLineErrorKind.Duplicate, "--show", "--show")]
     [InlineData(CommandLineErrorKind.Duplicate, "--check-conflicts", "--check-conflicts")]
+    [InlineData(CommandLineErrorKind.Duplicate, "--playset", "A", "--playset", "B", "--list-mods")]
     public void Errors(CommandLineErrorKind kind, params string[] args)
     {
         Assert.Equal(kind, Fails(args).Kind);

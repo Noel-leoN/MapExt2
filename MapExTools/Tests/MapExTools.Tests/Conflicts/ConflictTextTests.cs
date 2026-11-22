@@ -322,4 +322,63 @@ public sealed class ConflictTextTests
         Assert.DoesNotContain(Fmt(lang, "Conflicts.Impact.CellMap", "RentAdjustSystem"), msg, StringComparison.Ordinal);
         Assert.DoesNotContain("{", msg, StringComparison.Ordinal);
     }
+
+    [Theory]
+    [InlineData(UiLanguage.English)]
+    [InlineData(UiLanguage.SimplifiedChinese)]
+    [InlineData(UiLanguage.TraditionalChinese)]
+    public void PreviewNotes_AndMarkdownModList_RenderCleanlyInAllLanguages(string lang)
+    {
+        var modItems = new PlaysetModListItem[]
+        {
+            new("pdx_mods:99999", 1, true, ModInstallSource.PdxMods, "99999", "Traffic Mod", "Alice", "1.2.0", 5, "5", "1.6.*",
+                1048576, ["Code Mod"], ["TrafficMod"], [], ModLoadState.LoadedCodeMod, @"D:\Mods\99999_5"),
+            new("pdx_mods:77777", 2, false, ModInstallSource.PdxMods, "77777", "Disabled Pack", "Bob", "0.9", 1, null, null,
+                null, ["Asset"], [], [], ModLoadState.Disabled, null),
+            new("usermods:MyLocal", null, true, ModInstallSource.UserMods, null, "MyLocal", null, "0.1.0", null, null, null,
+                null, [], ["MyLocal"], [], ModLoadState.LoadedCodeMod, @"D:\UserData\Mods\MyLocal"),
+        };
+
+        var inactivePlayset = new PlaysetScanResult(
+            ActivePlaysetId: "active-1",
+            ActivePlaysetName: "Active Set",
+            PlaysetConfigExists: true,
+            PlaysetConfigError: null,
+            ManagedDirectoryAvailable: true,
+            Packages: [],
+            WinningAssemblies: [],
+            UnreadableAssemblies: [],
+            DualLocalAndPdxAssemblyNames: new HashSet<string>(),
+            TargetPlaysetId: "inactive-2",
+            TargetPlaysetName: "Preview Set",
+            IsTargetActivePlayset: false,
+            IsTargetOffdisk: true,
+            TargetPlaysetFound: true,
+            IsMapExtEnabledInTarget: false,
+            AvailablePlaysets: [new PlaysetSummary("inactive-2", "2002", "Preview Set", false, true, false, 1, 2)],
+            AllModItems: modItems);
+
+        var ws = new ScannedModWorkspace(inactivePlayset, new Dictionary<string, IReadOnlyList<AssemblyInspectionResult>>(), 2, 15, DateTime.UtcNow);
+        var report = new ConflictReport(
+            ws,
+            new ConflictEvalSettings("ModeA", true, true, true, true, false, false, false),
+            [Item("pdx_mods:99999", "Traffic Mod", ConflictSeverity.Warning)],
+            HardConflictCount: 0,
+            WarningCount: 1,
+            MitigatedCount: 0,
+            InfoCount: 0);
+
+        Assert.Contains("Preview Set", ConflictText.HeaderSummary(report, lang), StringComparison.Ordinal);
+        Assert.Contains("Preview Set", ConflictText.PreviewInactiveNote(inactivePlayset, lang)!, StringComparison.Ordinal);
+        Assert.NotNull(ConflictText.OffdiskNote(inactivePlayset, lang));
+        Assert.NotNull(ConflictText.MapExtMissingNote(inactivePlayset, lang));
+
+        string md = ConflictText.FormatModListMarkdown(inactivePlayset, report, 2, lang);
+        Assert.Contains("Preview Set", md, StringComparison.Ordinal);
+        Assert.Contains("Traffic Mod", md, StringComparison.Ordinal);
+        Assert.Contains("Disabled Pack", md, StringComparison.Ordinal);
+        Assert.Contains("MyLocal", md, StringComparison.Ordinal);
+        Assert.Contains(ConflictText.SeverityBadge(ConflictSeverity.Warning, lang), md, StringComparison.Ordinal);
+        Assert.DoesNotContain("{0}", md, StringComparison.Ordinal);
+    }
 }

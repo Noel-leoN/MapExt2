@@ -22,6 +22,9 @@ public static class CommandLineText
         rows.Add(("--launch", Get(language, "Cli.Usage.Launch")));
         rows.Add(("--show", Get(language, "Cli.Usage.Show")));
         rows.Add(("--check-conflicts", Get(language, "Cli.Usage.CheckConflicts")));
+        rows.Add(("--list-playsets", Get(language, "Cli.Usage.ListPlaysets")));
+        rows.Add(("--list-mods", Get(language, "Cli.Usage.ListMods")));
+        rows.Add(("--playset " + Get(language, "Cli.Usage.PlaysetArg"), Get(language, "Cli.Usage.Playset")));
         rows.Add(("--lang <" + string.Join('|', UiLanguage.All) + ">", Get(language, "Cli.Usage.Lang")));
         rows.Add(("--help", Get(language, "Cli.Usage.Help")));
         rows.Add(null);

@@ -97,6 +97,9 @@ public sealed class UserDataPaths
     /// <summary>PDX SDK 激活 Playset 与启用模组列表 <c>.cache/Mods/playset_config.json</c>（只读）。</summary>
     public string PlaysetConfigFile => Combine(".cache/Mods/playset_config.json");
 
+    /// <summary>PDX SDK 播放集云同步元数据（含商店后端数字 ID）<c>.cache/Mods/playset_sync.json</c>（只读）。</summary>
+    public string PlaysetSyncFile => Combine(".cache/Mods/playset_sync.json");
+
     /// <summary>PDX SDK 订阅与本地源存储根路径配置 <c>.cache/Mods/mod_directory.json</c>（只读）。</summary>
     public string ModsDirectoryFile => Combine(".cache/Mods/mod_directory.json");
 

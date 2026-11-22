@@ -18,13 +18,17 @@ public static class ConflictAnalyzer
         ConflictTargets.KeyDownstreamAI,
     ];
 
-    /// <summary>只读扫描激活 Playset 与本地 <c>Mods/</c> 并完成胜出程序集的字节码特征提取。</summary>
-    public static ScannedModWorkspace ScanWorkspace(UserDataPaths paths, string? gameDir = null)
+    /// <summary>只读扫描指定或激活 Playset 与本地 <c>Mods/</c> 并完成胜出程序集的字节码特征提取。</summary>
+    public static ScannedModWorkspace ScanWorkspace(
+        UserDataPaths paths,
+        string? gameDir = null,
+        string? targetPlaysetId = null,
+        IDictionary<AssemblyFileFingerprint, AssemblyInspectionResult?>? inspectionCache = null)
     {
         ArgumentNullException.ThrowIfNull(paths);
 
         var sw = Stopwatch.StartNew();
-        PlaysetScanResult playset = PlaysetModScanner.Scan(paths, gameDir);
+        PlaysetScanResult playset = PlaysetModScanner.Scan(paths, gameDir, targetPlaysetId);
 
         var byPkg = new Dictionary<string, IReadOnlyList<AssemblyInspectionResult>>(StringComparer.Ordinal);
         var unreadableExtra = new List<UnreadableAssemblyEntry>(playset.UnreadableAssemblies);
@@ -49,7 +53,20 @@ public static class ConflictAnalyzer
 
                 try
                 {
-                    AssemblyInspectionResult? res = ModAssemblyInspector.InspectFile(asm.FilePath);
+                    AssemblyInspectionResult? res;
+                    if (inspectionCache != null && TryCreateFingerprint(asm.FilePath, out AssemblyFileFingerprint fp))
+                    {
+                        if (!inspectionCache.TryGetValue(fp, out res))
+                        {
+                            res = ModAssemblyInspector.InspectFile(asm.FilePath);
+                            inspectionCache[fp] = res;
+                        }
+                    }
+                    else
+                    {
+                        res = ModAssemblyInspector.InspectFile(asm.FilePath);
+                    }
+
                     if (res != null)
                     {
                         list.Add(res);
@@ -73,7 +90,7 @@ public static class ConflictAnalyzer
         sw.Stop();
         PlaysetScanResult finalPlayset = unreadableExtra.Count == playset.UnreadableAssemblies.Count
             ? playset
-            : playset with { UnreadableAssemblies = unreadableExtra };
+            : RebuildUnreadableState(playset, unreadableExtra);
 
         return new ScannedModWorkspace(
             finalPlayset,
@@ -81,6 +98,41 @@ public static class ConflictAnalyzer
             enabledCodeModCount,
             sw.ElapsedMilliseconds,
             DateTime.UtcNow);
+    }
+
+    private static bool TryCreateFingerprint(string filePath, out AssemblyFileFingerprint fingerprint)
+    {
+        try
+        {
+            string full = Path.GetFullPath(filePath);
+            var fi = new FileInfo(full);
+            if (fi.Exists)
+            {
+                fingerprint = new AssemblyFileFingerprint(full, fi.LastWriteTimeUtc.Ticks, fi.Length);
+                return true;
+            }
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException)
+        {
+            // 回退无缓存直接读取
+        }
+
+        fingerprint = default;
+        return false;
+    }
+
+    private static PlaysetScanResult RebuildUnreadableState(PlaysetScanResult playset, List<UnreadableAssemblyEntry> unreadableExtra)
+    {
+        if (playset.AllModItems == null || playset.AllModItems.Count == 0)
+            return playset with { UnreadableAssemblies = unreadableExtra };
+
+        var badKeys = new HashSet<string>(unreadableExtra.Select(u => u.PackageKey), StringComparer.Ordinal);
+        List<PlaysetModListItem> updated = playset.AllModItems
+            .Select(m => m.LoadState == ModLoadState.AssetOrNonCode && badKeys.Contains(m.PackageKey)
+                ? m with { LoadState = ModLoadState.UnreadableAssembly }
+                : m)
+            .ToList();
+        return playset with { UnreadableAssemblies = unreadableExtra, AllModItems = updated };
     }
 
     /// <summary>结合当前 <c>MapExtPDX.coc</c> 设定快照输出排序后的冲突与备注卡片列表。</summary>

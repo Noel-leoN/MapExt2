@@ -21,6 +21,9 @@ public enum CommandLineErrorKind
 
     /// <summary>同一选项出现多次。</summary>
     Duplicate,
+
+    /// <summary>选项必须配合另一查询选项使用（如 <c>--playset</c> 需配合 <c>--check-conflicts</c> 或 <c>--list-mods</c>）。</summary>
+    RequiresOption,
 }
 
 /// <summary>命令行参数有误。界面与命令行用 <see cref="GetMessage"/> 取当前语言的文字。</summary>
@@ -62,6 +65,13 @@ public sealed class CommandLineOptions
 
     public bool CheckConflicts { get; init; }
 
+    public bool ListPlaysets { get; init; }
+
+    public bool ListMods { get; init; }
+
+    /// <summary><c>--playset</c>：只读检查目标播放集的 ID 或名称（仅配合 <c>--check-conflicts</c> 或 <c>--list-mods</c> 使用）。</summary>
+    public string? Playset { get; init; }
+
     /// <summary><c>--lang</c>，已换成规范的语言代码。</summary>
     public string? Language { get; init; }
 
@@ -77,7 +87,8 @@ public sealed class CommandLineOptions
     /// <summary>
     /// 是否在命令行里完成、不开窗口。只带 <c>--lang</c>、<c>--user-data</c>、<c>--game-process</c> 时照常打开界面。
     /// </summary>
-    public bool IsCommandMode => Help || Show || Reset || Launch || CheckConflicts || Settings.Count > 0;
+    public bool IsCommandMode =>
+        Help || Show || Reset || Launch || CheckConflicts || ListPlaysets || ListMods || Playset != null || Settings.Count > 0;
 }
 
 /// <summary>
@@ -114,7 +125,8 @@ public static class CommandLineParser
         ArgumentNullException.ThrowIfNull(args);
 
         bool help = false, show = false, reset = false, launch = false, checkConflicts = false;
-        string? language = null, userData = null, gameProcess = null;
+        bool listPlaysets = false, listMods = false;
+        string? language = null, userData = null, gameProcess = null, playset = null, playsetWritten = null;
         var settings = new Dictionary<string, object>(StringComparer.Ordinal);
         var seen = new HashSet<string>(StringComparer.Ordinal);
 
@@ -136,8 +148,9 @@ public static class CommandLineParser
             string name = written.ToLowerInvariant();
 
             SettingOption? setting = SettingOptions.FirstOrDefault(o => o.Name == name);
-            bool isFlag = name is "--help" or "--show" or "--reset" or "--launch" or "--check-conflicts";
-            if (setting == null && !isFlag && name is not ("--lang" or "--user-data" or "--game-process"))
+            bool isFlag = name is "--help" or "--show" or "--reset" or "--launch"
+                          or "--check-conflicts" or "--list-playsets" or "--list-mods";
+            if (setting == null && !isFlag && name is not ("--lang" or "--user-data" or "--game-process" or "--playset"))
                 throw new CommandLineException(CommandLineErrorKind.Unknown, written);
             if (!seen.Add(name))
                 throw new CommandLineException(CommandLineErrorKind.Duplicate, written);
@@ -160,6 +173,12 @@ public static class CommandLineParser
                     case "--check-conflicts":
                         checkConflicts = true;
                         break;
+                    case "--list-playsets":
+                        listPlaysets = true;
+                        break;
+                    case "--list-mods":
+                        listMods = true;
+                        break;
                     default:
                         launch = true;
                         break;
@@ -180,10 +199,22 @@ public static class CommandLineParser
                 case "--game-process":
                     gameProcess = NormalizeProcessName(value) ?? throw Invalid(written, value);
                     break;
+                case "--playset":
+                    playset = string.IsNullOrWhiteSpace(value) ? throw Invalid(written, value) : value.Trim();
+                    playsetWritten = written;
+                    break;
                 default:
                     settings[setting!.Key.Name] = ParseSettingValue(setting, written, value);
                     break;
             }
+        }
+
+        if (!help && playset != null && !checkConflicts && !listMods)
+        {
+            throw new CommandLineException(
+                CommandLineErrorKind.RequiresOption,
+                playsetWritten ?? "--playset",
+                "--check-conflicts / --list-mods");
         }
 
         return new CommandLineOptions
@@ -193,6 +224,9 @@ public static class CommandLineParser
             Reset = reset,
             Launch = launch,
             CheckConflicts = checkConflicts,
+            ListPlaysets = listPlaysets,
+            ListMods = listMods,
+            Playset = playset,
             Language = language,
             UserData = userData,
             GameProcess = gameProcess,

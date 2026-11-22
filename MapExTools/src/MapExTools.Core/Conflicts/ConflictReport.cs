@@ -94,6 +94,9 @@ public sealed record ModConflictItem(
         Severity == ConflictSeverity.Warning && OneClickDisableKeys.Count > 0;
 }
 
+/// <summary>托管程序集文件指纹（完整路径、UTC 修改时间 Tick、字节大小），供同一次稳定磁盘快照内跨播放集复用字节码特征。</summary>
+public readonly record struct AssemblyFileFingerprint(string FullPath, long LastWriteUtcTicks, long Length);
+
 /// <summary>磁盘启用集与字节码解析缓存（不依赖 <c>.coc</c> 设定，供修改设定后零 I/O 瞬时重算）。</summary>
 public sealed record ScannedModWorkspace(
     PlaysetScanResult Playset,
@@ -112,7 +115,31 @@ public sealed record ConflictReport(
     int MitigatedCount,
     int InfoCount)
 {
+    private Dictionary<string, ConflictSeverity>? _severityByPackageKey;
+
     public bool HasHardConflicts => HardConflictCount > 0;
 
     public bool HasWarnings => WarningCount > 0;
+
+    /// <summary>按包键查询该包在本次评估中的最高冲突等级（未产生冲突/备注条目时返回 <see cref="ConflictSeverity.None"/>）。</summary>
+    public ConflictSeverity GetPackageSeverity(string packageKey)
+    {
+        if (string.IsNullOrEmpty(packageKey) || Items.Count == 0)
+            return ConflictSeverity.None;
+
+        Dictionary<string, ConflictSeverity>? map = _severityByPackageKey;
+        if (map == null)
+        {
+            map = new Dictionary<string, ConflictSeverity>(Items.Count, StringComparer.Ordinal);
+            foreach (ModConflictItem item in Items)
+            {
+                if (!map.TryGetValue(item.PackageKey, out ConflictSeverity existing) || item.Severity > existing)
+                    map[item.PackageKey] = item.Severity;
+            }
+
+            _severityByPackageKey = map;
+        }
+
+        return map.GetValueOrDefault(packageKey, ConflictSeverity.None);
+    }
 }

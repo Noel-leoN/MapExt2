@@ -291,6 +291,170 @@ public sealed class PlaysetModScannerTests : IDisposable
         Assert.Empty(pkg.WinningAssemblies);
     }
 
+    [Fact]
+    public void Scan_TargetInactivePlayset_ReadsSyncBackendIds_Tags_DisabledMods_AndMapExtPresence()
+    {
+        string pdxRoot = Path.Combine(_paths.ModsCacheDir, "pdx_mods");
+        string mapExtDir = Path.Combine(pdxRoot, "74417_17");
+        string otherModDir = Path.Combine(pdxRoot, "99999_2");
+        string assetPackDir = Path.Combine(pdxRoot, "88888_1");
+        Directory.CreateDirectory(mapExtDir);
+        Directory.CreateDirectory(otherModDir);
+        Directory.CreateDirectory(assetPackDir);
+
+        File.WriteAllBytes(Path.Combine(mapExtDir, "MapExt2.dll"), BuildSimpleIMod("MapExt2", new Version(4, 12, 0)));
+        File.WriteAllBytes(Path.Combine(otherModDir, "OtherMod.dll"), BuildSimpleIMod("OtherMod", new Version(2, 1, 0)));
+        File.WriteAllText(Path.Combine(assetPackDir, "AssetOnly.cok"), "dummy-asset");
+
+        File.WriteAllText(_paths.PdxModsCacheFile, """
+            {
+              "items": [
+                {
+                  "source": "pdx_mods",
+                  "id": "99999",
+                  "version": "2",
+                  "userModVersion": "2.1.0",
+                  "displayName": "Inactive Code Mod",
+                  "author": "Alice",
+                  "requiredGameVersion": "1.6.*",
+                  "size": 2097152,
+                  "tags": [ { "id": "t1", "displayName": "Simulation" } ],
+                  "systemTags": [ { "id": "s1", "displayName": "Code Mod", "type": "ModType" } ]
+                },
+                {
+                  "source": "pdx_mods",
+                  "id": "88888",
+                  "version": "1",
+                  "userModVersion": "1.0",
+                  "displayName": "Harbor Asset Pack",
+                  "author": "Bob",
+                  "size": 0,
+                  "tags": [ { "id": "t2", "displayName": "Asset" } ]
+                },
+                {
+                  "source": "pdx_mods",
+                  "id": "77777",
+                  "version": "4",
+                  "userModVersion": "0.9",
+                  "displayName": "Disabled Sample Mod",
+                  "author": "Carol"
+                }
+              ]
+            }
+            """);
+
+        File.WriteAllText(_paths.PlaysetSyncFile, """
+            {
+              "configVersion": 1,
+              "playsets": [
+                {
+                  "id": "uuid-active",
+                  "backends": [ { "id": "pdx_mods", "playsetId": "1001" } ]
+                },
+                {
+                  "id": "uuid-inactive",
+                  "backends": [ { "id": "pdx_mods", "playsetId": "2002" } ]
+                },
+                {
+                  "id": "uuid-dup-a",
+                  "backends": [ { "id": "pdx_mods", "playsetId": "3001" } ]
+                },
+                {
+                  "id": "uuid-dup-b",
+                  "backends": [ { "id": "pdx_mods", "playsetId": "3002" } ]
+                }
+              ]
+            }
+            """);
+
+        // 在 uuid-inactive 中构造：同一 ID 99999 先禁用后启用（验证禁用项不吞掉后续启用项），且不含 MapExt 74417
+        File.WriteAllText(_paths.PlaysetConfigFile, """
+            {
+              "activePlaysetId": "uuid-active",
+              "playsets": [
+                {
+                  "id": "uuid-inactive",
+                  "isOffdisk": true,
+                  "presentation": { "name": "Vanilla Builder Set" },
+                  "mods": [
+                    { "source": "pdx_mods", "sourceId": "99999", "isEnabled": false },
+                    { "source": "pdx_mods", "sourceId": "99999", "isEnabled": true },
+                    { "source": "pdx_mods", "sourceId": "88888", "isEnabled": true },
+                    { "source": "pdx_mods", "sourceId": "77777", "isEnabled": false }
+                  ]
+                },
+                {
+                  "id": "uuid-active",
+                  "isOffdisk": true,
+                  "presentation": { "name": "MapExt Active Set" },
+                  "mods": [
+                    { "source": "pdx_mods", "sourceId": "74417", "isEnabled": true }
+                  ]
+                },
+                {
+                  "id": "uuid-dup-a",
+                  "presentation": { "name": "Duplicate Name" },
+                  "mods": []
+                },
+                {
+                  "id": "uuid-dup-b",
+                  "presentation": { "name": "Duplicate Name" },
+                  "mods": []
+                }
+              ]
+            }
+            """);
+
+        // 1. ListPlaysets 与 ResolvePlayset：激活项排第一且强制 IsOffdisk=false，支持按后端数字 ID 命中与重名歧义检测
+        PlaysetCatalogResult catalog = PlaysetModScanner.ListPlaysets(_paths);
+        Assert.Equal(4, catalog.Playsets.Count);
+        Assert.True(catalog.Playsets[0].IsActive);
+        Assert.False(catalog.Playsets[0].IsOffdisk);
+        Assert.Equal("1001", catalog.Playsets[0].BackendPlaysetId);
+
+        PlaysetLookupResult byBackendId = PlaysetModScanner.ResolvePlayset(catalog.Playsets, "2002");
+        Assert.Equal(PlaysetLookupKind.Matched, byBackendId.Kind);
+        Assert.Equal("uuid-inactive", byBackendId.Match!.Id);
+
+        PlaysetLookupResult ambiguous = PlaysetModScanner.ResolvePlayset(catalog.Playsets, "duplicate name");
+        Assert.Equal(PlaysetLookupKind.Ambiguous, ambiguous.Kind);
+        Assert.Equal(2, ambiguous.Candidates.Count);
+
+        // 2. 默认扫描激活播放集：包含 MapExt
+        PlaysetScanResult activeScan = PlaysetModScanner.Scan(_paths);
+        Assert.True(activeScan.IsTargetActivePlayset);
+        Assert.True(activeScan.IsMapExtEnabledInTarget);
+
+        // 3. 指定扫描非激活播放集 uuid-inactive
+        PlaysetScanResult inactiveScan = PlaysetModScanner.Scan(_paths, targetPlaysetId: "uuid-inactive");
+        Assert.False(inactiveScan.IsTargetActivePlayset);
+        Assert.True(inactiveScan.IsTargetOffdisk);
+        Assert.True(inactiveScan.TargetPlaysetFound);
+        Assert.False(inactiveScan.IsMapExtEnabledInTarget);
+        Assert.Equal("Vanilla Builder Set", inactiveScan.EffectivePlaysetName);
+
+        // 99999 虽第一条是 isEnabled:false，但第二条 isEnabled:true 必须正常进入胜出程序集！
+        Assert.Contains(inactiveScan.WinningAssemblies, a => a.AssemblyName == "OtherMod");
+
+        IReadOnlyList<PlaysetModListItem> list = inactiveScan.EffectiveAllModItems;
+        Assert.Equal(4, list.Count);
+        PlaysetModListItem enabledCode = Assert.Single(list, m => m.LoadOrder == 2);
+        Assert.Equal(ModLoadState.LoadedCodeMod, enabledCode.LoadState);
+        Assert.Equal("Alice", enabledCode.Author);
+        Assert.Equal("1.6.*", enabledCode.RequiredGameVersion);
+        Assert.Equal(2097152UL, enabledCode.SizeBytes);
+        Assert.Equal(["Simulation", "Code Mod"], enabledCode.Tags);
+
+        PlaysetModListItem assetItem = Assert.Single(list, m => m.LoadOrder == 3);
+        Assert.Equal(ModLoadState.AssetOrNonCode, assetItem.LoadState);
+        Assert.Null(assetItem.SizeBytes); // size == 0 视为未知不展示
+
+        PlaysetModListItem disabledItem = Assert.Single(list, m => m.LoadOrder == 4);
+        Assert.False(disabledItem.IsEnabled);
+        Assert.Equal(ModLoadState.Disabled, disabledItem.LoadState);
+        Assert.Equal("Carol", disabledItem.Author);
+    }
+
     private static byte[] BuildSimpleIMod(string asmName, Version version) =>
         SyntheticModBuilder.BuildModAssembly(asmName, version, (mod, env) =>
         {

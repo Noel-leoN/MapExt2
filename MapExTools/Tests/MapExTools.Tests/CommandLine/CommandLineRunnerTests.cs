@@ -387,4 +387,94 @@ public sealed class CommandLineRunnerTests : IDisposable
         Assert.Contains("ModeA", output, StringComparison.Ordinal);
         Assert.Equal(string.Empty, error);
     }
+
+    [Fact]
+    public void ListPlaysets_AndListMods_SupportInactivePlaysetAndDecoupleBrokenCoc()
+    {
+        Directory.CreateDirectory(Paths.ModsCacheDir);
+        File.WriteAllText(Paths.PlaysetSyncFile, """
+            {
+              "configVersion": 1,
+              "playsets": [
+                { "id": "ps-active", "backends": [ { "id": "pdx_mods", "playsetId": "111" } ] },
+                { "id": "ps-other", "backends": [ { "id": "pdx_mods", "playsetId": "222" } ] }
+              ]
+            }
+            """);
+        File.WriteAllText(Paths.PdxModsCacheFile, """
+            {
+              "items": [
+                { "source": "pdx_mods", "id": "86944", "version": "3", "userModVersion": "1.3.0", "displayName": "Inactive Builder Mod" }
+              ]
+            }
+            """);
+        File.WriteAllText(Paths.PlaysetConfigFile, """
+            {
+              "activePlaysetId": "ps-active",
+              "playsets": [
+                {
+                  "id": "ps-active",
+                  "presentation": { "name": "Active City" },
+                  "mods": []
+                },
+                {
+                  "id": "ps-other",
+                  "isOffdisk": true,
+                  "presentation": { "name": "Inactive Sandbox" },
+                  "mods": [
+                    { "source": "pdx_mods", "sourceId": "86944", "isEnabled": true },
+                    { "source": "pdx_mods", "sourceId": "77777", "isEnabled": false }
+                  ]
+                },
+                {
+                  "id": "ps-dup-1",
+                  "presentation": { "name": "SameName" },
+                  "mods": []
+                },
+                {
+                  "id": "ps-dup-2",
+                  "presentation": { "name": "SameName" },
+                  "mods": []
+                }
+              ]
+            }
+            """);
+
+        // 故意写坏 MapExtPDX.coc：验证 --list-playsets 完全不碰 .coc，--list-mods 仅向 stderr 提示并正常列出模组
+        WriteCoc("MapExtPDX\r\n{\n    \"PatchModeChoice\": \"ModeA\"\n    \"EnableDemandEcoSystem\": true\n}\r\n");
+
+        (int lpCode, string lpOut, string lpErr) = RunSplit("--list-playsets");
+        Assert.Equal(ExitCodes.Success, lpCode);
+        Assert.Equal(string.Empty, lpErr);
+        Assert.Contains("Active City", lpOut, StringComparison.Ordinal);
+        Assert.Contains("Inactive Sandbox", lpOut, StringComparison.Ordinal);
+        Assert.Contains("222", lpOut, StringComparison.Ordinal);
+
+        // 按商店数字 ID "222" 读取非激活播放集的模组列表
+        (int lmCode, string lmOut, string lmErr) = RunSplit("--list-mods", "--playset", "222");
+        Assert.Equal(ExitCodes.Success, lmCode);
+        Assert.Contains("Inactive Sandbox", lmOut, StringComparison.Ordinal);
+        Assert.Contains("Inactive Builder Mod", lmOut, StringComparison.Ordinal);
+        Assert.Contains("77777", lmOut, StringComparison.Ordinal);
+        Assert.NotEmpty(lmErr); // .coc 损坏的温和提示写往 stderr
+
+        // 重名歧义报错返回 1
+        (int ambCode, _, string ambErr) = RunSplit("--list-mods", "--playset", "SameName");
+        Assert.Equal(ExitCodes.Error, ambCode);
+        Assert.Contains("ps-dup-1", ambErr, StringComparison.Ordinal);
+
+        // 恢复合法 .coc：验证不存在的播放集配合 --launch 时直接拦截不启动，而有效非激活播放集配合 --launch 会向 stderr 输出只读提示
+        WriteCoc("MapExtPDX\r\n{\n    \"PatchModeChoice\": \"ModeA\"\n}\r\n");
+
+        (int nfCode, _, string nfErr) = RunSplit("--list-mods", "--playset", "GhostPlayset", "--launch");
+        Assert.Equal(ExitCodes.Error, nfCode);
+        Assert.Contains("GhostPlayset", nfErr, StringComparison.Ordinal);
+        Assert.Empty(_started);
+
+        (int roLaunchCode, string roOut, string roErr) = RunSplit("--check-conflicts", "--playset", "Inactive Sandbox", "--launch");
+        Assert.Equal(ExitCodes.Success, roLaunchCode);
+        Assert.Contains("Inactive Sandbox", roOut, StringComparison.Ordinal);
+        Assert.Contains("--playset", roErr, StringComparison.Ordinal);
+        Assert.Single(_started);
+    }
 }

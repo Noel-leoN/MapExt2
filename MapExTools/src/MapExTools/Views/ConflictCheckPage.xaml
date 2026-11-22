@@ -1,7 +1,8 @@
 <UserControl x:Class="MapExTools.Views.ConflictCheckPage"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:svc="clr-namespace:MapExTools.Services">
+             xmlns:svc="clr-namespace:MapExTools.Services"
+             xmlns:views="clr-namespace:MapExTools.Views">
     <UserControl.Resources>
         <Style x:Key="ToolbarCard" TargetType="Border">
             <Setter Property="Background" Value="{DynamicResource CardBackgroundFillColorDefaultBrush}" />
@@ -10,29 +11,42 @@
             <Setter Property="CornerRadius" Value="6" />
             <Setter Property="Padding" Value="14,10" />
         </Style>
+
+        <!-- 子视图切换（冲突预检／模组列表）：复用与存档页一致的切换按钮样式 -->
+        <Style x:Key="SubViewToggle" TargetType="RadioButton" BasedOn="{StaticResource {x:Type ToggleButton}}">
+            <Setter Property="MinWidth" Value="122" />
+            <Setter Property="Padding" Value="12,5" />
+            <Setter Property="Margin" Value="0,0,6,0" />
+        </Style>
     </UserControl.Resources>
 
     <Grid Margin="10,6,10,4">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
 
-        <!-- === 顶部摘要与重扫工具栏 === -->
+        <!-- === 第 0 行：播放集选择器、冲突摘要与环境提示卡片 === -->
         <Border Grid.Row="0" Style="{StaticResource ToolbarCard}">
-            <DockPanel LastChildFill="True">
-                <!-- 右侧：筛选备注复选框 + 重新扫描按钮 -->
-                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center" Margin="16,0,0,0">
-                    <CheckBox x:Name="ShowNotesCheckBox" VerticalAlignment="Center" Margin="0,0,14,0"
-                              Checked="OnShowNotesChanged" Unchecked="OnShowNotesChanged"
-                              Content="{Binding [Conflicts.Filter.ShowNotes], Source={x:Static svc:Loc.Instance}}" />
-                    <Button x:Name="RescanButton" MinWidth="108" Padding="12,5" Click="OnRescanClick"
+            <StackPanel>
+                <DockPanel LastChildFill="True">
+                    <Button x:Name="RescanButton" DockPanel.Dock="Right" MinWidth="108" Padding="12,5"
+                            VerticalAlignment="Center" Margin="12,0,0,0" Click="OnRescanClick"
                             Content="{Binding [Conflicts.Rescan], Source={x:Static svc:Loc.Instance}}"
                             ToolTip="{Binding [Conflicts.RescanTip], Source={x:Static svc:Loc.Instance}}" />
-                </StackPanel>
 
-                <!-- 左侧：评估模式与冲突摘要、适用范围、另一类模式的结果、Playset 摘要与未保存基准说明 -->
-                <StackPanel VerticalAlignment="Center">
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                        <TextBlock Text="{Binding [Conflicts.Playset.Label], Source={x:Static svc:Loc.Instance}}"
+                                   VerticalAlignment="Center" Margin="0,0,8,0" FontWeight="SemiBold" />
+                        <ComboBox x:Name="PlaysetBox" MinWidth="260" MaxWidth="520"
+                                  DisplayMemberPath="Display"
+                                  AutomationProperties.Name="{Binding [Conflicts.Playset.Label], Source={x:Static svc:Loc.Instance}}"
+                                  SelectionChanged="OnPlaysetSelectionChanged" />
+                    </StackPanel>
+                </DockPanel>
+
+                <StackPanel Margin="0,8,0,0">
                     <TextBlock x:Name="BannerStatusText" FontSize="13" FontWeight="SemiBold"
                                TextWrapping="Wrap" Text="{Binding Text}" Style="{StaticResource ToneText}" />
                     <TextBlock x:Name="ModeScopeText" FontSize="12" Margin="0,3,0,0" TextWrapping="Wrap"
@@ -42,6 +56,12 @@
                     <TextBlock x:Name="HeaderMetaText" FontSize="12" Margin="0,3,0,0"
                                Foreground="{DynamicResource TextFillColorSecondaryBrush}"
                                TextTrimming="CharacterEllipsis" />
+                    <TextBlock x:Name="PreviewNoticeText" FontSize="12" Margin="0,3,0,0" Visibility="Collapsed"
+                               TextWrapping="Wrap" Text="{Binding Text}" Style="{StaticResource ToneText}" />
+                    <TextBlock x:Name="OffdiskNoticeText" FontSize="12" Margin="0,3,0,0" Visibility="Collapsed"
+                               TextWrapping="Wrap" Text="{Binding Text}" Style="{StaticResource ToneText}" />
+                    <TextBlock x:Name="MapExtMissingText" FontSize="12" Margin="0,3,0,0" Visibility="Collapsed"
+                               TextWrapping="Wrap" Text="{Binding Text}" Style="{StaticResource ToneText}" />
                     <TextBlock x:Name="UnsavedBasisText" FontSize="12" Margin="0,3,0,0" Visibility="Collapsed"
                                TextWrapping="Wrap" Text="{Binding Text}" Style="{StaticResource ToneText}" />
                     <TextBlock x:Name="PlaysetErrorText" FontSize="12" Margin="0,3,0,0" Visibility="Collapsed"
@@ -49,16 +69,137 @@
                     <TextBlock x:Name="RescanErrorText" FontSize="12" Margin="0,3,0,0" Visibility="Collapsed"
                                TextWrapping="Wrap" Text="{Binding Text}" Style="{StaticResource ToneText}" />
                 </StackPanel>
-            </DockPanel>
+            </StackPanel>
         </Border>
 
-        <!-- === 下方分级模组冲突卡片列表 === -->
+        <!-- === 第 1 行：子视图切换按钮与当前视图专属筛选工具条 === -->
         <Grid Grid.Row="1" Margin="0,8,0,0">
-            <TextBlock x:Name="EmptyStateText" Visibility="Collapsed" Margin="14,18,14,0" FontSize="13"
-                       Foreground="{DynamicResource TextFillColorSecondaryBrush}" TextWrapping="Wrap" />
-            <ScrollViewer x:Name="CardsScroll" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
-                <StackPanel x:Name="CardsHost" Margin="0,0,4,8" />
-            </ScrollViewer>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+
+            <RadioButton x:Name="ConflictsViewToggle" Grid.Column="0" GroupName="ConflictSubView" IsChecked="True"
+                         Style="{StaticResource SubViewToggle}" Checked="OnSubViewChecked" />
+            <RadioButton x:Name="ModsViewToggle" Grid.Column="1" GroupName="ConflictSubView"
+                         Style="{StaticResource SubViewToggle}" Checked="OnSubViewChecked" />
+
+            <!-- 冲突预检子视图工具：备注复选框 -->
+            <StackPanel x:Name="ConflictToolsPanel" Grid.Column="2" Orientation="Horizontal"
+                        HorizontalAlignment="Right" VerticalAlignment="Center" Margin="12,0,0,0">
+                <CheckBox x:Name="ShowNotesCheckBox" VerticalAlignment="Center"
+                          Checked="OnShowNotesChanged" Unchecked="OnShowNotesChanged"
+                          Content="{Binding [Conflicts.Filter.ShowNotes], Source={x:Static svc:Loc.Instance}}" />
+            </StackPanel>
+
+            <!-- 模组列表子视图工具：状态筛选、关键词搜索与复制 Markdown -->
+            <Grid x:Name="ModListToolsPanel" Grid.Column="2" Margin="8,0,0,0" Visibility="Collapsed" VerticalAlignment="Center">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" MinWidth="110" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+
+                <ComboBox x:Name="ModFilterBox" Grid.Column="0" MinWidth="172" DisplayMemberPath="Display"
+                          SelectionChanged="OnModFilterChanged" />
+                <TextBlock Grid.Column="1" Text="{Binding [Conflicts.Mods.Keyword], Source={x:Static svc:Loc.Instance}}"
+                           VerticalAlignment="Center" Margin="12,0,6,0" />
+                <TextBox x:Name="ModKeywordBox" Grid.Column="2" VerticalAlignment="Center"
+                         ToolTip="{Binding [Conflicts.Mods.KeywordTip], Source={x:Static svc:Loc.Instance}}"
+                         TextChanged="OnModKeywordChanged" />
+                <Button x:Name="CopyModListButton" Grid.Column="3" Margin="10,0,0,0" Padding="10,5"
+                        VerticalAlignment="Center" Click="OnCopyModListClick"
+                        Content="{Binding [Conflicts.Mods.Copy], Source={x:Static svc:Loc.Instance}}" />
+                <TextBlock x:Name="CopyModListNote" Grid.Column="4" Margin="8,0,0,0" FontSize="12"
+                           VerticalAlignment="Center" Visibility="Collapsed"
+                           Foreground="{DynamicResource SystemFillColorSuccessBrush}" />
+            </Grid>
+        </Grid>
+
+        <!-- === 第 2 行：主内容区（冲突卡片视图 / 虚拟化模组列表视图） === -->
+        <Grid Grid.Row="2" Margin="0,8,0,0">
+            <!-- 子视图 1：分级模组冲突卡片 -->
+            <Grid x:Name="ConflictsContentHost">
+                <TextBlock x:Name="EmptyStateText" Visibility="Collapsed" Margin="14,18,14,0" FontSize="13"
+                           Foreground="{DynamicResource TextFillColorSecondaryBrush}" TextWrapping="Wrap" />
+                <ScrollViewer x:Name="CardsScroll" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                    <StackPanel x:Name="CardsHost" Margin="0,0,4,8" />
+                </ScrollViewer>
+            </Grid>
+
+            <!-- 子视图 2：播放集与本地模组完整虚拟化列表 -->
+            <Grid x:Name="ModListContentHost" Visibility="Collapsed">
+                <TextBlock x:Name="ModListEmptyText" Visibility="Collapsed" Margin="14,18,14,0" FontSize="13"
+                           Foreground="{DynamicResource TextFillColorSecondaryBrush}" TextWrapping="Wrap" />
+                <ListBox x:Name="ModListBox" SelectionMode="Single"
+                         VirtualizingPanel.IsVirtualizing="True"
+                         VirtualizingPanel.VirtualizationMode="Recycling"
+                         ScrollViewer.CanContentScroll="True"
+                         ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                    <ListBox.ItemContainerStyle>
+                        <Style TargetType="ListBoxItem" BasedOn="{StaticResource {x:Type ListBoxItem}}">
+                            <Setter Property="Padding" Value="10,6" />
+                            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                        </Style>
+                    </ListBox.ItemContainerStyle>
+                    <ListBox.ItemTemplate>
+                        <DataTemplate DataType="{x:Type views:ModListRowViewModel}">
+                            <Grid Opacity="{Binding RowOpacity}" ToolTip="{Binding ToolTipText}">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="52" />
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+
+                                <!-- 加载序号或 Mods\ 标记 -->
+                                <TextBlock Grid.Column="0" Text="{Binding OrderText}" FontSize="12"
+                                           VerticalAlignment="Center"
+                                           Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+
+                                <!-- 状态圆点 -->
+                                <Ellipse Grid.Column="1" Width="8" Height="8" Margin="0,0,10,0"
+                                         VerticalAlignment="Center" Fill="{Binding DotBrush}" />
+
+                                <!-- 标题、版本与次要元数据行 -->
+                                <StackPanel Grid.Column="2" VerticalAlignment="Center" Margin="0,0,12,0">
+                                    <WrapPanel VerticalAlignment="Center">
+                                        <TextBlock Text="{Binding Title}" FontSize="13.5" FontWeight="SemiBold"
+                                                   Margin="0,0,8,0" VerticalAlignment="Center" />
+                                        <TextBlock Text="{Binding VersionText}" FontSize="12"
+                                                   Visibility="{Binding VersionVisibility}"
+                                                   VerticalAlignment="Center"
+                                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                                    </WrapPanel>
+                                    <TextBlock Text="{Binding MetadataText}" FontSize="11.5" Margin="0,2,0,0"
+                                               Visibility="{Binding MetadataVisibility}"
+                                               TextTrimming="CharacterEllipsis"
+                                               Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                                </StackPanel>
+
+                                <!-- 右侧冲突等级徽标、加载状态与物理来源 -->
+                                <StackPanel Grid.Column="3" Orientation="Horizontal" VerticalAlignment="Center">
+                                    <Border Background="{Binding ConflictBadgeBrush}" CornerRadius="4" Padding="6,1.5"
+                                            Margin="0,0,8,0" VerticalAlignment="Center"
+                                            Visibility="{Binding ConflictBadgeVisibility}">
+                                        <TextBlock Text="{Binding ConflictBadgeText}" Foreground="White"
+                                                   FontSize="11" FontWeight="SemiBold" />
+                                    </Border>
+                                    <TextBlock Text="{Binding StateBadgeText}" FontSize="12" FontWeight="SemiBold"
+                                               VerticalAlignment="Center" Margin="0,0,10,0"
+                                               Style="{StaticResource ToneText}" />
+                                    <TextBlock Text="{Binding SourceText}" FontSize="12" MinWidth="78"
+                                               TextAlignment="Right" VerticalAlignment="Center"
+                                               Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                                </StackPanel>
+                            </Grid>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+            </Grid>
         </Grid>
     </Grid>
 </UserControl>

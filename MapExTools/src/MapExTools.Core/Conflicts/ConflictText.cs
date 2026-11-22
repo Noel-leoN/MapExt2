@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Text;
 using MapExTools.Core.Launch;
 using MapExTools.Core.Localization;
 using MapExTools.Core.Packages;
@@ -8,7 +9,7 @@ using MapExtPDX.MapExt.Core;
 namespace MapExTools.Core.Conflicts;
 
 /// <summary>
-/// 冲突预检页与启动页联动的三语文案拼装（遵循中性可复核事实规范，不贬损或替第三方打包票）。
+/// 冲突预检页、模组列表与启动页联动的三语文案拼装（遵循中性可复核事实规范，不贬损或替第三方打包票）。
 /// </summary>
 public static class ConflictText
 {
@@ -30,13 +31,27 @@ public static class ConflictText
         _ => Strings.Get(language, "Conflicts.Badge.Clean"),
     };
 
-    public static string SourceLabel(ModConflictItem item, string language) => item.Source switch
+    public static string SourceLabel(ModConflictItem item, string language) =>
+        SourceLabel(item.Source, item.PdxModId, language);
+
+    public static string SourceLabel(ModInstallSource source, string? pdxModId, string language) => source switch
     {
         ModInstallSource.UserMods => Strings.Get(language, "Conflicts.Source.UserMods"),
-        ModInstallSource.PdxMods when !string.IsNullOrEmpty(item.PdxModId) =>
-            Format(language, "Conflicts.Source.PdxId", item.PdxModId),
+        ModInstallSource.PdxMods when !string.IsNullOrEmpty(pdxModId) =>
+            Format(language, "Conflicts.Source.PdxId", pdxModId),
         ModInstallSource.PdxLocal => Strings.Get(language, "Conflicts.Source.PdxLocal"),
         _ => Strings.Get(language, "Conflicts.Source.PdxMods"),
+    };
+
+    public static string LoadStateLabel(ModLoadState state, string language) =>
+        Strings.Get(language, "Conflicts.Mods.State." + state);
+
+    public static PackageTone LoadStateTone(ModLoadState state) => state switch
+    {
+        ModLoadState.LoadedCodeMod => PackageTone.Good,
+        ModLoadState.AssetOrNonCode => PackageTone.Accent,
+        ModLoadState.MissingDependencies or ModLoadState.UnreadableAssembly => PackageTone.Warning,
+        _ => PackageTone.Muted,
     };
 
     public static string VersionLabel(ModConflictItem item, string language)
@@ -54,21 +69,207 @@ public static class ConflictText
             : Format(language, "Conflicts.Version.WithAudited", installed, audited);
     }
 
-    /// <summary>扫描概况：激活播放集、启用的代码模组数与扫描耗时（评估模式放在 <see cref="StatusBanner"/> 句首）。</summary>
+    public static string ModItemVersionLabel(PlaysetModListItem item, string language)
+    {
+        ArgumentNullException.ThrowIfNull(item);
+
+        string baseVer;
+        if (!string.IsNullOrWhiteSpace(item.DisplayVersion))
+        {
+            baseVer = "v" + item.DisplayVersion.TrimStart('v', 'V');
+        }
+        else if (item.PlatformVersion.HasValue)
+        {
+            baseVer = "#" + item.PlatformVersion.Value.ToString(CultureInfo.InvariantCulture);
+        }
+        else
+        {
+            baseVer = string.Empty;
+        }
+
+        if (!string.IsNullOrWhiteSpace(item.LockedPlatformVersion))
+        {
+            baseVer += Format(language, "Conflicts.Mods.LockedVer", item.LockedPlatformVersion);
+        }
+
+        return baseVer.TrimStart();
+    }
+
+    /// <summary>单行模组的次要说明文字（作者 · 分类标签 · 包体积 · 胜出 DLL 或缺失依赖 · 适配游戏版本）。</summary>
+    public static string ModItemMetadataLine(PlaysetModListItem item, string language)
+    {
+        ArgumentNullException.ThrowIfNull(item);
+
+        var parts = new List<string>(5);
+        if (!string.IsNullOrWhiteSpace(item.Author))
+            parts.Add(Format(language, "Conflicts.Mods.Meta.Author", item.Author));
+
+        if (item.Tags.Count > 0)
+            parts.Add(string.Join(", ", item.Tags));
+
+        if (item.SizeBytes is > 0 and var bytes)
+            parts.Add(FormatFileSize(bytes));
+
+        if (item.WinningAssemblyNames.Count > 0)
+            parts.Add(Format(language, "Conflicts.Mods.Meta.Dll", string.Join(", ", item.WinningAssemblyNames)));
+        else if (item.MissingDependencies.Count > 0)
+            parts.Add(Format(language, "Conflicts.Mods.Meta.Missing", string.Join(", ", item.MissingDependencies)));
+
+        if (!string.IsNullOrWhiteSpace(item.RequiredGameVersion))
+            parts.Add(Format(language, "Conflicts.Mods.Meta.GameVer", item.RequiredGameVersion));
+
+        return string.Join(" · ", parts);
+    }
+
+    public static string FormatFileSize(ulong bytes)
+    {
+        if (bytes < 1024UL)
+            return string.Create(CultureInfo.InvariantCulture, $"{bytes} B");
+        if (bytes < 1024UL * 1024UL)
+            return string.Create(CultureInfo.InvariantCulture, $"{bytes / 1024.0:0.0} KB");
+        if (bytes < 1024UL * 1024UL * 1024UL)
+            return string.Create(CultureInfo.InvariantCulture, $"{bytes / (1024.0 * 1024.0):0.0} MB");
+        return string.Create(CultureInfo.InvariantCulture, $"{bytes / (1024.0 * 1024.0 * 1024.0):0.00} GB");
+    }
+
+    /// <summary>生成播放集下拉框单行显示名（同名播放集自动附加 <c>[#后端ID]</c> 或短本地 ID）。</summary>
+    public static string FormatPlaysetChoice(PlaysetSummary summary, bool hasDuplicateName, string language)
+    {
+        ArgumentNullException.ThrowIfNull(summary);
+
+        string displayName = hasDuplicateName
+            ? $"{summary.Name} [{DisambiguationTag(summary)}]"
+            : summary.Name;
+
+        if (summary.IsActive)
+            return Format(language, "Conflicts.Playset.ItemActive", displayName, summary.EnabledModCount, summary.TotalModCount);
+        if (summary.IsOffdisk)
+            return Format(language, "Conflicts.Playset.ItemOffdisk", displayName, summary.EnabledModCount, summary.TotalModCount);
+        return Format(language, "Conflicts.Playset.ItemInactive", displayName, summary.EnabledModCount, summary.TotalModCount);
+    }
+
+    public static string DisambiguationTag(PlaysetSummary summary)
+    {
+        ArgumentNullException.ThrowIfNull(summary);
+
+        if (!string.IsNullOrWhiteSpace(summary.BackendPlaysetId))
+            return "#" + summary.BackendPlaysetId;
+
+        return summary.Id.Length > 8 ? summary.Id[..8] : summary.Id;
+    }
+
+    /// <summary>扫描概况：目标/激活播放集、启用的代码模组数与扫描耗时（评估模式放在 <see cref="StatusBanner"/> 句首）。</summary>
     public static string HeaderSummary(ConflictReport report, string language)
     {
         ArgumentNullException.ThrowIfNull(report);
 
-        string playset = report.Workspace.Playset.ActivePlaysetName
-                         ?? Strings.Get(language, "Conflicts.NoActivePlayset");
+        PlaysetScanResult playset = report.Workspace.Playset;
+        string name = playset.EffectivePlaysetName ?? Strings.Get(language, "Conflicts.NoActivePlayset");
+        string key = playset.IsTargetActivePlayset ? "Conflicts.HeaderSummary" : "Conflicts.HeaderSummary.Preview";
 
         return Format(
             language,
-            "Conflicts.HeaderSummary",
-            playset,
+            key,
+            name,
             report.Workspace.EnabledCodeModCount,
             report.Workspace.ScanElapsedMs);
     }
+
+    /// <summary>当所选目标为非激活播放集时给出的只读预览说明。</summary>
+    public static string? PreviewInactiveNote(PlaysetScanResult playset, string language)
+    {
+        ArgumentNullException.ThrowIfNull(playset);
+        if (playset.IsTargetActivePlayset)
+            return null;
+
+        string name = playset.EffectivePlaysetName ?? playset.EffectivePlaysetId ?? "?";
+        return Format(language, "Conflicts.PreviewInactiveNote", name);
+    }
+
+    /// <summary>当所选播放集开启了 <c>isOffdisk</c>（不保留本地文件）时的提示。</summary>
+    public static string? OffdiskNote(PlaysetScanResult playset, string language)
+    {
+        ArgumentNullException.ThrowIfNull(playset);
+        return playset.IsTargetOffdisk ? Strings.Get(language, "Conflicts.OffdiskNote") : null;
+    }
+
+    /// <summary>当目标环境存在已启用模组（或正在预览非激活播放集）但未启用 MapExt 时的知情说明。</summary>
+    public static string? MapExtMissingNote(PlaysetScanResult playset, string language)
+    {
+        ArgumentNullException.ThrowIfNull(playset);
+        if (playset.IsMapExtEnabledInTarget)
+            return null;
+
+        if (playset.IsTargetActivePlayset && playset.Packages.Count == 0)
+            return null;
+
+        return Strings.Get(language, "Conflicts.MapExtMissingNote");
+    }
+
+    /// <summary>导出目标播放集与本地 <c>Mods/</c> 的模组清单为 Markdown 表格。</summary>
+    public static string FormatModListMarkdown(
+        PlaysetScanResult playset,
+        ConflictReport? report,
+        int enabledCodeModCount,
+        string language)
+    {
+        ArgumentNullException.ThrowIfNull(playset);
+
+        IReadOnlyList<PlaysetModListItem> items = playset.EffectiveAllModItems;
+        string titleName = playset.EffectivePlaysetName ?? Strings.Get(language, "Conflicts.NoActivePlayset");
+        int enabledTotal = items.Count(m => m.IsEnabled);
+
+        var sb = new StringBuilder();
+        sb.AppendLine(Format(language, "Conflicts.Mods.Md.Title", EscapeMarkdownCell(titleName)));
+        sb.AppendLine();
+        sb.AppendLine(Format(language, "Conflicts.Mods.Md.Summary", items.Count, enabledTotal, enabledCodeModCount));
+        sb.AppendLine();
+        sb.AppendLine(Strings.Get(language, "Conflicts.Mods.Md.Columns"));
+        sb.AppendLine("| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |");
+
+        string yes = Strings.Get(language, "Conflicts.Mods.Md.Yes");
+        string no = Strings.Get(language, "Conflicts.Mods.Md.No");
+        string localOrder = Strings.Get(language, "Conflicts.Mods.OrderLocal");
+
+        foreach (PlaysetModListItem m in items)
+        {
+            string orderText = m.LoadOrder.HasValue
+                ? m.LoadOrder.Value.ToString(CultureInfo.InvariantCulture)
+                : localOrder;
+            string enabledText = m.IsEnabled ? yes : no;
+            string ver = ModItemVersionLabel(m, language);
+            string source = SourceLabel(m.Source, m.PdxModId, language);
+            string state = LoadStateLabel(m.LoadState, language);
+
+            string conflict = "-";
+            if (report != null && m.IsEnabled && m.LoadState != ModLoadState.Disabled)
+            {
+                ConflictSeverity sev = report.GetPackageSeverity(m.PackageKey);
+                if (sev != ConflictSeverity.None)
+                    conflict = SeverityBadge(sev, language);
+                else if (m.LoadState == ModLoadState.LoadedCodeMod)
+                    conflict = SeverityBadge(ConflictSeverity.None, language);
+            }
+
+            string author = string.IsNullOrWhiteSpace(m.Author) ? "-" : m.Author;
+            sb.Append("| ").Append(EscapeMarkdownCell(orderText))
+              .Append(" | ").Append(EscapeMarkdownCell(enabledText))
+              .Append(" | ").Append(EscapeMarkdownCell(m.DisplayName))
+              .Append(" | ").Append(EscapeMarkdownCell(string.IsNullOrEmpty(ver) ? "-" : ver))
+              .Append(" | ").Append(EscapeMarkdownCell(source))
+              .Append(" | ").Append(EscapeMarkdownCell(state))
+              .Append(" | ").Append(EscapeMarkdownCell(conflict))
+              .Append(" | ").Append(EscapeMarkdownCell(author))
+              .AppendLine(" |");
+        }
+
+        return sb.ToString().TrimEnd();
+    }
+
+    private static string EscapeMarkdownCell(string text) =>
+        text.Replace("|", "\\|", StringComparison.Ordinal)
+            .Replace("\r", " ", StringComparison.Ordinal)
+            .Replace("\n", " ", StringComparison.Ordinal);
 
     /// <summary>评估所用模式的标签并附模式类别，如“ModeA 57km（扩展地图）”“None 14km（原版尺寸）”。</summary>
     public static string EvalModeLabel(ConflictEvalSettings settings, string language)
@@ -160,21 +361,26 @@ public static class ConflictText
     /// <summary>
     /// 有未保存改动时冲突预检页的评估依据提示。页面按工作设定评估；若有模组按已保存的设定（游戏实际读取的）冲突更重，
     /// 在提示中点名，避免一键关组后页面显示“已规避”、磁盘上的设定却仍冲突时无从察觉。
+    /// 预览非激活播放集时改用全局 <c>MapExtPDX.coc</c> 说明文案，避免误指游戏即将加载该播放集。
     /// </summary>
     /// <param name="saved">同一扫描结果按已保存设定评估的报告；读不到已保存设定时传 null，只给通用提示。</param>
     public static DetailLine UnsavedBasisNote(ConflictReport working, ConflictReport? saved, string language)
     {
         ArgumentNullException.ThrowIfNull(working);
 
+        bool isActiveTarget = working.Workspace.Playset.IsTargetActivePlayset;
+        string plainKey = isActiveTarget ? "Conflicts.UnsavedBasisNote" : "Conflicts.UnsavedBasisNote.Preview";
+        string worseKey = isActiveTarget ? "Conflicts.UnsavedBasisWorse" : "Conflicts.UnsavedBasisWorse.Preview";
+
         IReadOnlyList<ModConflictItem> worse = saved == null ? [] : ConflictAnalyzer.WorseUnderSavedSettings(working, saved);
         if (worse.Count == 0)
-            return new DetailLine(string.Empty, Strings.Get(language, "Conflicts.UnsavedBasisNote"), PackageTone.Warning);
+            return new DetailLine(string.Empty, Strings.Get(language, plainKey), PackageTone.Warning);
 
         string names = string.Join(
             Strings.Get(language, "Startup.ListSeparator"),
             worse.Select(i => Format(language, "Conflicts.SavedSeverityItem", i.DisplayName, SeverityBadge(i.Severity, language))));
         PackageTone tone = worse.Any(i => i.Severity == ConflictSeverity.Hard) ? PackageTone.Error : PackageTone.Warning;
-        return new DetailLine(string.Empty, Format(language, "Conflicts.UnsavedBasisWorse", names), tone);
+        return new DetailLine(string.Empty, Format(language, worseKey, names), tone);
     }
 
     /// <summary>单条发现的文字：句首标注适用范围，句末附定级说明（已规避、可关闭某分组规避）。</summary>
