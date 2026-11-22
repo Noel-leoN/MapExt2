@@ -209,11 +209,21 @@ public sealed class CommandLineRunner
             GameLocateResult? cachedLocation = null;
             GameLocateResult GetLocation() => cachedLocation ??= _context.LocateGame();
 
-            if (activationResult != null && !reuseDiagForActivation)
+            ScannedModWorkspace? diagWorkspace = null;
+            if (activationResult != null)
             {
-                string? gameDir = TryGetGameDirQuietly(GetLocation);
-                PlaysetScanResult activatedScan = PlaysetModScanner.Scan(_context.Paths, gameDir, activationResult.TargetPlaysetId);
-                EmitActivationOutcomeAndWarnings(activationResult, activatedScan);
+                if (reuseDiagForActivation)
+                {
+                    GameLocateResult location = GetLocation();
+                    diagWorkspace = ConflictAnalyzer.ScanWorkspace(_context.Paths, location.Game?.GameDir, resolvedInspectPlaysetId);
+                    EmitActivationOutcomeAndWarnings(activationResult, diagWorkspace.Playset);
+                }
+                else
+                {
+                    string? gameDir = TryGetGameDirQuietly(GetLocation);
+                    PlaysetScanResult activatedScan = PlaysetModScanner.Scan(_context.Paths, gameDir, activationResult.TargetPlaysetId);
+                    EmitActivationOutcomeAndWarnings(activationResult, activatedScan);
+                }
             }
 
             if (options.Show)
@@ -224,11 +234,8 @@ public sealed class CommandLineRunner
 
             if (hasDiagScan)
             {
-                GameLocateResult location = GetLocation();
-                ScannedModWorkspace ws = ConflictAnalyzer.ScanWorkspace(_context.Paths, location.Game?.GameDir, resolvedInspectPlaysetId);
-
-                if (reuseDiagForActivation && activationResult != null)
-                    EmitActivationOutcomeAndWarnings(activationResult, ws.Playset);
+                ScannedModWorkspace ws = diagWorkspace
+                    ?? ConflictAnalyzer.ScanWorkspace(_context.Paths, GetLocation().Game?.GameDir, resolvedInspectPlaysetId);
 
                 if (!string.IsNullOrEmpty(ws.Playset.PlaysetConfigError))
                 {

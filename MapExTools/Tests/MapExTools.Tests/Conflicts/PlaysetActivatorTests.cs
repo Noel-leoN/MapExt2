@@ -233,8 +233,38 @@ public sealed class PlaysetActivatorTests : IDisposable
         Assert.Equal("2026-11-22T11:59:00Z", res.LockUpdatedAt);
 
         string msgZh = ConflictText.FormatActivationResult(res, hasPendingMods: false, UiLanguage.SimplifiedChinese);
-        Assert.Contains("未知程序", msgZh, StringComparison.Ordinal);
-        Assert.DoesNotContain("被  锁定", msgZh, StringComparison.Ordinal);
+        Assert.Contains("「未知程序」", msgZh, StringComparison.Ordinal);
+        Assert.DoesNotContain("被 ", msgZh, StringComparison.Ordinal);
+
+        // 验证 UTC Z 时间戳在面向用户文本中已转为本地时间 yyyy-MM-dd HH:mm:ss（不再带末尾 Z）
+        string expectedLocal = new DateTimeOffset(2026, 11, 22, 11, 59, 0, TimeSpan.Zero)
+            .LocalDateTime.ToString("yyyy-MM-dd HH:mm:ss", System.Globalization.CultureInfo.InvariantCulture);
+        Assert.Contains(expectedLocal, msgZh, StringComparison.Ordinal);
+        Assert.DoesNotContain("11:59:00Z", msgZh, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Activate_PlaysetNamesWithEmoji_EscapesSurrogatePairsAndRoundTripsCleanly()
+    {
+        const string input =
+            "{\"configVersion\":1,\"activePlaysetId\":\"p1\",\"playsets\":[" +
+            "{\"id\":\"p1\",\"presentation\":{\"name\":\"🚗 交通测试集\"},\"mods\":[]}," +
+            "{\"id\":\"p2\",\"presentation\":{\"name\":\"🚇 地铁专线\"},\"mods\":[]}]}";
+        WriteConfig(input);
+
+        PlaysetActivationResult res = PlaysetActivator.Activate(_paths, "p2", () => false, s_now);
+
+        Assert.Equal(PlaysetActivationStatus.Activated, res.Status);
+        Assert.Equal("🚇 地铁专线", res.TargetPlaysetName);
+
+        string written = File.ReadAllText(_paths.PlaysetConfigFile, Encoding.UTF8);
+        // 汉字保持原样不转义，非 BMP Emoji 写成 UTF-16 代理对 \uXXXX，经解析后与原字符串完全一致
+        Assert.Contains("交通测试集", written, StringComparison.Ordinal);
+        Assert.Contains("地铁专线", written, StringComparison.Ordinal);
+
+        PlaysetCatalogResult catalog = PlaysetModScanner.ListPlaysets(_paths);
+        Assert.Contains(catalog.Playsets, p => p.Id == "p1" && p.Name == "🚗 交通测试集");
+        Assert.Contains(catalog.Playsets, p => p.Id == "p2" && p.Name == "🚇 地铁专线" && p.IsActive);
     }
 
     [Theory]

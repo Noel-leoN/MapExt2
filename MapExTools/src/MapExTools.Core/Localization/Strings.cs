@@ -2037,9 +2037,9 @@ public static class Strings
             "如需新建播放集、增刪或啟用/停用模組，請至遊戲主選單的 Paradox Mods 介面或網頁上操作；切換啟用播放集前請先關閉遊戲和其他模組管理工具。",
         ],
         ["Conflicts.Activate.ConfirmNoMapEx"] = [
-            "Playset \"{0}\" (together with local Mods/) does not have MapEx enabled. Starting the game with it will not load MapEx, and loading an expanded-size save can fail or corrupt the save.\n\nSet \"{0}\" as the active playset anyway?",
-            "播放集「{0}」（含本地 Mods/）未启用 MapEx。切换后启动游戏不会加载 MapEx，读取扩展尺寸存档可能出错或损坏存档。\n\n仍要将「{0}」设为当前激活播放集吗？",
-            "播放集「{0}」（含本機 Mods/）未啟用 MapEx。切換後啟動遊戲不會載入 MapEx，讀取擴展尺寸存檔可能出錯或損毀存檔。\n\n仍要將「{0}」設為目前啟用播放集嗎？",
+            "Playset \"{0}\" (together with local Mods/) does not have MapEx enabled. Starting the game with it will not load MapEx, so expanded-size saves will load without size checks and can damage the city (do not save over them).\n\nSet \"{0}\" as the active playset anyway?",
+            "播放集「{0}」（含本地 Mods/）未启用 MapEx。切换后启动游戏不会加载 MapEx，没有读档尺寸校验，直接载入扩展尺寸存档会导致地图与城市异常（切勿覆盖保存）。\n\n仍要将「{0}」设为当前激活播放集吗？",
+            "播放集「{0}」（含本機 Mods/）未啟用 MapEx。切換後啟動遊戲不會載入 MapEx，沒有讀檔尺寸驗證，直接載入擴展尺寸存檔會導致地圖與城市異常（切勿覆蓋儲存）。\n\n仍要將「{0}」設為目前啟用播放集嗎？",
         ],
         ["Conflicts.Activate.ConfirmPendingMapEx"] = [
             "MapEx in playset \"{0}\" has not been downloaded to disk yet. On the first launch, wait in the main menu for Paradox Mods sync to finish before loading any save (delayed loading can bypass the save size gate).\n\nSet \"{0}\" as the active playset?",
@@ -2069,8 +2069,8 @@ public static class Strings
         ],
         ["Conflicts.Activate.Err.Locked"] = [
             "Playset configuration is currently locked by {0} (updated: {1}). Close it first and try again.",
-            "播放集配置当前正被 {0} 锁定（更新时间：{1}）。请先关闭该程序后再试。",
-            "播放集設定目前正被 {0} 鎖定（更新時間：{1}）。請先關閉該程式後再試。",
+            "播放集配置当前正被「{0}」锁定（更新时间：{1}）。请先关闭该程序后再试。",
+            "播放集設定目前正被「{0}」鎖定（更新時間：{1}）。請先關閉該程式後再試。",
         ],
         ["Conflicts.Activate.Err.LockedFileInUse"] = [
             "Playset configuration lock file is currently in use by another program. Close it first and try again.",
@@ -2118,9 +2118,9 @@ public static class Strings
             "模組衝突掃描出錯（{0}）；本次啟動前不會進行衝突確認。",
         ],
         ["Cli.Activate.WarnNoMapEx"] = [
-            "Warning: MapEx is not enabled in \"{0}\" (or local Mods/); launching with it will not load MapEx, and expanded-size saves will fail to load.",
-            "警告：播放集「{0}」（含本地 Mods/）未启用 MapEx；切换后启动游戏不会加载 MapEx，读取扩展尺寸存档会出错。",
-            "警告：播放集「{0}」（含本機 Mods/）未啟用 MapEx；切換後啟動遊戲不會載入 MapEx，讀取擴展尺寸存檔會出錯。",
+            "Warning: MapEx is not enabled in \"{0}\" (or local Mods/); launching with it will not load MapEx, so expanded-size saves will load without size checks and can damage the city (do not save over them).",
+            "警告：播放集「{0}」（含本地 Mods/）未启用 MapEx；切换后启动游戏不会加载 MapEx，没有读档尺寸校验，直接载入扩展尺寸存档会导致地图与城市异常（切勿覆盖保存）。",
+            "警告：播放集「{0}」（含本機 Mods/）未啟用 MapEx；切換後啟動遊戲不會載入 MapEx，沒有讀檔尺寸驗證，直接載入擴展尺寸存檔會導致地圖與城市異常（切勿覆蓋儲存）。",
         ],
         ["Cli.Activate.WarnPendingMapEx"] = [
             "Warning: MapEx in \"{0}\" has not been downloaded locally yet; wait in the main menu for Paradox Mods sync to finish before loading any save.",

@@ -582,6 +582,16 @@ public sealed class CommandLineRunnerTests : IDisposable
         Assert.Contains("MapExt2", stdout, StringComparison.Ordinal);
         Assert.DoesNotContain("Alpha Only Mod", stdout, StringComparison.Ordinal);
         Assert.Contains("尚未下载到本地", stderr, StringComparison.Ordinal);
+
+        // 同时附带 --show、--list-playsets、--list-mods 时，“已将…设为当前激活播放集”始终排在所有查询输出之前
+        (int comboCode, string comboOut, _) = RunSplit("--activate-playset", "Alpha", "--show", "--list-playsets", "--list-mods");
+        Assert.Equal(ExitCodes.Success, comboCode);
+        int posActivated = comboOut.IndexOf("已将「Alpha」设为当前激活播放集", StringComparison.Ordinal);
+        int posShow = comboOut.IndexOf("地图尺寸模式", StringComparison.Ordinal);
+        int posListPlaysets = comboOut.IndexOf("本地播放集", StringComparison.Ordinal);
+        int posListMods = comboOut.IndexOf("模组列表 — Alpha", StringComparison.Ordinal);
+        Assert.True(posActivated >= 0 && posActivated < posShow && posShow < posListPlaysets && posListPlaysets < posListMods,
+            $"预期输出顺序为 激活结果 -> --show -> --list-playsets -> --list-mods，实际输出：\n{comboOut}");
     }
 
     [Fact]

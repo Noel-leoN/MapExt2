@@ -51,6 +51,7 @@
 
                     <Button x:Name="ActivatePlaysetButton" Grid.Column="2" Padding="10,5"
                             VerticalAlignment="Center" Margin="8,0,0,0" Click="OnActivatePlaysetClick"
+                            ToolTipService.ShowOnDisabled="True"
                             Content="{Binding [Conflicts.Activate.Button], Source={x:Static svc:Loc.Instance}}"
                             ToolTip="{Binding [Conflicts.Activate.Tip], Source={x:Static svc:Loc.Instance}}" />
 

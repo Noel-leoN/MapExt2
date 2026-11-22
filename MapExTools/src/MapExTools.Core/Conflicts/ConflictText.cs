@@ -581,7 +581,7 @@ public static class ConflictText
                 !string.IsNullOrWhiteSpace(result.LockHolder)
                     ? result.LockHolder
                     : Strings.Get(language, "Conflicts.Activate.UnknownLockHolder"),
-                result.LockUpdatedAt),
+                FormatLockTimestampForDisplay(result.LockUpdatedAt)),
             PlaysetActivationStatus.ConfigLocked => Strings.Get(language, "Conflicts.Activate.Err.LockedFileInUse"),
             PlaysetActivationStatus.ConfigMissing => Strings.Get(language, "Conflicts.Activate.Err.ConfigMissing"),
             PlaysetActivationStatus.ConfigMalformed => Format(
@@ -593,6 +593,14 @@ public static class ConflictText
             PlaysetActivationStatus.InvalidPlaysetId => Format(language, "Conflicts.Activate.Err.InvalidId", result.TargetPlaysetId ?? string.Empty),
             _ => Format(language, "Conflicts.Activate.Err.WriteFailed", result.ErrorMessage ?? "?"),
         };
+    }
+
+    private static string FormatLockTimestampForDisplay(string rawTimestamp)
+    {
+        if (DateTimeOffset.TryParse(rawTimestamp, CultureInfo.InvariantCulture, DateTimeStyles.AssumeLocal, out DateTimeOffset dto))
+            return dto.LocalDateTime.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture);
+
+        return rawTimestamp;
     }
 
     /// <summary>激活后重扫失败且没有可用报告时的启动页提示（告知本次启动前不会做冲突确认）。</summary>

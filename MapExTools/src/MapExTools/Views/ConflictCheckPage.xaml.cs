@@ -66,6 +66,8 @@ public partial class ConflictCheckPage : UserControl
     private ModListFilterKind _modFilter = ModListFilterKind.All;
     private Func<string, ToneLine>? _activationNotice;
     private string? _activatedPlaysetId;
+    private string? _pendingRescanActiveId;
+    private IReadOnlyList<PlaysetSummary>? _lastKnownPlaysets;
 
     public ConflictCheckPage()
     {
@@ -184,8 +186,14 @@ public partial class ConflictCheckPage : UserControl
 
         ClearCopyNote();
         ClearActivationNotice();
+        _pendingRescanActiveId = targetId;
 
         PlaysetActivationResult result = await ScanService.ActivatePlaysetAsync(targetId);
+        if (!result.IsSuccess)
+            _pendingRescanActiveId = null;
+        else
+            _pendingRescanActiveId = ScanService.IsActiveStale ? (result.TargetPlaysetId ?? targetId) : null;
+
         if (!IsLoaded)
             return;
 
@@ -321,6 +329,9 @@ public partial class ConflictCheckPage : UserControl
         ConflictReport? activeReport = ScanService.Report;
         ConflictReport? report = ScanService.PreviewReport;
         string? previewError = ScanService.LastPreviewError ?? (ScanService.SelectedPlaysetId == null ? ScanService.LastScanError : null);
+
+        if (!activating && (report != null || !ScanService.IsScanning))
+            _pendingRescanActiveId = null;
 
         if (report != null &&
             _activatedPlaysetId != null &&
@@ -466,10 +477,11 @@ public partial class ConflictCheckPage : UserControl
             return;
         }
 
-        if (playset != null &&
-            playset.IsTargetActivePlayset &&
-            !string.IsNullOrWhiteSpace(playset.EffectivePlaysetId) &&
-            playset.TargetPlaysetFound)
+        if ((playset != null &&
+             playset.IsTargetActivePlayset &&
+             !string.IsNullOrWhiteSpace(playset.EffectivePlaysetId) &&
+             playset.TargetPlaysetFound) ||
+            (playset == null && ScanService.IsActiveStale && _pendingRescanActiveId != null))
         {
             ActivatePlaysetButton.Content = Loc.Instance["Conflicts.Activate.Active"];
             ActivatePlaysetButton.IsEnabled = false;
@@ -516,7 +528,31 @@ public partial class ConflictCheckPage : UserControl
         _populatingPlaysetBox = true;
         try
         {
-            IReadOnlyList<PlaysetSummary> available = playset?.EffectiveAvailablePlaysets ?? [];
+            IReadOnlyList<PlaysetSummary> available;
+            if (playset != null)
+            {
+                available = playset.EffectiveAvailablePlaysets;
+                _lastKnownPlaysets = available;
+            }
+            else if (ScanService.IsScanning && _lastKnownPlaysets is { Count: > 0 } cached)
+            {
+                // 激活后重扫完成前 Report / PreviewReport 均被置空：沿用上一次已知播放集列表并按新激活目标即时预览，避免闪现“未设置（仅本地 Mods）”
+                available = _pendingRescanActiveId != null
+                    ? cached
+                        .Select(p =>
+                        {
+                            bool nowActive = string.Equals(p.Id, _pendingRescanActiveId, StringComparison.Ordinal);
+                            return p with { IsActive = nowActive, IsOffdisk = p.IsOffdisk && !nowActive };
+                        })
+                        .OrderByDescending(p => p.IsActive)
+                        .ToList()
+                    : cached;
+            }
+            else
+            {
+                available = [];
+            }
+
             if (available.Count == 0)
             {
                 var fallback = new PlaysetChoice(null, Loc.Instance["Conflicts.NoActivePlayset"]);
@@ -791,6 +827,7 @@ public partial class ConflictCheckPage : UserControl
                 Tag = item.OneClickDisableKeys,
             };
             actionBtn.SetResourceReference(StyleProperty, "AccentButtonStyle");
+            ToolTipService.SetShowOnDisabled(actionBtn, true);
             if (Coc.GameRunning)
                 actionBtn.ToolTip = Loc.Instance["Startup.Running"];
             else if (!isActiveTarget)
