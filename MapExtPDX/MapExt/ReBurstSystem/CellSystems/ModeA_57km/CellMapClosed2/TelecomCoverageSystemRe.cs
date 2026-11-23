@@ -15,8 +15,6 @@ using MapExtPDX.MapExt.Core;
 
 namespace MapExtPDX.ModeA
 {
-    // v1.3.6f变更
-
     // 重定向私有结构体
     public struct CellDensityData
     {
@@ -214,10 +212,9 @@ namespace MapExtPDX.ModeA
                 componentData.m_NetworkCapacity *= efficiencyFactor;
                 if (!(componentData.m_Range < 1f) && !(componentData.m_NetworkCapacity < 1f))
                 {
-                    //
-                    int2 @int = math.max(CellMapSystem<TelecomCoverage>.GetCell(transform.m_Position - componentData.m_Range, XCellMapSystemRe.kMapSize, 128), 0); //
+                    int2 @int = math.max(CellMapSystem<TelecomCoverage>.GetCell(transform.m_Position - componentData.m_Range, XCellMapSystemRe.kMapSize, 128), 0);
 
-                    int2 int2 = math.min(CellMapSystem<TelecomCoverage>.GetCell(transform.m_Position + componentData.m_Range, XCellMapSystemRe.kMapSize, 128) + 1, 128); //
+                    int2 int2 = math.min(CellMapSystem<TelecomCoverage>.GetCell(transform.m_Position + componentData.m_Range, XCellMapSystemRe.kMapSize, 128) + 1, 128);
 
                     int2 int3 = int2 - @int;
                     if (!math.any(int3 <= 0))
@@ -304,8 +301,8 @@ namespace MapExtPDX.ModeA
                 }
                 float3 position = transform.m_Position;
                 position.y += objectGeometryData.m_Size.y;
-                int2 @int = math.max(CellMapSystem<TelecomCoverage>.GetCell(position - componentData.m_Range, XCellMapSystemRe.kMapSize, 128), 0); //
-                int2 int2 = math.min(CellMapSystem<TelecomCoverage>.GetCell(position + componentData.m_Range, XCellMapSystemRe.kMapSize, 128) + 1, 128); //
+                int2 @int = math.max(CellMapSystem<TelecomCoverage>.GetCell(position - componentData.m_Range, XCellMapSystemRe.kMapSize, 128), 0);
+                int2 int2 = math.min(CellMapSystem<TelecomCoverage>.GetCell(position + componentData.m_Range, XCellMapSystemRe.kMapSize, 128) + 1, 128);
                 int2 int3 = int2 - @int;
                 if (math.any(int3 <= 0))
                 {
@@ -321,7 +318,7 @@ namespace MapExtPDX.ModeA
                 else
                 {
                     this.ResetObstructAngles(obstructSlopes, @int, int2);
-                    int2 int4 = math.clamp(CellMapSystem<TelecomCoverage>.GetCell(position, XCellMapSystemRe.kMapSize, 128), 0, 127); //
+                    int2 int4 = math.clamp(CellMapSystem<TelecomCoverage>.GetCell(position, XCellMapSystemRe.kMapSize, 128), 0, 127);
                     this.CalculateCellSignalStrength(obstructSlopes, subArray, int4, @int, int2, componentData.m_Range, position);
                     int2 int5 = int4;
                     int2 int6 = int4 + 1;
@@ -436,7 +433,7 @@ namespace MapExtPDX.ModeA
             {
                 for (int j = min.x; j < max.x; j++)
                 {
-                    float3 cellCenter = XCellMapSystemRe.GetCellCenter(new int2(j, i), 128); //
+                    float3 cellCenter = XCellMapSystemRe.GetCellCenter(new int2(j, i), 128);
                     float distance = math.length((position - cellCenter).xz);
                     signalStrengthArray[num + j] = math.max(0f, this.CalculateSignalStrength(distance, range));
                 }
@@ -466,7 +463,7 @@ namespace MapExtPDX.ModeA
             int2 @int = cell - min;
             int2 int2 = max - min;
             int index = @int.x + int2.x * @int.y;
-            float3 cellCenter = XCellMapSystemRe.GetCellCenter(cell, 128); //
+            float3 cellCenter = XCellMapSystemRe.GetCellCenter(cell, 128);
             float3 @float = position - cellCenter;
             float num = math.length(@float.xz);
             float num2 = this.CalculateSignalStrength(num, range);
@@ -478,7 +475,7 @@ namespace MapExtPDX.ModeA
             cellCenter.y = TerrainUtils.SampleHeight(ref this.m_TerrainHeightData, cellCenter);
             @float.y = position.y - cellCenter.y;
             float num3 = @float.y / math.max(1f, num);
-            float num4 = (float)XCellMapSystemRe.kMapSize / 128f; //
+            float num4 = (float)XCellMapSystemRe.kMapSize / 128f;
             float2 float2 = math.abs(@float.xz);
             int2 int3 = math.clamp(@int + math.select((int2)math.sign(@float.xz), 0, math.all(float2 < num4)), 0, int2 - 1);
             int2 int4;
@@ -557,7 +554,7 @@ namespace MapExtPDX.ModeA
 
         private void AddDensity(NativeArray<CellDensityData> densityData, int density, float3 position)
         {
-            int2 @int = math.clamp(CellMapSystem<TelecomCoverage>.GetCell(position, XCellMapSystemRe.kMapSize, 128), 0, 127); //
+            int2 @int = math.clamp(CellMapSystem<TelecomCoverage>.GetCell(position, XCellMapSystemRe.kMapSize, 128), 0, 127);
             int index = @int.x + 128 * @int.y;
             CellDensityData value = densityData[index];
             value.m_Density = (ushort)math.min(65535, value.m_Density + density);

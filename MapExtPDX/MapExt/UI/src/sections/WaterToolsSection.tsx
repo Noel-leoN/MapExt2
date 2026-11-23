@@ -204,30 +204,7 @@ export const WaterToolsSection: React.FC = () => {
                 </Tooltip>
             </div>
 
-            {/* [DISABLED] 水速功能整体禁用，分隔线也隐藏 */}
-            {/* <div className={styles.sectionDivider} /> */}
-
-            {/* === [DISABLED] 水模拟速度 ===
-             * 因原版 Simulate() 每帧强制 speed=1 与 Mod 持久化回写冲突导致 UI 横跳，暂时禁用。
-             * 需要 Transpiler 修改 Simulate() 内部逻辑才能彻底解决。
-            <div className={styles.waterSubTitle}>{t("waterSimSpeedLabel")}</div>
-            <div className={styles.waterSpeedRow}>
-                <button
-                    className={styles.waterSpeedBtn}
-                    onClick={speedDown}
-                    disabled={currentSimSpeed <= 0}
-                >▼</button>
-                <span className={styles.waterSpeedValue}>
-                    {currentSimSpeed === 0 ? t("waterSimPaused") : `${currentSimSpeed}x`}
-                </span>
-                <button
-                    className={styles.waterSpeedBtn}
-                    onClick={speedUp}
-                    disabled={currentSimSpeed >= 128}
-                >▲</button>
-            </div>
-            <div className={styles.waterSpeedHint}>{t("waterSimSpeedHint")}</div>
-            */}
+            {/* 水模拟速度控件已停用：原版 Simulate() 每帧覆盖 speed，UI 回写会横跳；相关函数与 binding 暂留 */}
         </div>
     );
 };

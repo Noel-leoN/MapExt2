@@ -623,8 +623,8 @@ namespace MapExtPDX.ModeA
                     // 👨‍👩‍👧‍👦 如果没有工作的人（例如纯老人家庭），则综合计算所有家庭成员的通勤权重偏好
                     for (int i = 0; i < householdCitizens.Length; i++)
                     {
-                        // [BUGFIX] 反编译原有 bug 修改：使用 m_Citizens[householdCitizens[i].m_Citizen] 而不是使用未被赋值的跳出作用域的 citizenData 属性
-                        // [BUGFIX-3] 防御性检查：防止已销毁但未清理的 citizen entity 导致 IndexOutOfRange
+                        // 反编译修复：读取 m_Citizens[householdCitizens[i].m_Citizen]（避免误用未赋值的外层局部变量）
+                        // 防御性检查：防止已销毁但未清理的 citizen entity 导致 IndexOutOfRange
                         if (!m_Citizens.HasComponent(householdCitizens[i].m_Citizen)) continue;
                         Citizen citizenDataObj = m_Citizens[householdCitizens[i].m_Citizen];
                         weights.m_Value += CitizenUtils
@@ -1077,15 +1077,6 @@ namespace MapExtPDX.ModeA
             public int free;
         }
 
-        // public struct GenericApartmentQuality
-        // {
-        //     public float apartmentSize;
-        //     public float2 educationBonus;
-        //     public float welfareBonus;
-        //     public float score;
-        //     public int level;
-        // }
-
         #endregion
     }
 
@@ -1376,7 +1367,7 @@ namespace MapExtPDX.ModeA
 
         // --- 静态缓存字段 ---
         private static bool _initialized = false;
-        private static World _cachedWorld; // [BUGFIX] 用于检测 World 重建（场景切换）
+        private static World _cachedWorld; // 用于检测 World 重建（场景切换）
         private static EntityQuery _findHomeQuery;
         private static EntityQuery _healthcareParamQuery;
         private static EntityQuery _parkParamQuery;
@@ -1408,8 +1399,8 @@ namespace MapExtPDX.ModeA
                         dependencyGetter);
             }
 
-            // 2. [BUGFIX-2] 使用 bool 标记替代 EntityQuery struct 的 default 比较
-            // [BUGFIX-3] 场景切换后 World 会被销毁重建，必须检测 World 变化并重新初始化所有缓存
+            // 2. 使用 bool 标记替代 EntityQuery struct 的 default 比较；
+            // 场景切换后 World 会被销毁重建，必须检测 World 变化并重新初始化所有缓存
             var currentWorld = system.World;
             if (_initialized && _cachedWorld == currentWorld && _cachedWorld.IsCreated)
                 return;
@@ -1491,7 +1482,7 @@ namespace MapExtPDX.ModeA
 
             EnsureInitialized(__instance);
 
-            // HarmonySystemAPI__instance
+            // Harmony Prefix 静态方法中不能使用 SystemAPI，需通过 __instance 获取各项 TypeHandle / Lookup 句柄
             var jobData = new CustomSetupFindHomeJob
             {
                 m_EntityType = __instance.GetEntityTypeHandle(),

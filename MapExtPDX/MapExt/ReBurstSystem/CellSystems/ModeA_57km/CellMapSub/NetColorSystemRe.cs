@@ -17,15 +17,10 @@ using MapExtPDX.MapExt.Core;
 
 namespace MapExtPDX.ModeA
 {
-    // v1.3.6f变动/v1.4.2变动
-
     /// <summary>
-    /// Job较大
-    /// 引用 GroundPollutionSystem / NoisePollutionSystem / AirPollutionSystem 三张污染图的 GetPollution
-    /// 影响UI信息视图中的道路显示可适土壤污染影响
-    /// 住宅分区时显示居住适应性，出现较频繁，有必要修
+    /// Job 较大，引用 GroundPollutionSystem / NoisePollutionSystem / AirPollutionSystem 三张污染图的 GetPollution；
+    /// 影响 UI 信息视图中的道路居住适应性（土壤/空气/噪音污染）着色，住宅分区时频繁显示，需适配扩展地图尺寸。
     /// </summary>
-
     [BurstCompile]
     public struct UpdateEdgeColorsJob : IJobChunk
     {
@@ -236,7 +231,7 @@ namespace MapExtPDX.ModeA
                     float3 position = this.m_Nodes[edge.m_Start].m_Position;
                     float3 position2 = this.m_Nodes[edge.m_End].m_Position;
 
-                    // mod重定
+                    // mod 重定向
                     GroundPollution pollution = XCellMapSystemRe.GroundPollutionSystemGetPollution(position, this.m_GroundPollutionMap);
                     GroundPollution pollution2 = XCellMapSystemRe.GroundPollutionSystemGetPollution(position2, this.m_GroundPollutionMap);
                     NoisePollution pollution3 = XCellMapSystemRe.NoisePollutionSystemGetPollution(position, this.m_NoisePollutionMap);

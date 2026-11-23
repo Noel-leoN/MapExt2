@@ -1,28 +1,28 @@
 // Game.Simulation.AirPollutionSystem : CellMapSystem<AirPollution>, IJobSerializable
 
-// 需修改内容
+// 需修改内容：
 // BC调用GetCellCenter/GetPollution/GetWind/kTextureSize
 // GetCellCenter/GetPollution引用kMapSize/kTextureSize
 // OnCreate() base.CreateTextures(AirPollutionSystem.kTextureSize);
 
-// CellMapSystem<T>解决方案
-// 1. ECS替换模式优点：可全面修改系统行为，灵活控制；缺点：维护稍复杂)
-// a. 直接在Job中引用自定义静态常量和静态方
-// b. 继承CellMapSystem<T>创建Mod系统类，重写OnCreate/OnUpdate等方
-// c. 禁用原版系统，使用Harmony补丁重定向方法调
-// d. 存档兼容性处理，可实现map贴图尺寸任意变更
-// 2. 泛型化：方便批量修改，使用别名定义泛型类型，配合Harmony补丁重定向方法调
-// 3. 规范化：修正为ECS现代规范代码格式，局部变量改为易读名
-// 注意：仅限于CellMapSystem<T>类，其他类型(非经济类)仍采用Job通用替换处理,避免过度复杂可能需要Harmony重定向所有外系统调用方法)
-// 注意2：TelecomCoverage采用Job内硬编码/且实用性不大，暂不修改
-// 注意3：WindSystem相关系统需大量调整其他参数，暂不修改
+// CellMapSystem<T> 解决方案：
+// 1. ECS 替换模式（优点：可全面修改系统行为，灵活控制；缺点：维护稍复杂）
+// a. 直接在 Job 中引用自定义静态常量和静态方法
+// b. 继承 CellMapSystem<T> 创建 Mod 系统类，重写 OnCreate/OnUpdate 等方法
+// c. 禁用原版系统，使用 Harmony 补丁重定向方法调用
+// d. 存档兼容性处理，可实现 map 贴图尺寸任意变更
+// 2. 泛型化：方便批量修改，使用别名定义泛型类型，配合 Harmony 补丁重定向方法调用
+// 3. 规范化：修正为 ECS 现代规范代码格式，局部变量改为易读名称
+// 注意：仅限于 CellMapSystem<T> 类，其他类型（非经济类）仍采用 Job 通用替换处理，避免过度复杂（可能需要 Harmony 重定向所有外系统调用方法）
+// 注意2：TelecomCoverage 采用 Job 内硬编码/且实用性不大，暂不修改
+// 注意3：WindSystem 相关系统需大量调整其他参数，暂不修改
 
-// 批量修改方式
-// 1.配置区域->命名空间->类定
-// 2.静态字段配原版系统引用依赖
-// 3.OnCreate/OnUpdate(注意尽量使用TempJob分配临时缓冲区避免大型贴图内存溢
-// 4.Job
-// 5.存档读写、GetData修正与重定向判断由基类 CellMapReplacementSystem 提供，Patches 只留非泛型薄壳
+// 批量修改方式：
+// 1. 配置区域 -> 命名空间 -> 类定义
+// 2. 静态字段配置 -> 原版系统引用依赖
+// 3. OnCreate/OnUpdate（注意尽量使用 TempJob 分配临时缓冲区，避免大型贴图内存溢出）
+// 4. Job
+// 5. 存档读写、GetData 修正与重定向判断由基类 CellMapReplacementSystem 提供，Patches 只留非泛型薄壳
 // 其他直接套用
 
 using Colossal.Entities;
@@ -56,7 +56,7 @@ namespace MapExtPDX.ModeA
 
     // 降级保护：合并版存档里本类的类型名是 MapExtPDX.CellMap.AirPollutionSystemMod，退回本版本时靠此别名读回，勿删
     /// <summary>
-    /// 空气污染计算、扩散、衰减系
+    /// 空气污染计算、扩散、衰减系统
     /// 负责模拟空气中污染物的传播和消散过程
     /// 通过风力影响污染的移动，并考虑自然衰减和扩散
     /// </summary>
@@ -75,7 +75,7 @@ namespace MapExtPDX.ModeA
         protected override int ModTextureSize => kTextureSize;
         protected override int MapSize => XCellMapSystemRe.kMapSize;
 
-        // 系统更新周期：每次数128
+        // 系统更新周期：每日更新次数 128
         public static readonly int kUpdatesPerDay = 128;
         public override int GetUpdateInterval(SystemUpdatePhase phase) => 262144 / kUpdatesPerDay;
 
@@ -83,7 +83,7 @@ namespace MapExtPDX.ModeA
         private static readonly int kSpreadShift = 3;
         #endregion
 
-        #region 查询和系统引
+        #region 查询和系统引用
         // 系统依赖
         private WindSystem m_WindSystem;
         // 查询
@@ -96,7 +96,7 @@ namespace MapExtPDX.ModeA
             // 1–2. 禁用原版系统、登记 Instance、创建自定义大小纹理由基类完成
             base.OnCreate();
 
-            // 3. 获取其他依赖和查
+            // 3. 获取其他依赖和查询
             m_WindSystem = World.GetOrCreateSystemManaged<WindSystem>();
             m_PollutionParameterQuery = GetEntityQuery(ComponentType.ReadOnly<PollutionParameterData>());
             // 强制依赖更新
@@ -136,7 +136,7 @@ namespace MapExtPDX.ModeA
                 m_Bounds = bounds
             };
 
-            // === 趟1 平流(Advection)：只算平流范围内的格。每格只读唯读输入、只写自己的暂存格、无随机数，
+            // === 趟1 平流(Advection)：只算平流范围内的格。每格只读输入、只写自己的暂存格、无随机数，
             // 范围外的格采样到的全是 0，结果与全图计算逐位相同
             AirPollutionAdvectRowJob advectJob = new()
             {

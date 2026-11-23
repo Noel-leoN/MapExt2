@@ -34,7 +34,7 @@ namespace MapExtPDX.ModeA
     {
         private const string Tag = nameof(NoisePollutionSystemMod);
 
-        #region 常量与配
+        #region 常量与配置
         // 纹理尺寸(vanilla=256)
         public static readonly int orgTextureSize = TargetSystem.kTextureSize; // 原版尺寸
         public static readonly int kTextureSize = XCellMapSystemRe.NoisePollutionSystemkTextureSize; // mod尺寸
@@ -44,7 +44,7 @@ namespace MapExtPDX.ModeA
         protected override int ModTextureSize => kTextureSize;
         protected override int MapSize => XCellMapSystemRe.kMapSize;
 
-        // 系统更新周期：每128
+        // 系统更新周期：每日更新 128 次
         public static readonly int kUpdatesPerDay = 128;
         public override int GetUpdateInterval(SystemUpdatePhase phase) => 262144 / kUpdatesPerDay;
         #endregion
@@ -54,11 +54,11 @@ namespace MapExtPDX.ModeA
 
         protected override void OnUpdate()
         {
-            // 1. 获取地图数据的原生数组（读写权限
+            // 1. 获取地图数据的原生数组（读写权限）
             NativeArray<TargetType> pollutionMap = GetMap(readOnly: false, out JobHandle inputDeps);
 
             // 2. 调度扩散计算 Job (Swap Job)
-            // 这一步计算加权平均值，Temp 中的累积值转化为实际Pollution
+            // 这一步计算加权平均值，将 Temp 中的累积值转化为实际 Pollution
             var swapJob = new NoisePollutionSwapJob
             {
                 m_PollutionMap = pollutionMap
@@ -67,7 +67,7 @@ namespace MapExtPDX.ModeA
             JobHandle swapHandle = swapJob.Schedule(m_Map.Length, 64, inputDeps);
 
             // 3. 调度清理 Job (Clear Job)
-            // 计算完成后，清空 Temp 值，为下一帧的累积做准
+            // 计算完成后，清空 Temp 值，为下一帧的累积做准备
             var clearJob = new NoisePollutionClearJob
             {
                 m_PollutionMap = pollutionMap
@@ -81,12 +81,12 @@ namespace MapExtPDX.ModeA
 
         #region Jobs
         /// <summary>
-        /// 扩散计算 Job：执3x3 高斯模糊加权
+        /// 扩散计算 Job：执行 3x3 高斯模糊加权
         /// </summary>
         [BurstCompile]
         private struct NoisePollutionSwapJob : IJobParallelFor
         {
-            // 允许并行写入，因为写入的Struct 内部字段，且每个 Index 独立
+            // 允许并行写入，因为写入的是 Struct 内部字段，且每个 Index 独立
             [NativeDisableParallelForRestriction] public NativeArray<TargetType> m_PollutionMap;
 
             public void Execute(int index)
@@ -97,8 +97,8 @@ namespace MapExtPDX.ModeA
                 int x = index % kTextureSize;
                 int y = index / kTextureSize;
 
-                // 获取周围 8 个邻居的 Temp (边界检查：越界则视0)
-                // 使用三元运算符替if 以利Burst 向量化优
+                // 获取周围 8 个邻居的 Temp（边界检查：越界则视为 0）
+                // 使用三元运算符替代 if 以利于 Burst 向量化优化
 
                 // 左右邻居
                 short left = (short)((x > 0) ? m_PollutionMap[index - 1].m_PollutionTemp : 0);
@@ -108,18 +108,18 @@ namespace MapExtPDX.ModeA
                 short bottom = (short)((y > 0) ? m_PollutionMap[index - kTextureSize].m_PollutionTemp : 0);
                 short top = (short)((y < kTextureSize - 1) ? m_PollutionMap[index + kTextureSize].m_PollutionTemp : 0);
 
-                // 对角线邻
+                // 对角线邻居
                 short bottomLeft = (short)((x > 0 && y > 0) ? m_PollutionMap[index - 1 - kTextureSize].m_PollutionTemp : 0);
                 short bottomRight = (short)((x < kTextureSize - 1 && y > 0) ? m_PollutionMap[index + 1 - kTextureSize].m_PollutionTemp : 0);
                 short topLeft = (short)((x > 0 && y < kTextureSize - 1) ? m_PollutionMap[index - 1 + kTextureSize].m_PollutionTemp : 0);
                 short topRight = (short)((x < kTextureSize - 1 && y < kTextureSize - 1) ? m_PollutionMap[index + 1 + kTextureSize].m_PollutionTemp : 0);
 
                 // 计算加权平均
-                // 权重分布
+                // 权重分布：
                 // 中心: 1/4 (0.25)
                 // 十字: 1/8 (0.125) * 4 = 0.5
                 // 对角: 1/16 (0.0625) * 4 = 0.25
-                // 总权= 1.0
+                // 总权重 = 1.0
                 int weightedSum = (cell.m_PollutionTemp / 4) +
                                   ((left + right + bottom + top) / 8) +
                                   ((bottomLeft + bottomRight + topLeft + topRight) / 16);

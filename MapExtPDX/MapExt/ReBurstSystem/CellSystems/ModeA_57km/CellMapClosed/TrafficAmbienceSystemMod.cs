@@ -25,9 +25,9 @@ namespace MapExtPDX.ModeA
 
     // 降级保护：合并版存档里本类的类型名是 MapExtPDX.CellMap.TrafficAmbienceSystemMod，退回本版本时靠此别名读回，勿删
     /// <summary>
-    /// 交通氛围系(Traffic Ambience System)
+    /// 交通氛围系统 (Traffic Ambience System)
     /// <para>
-    /// 负责管理全图的交通噪氛围数据。定期更新每个网格单元的交通强度供UI显示
+    /// 负责管理全图的交通噪音/氛围数据。定期更新每个网格单元的交通强度供 UI 显示
     /// </para>
     /// </summary>
     [Colossal.Serialization.Entities.FormerlySerializedAs("MapExtPDX.CellMap.TrafficAmbienceSystemMod")]
@@ -45,7 +45,7 @@ namespace MapExtPDX.ModeA
         protected override int ModTextureSize => kTextureSize;
         protected override int MapSize => XCellMapSystemRe.kMapSize;
 
-        // 系统更新周期：每次数1024
+        // 系统更新周期：每日更新次数 1024
         public static readonly int kUpdatesPerDay = 1024;
         public override int GetUpdateInterval(SystemUpdatePhase phase) => 262144 / kUpdatesPerDay;
         #endregion
@@ -89,15 +89,15 @@ namespace MapExtPDX.ModeA
         [BurstCompile]
         private struct TrafficAmbienceUpdateJob : IJobParallelFor
         {
-            // 交通氛围地图数
+            // 交通氛围地图数据
             public NativeArray<TargetType> m_TrafficMap;
 
             public void Execute(int index)
             {
                 TargetType currentCell = m_TrafficMap[index];
 
-                // 将累积的交通量转移到当前交通量字段，并清空累积
-                // 意味着上一帧积累的数据在这一帧生
+                // 将累积的交通量转移到当前交通量字段，并清空累积器
+                // 意味着上一帧积累的数据在这一帧生效
                 m_TrafficMap[index] = new TargetType
                 {
                     m_Traffic = currentCell.m_Accumulator,

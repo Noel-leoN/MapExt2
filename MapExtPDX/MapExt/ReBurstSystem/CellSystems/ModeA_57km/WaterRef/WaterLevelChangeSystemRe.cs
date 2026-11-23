@@ -51,7 +51,7 @@ namespace MapExtPDX.ModeA
                 }
                 if (waterLevelChangeData.m_ChangeType == WaterLevelChangeType.Sine)
                 {
-                    float num2 = (duration.m_EndFrame - TsunamiEndDelay - duration.m_StartFrame) / 60f; //
+                    float num2 = (duration.m_EndFrame - TsunamiEndDelay - duration.m_StartFrame) / 60f;
                     if (num < 0.05f * num2)
                     {
                         value.m_Intensity = -0.2f * value.m_MaxIntensity * math.sin(20f * num / num2 * math.PI);

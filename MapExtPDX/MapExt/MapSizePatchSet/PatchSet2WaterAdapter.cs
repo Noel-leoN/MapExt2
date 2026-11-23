@@ -57,7 +57,7 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
         public static RenderTexture DownsampledCascade => s_DownsampledCascade;
 
         /// <summary>
-        /// [BUGFIX] 退出主菜单时重置会话状态。
+        /// 返回主菜单时重置会话状态。
         /// 清除 TerrainSystem 引用（可能在 Cleanup 期间变无效）和缓存计数器。
         /// GPU 资源在下次 BeforeSimulateGPU 中按需重建。
         /// </summary>

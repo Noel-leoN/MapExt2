@@ -25,20 +25,20 @@ namespace MapExtPDX.ModeA
 
         public void Execute(int index)
         {
-            // 重定由于Deserialize硬编码限制，暂不修改该
+            // 重定向：由于 Deserialize 硬编码限制，暂不修改该值
             int kTextureSize = XCellMapSystemRe.WindSystemkTextureSize;
-            // 重定
+            // 重定向
             int3 kResolution = new(kTextureSize, kTextureSize, 16);
 
             // 核心修正：为了保持物理波速不变，耦合系数 kChangeFactor 必须按比例的平方反比衰减
             // 如果不平方，风力随尺寸增加仍会过大；如果修改 Slowdown，风力会过快衰减
-            // 不更改kTextureSize时无需修改
+            // 不更改 kTextureSize 时无需修改
             //int m_CellSizeScale = XCellMapSystemRe.CellMapTextureSizeMultiplier;
             float kChangeFactor = WindSimulationSystem.kChangeFactor /*/ (m_CellSizeScale * m_CellSizeScale)*/;
 
-            // kTextureSize不变update_interval不变时该值不必改
+            // kTextureSize 与 update_interval 不变时该值不必改
             float kTerrainSlowdown = WindSimulationSystem.kTerrainSlowdown;
-            // kTextureSize不变时该值不必改
+            // kTextureSize 不变时该值不必改
             float kAirSlowdown = WindSimulationSystem.kAirSlowdown;
 
             int3 @int = new int3(index % kResolution.x, index / kResolution.x % kResolution.y, index / (kResolution.x * kResolution.y));
@@ -86,9 +86,9 @@ namespace MapExtPDX.ModeA
 
         public void Execute(int index)
         {
-            // 重定
+            // 重定向
             int kTextureSize = XCellMapSystemRe.WindSystemkTextureSize;
-            // 重定
+            // 重定向
             int3 kResolution = new(kTextureSize, kTextureSize, 16);
 
             int3 @int = new int3(index % kResolution.x, index / kResolution.x % kResolution.y, index / (kResolution.x * kResolution.y));

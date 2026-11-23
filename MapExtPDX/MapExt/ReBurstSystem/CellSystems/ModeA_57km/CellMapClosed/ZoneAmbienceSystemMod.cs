@@ -62,7 +62,7 @@ namespace MapExtPDX.ModeA
                 m_ZoneMap = m_Map
             };
 
-            // 依赖链管理：合并读写依赖，确保线程安
+            // 依赖链管理：合并读写依赖，确保线程安全
             JobHandle dependency = JobHandle.CombineDependencies(m_WriteDependencies, m_ReadDependencies, Dependency);
 
             // 调度并行 Job，处理所有单元格
@@ -97,7 +97,7 @@ namespace MapExtPDX.ModeA
             {
                 TargetType currentCell = m_ZoneMap[index];
 
-                // 将累积值应用为当前有效值，并清空累积器以便下一帧重新计
+                // 将累积值应用为当前有效值，并清空累积器以便下一帧重新计算
                 m_ZoneMap[index] = new TargetType
                 {
                     m_Value = currentCell.m_Accumulator,

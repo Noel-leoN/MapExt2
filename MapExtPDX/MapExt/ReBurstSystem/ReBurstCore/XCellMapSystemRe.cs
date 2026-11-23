@@ -36,7 +36,7 @@ namespace MapExtPDX.MapExt.ReBurstSystemCore
         public static int TsunamiEndDelay => (int)math.round(kMapSize / WaveSpeed);
 
         /// <summary>
-        /// v2.2.0版本 将CellMapSystem模拟计算的贴图分辨率提升到原版水平
+        /// 将 CellMapSystem 模拟计算的贴图分辨率提升到与扩展地图匹配的水平
         /// </summary>
         /// <remarks>
         /// 核心调整倍率，等于 CV：57344→4, 28672→2, 43008→3, 114688→8, 14336→1。

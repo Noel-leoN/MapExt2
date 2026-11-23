@@ -1,10 +1,9 @@
 // Copyright (c) 2024 Noel2(Noel-leoN)
 // Licensed under the MIT License.
 // See LICENSE in the project root for full license information.
-// When using this part of the code, please clearly credit [Project Name] and the author.
+// When using this part of the code, please clearly credit MapExt2 and the author.
 
 // Game.Simulation.HouseholdBehaviorSystem替换
-// v1.4.2较大变化
 
 using Colossal.Mathematics;
 using Game;
@@ -106,9 +105,7 @@ namespace MapExtPDX.EcoShared
             if (originalSystem != null)
             {
                 originalSystem.Enabled = false;
-                //#if DEBUG
                 ModLog.Swap(Tag, $"禁用原系统: {typeof(TargetSystem).Name}");
-                //#endif
             }
             else
             {

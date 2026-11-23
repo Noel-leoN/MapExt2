@@ -96,10 +96,6 @@ namespace MapExtPDX.UI
         // --- 海平面锁定 ---
         private ValueBinding<bool> m_SeaLevelLocked;
         private float m_LockedSeaLevelValue;
-
-        // --- [DISABLED] 水模拟速度持久化 ---
-        // 因原版 Simulate() 每帧强制 speed=1 与 Mod 持久化回写冲突导致横跳，暂时禁用。
-        // private int m_UserWaterSimSpeed = -1;
         private bool m_SeaLevelDiagLogged = false;
 
         // --- 效能快取 ---
@@ -544,9 +540,6 @@ namespace MapExtPDX.UI
             // GetterValueBinding 的自动更新由 base.OnUpdate() 处理
             base.OnUpdate();
 
-            // === [DISABLED] 水模拟速度持久化 ===
-            // 因原版 Simulate() 每帧强制 speed=1 与 Mod 持久化逻辑冲突，已禁用。
-
             // === 海平面锁定：在 base.OnUpdate 后强制回写 ===
             if (m_SeaLevelLocked.value && m_WaterSystem != null && m_WaterSystem.Loaded)
             {
@@ -602,16 +595,13 @@ namespace MapExtPDX.UI
                 m_ServiceBonusCap.Update(s.ServiceBonusCapMultiplier);
 
             // --- 寻路核心参数 ---
-            // ReSharper disable once CompareOfFloatsByEqualityOperator
             if (m_ShoppingMaxCost.value != s.ShoppingMaxCost)
                 m_ShoppingMaxCost.Update(s.ShoppingMaxCost);
 
-            // ReSharper disable once CompareOfFloatsByEqualityOperator
             if (m_LeisureMaxCost.value != s.LeisureMaxCost)
                 m_LeisureMaxCost.Update(s.LeisureMaxCost);
 
             // --- 寻路扩展参数 ---
-            // ReSharper disable CompareOfFloatsByEqualityOperator
             if (m_EmergencyMaxCost.value != s.EmergencyMaxCost)
                 m_EmergencyMaxCost.Update(s.EmergencyMaxCost);
 
@@ -623,7 +613,6 @@ namespace MapExtPDX.UI
 
             if (m_FindSchoolElemMaxCost.value != s.FindSchoolElementaryMaxCost)
                 m_FindSchoolElemMaxCost.Update(s.FindSchoolElementaryMaxCost);
-            // ReSharper restore CompareOfFloatsByEqualityOperator
 
             // --- 扩展租金参数 ---
             if (m_LvFactorRes.value != s.LandValueFactorResidential)

@@ -28,7 +28,7 @@ namespace MapExtPDX.ModeA
 
     // 降级保护：合并版存档里本类的类型名是 MapExtPDX.CellMap.TerrainAttractivenessSystemMod，退回本版本时靠此别名读回，勿删
     /// <summary>
-    /// 地形吸引力计算系(Terrain Attractiveness System)
+    /// 地形吸引力计算系统 (Terrain Attractiveness System)
     /// <para>
     /// 该系统负责根据地形高度、水域深度和森林环境（Zone Ambience）计算全图的吸引力数值
     /// 吸引力影响地价、市民满意度以及建筑生成的适宜度
@@ -50,7 +50,7 @@ namespace MapExtPDX.ModeA
         protected override int ModTextureSize => kTextureSize;
         protected override int MapSize => XCellMapSystemRe.kMapSize;
 
-        // 系统更新周期：每16
+        // 系统更新周期：每日更新 16 次
         public static readonly int kUpdatesPerDay = 16;
         public override int GetUpdateInterval(SystemUpdatePhase phase) => 262144 / kUpdatesPerDay;
 
@@ -60,7 +60,7 @@ namespace MapExtPDX.ModeA
         private NativeArray<float3> m_AttractFactorData;
         #endregion
 
-        #region 查询和系统引
+        #region 查询和系统引用
         private TerrainSystem m_TerrainSystem;
         private WaterSystem m_WaterSystem;
         private ZoneAmbienceSystemMod m_ZoneAmbienceSystem;
@@ -73,8 +73,8 @@ namespace MapExtPDX.ModeA
             // 1–2. 禁用原版系统、登记 Instance、创建自定义大小纹理由基类完成
             base.OnCreate();
 
-            // 3. 获取其他依赖和查
-            // 获取依赖的托管系(Managed Systems)
+            // 3. 获取其他依赖和查询
+            // 获取依赖的托管系统 (Managed Systems)
             m_TerrainSystem = World.GetOrCreateSystemManaged<TerrainSystem>();
             m_WaterSystem = World.GetOrCreateSystemManaged<WaterSystem>();
             m_ZoneAmbienceSystem = World.GetOrCreateSystemManaged<ZoneAmbienceSystemMod>();
@@ -106,7 +106,7 @@ namespace MapExtPDX.ModeA
             AttractivenessParameterData parameters = SystemAPI.GetSingleton<AttractivenessParameterData>();
 
             // 2. 调度准备工作 Job：采集地形、水域和环境数据
-            // 必须等待之前的写入完(base.Dependency) 以及外部数据的依
+            // 必须等待之前的写入完成 (base.Dependency) 以及外部数据的依赖
             TerrainAttractivenessPrepareJob prepareJob = new TerrainAttractivenessPrepareJob
             {
                 m_TerrainData = heightData,
@@ -144,12 +144,12 @@ namespace MapExtPDX.ModeA
                 JobHandle.CombineDependencies(Dependency, waterDeps, ambienceDeps)
             );
 
-            // 注册读取器，确保外部系统知道我们在读取数
+            // 注册读取器，确保外部系统知道我们在读取数据
             m_TerrainSystem.AddCPUHeightReader(prepareHandle);
             m_ZoneAmbienceSystem.AddReader(prepareHandle);
             m_WaterSystem.AddSurfaceReader(prepareHandle);
 
-            // Job 依赖Prepare Job 以及 Map 的读写依
+            // Job 依赖 Prepare Job 以及 Map 的读写依赖
             JobHandle mainHandle = scanJob.ScheduleBatch(
                 m_Map.Length,
                 4,
@@ -158,8 +158,8 @@ namespace MapExtPDX.ModeA
             kernelOffsets.Dispose(mainHandle);
             kernelFalloffs.Dispose(mainHandle);
 
-            // 5. 完成依赖链设
-            // 将此 Job 注册Map 的写入
+            // 5. 完成依赖链设置
+            // 将此 Job 注册为 Map 的写入者
             AddWriter(mainHandle);
             // 更新系统的主依赖句柄
             Dependency = JobHandle.CombineDependencies(m_ReadDependencies, m_WriteDependencies, mainHandle);
@@ -180,7 +180,7 @@ namespace MapExtPDX.ModeA
             [ReadOnly] public WaterSurfaceData<SurfaceWater> m_WaterData;
             [ReadOnly] public CellMapData<ZoneAmbienceCell> m_ZoneAmbienceData;
 
-            [NativeDisableParallelForRestriction] // Batch Job 写入非重叠索引，通常安全，但显示声明以防万一
+            [NativeDisableParallelForRestriction] // Batch Job 写入非重叠索引，通常安全，但显式声明以防万一
             public NativeArray<float3> m_AttractFactorData;
 
             public void Execute(int startIndex, int count)

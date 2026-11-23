@@ -1,7 +1,7 @@
 // Copyright (c) 2024 Noel2(Noel-leoN)
 // Licensed under the MIT License.
 // See LICENSE in the project root for full license information.
-// When using this part of the code, please clearly credit [Project Name] and the author.
+// When using this part of the code, please clearly credit MapExt2 and the author.
 
 using System;
 using System.Reflection;
@@ -24,7 +24,6 @@ namespace MapExtPDX
 
         public const string ModName = "MapExtPDX";
 
-        // public const string ModFileName = "MapExtPDX2";
         public const string ModNameZH = "大地图mod";
         public static string ModVersion => Assembly.GetExecutingAssembly().GetName().Version.ToString(3);
 
@@ -187,8 +186,6 @@ namespace MapExtPDX
             ApplySaveGatePatch(nameof(GameManagerLoadGatePatch),
                 () => _globalPatcher.CreateClassProcessor(typeof(GameManagerLoadGatePatch)).Patch());
 
-            // 其他并行的选项补丁，也在这里添加
-            // _globalPatcher.CreateClassProcessor(typeof(ParallelOptionPatch)).Patch();
             // 對話框本地化已隨設定文本在 RegisterLocalization 一併註冊（合併為每語言一次）
 
             // 4.2 注册原版存档转换系统
@@ -203,14 +200,6 @@ namespace MapExtPDX
 
             // --- 加载NoThroughTraffic(From CS2LiteBooster，含 RandomTrafficDispatchSystem) ---
             m_Setting.UpdateNoThroughTrafficSystemStates();
-
-            // === F. 加载特色工具 ===
-            // 加载LandValueRemake
-            // m_Setting.UpdateLandValueRemakeSystemStates();
-            //Info($"LandValue Remake补丁(全局并行) {nameof(ModLocalization)}已应用.");
-
-            // 执行诊断系统
-            // updateSystem.UpdateAt<SaveGameDiagnosticSystem>(SystemUpdatePhase.LateUpdate);
 
             // === G. 冲突 Mod 指纹检测 ===
             ModConflictDetector.ScanLoadedMods();

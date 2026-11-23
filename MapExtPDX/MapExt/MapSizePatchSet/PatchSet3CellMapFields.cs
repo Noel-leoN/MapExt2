@@ -1,7 +1,7 @@
 // Copyright (c) 2024 Noel2(Noel-leoN)
 // Licensed under the MIT License.
 // See LICENSE in the project root for full license information.
-// When using this part of the code, please clearly credit [Project Name] and the author.
+// When using this part of the code, please clearly credit MapExt2 and the author.
 
 using System;
 using System.Collections.Concurrent;
@@ -26,8 +26,7 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
     /// CellMapSystem.kMapSize / cellmapClosedType.kTextureSize
     /// </summary>
     /// <remarks>
-    /// 技术方案：v2.2.0 改为自动搜索修补对象
-    /// v2.3.x 日志迁移至 ModLog 统一格式
+    /// 技术方案：自动搜索并修补目标字段，日志统一经 ModLog 输出。
     /// </remarks>
     
     public static class CellMapSystemPatchManager

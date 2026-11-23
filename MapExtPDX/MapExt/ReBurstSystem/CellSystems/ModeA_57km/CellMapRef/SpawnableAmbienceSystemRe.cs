@@ -98,8 +98,6 @@ namespace MapExtPDX.ModeA
         }
     }
 
-    // v1.2.5f
-    // mod v2.2.0
     [BurstCompile]
     public struct EmitterAmbienceJob : IJobChunk
     {
@@ -132,7 +130,7 @@ namespace MapExtPDX.ModeA
                 AmbienceEmitterData ambienceEmitterData = this.m_AmbienceEmitterDatas[prefabRef.m_Prefab];
                 if (ambienceEmitterData.m_Intensity != 0f)
                 {
-                    int2 cell = CellMapSystem<ZoneAmbienceCell>.GetCell(position, kMapSize, kTextureSize); // 
+                    int2 cell = CellMapSystem<ZoneAmbienceCell>.GetCell(position, kMapSize, kTextureSize);
                     int num = cell.x + cell.y * kTextureSize;
                     int hashCode = num * this.m_Queue.HashRange / (kTextureSize * kTextureSize);
                     if (cell.x >= 0 && cell.y >= 0 && cell.x < kTextureSize && cell.y < kTextureSize)

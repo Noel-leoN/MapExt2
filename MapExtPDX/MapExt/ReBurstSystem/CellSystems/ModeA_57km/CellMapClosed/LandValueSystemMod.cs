@@ -1,7 +1,7 @@
 // Copyright (c) 2024 Noel2(Noel-leoN)
 // Licensed under the MIT License.
 // See LICENSE in the project root for full license information.
-// When using this part of the code, please clearly credit [Project Name] and the author.
+// When using this part of the code, please clearly credit MapExt2 and the author.
 
 // Game.Simulation.LandValueSystem
 // 重写Job逻辑需更改引入字段，ECS替换+HarmonyPatch公开字段/方法
@@ -55,22 +55,14 @@ namespace MapExtPDX.ModeA
         private const string Tag = nameof(LandValueSystemMod);
 
         #region LandValue特定逻辑配置
-        // --- 蔓延与辐(热力图生 ---
+        // --- 蔓延与辐射（热力图生成） ---
         // 地价从道路向周围辐射的物理距离（米）
-        // 原版逻辑依赖格大14336/128=112m)，这里改为固定物理距离：1.减少断层.可配置辐射范围
+        // 原版逻辑依赖网格大小（14336/128=112m），这里改为固定物理距离：1. 减少断层；2. 可配置辐射范围
         // 建议 150m - 300m (一个街区约 80-120m)
         public const float kSpreadDistance = 150.0f;
 
-        // 数值平滑系(Lerp)。越小变化越慢（越平滑），越大变化越快（越灵敏）
+        // 数值平滑系数 (Lerp)。越小变化越慢（越平滑），越大变化越快（越灵敏）
         public const float kLerpSpeed = 0.6f;
-
-        // 组件存储 Mod 自定义的算法参数
-        //public struct LandValueModData : IComponentData
-        //{
-        //    public float m_SpreadDistance;
-        //    public float m_LerpSpeed;
-        //    // public float m_PollutionDampeningFactor;
-        //}
 
         #endregion
 
@@ -84,7 +76,7 @@ namespace MapExtPDX.ModeA
         protected override int ModTextureSize => kTextureSize;
         protected override int MapSize => XCellMapSystemRe.kMapSize;
 
-        // 系统更新周期：每次数32(vanilla)
+        // 系统更新周期：每日更新次数 32 (vanilla)
         public static readonly int kUpdatesPerDay = 32;
         public override int GetUpdateInterval(SystemUpdatePhase phase) => 262144 / kUpdatesPerDay;
 
@@ -92,10 +84,10 @@ namespace MapExtPDX.ModeA
         private bool m_ColdStart;
         #endregion
 
-        #region 查询和系统引
+        #region 查询和系统引用
         // 查询
         private EntityQuery m_EdgeGroup;
-        // private EntityQuery m_NodeGroup; // vanilla未使
+        // private EntityQuery m_NodeGroup; // vanilla 未使用
         private EntityQuery m_AttractivenessParameterQuery;
         private EntityQuery m_LandValueParameterQuery;
         // 依赖的子系统引用
@@ -116,7 +108,7 @@ namespace MapExtPDX.ModeA
             // 1–2. 禁用原版系统、登记 Instance、创建自定义大小纹理由基类完成
             base.OnCreate();
 
-            // 3. 获取其他依赖和查
+            // 3. 获取其他依赖和查询
             m_NetSearchSystem = World.GetOrCreateSystemManaged<SearchSystem>();
             m_GroundPollutionSystem = World.GetOrCreateSystemManaged<GroundPollutionSystem>();
             m_AirPollutionSystem = World.GetOrCreateSystemManaged<AirPollutionSystem>();
@@ -157,19 +149,6 @@ namespace MapExtPDX.ModeA
             bool coldStart = m_ColdStart;
             m_ColdStart = false;
 
-            // [新增] 获取 Mod 自定义参(默认值兜
-            //LandValueModData modParams = new LandValueModData
-            //{
-            //    m_SpreadDistance = 180f,
-            //    m_LerpSpeed = 0.2f,                
-            //};
-
-            //// 尝试ECS 读取配置
-            //if (m_LandValueParameterQuery.HasSingleton<LandValueModData>())
-            //{
-            //    modParams = m_LandValueParameterQuery.GetSingleton<LandValueModData>();
-            //}
-
             // --- 资源准备 ---
             // 获取所有依赖数据的句柄
             NativeArray<TerrainAttractiveness> attrMap = m_TerrainAttractivenessSystem.GetMap(true, out JobHandle attrDep);
@@ -184,20 +163,20 @@ namespace MapExtPDX.ModeA
             JobHandle envDeps = JobUtils.CombineDependencies(attrDep, gPolDep, aPolDep, nPolDep, availDep, teleDep, waterDep);
 
             // --- Phase 1: Edge Calculation (逻辑核心) ---
-            // 这一步直接计Edge 的最终地价，确保模拟数据的绝对精度。不再依Map 分辨率
+            // 这一步直接计算 Edge 的最终地价，确保模拟数据的绝对精度，不再依赖 Map 分辨率
             var edgeJob = new EdgeLandValueJob
             {
                 m_EntityType = SystemAPI.GetEntityTypeHandle(),
                 m_CurveType = SystemAPI.GetComponentTypeHandle<Curve>(true),
 
-                // Write 权限：直接写入地
+                // Write 权限：直接写入地价
                 m_LandValues = SystemAPI.GetComponentTypeHandle<LandValue>(false),
 
                 // 服务数据
                 m_ServiceCoverageType = SystemAPI.GetBufferTypeHandle<Game.Net.ServiceCoverage>(true),
                 m_AvailabilityType = SystemAPI.GetBufferTypeHandle<ResourceAvailability>(true),
 
-                // 环境数据采样器复
+                // 环境数据采样器复用
                 m_Sampler =
                 {
                     // 环境 Maps
@@ -219,7 +198,7 @@ namespace MapExtPDX.ModeA
                     m_AttractionMapSize = XCellMapSystemRe.LandValueSystemkTextureSize,
                 },
 
-                // 传入配置可改为ModSetting输入)
+                // 传入配置（可改为 ModSettings 输入）
                 m_LerpSpeed = kLerpSpeed,
                 // 环境衰减系数 (从 ModSettings 百分比转小数)
                 m_EnvDampeningFactor = (Mod.Instance?.Settings?.LandValueEnvironmentEffect ?? 40) / 100f,
@@ -236,7 +215,7 @@ namespace MapExtPDX.ModeA
                 Dependency = edgeJob.ScheduleParallel(m_EdgeGroup, Dependency);
             }
 
-            // --- Phase 2: Map Rasterization (UI 可视 ---
+            // --- Phase 2: Map Rasterization (UI 可视化) ---
             // 这一步将计算好的 Edge 地价“画”到 Map 上。完全为UI 服务
 
             NativeQuadTree<Entity, QuadTreeBoundsXZ> netSearchTree = m_NetSearchSystem.GetNetSearchTree(true, out JobHandle searchDep);
@@ -247,16 +226,16 @@ namespace MapExtPDX.ModeA
                 m_LandValueMap = m_Map, // Write Map
                 m_NetSearchTree = netSearchTree,
 
-                // Read Component (读取 Phase 1 刚算好的
+                // Read Component（读取 Phase 1 刚算好的地价）
                 m_LandValueData = SystemAPI.GetComponentLookup<LandValue>(true),
                 // m_EdgeGeometryData = SystemAPI.GetComponentLookup<EdgeGeometry>(true), // 改为Curve优化性能
-                // [Fix] 引入 Curve / LV参数
+                // 引入 Curve / LV 参数
                 m_CurveData = SystemAPI.GetComponentLookup<Curve>(true),
 
-                // 环境数据采样器复
+                // 环境数据采样器复用
                 m_Sampler =
                 {
-                    // 环境 Maps (用于无道路区域映
+                    // 环境 Maps（用于无道路区域映射）
                     m_AttractiveMap = attrMap,
                     m_GroundPollutionMap = gPolMap,
                     m_AirPollutionMap = aPolMap,
@@ -278,7 +257,7 @@ namespace MapExtPDX.ModeA
                 // m_CellSize = XCellMapSystemRe.kMapSize / kTextureSize, // 计算格大小已移除,改为物理距离
                 m_TextureSize = kTextureSize,
 
-                // 传入配置可改为ModSetting输入)
+                // 传入配置（可改为 ModSettings 输入）
                 m_SpreadDistance = kSpreadDistance,
 
                 // 读档冷启动：直接写目标值
@@ -295,7 +274,7 @@ namespace MapExtPDX.ModeA
             // --- 资源管理 ---
             AddWriter(Dependency);
 
-            // 注册所有读取依
+            // 注册所有读取依赖
             m_NetSearchSystem.AddNetSearchTreeReader(Dependency);
             m_WaterSystem.AddSurfaceReader(Dependency);
             m_TerrainAttractivenessSystem.AddReader(Dependency);
@@ -393,7 +372,7 @@ namespace MapExtPDX.ModeA
             public int m_MapSize;
             public int m_AttractionMapSize;
 
-            // 核心逻辑：计算某坐标点的“环境固有价值(不含服务设施加成)
+            // 核心逻辑：计算某坐标点的“环境固有价值”（不含服务设施加成）
             public float CalculateBaseEnvironmentValue(float3 pos)
             {
                 // 1. 采样基础数据
@@ -408,7 +387,7 @@ namespace MapExtPDX.ModeA
                 // 2. 计算加成
                 float mapBonus = 0f;
 
-                // 吸引(无污染时才计
+                // 吸引力（无污染时才计入）
                 if (waterPol <= 0.01f && gPol <= 0.01f)
                 {
                     float attrRaw = SampleAttr(pos);
@@ -483,7 +462,7 @@ namespace MapExtPDX.ModeA
 
                     // === B. 服务加成 (Buffer) ===
                     // [Buffer 全路段共享]
-                    // --- B1. 服务加成：医警务/教育 ---
+                    // --- B1. 服务加成：医疗/警务/教育 ---
                     float serviceBonus = 0f;
                     if (serviceCoverages.Length > 0)
                     {
@@ -496,7 +475,7 @@ namespace MapExtPDX.ModeA
                         }
                     }
 
-                    // --- B2. 资源加成：商公交/电车地铁
+                    // --- B2. 资源加成：商业/公交/电车地铁 ---
                     if (availabilities.Length > 0)
                     {
                         var res = availabilities[i];
@@ -525,7 +504,7 @@ namespace MapExtPDX.ModeA
 
         } // job end;
 
-        // Phase 2: Map Rasterization(可视
+        // Phase 2: Map Rasterization（可视化）
         [BurstCompile]
         private struct LandValueToGridJob : IJobParallelFor
         {
@@ -536,7 +515,7 @@ namespace MapExtPDX.ModeA
             [ReadOnly] public NativeQuadTree<Entity, QuadTreeBoundsXZ> m_NetSearchTree;
             [ReadOnly] public ComponentLookup<LandValue> m_LandValueData;
             // [ReadOnly] public ComponentLookup<EdgeGeometry> m_EdgeGeometryData; // 改用Curve
-            // [Fix] 引入 Curve 组件获取道路形状
+            // 引入 Curve 组件获取道路形状
             [ReadOnly] public ComponentLookup<Curve> m_CurveData;
 
             // 引入复用的采样器
@@ -563,18 +542,18 @@ namespace MapExtPDX.ModeA
                 }
 
                 // =========================================================
-                // A. 计算“自然背景地价(荒野
-                // 即使没有道路，污染和风景也应该显示出
+                // A. 计算“自然背景地价”（荒野）
+                // 即使没有道路，污染和风景也应该显示出来
                 // =========================================================
                 float envNetValue = m_Sampler.CalculateBaseEnvironmentValue(cellCenter);
                 float baseline = m_Sampler.m_LvParams.m_LandValueBaseline;
                 float backgroundValue = math.max(baseline, baseline + envNetValue);
 
                 // =========================================================
-                // B. 投射地价热力
+                // B. 投射地价热力图
                 // =========================================================
 
-                // 道路搜索与加权平
+                // 道路搜索与加权平均
                 // 1. 设置搜索范围
                 float radius = m_SpreadDistance;
                 float radiusSq = math.max(1f, radius * radius);
@@ -597,17 +576,17 @@ namespace MapExtPDX.ModeA
                     m_WeightedSum = 0f
                 };
 
-                // 4. 执行搜索
+                // 3. 执行搜索
                 m_NetSearchTree.Iterate(ref iterator);
 
-                // 3. 计算最终
+                // 4. 计算最终目标值
                 float targetValue;
 
-                // 判断是否有道路覆
+                // 判断是否有道路覆盖
                 if (iterator.m_TotalWeight > 0.001f)
                 {
                     // 道路的平均地价(Average Road Value)
-                    // 注意：在EdgeJob里已经把环境值加进去了，所以这里直接用道路值即
+                    // 注意：在 EdgeJob 里已经把环境值加进去了，所以这里直接用道路值即可
                     // 此处如果有建筑，对应地价（含服务+环境）：
                     float roadValue = iterator.m_WeightedSum / iterator.m_TotalWeight;
 
@@ -615,44 +594,31 @@ namespace MapExtPDX.ModeA
                     // 纯粹的IDW在权重低时可能会导致数值跳变，这里做一个简单的混合
                     // 如果只有一点点权重（很远），应该让它逐渐趋向backgroundValue
                     // 既然 EdgeJob 里的环境计算和上面的 A步骤环境计算使用的是同一套参数，
-                    // 理论RoadValue 在去除服务加成后，应该非常接BackgroundValue
-                    // 因此，直接使RoadValue 也是合理的，或者取二者最大值
+                    // 理论上 RoadValue 在去除服务加成后，应该非常接近 BackgroundValue
+                    // 因此，直接使用 RoadValue 也是合理的，或者取二者最大值
 
                     float blendFactor = math.saturate(iterator.m_TotalWeight);
 
-                    // 混合 道路价荒地价
+                    // 混合道路价与荒地价
                     targetValue = math.lerp(backgroundValue, roadValue, blendFactor);
-
-                    // targetValue = roadValue;
-
-                    //// 或者：这里使用 TotalWeight 做一个简单的饱和度混合，让过渡更自然
-                    //// 假设最大权重约1.0 (极近)，远处权重衰减至0
-                    //float roadInfluence = math.saturate(iterator.m_TotalWeight * 2.0f); // *2.0让混合区变宽
-
-                    //// 道路值通常包含了服务加成，所以通常 roadAvgValue > backgroundValue
-                    //// lerp 可以在远离道路时平滑过渡回自然地貌
-                    //finalValue = math.lerp(backgroundValue, roadAvgValue, roadInfluence);
-
-                    // 可选：也可以简单粗暴取最大值防止插值导致的数值凹
-                    // targetValue = math.max(roadValue, backgroundValue); 
                 }
                 else
                 {
-                    // B. 无道路：计算“荒地”的潜在价(Baseline + 环境 - 污染)
-                    // 这给了玩家规划建议，但不会算入服务加成（因为没有路就没有服务
+                    // B. 无道路：计算“荒地”的潜在价值（Baseline + 环境 - 污染）
+                    // 这给了玩家规划建议，但不会算入服务加成（因为没有路就没有服务）
 
-                    // 附近无道路，显示自然环境值（荒野模式
+                    // 附近无道路，显示自然环境值（荒野模式）
                     targetValue = backgroundValue;
                 }
 
-                // 4. 平滑写入
+                // 5. 平滑写入
                 TargetType currentCell = m_LandValueMap[index];
                 if (m_DirectWrite)
                 {
                     // 读档冷启动：图从全零起步，按 0.4 插值约 4 次更新（游戏内 3 小时）才到 87%，这一次直接写目标值
                     currentCell.m_LandValue = targetValue;
                 }
-                // 仅当差异较大时Lerp，节省性能，参数可(0.4f 是原版数
+                // 仅当差异较大时 Lerp，节省性能，参数可调（0.4f 是原版数值）
                 else if (math.abs(currentCell.m_LandValue - targetValue) >= 0.1f)
                 {
                     currentCell.m_LandValue = math.lerp(currentCell.m_LandValue, targetValue, 0.4f);
@@ -664,7 +630,7 @@ namespace MapExtPDX.ModeA
 
             private struct NetIterator : INativeQuadTreeIterator<Entity, QuadTreeBoundsXZ>, IUnsafeQuadTreeIterator<Entity, QuadTreeBoundsXZ>
             {
-                // 输出累加
+                // 输出累加器
                 public float m_TotalWeight;
                 public float m_WeightedSum;
                                             // 输入参数
@@ -684,26 +650,26 @@ namespace MapExtPDX.ModeA
 
                 public void Iterate(QuadTreeBoundsXZ bounds, Entity entity)
                 {
-                    // Level 1. 基础包围盒检
+                    // Level 1. 基础包围盒检查
                     if (!MathUtils.Intersect(bounds.m_Bounds, this.m_Bounds)) return;
 
-                    // Level 2. 检查地价组件及阈
+                    // Level 2. 检查地价组件及阈值
                     if (!m_LandValueData.TryGetComponent(entity, out var lv)) return;
                     if (lv.m_LandValue <= m_Baseline + 0.1f) return;
 
                     if (!m_CurveData.TryGetComponent(entity, out var curve)) return;
 
-                    // Level 3: AABB Distance Approximation (快速剔
+                    // Level 3: AABB Distance Approximation（快速剔除）
                     // 计算点到 Bounds 的最小距离平方。如果连 AABB 最近点都太远，就不需要算 Bezier 了
-                    // clamp center 限制bounds 内部，如center 在内部，距离
+                    // clamp center 限制到 bounds 内部，如果 center 在内部，距离为 0
                     float3 closestAABB = math.clamp(m_CellCenter, bounds.m_Bounds.min, bounds.m_Bounds.max);
-                    // 这里只比XZ 平面，忽Y 轴差异（地价通常主要看水平距离）
+                    // 这里只比较 XZ 平面，忽略 Y 轴差异（地价通常主要看水平距离）
                     float distSqAABB = math.distancesq(m_CellCenter.xz, closestAABB.xz);
 
                     if (distSqAABB > m_RadiusSq) return;
 
                     // Level 4: Precise Bezier Distance (昂贵操作)
-                    // 计算点到贝塞尔曲线的最近距
+                    // 计算点到贝塞尔曲线的最近距离
                     float distSqReal = MathUtils.DistanceSquared(curve.m_Bezier, m_CellCenter, out _);
 
                     if (distSqReal < m_RadiusSq)
@@ -767,78 +733,6 @@ namespace MapExtPDX.ModeA
         #endregion
 
     } // mod class
-
-    //  Mod设置系统
-    //    public partial class LandValueConfigSyncSystem : GameSystemBase
-    //    {
-    //        public static LandValueConfigSyncSystem Instance { get; private set; }
-    //        private EntityQuery m_ParameterQuery;
-
-    //        protected override void OnCreate()
-    //        {
-    //            base.OnCreate();
-    //            Instance = this;
-    //            // Query for the entity holding the data
-    //            m_ParameterQuery = SystemAPI.QueryBuilder()
-    //                .WithAll<LandValueParameterData>()
-    //                .Build();
-
-    //            // Apply initial settings on load
-    //            RequireForUpdate(m_ParameterQuery);
-    //        }
-
-    //        protected override void OnUpdate()
-    //        {
-    //            // By default, we only need to run this when settings change (triggered by Apply()),
-    //            // or once at startup. 
-    //            // However, to be safe against game reloading prefabs, we can run a check.
-
-    //            // To save performance, we usually call SyncWithSettings explicitly from the Settings class,
-    //            // but we need an initial run.
-
-    //            // Just return here. The Apply() method in Settings will call SyncWithSettings.
-    //            // Alternatively, enable this system only when "Dirty".
-    //        }
-
-    //        public void SyncWithSettings(LandValueModSettings settings)
-    //        {
-    //            if (m_ParameterQuery.IsEmptyIgnoreFilter) return;
-
-    //            // Get the Singleton Entity
-    //            Entity paramEntity = m_ParameterQuery.GetSingletonEntity();
-
-    //            // Get current data
-    //            LandValueParameterData data = EntityManager.GetComponentData<LandValueParameterData>(paramEntity);
-
-    //            // === OVERWRITE WITH SETTINGS ===
-    //            // Source Mapping: LandValuePrefab fields -> ModSettings fields
-    //            data.m_LandValueBaseline = settings.LandValueBaseline;
-    //            data.m_CommonFactorMaxBonus = settings.CommonFactorMaxBonus;
-
-    //            data.m_HealthCoverageBonusMultiplier = settings.HealthCoverageBonusMultiplier;
-    //            data.m_EducationCoverageBonusMultiplier = settings.EducationCoverageBonusMultiplier;
-    //            data.m_PoliceCoverageBonusMultiplier = settings.PoliceCoverageBonusMultiplier;
-    //            data.m_TelecomCoverageBonusMultiplier = settings.TelecomCoverageBonusMultiplier;
-
-    //            data.m_BusBonusMultiplier = settings.BusBonusMultiplier;
-    //            data.m_TramSubwayBonusMultiplier = settings.TramSubwayBonusMultiplier;
-
-    //            data.m_CommercialServiceBonusMultiplier = settings.CommercialServiceBonusMultiplier;
-    //            data.m_AttractivenessBonusMultiplier = settings.AttractivenessBonusMultiplier;
-
-    //            data.m_GroundPollutionPenaltyMultiplier = settings.GroundPollutionPenaltyMultiplier;
-    //            data.m_AirPollutionPenaltyMultiplier = settings.AirPollutionPenaltyMultiplier;
-    //            data.m_NoisePollutionPenaltyMultiplier = settings.NoisePollutionPenaltyMultiplier;
-
-    //            // Write back to ECS
-    //            EntityManager.SetComponentData(paramEntity, data);
-
-    //#if DEBUG
-    //            Mod.Info($"[LandValueMod] Synced Parameters with Settings. Baseline: {data.m_LandValueBaseline}"); 
-    //#endif
-
-    //        }
-    //    }
 
 } // mod namespace
 

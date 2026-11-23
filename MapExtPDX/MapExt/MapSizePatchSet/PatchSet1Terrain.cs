@@ -1,9 +1,7 @@
 // Copyright (c) 2024 Noel2(Noel-leoN)
 // Licensed under the MIT License.
 // See LICENSE in the project root for full license information.
-// When using this part of the code, please clearly credit [Project Name] and the author.
-
-// ReSharper disable UnusedMember.Local
+// When using this part of the code, please clearly credit MapExt2 and the author.
 
 namespace MapExtPDX.MapExt.MapSizePatchSet
 {
@@ -227,7 +225,7 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
         private static bool s_BufferExpanded = false;
 
         /// <summary>
-        /// [BUGFIX] 退出主菜单时重置会话状态。
+        /// 返回主菜单时重置会话状态。
         /// TerrainSystem 在 Cleanup 期间会释放 ManagedStructuredBuffers，
         /// 二次加载时必须重新执行扩容。
         /// 同時清除地圖尺寸錯配記錄，避免上一次載入的判定殘留到下一張地圖。
@@ -383,7 +381,7 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
         private static bool s_FieldsResolved = false;
 
         /// <summary>
-        /// [BUGFIX] 退出主菜单时重置级联范围快照，避免二次加载使用旧数据。
+        /// 返回主菜单时重置级联范围快照，避免二次加载使用旧数据。
         /// </summary>
         internal static void ResetSessionState()
         {
@@ -543,7 +541,7 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
         private static int s_ExecutedCount = 0;
 
         /// <summary>
-        /// [BUGFIX] 退出主菜单时重置会话状态。
+        /// 返回主菜单时重置会话状态。
         /// 二次加载会重建 cascade 与 m_DownscaledHeightmap，dirty 记录必须作废并重新强制放行。
         /// </summary>
         internal static void ResetSessionState()

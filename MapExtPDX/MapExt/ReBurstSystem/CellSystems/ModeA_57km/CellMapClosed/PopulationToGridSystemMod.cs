@@ -51,12 +51,12 @@ namespace MapExtPDX.ModeA
         protected override int ModTextureSize => kTextureSize;
         protected override int MapSize => XCellMapSystemRe.kMapSize;
 
-        // 系统更新周期：每32
+        // 系统更新周期：每日更新 32 次
         public static readonly int kUpdatesPerDay = 32;
         public override int GetUpdateInterval(SystemUpdatePhase phase) => 262144 / kUpdatesPerDay;
         #endregion
 
-        #region 查询和系统引
+        #region 查询和系统引用
         // 用于筛选住宅资产的查询
         private EntityQuery m_ResidentialPropertyQuery;
         #endregion
@@ -67,8 +67,8 @@ namespace MapExtPDX.ModeA
             // 1–2. 禁用原版系统、登记 Instance、创建自定义大小纹理由基类完成
             base.OnCreate();
 
-            // 3. 获取其他依赖和查
-            // 构建查询：筛选所有具有住宅属性、租赁者信息和Transform组件的实
+            // 3. 获取其他依赖和查询
+            // 构建查询：筛选所有具有住宅属性、租赁者信息和 Transform 组件的实体
             // 排除已销毁、已删除或临时的实体
             m_ResidentialPropertyQuery = SystemAPI.QueryBuilder()
                 .WithAll<ResidentialProperty, Renter, Transform>()
@@ -83,11 +83,11 @@ namespace MapExtPDX.ModeA
             var citizenLookup = SystemAPI.GetBufferLookup<HouseholdCitizen>(isReadOnly: true);
             var transformLookup = SystemAPI.GetComponentLookup<Transform>(isReadOnly: true);
 
-            // 将符合条件的实体转换NativeList，分配器使用 World UpdateAllocator
-            // ToEntityListAsync 返回一JobHandle，需要将其与当前的依赖合
+            // 将符合条件的实体转换为 NativeList，分配器使用 World UpdateAllocator
+            // ToEntityListAsync 返回一个 JobHandle，需要将其与当前的依赖合并
             NativeList<Entity> entities = m_ResidentialPropertyQuery.ToEntityListAsync(World.UpdateAllocator.ToAllocator, out var queryHandle);
 
-            // 实例Job
+            // 实例化 Job
             var job = new PopulationToGridJob
             {
                 m_Entities = entities,
@@ -97,7 +97,7 @@ namespace MapExtPDX.ModeA
                 m_Transforms = transformLookup
             };
 
-            // 组合依赖项：查询结果 + 当前系统的读写依
+            // 组合依赖项：查询结果 + 当前系统的读写依赖
             var combinedDeps = JobUtils.CombineDependencies(queryHandle, m_WriteDependencies, m_ReadDependencies, Dependency);
 
             // 调度 Job
@@ -116,7 +116,7 @@ namespace MapExtPDX.ModeA
             [ReadOnly] public BufferLookup<Renter> m_Renters;
             [ReadOnly] public ComponentLookup<Transform> m_Transforms;
             [ReadOnly] public BufferLookup<HouseholdCitizen> m_HouseholdCitizens;
-            // 输出的目标网格数
+            // 输出的目标网格数组
             public NativeArray<TargetType> m_PopulationMap;
 
             public void Execute()
@@ -125,13 +125,13 @@ namespace MapExtPDX.ModeA
                 int totalCells = kTextureSize * kTextureSize;
                 for (int i = 0; i < totalCells; i++) m_PopulationMap[i] = default;
 
-                // 2. 遍历所有住宅实
+                // 2. 遍历所有住宅实体
                 for (int i = 0; i < m_Entities.Length; i++)
                 {
                     Entity buildingEntity = m_Entities[i];
                     int totalCitizensInBuilding = 0;
 
-                    // 获取该建筑内的所有租(Renter Buffer)
+                    // 获取该建筑内的所有租户 (Renter Buffer)
                     if (m_Renters.TryGetBuffer(buildingEntity, out var rentersBuffer))
                     {
                         for (int r = 0; r < rentersBuffer.Length; r++)

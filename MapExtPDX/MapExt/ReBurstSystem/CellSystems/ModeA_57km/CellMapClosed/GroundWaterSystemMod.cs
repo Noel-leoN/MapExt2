@@ -32,14 +32,14 @@ using MapExtPDX.SaveLoadSystem;
 
     // 降级保护：合并版存档里本类的类型名是 MapExtPDX.CellMap.GroundWaterSystemMod，退回本版本时靠此别名读回，勿删
     /// <summary>
-    /// 地下水系 地下水流动和污染扩散，并定期补充地下水资源
+    /// 地下水系统：模拟地下水流动和污染扩散，并定期补充地下水资源
     /// </summary>
     [Colossal.Serialization.Entities.FormerlySerializedAs("MapExtPDX.CellMap.GroundWaterSystemMod")]
     public partial class GroundWaterSystemMod : CellMapReplacementSystem<TargetType, TargetSystem>
     {
         private const string Tag = nameof(GroundWaterSystemMod);
 
-        #region 常量和静态字配置
+        #region 常量和静态字段配置
         // 纹理尺寸(vanilla=256)
         // orgTextureSize 讀的是原版 static readonly 欄位；本 Mod 自己的組件不受
         // PatchSet3CellMapFields 的 ldsfld 替換（它只掃 Game 程序集），所以這裡拿到的是真正的 256，
@@ -69,12 +69,12 @@ using MapExtPDX.SaveLoadSystem;
         public override int GetUpdateInterval(SystemUpdatePhase phase) => 262144 / kUpdatesPerDay;
         public override int GetUpdateOffset(SystemUpdatePhase phase) => 64;
 
-        // 最大阈
+        // 最大阈值
         public const int kMaxGroundWater = 10000;
         public const int kMinGroundWaterThreshold = 500;
         #endregion
 
-        #region 查询和系统引
+        #region 查询和系统引用
         private EntityQuery m_ParameterQuery;
         #endregion
 
@@ -84,7 +84,7 @@ using MapExtPDX.SaveLoadSystem;
             // 1–2. 禁用原版系统、登记 Instance、创建自定义大小纹理由基类完成
             base.OnCreate();
 
-            // 3. 获取其他依赖和查
+            // 3. 获取其他依赖和查询
             this.m_ParameterQuery = GetEntityQuery(ComponentType.ReadOnly<WaterPipeParameterData>());
         }
 
@@ -135,8 +135,8 @@ using MapExtPDX.SaveLoadSystem;
 
             Dependency = JobHandle.CombineDependencies(m_ReadDependencies, m_WriteDependencies, Dependency);
 
-            // [关键] 注册 TempJob 的自动释
-            // 这告Unity：当 Dependency (即这Job) 完成后，自动调用 scratchMap.Dispose()
+            // [关键] 注册 TempJob 的自动释放
+            // 这告诉 Unity：当 Dependency（即这个 Job）完成后，自动调用 scratchMap.Dispose()
             // 无需手动管理生命周期，也不会阻塞主线程
             // 必須掛在最後一個 Job（趟3）上——掛在前面的 Job 上會在趟3 讀取期間被釋放。
             scratchMap.Dispose(Dependency);

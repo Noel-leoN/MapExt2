@@ -1,7 +1,7 @@
 // Copyright (c) 2024 Noel2(Noel-leoN)
 // Licensed under the MIT License.
 // See LICENSE in the project root for full license information.
-// When using this part of the code, please clearly credit [Project Name] and the author.
+// When using this part of the code, please clearly credit MapExt2 and the author.
 
 // 本文件同时编进开了可空检查的 MapExTools.Core，Mod 端默认没开：文件内自行打开，两边结果一致
 #nullable enable

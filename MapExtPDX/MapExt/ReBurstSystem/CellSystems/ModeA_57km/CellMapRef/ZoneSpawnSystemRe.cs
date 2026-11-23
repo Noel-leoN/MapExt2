@@ -14,7 +14,6 @@ using MapExtPDX.MapExt.Core;
 
 namespace MapExtPDX.ModeA
 {
-    // v1.3.6f
     [BurstCompile]
     public struct EvaluateSpawnAreas : IJobChunk
     {
@@ -238,9 +237,9 @@ namespace MapExtPDX.ModeA
             {
                 float3 position = ZoneUtils.GetPosition(this.m_BlockData[location.m_Entity], location.m_LotArea.xz, location.m_LotArea.yw);
                 bool extractor = false;
-                GroundPollution pollution = XCellMapSystemRe.GroundPollutionSystemGetPollution(position, this.m_GroundPollutionMap);//
-                NoisePollution pollution2 = XCellMapSystemRe.NoisePollutionSystemGetPollution(position, this.m_NoisePollutionMap);//
-                AirPollution pollution3 = XCellMapSystemRe.AirPollutionSystemGetPollution(position, this.m_AirPollutionMap);//
+                GroundPollution pollution = XCellMapSystemRe.GroundPollutionSystemGetPollution(position, this.m_GroundPollutionMap);
+                NoisePollution pollution2 = XCellMapSystemRe.NoisePollutionSystemGetPollution(position, this.m_NoisePollutionMap);
+                AirPollution pollution3 = XCellMapSystemRe.AirPollutionSystemGetPollution(position, this.m_AirPollutionMap);
                 float landValue = this.m_LandValues[road].m_LandValue;
                 float maxHeight = (float)height - position.y;
                 if (this.SelectBuilding(ref location, ref random, availabilities, zoneData, zonePropertiesData, curvePos, new float3(pollution.m_Pollution, pollution2.m_Pollution, pollution3.m_Pollution), landValue, maxHeight, estimates, processes, normal, storage, extractor, office) && location.m_Priority > bestLocation.m_Priority)

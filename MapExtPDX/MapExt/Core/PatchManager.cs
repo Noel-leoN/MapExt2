@@ -1,7 +1,7 @@
 // Copyright (c) 2024 Noel2(Noel-leoN)
 // Licensed under the MIT License.
 // See LICENSE in the project root for full license information.
-// When using this part of the code, please clearly credit [Project Name] and the author.
+// When using this part of the code, please clearly credit MapExt2 and the author.
 
 using HarmonyLib;
 using MapExtPDX.MapExt.MapSizePatchSet;
@@ -95,7 +95,7 @@ namespace MapExtPDX.MapExt.Core
                     new PatchSet(Critical, (h) => h.CreateClassProcessor(typeof(WaterLevelChangeSystemMethodPatches)).Patch())
                 },
                 { "WaterSystem_BaseDataReader_Patch", new PatchSet(Critical, (h) => WaterSystem_BaseDataReader_Patch.Apply(h)) },
-                // v2.1.1新增: WaterSystem.InitTextures()重置
+                // WaterSystem.InitTextures() 重置
                 { "WaterSystemInitFix", new PatchSet(Critical, (_) => WaterSystemReinitializer.Execute()) },
 
                 // 水模拟地形级联降采样适配 (方法拦截 + 全局变量双通道)
@@ -121,8 +121,7 @@ namespace MapExtPDX.MapExt.Core
                 // 地形 Backdrop 禁用补丁 (InitializeTerrainData 源头拦截)
                 { "TerrainBackdropDisable", new PatchSet(Optional, (h) => h.CreateClassProcessor(typeof(TerrainSystem_InitializeTerrainData_DisableBackdrop)).Patch()) },
 
-                // v2.2.0改动
-                // PatchSet3:CellMapSystem<T>托管代码部分
+                // PatchSet3: CellMapSystem<T> 托管代码部分
                 { "CellMapSystemValuesPatch", new PatchSet(Critical, (h) => CellMapSystemPatchManager.ApplyPatches(h)) },
 
                 // PatchSet4:AirWaySystem

@@ -35,7 +35,7 @@ namespace MapExtPDX.ModeA
     {
         private const string Tag = nameof(GroundPollutionSystemMod);
 
-        #region 常量和静态字配置
+        #region 常量和静态字段配置
         // 纹理尺寸(vanilla=256)
         public static readonly int orgTextureSize = TargetSystem.kTextureSize; // 原版尺寸
         public static readonly int kTextureSize = XCellMapSystemRe.GroundPollutionSystemkTextureSize; // mod尺寸
@@ -45,12 +45,12 @@ namespace MapExtPDX.ModeA
         protected override int ModTextureSize => kTextureSize;
         protected override int MapSize => XCellMapSystemRe.kMapSize;
 
-        // 系统更新周期：每128
+        // 系统更新周期：每日更新 128 次
         public static readonly int kUpdatesPerDay = 128;
         public override int GetUpdateInterval(SystemUpdatePhase phase) => 262144 / kUpdatesPerDay;
         #endregion
 
-        #region 查询和系统引
+        #region 查询和系统引用
         // 系统依赖
         private SimulationSystem m_SimulationSystem;
         // 查询
@@ -63,7 +63,7 @@ namespace MapExtPDX.ModeA
             // 1–2. 禁用原版系统、登记 Instance、创建自定义大小纹理由基类完成
             base.OnCreate();
 
-            // 3. 获取其他依赖和查
+            // 3. 获取其他依赖和查询
             this.m_SimulationSystem = World.GetOrCreateSystemManaged<SimulationSystem>();
             this.m_PollutionParameterGroup = GetEntityQuery(ComponentType.ReadOnly<PollutionParameterData>());
             // 强制依赖更新

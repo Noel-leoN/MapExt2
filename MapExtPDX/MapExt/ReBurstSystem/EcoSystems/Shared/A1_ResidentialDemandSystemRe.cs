@@ -15,8 +15,6 @@ using Unity.Entities;
 using Unity.Jobs;
 using Unity.Mathematics;
 
-// using UnityEngine; // 使用 Unity.Mathematics 代替以符合 Burst
-
 
 namespace MapExtPDX.EcoShared
 {
@@ -118,15 +116,10 @@ namespace MapExtPDX.EcoShared
             // 作用：在新城市(房產總數<100)時，大幅稀釋空置率的波動。
             // 例如：只有 10 套房，空了 10 套。無緩衝=100%空置(崩盤)。有緩衝(150)=10/160=6%空置(可控)。
             float kVirtualHousingBuffer = 150f;
-            // 5. 權重係數
-            // 空置率低影響建築權重
-            // float kBuildWeight = 1.0f;
-            // 空置率高吸引移民權重
-            // float kMoveInWeight = 0.5f;
-            // [MODIFIED] 低密度專屬較溫和的敏感度
+            // 低密度专属较温和的敏感度
             float kVacancySensitivityLow = 500f;
 
-            // [MODIFIED 2026-07] 無家可歸中性率 (市民口徑)。
+            // 无家可归中性率（市民口径）。
             // 量綱統一：homelessRate 分子分母皆採市民數（見下方 homelessRate 計算），
             // 對齊原版 CountHouseholdDataSystem.HomelessnessRate 的市民口徑，避免家庭/市民混用。
             // 由家庭口徑 0.0005 依「每戶約 2 人」重新標定為 0.001，維持觸發點大致不變。
@@ -238,13 +231,13 @@ namespace MapExtPDX.EcoShared
 
             //--- [流浪人口因子] ---
             // 修復：改為比例，避免大城市因絕對數量高而受到不合理的懲罰
-            // [MODIFIED 2026-07] 量綱統一：分子改用市民數 m_HomelessCitizenCount，
+            // 量纲统一：分子改用市民数 m_HomelessCitizenCount，
             // 與分母 popCount(市民)同口徑；不再用家庭數 / 市民數的混用量綱。
             float homelessRate = m_HouseholdCountData.m_HomelessCitizenCount / (float)popCount;
             // 歸一化：如果流浪率是中性率的 2 倍，則係數為 2。
             float homelessRatioNormalized = homelessRate / kNeutralHomelessRate;
             // HouseholdDemand 負面懲罰 (無家可歸太多降低城市吸引力)
-            // [MODIFIED 2026-07] 上限由 clamp(,0,5)→(,0,2.5)：單因子懲罰上限由 -100 收斂到 -50，
+            // 上限由 clamp(,0,5) 收敛为 (,0,2.5)：单因子惩罚上限由 -100 收敛到 -50，
             // 與下方 homelessBonus 的 +40 大致對稱，避免單一因子瞬間把家庭需求壓到 0、造成移民面板忽開忽關。
             float homelessPenalty = (0f - paramsData.m_HomelessEffect) * math.clamp(homelessRatioNormalized, 0f, 2.5f);
             // BuildingDemand 正面需求 (無家可歸的人急需住房，主要推高高密度/廉租房需求)
@@ -314,7 +307,7 @@ namespace MapExtPDX.EcoShared
                 (int)math.clamp(finalHigh * buildingHighFactor, 0f, 100f)
             );
 
-            // F. 填充 UI 因子数组 (Low/Medium/High DemandFactors)
+            // G. 填充 UI 因子数组 (Low/Medium/High DemandFactors)
             // ⚠️ [脆弱点] 以下硬编码索引对应原版 Game.Simulation.DemandFactor 具名枚举；
             //    若游戏版本调整 DemandFactor 枚举序号，这里会静默错位（显示错误但不崩溃、编译不报错），
             //    版本升级后须核对 DemandFactor 枚举是否变动。
@@ -364,31 +357,6 @@ namespace MapExtPDX.EcoShared
                 m_HighDemandFactors[5] = 0;
             }
 
-            //// G. 計算各密度總分 (Sum Factors)
-            ////============================================================================
-            //// --- 修正 ---
-            //// 應用空置率懲罰修正(建築需求)移除空置率一票否決邏輯，改為使用動態計算的需求偏移值
-            //// 移除重複計算的因子(幸福度、稅收、學生、失業率、就業率)
-            ////============================================================================
-            //float baseDemand = m_HouseholdDemand.value * kHouseholdDemandFactor;
-
-            //// 低密度
-            //float sumLow = baseDemand - simpleJobFactor / 2 + /*happinessFactor + taxFactor + simpleJobFactor / 2f + unemploymentFactor + */ offsetLow;
-
-            //// 中密度
-            //float sumMed = baseDemand + /* happinessFactor + taxFactor + simpleJobFactor + unemploymentFactor + studentFactor + */ offsetMed;
-
-            //// 高密度 (包含流浪漢正面加成)
-            //float sumHigh = baseDemand + /*happinessFactor + taxFactor + simpleJobFactor + unemploymentFactor + studentFactor + */ homelessBonus + offsetHigh;
-
-            //// I. 最終建築需求 (Final Calculation)
-            //int finalLow = (int)(math.clamp(sumLow, 0f, 100f) * /*cutOffLow **/ buildingLowFactor) ;
-            //int finalMed = (int)(math.clamp(sumMed, 0f, 100f) * /*cutOffMed **/ buildingMedFactor);
-            //int finalHigh = (int)(math.clamp(sumHigh, 0f, 100f) * /*cutOffHigh **/ buildingHighFactor);
-
-            //// 建築需求最終值
-            //m_BuildingDemand.value = new int3(finalLow, finalMed, finalHigh);
-
             // 應用解鎖限制
             m_BuildingDemand.value = math.select(default(int3), m_BuildingDemand.value, unlockedDensities);
 
@@ -398,7 +366,7 @@ namespace MapExtPDX.EcoShared
                 m_BuildingDemand.value = 100;
             }
 
-            // J. 觸發器 (Trigger)
+            // H. 触发器 (Trigger)
             float totalPropCount = totalProperties.x + totalProperties.y + totalProperties.z;
             float totalDemandSum =
                 m_BuildingDemand.value.x + m_BuildingDemand.value.y + m_BuildingDemand.value.z;

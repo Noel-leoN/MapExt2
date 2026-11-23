@@ -21,7 +21,6 @@ using static Game.Tools.ValidationSystem;
 using MapExtPDX.MapExt.Core;
 
 // ValidationJob -> Game.Buildings.ValidationHelpers.ValidateBuilding -> GroundWaterSystem.GetGroundWater -> kMapSize/kTextureSize
-// v2.1.1 mod新增遗漏
 
 namespace MapExtPDX.ModeA
 {
@@ -147,7 +146,7 @@ namespace MapExtPDX.ModeA
                         Transform transform2 = nativeArray4[j];
                         PrefabRef prefabRef2 = nativeArray7[j];
 
-                        // mod 重定
+                        // mod 重定向
                         ValidateBuilding(entity2, building, transform2, prefabRef2, this.m_EntityData, this.m_GroundWaterMap, this.m_ErrorQueue);
                         // mod end;
                     }

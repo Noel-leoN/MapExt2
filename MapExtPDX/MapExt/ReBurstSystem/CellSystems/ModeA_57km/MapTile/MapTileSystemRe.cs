@@ -29,7 +29,7 @@ namespace MapExtPDX.ModeA
         [NativeDisableParallelForRestriction]
         public BufferLookup<Node> m_NodeData;
 
-        // 新增配置参数 (暂不实施动态配
+        // 新增配置参数（暂不实施动态配置）
 
         public void Execute(int index)
         {
@@ -37,7 +37,7 @@ namespace MapExtPDX.ModeA
             float BASE_MAP_SIZE = 14336f; // 基础地图边长
             int CoreValue = XCellMapSystemRe.kMapSize / 14336; // 1 -> 14336, 2 -> 28672, 3 -> 43008, 4 -> 57344, 8 -> 114688
 
-            // 瓦片基础数
+            // 瓦片基础数量
             int GRID_COUNT = 23;
 
             Entity entity = m_Entities[index];
@@ -50,14 +50,14 @@ namespace MapExtPDX.ModeA
             float currentTotalMapSize = BASE_MAP_SIZE * (float)CoreValue;
             float tileSize = currentTotalMapSize / (float)GRID_COUNT;
 
-            // 2. 计算地图偏移(用于将地图中心对齐到 0,0)
+            // 2. 计算地图偏移（用于将地图中心对齐到 0,0）
             float2 mapHalfExtents = new float2(currentTotalMapSize * 0.5f);
 
-            // 3. 计算当前瓦片的网格坐(x, y)
+            // 3. 计算当前瓦片的网格坐标 (x, y)
             int2 gridIndex = new int2(index % GRID_COUNT, index / GRID_COUNT);
 
             // 4. 计算瓦片的包围盒 (Bounds)
-            // 公式网格坐标 * 瓦片大小) - 地图半宽
+            // 公式：(网格坐标 * 瓦片大小) - 地图半宽
             Bounds2 bounds = default(Bounds2);
             bounds.min = (float2)gridIndex * tileSize - mapHalfExtents;
             bounds.max = (float2)(gridIndex + 1) * tileSize - mapHalfExtents;

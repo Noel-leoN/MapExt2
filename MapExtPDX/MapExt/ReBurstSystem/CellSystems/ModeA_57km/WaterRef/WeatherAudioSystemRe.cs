@@ -77,8 +77,8 @@ namespace MapExtPDX.ModeA
 
         private static bool NearWater(float3 position, int2 texSize, int distance, ref NativeArray<SurfaceWater> depthsCPU)
         {
-            float2 @float = XCellMapSystemRe.kMapSize / (float2)texSize; //
-            int2 cell = WaterSystem.GetCell(position - new float3(@float.x / 2f, 0f, @float.y / 2f), XCellMapSystemRe.kMapSize, texSize); //
+            float2 @float = XCellMapSystemRe.kMapSize / (float2)texSize;
+            int2 cell = WaterSystem.GetCell(position - new float3(@float.x / 2f, 0f, @float.y / 2f), XCellMapSystemRe.kMapSize, texSize);
             int2 @int = default;
             for (int i = -distance; i <= distance; i++)
             {

@@ -1,7 +1,7 @@
 // Copyright (c) 2024 Noel2(Noel-leoN)
 // Licensed under the MIT License.
 // See LICENSE in the project root for full license information.
-// When using this part of the code, please clearly credit [Project Name] and the author.
+// When using this part of the code, please clearly credit MapExt2 and the author.
 
 // 本文件同时编进开了可空检查的 MapExTools.Core 与默认未开的 MapExt2.csproj：
 // 必须保持纯 C# 9 语法、零 Unity/Colossal/HarmonyLib 程序集引用，文件内自行开启 #nullable enable。

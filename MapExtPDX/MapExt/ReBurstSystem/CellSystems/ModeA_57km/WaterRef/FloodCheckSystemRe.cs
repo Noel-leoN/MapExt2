@@ -127,11 +127,11 @@ namespace MapExtPDX.ModeA
                     if (duration.m_StartFrame <= this.m_SimulationFrame && waterLevelChangeData.m_ChangeType == WaterLevelChangeType.Sine)
                     {
                         float num2 = (float)(this.m_SimulationFrame - duration.m_StartFrame) / 60f;
-                        float num3 = (float)(duration.m_EndFrame - XCellMapSystemRe.TsunamiEndDelay - duration.m_StartFrame) / 60f; //
-                        float num4 = XCellMapSystemRe.WaveSpeed * 60f; //
+                        float num3 = (float)(duration.m_EndFrame - XCellMapSystemRe.TsunamiEndDelay - duration.m_StartFrame) / 60f;
+                        float num4 = XCellMapSystemRe.WaveSpeed * 60f;
                         float num5 = num2 * num4;
                         float num6 = num5 - num3 * num4;
-                        float2 @float = XCellMapSystemRe.kMapSize / 2 * -waterLevelChange.m_Direction; //
+                        float2 @float = XCellMapSystemRe.kMapSize / 2 * -waterLevelChange.m_Direction;
                         float t;
                         float num7 = MathUtils.Distance(new Line2(@float, @float + MathUtils.Right(waterLevelChange.m_Direction)), position.xz, out t);
                         float num8 = math.lerp(num5, num6, 0.5f);

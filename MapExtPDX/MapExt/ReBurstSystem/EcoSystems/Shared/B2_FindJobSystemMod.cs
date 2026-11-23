@@ -116,9 +116,7 @@ namespace MapExtPDX.EcoShared
             if (originalSystem != null)
             {
                 originalSystem.Enabled = false;
-                //#if DEBUG
                 ModLog.Swap(Tag, $"禁用原系统: {typeof(TargetSystem).Name}");
-                //#endif
             }
             else
             {

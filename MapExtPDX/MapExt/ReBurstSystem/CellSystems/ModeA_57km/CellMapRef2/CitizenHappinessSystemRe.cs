@@ -60,7 +60,6 @@ namespace MapExtPDX.ModeA
     }
 
 
-    // v1.3.6f??/v1.4.2??
     [BurstCompile]
     public struct CitizenHappinessJob : IJobChunk
     {

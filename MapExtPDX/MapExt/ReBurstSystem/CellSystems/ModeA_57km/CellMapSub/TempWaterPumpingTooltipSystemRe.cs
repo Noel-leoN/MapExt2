@@ -16,7 +16,6 @@ using MapExtPDX.MapExt.Core;
 
 namespace MapExtPDX.ModeA
 {
-    // v2.1.1 mod
     [BurstCompile]
     public struct TempJob : IJobChunk
     {

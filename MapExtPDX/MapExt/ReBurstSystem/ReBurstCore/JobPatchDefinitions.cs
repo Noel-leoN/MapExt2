@@ -7,7 +7,7 @@ using MapExtPDX.MapExt.Core;
 namespace MapExtPDX.MapExt.ReBurstSystem.Core
 {
     /// <summary>
-    /// 定义单个替换目标的数据结
+    /// 定义单个替换目标的数据结构
     /// </summary>
     public class JobPatchTarget
     {
@@ -34,7 +34,7 @@ namespace MapExtPDX.MapExt.ReBurstSystem.Core
             TargetMethodName = targetMethod;
             MethodParamTypes = methodParams;
 
-            // 自动替换 / + 以适应嵌套类反射语
+            // 自动将 '/' 替换为 '+' 以适应嵌套类反射语法
             OriginalJobFullName = originalJob.Replace('/', '+');
 
             // 格式化替换目标的命名空间

@@ -172,11 +172,11 @@ namespace MapExtPDX.ModeA
                 num = (m_SimulationFrame - duration.m_StartFrame) / 60f;
             }
             value = math.max(0f, value);
-            float num2 = (duration.m_EndFrame - XCellMapSystemRe.TsunamiEndDelay - duration.m_StartFrame) / 60f; //
-            float num3 = XCellMapSystemRe.WaveSpeed * 60f; //
+            float num2 = (duration.m_EndFrame - XCellMapSystemRe.TsunamiEndDelay - duration.m_StartFrame) / 60f;
+            float num3 = XCellMapSystemRe.WaveSpeed * 60f;
             float num4 = num * num3;
             float min = num4 - num2 * num3;
-            float2 @float = XCellMapSystemRe.kMapSize / 2 * -waterLevelChange.m_Direction; //
+            float2 @float = XCellMapSystemRe.kMapSize / 2 * -waterLevelChange.m_Direction;
             Line2 startLine = new Line2(@float, @float + MathUtils.Right(waterLevelChange.m_Direction));
             Bounds1 predictionDistance = new Bounds1(min, num4);
             predictionDistance.max += value * num3;

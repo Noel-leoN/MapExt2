@@ -1,7 +1,7 @@
 // Copyright (c) 2024 Noel2(Noel-leoN)
 // Licensed under the MIT License.
 // See LICENSE in the project root for full license information.
-// When using this part of the code, please clearly credit [Project Name] and the author.
+// When using this part of the code, please clearly credit MapExt2 and the author.
 
 using Game.Simulation;
 using HarmonyLib;
@@ -21,7 +21,6 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
     {
         private const string Tag = nameof(WaterSystemMethodPatches);
 
-        // v2.1.1重新启用
         // Essential for initializing SurfaceDataReaders correctly
         // 配合使用反射强制重新调用一次
         [HarmonyPatch("InitTextures")]
@@ -90,7 +89,7 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
             return WaterSystemPatcherHelper.PatchMethodInstructions(instructions, WaterSystemPatcherHelper.GetCurrentMethodName());
         }
 
-        // 1.4.2f版本增加-mod v2.1.1
+        // 1.4.2f 版本新增
         [HarmonyPatch(typeof(WaterSystem), "InitBackdropTexture")]
         [HarmonyTranspiler]
         static IEnumerable<CodeInstruction> InitBackdropTexture_Transpiler(IEnumerable<CodeInstruction> instructions)
@@ -124,7 +123,6 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
     {
         private const string Tag = nameof(WaterSimulationMethodPatches);
 
-        // v1.3.6f版本变动
         [HarmonyPatch(nameof(WaterSimulation.ResetToLevel))]
         [HarmonyTranspiler]
         static IEnumerable<CodeInstruction> ResetToLevel_Transpiler(IEnumerable<CodeInstruction> instructions)
@@ -186,8 +184,6 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
     static class WaterSimulationLegacyMethodPatches
     {
         private const string Tag = nameof(WaterSimulationLegacyMethodPatches);
-
-        // v1.3.6f版本变动      
 
         [HarmonyPatch(nameof(WaterSimulationLegacy.SourceStep))]
         [HarmonyTranspiler]

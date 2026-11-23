@@ -38,7 +38,6 @@ namespace MapExtPDX.ModeA
     /// 土壤水份系统
     /// 负责模拟全图的土壤含水量，包括降雨吸收、地形流动扩散以及洪水事件的触发
     /// 继承CellMapSystem 用于处理网格数据
-    /// 该系统是否有存在的必要？？？
     /// </summary>
     [Colossal.Serialization.Entities.FormerlySerializedAs("MapExtPDX.CellMap.SoilWaterSystemMod")]
     public partial class SoilWaterSystemMod : CellMapReplacementSystem<TargetType, TargetSystem>, IPostDeserialize
@@ -55,18 +54,18 @@ namespace MapExtPDX.ModeA
         protected override int ModTextureSize => kTextureSize;
         protected override int MapSize => XCellMapSystemRe.kMapSize;
 
-        // 系统更新周期：每次数1024
+        // 系统更新周期：每日更新次数 1024
         public static readonly int kUpdatesPerDay = 1024;
         public override int GetUpdateInterval(SystemUpdatePhase phase) => 262144 / kUpdatesPerDay;
 
-        // 将地图分份，每tick更新一
+        // 将地图分片，每 tick 更新一片
         public static readonly int kLoadDistribution = XCellMapSystemRe.SoilWaterSystemkLoadDistribution; //随texturesize同步变更
 
         private Texture2D m_SoilWaterTexture;
         public Texture soilTexture => this.m_SoilWaterTexture;
         #endregion
 
-        #region 查询和系统引
+        #region 查询和系统引用
         // 系统依赖
         private SimulationSystem m_SimulationSystem;
         private TerrainSystem m_TerrainSystem;
@@ -86,8 +85,8 @@ namespace MapExtPDX.ModeA
             // 1–2. 禁用原版系统、登记 Instance、创建自定义大小纹理由基类完成
             base.OnCreate();
 
-            // 3. 获取其他依赖和查
-            // 获取子系统依
+            // 3. 获取其他依赖和查询
+            // 获取子系统依赖
             m_SimulationSystem = World.GetOrCreateSystemManaged<SimulationSystem>();
             m_TerrainSystem = World.GetOrCreateSystemManaged<TerrainSystem>();
             m_WaterSystem = World.GetOrCreateSystemManaged<WaterSystem>();
@@ -103,7 +102,7 @@ namespace MapExtPDX.ModeA
                 .WithOptions(EntityQueryOptions.IncludeSystems)
                 .Build(this);
 
-            // 确保洪水计数器存
+            // 确保洪水计数器存在
             CreateFloodCounter();
 
             // 初始化纹理和Map数据
@@ -114,7 +113,7 @@ namespace MapExtPDX.ModeA
                 hideFlags = HideFlags.HideAndDontSave
             };
 
-            // 初始化默认数
+            // 初始化默认数据
             NativeArray<float> rawTextureData = m_SoilWaterTexture.GetRawTextureData<float>();
             for (int i = 0; i < m_Map.Length; i++)
             {
@@ -160,12 +159,12 @@ namespace MapExtPDX.ModeA
 
             m_SoilWaterTexture.Apply(); // 应用上一帧的纹理修改
 
-            // 获取天气和水面数
+            // 获取天气和水面数据
             float precipitation = m_ClimateSystem.precipitation.value;
             WaterSurfaceData<SurfaceWater> waterSurfaceData = m_WaterSystem.GetSurfaceData(out JobHandle waterDeps);
 
             // 计算负载均衡索引和Shader更新频率
-            // 计算每一帧只更新 1/kLoadDistribution 的网
+            // 计算每一帧只更新 1/kLoadDistribution 的网格
             int totalSteps = 262144;
             int stepsPerFrame = totalSteps / kUpdatesPerDay;
             int shaderUpdatesPerSoilUpdate = stepsPerFrame / kLoadDistribution / m_WaterSystem.SimulationCycleSteps;
@@ -257,7 +256,7 @@ namespace MapExtPDX.ModeA
             public EntityCommandBuffer m_CommandBuffer;
             public Entity m_FloodCounterEntity;
 
-            // --- 运行时参---
+            // --- 运行时参数 ---
             public float m_Weather;
             public int m_ShaderUpdatesPerSoilUpdate;
             public int m_LoadDistributionIndex;
@@ -280,8 +279,8 @@ namespace MapExtPDX.ModeA
                 float heightDelta = neighbor.m_Surface - current.m_Surface;
                 float saturationDelta = (float)neighbor.m_Amount / neighbor.m_Max - (float)current.m_Amount / current.m_Max;
 
-                // 计算流动量：重力(高度 + 渗饱和度差)
-                // 0.25f 是经验系
+                // 计算流动量：重力（高度差）+ 渗透（饱和度差）
+                // 0.25f 是经验系数
                 float flowAmount = parameters.m_HeightEffect * heightDelta / (XCellMapSystemRe.kMapSize / kTextureSize) + 0.25f * saturationDelta;
 
                 // 限制最大扩散速度
@@ -308,7 +307,7 @@ namespace MapExtPDX.ModeA
                     EntityArchetype archetype = m_Events[prefab].m_Archetype;
                     Entity eventEntity = m_CommandBuffer.CreateEntity(archetype);
 
-                    // 实例化洪水事
+                    // 实例化洪水事件
                     m_CommandBuffer.SetComponent(eventEntity, new PrefabRef { m_Prefab = prefab });
                     m_CommandBuffer.SetComponent(eventEntity, new WaterLevelChange
                     {
@@ -331,11 +330,10 @@ namespace MapExtPDX.ModeA
 
             public void Execute()
             {
-                // 临时缓冲区，用于存储扩散计算中的增量，避免读写冲
-                // NativeArray<int> diffusionBuffer = new NativeArray<int>(m_SoilWaterMap.Length, Allocator.TempJob);
+                // 使用传入的临时缓冲区存储扩散计算中的增量，避免读写冲突
 
                 // 1. 计算水分扩散 (Diffusion Pass)
-                // 遍历每个网格，处理它与右侧和下方网格的交
+                // 遍历每个网格，处理它与右侧和下方网格的交互
                 for (int i = 0; i < m_SoilWaterMap.Length; i++)
                 {
                     int x = i % kTextureSize;
@@ -353,8 +351,8 @@ namespace MapExtPDX.ModeA
                     }
                 }
 
-                // 2. 更新洪水计数(Flood Counter Logic)
-                // 降雨强度因子2 * (降雨 - 0.5))^2，只有当降雨 > 0.5 时才显著增加
+                // 2. 更新洪水计数器 (Flood Counter Logic)
+                // 降雨强度因子：(2 * (降雨 - 0.5))^2，只有当降雨 > 0.5 时才显著增加
                 float rainIntensity = math.max(0f, math.pow(2f * math.max(0f, m_Weather - 0.5f), 2f));
 
                 FloodCounterData floodData = m_FloodCounterDatas[m_FloodCounterEntity];
@@ -362,7 +360,7 @@ namespace MapExtPDX.ModeA
                 // 更新计数器：衰减 (0.98) + 降雨增量 - 自然消退 (0.1)
                 floodData.m_FloodCounter = math.max(0f, 0.98f * floodData.m_FloodCounter + 2f * rainIntensity - 0.1f);
 
-                // 3. 触发或更新洪水事
+                // 3. 触发或更新洪水事件
                 if (floodData.m_FloodCounter > 20f && m_FloodEntities.Length == 0)
                 {
                     StartFlood();
@@ -383,8 +381,8 @@ namespace MapExtPDX.ModeA
                 }
                 m_FloodCounterDatas[m_FloodCounterEntity] = floodData;
 
-                // 4. 更新单元格状(Cell Update Pass)
-                // 只更新当前帧负责的区(Load Distribution)
+                // 4. 更新单元格状态 (Cell Update Pass)
+                // 只更新当前帧负责的区域 (Load Distribution)
                 int startRow = m_LoadDistributionIndex * kTextureSize / kLoadDistribution;
                 int endRow = startRow + kTextureSize / kLoadDistribution;
                 int startIdx = startRow * kTextureSize;
@@ -398,7 +396,7 @@ namespace MapExtPDX.ModeA
                 {
                     TargetType cellData = m_SoilWaterMap[j];
 
-                    // 步骤 A: 应用扩散和降
+                    // 步骤 A: 应用扩散和降雨
                     // m_RainMultiplier 控制降雨对土壤水分的影响
                     cellData.m_Amount = (short)math.max(0, cellData.m_Amount + m_TempMap[j] + math.round(m_SoilWaterParameters.m_RainMultiplier * rainIntensity));
 
@@ -406,8 +404,8 @@ namespace MapExtPDX.ModeA
                     float3 worldPos = XCellMapSystemRe.GetCellCenter(j, kTextureSize);
                     cellData.m_Surface = TerrainUtils.SampleHeight(ref m_TerrainHeightData, worldPos);
 
-                    // 步骤 C: 计算地表水交(River/Ocean absorption)
-                    // 计算该单元格能容纳的潜在水量 (剩余容量的一小部
+                    // 步骤 C: 计算地表水交互 (River/Ocean absorption)
+                    // 计算该单元格能容纳的潜在水量（剩余容量的一小部分）
                     short potentialAbsorption = (short)math.round(math.max(0f, 0.1f * (0.5f * cellData.m_Max - cellData.m_Amount)));
                     float waterAbsorptionVolume = (float)potentialAbsorption * m_SoilWaterParameters.m_WaterPerUnit / cellData.m_Max;
 
@@ -416,10 +414,10 @@ namespace MapExtPDX.ModeA
                     float accumulatedDepth = 0f;
                     float accumulatedAbsorption = 0f;
 
-                    // 映射WaterSurfaceData 的坐
+                    // 映射到 WaterSurfaceData 的坐标
                     int waterMapBaseIndex = (j % kTextureSize * waterSampleRatio.x) + (j / kTextureSize * m_WaterSurfaceData.resolution.x * waterSampleRatio.y);
 
-                    // 采样周围的水体深
+                    // 采样周围的水体深度
                     for (int k = 0; k < waterSampleRatio.x; k += 4)
                     {
                         for (int l = 0; l < waterSampleRatio.y; l += 4)
@@ -437,9 +435,9 @@ namespace MapExtPDX.ModeA
                         }
                     }
 
-                    // 修正吸收
+                    // 修正吸收量
                     potentialAbsorption = (short)Math.Min(potentialAbsorption, math.round(cellData.m_Max * 10f * accumulatedAbsorption));
-                    // 更新用于显示的变
+                    // 更新用于显示的变量
                     float visualWaterValue = (float)potentialAbsorption * m_SoilWaterParameters.m_WaterPerUnit / cellData.m_Max;
 
                     // 步骤 D: 计算溢出 (Overflow)
@@ -458,11 +456,11 @@ namespace MapExtPDX.ModeA
                         visualWaterValue = 0f;
                     }
 
-                    // 步骤 E: 应用数值变
+                    // 步骤 E: 应用数值变化
                     cellData.m_Amount += potentialAbsorption; // 吸收河水
                     cellData.m_Amount -= overflowAmount;      // 溢出流失
 
-                    // 自然恢复逻辑 (趋向1/8 容量?)
+                    // 自然恢复逻辑（趋向 1/8 容量）
                     short equilibriumAdjustment = (short)math.round(math.sign(cellData.m_Max / 8 - cellData.m_Amount));
                     cellData.m_Amount += equilibriumAdjustment;
 
@@ -473,8 +471,6 @@ namespace MapExtPDX.ModeA
                     // 写回 Map
                     m_SoilWaterMap[j] = cellData;
                 }
-
-                // diffusionBuffer.Dispose();
             }
         }
         #endregion

@@ -86,7 +86,7 @@ namespace MapExtPDX.MapExt.Core
         }
 
         /// <summary>
-        /// [BUGFIX] 场景切换守卫：在返回主菜单（Cleanup）时重置所有 PatchSet 的静态会话状态。
+        /// 场景切换守卫：在返回主菜单（Cleanup）时重置所有 PatchSet 的静态会话状态。
         /// 根因：返回主菜单时原版引擎会释放/重建资源（Terrain Buffers、CellMap 数据等），
         /// 但 Harmony patch 中的 static 标志不会自动重置，导致二次加载跳过关键初始化。
         /// </summary>
@@ -155,8 +155,7 @@ namespace MapExtPDX.MapExt.Core
             base.OnGameLoadingComplete(purpose, mode);
             if (mode == GameMode.Game)
             {
-                // [BUGFIX] 移除 _initialCheckDone guard，确保每次加载都运行诊断
-                // 二次加载后系统状态可能异常，必须每次验证
+                // 每次加载都运行诊断（二次加载后系统状态可能异常，必须每次验证）
                 string loadLabel = _initialCheckDone ? "二次加载" : "首次加载";
                 _initialCheckDone = true;
                 ModLog.Ok(Tag, $"游戏加载完成（{loadLabel}），执行系统状态诊断");

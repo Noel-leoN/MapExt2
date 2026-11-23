@@ -18,7 +18,6 @@ using MapExtPDX.MapExt.Core;
 
 namespace MapExtPDX.ModeA
 {
-    // v1.3.6f??/v1.4.2f??
     [BurstCompile]
     public struct CountHappinessJob : IJob
     {

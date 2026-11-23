@@ -119,10 +119,8 @@ namespace MapExtPDX.ModeA
         {
             // 1–2. 禁用原版系统、登记 Instance、创建自定义大小纹理由基类完成
             base.OnCreate();
-            // #if DEBUG
             ModLog.Swap(Tag,
                 $"创建自定义纹理: {typeof(TargetSystem).Name} kTextureSize 从 原值{TargetSystem.kTextureSize} 变更为 目标值{this.m_TextureSize.x}");
-            // #endif
 
             // 3. 获取其他依赖和查询
             m_ToolSystem = World.GetOrCreateSystemManaged<ToolSystem>();

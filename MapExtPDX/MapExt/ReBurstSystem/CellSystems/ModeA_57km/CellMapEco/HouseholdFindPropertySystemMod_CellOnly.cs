@@ -815,15 +815,6 @@ namespace MapExtPDX.ModeA
             public int free;
         }
 
-        // public struct GenericApartmentQuality
-        // {
-        //     public float apartmentSize;
-        //     public float2 educationBonus;
-        //     public float welfareBonus;
-        //     public float score;
-        //     public int level;
-        // }
-
         #endregion
     }
 }

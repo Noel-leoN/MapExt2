@@ -24,7 +24,6 @@ using Unity.Entities;
 using Unity.Jobs;
 using Unity.Mathematics;
 using UnityEngine;
-// ReSharper disable InlineOutVariableDeclaration
 
 namespace MapExtPDX.EcoShared
 {

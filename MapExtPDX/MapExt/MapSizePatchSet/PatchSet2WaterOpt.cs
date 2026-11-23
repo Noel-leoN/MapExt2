@@ -62,7 +62,7 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
         private const int kPauseFreezeGraceFrames = 30;
 
         /// <summary>
-        /// [BUGFIX] 退出主菜单时重置会话状态。
+        /// 返回主菜单时重置会话状态。
         /// m_SimulateBackdrop 会在下次加载时重新反序列化，覆写记录必须作废。
         /// </summary>
         internal static void ResetSessionState()
@@ -103,8 +103,8 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
             // Vanilla 模式：仅确保背景水已还原，其余零开销直通原版
             if (quality == WaterSimQualitySetting.Vanilla_EveryFrame)
             {
-                // [BUGFIX] Minimal/Paused 檔位會設 BlurFlowMap=false，切回 Vanilla 必須還原，
-                // 否則 Flow Blur 跨存檔永久關閉直到重啟遊戲（原版預設 true 且全遊戲無其他寫入點）
+                // Minimal/Paused 档位会设 BlurFlowMap=false，切回 Vanilla 必须还原，
+                // 否则 Flow Blur 跨存档永久关闭直到重启游戏（原版默认 true 且全游戏无其他写入点）
                 __instance.BlurFlowMap = true;
                 RestoreBackdrop(__instance);
                 ApplyPauseFreeze(__instance);
@@ -122,9 +122,9 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
 
                 case WaterSimQualitySetting.Minimal_Every4Frames:
                     // 每 4 帧执行一次完整 GPU 模拟，其余帧仅维护状态；关闭背景水与 Flow Blur
-                    // [BUGFIX] 地形變更 counter 倒數期間不寫 speed：
-                    // 原版恢復流程靠 speed=0 凍結模擬循環，第 4 幀寫 1 會讓恢復與模擬並行
-                    //（與 Postfix 的讓行同一根因）。counter 歸零後原版自行設 speed=1，節奏自然恢復。
+                    // 地形变更 counter 倒数期间不写 speed：
+                    // 原版恢复流程靠 speed=0 冻结模拟循环，第 4 帧写 1 会让恢复与模拟并行
+                    //（与 Postfix 的让行同一根因）。counter 归零后原版自行设 speed=1，节奏自然恢复。
                     if (GetTerrainChangeCounter(__instance) > 0)
                     {
                         break;
@@ -335,8 +335,8 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
         {
             int postSpeed = __instance.WaterSimSpeed;
 
-            // [BUGFIX] 地形變更 counter 倒數期間（放置建築 counter=1、筆刷 counter=15）讓行：
-            // 原版 Simulate() 在 counter>0 時每幀跑恢復流程（RestoreHeightFromHeightmap 等），
+            // 地形变更 counter 倒数期间（放置建筑 counter=1、笔刷 counter=15）让行：
+            // 原版 Simulate() 在 counter>0 时每帧跑恢复流程（RestoreHeightFromHeightmap 等），
             // 靠 speed=0 让模拟循环跳过、仅在 counter 归零时才恢复 speed=1（WaterSystem.Simulate）。
             // 若此處把 speed 抬回，下一幀起恢復流程與模擬循環並行——
             // 模擬會在尚未恢復完成的水面高度上推進，筆刷後可能產生波紋/水位異常。
