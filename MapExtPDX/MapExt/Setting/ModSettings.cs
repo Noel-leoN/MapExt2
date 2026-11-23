@@ -967,10 +967,15 @@ namespace MapExtPDX
 
         public void UpdateNoThroughTrafficSystemStates()
         {
+            bool enabled = !m_NoThroughTrafficSystem;
             ModLog.Info(Tag,
-                $"TrafficSpawnerAISystem Enabled={!m_NoThroughTrafficSystem}");
-            World.DefaultGameObjectInjectionWorld.GetOrCreateSystemManaged<Game.Simulation.TrafficSpawnerAISystem>()
-                .Enabled = !m_NoThroughTrafficSystem;
+                $"TrafficSpawnerAISystem & RandomTrafficDispatchSystem Enabled={enabled}");
+            var world = World.DefaultGameObjectInjectionWorld;
+            world.GetOrCreateSystemManaged<Game.Simulation.TrafficSpawnerAISystem>()
+                .Enabled = enabled;
+            // 与 TrafficSpawnerAISystem 一并停用，避免旧档残留 RandomTrafficRequest 持续空转调度
+            world.GetOrCreateSystemManaged<Game.Simulation.RandomTrafficDispatchSystem>()
+                .Enabled = enabled;
 
             ModLog.Patch(Tag, "NoThroughTraffic 补丁已应用 (全局并行)");
         }

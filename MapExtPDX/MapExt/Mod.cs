@@ -214,11 +214,8 @@ namespace MapExtPDX
             // --- 加载NoDogs ---
             m_Setting.UpdateNoDogsSystemStates();
 
-            // --- 加载NoTroughTraffic(From CS2LiteBooster) ---
+            // --- 加载NoThroughTraffic(From CS2LiteBooster，含 RandomTrafficDispatchSystem) ---
             m_Setting.UpdateNoThroughTrafficSystemStates();
-
-            // --- 加载NoRandomTraffic(From CS2LiteBooster) ---
-            // m_Setting.UpdateNoRandomTrafficSystemStates();
 
             // === F. 加载特色工具 ===
             // 加载LandValueRemake
