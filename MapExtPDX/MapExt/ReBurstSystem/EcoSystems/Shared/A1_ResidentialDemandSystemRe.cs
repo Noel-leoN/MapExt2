@@ -28,27 +28,21 @@ namespace MapExtPDX.EcoShared
     /// 2. 部分邏輯存在嚴重缺陷，如空置率邏輯、學生效應等；
     /// 3. 建築需求與家庭需求混淆，比如空置率高時建築需求砍至 0，同時連帶家庭需求砍至 0；
     /// </summary>
-    /// 【參考模型】
-    /// 城市人口增長和房地產發展需求動力分析模型：
-    /// （原系統屬於相當簡陋的模型並且數值不盡合理）
-    /// 1. 核心驅動層 (Primary Drivers) - 佔比約 60%
-    /// 就業機會與產業結構 (30%)： 有沒有好工作是人來的根本原因。
-    /// 遊戲對應：空閒工作機會。
-    /// 宏觀經濟與金融環境 (20%)： 利率高低、信貸寬鬆程度直接決定房地產能否開發。
-    /// 遊戲對應：稅收和獨特銀行建築、政策。
-    /// 基礎設施與交通 (10%)： 地鐵、高鐵、機場的通達性。
-    /// 遊戲對應：公共交通、道路密度。
-    /// 2. 調節與限制層 (Secondary Regulators) - 佔比約 30%
-    /// 住房成本與生活成本 (15%)： 房價太高會擠出人口（負面），也會吸引投資（正面）。
-    /// 遊戲對應：地價、商業發展指數
-    /// 政府政策與規劃 (10%)： 區域規劃（Zoning）、學區劃分。
-    /// 遊戲對應：教育水平、區域政策
-    /// 人口結構 (5%)： 老齡化程度、出生率、移民政策。
-    /// 遊戲對應：人口年齡構成、政策。
-    /// 3. 摩擦與環境層 (Tertiary Friction Factors) - 佔比約 10%
-    /// 治安與公共安全 (4%)：
-    /// 醫療衛生 (3%)：
-    /// 環境品質與氣候 (3%)： 空氣污染、氣候舒適度。
+    /// <remarks>
+    /// 【参考模型】
+    /// 城市人口增长和房地产发展需求动力分析模型：
+    /// （原系统属于相当简陋的模型并且数值不尽合理）
+    /// 1. 核心驱动层 (Primary Drivers) - 占比约 60%
+    /// 就业机会与产业结构 (30%)：有没有好工作是人来的根本原因。游戏对应：空闲工作机会。
+    /// 宏观经济与金融环境 (20%)：利率高低、信贷宽松程度直接决定房地产能否开发。游戏对应：税收和独特银行建筑、政策。
+    /// 基础设施与交通 (10%)：地铁、高铁、机场的通达性。游戏对应：公共交通、道路密度。
+    /// 2. 调节与限制层 (Secondary Regulators) - 占比约 30%
+    /// 住房成本与生活成本 (15%)：房价太高会挤出人口（负面），也会吸引投资（正面）。游戏对应：地价、商业发展指数。
+    /// 政府政策与规划 (10%)：区域规划（Zoning）、学区划分。游戏对应：教育水平、区域政策。
+    /// 人口结构 (5%)：老龄化程度、出生率、移民政策。游戏对应：人口年龄构成、政策。
+    /// 3. 摩擦与环境层 (Tertiary Friction Factors) - 占比约 10%
+    /// 治安与公共安全 (4%)；医疗卫生 (3%)；环境品质与气候 (3%)：空气污染、气候舒适度。
+    /// </remarks>
     [BurstCompile]
     public struct UpdateResidentialDemandJob : IJob
     {
@@ -320,21 +314,21 @@ namespace MapExtPDX.EcoShared
                 (int)math.clamp(finalHigh * buildingHighFactor, 0f, 100f)
             );
 
-            // F. 填充 UI 因子陣列 (Low/Medium/High DemandFactors)
-            // ⚠️ [脆弱點] 以下索引 (7/6/5/11/13/12/8/18) 為對原版 DemandFactor 顯示順序的【經驗推測值】，
-            //    非來自具名列舉，遊戲本體若調整需求面板因子順序，這裡會【靜默錯位】(顯示錯誤但不崩潰、編譯不報錯)。
-            //    遊戲版本升級後務必經 /check-upgrade 覆核原版 DemandFactor enum / UI 因子順序是否變動。
-            // 索引含義推測：7=幸福, 6=工作, 5=失業, 11=稅收, 13=空置率, 12=學生, 8=無家可歸(高密度), 18=未建設提示
+            // F. 填充 UI 因子数组 (Low/Medium/High DemandFactors)
+            // ⚠️ [脆弱点] 以下硬编码索引对应原版 Game.Simulation.DemandFactor 具名枚举；
+            //    若游戏版本调整 DemandFactor 枚举序号，这里会静默错位（显示错误但不崩溃、编译不报错），
+            //    版本升级后须核对 DemandFactor 枚举是否变动。
+            // 枚举对应：7=Happiness, 6=FreeWorkplaces, 5=Unemployment, 11=Taxes, 13=EmptyBuildings, 12=Students, 8=Homelessness, 18=BuildingDemand
 
             // 低密度 UI 因子
             // 使用 math 代替 MathF 以符合 Burst
             m_LowDemandFactors[7] = (int)math.round(happinessFactor);
-            m_LowDemandFactors[6] = (int)math.round(simpleJobFactor) / 2; // 低密度對簡單工作需求只有一半權重
+            m_LowDemandFactors[6] = (int)math.round(simpleJobFactor) / 2; // 低密度对简单工作需求只有一半权重
             m_LowDemandFactors[5] = (int)math.round(unemploymentFactor);
             m_LowDemandFactors[11] = (int)math.round(taxFactor);
-            // 低密度無學生加成(學生不會住別墅)
-            m_LowDemandFactors[13] = offsetLow; // 顯示空置率帶來的加成或懲罰
-            m_LowDemandFactors[18] = (totalProperties.x <= 0) ? 20 : 0; // 提示未建設
+            // 低密度无学生加成(学生不会住别墅)
+            m_LowDemandFactors[13] = offsetLow; // EmptyBuildings（显示空置率带来的加成或惩罚）
+            m_LowDemandFactors[18] = (totalProperties.x <= 0) ? 20 : 0; // BuildingDemand
 
             // 中密度 UI 因子
             m_MediumDemandFactors[7] = (int)math.round(happinessFactor);

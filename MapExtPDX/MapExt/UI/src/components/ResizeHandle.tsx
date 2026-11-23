@@ -1,4 +1,4 @@
-// ResizeHandle — 面板拖拽调整宽度组件
+// ResizeHandle — 面板拖拽调整尺寸（宽/高）组件
 // 复用 SliderControl 的 document 级拖拽模式（Coherent Gameface 兼容）
 
 import React, { useCallback, useRef } from "react";
@@ -9,7 +9,7 @@ interface ResizeHandleProps {
     direction: "horizontal" | "vertical";
     /** 拖拽时回调，参数为鼠标移动的 delta 像素值 */
     onResize: (delta: number) => void;
-    /** 拖拽结束回调，用于持久化最终宽度 */
+    /** 拖拽结束回调，用于持久化最终尺寸（宽/高） */
     onResizeEnd?: () => void;
 }
 

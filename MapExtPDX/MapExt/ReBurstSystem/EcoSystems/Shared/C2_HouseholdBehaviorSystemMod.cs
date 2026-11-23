@@ -37,12 +37,12 @@ namespace MapExtPDX.EcoShared
     // =========================================================================================
 
     /// <summary>
-    /// v2.3.0修复：
-    /// 1. HouseholdBehaviorSystem 引发的找房过度问题
-    /// 2. 修复购物安全阀覆盖已购物衰减导致购物过频的Bug
+    /// HouseholdBehaviorSystem 自定义重写版本：
+    /// 1. 1.6.0f 起恢复原版 idealBand 换房概率曲线（配合 kUpdatesPerDay=128 使整体触发频率减半）
+    /// 2. 修复购物安全阀覆盖已购物衰减导致购物过频的问题
     /// 3. 修复收入计算逻辑差异（与原版一致：先检查工作再按年龄分类）
-    /// 4. 修改车辆购买条件合理性
-    /// 5. 修正一些性能低下的算法
+    /// 4. 调整车辆购买条件合理性
+    /// 5. 优化部分低效算法与缓存计算
     /// 6. 清理游客死代码（原版由 TouristHouseholdBehaviorSystem 独立处理）
     /// 7. 恢复 ModeSettingData 读取
     /// </summary>
@@ -53,8 +53,7 @@ namespace MapExtPDX.EcoShared
         #region 静态常量 - 游戏规则参数
 
         // === 配置中心(自定义) ===
-        /// <summary>每天的更新次数基数</summary>
-        // 原版值256
+        /// <summary>每天的更新次数基数（原版为 256）。</summary>
         public static readonly int kUpdatesPerDay = 128;
 
         // 计算更新间隔帧数。262144 等于一天(月)。
@@ -615,9 +614,8 @@ namespace MapExtPDX.EcoShared
 
                     if (averageHappiness < 30)
                     {
-                        // 线性近似概率，避免 exp 计算
-                        // 0 happiness -> ~14% chance. 30 happiness -> 0 chance.
-                        // 140 * e^(-0.11 * happiness) 拟合度非常高
+                        // 指数衰减概率：0 happiness -> ~14%，30 happiness -> ~0.5%
+                        // 使用 140 * exp(-0.11 * happiness) 拟合原版曲线
                         float threshold = 140f * math.exp(-0.11f * averageHappiness);
                         isUnhappyAndConsideringMoving = random.NextInt(1000) < threshold;
                     }

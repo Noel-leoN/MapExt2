@@ -57,7 +57,7 @@ namespace MapExtPDX.EcoShared
 		private CityConfigurationSystem m_CityConfigurationSystem;
 		private VehicleCapacitySystem m_VehicleCapacitySystem;
 		private TriggerSystem m_TriggerSystem;
-		// 1.6.0f: TripPriority 依賴（Mod 保留自定義滑塊，此字段用於編譯對齊）
+		// 1.6.0f: TripPriority 查询（完整系统替换无编译对齐约束；仅保留 RequireForUpdate 门控，Mod 使用自定义滑块）
 		private EntityQuery m_TripPriorityParametersQuery;
 
 		[DebugWatchValue] private DebugWatchDistribution m_DebugPathCostsCar;
@@ -881,7 +881,7 @@ namespace MapExtPDX.EcoShared
 			[ReadOnly] public RandomSeed m_RandomSeed;
 			[ReadOnly] public float m_TimeOfDay;
 			[ReadOnly] public EntityArchetype m_ResetTripArchetype;
-			// 1.6.0f: TripPriority 依賴（Mod 保留自定義滑塊，此字段供後續邏輯或編譯對齊使用）
+			// 1.6.0f: TripPriority 参数字段（完整系统替换无编译对齐约束；当前由自定义滑块接管）
 			[ReadOnly] public TripPriorityParametersData m_TripPriorityParameters;
 			[ReadOnly] public ComponentTypeSet m_HumanSpawnTypes;
 			[ReadOnly] public ComponentTypeSet m_PathfindTypes;
@@ -1369,7 +1369,7 @@ namespace MapExtPDX.EcoShared
 							else if (tripInfo.m_Purpose == Purpose.Hospital ||
 							         tripInfo.m_Purpose == Purpose.Crime)
 							{
-								// 就医/犯罪：使用用户可调的紧急服务滑块（与分支B保持一致）
+								// 就医/犯罪：使用用户可调的就医/犯罪寻路成本滑块（与分支 B 保持一致）
 								dynamicMaxCost = m_DynamicEmergencyMaxCost;
 							}
 							else
@@ -1675,7 +1675,7 @@ namespace MapExtPDX.EcoShared
 								m_LeaveQueue.Enqueue(entity);
 							}
 
-							// [MOD FIX] 还原原版 IL_102e 传送逻辑：纯步行/出租车路径的通勤者回家或搬离直接传送
+							// [MOD FIX] 还原原版传送逻辑：起点为外部连接的 GoingHome（新迁入/返城居民）或终点为外部连接的 MovingAway 在步行/出租车路径下直接传送
 							bool isPedestrianOnly = false;
 							bool isPedestrianGoingHomeFromOC = false;
 							if (componentData.m_Destination != Entity.Null &&
@@ -1695,7 +1695,7 @@ namespace MapExtPDX.EcoShared
 
 							if (isPedestrianGoingHomeFromOC || isPedestrianMovingAwayToOC)
 							{
-								// 纯步行传送：直接修改 CurrentBuilding，不生成 Creature 实体
+								// 步行/出租车路径直接传送：更新 CurrentBuilding，不生成 Creature 实体
 								m_CommandBuffer.SetComponent(unfilteredChunkIndex, entity, new CurrentBuilding
 								{
 									m_CurrentBuilding = target.m_Target
@@ -1841,7 +1841,7 @@ namespace MapExtPDX.EcoShared
 									break;
 								case Purpose.Hospital:
 								case Purpose.Crime:
-									// 就近服务/就近犯罪：用户可调独立滑块
+									// 就医/犯罪：使用用户可调的就医/犯罪寻路成本滑块
 									dynamicMaxCost = m_DynamicEmergencyMaxCost;
 									break;
 								default:

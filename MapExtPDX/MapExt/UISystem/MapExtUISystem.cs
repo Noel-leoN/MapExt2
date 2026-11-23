@@ -15,16 +15,11 @@ namespace MapExtPDX.UI
 {
     /// <summary>
     /// 🎛️ [MOD] MapExt 游戏内 UI 中央控制器
-    /// 继承 UISystemBase，通过 ValueBinding/TriggerBinding 实现前端双向实时调参。
-    /// Phase 1: 7 个高频参数（租金 5 + 寻路 2），21 个 Binding。
-    /// Phase 1.1: +寻路扩展 4（急诊 + 找工 + 找房 + 找小学），累计增加 8 个 Binding。
-    /// Phase 2: +Dashboard 统计 8 + 扩展租金 6 + 面板状态 2 = 新增 22 个，累计 43 个 Binding。
-    /// Phase 3: +UI 外观 4，累计 47 个 Binding。
-    /// Phase 4: +Dashboard 扩展 13（住宅空置 6 + 商业 2 + 人口活动 4 + 通勤 1），累计 60 个 Binding。
-    /// Phase 5: +水体工具 8（海平面 3 + 重置 1 + 模拟速度 2 + 面板状态 2），累计 68 个 Binding。
-    /// Phase 5.1: +海平面锁定 3（锁定开关 1 + 锁定值读写 2），累计 71 个 Binding。
-    /// 面板關閉時跳過 ValueBinding 的反向同步脏檢查；GetterValueBinding 仍由 base.OnUpdate 每幀輪詢，
-    /// 但 getter 均為欄位讀取或快取值，無實體掃描與分配開銷。
+    /// 继承 UISystemBase，通过 ValueBinding / GetterValueBinding / TriggerBinding 实现前端双向实时调参。
+    /// 功能分组：面板开关与只读状态、租金与地价参数、寻路成本上限、Dashboard 城市统计指标、
+    /// 面板尺寸与默认展开偏好、水体工具与海平面锁定。
+    /// 面板关闭时跳过 ValueBinding 的反向同步脏检查；GetterValueBinding 仍由 base.OnUpdate 每帧轮询，
+    /// 但 getter 均为字段读取或缓存值，无实体扫描与分配开销。
     /// </summary>
     public partial class MapExtUISystem : UISystemBase
     {
@@ -314,7 +309,7 @@ namespace MapExtPDX.UI
                 m_LevelFactorInd.Update(v);
             }));
 
-            // === UI 外观参数 (4: 2 value + 2 trigger) ===
+            // === UI 外观参数 (6: 3 value + 3 trigger) ===
             // --- 面板宽度持久化 ---
             AddBinding(m_UIMenuWidth = new ValueBinding<int>(kGroup, "UIMenuWidth", s.UIMenuPanelWidth));
             AddBinding(new TriggerBinding<int>(kGroup, "SetUIMenuWidth", v =>
@@ -527,7 +522,7 @@ namespace MapExtPDX.UI
                 }
             }));
 
-            // 允许在锁定状态下修改目标锁定值
+            // 锁定海平面目标值的只读回显（锁定态修改目标值在 SetSeaLevel 处理）
             AddUpdateBinding(new GetterValueBinding<float>(kGroup, "LockedSeaLevel",
                 () => m_LockedSeaLevelValue));
 

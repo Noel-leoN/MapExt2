@@ -51,7 +51,7 @@ namespace MapExtPDX.EcoShared
 			RequireAnyForUpdate(m_SchoolSeekerQuery, m_ResultsQuery);
 			RequireForUpdate<EconomyParameterData>();
 			RequireForUpdate<TimeData>();
-			// 1.6.0f: TripPriority 依賴
+			// 1.6.0f: 保留原版 RequireForUpdate 门控（Job 实际使用自定义分段滑块）
 			RequireForUpdate<TripPriorityParametersData>();
 		}
 
@@ -83,7 +83,7 @@ namespace MapExtPDX.EcoShared
 					// 本系統每 16 幀 tick，spreadFrames 等於 tick 間隔，新舊佇列不重疊。
 					m_PathfindQueue = m_PathfindSetupSystem.GetQueue(this, 64, 16).AsParallelWriter(),
 					m_CommandBuffer = m_EndFrameBarrier.CreateCommandBuffer().AsParallelWriter(),
-					// 1.6.0f: TripPriority 依賴
+					// 1.6.0f: 传入单例子数据（当前 FindSchoolJob 未消费）
 					m_TripPriorityParameters = SystemAPI.GetSingleton<TripPriorityParametersData>()
 				};
 				Dependency = jobData.ScheduleParallel(m_SchoolSeekerQuery, Dependency);
@@ -142,7 +142,7 @@ namespace MapExtPDX.EcoShared
 			public float m_DynamicFindSchoolUniversityMaxCost;
 			public NativeQueue<SetupQueueItem>.ParallelWriter m_PathfindQueue;
 			public EntityCommandBuffer.ParallelWriter m_CommandBuffer;
-			// 1.6.0f: TripPriority 依賴
+			// 1.6.0f: TripPriority 参数字段（当前 FindSchoolJob 未消费，由自定义分段滑块接管）
 			[ReadOnly] public TripPriorityParametersData m_TripPriorityParameters;
 
 			public void Execute(in ArchetypeChunk chunk, int unfilteredChunkIndex, bool useEnabledMask, in v128 chunkEnabledMask)

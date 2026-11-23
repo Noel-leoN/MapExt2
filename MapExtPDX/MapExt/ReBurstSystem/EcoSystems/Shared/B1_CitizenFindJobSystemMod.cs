@@ -34,15 +34,15 @@ namespace MapExtPDX.EcoShared
 
         #region Constants
         /// <summary>
-        /// 每天更新次数，16分片 → 每帧处理 1/16 的实体
-        /// 每个市民每天被扫描 kUpdatesPerDay/16 ≈ 16 次
+        /// 每天更新次数：每 64 模拟帧更新 1/16 分片（每天 4096 次调度 ÷ 16 分片），
+        /// 每个市民每天被扫描 kUpdatesPerDay = 256 次。
         /// </summary>
         public static readonly int kUpdatesPerDay = 256;
         public override int GetUpdateInterval(SystemUpdatePhase phase) => 262144 / (kUpdatesPerDay * 16);
 
         /// <summary>
-        /// 原版冷却时间范围（帧数），失败后等待多久再试
-        /// 5000~10000帧 ≈ 0.3~0.6天
+        /// 原版冷却时间范围（模拟帧数），失败后等待多久再试。
+        /// 5000~10000 模拟帧 ≈ 0.019~0.038 天（约游戏内 27~55 分钟，按 262144 帧/天计）。
         /// </summary>
         public static readonly int kJobSeekCoolDownMin = 5000;
         public static readonly int kJobSeekCoolDownMax = 10000;

@@ -41,12 +41,12 @@ namespace MapExtPDX.ModeA
 
     // =========================================================================================
 
+    // 降级保护（重构二 0.4）：合并版存档里本类的类型名是 MapExtPDX.CellMap.NaturalResourceSystemMod，退回本版本时靠此别名读回，勿删
     /// <summary>
     /// 自然资源系统
     /// 负责管理地图上的肥力、矿产、石油和鱼类资源。
     /// 处理资源的再生、污染带来的损耗以及资源变化对区域（Area）的影响。
     /// </summary>
-    // 降级保护（重构二 0.4）：合并版存档里本类的类型名是 MapExtPDX.CellMap.NaturalResourceSystemMod，退回本版本时靠此别名读回，勿删
     [Colossal.Serialization.Entities.FormerlySerializedAs("MapExtPDX.CellMap.NaturalResourceSystemMod")]
     public partial class NaturalResourceSystemMod : CellMapReplacementSystem<TargetType, TargetSystem>, IPostDeserialize
     {
@@ -465,9 +465,9 @@ namespace MapExtPDX.ModeA
                         m_AreaTree.Iterate(ref areaIterator);
                     }
 
-                    // --- 4. 鱼类当前可用量更新 ---
-                    // 如果当前存量小于污染限制，快速恢复（但也受污染上限压制）
-                    // 如果当前存量大于污染限制，随时间自然减少
+                    // --- 4. 鱼类已损耗量更新（可用鱼量 = m_Base - m_Used）---
+                    // 当已损耗量 m_Used 小于污染上限时，污染导致损耗加剧（累加值上限为 pollutionLimit）
+                    // 当已损耗量大于等于污染上限时，随时间按 m_FishRegenerationRate 消退（自然恢复）
                     if (cell.m_Fish.m_Used < pollutionLimit)
                     {
                         int recovery = MathUtils.RoundToIntRandom(ref random, totalPollutedDepth * 3.125f);

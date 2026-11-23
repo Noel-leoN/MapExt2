@@ -33,13 +33,13 @@ namespace MapExtPDX.ModeA
     using TargetSystem = SoilWaterSystem;
     // =========================================================================================
 
+    // 降级保护（重构二 0.4）：合并版存档里本类的类型名是 MapExtPDX.CellMap.SoilWaterSystemMod，退回本版本时靠此别名读回，勿删
     /// <summary>
     /// 土壤水份系统
     /// 负责模拟全图的土壤含水量，包括降雨吸收、地形流动扩散以及洪水事件的触发
     /// 继承CellMapSystem 用于处理网格数据
     /// 该系统是否有存在的必要？？？
     /// </summary>
-    // 降级保护（重构二 0.4）：合并版存档里本类的类型名是 MapExtPDX.CellMap.SoilWaterSystemMod，退回本版本时靠此别名读回，勿删
     [Colossal.Serialization.Entities.FormerlySerializedAs("MapExtPDX.CellMap.SoilWaterSystemMod")]
     public partial class SoilWaterSystemMod : CellMapReplacementSystem<TargetType, TargetSystem>, IPostDeserialize
     {

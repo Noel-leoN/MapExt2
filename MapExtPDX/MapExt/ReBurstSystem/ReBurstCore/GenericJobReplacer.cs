@@ -39,7 +39,7 @@ namespace MapExtPDX.MapExt.ReBurstSystem.Core
         /// <summary>
         /// 注册替换规则
         /// </summary>
-        /// <returns>true 表示映射已成功登记；false 表示結構驗證未通過，該 Job 不會被替換。</returns>
+        /// <returns>true 表示映射已成功登记；false 表示参数为空或结构验证未通过，该 Job 不会被替换。</returns>
         public static bool AddReplacementToContext(MethodBase method, Type originalJobType, Type replacementJobType)
         {
             if (method == null || originalJobType == null || replacementJobType == null) return false;
@@ -117,7 +117,7 @@ namespace MapExtPDX.MapExt.ReBurstSystem.Core
         }
 
         /// <summary>
-        /// 清理所有缓存 (建议在 Mod OnDispose 时调用)
+        /// 清理所有 Patch 上下文缓存
         /// </summary>
         public static void ClearCache()
         {
@@ -255,7 +255,7 @@ namespace MapExtPDX.MapExt.ReBurstSystem.Core
                     continue;
                 }
 
-                // 3. 字段写入 (Stfld) - 类型欺骗
+                // 3. 字段写入 (Stfld) - 类型不一致时插入 Bitcast 安全位投影
                 if (instruction.opcode == OpCodes.Stfld && instruction.operand is FieldInfo oldFieldInfo)
                 {
                     if (context.FieldReplacements.TryGetValue(oldFieldInfo, out FieldInfo newFieldInfo))
@@ -485,7 +485,7 @@ namespace MapExtPDX.MapExt.ReBurstSystem.Core
 
         /// <summary>
         /// 泛型位投影安全强转 (解决 Burst/IL2CPP C++ 严格别名 Strict-Aliasing 导致的随机崩溃内存失效问题)
-        /// 此扩展在 IL 阶段替代原始的 `Ldloca` + `Ldobj` 类型欺骗黑魔法。
+        /// 此扩展在 IL 阶段替代原始的 <c>Ldloca</c> + <c>Ldobj</c> 非安全强转。
         /// </summary>
         public static unsafe TTo Bitcast<TFrom, TTo>(TFrom source)
             where TFrom : struct

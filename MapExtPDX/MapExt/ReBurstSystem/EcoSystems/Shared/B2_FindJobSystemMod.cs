@@ -33,10 +33,9 @@ namespace MapExtPDX.EcoShared
     // =========================================================================================
 
     /// <summary>
-    /// 为无业和寻求更好工作的市民寻找工作岗位。
-    /// 系统会分两步执行：
-    /// 1. 为所有符合条件的无业市民寻找工作。
-    /// 2. 为一小部分已就业但学历高于当前职位的市民寻找更好的工作。
+    /// FindJobSystem 的自定义重写版本，分两阶段处理求职寻路与入职：
+    /// 1. ProcessJobSeekers：遍历待求职实体（JobSeeker），检查空缺职位并向寻路队列投递求职请求（支持单帧限流）。
+    /// 2. ProcessJobResults：消费寻路结果，为成功匹配的市民办理入职/跳槽，并回收求职实体。
     /// </summary>
     public partial class FindJobSystemMod : GameSystemBase
     {
@@ -86,7 +85,7 @@ namespace MapExtPDX.EcoShared
         private CountHouseholdDataSystem m_CountHouseholdDataSystem;
         private PathfindSetupSystem m_PathfindSetupSystem;
         private EndFrameBarrier m_EndFrameBarrier;
-        // 1.6.0f: TripPriority 依賴（Mod 保留自定義滑塊，此字段用於編譯對齊）
+        // 1.6.0f: TripPriority 查询（完整系统替换无结构体布局对齐约束；仅保留 RequireForUpdate 门控，Job 内由自定义滑块接管）
         private EntityQuery m_TripPriorityParametersQuery;
         #endregion
 
@@ -484,8 +483,8 @@ namespace MapExtPDX.EcoShared
 
             public RandomSeed m_RandomSeed; // 随机种子
 
-            public float m_FindJobMaxCost; // 寻路最大成本（主线程计算：基准值 × 乘数）
-            // 1.6.0f: TripPriority 依賴
+            public float m_FindJobMaxCost; // 寻路最大成本（直接读取 ModSettings.FindJobMaxCost 绝对值滑块）
+            // 1.6.0f: TripPriority 参数字段（完整系统替换无编译对齐约束；当前 Job 未消费，由自定义滑块接管）
             [ReadOnly] public TripPriorityParametersData m_TripPriorityParameters;
 
             // [优化] 限流参数
@@ -588,9 +587,8 @@ namespace MapExtPDX.EcoShared
                             isSwitcher = true;
                         }
 
-                        // 4. 判定是否需要换工作：
-                        // 如果已有工作，且当前工作等级 >= 期望等级，或者期望等级并不比当前高，则无需找工作。
-                        // 逻辑解释：如果我有2级工作，想找2级或1级工作，没必要换。如果我有2级工作，想找3级，才继续。
+                        // 4. 保留原版条件分支：由于 targetJobLevel 初值等于 educationLevel，
+                        //    targetJobLevel > educationLevel 恒为假（原版死分支）；实际等级过滤由下方降级搜索循环完成。
                         if (currentJobLevel >= 0 && targetJobLevel > educationLevel && targetJobLevel <= currentJobLevel)
                         {
                             // 移除求职状态，删除求职实体

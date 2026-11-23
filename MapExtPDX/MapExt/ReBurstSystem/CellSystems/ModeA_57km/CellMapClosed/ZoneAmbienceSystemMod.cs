@@ -23,21 +23,21 @@ namespace MapExtPDX.ModeA
     using TargetType = ZoneAmbienceCell;
     // =========================================================================================
 
+    // 降级保护（重构二 0.4）：合并版存档里本类的类型名是 MapExtPDX.CellMap.ZoneAmbienceSystemMod，退回本版本时靠此别名读回，勿删
     /// <summary>
     /// 区域氛围系统 (Zone Ambience System)
     /// <para>
-    /// 负责管理整个地图的“氛围值”网格（如噪音、污染、地价等）
+    /// 负责管理整个地图的区域与环境氛围网格（记录各类区域与环境类型的氛围强度，供地形吸引力、建筑生成与地价/满意度查询使用）
     /// 主要功能包括定期更新网格数据（将累积值应用到当前值），以及提供查询特定位置氛围值的工具方法
     /// </para>
     /// </summary>
-    // 降级保护（重构二 0.4）：合并版存档里本类的类型名是 MapExtPDX.CellMap.ZoneAmbienceSystemMod，退回本版本时靠此别名读回，勿删
     [Colossal.Serialization.Entities.FormerlySerializedAs("MapExtPDX.CellMap.ZoneAmbienceSystemMod")]
     public partial class ZoneAmbienceSystemMod : CellMapReplacementSystem<TargetType, TargetSystem>
     {
         private const string Tag = nameof(ZoneAmbienceSystemMod);
 
         #region 字段/配置
-        // 纹理尺寸(vanilla=256)
+        // 纹理尺寸(vanilla=64)
         public static readonly int orgTextureSize = TargetSystem.kTextureSize; // 原版尺寸
         public static readonly int kTextureSize = XCellMapSystemRe.ZoneAmbienceSystemkTextureSize; // mod尺寸
 
@@ -46,7 +46,7 @@ namespace MapExtPDX.ModeA
         protected override int ModTextureSize => kTextureSize;
         protected override int MapSize => XCellMapSystemRe.kMapSize;
 
-        // 系统更新周期：每64
+        // 系统更新周期：每日更新 128 次
         public static readonly int kUpdatesPerDay = 128;
         public override int GetUpdateInterval(SystemUpdatePhase phase) => 262144 / kUpdatesPerDay;
         #endregion
@@ -86,7 +86,7 @@ namespace MapExtPDX.ModeA
 
         /// <summary>
         /// 氛围更新 Job
-        /// <para>并行处理每一个网格单元。将累积Accumulator)的值转移到当前Value)中，并重置累积器/para>
+        /// <para>并行处理每一个网格单元。将累积 (Accumulator) 的值转移到当前 (Value) 中，并重置累积器。</para>
         /// </summary>
         [BurstCompile]
         private struct ZoneAmbienceUpdateJob : IJobParallelFor

@@ -22,7 +22,7 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
     using UnityEngine;
 
     // Target TerrainSystem class
-    // 修补FinalizeTerrainData/GetTerrainBounds/GetHeightData等三个方法
+    // 修补 TerrainSystemPatches 下 5 个方法
     [HarmonyPatch(typeof(TerrainSystem))]
     public static class TerrainSystemPatches
     {
@@ -487,7 +487,7 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
     //
     // 原版 TerrainSystem.OnUpdate（ModificationEnd 階段）無條件呼叫 DownSampleHeightMap()，
     // 該方法在 HasBackdrop（baseLod != 0）時對 cascade 做一次 compute dispatch，
-    // 規模 (m_DownscaledHeightmap.width / 8)²（4096 圖 → 32×32 groups），
+    // 规模 (m_DownscaledHeightmap.width / 8)²（4096 图 4 倍降采样为 1024 → 128×128 groups），
     // 把 cascade 降採樣 4 倍寫入 m_DownscaledHeightmap。
     //
     // 但 cascade 的內容只會在 RenderCascades() 真正繪製時改變，而 RenderCascades 僅在

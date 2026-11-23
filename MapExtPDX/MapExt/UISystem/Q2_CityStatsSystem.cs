@@ -25,7 +25,7 @@ namespace MapExtPDX.UI
     /// 按需运行：仅当 Dashboard 面板展开时由 MapExtUISystem 启用。
     /// 每 256 帧（约 4.3 秒）执行一次 ECS 查询，收集人口健康度指标。
     /// Phase 4 新增：住宅空置率、商业活动、人口活动（购物/休闲/通勤）。
-    /// 所有新增数据均从游戏原生缓存系统零成本读取，无需自建 Burst Job。
+    /// 住宅空置率、商业活动与多数人口活动直接读取原生系统缓存；通勤者经自建 CommuterCount Query 统计，高租金建筑经自建 CountHighRentJob 统计。
     /// 面板关闭时 Enabled = false，零开销。
     /// </summary>
     public partial class Q2_CityStatsSystem : GameSystemBase

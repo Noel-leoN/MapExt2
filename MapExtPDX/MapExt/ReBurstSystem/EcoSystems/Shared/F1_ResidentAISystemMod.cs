@@ -2587,8 +2587,8 @@ namespace MapExtPDX.EcoShared
 				ref Game.Creatures.Resident resident, ref HumanCurrentLane currentLane, ref Target target,
 				ref Divert divert, ref PathOwner pathOwner)
 			{
-				// 尋路失敗的重試耐心上限(約 80~250 tick)，逾限即回到 Purpose.None 放棄重試。
-				// 此值 250 與 1.5.10f / 1.6.0f 原版一致，屬正確語意，保持不動。
+				// 寻路失败的重试耐心上限（NextInt(1, 3) 仅取 1 或 2，累加超 250 需 126~251 tick），逾限即回到 Purpose.None 放弃重试。
+				// 此值 250 与 1.5.10f / 1.6.0f 原版一致，属正确语义，保持不动。
 				divert.m_Data += random.NextInt(1, 3);
 				if (divert.m_Data <= 250)
 				{
@@ -3338,7 +3338,7 @@ namespace MapExtPDX.EcoShared
 							        (componentData13.m_Flags & HealthProblemFlags.RequireTransport) != 0;
 							break;
 						}
-						// [MOD] 刚需出行：回家/上班/上学需全图可达，与 TripNeededSystem 分支A对齐
+						// [MOD] 刚需出行：回家/上班/上学/搬离（MovingAway）需全图可达，与 TripNeededSystem 分支 A 对齐
 						case Purpose.GoingHome:
 						case Purpose.GoingToWork:
 						case Purpose.GoingToSchool:

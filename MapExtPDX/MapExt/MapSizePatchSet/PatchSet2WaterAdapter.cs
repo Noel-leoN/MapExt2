@@ -115,7 +115,7 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
                     "(GetCascadeTexture intercept + global swap)");
             }
 
-            // 仅在地形实际更新时才执行极其耗时的异步阻塞 Blit
+            // 仅在级联纹理实际更新时执行逐 slice 降采样拷贝 / Blit
             if (srcCascade.updateCount != s_LastCascadeUpdateCount)
             {
                 // 逐 slice 降采样

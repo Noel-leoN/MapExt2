@@ -620,7 +620,7 @@ namespace MapExtPDX.ModeA
 				}
 			}
 		}
-	}
 
-	#endregion
+		#endregion
+	}
 }

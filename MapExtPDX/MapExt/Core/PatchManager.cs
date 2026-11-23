@@ -40,8 +40,10 @@ namespace MapExtPDX.MapExt.Core
         /// <summary>
         /// 补丁集注册表系统
         /// </summary>
-        // 补丁集注册表: string是名称, PatchSet是分级与应用补丁的委托
-        // 初始化保持 { "Key", new PatchSet(...) } 写法：Check-SurfaceMapCoverage.ps1 按此解析键名
+        /// <remarks>
+        /// string 是名称，PatchSet 是分级与应用补丁的委托。
+        /// 初始化保持 { "Key", new PatchSet(...) } 写法：Check-SurfaceMapCoverage.ps1 按此解析键名。
+        /// </remarks>
         private static readonly Dictionary<string, PatchSet> s_AllPatchSets;
 
         // 补丁集分级（让注册表条目一眼可读）
@@ -196,7 +198,7 @@ namespace MapExtPDX.MapExt.Core
             _modePatcher = harmony;
 
             // 从已保存设置中读取模式并应用补丁集
-            // 进入游戏后Mod初始化加载，不需要进行UnpatchAll or CleanUpAllContexts
+            // 游戏启动时（载入 Prefab 前）由 Mod.OnLoad 一次性初始化，不需要进行 UnpatchAll 或 CleanUpAllContexts
             _currentMode = initialModeFromSettings;
             CurrentCoreValue = GetCoreValueForMode(_currentMode);
 
@@ -224,11 +226,8 @@ namespace MapExtPDX.MapExt.Core
         }
 
         /// <summary>
-        /// 核心CV设置！
+        /// 获取指定模式对应的核心倍率（CV 值），用于初始化与模式查询。
         /// </summary>
-        /// <param name="mode"></param>
-        /// <returns></returns>
-        // 获取模式对应的CV值；用于初始化、切换模式；
         internal static int GetCoreValueForMode(PatchModeSetting mode) // Changed to internal or could be public
         {
             switch (mode)
@@ -281,11 +280,11 @@ namespace MapExtPDX.MapExt.Core
 
         /// <summary>
         /// 用于存档验证系统弹窗警告显示；
-        /// 根据 CoreValue 获取其对应的模式枚举名称。
+        /// 根据 CoreValue 获取其对应的模式显示名称。
         /// 这是 GetCoreValueForMode 方法的反向操作。
         /// </summary>
         /// <param name="coreValue">要查询的 CoreValue。</param>
-        /// <returns>模式的名称 (例如 "ModeA")，如果找不到则返回一个描述性文本。</returns>
+        /// <returns>模式显示名称（例如 "ModeA 57km" / "Vanilla 14km"），未命中时返回描述性文本。</returns>
         public static string GetModeNameForCoreValue(int coreValue)
         {
             switch (coreValue)

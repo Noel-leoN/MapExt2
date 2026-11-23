@@ -26,10 +26,10 @@ namespace MapExtPDX.ModeA
     using TargetType = GroundPollution;
     // =========================================================================================
 
+    // 降级保护（重构二 0.4）：合并版存档里本类的类型名是 MapExtPDX.CellMap.GroundPollutionSystemMod，退回本版本时靠此别名读回，勿删
     /// <summary>
     /// 地表污染系统：用于计算和存储地面污染数据
     /// </summary>
-    // 降级保护（重构二 0.4）：合并版存档里本类的类型名是 MapExtPDX.CellMap.GroundPollutionSystemMod，退回本版本时靠此别名读回，勿删
     [Colossal.Serialization.Entities.FormerlySerializedAs("MapExtPDX.CellMap.GroundPollutionSystemMod")]
     public partial class GroundPollutionSystemMod : CellMapReplacementSystem<TargetType, TargetSystem>
     {
@@ -107,7 +107,7 @@ namespace MapExtPDX.ModeA
                         value.m_Pollution = (short)math.max(0, this.m_PollutionMap[i].m_Pollution - MathUtils.RoundToIntRandom(ref random, (float)this.m_PollutionParameters.m_GroundFade / (float)kUpdatesPerDay));
                         // === [MOD OPT] 條件寫回（位元級等價）===
                         // 原本寫回在 if 外，m_Pollution == 0 的格子會把讀出來的同一個值寫回去。
-                        // 大地圖上絕大多數格為 0，等於每次 tick 無謂標髒並回寫整張 1024² 貼圖（2MB）。
+                        // 大地图上绝大多数格为 0，等于每次 tick 无谓标脏并回写整张扩展贴图（按 kTextureSize² 计）。
                         // 只在真正變化時寫入；random 的消耗位置不變（本來就在 if 內），隨機序列不受影響。
                         this.m_PollutionMap[i] = value;
                     }

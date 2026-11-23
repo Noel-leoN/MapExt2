@@ -16,9 +16,9 @@ namespace MapExtPDX.EcoShared
 {
     /// <summary>
     /// P2: Editor Collision Override System
-    /// 绕过 GenericJobReplacer 的校验限制，作为独立的 System 在 ValidationSystem 之后运行，
-    /// 专门移除由于碰撞检测而标记到待放置对象（Temp）上的 Error 和 Warning。
-    /// 可以由 ModSettings 中的三档开关控制。
+    /// 独立运行于 ToolUpdate 阶段（原版 ValidationSystem 运行于 ModificationEnd 阶段，且其 ValidationJob 已由 ValidationSystemRe 替换）。
+    /// 当开关启用时，移除匹配待放置对象（Temp）上的全部 Error 和 Warning（不仅限于碰撞错误），
+    /// 由 ModSettings 中的三档开关控制。
     /// </summary>
     [UpdateAfter(typeof(ValidationSystem))]
     public partial class P2_EditorCollisionOverrideSystem : GameSystemBase

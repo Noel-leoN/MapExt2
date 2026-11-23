@@ -5,9 +5,9 @@
 //   （_KnowledgeBase/1_GameSource/Game/Simulation/ResourcePathfindSetup.cs:25-241 / 721-774）
 //
 // 本檔以原版 SetupResourceSellerJob 為基礎複製，改動三處（見 P1 計畫 §3）：
-//   1. Early Exit（砍 T）：湊滿 kMaxCandidatesToFind 個「已完成 FindTargets 的合格候選」即 break。
-//   2. 隨機起點 startOffset：避免先建的企業恆被優先評估，攤平地理與計數偏差（計數策略方案 3）。
-//   3. cap 可配置：kMaxCandidatesToFind 由 ModSettings.ResourceSellerCandidateCap 於排程時注入。
+//   1. Early Exit（砍 T）：凑满 m_MaxCandidatesToFind 个“已完成 FindTargets 的合格候选”即 break。
+//   2. 随机起点 startOffset：避免先建的企业恒被优先评估，摊平地理与计数偏差（计数策略方案 3）。
+//   3. cap 可配置：m_MaxCandidatesToFind 由 ModSettings.ResourceSellerCandidateCap 于排程时注入。
 // 其餘篩選 / 評分 / 分支完整性（flag~flag9、ServiceAvailable 與庫存兩套評分、CargoStation 隊列上限、
 // RequireTransport 運力上限、防超賣 num2 校驗）逐行保留，零行為偏移。
 
@@ -232,8 +232,8 @@ namespace MapExtPDX.EcoShared
 	}
 
 	/// <summary>
-	/// 原版 <c>SetupResourceSellerJob</c> 的 Early Exit 版本。欄位佈局與原版嚴格一致（僅追加
-	/// <see cref="m_MaxCandidatesToFind"/>），內層雙迴圈加隨機起點 + 湊滿 cap 即 break。
+	/// 原版 <c>SetupResourceSellerJob</c> 的 Early Exit 版本。本结构体由 <c>Schedule</c> 独立全新排程，
+	/// 无原版字段布局对齐约束（追加了 <see cref="m_MaxCandidatesToFind"/>），内层双循环加随机起点 + 凑满 cap 即 break。
 	/// </summary>
 	[BurstCompile]
 	public struct CustomSetupResourceSellerJob : IJobChunk

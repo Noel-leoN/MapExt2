@@ -36,10 +36,10 @@ namespace MapExtPDX.ModeA
     using TargetType = AvailabilityInfoCell;
     // =========================================================================================
 
+    // 降级保护（重构二 0.4）：合并版存档里本类的类型名是 MapExtPDX.CellMap.AvailabilityInfoToGridSystemMod，退回本版本时靠此别名读回，勿删
     /// <summary>
     /// 网格Heatmap，将网络（道管线）上的资源可用性数据（如吸引力、服务、就业机会）映射到一个二维网格Grid
     /// </summary>
-    // 降级保护（重构二 0.4）：合并版存档里本类的类型名是 MapExtPDX.CellMap.AvailabilityInfoToGridSystemMod，退回本版本时靠此别名读回，勿删
     [Colossal.Serialization.Entities.FormerlySerializedAs("MapExtPDX.CellMap.AvailabilityInfoToGridSystemMod")]
     public partial class AvailabilityInfoToGridSystemMod : CellMapReplacementSystem<TargetType, TargetSystem>
     {
@@ -138,7 +138,7 @@ namespace MapExtPDX.ModeA
             {
                 // 直接修补输入值；重定义字段为局部变量；
                 int cellSize = XCellMapSystemRe.kMapSize / XCellMapSystemRe.AvailabilityInfoToGridSystemkTextureSize;
-                // 57344f/128f; m_CellSize = (float)CellMapSystem<AvailabilityInfoCell>.kMapSize / (float)AvailabilityInfoToGridSystem.kTextureSize;
+                // m_CellSize = (float)CellMapSystem<AvailabilityInfoCell>.kMapSize / (float)AvailabilityInfoToGridSystem.kTextureSize;
 
                 // 重定义kTextureSize字段为局部变
                 int textureSize = XCellMapSystemRe.AvailabilityInfoToGridSystemkTextureSize;

@@ -26,6 +26,7 @@ namespace MapExtPDX.ModeA
     using TargetType = TerrainAttractiveness;
     // =========================================================================================
 
+    // 降级保护（重构二 0.4）：合并版存档里本类的类型名是 MapExtPDX.CellMap.TerrainAttractivenessSystemMod，退回本版本时靠此别名读回，勿删
     /// <summary>
     /// 地形吸引力计算系(Terrain Attractiveness System)
     /// <para>
@@ -34,14 +35,13 @@ namespace MapExtPDX.ModeA
     /// 系统继承CellMapSystem，以网格形式存储数据
     /// </para>
     /// </summary>
-    // 降级保护（重构二 0.4）：合并版存档里本类的类型名是 MapExtPDX.CellMap.TerrainAttractivenessSystemMod，退回本版本时靠此别名读回，勿删
     [Colossal.Serialization.Entities.FormerlySerializedAs("MapExtPDX.CellMap.TerrainAttractivenessSystemMod")]
     public partial class TerrainAttractivenessSystemMod : CellMapReplacementSystem<TargetType, TargetSystem>
     {
         private const string Tag = nameof(TerrainAttractivenessSystemMod);
 
         #region 字段/配置
-        // 纹理尺寸(vanilla=256)
+        // 纹理尺寸(vanilla=128)
         public static readonly int orgTextureSize = TargetSystem.kTextureSize; // 原版尺寸
         public static readonly int kTextureSize = XCellMapSystemRe.TerrainAttractivenessSystemkTextureSize; // mod尺寸
 

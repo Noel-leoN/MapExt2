@@ -23,20 +23,20 @@ namespace MapExtPDX.ModeA
     using TargetType = TrafficAmbienceCell;
     // =========================================================================================
 
+    // 降级保护（重构二 0.4）：合并版存档里本类的类型名是 MapExtPDX.CellMap.TrafficAmbienceSystemMod，退回本版本时靠此别名读回，勿删
     /// <summary>
     /// 交通氛围系(Traffic Ambience System)
     /// <para>
     /// 负责管理全图的交通噪氛围数据。定期更新每个网格单元的交通强度供UI显示
     /// </para>
     /// </summary>
-    // 降级保护（重构二 0.4）：合并版存档里本类的类型名是 MapExtPDX.CellMap.TrafficAmbienceSystemMod，退回本版本时靠此别名读回，勿删
     [Colossal.Serialization.Entities.FormerlySerializedAs("MapExtPDX.CellMap.TrafficAmbienceSystemMod")]
     public partial class TrafficAmbienceSystemMod : CellMapReplacementSystem<TargetType, TargetSystem>
     {
         private const string Tag = nameof(TrafficAmbienceSystemMod);
 
         #region 字段/配置
-        // 纹理尺寸(vanilla=256)
+        // 纹理尺寸(vanilla=64)
         public static readonly int orgTextureSize = TargetSystem.kTextureSize; // 原版尺寸
         public static readonly int kTextureSize = XCellMapSystemRe.TrafficAmbienceSystemkTextureSize; // mod尺寸
 
@@ -84,7 +84,7 @@ namespace MapExtPDX.ModeA
 
         /// <summary>
         /// 负责更新交通氛围数据的并行 Job
-        /// <para>核心逻辑是将累积的流量(Accumulator) 应用到当前流量(Traffic) 中，并重置累积器/para>
+        /// <para>核心逻辑是将累积的流量 (Accumulator) 应用到当前流量 (Traffic) 中，并重置累积器。</para>
         /// </summary>
         [BurstCompile]
         private struct TrafficAmbienceUpdateJob : IJobParallelFor

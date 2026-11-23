@@ -17,12 +17,6 @@ namespace MapExtPDX.ModeA
 {
     // v1.3.6f变更
 
-    /// <summary>
-    /// TelecomCoverageJob被TelecomCoverageSystem/TelecomPreviewSystem两个系统调用
-    /// </summary>
-    /// 注意该系统没有定义kTextureSize字段，而是直接使用128在job中硬编码
-    /// 该系统实用意义不大，建议不作TextureSize修改
-
     // 重定向私有结构体
     public struct CellDensityData
     {
@@ -39,7 +33,13 @@ namespace MapExtPDX.ModeA
         public float m_NetworkCapacity;
     }
 
-
+    /// <summary>
+    /// TelecomCoverageJob 被 TelecomCoverageSystem / TelecomPreviewSystem 两个系统调用。
+    /// </summary>
+    /// <remarks>
+    /// 注意该系统没有定义 kTextureSize 字段，而是直接在 Job 中硬编码 128；
+    /// 实用意义不大，暂不修改贴图尺寸。
+    /// </remarks>
     [BurstCompile]
     public struct TelecomCoverageJob : IJob
     {

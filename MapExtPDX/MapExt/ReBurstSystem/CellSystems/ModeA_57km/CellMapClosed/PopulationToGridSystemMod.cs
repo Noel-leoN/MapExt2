@@ -31,18 +31,18 @@ namespace MapExtPDX.ModeA
     using TargetType = PopulationCell;
     // =========================================================================================
 
+    // 降级保护（重构二 0.4）：合并版存档里本类的类型名是 MapExtPDX.CellMap.PopulationToGridSystemMod，退回本版本时靠此别名读回，勿删
     /// <summary>
     /// 人口映射系统
     /// 将住宅内的居民数量映射到 PopulationCell 网格中，用于生成人口密度数据
     /// </summary>
-    // 降级保护（重构二 0.4）：合并版存档里本类的类型名是 MapExtPDX.CellMap.PopulationToGridSystemMod，退回本版本时靠此别名读回，勿删
     [Colossal.Serialization.Entities.FormerlySerializedAs("MapExtPDX.CellMap.PopulationToGridSystemMod")]
     public partial class PopulationToGridSystemMod : CellMapReplacementSystem<TargetType, TargetSystem>
     {
         private const string Tag = nameof(PopulationToGridSystemMod);
 
         #region 字段/配置
-        // 纹理尺寸(vanilla=256)
+        // 纹理尺寸(vanilla=64)
         public static readonly int orgTextureSize = TargetSystem.kTextureSize; // 原版尺寸
         public static readonly int kTextureSize = XCellMapSystemRe.PopulationToGridSystemkTextureSize; // mod尺寸
 

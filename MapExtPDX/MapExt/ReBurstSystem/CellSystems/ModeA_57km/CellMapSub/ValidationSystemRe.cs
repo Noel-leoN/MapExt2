@@ -28,7 +28,7 @@ namespace MapExtPDX.ModeA
     /// <summary>
     /// 并行作业，用于在一组原型块（archetype chunks）中对各种实体、对象和组件执行验证检查
     /// </summary>
-    /// <remarks>ValidationJob 检查多种条件和约束，例如对象有效性、升级资格、区域与边缘的正确性，以及水源需求验证结果和错误通过线程安全的错误队列进行报告/remarks>
+    /// <remarks>ValidationJob 检查多种条件和约束，例如对象有效性、升级资格、区域与边缘的正确性，以及水源需求。验证结果和错误通过线程安全的错误队列进行报告。</remarks>
     [BurstCompile]
     public struct ValidationJob : IJobParallelForDefer
     {

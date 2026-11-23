@@ -38,14 +38,14 @@ namespace MapExtPDX.EcoShared
     /// 因此本系統在 GameSimulation 掛上的 <c>Updated</c> 比當幀快照更新、不會被當幀清掉，
     /// 必然完整存活到下一幀 Modification5 的 <c>FixParkingLocationSystem</c>，且只被消化一次。
     /// 反之若改掛 Modification 系列，<c>ModificationSystem</c> 走的是不帶 updateIndex 的
-    /// <c>UpdateSystem.Update(phase)</c> 多載，會**完全忽略** <see cref="GetUpdateInterval"/>，
-    /// 使 64 幀節流退化成每渲染幀一次、<see cref="kMaxRetries"/> 預算從約 512 模擬幀縮成約 8 幀。
+    /// <c>UpdateSystem.Update(phase)</c> 多载，会<b>完全忽略</b> <see cref="GetUpdateInterval"/>，
+    /// 使 64 帧节流退化成每渲染帧一次、<see cref="kMaxRetries"/> 预算从约 512 模拟帧缩成约 8 帧。
     ///
-    /// 【设计】追蹤表只存在記憶體中（<see cref="m_RescuedVehicles"/>），不注入任何自定义 ECS 组件到实体上，
+    /// 【设计】追踪表只存在内存中（<see cref="m_RescuedVehicles"/>），不注入任何自定义 ECS 组件到实体上，
     /// 确保存档零污染，禁用 Mod 后不留痕迹。
     ///
-    /// 【2026-08-11 加固】三項變更，起因為某 78 萬人口舊存檔在啟用本系統時
-    /// 於 <c>Serialize</c> 階段拋 <c>NullReferenceException</c>（`EntityManager.HighestEntityIndex`），
+    /// 【2026-08-11 加固】三项变更，起因为某 78 万人口旧存档在启用本系统时
+    /// 于 <c>Serialize</c> 阶段抛 <c>NullReferenceException</c>（<c>EntityManager.HighestEntityIndex</c>），
     /// 關閉本系統後存檔恢復正常：
     /// ① 移除全部 <c>EntityManager</c> 同步直寫（原 <c>CleanupOwnership</c> 直改
     ///    <c>OwnedVehicle</c> buffer、<c>ClearCarKeeper</c> 直寫 <c>CarKeeper</c>）——
@@ -80,7 +80,7 @@ namespace MapExtPDX.EcoShared
 
         /// <summary>
         /// 最大重试次数。超过后删除僵尸车辆。
-        /// 每次重试间隔约 64 帧，8 次 ≈ 512 帧 ≈ 游戏内约 0.5 小时，足够等待车位空出。
+        /// 每次重试间隔约 64 帧，8 次 ≈ 512 模拟帧 ≈ 游戏内约 3 分钟（约 0.05 小时，按 262144 帧/天计），足够等待车位空出。
         /// </summary>
         private const int kMaxRetries = 8;
 
@@ -501,7 +501,7 @@ namespace MapExtPDX.EcoShared
                         m_CommandBuffer.SetComponent(vehicle, homeTf);
 
                     // 3. 添加 FixParkingLocation，m_ResetLocation = homeProperty
-                    //    原版 FixParkingLocationSystem 会以住宅 Transform 为搜索中心，100m 范围内查找车位
+                    //    原版 FixParkingLocationSystem 会以住宅 Transform 为搜索中心，默认 150m 范围内查找车位
                     m_CommandBuffer.AddComponent(vehicle, new FixParkingLocation(Entity.Null, homeProperty));
 
                     // 4. 添加 Updated 标记，原版 FixParkingLocationSystem.m_FixQuery 要求

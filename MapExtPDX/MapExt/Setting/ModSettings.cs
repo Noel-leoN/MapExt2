@@ -33,7 +33,7 @@ namespace MapExtPDX
     public enum TerrainResolutionSetting
     {
         Vanilla_4096, // 原版 4096×4096
-        High_8192, // 高清 8192×8192 (默认)
+        High_8192, // 高清 8192×8192
     }
 
     /// <summary>编辑器碰撞检测跳过选项</summary>
@@ -49,7 +49,7 @@ namespace MapExtPDX
     {
         Vanilla_2048, // 原版 2048×2048
         Medium_1024, // 中等 1024×1024
-        Low_512, // 低 512×512 (推荐)
+        Low_512, // 低 512×512
         Ultra_256, // 极低 256×256 (最高性能)
     }
 
@@ -58,7 +58,7 @@ namespace MapExtPDX
     {
         Vanilla_EveryFrame, // 原版：每帧模拟，开启背景水
         Reduced_NoBackdrop, // 降低：每帧模拟，关闭背景水
-        Minimal_Every4Frames, // 极简：每四帧模拟，关闭背景水、模糊和后处理
+        Minimal_Every4Frames, // 极简：每四帧模拟，关闭背景水与水流模糊
         Paused_NoFlow, // 暂停：停止水流模拟
 
         // [SUSPENDED] 方案 E：事件驅動自適應休眠（實作留在 PatchSet2WaterAdaptive.cs）。
@@ -132,6 +132,8 @@ namespace MapExtPDX
         public const string kNoDogsGroup = "NoDogs";
         public const string kNoTrafficGroup = "NoTraffic";
         public const string kEditorToolGroup = "EditorTool";
+
+        // -- UI Tab --
         public const string kInGameUIGroup = "InGameUI";
 
         // -- Developer Tab --
@@ -139,8 +141,8 @@ namespace MapExtPDX
         public const string kDebugGroup = "Debug";
 
         public string DisplayedMapSize { get; set; } = "N/A"; // 用于显示 playableArea
-        public string DisplayedTerrainSystemValue { get; set; } = "N/A"; // 用于显示 TargetSystemA 的值
-        public string DisplayedWaterSystemValue { get; set; } = "N/A"; // 用于显示 TargetSystemB 的值
+        public string DisplayedTerrainSystemValue { get; set; } = "N/A"; // 用于显示 TerrainSystem 的值
+        public string DisplayedWaterSystemValue { get; set; } = "N/A"; // 用于显示 WaterSystem 的值
         public string DisplayedCellMapSystemValue { get; set; } = "N/A"; // 用于显示泛型系统的值
         public string DetectedSaveCoreValue { get; set; } = "N/A"; // 用于显示从存档检测到的CoreValue
 
@@ -167,7 +169,7 @@ namespace MapExtPDX
         [SettingsUIHideByCondition(typeof(ModSettings), nameof(IsNotInMainMenu))]
         public PatchModeSetting PatchModeChoice { get; set; } // = PatchModeSetting.ModeA; // Default to ModeA
 
-        // 在游戏内显示状态信息 (已读取存档的地图大小值)
+        // 在游戏内显示状态信息 (当前生效模式的地图边长，单位米)
         [SettingsUISection(kMapSizeModeTab, kMainModeGroup)]
         public string ModSettingCoreValue => (PatchManager.CurrentCoreValue * 14336).ToString();
 
@@ -342,10 +344,7 @@ namespace MapExtPDX
 
         #endregion
 
-        /// <summary>
-        /// 全局并行选项
-        /// </summary>
-        // 选项可用性
+        // 选项可用性（用于隐藏/禁用未开放项）
         public bool IsPatchUnAvailable => true;
 
         // === EconomyEX Tab - 经济子系统启用开关 ===
@@ -530,32 +529,32 @@ namespace MapExtPDX
         public int HomelessSeekerCap { get; set; } = 1280;
 
         /// <summary>
-        /// 【P1 尋路優化】企業採購尋路（ResourceSeller）每個請求最多收集的合格候選供應商數量。
-        /// 湊滿即提前退出全城掃描（Early Exit），將 O(全城企業數) 降為 O(常數)。
-        /// 值越小效能越好但可能錯過較優貨源；值越大越貼近原版全域最優但開銷越高。
-        /// 稀缺資源自帶保護：合格候選稀少時永遠湊不滿，自然遍歷完全城，不會漏找。預設 8。
+        /// 【P1 寻路优化】企业采购寻路（ResourceSeller）每个请求按 chunk 收集的合格候选供应商上限。
+        /// 每个 chunk 凑满即跳出该 chunk 的实体遍历（Early Exit），减少单 chunk 内后续评估；所有 chunk 仍会遍历。
+        /// 值越小性能越好但可能错过较优货源；值越大越贴近原版全局最优但开销越高。
+        /// 稀缺资源自带保护：合格候选稀少时不会触发提前跳出，自然遍历完全部实体。默认 8。
         /// </summary>
         [SettingsUISection(kMiscTab, kEcoBehaviorGroup)]
         [SettingsUISlider(min = 3, max = 20, step = 1, scalarMultiplier = 1, unit = Game.UI.Unit.kInteger)]
         public int ResourceSellerCandidateCap { get; set; } = 8;
 
         /// <summary>
-        /// 【P2 尋路優化】休閒尋路（Leisure）每個請求最多收集的合格休閒設施候選數量。
-        /// 湊滿即提前退出全城掃描（Early Exit），將 O(全城 LeisureProvider 數) 降為 O(常數)。
-        /// 多數候選 cost=0，A* 端以實際路徑距離排序，提前退出幾乎無品質損失；
-        /// 稀缺設施自帶保護：合格候選稀少時永遠湊不滿，自然遍歷完全城，不會漏找。預設 6。
+        /// 【P2 寻路优化】休闲寻路（Leisure）每个请求按 chunk 收集的合格休闲设施候选上限。
+        /// 每个 chunk 凑满即跳出该 chunk 的实体遍历（Early Exit），减少单 chunk 内后续评估；所有 chunk 仍会遍历。
+        /// 多数候选 cost=0，A* 端以实际路径距离排序，提前退出几乎无质量损失；
+        /// 稀缺设施自带保护：合格候选稀少时不会触发提前跳出，自然遍历完全部实体。默认 6。
         /// </summary>
         [SettingsUISection(kMiscTab, kEcoBehaviorGroup)]
         [SettingsUISlider(min = 3, max = 15, step = 1, scalarMultiplier = 1, unit = Game.UI.Unit.kInteger)]
         public int LeisureCandidateCap { get; set; } = 6;
 
         /// <summary>
-        /// 【P6 尋路優化】家庭找房（FindHome）每戶每次評估最多收集的合格候選房屋數量。
-        /// 湊滿即提前退出全城掃描（Early Exit）。與 P1/P2 不同：找房候選的 cost 是 GetPropertyScore
-        /// （房屋質量綜合評分，非同質 cost=0），故本 cap 直接影響「居住質量匹配度」——
-        /// 值越小效能越好，但家庭越可能住進次優房（仍付得起、可接受，但評分較低），極端偏低時可能加劇搬家頻率；
-        /// 值越大越貼近全域最優匹配，但每戶掃描開銷（含最重的 GetPropertyScore 打分）越高。
-        /// 稀缺保護：合格房源稀少時永遠湊不滿，自然遍歷完全城，不會漏找。預設 5（原版硬編碼值，零行為變化）。
+        /// 【P6 寻路优化】家庭找房（FindHome）每户每次评估按 chunk 收集的合格候选房屋上限。
+        /// 每个 chunk 凑满即跳出该 chunk 的实体遍历（Early Exit），所有 chunk 仍会遍历。与采购/休闲不同：找房候选的 cost 是 GetPropertyScore
+        /// （房屋质量综合评分，非同质 cost=0），故本 cap 直接影响“居住质量匹配度”——
+        /// 值越小性能越好，但家庭越可能住进次优房（仍付得起、可接受，但评分较低），极端偏低时可能加剧搬家频率；
+        /// 值越大越贴近全局最优匹配，但每户扫描开销（含最重的 GetPropertyScore 打分）越高。
+        /// 稀缺保护：合格房源稀少时不会触发提前跳出，自然遍历完全部实体。默认 5（本 Mod 先前硬编码默认值，零行为变化）。
         /// </summary>
         [SettingsUISection(kMiscTab, kEcoBehaviorGroup)]
         [SettingsUISlider(min = 3, max = 15, step = 1, scalarMultiplier = 1, unit = Game.UI.Unit.kInteger)]
@@ -692,7 +691,7 @@ namespace MapExtPDX
         private bool m_EnableVanillaConversion = false;
 
         /// <summary>
-        /// ⚠ 高度实验性功能：启用原版 14km 存档转换到当前 MapExt 模式。
+        /// ⚠ 高度实验性功能：启用存档与地图扩展转换（涵盖原版 14km / None 存档转换到当前扩展模式、用原版地图开新城以及 28km→57km 存档扩展）。
         ///
         /// <para>與 <see cref="DisableWorldBackdrop"/> 互斥，互斥由 UI 層的
         /// <c>DisableByCondition</c> 保證（對方開啟時本項變灰不可點），setter 不再改寫對方欄位。
@@ -1076,7 +1075,7 @@ namespace MapExtPDX
         public string DetectedConflictMods => _detectedConflictMods;
         internal string _detectedConflictMods = "Not scanned";
 
-        /// <summary>冲突警告信息，由 ConflictMonitoringSystem 更新</summary>
+        /// <summary>冲突警告信息，由 Mod.OnLoadCore 经 ModConflictDetector 更新</summary>
         [SettingsUISection(kMiscTab, kEcoSystemEnableGroup)]
         public string ConflictWarning => _conflictWarning;
         internal string _conflictWarning = "None";

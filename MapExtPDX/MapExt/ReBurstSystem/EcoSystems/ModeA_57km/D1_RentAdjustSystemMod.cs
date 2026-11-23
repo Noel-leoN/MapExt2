@@ -27,15 +27,15 @@ namespace MapExtPDX.ModeA
 {
 	/*
 	 * 🟢 [Mod Modifications Summary]
-	 * 1. 🔧 破产驱逐线修复: 恢复原版的 renterUpkeepCapacity = Income + Savings 作为绝对破产生死线，避免大规模死循环驱逐。
-	 * 2. 🎲 住房改善逻辑平滑化: 家庭租金花销低于收入 15% 时，仅有 30% 的概率触发升级寻房，减少全城无意义搬家引发的CPU负担。
-	 * 3. ⚠️ 高租金警告提示优化: 即使建筑满员，当绝大多数租户面临经济压力但未破产时，也会显示高租金警告，给玩家提供真实的经济反馈。
-	 * 4. 🗑️ 异常清理与调度还原: 清理导致跳帧的错误降频逻辑，恢复原生 ECS UpdateFrame 调度；移除无效实体残留。
+	 * 1. 🔧 租金公式可调化: 通过 GetModdedRentPerRenter 提供按区划（住宅/商业/工业）可调的租金倍率、地价权重与等级系数。
+	 * 2. ⚠️ 高租金警告提示优化: 即使建筑满员（>=），当租户面临租金压力时也会显示高租金警告，给玩家提供更及时的经济反馈。
+	 * 3. 🌍 污染通知尺寸修正: 将空气/噪音污染采样重定向至 XCellMapSystemRe，确保扩展地图下污染通知位置准确。
+	 * 4. 🗑️ 异常清理与调度还原: 恢复原生 ECS UpdateFrame 调度，并对无效实体进行保护。
 	 */
 
 	/// <summary>
 	/// 🔧 [MOD] 租金定期调整系统 (RentAdjustSystem) 的重写版本
-	/// 负责处理全图建筑的租金计算、租户破产驱逐以及公司经营预警更新。
+	/// 负责处理全图建筑的租金计算（GetModdedRentPerRenter）、高租金/污染警告更新及原版公司找房标记（PropertySeeker）逻辑。
 	/// </summary>
 	public partial class RentAdjustSystemMod : GameSystemBase
 	{
@@ -697,7 +697,7 @@ namespace MapExtPDX.ModeA
 				}
 			}
 		}
-	}
 
-	#endregion
+		#endregion
+	}
 }

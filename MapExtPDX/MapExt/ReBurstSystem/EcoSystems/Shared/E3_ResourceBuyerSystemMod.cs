@@ -28,7 +28,7 @@ using UnityEngine;
 namespace MapExtPDX.EcoShared
 {
 	/// <summary>
-	/// ResourceBuyerSystem 完整替換（System Replacement，基準 1.6.0f）。
+	/// ResourceBuyerSystem 完整替换（System Replacement，基准 1.6.2f）。
 	/// 刻意不跟版項：1.6.0f 新增的 BuyerOutcome / IncrementOutcome 遙測統計體系
 	/// （純 UI／遙測計數，Mod 無消費端，省略以減少 Job 開銷）——/check-upgrade 比對時勿誤報為遺漏。
 	/// </summary>
@@ -69,7 +69,7 @@ namespace MapExtPDX.EcoShared
 		private CitySystem m_CitySystem;
 		private CityProductionStatisticSystem m_CityProductionStatisticSystem;
 		private NativeQueue<SalesEvent> m_SalesQueue;
-		// 1.6.0f: TripPriority 依賴（Mod 保留自定義滑塊，此字段用於編譯對齊）
+		// 1.6.0f: TripPriority 查询（完整系统替换无编译对齐约束；Mod 使用自定义滑块）
 		private EntityQuery m_TripPriorityParametersQuery;
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -290,7 +290,7 @@ namespace MapExtPDX.EcoShared
 			[ReadOnly] public ResourcePrefabs m_ResourcePrefabs;
 
 			[ReadOnly] public PersonalCarSelectData m_PersonalCarSelectData;
-			// 1.6.0f: TripPriority 依賴
+			// 1.6.0f: TripPriority 参数字段（完整系统替换无编译对齐约束；原版 BuyJob 无此字段，当前未消费）
 			[ReadOnly] public TripPriorityParametersData m_TripPriorityParameters;
 			[ReadOnly] public ComponentLookup<Population> m_PopulationData;
 			public NativeArray<int> m_CitizenConsumptionAccumulator;
@@ -857,8 +857,7 @@ namespace MapExtPDX.EcoShared
 				}
 
 				// [MOD EXT] 缩减购物寻路的最大代价，避免市民跨越大半个地图去找一家商店
-				// 原版 kMaxPathfindCost = 17000f，对于 57km 地图上的购物行为过于宽泛
-				// const float kShoppingMaxCost = 8000f;
+				// 原版 1.6.x 购物使用 TripPriorityParameters.m_PriorityShopping；此处由用户可调滑块接管
 				PathfindParameters parameters = new PathfindParameters
 				{
 					m_MaxSpeed = 277.77777f,

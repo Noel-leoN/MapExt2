@@ -17,7 +17,6 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
     /// 4.[Layer 3] 如果水分辨率需要降级，在 InitTextures 后再次 Dispose + 以新尺寸重建。
     /// 此class修补WaterSystem.OnCreate初始化后的重置逻辑(针对InitTextures)，专门负责处理 WaterSystem 的安全重置、内存清理和重新初始化
     /// InitTextures 修补已归一至WaterSystemMethodPatches
-    /// BepInEx版本无需对InitTextures()修复(Preloader已处理)
     /// </summary>
     public static class WaterSystemReinitializer
     {
@@ -69,7 +68,7 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
                 traverse.Method("InitTextures").GetValue();
                 ModLog.Ok(Tag, "WaterSystem re-initialized with Transpiler-patched values.");
 
-                // === Layer 3: 水分辨率降低 & 16-bit 显存压缩 ===
+                // === Layer 3: 水分辨率降低 ===
                 // [FIX] 判斷與能力對齊：僅解析度變更才觸發重建。
                 // 深度/傳播（waterTextures、m_depthsReader）因迭代精度鎖 R32；
                 // 流速（downdScaledFlowTextures、m_velocitiesReader）與原版一致為 R16，
@@ -99,7 +98,7 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
                 failure = e;
             }
 
-            // Layer 2 (级联纹理降采样) 现在由 FinalizeTerrainData Postfix 自动处理,
+            // Layer 2 (级联纹理降采样) 现在由 WaterSystem.OnSimulateGPU Prefix/Postfix 自动处理，
             // 不再需要手动初始化。
 
             // === Async Compute（已硬掛起，此處僅確保初值為 false）===

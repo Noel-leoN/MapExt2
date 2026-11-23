@@ -526,7 +526,7 @@ namespace MapExtPDX.ModeA
         /// 注意：由于目前采用了 IJob 而不是 IJobChunk，且未通过任何 NativeArray 切分，
         /// 这个 Job 实际上是【单线程顺序执行】的。
         /// 这虽然避免了操作同一 CommandBuffer 及 NativeQueue 时的资源竞争（竞态条件），
-        /// 但当城市规模达百万级、单帧需处理几千个家庭迁徙时，该单步 Job 的执行将占用大量主线程时间。
+        /// 但当城市规模达百万级、单帧需处理几千个家庭迁徙时，该单步 Job 虽然异步运行在 Worker 线程，单线程顺序执行仍会拉长关键路径耗时。
         /// </para>
         /// </summary>
         [BurstCompile]
@@ -748,8 +748,8 @@ namespace MapExtPDX.ModeA
 
             /// <summary>
             /// IJob 只有一个总控制流。
-            /// 顺序处理最多 {kMaxProcessHomelessHouseholdPerUpdate} 户流浪家庭，
-            /// 以及 {kMaxProcessNormalHouseholdPerUpdate} 户常规搬家家庭。
+            /// 顺序处理最多 m_MaxProcessHomelessPerUpdate 户流浪家庭，
+            /// 以及 m_MaxProcessNormalPerUpdate 户常规搬家家庭。
             /// </summary>
             public void Execute()
             {
@@ -834,7 +834,7 @@ namespace MapExtPDX.ModeA
                     propertySeeker.m_LastPropertySeekFrame +
                     kFindPropertyCoolDown > m_SimulationFrame)
                 {
-                    // 若彻底找不到家且冷却结束，同时如果城市中几乎没有可用空房子 (<MinFreeResidentialProperties)，此人直接搬离城市
+                    // 若当前无住房且尚在找房冷却期内，同时城市中几乎没有可用空房子 (<MinFreeResidentialProperties)，此户直接搬离城市
                     if (m_PathInformations[householdEntity].m_State != PathFlags.Pending &&
                         math.csum(m_ResidentialPropertyData.m_FreeProperties) < m_EconomyParameters.m_MinFreeResidentialProperties)
                     {
@@ -924,9 +924,9 @@ namespace MapExtPDX.ModeA
                     return;
                 }
 
-                // ⚖️ 阶段2：解析最终目标的完整总分（此时系统再一次调用 GetPropertyScore的庞大开销），
-                // 在这里也会调用到我们在 PrepareJob 中缓存过的 GenericApartmentQuality 数据
-                // 以综合计算是否值得真正下发搬入这套房子。
+                // ⚖️ 阶段2：评估最终候选目标的综合总分，通过 GetPropertyScoreWithCachedQuality
+                // 复用 PreparePropertyJob 预缓存的 GenericApartmentQuality 数据，
+                // 综合判断是否值得真正下发搬入这套房子。
                 float targetPropertyScore = float.NegativeInfinity;
                 if (candidateProperty != Entity.Null && m_CachedPropertyInfo.ContainsKey(candidateProperty) &&
                     m_CachedPropertyInfo[candidateProperty].free > 0)
@@ -967,7 +967,7 @@ namespace MapExtPDX.ModeA
 
                 // --- 4. 判决执行阶段 ---
 
-                // 情况 1：放弃了新选择，决定继续住在老的家里（或者依旧无家可归没有找到）
+                // 情况 1：放弃了新选择，决定继续住在现有住房中
                 if (currentHomeBuilding != Entity.Null && currentHomeBuilding == candidateProperty)
                 {
                     // 若彻底破产无法支付自己现在的房子租金，滚出城市
@@ -1093,17 +1093,17 @@ namespace MapExtPDX.ModeA
 
     // PartA: Job
     /// <summary>
-    /// [Job] CustomSetupFindHomeJob: 核心由于原版没有距离限制而导致算力灾难的寻路下推逻辑。
+    /// [Job] CustomSetupFindHomeJob: 找房寻路的候选目标收集与推送逻辑。
     /// <para>
-    /// 核心职责：遍历地图上的**所有**挂有 PropertyOnMarket 的空房子（无论是住宅还是收容所），
-    /// 判定家庭是否能负担得起。如果可以，利用极度消耗性能的 PropertyUtils.GetPropertyScore 算出目标分数。
-    /// 然后反转为寻路 Cost，通过 targetSeeker.FindTargets() 将这个建筑候选推送给 A* 寻路引擎作为搜索目标。
+    /// 核心职责：遍历地图上<b>所有</b>挂有 <c>PropertyOnMarket</c> 的空房子（无论是住宅还是收容所），
+    /// 判定家庭是否能负担得起。如果可以，利用 <c>PropertyUtils.GetPropertyScore</c> 算出目标分数，
+    /// 然后反转为寻路 Cost，通过 <c>targetSeeker.FindTargets()</c> 将这个建筑候选推送给 A* 寻路引擎作为搜索目标。
     /// </para>
     /// <para>
-    /// 【问题根源】：该 Job 的原版实现**没有任何空间距离裁剪（Distance Culling）**！
-    /// 找房者直接对全图符合租金的所有建筑发起了 O(N) 遍历和极为昂贵的 GetPropertyScore 计算，
-    /// 这不仅导致大型地图 CPU 占用直接爆表，而且因为距离太长，寻路引擎必定因为节点数耗尽而失败（PathFlags.Failed），
-    /// 从而导致这户家庭在下一次冷却时又重头走一遍这套死循环。
+    /// 【问题根源】：该 Job 的原版实现<b>没有任何空间距离裁剪（Distance Culling）</b>与候选上限，
+    /// 会对全图所有符合租金的空房发起完整遍历与昂贵的 <c>GetPropertyScore</c> 计算；
+    /// 在扩展大地图上不仅导致 CPU 开销暴增，且远距离候选超出最大寻路成本上限时易失败（<c>PathFlags.Failed</c>），
+    /// 从而导致家庭在冷却后反复重试。
     /// </para>
     /// </summary>
     [BurstCompile]
@@ -1176,7 +1176,7 @@ namespace MapExtPDX.ModeA
             {
                 m_SetupData.GetItem(i, out var _, out var targetSeeker);
                 Unity.Mathematics.Random random = targetSeeker.m_RandomSeed.GetRandom(unfilteredChunkIndex);
-                // 🧑‍🤝‍🧑 获取传入的起点实体 (原家、工作地或自身当前位置) 以备后用
+                // 🧑‍🤝‍🧑 获取传入的找房家庭实体（householdEntity）以备后用
                 Entity originEntity = targetSeeker.m_SetupQueueTarget.m_Entity;
                 if (!m_HouseholdCitizens.TryGetBuffer(originEntity, out var citizensBuffer))
                 {
@@ -1200,7 +1200,7 @@ namespace MapExtPDX.ModeA
                 // [MOD OPT/P6] 候選上限改為可配置（ModSettings.FindHomeCandidateCap 於排程時注入）；防呆退回 5
                 int kMaxCandidatesToFind = (m_MaxCandidatesToFind >= 1) ? m_MaxCandidatesToFind : 5;
 
-                // --- 🔄 核心耗时循环：遍历本 Chunk 内的所有售/租建筑 (O(N) 全图遍历) ---
+                // --- 🔄 核心耗时循环：遍历本 Chunk 内的售/租建筑（配合候选上限执行单 Chunk 内 Early Exit）---
                 // [MOD OPT] 随机起始偏移：避免先创建的建筑总是被优先评估，提高新旧城区的公平性
                 int startOffset = (nativeArray.Length > 0) ? random.NextInt(nativeArray.Length) : 0;
                 for (int jj = 0; jj < nativeArray.Length; jj++)

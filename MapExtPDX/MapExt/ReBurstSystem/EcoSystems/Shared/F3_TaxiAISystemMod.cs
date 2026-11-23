@@ -770,7 +770,7 @@ namespace MapExtPDX.EcoShared
 							case Purpose.Shopping:
 							case Purpose.Leisure:
 							case Purpose.MovingAway:
-								// [MapExt2-MaxCost] Allow massive distance taxi rides unconditionally
+								// [MapExt2-MaxCost] 为以上 6 种出行目的放宽出租车长途寻路成本上限
 								parameters.m_MaxCost = m_FindHomeMaxCost;
 								break;
 							}

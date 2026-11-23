@@ -66,7 +66,7 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
             // --- 在此处配置清单 ---
             // 格式: Register<系统类>(Map倍率, Texture倍率);
             // 继承CellMapSystem<T>基类的共15个系统/14个派生类型
-            // kMapSize修改14个，kTextureSize修改11个
+            // kMapSize修改14个，kTextureSize修改12个
             // TelecomPreviewSystem与TelecomCoverageSystem 封闭类型相同，kTextureSize内部硬编码不作修改
             // WindSystem kTextureSize需要额外处理，暂不加入
             Register<AirPollutionSystem>(mapMult, texMult);

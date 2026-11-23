@@ -86,8 +86,8 @@ namespace MapExtPDX.MapExt.Core
         }
 
         /// <summary>
-        /// [BUGFIX] 场景切换守卫：在退出主菜单（Cleanup）时重置所有 PatchSet 的静态会话状态。
-        /// 根因：退出主菜单时原版引擎会释放/重建资源（Terrain Buffers、CellMap 数据等），
+        /// [BUGFIX] 场景切换守卫：在返回主菜单（Cleanup）时重置所有 PatchSet 的静态会话状态。
+        /// 根因：返回主菜单时原版引擎会释放/重建资源（Terrain Buffers、CellMap 数据等），
         /// 但 Harmony patch 中的 static 标志不会自动重置，导致二次加载跳过关键初始化。
         /// </summary>
         protected override void OnGamePreload(Purpose purpose, GameMode mode)
@@ -143,8 +143,8 @@ namespace MapExtPDX.MapExt.Core
                 // 存档闸门：已完成、失败或被否决的转换请求到下一次加载就作废；本次正是转换读档时请求处于"加载中"，不受影响
                 VanillaConversionState.ClearFinished("新一次加载开始");
 
-                // [BUGFIX] 在加载开始前（而非加载完成后）立即重新禁用被引擎复活的原版系统。
-                // 消除加载期间原版+替换系统双跑的窗口期，彻底解决 JobTempAlloc 警告。
+                // 加载开始前执行防御性检查，确保被本 Mod 替换的原版系统保持禁用状态
+                // （防范外部 Mod 将其重新启用，消除加载期间原版与替换系统双跑的窗口期）。
                 // 要重新禁用的正是 OnLoad 时各条替换声明取代的那些，与实时设定无关
                 SystemReplacer.ReDisableVanillaSystems(this.World);
             }
@@ -161,7 +161,7 @@ namespace MapExtPDX.MapExt.Core
                 _initialCheckDone = true;
                 ModLog.Ok(Tag, $"游戏加载完成（{loadLabel}），执行系统状态诊断");
 
-                // [BUGFIX] 退出主菜单后引擎会重新启用所有系统，必须在诊断前重新禁用
+                // 诊断前再次执行防御性检查，确保被本 Mod 替换的原版系统未被外部 Mod 重新启用
                 SystemReplacer.ReDisableVanillaSystems(this.World);
 
                 // 地圖尺寸模式錯配提示（由 FinalizeTerrainData_Prefix 於載入中途記錄）
@@ -370,7 +370,7 @@ namespace MapExtPDX.MapExt.Core
         }
 
         /// <summary>
-        /// 供 UI 按钮（RefreshStatus）或首次进入游戏时调用。
+        /// 供 UI 按钮（RefreshStatus）调用。
         /// 执行完整的系统状态诊断并更新 UI。
         /// </summary>
         public void ForceCheck()

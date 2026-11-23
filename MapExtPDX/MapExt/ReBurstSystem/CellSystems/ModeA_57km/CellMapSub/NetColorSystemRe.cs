@@ -21,7 +21,7 @@ namespace MapExtPDX.ModeA
 
     /// <summary>
     /// Job较大
-    /// 仅引用GroundPollutionSystem.GetPollution
+    /// 引用 GroundPollutionSystem / NoisePollutionSystem / AirPollutionSystem 三张污染图的 GetPollution
     /// 影响UI信息视图中的道路显示可适土壤污染影响
     /// 住宅分区时显示居住适应性，出现较频繁，有必要修
     /// </summary>

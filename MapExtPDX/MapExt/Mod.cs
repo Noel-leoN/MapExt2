@@ -22,7 +22,7 @@ namespace MapExtPDX
     {
         private const string Tag = nameof(Mod);
 
-        public const string ModName = "MapExtPDX"; // 保持与BepInEx版本一致
+        public const string ModName = "MapExtPDX";
 
         // public const string ModFileName = "MapExtPDX2";
         public const string ModNameZH = "大地图mod";
@@ -70,15 +70,13 @@ namespace MapExtPDX
         public static bool InitializationFailed { get; private set; }
 
         /// <summary>
-        /// Mod 載入入口（首次進入主菜單時執行一次）。本方法只負責兜底，
-        /// 實際初始化全在 <see cref="OnLoadCore"/>。
+        /// Mod 加载入口（游戏启动时、载入 Prefab 前由 <c>ModManager</c> 调用）。本方法只负责兜底，
+        /// 实际初始化全在 <see cref="OnLoadCore"/>。
         ///
-        /// <para><b>為什麼需要自己兜底</b>：<c>ModManager.InitializeMods</c> 對逸出的異常
-        /// 只寫一行 <c>[Modding] [ERROR]</c> 就繼續，<b>不彈窗</b>。於是「整個 Mod 沒生效」
-        /// 會完全靜默地發生——2026-09-05 實測過一次（第一次 <c>AddSource</c> 撞上引擎無鎖的
-        /// 本地化字典，見 <see cref="MapExt.Core.CompositeLocaleSource"/>），
-        /// 20 個 patchset、SystemReplacer、71 個 UI binding 全部沒跑，而使用者只看到卡頓與
-        /// 滑鼠縮放失效，只能反推。這裡捕獲後推一則主菜單通知，讓失效變成可見事件。</para>
+        /// <para><b>为什么需要自己兜底</b>：<c>ModManager.InitializeMods</c> 对逸出的异常
+        /// 只写一行 <c>[Modding] [ERROR]</c> 就继续，<b>不弹窗</b>。若不拦截，全部补丁集、
+        /// SystemReplacer 与 UI binding 都会静默跳过，玩家无从得知 Mod 未完整生效。
+        /// 这里捕获后推一则主菜单通知，让失效变成可见事件。</para>
         /// </summary>
         public void OnLoad(UpdateSystem updateSystem)
         {
@@ -498,8 +496,8 @@ namespace MapExtPDX
             // 必須傳入自己的 Harmony id：Harmony 的 UnpatchAll(null) 會對每個 patch 的
             // owner 檢查一律放行，且它遍歷的 GetAllPatchedMethods() 作用範圍是整個
             // appdomain——不傳 id 等於剝除進程內所有 Mod 的 patch，不只自己的。
-            // 危害路徑：ModManager 在單一 Mod 初始化失敗時只 Dispose 該 Mod，此刻其他
-            // Mod 已載入完成，其 patch 會被靜默清空。
+            // 危害路径：ModManager 在单一 Mod 初始化失败时只 Dispose 该 Mod，
+            // 此时此前已载入的 Mod 补丁会被静默清空。
             // （Harmony 2.2.2 無 UnpatchSelf，傳自身 id 是唯一手段。）
             _globalPatcher?.UnpatchAll(HarmonyIdGlobal);
             _modePatcher?.UnpatchAll(HarmonyIdModes);

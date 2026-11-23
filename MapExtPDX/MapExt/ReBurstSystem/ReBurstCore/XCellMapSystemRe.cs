@@ -17,22 +17,20 @@ using UnityEngine;
 namespace MapExtPDX.MapExt.ReBurstSystemCore
 {
     /// <summary>
-    /// 重定义CellMapSystem<T>.kMapSize/ClosedGenericType.kTextureSize
+    /// 重定义 CellMapSystem&lt;T&gt;.kMapSize / ClosedGenericType.kTextureSize
     /// 基类和派生封闭类型以及外部系统直接或间接调用的静态方法库
-    /// 集中管理自定义BurstJob直接重定向引用本库，以确保CV值正确编译
+    /// 集中管理自定义 BurstJob 直接重定向引用本库，以确保 CV 值正确编译
     /// </summary>
     public static class XCellMapSystemRe
     {
         #region kMapSize / kTextureSize 常量定义
 
-        // 变更MapSizeModeA/B/C请修改该值
-        // 等同于CV值；用于CellMapSystem/WaterSystem; 其他系统无BurstJob调用；
-        // public static readonly int MapSizeMultiplier = 4;
-        public const int kMapSize = 57344; //MapSizeMultiplier * 14336;
+        // 地图边长（米），由模板生成器按模式替换
+        public const int kMapSize = 57344;
 
-        // WaterSystem CellSize/WaveSpeed
-        public const float kCellSize = kMapSize / 14336 * 7f; //28f; //MapSizeMultiplier * 7f;
-        public const float WaveSpeed = kMapSize / 14336 * 7f / 30f; //kCellSize / 30f;
+        // WaterSystem CellSize/WaveSpeed（由 kMapSize 自动换算）
+        public const float kCellSize = kMapSize / 14336 * 7f;
+        public const float WaveSpeed = kMapSize / 14336 * 7f / 30f;
 
         // Water-related System
         public static int TsunamiEndDelay => (int)math.round(kMapSize / WaveSpeed);
@@ -40,10 +38,12 @@ namespace MapExtPDX.MapExt.ReBurstSystemCore
         /// <summary>
         /// v2.2.0版本 将CellMapSystem模拟计算的贴图分辨率提升到原版水平
         /// </summary>
-        // 核心调整倍率，等于 CV：57344->4, 28672->2, 43008->3, 114688->8, 14336->1。
-        // 各模式 256 基图层的格距因此都与原版相同（56 m）。ModeC 原先锁 1（格距 448 m），按格汇总的污染图严重失真，
-        // 见 ModeC 标定计划（26-10-17_CellMap_ModeC_Calibration_Plan.md）。
-        // 必须与 PatchSet3CellMapFields 的 texMult 一致，否则原版读写方的贴图边长与本模式贴图不符。
+        /// <remarks>
+        /// 核心调整倍率，等于 CV：57344→4, 28672→2, 43008→3, 114688→8, 14336→1。
+        /// 各模式 256 基图层的格距因此都与原版相同（56 m）。ModeC 原先锁 1（格距 448 m），按格汇总的污染图严重失真，
+        /// 见 ModeC 标定计划（26-10-17_CellMap_ModeC_Calibration_Plan.md）。
+        /// 必须与 PatchSet3CellMapFields 的 texMult 一致，否则原版读写方的贴图边长与本模式贴图不符。
+        /// </remarks>
         public const int CellMapTextureSizeMultiplier = kMapSize / 14336;
 
         // CellMapSystem<T>封闭类型TextureSize字段赋值
@@ -1097,7 +1097,7 @@ namespace MapExtPDX.MapExt.ReBurstSystemCore
 
         #endregion
 
-        // 僅用於HouseholdFindPopertySystemMod
+        // 用于 HouseholdFindPropertySystemMod（CustomSetupFindHomeJob）、HouseholdFindPropertySystemMod_CellOnly 与 FindHomeHandler_CellOnly
         //#region Game.Buildings.PropertyUtils 重定向静态方法
 
         public static float GetPropertyScore(Entity property, Entity household,

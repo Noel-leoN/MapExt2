@@ -10,70 +10,85 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
     using Unity.Entities;
 
     /// <summary>
-    /// 方案 E — 水模擬事件驅動自適應休眠（`WaterSimQuality = Adaptive_EventDriven`）。
+    /// 方案 E — 水模拟事件驱动自适应休眠（<c>WaterSimQuality = Adaptive_EventDriven</c>）。
     ///
     /// <para>
-    /// <b>[SUSPENDED / 硬掛起]</b> 本檔位已停用：UI 不下拉、
-    /// <see cref="ResolutionManager.SanitizeWaterSimQuality"/> 強制降級為 Vanilla，
-    /// <c>PatchSet2WaterOpt</c> 不再呼叫 <see cref="Apply"/>，Postfix 的
-    /// 「意圖 speed=0」例外已收回僅保留 <c>Paused_NoFlow</c>。
-    /// 原因：跨幀持有 <c>WaterSimSpeed=0</c> 與 Editor 橫跳修復 / PauseFreeze
-    /// （依賴 Postfix 抬回 StableSpeed）結構性衝突；另 changed-filter 未設
-    /// RequiredVersion 會使休眠路徑失效。程式碼保留供日後以單一 speed 仲裁器重啟。
+    /// <b>[SUSPENDED / 硬挂起]</b> 本档位已停用：UI 不下拉、
+    /// <see cref="ResolutionManager.SanitizeWaterSimQuality"/> 强制降级为 Vanilla，
+    /// <c>PatchSet2WaterOpt</c> 不再调用 <see cref="Apply"/>，Postfix 的
+    /// “意图 speed=0”例外已收回仅保留 <c>Paused_NoFlow</c>。
+    /// 原因：跨帧持有 <c>WaterSimSpeed=0</c> 与 Editor 横跳修复 / PauseFreeze
+    /// （依赖 Postfix 抬回 StableSpeed）结构性冲突；另 changed-filter 未设
+    /// RequiredVersion 会使休眠路径失效。代码保留供日后以单一 speed 仲裁器重启。
     /// </para>
     ///
-    /// 動機：多數城市在多數時間水面已收斂（河流穩態、湖泊靜止），但原版每渲染幀
-    /// 照樣跑完整條 GPU 模擬鏈。固定降頻（`Minimal_Every4Frames`）是時間上的粗暴切分——
-    /// 靜止時仍付 1/4 成本，激烈變化時又只有 1/4 保真。本檔位改為**內容自適應**：
-    /// 收斂後完全休眠（近零成本），任何擾動瞬間全速喚醒。
+    /// <para>
+    /// 动机：多数城市在多数时间水面已收敛（河流稳态、湖泊静止），但原版每渲染帧
+    /// 照样跑完整条 GPU 模拟链。固定降频（<c>Minimal_Every4Frames</c>）是时间上的粗暴切分——
+    /// 静止时仍付 1/4 成本，激烈变化时又只有 1/4 保真。本档位改为<b>内容自适应</b>：
+    /// 收敛后完全休眠（近零成本），任何扰动瞬间全速唤醒。
+    /// </para>
     ///
-    /// === 喚醒判據（三層防線） ===
+    /// <para>=== 唤醒判据（三层防线） ===</para>
     ///
-    /// 1. **被動偵測（覆蓋最大風險面，零監聽成本）**
-    ///    遊戲原生已有睡眠協議：所有地形類擾動（地形刷、建築放置/升級、道路整平、
-    ///    編輯器 lot、heightmap 替換、載圖）都經 `TerrainWillChange`（counter=1）或
-    ///    `TerrainWillChangeFromBrush`（counter=15），倒數歸零時由 `Simulate()`
-    ///    **強制寫 `WaterSimSpeed=1`**（WaterSystem.cs:1426）。
-    ///    因此本補丁不必監聽任何地形事件——休眠期間偵測到 speed 被外力改為非 0
-    ///    即視為喚醒信號。這一條就吃下地形類全部路徑。
+    /// <para>
+    /// 1. <b>被动侦测（覆盖最大风险面，零监听成本）</b>：
+    /// 游戏原生已有睡眠协议：所有地形类扰动（地形刷、建筑放置/升级、道路整平、
+    /// 编辑器 lot、heightmap 替换、载图）都经 <c>TerrainWillChange</c>（counter=1）或
+    /// <c>TerrainWillChangeFromBrush</c>（counter=15），倒数归零时由 <c>Simulate()</c>
+    /// <b>强制写 <c>WaterSimSpeed=1</c></b>（WaterSystem.cs:1426）。
+    /// 因此本补丁不必监听任何地形事件——休眠期间侦测到 speed 被外力改为非 0
+    /// 即视为唤醒信号。这一条就吃下地形类全部路径。
+    /// </para>
     ///
-    /// 2. **主動監聽（4 個信號，全 public/ECS，零反射）**
-    ///    - `WaterLevelChange` query（海嘯/洪水事件）
-    ///    - `WaterSourceData` changed-filter（水源增刪改；原版 SourceJob 只 RO 讀，無自噪音）
-    ///    - `SeaLevel` float 快取比對（`m_seaLevelChanged` 會在 Simulate 尾自清，
-    ///      輪詢有窗口，直接比對 float 更穩）
-    ///    - `ClimateSystem.isPrecipitating`（降水開始）
+    /// <para>
+    /// 2. <b>主动监听（4 个信号，全 public/ECS，零反射）</b>：
+    /// <c>WaterLevelChange</c> query（海啸/洪水事件）；
+    /// <c>WaterSourceData</c> changed-filter（水源增删改；原版 SourceJob 只 RO 读，无自噪音）；
+    /// <c>SeaLevel</c> float 缓存比对（<c>m_seaLevelChanged</c> 会在 Simulate 尾自清，轮询有窗口，直接比对 float 更稳）；
+    /// <c>ClimateSystem.isPrecipitating</c>（降水开始）。
+    /// </para>
     ///
-    /// 3. **心跳兜底（漏事件的最後保險）**
-    ///    每 <see cref="kHeartbeatInterval"/> 幀強制喚醒，跑滿
-    ///    <see cref="kObserveFrames"/> 幀讓 active-tiles readback 走完一輪，
-    ///    連續 <see cref="kStableRoundsToSleep"/> 輪判定收斂才再次休眠。
-    ///    這同時消化了融雪黑盒：`SnowSystem.AddSnow` 每幀把 WaterTexture 綁進雪 kernel
-    ///    且**不受 WaterSimSpeed 閘控**，C# 側無法確證讀寫方向；心跳保證即使雪在
-    ///    休眠期間改了水面，也會被週期性重新模擬消化。
+    /// <para>
+    /// 3. <b>心跳兜底（漏事件的最后保险）</b>：
+    /// 每 <see cref="kHeartbeatInterval"/> 帧强制唤醒，跑满
+    /// <see cref="kObserveFrames"/> 帧让 active-tiles readback 走完一轮，
+    /// 连续 <see cref="kStableRoundsToSleep"/> 轮判定收敛才再次休眠。
+    /// 这同时消化了融雪黑盒：<c>SnowSystem.AddSnow</c> 每帧把 WaterTexture 绑进雪 kernel
+    /// 且<b>不受 WaterSimSpeed 闸控</b>，C# 侧无法确证读写方向；心跳保证即使雪在
+    /// 休眠期间改了水面，也会被周期性重新模拟消化。
+    /// </para>
     ///
-    /// === 收斂判據 ===
+    /// <para>=== 收敛判据 ===</para>
     ///
-    /// `GetActive()` 的活躍磚集合穩定 + `GetDepths()` 的 Σ|Δdepth| &lt; ε。
-    /// **不用 velocity 歸零**——河流穩態有恆定非零流速，那樣永遠不會睡。
+    /// <para>
+    /// <c>GetActive()</c> 的活跃砖集合稳定 + <c>GetDepths()</c> 的 Σ|Δdepth| &lt; ε。
+    /// <b>不用 velocity 归零</b>——河流稳态有恒定非零流速，那样永远不会睡。
+    /// </para>
     ///
-    /// 注意 `GetActive()` 的實際長度是 `m_TexSize / GridSize` 的平方
-    /// （2048/8 = 256² = 65536），非某些文檔所稱的 8×8=64。故收斂比對採
-    /// 累加 checksum 而非逐格 diff，且僅在觀察窗口內計算，不是每幀。
+    /// <para>
+    /// 注意 <c>GetActive()</c> 的实际长度是 <c>(m_TexSize / GridSize)²</c>
+    /// （<c>GridSize = 256</c>，默认 <c>2048 / 256 = 8</c>，即 <c>8×8 = 64</c>）。
+    /// 收敛比对采用累加 checksum，且仅在观察窗口内计算，不是每帧。
+    /// </para>
     ///
-    /// === 前置閘門 ===
+    /// <para>=== 前置闸门 ===</para>
     ///
-    /// - `Loaded &amp;&amp; !IsNewMap`：載入中與新圖初始收斂期不休眠。
-    /// - 僅 Game 模式：編輯器做圖需要即時看到水流。
-    /// - `UseActiveCellsCulling` 為 false 時停用：該旗標被編輯器
-    ///   `UpdateSeaLevel`/`ResetToSealevel` 設 false 後**無任何代碼恢復**，
-    ///   此時全磚強制活躍、`GetActive()` 失去鑑別力。
-    /// - 地形變更 counter &gt; 0 期間讓行（與 PatchSet2WaterOpt 的既有紀律一致）。
+    /// <para>
+    /// - <c>Loaded &amp;&amp; !IsNewMap</c>：载入中与新图初始收敛期不休眠。
+    /// - 仅 Game 模式：编辑器做图需要即时看到水流。
+    /// - <c>UseActiveCellsCulling</c> 为 false 时停用：该旗标被编辑器
+    ///   <c>UpdateSeaLevel</c>/<c>ResetToSealevel</c> 设 false 后<b>无任何代码恢复</b>，
+    ///   此时全砖强制活跃、<c>GetActive()</c> 失去鉴别力。
+    /// - 地形变更 counter &gt; 0 期间让行（与 PatchSet2WaterOpt 的既有纪律一致）。
+    /// </para>
     ///
-    /// === 與其他 WaterSimSpeed 寫入者的優先級 ===
+    /// <para>=== 与其他 WaterSimSpeed 写入者的优先级 ===</para>
     ///
-    /// 地形恢復窗口（counter&gt;0） &gt; Paused 檔位 &gt; 暫停凍結 &gt; 本檔位。
-    /// 本檔位與 `Minimal_Every4Frames` 語義互斥，由 enum 天然保證不會同時生效。
+    /// <para>
+    /// 地形恢复窗口（counter &gt; 0） &gt; Paused 档位 &gt; 暂停冻结 &gt; 本档位。
+    /// 本档位与 <c>Minimal_Every4Frames</c> 语义互斥，由 enum 天然保证不会同时生效。
+    /// </para>
     /// </summary>
     internal static class WaterAdaptiveSleep
     {
@@ -96,7 +111,7 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
         /// <summary>深度變化總量閾值：Σ|Δdepth| 低於此值視為收斂。</summary>
         private const float kDepthDeltaEpsilon = 0.05f;
 
-        /// <summary>深度取樣步長：65536 格全掃太貴，隔格取樣。</summary>
+        /// <summary>深度取样步长：默认 2048²（4,194,304 格）全扫太贵，按步长隔格取样。</summary>
         private const int kDepthSampleStride = 64;
 
         #endregion
@@ -449,9 +464,9 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
         }
 
         /// <summary>
-        /// 活躍磚集合的位置敏感 checksum。
-        /// 陣列長度是 (m_TexSize / GridSize)²（預設 2048/8 → 256² = 65536），
-        /// 故用單趟累加而非逐格 diff；乘上索引使「磚集合位移但總數不變」也能被偵測。
+        /// 活跃砖集合的位置敏感 checksum。
+        /// 数组长度是 (m_TexSize / GridSize)²（GridSize = 256，默认 2048/256 → 8×8 = 64），
+        /// 用单趟累加而非逐格 diff；乘上索引使“砖集合位移但总数不变”也能被侦测。
         /// </summary>
         private static long ComputeActiveChecksum(WaterSystem instance)
         {
@@ -480,8 +495,8 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
         }
 
         /// <summary>
-        /// 抽樣深度總和。65536+ 格全掃過貴，按 <see cref="kDepthSampleStride"/> 隔格取樣；
-        /// 僅在觀察窗口結束時呼叫（非每幀）。
+        /// 抽样深度总和。默认 2048²（4,194,304 格）全扫过贵，按 <see cref="kDepthSampleStride"/> 隔格取样；
+        /// 仅在观察窗口结束时调用（非每帧）。
         /// </summary>
         private static float ComputeDepthSum(WaterSystem instance)
         {

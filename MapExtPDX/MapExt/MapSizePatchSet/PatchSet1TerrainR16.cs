@@ -131,11 +131,10 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
         [HarmonyPrefix]
         public static bool ToR16_Prefix(Texture2D textureRGBA64, ref Texture2D __result)
         {
-            // Fix for 16384 resolution crash:
-            // Original code uses Allocator.Temp for the conversion buffer.
-            // 16384x16384x2 bytes = 512MB, which exceeds Allocator.Temp limit (or is very close to it).
-            // 14336x14336x2 bytes = ~392MB, which fits.
-            // We replace it with Allocator.Persistent and dispose it manually.
+            // 修复大尺寸高度图导入时 Allocator.Temp 缓冲溢出崩溃：
+            // 原版转换缓冲使用 Allocator.Temp；即便在导入上限 MAX_IMPORT_RESOLUTION = 8192 下，
+            // 大缓冲（如 8192×8192×2 = 128MB）仍可能触及 Allocator.Temp 容量限制。
+            // 此处改用 Allocator.Persistent 并在 finally 中手动释放。
 
             if (textureRGBA64 != null && textureRGBA64.graphicsFormat != GraphicsFormat.R16_UNorm)
             {

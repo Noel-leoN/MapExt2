@@ -85,7 +85,7 @@ namespace MapExtPDX.MapExt.ReBurstSystem.Core
         // =========================================================================================
         private static readonly List<BaseJobTargetInfo> CellSystemTargets = new List<BaseJobTargetInfo>
         {
-            // ===== ReBurstCellMapClosed2 =====
+            // ===== CellMapClosed2 =====
             new BaseJobTargetInfo("Game.Simulation.TelecomCoverageSystem", "OnUpdate",
                 "Game.Simulation.TelecomCoverageSystem/TelecomCoverageJob", "TelecomCoverageJob"),
             new BaseJobTargetInfo("Game.Tools.TelecomPreviewSystem", "OnUpdate",
@@ -97,7 +97,7 @@ namespace MapExtPDX.MapExt.ReBurstSystem.Core
             new BaseJobTargetInfo("Game.Simulation.WindSimulationSystem", "OnUpdate",
                 "Game.Simulation.WindSimulationSystem/UpdatePressureJob", "UpdatePressureJob"),
 
-            // ===== ReBurstCellMapRef =====
+            // ===== CellMapRef =====
             new BaseJobTargetInfo("Game.Simulation.AttractionSystem", "OnUpdate",
                 "Game.Simulation.AttractionSystem/AttractivenessJob", "AttractivenessJob"),
             new BaseJobTargetInfo("Game.Audio.AudioGroupingSystem", "OnUpdate",
@@ -117,7 +117,7 @@ namespace MapExtPDX.MapExt.ReBurstSystem.Core
             new BaseJobTargetInfo("Game.Simulation.ZoneSpawnSystem", "OnUpdate",
                 "Game.Simulation.ZoneSpawnSystem/EvaluateSpawnAreas", "EvaluateSpawnAreas"),
 
-            // ===== ReBurstCellMapRef2 (CitizenHappiness) =====
+            // ===== CellMapRef2 (CitizenHappiness / 污染 UI 与触发器) =====
             new BaseJobTargetInfo("Game.Simulation.CitizenHappinessSystem", "OnUpdate",
                 "Game.Simulation.CitizenHappinessSystem/CitizenHappinessJob", "CitizenHappinessJob"),
             new BaseJobTargetInfo("Game.UI.InGame.AverageHappinessSection", "OnUpdate",
@@ -131,7 +131,7 @@ namespace MapExtPDX.MapExt.ReBurstSystem.Core
                 "Game.Simulation.PollutionTriggerSystem/CalculateAverageAirPollutionJob",
                 "CalculateAverageAirPollutionJob"),
 
-            // ===== ReBurstCellMapSub =====
+            // ===== CellMapSub =====
             new BaseJobTargetInfo("Game.Rendering.NetColorSystem", "OnUpdate",
                 "Game.Rendering.NetColorSystem/UpdateEdgeColorsJob", "UpdateEdgeColorsJob"),
             new BaseJobTargetInfo("Game.Tools.ValidationSystem", "OnUpdate",
@@ -153,7 +153,7 @@ namespace MapExtPDX.MapExt.ReBurstSystem.Core
             new BaseJobTargetInfo("Game.Areas.MapTileSystem", "LegacyGenerateMapTiles",
                 "Game.Areas.MapTileSystem/GenerateMapTilesJob", "GenerateMapTilesJob"),
 
-            // ===== WaterSystem =====
+            // ===== WaterRef =====
             new BaseJobTargetInfo("Game.Simulation.FloodCheckSystem", "OnUpdate",
                 "Game.Simulation.FloodCheckSystem/FloodCheckJob", "FloodCheckJob"),
             new BaseJobTargetInfo("Game.Simulation.WaterDangerSystem", "OnUpdate",

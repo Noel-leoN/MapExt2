@@ -42,9 +42,7 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
         private static bool s_originalBackdrop = false;
 
         /// <summary>
-        /// 记录用户设定的 speed 值（> 1 时才更新）。
-        /// TerrainWillChange 只设 0，Simulate() 只设 0/1，
-        /// 因此 speed > 1 只可能来自用户。
+        /// 记录用户设定的 speed 值（在 Prefix 中当 preSpeed &gt; 0 且不等于当前 StableSpeed 时更新）。
         /// </summary>
         internal static int StableSpeed = 1;
 

@@ -2,7 +2,7 @@
 // Licensed under the MIT License.
 
 // VanillaSaveConversionSystem.cs
-// 原版存档转换后处理系统：在目标模式下加载原版存档或用原版地图开新城后，执行一次性数据修复。
+// 原版存档转换后处理系统：在目标模式下加载原版存档、用原版地图开新城或执行 28→57 存档扩展后，执行一次性数据修复。
 
 using Colossal.IO.AssetDatabase;
 using Colossal.Mathematics;
@@ -953,13 +953,13 @@ namespace MapExtPDX.SaveLoadSystem
         private const int kVanillaNRTextureSize = 256;
 
         /// <summary>
-        /// NaturalResource 资源修复：将反序列化拉伸的数据降采样回原版尺寸，
-        /// 嵌入扩展地图中心区域，外围保持清空（由用户自行创建资源）。
+        /// NaturalResource 资源修复：直接读取原版系统反序列化得到的 256² <c>m_Map</c>，
+        /// 居中 1:1 嵌入扩展地图中心区域，外围保持清空（由用户自行创建资源）。
         ///
         /// 策略：
-        /// ① 从反序列化后被拉伸的 m_Map 中降采样回原版尺寸 (256²)，恢复原始资源数据。
-        /// ② 清空整个 m_Map。
-        /// ③ 将原版数据 1:1 嵌入到扩展地图中心。
+        /// ① 读取原版 NaturalResourceSystem 中的 256² <c>m_Map</c> 原始资源数据。
+        /// ② 清空 Mod 扩展地图的整个 <c>m_Map</c>。
+        /// ③ 将原版数据 1:1 居中嵌入到扩展地图中心。
         ///
         /// <para>取不到系统或字段、或处理出错都抛出、走失败路径（整合计划 Q19）：原先跳过或只记日志，
         /// 转换照样报成功，存下的是被拉伸的资源图。</para>
@@ -1046,8 +1046,8 @@ namespace MapExtPDX.SaveLoadSystem
         private const int kVanillaGWTextureSize = 256;
 
         /// <summary>
-        /// GroundWater 修复：将反序列化拉伸的数据降采样回原版尺寸，
-        /// 嵌入扩展地图中心区域，外围保持清空。策略与 NaturalResource 相同，出错同样抛出（整合计划 Q19）。
+        /// GroundWater 修复：直接读取原版系统反序列化得到的 256² <c>m_Map</c>，
+        /// 居中 1:1 嵌入扩展地图中心区域，外围保持清空。策略与 NaturalResource 相同，出错同样抛出（整合计划 Q19）。
         /// </summary>
         private void ExecuteGroundWaterInit()
         {
@@ -1402,7 +1402,7 @@ namespace MapExtPDX.SaveLoadSystem
         /// <summary>
         /// 安全版水源升级 + 海平面重置（复现 UpgradeToNewWaterSystem 逻辑）。
         /// 关键改进：
-        /// ① 保留非海源水源（河流 type 0、湖泊 type 1），仅删除海源（type 2/3）。
+        /// ① 仅删除旧版恒定海源（Type 3），保留并换算河流（Type 0）、湖泊（Type 1）与海水源（Type 2）。
         /// ② 对保留水源执行 Legacy→新系统的 m_Height 语义转换。
         /// ③ 清除陈旧 GPU 流速/传播纹理，防止水面流向异常。
         /// ④ 使用 AddComponent&lt;Deleted&gt; 替代 DestroyEntity，避免并行 Job NRE。
@@ -1427,7 +1427,7 @@ namespace MapExtPDX.SaveLoadSystem
 
             if (!isLegacy)
             {
-                // === 非 Legacy 路径（MapExt vanilla 模式存档转换）===
+                // === 非 Legacy 路径（新版水源场景，!UseLegacyWaterSources）===
                 // 地形已完全替换，需要完整的 GPU 状态重置
                 ClearWaterGpuState(waterSystem);
 
@@ -1577,7 +1577,7 @@ namespace MapExtPDX.SaveLoadSystem
                 entities.Dispose();
             }
 
-            ModLog.Info(Tag, $"水源处理: 删除 {deletedCount} 个旧版海源(Type 3), 保留并升级 {upgradedCount} 个水源(含 Type 2 海水源)");
+            ModLog.Info(Tag, $"水源处理: 删除 {deletedCount} 个水源（旧版恒定海源，或无地形数据时无法换算者），保留并升级/换算 {upgradedCount} 个（河流/湖泊/海水源）");
             // 地形数据未就绪时上面只能全删；本来就没有水源的不算删除
             request.WaterSources = terrainReady || totalSources == 0 ? WaterSourceOutcome.Upgraded : WaterSourceOutcome.Removed;
 
@@ -1637,7 +1637,7 @@ namespace MapExtPDX.SaveLoadSystem
             // 必须在 TerrainWillChange() 之后，否则会被覆盖为 0
             waterSystem.WaterSimSpeed = 1;
 
-            ModLog.Ok(Tag, $"水源安全升级完成: 删除 {deletedCount} 海源, 保留 {upgradedCount} 河流/湖泊, " +
+            ModLog.Ok(Tag, $"水源安全升级完成: 删除 {deletedCount} 个水源（旧版恒定海源，或无地形数据时无法换算者），保留并升级/换算 {upgradedCount} 个（河流/湖泊/海水源），" +
                 $"海平面 {waterSystem.SeaLevel}m, m_NewMap={newMapFrames}");
         }
 
@@ -1648,12 +1648,12 @@ namespace MapExtPDX.SaveLoadSystem
         /// 让 Type 0/1 水源（河流/湖泊）预填充水体。
         /// 保存的存档已包含填好的水面，重载后无需等待缓慢注水。
         ///
-        /// 关键解锁条件（不处理任何一个，Simulate() 都会空转）：
+        /// 关键解锁条件（不处理任何一个，Simulate() 都会空转或走地形恢复分支）：
         /// ① m_terrainReady 必须 ≤ 0（反序列化后为 int.MaxValue）
-        /// ② WaterSimSpeed 必须 > 0（TerrainWillChange 会设为 0）
+        /// ② WaterSimSpeed = MaxSpeed（TerrainWillChange 会设为 0，同时最大化每帧内部迭代次数）
         /// ③ SimulationSystem.selectedSpeed 必须 > 0（pausedAfterLoading 会设为 0）
-        /// ④ TimeStepOverride = 1 最大化每步传播距离
-        /// ⑤ WaterSimSpeed = MaxSpeed 最大化每帧内部迭代次数
+        /// ④ TimeStepOverride = 1（最大化每步传播距离）
+        /// ⑤ m_terrainChangeCounter = 0（> 0 时走地形恢复分支，不执行正常注水）
         ///
         /// <para><b>③ 在转换里达不到</b>（v4.12.0 整合计划 Q25）：转换跑在读档期间，<c>SimulationSystem</c> 从 <c>OnGamePreload</c>
         /// 到加载结束都忽略 <c>selectedSpeed</c> 的写入，它保持 0，<c>WaterSystem.Simulate</c> 的内循环每帧只跑 1 次就退出。
@@ -1865,7 +1865,7 @@ namespace MapExtPDX.SaveLoadSystem
             }
         }
 
-        // === ③c 车辆/居民清理 ===
+        // === ⓪b 车辆/居民清理 ===
 
         /// <summary>
         /// 标记所有车辆和居民为 Deleted，防止旧路径引用失效的实体导致 NRE。
@@ -1875,9 +1875,9 @@ namespace MapExtPDX.SaveLoadSystem
         /// </summary>
         private void ExecuteVehicleCleanup()
         {
-            ModLog.Info(Tag, "③c 开始清除车辆和居民...");
+            ModLog.Info(Tag, "⓪b 开始清除车辆和居民...");
 
-            // 出错抛出、走失败路径（整合计划 Q19）：原先只记日志，接着删外部连接时车辆导航还引用着旧路径，会 NRE
+            // 出错抛出、走失败路径（整合计划 Q19）：原先只记日志，后续地形与地图瓦片重建期间车辆导航仍引用旧路径，易触发 NRE（外部连接现已保留）
 
             // 完成所有挂起的 Job（TrainNavigation/CarNavigation 等）
             // 否则已调度的 Job 会访问被 Deleted 实体的 archetype → NRE

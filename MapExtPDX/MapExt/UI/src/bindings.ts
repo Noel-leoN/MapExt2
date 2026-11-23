@@ -1,5 +1,5 @@
-// MapExt2 UI Bindings — Phase 1 ~ Phase 5
-// 与 C# MapExtUISystem.cs 的 68 个 Binding 一一对应
+// MapExt2 UI Bindings
+// 与 C# MapExtUISystem.cs 的 Binding 一一对应（SystemStatusTooltip 未接入前端）
 
 import { bindValue, trigger } from "cs2/api";
 
@@ -108,7 +108,7 @@ export const dashDefaultCommercial$  = bindValue<boolean>(G, "DashDefaultCommerc
 export const dashDefaultActivity$    = bindValue<boolean>(G, "DashDefaultActivity", true);
 export const dashDefaultMisc$        = bindValue<boolean>(G, "DashDefaultMisc", true);
 
-// === 水体工具 (Phase 5: 2 value + 2 getter + 4 trigger = 8) ===
+// === 水体工具 (Phase 5: 1 value + 2 getter + 5 trigger = 8) ===
 export const waterToolsOpen$ = bindValue<boolean>(G, "WaterToolsOpen", false);
 export const setWaterToolsOpen = (v: boolean) => trigger(G, "SetWaterToolsOpen", v);
 

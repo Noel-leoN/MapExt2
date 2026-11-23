@@ -216,7 +216,7 @@ namespace MapExtPDX.UI
         /// <summary>
         /// 对 MovingAway 家庭进行细分分析：
         /// - 是否仍有住房 (PropertyRenter)
-        /// - 涉及市民总数及年龄分布
+        /// - 涉及市民总数
         /// - 是否已到达 OutsideConnection (CitizenFlags.MovingAwayReachOC)
         /// - 单人户 vs 多人户
         /// </summary>

@@ -38,14 +38,14 @@ namespace MapExtPDX.MapExt.Core
         #region Properties
 
         /// <summary>
-        /// 地形 heightmap 分辨率 (新建地图时使用)。
-        /// 4096(原版) 或 8192(高清)。
+        /// 地形 heightmap 分辨率（新建地图时使用）。
+        /// 枚举保留 4096（原版）与 8192（高清），当前在 <see cref="Initialize"/> 中锁定为原版 4096。
         /// </summary>
         public static int TerrainResolution { get; private set; } = VanillaTerrainResolution;
 
         /// <summary>
-        /// 水纹理分辨率 (m_TexSize 目标值)。
-        /// 2048(原版) / 1024 / 512 / 256。
+        /// 水纹理分辨率（m_TexSize 目标值）。
+        /// 枚举保留 2048（原版）/ 1024 / 512 / 256，当前在 <see cref="Initialize"/> 中锁定为原版 2048。
         /// </summary>
         public static int WaterTextureSize { get; private set; } = VanillaWaterTextureSize;
 

@@ -1,5 +1,5 @@
-// WaterToolsSection — 水体工具面板（Phase 5 P1: 海平面 + 模拟速度）
-// v4.0.1: 修复浮点精度、分段滑块（0-4000m）、速度居中
+// WaterToolsSection — 水体工具面板（海平面控制与水体重置）
+// 分段滑块（0-4000m）、浮点精度处理与海平面锁定
 
 import React, { useState, useCallback, useEffect } from "react";
 import { useValue } from "cs2/api";
@@ -143,7 +143,7 @@ export const WaterToolsSection: React.FC = () => {
             {/* === 海平面控制 === */}
             <div className={styles.waterSubTitle}>{t("seaLevelLabel")}</div>
 
-            {/* 分段选择器 (8段，每段 500m) */}
+            {/* 分段选择器 (5段，0-4000m) */}
             <div className={styles.waterRangeRow}>
                 {RANGE_PRESETS.map((preset, idx) => (
                     <button

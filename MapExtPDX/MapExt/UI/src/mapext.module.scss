@@ -10,7 +10,7 @@
     flex-direction: row;
     align-items: stretch;
     z-index: 100;
-    /* CSS 变量默认值，由 MapExtButton inline style 覆盖 */
+    /* CSS 变量默认值 */
     --me-font-size: 13rem;
 }
 
@@ -134,7 +134,7 @@
     padding: 4rem 10rem;
 }
 
-/* === 底部菜单按钮（Rent / Pathfinding） === */
+/* === 底部菜单按钮（Rent / Pathfinding / Water Tools） === */
 .menuFooter {
     flex-shrink: 0;
     border-top: 1rem solid rgba(100, 140, 200, 0.15);
@@ -432,7 +432,7 @@
     text-align: right;
 }
 
-/* === 拖拽调整宽度柄 === */
+/* === 拖拽调整尺寸柄 === */
 .resizeHandleH {
     width: 6rem;
     cursor: col-resize;

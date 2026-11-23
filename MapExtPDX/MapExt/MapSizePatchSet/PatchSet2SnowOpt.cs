@@ -161,7 +161,7 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
             if (s_climateSystem != null)
                 return s_climateSystem;
 
-            // SnowSystem 自身持有 m_ClimateSystem 引用，直接取用避免額外 World 查詢
+            // 通过 world.GetExistingSystemManaged<ClimateSystem>() 获取并静态缓存，避免每帧重复查询
             var world = instance.World;
             if (world == null)
                 return null;

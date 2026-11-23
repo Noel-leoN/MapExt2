@@ -11,18 +11,18 @@ namespace MapExtPDX.MapExt.Core
     /// 把多個 <see cref="IDictionarySource"/> 併成一份對外註冊，使同一個語言只需呼叫一次
     /// <c>LocalizationManager.AddSource</c>。
     ///
-    /// <para><b>為什麼要合併（不是為了整潔，是為了避開一個引擎競態）</b>：
-    /// <c>LocalizationManager.AddSourceInternal</c> 在 localeId 等於 fallback 語言（en-US）時，
-    /// 會接著呼叫 <c>AddMissingEntriesFromFallback</c> → <c>LocalizationDictionary.MergeFrom</c>，
-    /// 而後者用 <c>foreach</c> 遍歷<b>整個</b> fallback 字典（遊戲本體上萬條 ＋ 其他 Mod 的條目）。
-    /// <c>LocalizationDictionary</c> 內部是裸 <c>Dictionary</c>，<c>LocalizationManager</c> 全類
-    /// 沒有任何鎖：遍歷期間只要有別的執行流寫入該字典，就會拋
+    /// <para><b>为什么需要合并（不是为了整洁，是为了避开一个引擎竞态）</b>：
+    /// 当游戏当前活动语言非 en-US 且 <c>localeId</c> 等于 fallback 语言（en-US）时，
+    /// <c>LocalizationManager.AddSourceInternal</c> 会接着调用 <c>AddMissingEntriesFromFallback</c> → <c>LocalizationDictionary.MergeFrom</c>，
+    /// 而后者用 <c>foreach</c> 遍历<b>整个</b> fallback 字典（游戏本体上万条 + 其他 Mod 的条目）。
+    /// <c>LocalizationDictionary</c> 内部是裸 <c>Dictionary</c>，<c>LocalizationManager</c> 全类
+    /// 没有任何锁：遍历期间只要有别的执行流写入该字典，就会抛
     /// <c>InvalidOperationException: Collection was modified</c>。</para>
     ///
-    /// <para>2026-09-05 實測到一次：異常從 <c>Mod.OnLoad</c> 的第一次 <c>AddSource</c> 逸出，
-    /// 被 <c>ModManager.InitializeMods</c> 的 try-catch 吞掉（只寫一行 log、不彈窗），
-    /// 於是 20 個 patchset、SystemReplacer、71 個 UI binding 全部沒跑，
-    /// 而玩家只看到卡頓與縮放失效，無從得知 Mod 已完全失效。</para>
+    /// <para>一旦该异常从 <c>Mod.OnLoad</c> 的首次 <c>AddSource</c> 逸出，会被
+    /// <c>ModManager.InitializeMods</c> 的 try-catch 吞掉（只写日志、不弹窗），
+    /// 导致全部 patchset、SystemReplacer 与 UI binding 均未执行，
+    /// 玩家只会看到卡顿与缩放失效，无从得知 Mod 已完全未生效。</para>
     ///
     /// <para>只有 en-US 那條路徑會觸發 <c>MergeFrom</c>（active 語言走另一支、
     /// 第三語言兩個條件都不滿足），所以每少註冊一次 en-US 就少一次全字典遍歷、

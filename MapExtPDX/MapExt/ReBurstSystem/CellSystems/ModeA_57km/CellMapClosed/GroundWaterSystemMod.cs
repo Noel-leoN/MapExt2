@@ -30,10 +30,10 @@ using MapExtPDX.MapExt.Core;
 using MapExtPDX.SaveLoadSystem;
     // =========================================================================================
 
+    // 降级保护（重构二 0.4）：合并版存档里本类的类型名是 MapExtPDX.CellMap.GroundWaterSystemMod，退回本版本时靠此别名读回，勿删
     /// <summary>
     /// 地下水系 地下水流动和污染扩散，并定期补充地下水资源
     /// </summary>
-    // 降级保护（重构二 0.4）：合并版存档里本类的类型名是 MapExtPDX.CellMap.GroundWaterSystemMod，退回本版本时靠此别名读回，勿删
     [Colossal.Serialization.Entities.FormerlySerializedAs("MapExtPDX.CellMap.GroundWaterSystemMod")]
     public partial class GroundWaterSystemMod : CellMapReplacementSystem<TargetType, TargetSystem>
     {
@@ -163,8 +163,8 @@ using MapExtPDX.SaveLoadSystem;
         //      而原版 GroundWaterSystem 連 OnGameLoaded 覆寫都沒有，沒有任何兜底生成路徑。
         //
         // 所以本 Mod 也不生成：作者沒畫就是沒有，與原版語意一致。作者畫過的含水層由
-        // OnGameLoaded 以原版原稿升採樣還原——那才是 v4.8.0 真正要修的缺陷（65536 ≠ 1048576
-        // 導致原稿在 CellMapReplacementSystem.Deserialize 中被丟棄）。
+        // OnGameLoaded 以原版原稿升采样还原——那才是 v4.8.0 真正要修的缺陷（原版 256² 与扩展模式 kTextureSize² 尺寸不符
+        // 导致原稿在 CellMapReplacementSystem.Deserialize 中被丢弃）。
         //
         // 副作用是正面的：Perlin 場覆蓋率約 22.7%，會讓零格早退命中率從近 100% 掉到 60–72%，
         // GroundWaterTickJob 單次成本約從 12ms 升到 20–25ms（每 128 幀一次）。不生成即省下這筆。
@@ -189,8 +189,9 @@ using MapExtPDX.SaveLoadSystem;
         ///
         /// <para><b>為何是 <c>OnGameLoaded</c> 而非 <c>IPostDeserialize</c></b>：後者不會被反序列化器
         /// 自動派發，得另外註冊 <c>PostDeserialize&lt;T&gt;</c> 包裝系統
-        /// （<c>Game/Serialization/PostDeserialize.cs</c>）；<c>SystemReplacer</c> 只為
-        /// NaturalResource 與 SoilWater 註冊過，GroundWater 沒有，所以 v4.8.0 之前掛在
+        /// （<c>Game/Serialization/PostDeserialize.cs</c>）；<c>ModeSystems.cs</c> 的
+        /// <c>.WithPostDeserialize()</c> 注册链仅对 NaturalResource 与 SoilWater 登记过，
+        /// GroundWater 未登记，所以 v4.8.0 之前挂在
         /// <c>PostDeserialize(Context)</c> 的兜底補生成從未執行過。而且那個時點在 Deserialize 階段
         /// <b>內</b>，原版系統的反序列化 job 未必收斂；<c>OnGameLoaded</c> 由
         /// <c>GameSystemBase.OnCreate</c> 掛上 <c>LoadGameSystem.onOnSaveGameLoaded</c>，

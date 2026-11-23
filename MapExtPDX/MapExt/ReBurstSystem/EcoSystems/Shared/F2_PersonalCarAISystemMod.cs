@@ -806,7 +806,7 @@ namespace MapExtPDX.EcoShared
 		private EntityQuery m_VehicleQuery;
 		private ComponentTypeSet m_MovingToParkedCarRemoveTypes;
 		private ComponentTypeSet m_MovingToParkedCarAddTypes;
-		private EntityQuery m_TripPriorityParametersQuery; // 1.6.0f: TripPriority 查詢
+		private EntityQuery m_TripPriorityParametersQuery; // 未使用的保留查询（原版 PersonalCarAISystem 无 TripPriority 查询）
 
 		protected override void OnCreate()
 		{
@@ -834,7 +834,7 @@ namespace MapExtPDX.EcoShared
 				ComponentType.ReadWrite<PathElement>()
 			});
 			m_MovingToParkedCarAddTypes = new ComponentTypeSet(ComponentType.ReadWrite<ParkedCar>(), ComponentType.ReadWrite<Stopped>(), ComponentType.ReadWrite<Updated>());
-			m_TripPriorityParametersQuery = GetEntityQuery(ComponentType.ReadOnly<TripPriorityParametersData>());
+			m_TripPriorityParametersQuery = GetEntityQuery(ComponentType.ReadOnly<TripPriorityParametersData>()); // 未使用的保留查询
 		}
 
 		protected override void OnUpdate()
@@ -908,7 +908,7 @@ namespace MapExtPDX.EcoShared
 				m_FeeQueue = m_ServiceFeeSystem.GetFeeQueue(out deps).AsParallelWriter(),
 				// [MapExt2] 从 Settings 读取分级 MaxCost
 				m_FindHomeMaxCost = Mod.Instance.Settings.FindHomeMaxCost,
-				// [1.6.0f] FindJob MaxCost = GetMaxCost(GoingToWork) × 1.1 × 用户乘数
+				// FindJob 寻路最大成本（直接读取上方 ModSettings.FindJobMaxCost 绝对值滑块）
 				m_FindJobMaxCost = findJobMaxCost,
 				m_ShoppingMaxCost = Mod.Instance.Settings.ShoppingMaxCost,
 				m_LeisureMaxCost = Mod.Instance.Settings.LeisureMaxCost,

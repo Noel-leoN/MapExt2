@@ -54,12 +54,12 @@ namespace MapExtPDX.ModeA
     using TargetType = AirPollution;
     // =========================================================================================
 
+    // 降级保护（重构二 0.4）：合并版存档里本类的类型名是 MapExtPDX.CellMap.AirPollutionSystemMod，退回本版本时靠此别名读回，勿删
     /// <summary>
     /// 空气污染计算、扩散、衰减系
     /// 负责模拟空气中污染物的传播和消散过程
     /// 通过风力影响污染的移动，并考虑自然衰减和扩散
     /// </summary>
-    // 降级保护（重构二 0.4）：合并版存档里本类的类型名是 MapExtPDX.CellMap.AirPollutionSystemMod，退回本版本时靠此别名读回，勿删
     [Colossal.Serialization.Entities.FormerlySerializedAs("MapExtPDX.CellMap.AirPollutionSystemMod")]
     public partial class AirPollutionSystemMod : CellMapReplacementSystem<TargetType, TargetSystem>
     {

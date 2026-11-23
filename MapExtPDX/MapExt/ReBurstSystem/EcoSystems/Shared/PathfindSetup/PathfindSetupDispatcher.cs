@@ -29,7 +29,7 @@ namespace MapExtPDX.EcoShared
 	}
 
 	/// <summary>
-	/// <para>尋路 Setup 統一分派路由器 —— 全 Mod 唯一掛在 <c>PathfindSetupSystem.FindTargets</c> 上的 Harmony Prefix。</para>
+	/// <para>寻路 Setup 统一分派路由器 —— 挂在 <c>PathfindSetupSystem.FindTargets</c> 上的 Harmony Prefix（C1 完整版开启时另挂有 <c>PathfindSetupSystem_FindTargets_Patch</c>，两者按 <see cref="SetupTargetType"/> 互斥分工）。</para>
 	/// <para>
 	/// 依 <see cref="SetupTargetType"/> 查註冊表：命中且 handler 啟用 → 接管排程並 <c>return false</c> 跳過原版；
 	/// 否則 <c>return true</c> 放行原版。P1（ResourceSeller）等優化皆掛此框架，避免多 Prefix 疊掛衝突。
@@ -53,8 +53,8 @@ namespace MapExtPDX.EcoShared
 			new Dictionary<SetupTargetType, IFindTargetsHandler>();
 
 		/// <summary>
-		/// 註冊一個 handler。應在 <c>SystemReplacer.Apply()</c> 依 settings 呼叫。
-		/// 重複註冊同一 type 會覆蓋（World 重建後重新 Apply 的冪等行為）。
+		/// 注册一个 handler，由 <c>ReplacementRegistrar.FindTargetsHandler</c> 经 <c>SystemReplacer</c> 在 OnLoad 时一次性注册。
+		/// 重复注册同一 type 会覆盖（保持幂等）。
 		/// </summary>
 		public static void Register(SetupTargetType type, IFindTargetsHandler handler)
 		{

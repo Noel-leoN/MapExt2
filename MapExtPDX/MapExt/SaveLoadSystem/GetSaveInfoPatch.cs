@@ -3,7 +3,7 @@
 // See LICENSE in the project root for full license information.
 // When using this part of the code, please clearly credit [Project Name] and the author.
 
-// MetaDataExtenderPatch.cs
+// GetSaveInfoPatch.cs
 using Game.Assets;      // 包含 SaveInfo
 using Game.UI.Menu; // 包含 MenuUISystem
 using HarmonyLib;

@@ -35,7 +35,7 @@ namespace MapExtPDX.ModeA
         {
             // 核心参数设置
             float BASE_MAP_SIZE = 14336f; // 基础地图边长
-            int CoreValue = XCellMapSystemRe.kMapSize / 14336; // 2-> 28672 4 -> 57344; 16 -> 229376
+            int CoreValue = XCellMapSystemRe.kMapSize / 14336; // 1 -> 14336, 2 -> 28672, 3 -> 43008, 4 -> 57344, 8 -> 114688
 
             // 瓦片基础数
             int GRID_COUNT = 23;

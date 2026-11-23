@@ -33,12 +33,7 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
             // 替换 kMapSize / kCellSize (已验证可靠)
             var patched = WaterSystemPatcherHelper.PatchMethodInstructions(instructions, WaterSystemPatcherHelper.GetCurrentMethodName());
 
-            // TODO [Phase 2]: m_TexSize 2048→WaterTextureSize 替换
-            // 现阶段暂不修改 m_TexSize, 因为:
-            //   1. CellSize 当前假设 m_TexSize=2048
-            //   2. m_TexSize 和 CellSize 必须原子性同步变更
-            //   3. ldc.i4 2048 替换的可靠性需要进一步验证
-            // 完整方案: 需要同时修改 CellSize + m_TexSize + 验证 + 后备回退
+            // CellSize 已按当前地图边长动态换算；m_TexSize 因原版着色器硬编码，由 ResolutionManager 锁定为 2048。
 
             return patched;
         }

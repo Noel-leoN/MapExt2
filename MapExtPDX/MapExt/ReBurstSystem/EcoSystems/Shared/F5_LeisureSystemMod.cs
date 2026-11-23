@@ -61,7 +61,7 @@ namespace MapExtPDX.EcoShared
 		private ComponentTypeSet m_PathfindTypes;
 		private NativeQueue<LeisureEvent> m_LeisureQueue;
 		private PersonalCarSelectData m_PersonalCarSelectData;
-		// 1.6.0f: TripPriority 依賴（Mod 保留自定義滑塊，此字段用於編譯對齊）
+		// 1.6.0f: TripPriority 查询（完整系统替换无编译对齐约束；Mod 保留自定义滑块）
 		private EntityQuery m_TripPriorityParametersQuery;
 
 		#endregion
@@ -349,7 +349,7 @@ namespace MapExtPDX.EcoShared
 			public EconomyParameterData m_EconomyParameters;
 			// [MapExt2-MaxCost] Storage for dynamic slider
 			public float m_DynamicLeisureMaxCost;
-			// 1.6.0f: TripPriority 依賴
+			// 1.6.0f: TripPriority 参数字段（完整系统替换无编译对齐约束；当前 Job 未消费）
 			[ReadOnly] public TripPriorityParametersData m_TripPriorityParameters;
 			public EntityCommandBuffer.ParallelWriter m_CommandBuffer;
 			public NativeQueue<SetupQueueItem>.ParallelWriter m_PathfindQueue;

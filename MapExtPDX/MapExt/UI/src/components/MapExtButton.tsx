@@ -1,6 +1,6 @@
 // MapExtButton — 游戏内浮动按钮 + Dashboard-in-Left + Detail-in-Right 布局
 // 左侧面板：标题栏 + 状态栏 + Dashboard 统计（accordion）+ 底部菜单按钮
-// 右侧面板：仅 Rent Control / Pathfinding 展开时显示
+// 右侧面板：仅 Rent Control / Pathfinding / Water Tools 展开时显示
 // 面板宽度和高度均持久化到 ModSettings（支持 OptionsUI + 拖拽）
 
 import { useValue } from "cs2/api";
@@ -134,7 +134,7 @@ export const MapExtButton: React.FC = () => {
                             <DashboardSection />
                         </div>
 
-                        {/* 底部菜单：Rent Control / Pathfinding → 展开右侧 */}
+                        {/* 底部菜单：Rent Control / Pathfinding / Water Tools → 展开右侧 */}
                         <div className={styles.menuFooter}>
                             <Tooltip tooltip={t("rentControlMenuTip")}>
                                 <button className={detailClass("rent")} onClick={() => toggleDetail("rent")}>
@@ -163,7 +163,7 @@ export const MapExtButton: React.FC = () => {
                     {/* 左侧面板右边缘拖拽柄 */}
                     <ResizeHandle direction="horizontal" onResize={onMenuResize} onResizeEnd={onMenuResizeEnd} />
 
-                    {/* === 右侧详情面板（仅 Rent/Pathfinding） === */}
+                    {/* === 右侧详情面板（Rent / Pathfinding / Water Tools） === */}
                     {activeDetail && (
                         <>
                             <div className={styles.detailPanel} style={{ width: `${detailWidth}rem` }}>

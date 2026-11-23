@@ -276,12 +276,9 @@ namespace MapExtPDX.EcoShared
                         if (!m_PropertyRenters.HasComponent(entity) ||
                             !m_Prefabs.HasComponent(m_PropertyRenters[entity].m_Property))
                         {
-                            // 無租戶／空閒倉庫
-                            // 這是一個「空殼」倉儲公司 (尚未完全啟用或沒有物業關聯)
-                            // 邏輯註記：這裡 FreeStorages-- 是反直覺的。可能是為了後續計算「淨缺口」。
-                            // 意為：雖然存在這個公司實體，但它還沒準備好，所以在計算「可用空間」時扣除計數？
-                            // m_FreeStorages 代表有效空閒的倉庫數量；m_StorageCapacities 代表整體儲存容量
-                            // 或者意為：該倉庫未入駐公司，不能算入可用倉庫；而倉庫已建好，可算入全域總儲存容量
+                            // 无物业的待入驻仓储公司（尚未关联有效仓库建筑）
+                            // 逻辑注记：m_FreeStorages-- 表示该待入驻公司需占用一个空闲仓库名额（扣减净空闲仓位），
+                            // 同时按估算容量 kStorageCompanyEstimateLimit 计入全域总存储容量。
                             m_FreeStorages[resIndex]--;
                             m_StorageCapacities[resIndex] += kStorageCompanyEstimateLimit;
                         }
@@ -483,7 +480,7 @@ namespace MapExtPDX.EcoShared
                 int highEduWorkerSurplus; // 高學歷勞動力得分 (Office 偏好)
                 int lowEduWorkerSurplus; // 低學歷勞動力得分 (Industrial 偏好)
 
-                // 注意：這裡傳入 scaled 後的原始值，因此 MapAndClaimWorkforceEffect 的 -2000~[Max] 範圍現在依然有效
+                // 注意：这里传入 scaled 后的原始值，MapAndClaimWorkforceEffect 的输入有效区间固定为 -2000~20（max 参数为输出上限）
                 if (taxEffectVal > 0f)
                 {
                     // [MODIFIED 3] 放開廉價勞力紅利上限，激活出口加工業玩法
@@ -569,23 +566,23 @@ namespace MapExtPDX.EcoShared
                     m_IndustrialBuildingDemands[resIndex] = 0;
                 }
 
-                // === D. 填充 UI 需求因子 (Demand Factors) ===
-                // 這些索引對應 UI 上的提示條 (例如：2=Educated Workers, 11=Tax, 13=Demand)
+                // === D. 填充 UI 需求因子 (DemandFactor 枚举) ===
+                // 索引对应原版 DemandFactor：1=UneducatedWorkforce, 2=EducatedWorkforce, 4=LocalDemand, 11=Taxes, 13=EmptyBuildings, 18=BuildingDemand
 
-                // 若是原料採集業 (Extractor)，不由一般工業／辦公 UI 需求條顯示，跳過
+                // 若是原料采集业 (Extractor)，不由一般工业／办公 UI 需求条显示，跳过
                 if (isMaterial) continue;
 
-                // 辦公資源需求
+                // 办公资源需求
                 if (isOfficeResource)
                 {
-                    // 僅當有上一幀需求 或 當前有強勁新需求時才更新 UI，避免 UI 閃爍
+                    // 仅当有上一帧需求 或 当前有强劲新需求时才更新 UI，避免 UI 闪烁
                     if (!wasOfficeBuildingDemandPositive || (m_IndustrialBuildingDemands[resIndex] > 0 &&
                                                              m_IndustrialCompanyDemands[resIndex] > 0))
                     {
-                        m_OfficeDemandFactors[2] += highEduWorkerSurplus; // High Skill Labor
-                        m_OfficeDemandFactors[4] += (int)marketDemand; // Local Demand/Market
+                        m_OfficeDemandFactors[2] += highEduWorkerSurplus; // EducatedWorkforce
+                        m_OfficeDemandFactors[4] += (int)marketDemand; // LocalDemand
                         m_OfficeDemandFactors[11] += (int)taxEffectVal; // Taxes
-                        m_OfficeDemandFactors[13] += m_IndustrialBuildingDemands[resIndex]; // Building Demand
+                        m_OfficeDemandFactors[13] += m_IndustrialBuildingDemands[resIndex]; // EmptyBuildings
                     }
                 }
 
@@ -619,8 +616,7 @@ namespace MapExtPDX.EcoShared
                 m_IndustrialDemandFactors[4] = 0;
             }
 
-            // c. 若地圖上完全沒有對應的特定產業分區，將「建築需求」因子從 13 轉移到索引 18 (可能是「無分區」提示)，並清空原因子
-            // Index 18 可能是 "Zone Availability"
+            // c. 若地图上尚无任何已建成的工业/办公物业建筑（Chunks 为空），将需求因子从 13（EmptyBuildings）转移到 18（BuildingDemand），并清空 13
             if (m_IndustrialPropertyChunks.Length == 0)
             {
                 m_IndustrialDemandFactors[18] = m_IndustrialDemandFactors[13];
@@ -688,14 +684,14 @@ namespace MapExtPDX.EcoShared
         // ------------------ 輔助方法 ------------------
 
         /// <summary>
-        /// 映射勞動力效應值。
-        /// 將原始的勞動力盈餘／赤字映射到一個合理的分數區間。
+        /// 映射劳动力效应值。
+        /// 将原始的劳动力盈余／赤字映射到一个合理的分数区间。
         /// </summary>
-        /// <param name="value">原始勞動力差值</param>
-        /// <param name="min">映射的最小分數</param>
-        /// <param name="max">映射的最大分數</param>
-        /// <returns>映射後的需求影響分</returns>
-        // 保持原有的 Map 函數不變，透過 Scaler 適配它的輸入範圍
+        /// <remarks>保持原有的 Map 函数不变，通过 Scaler 适配它的输入范围。</remarks>
+        /// <param name="value">原始劳动力差值</param>
+        /// <param name="min">映射的最小分数</param>
+        /// <param name="max">映射的最大分数</param>
+        /// <returns>映射后的需求影响分</returns>
         private float MapAndClaimWorkforceEffect(float value, float min, float max)
         {
             if (value < 0f)

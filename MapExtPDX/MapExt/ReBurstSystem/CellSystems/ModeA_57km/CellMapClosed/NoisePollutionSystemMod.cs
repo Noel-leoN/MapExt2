@@ -24,16 +24,16 @@ namespace MapExtPDX.ModeA
     // =========================================================================================
 
     // 降级保护（重构二 0.4）：合并版存档里本类的类型名是 MapExtPDX.CellMap.NoisePollutionSystemMod，退回本版本时靠此别名读回，勿删
+    /// <summary>
+    /// 噪音污染系统
+    /// 负责计算地图上噪声的扩散平滑处理
+    /// 噪音通常由建筑、交通等声源填入 m_PollutionTemp，本系统负责将其扩散到周围格点
+    /// </summary>
     [Colossal.Serialization.Entities.FormerlySerializedAs("MapExtPDX.CellMap.NoisePollutionSystemMod")]
     public partial class NoisePollutionSystemMod : CellMapReplacementSystem<TargetType, TargetSystem>
     {
         private const string Tag = nameof(NoisePollutionSystemMod);
 
-        /// <summary>
-        /// 噪音污染系统
-        /// 负责计算地图上噪声的扩散平滑处理
-        /// 噪音通常由建筑、交通等声源填入 m_PollutionTemp，本系统负责将其扩散到周围格点
-        /// </summary>
         #region 常量与配
         // 纹理尺寸(vanilla=256)
         public static readonly int orgTextureSize = TargetSystem.kTextureSize; // 原版尺寸
