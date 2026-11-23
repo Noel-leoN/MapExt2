@@ -14,7 +14,7 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
     /// 1.Transpiler修补InitTextures()；
     /// 2.强制清除初始化生成字段；
     /// 3.重新运行一次InitTextures()；
-    /// 4.[Layer 3] 如果水分辨率需要降级，在 InitTextures 后再次 Dispose + 以新尺寸重建。
+    /// 4. 如果水分辨率需要降级，在 InitTextures 后再次 Dispose + 以新尺寸重建。
     /// 此class修补WaterSystem.OnCreate初始化后的重置逻辑(针对InitTextures)，专门负责处理 WaterSystem 的安全重置、内存清理和重新初始化
     /// InitTextures 修补已归一至WaterSystemMethodPatches
     /// </summary>
@@ -68,7 +68,7 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
                 traverse.Method("InitTextures").GetValue();
                 ModLog.Ok(Tag, "WaterSystem re-initialized with Transpiler-patched values.");
 
-                // === Layer 3: 水分辨率降低 ===
+                // === 水分辨率降低 ===
                 // [FIX] 判斷與能力對齊：僅解析度變更才觸發重建。
                 // 深度/傳播（waterTextures、m_depthsReader）因迭代精度鎖 R32；
                 // 流速（downdScaledFlowTextures、m_velocitiesReader）與原版一致為 R16，
@@ -98,7 +98,7 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
                 failure = e;
             }
 
-            // Layer 2 (级联纹理降采样) 现在由 WaterSystem.OnSimulateGPU Prefix/Postfix 自动处理，
+            // 级联纹理降采样现在由 WaterSystem.OnSimulateGPU Prefix/Postfix 自动处理，
             // 不再需要手动初始化。
 
             // === Async Compute（已硬掛起，此處僅確保初值為 false）===
@@ -120,7 +120,7 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
         }
 
         // ========================================================================
-        // Layer 3: 水分辨率降级
+        // 水分辨率降级
         // ========================================================================
 
 
@@ -392,8 +392,7 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
 
         private static WaterSystem.QuadWaterBuffer InitQuadWaterBuffer(int2 size)
         {
-            // waterTextures / waterBackdropTextures：深度與水面傳播鎖 R32
-            // （16-bit 會截斷迭代精度，見 Water_System_Analysis.md §12）
+            // waterTextures / waterBackdropTextures：深度与水面传播锁 R32（16-bit 会截断迭代精度）
             // 下方 flow / seaPropagation 仍按原版用 R16 系格式，不要把這把 32-bit 鎖套過去
             GraphicsFormat targetFormat = GraphicsFormat.R32G32B32A32_SFloat;
             

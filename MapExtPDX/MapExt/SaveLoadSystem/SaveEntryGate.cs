@@ -110,11 +110,11 @@ namespace MapExtPDX.SaveLoadSystem
     }
 
     /// <summary>
-    /// 存档入口闸门（v4.12.0 整合计划 §2.1、§2.2）：菜单各入口与 <c>GameManager.Load</c> 汇合点共用的判定与提示。
+    /// 存档入口闸门：菜单各入口与 <c>GameManager.Load</c> 汇合点共用的判定与提示。
     ///
     /// <para><b>判定顺序</b>：转换请求 → 模式值（受"禁止读档校验"控制）→ 降级（不受该开关控制）。
     /// 模式不符的档直接说明原因；降级确认只对本来就会放行的加载弹出，转换在降级状态下一律不提供。
-    /// 开新城的模式值按地图面积推断，原版地图在扩展模式下的拉伸警告不受任何开关控制（D3）。</para>
+    /// 开新城的模式值按地图面积推断，原版地图在扩展模式下的拉伸警告不受任何开关控制。</para>
     ///
     /// <para><b>两层</b>：菜单层在原方法写入城市配置覆盖项、更新"上次存档名"之前判定，"仍要加载"与转换只在这一层提供，
     /// 确认后带着许可重新调用菜单方法。汇合点只拦不放，兜住命令行、其他 Mod 与菜单层失效的情况。
@@ -144,11 +144,11 @@ namespace MapExtPDX.SaveLoadSystem
 
         /// <summary>
         /// 原版地图 529 个分块的总面积（14336²，约 2.0552E+08 m²）。<c>MapInfo.area</c> 是分块几何面积，
-        /// 与它的比值等于 CV²（开新城计划 §3.2；地形起伏只带来约 0.006% 的漂移）。
+        /// 与它的比值等于 CV²（地形起伏只带来约 0.006% 的漂移）。
         /// </summary>
         private const double kVanillaTileArea = (double)PatchManager.OriginalMapSize * PatchManager.OriginalMapSize;
 
-        /// <summary>面积比值与 CV² 的相对容差：超过就判为面积不可信（开新城计划 §3.3）。</summary>
+        /// <summary>面积比值与 CV² 的相对容差：超过就判为面积不可信。</summary>
         private const double kAreaRatioTolerance = StartupKeys.MapAreaRatioTolerance;
 
         #endregion
@@ -220,7 +220,7 @@ namespace MapExtPDX.SaveLoadSystem
                                 : GateDecision.Conversion(ConversionKind.CoreValue1Save, NoneModeCoreValue, currentCV);
                         }
 
-                        // 28→57（整合计划 3.2）：ModeB 存档在 ModeA 下读，且类型路由已挂上；路由没挂上时照常按模式不符拦下
+                        // 28→57：ModeB 存档在 ModeA 下读，且类型路由已挂上；路由没挂上时照常按模式不符拦下
                         if (IsConversionEnabled && SaveExpansionTypeMapPatch.CanExpand(savedCV, currentCV))
                         {
                             return IsDegradedForExpandedLoad
@@ -245,18 +245,18 @@ namespace MapExtPDX.SaveLoadSystem
         }
 
         /// <summary>
-        /// 判定一次开新城（v4.12.0 整合计划 §2.1 第 4 条）：转换请求 → 面积推断的制作模式 → 降级。
+        /// 判定一次开新城：转换请求 → 面积推断的制作模式 → 降级。
         /// <list type="bullet">
-        /// <item>原版地图而当前为扩展模式：拉伸是事实警告，不受任何开关影响（D3）。降级时直接说明并拦下（Q13）；
+        /// <item>原版地图而当前为扩展模式：拉伸是事实警告，不受任何开关影响。降级时直接说明并拦下；
         /// 汇合点只拦；菜单层在 ModeA／ModeB 且启用转换时给"转换／取消"，其余给"返回"与"仍要继续"；</item>
-        /// <item>推断模式与当前模式不一致（包括 None 模式开扩展地图）：按模式不符拦下，受"禁止读档校验"控制（Q12）；</item>
-        /// <item>面积不可信，或推断出的模式值不属于任何现行模式（Q15）：放行，载入后按地形实际尺寸判。</item>
+        /// <item>推断模式与当前模式不一致（包括 None 模式开扩展地图）：按模式不符拦下，受"禁止读档校验"控制；</item>
+        /// <item>面积不可信，或推断出的模式值不属于任何现行模式：放行，载入后按地形实际尺寸判。</item>
         /// </list>
         /// 降级确认只对会放行的加载弹出。
         /// </summary>
         public static GateDecision EvaluateNewGame(SaveEntry entry, MapInfo map)
         {
-            // 确认转换后重新触发的那一次：不认请求的话会再判成原版地图、再弹转换框（§1.7）
+            // 确认转换后重新触发的那一次：不认请求的话会再判成原版地图、再弹转换框
             if (VanillaConversionState.IsRequestedFor(map.id))
             {
                 ModLog.Info(Tag, $"{entry} 地图 '{map.displayName}'：转换请求绑定的地图，放行");
@@ -300,7 +300,7 @@ namespace MapExtPDX.SaveLoadSystem
                         return GateDecision.Stretch(new LocalizedString(key, null, MapParams(map, currentCV)));
                     }
 
-                    // 玩家刚对这张地图选了"仍要继续"：放行，记下菜单层已提示过（载入后只推通知条，Q11）
+                    // 玩家刚对这张地图选了"仍要继续"：放行，记下菜单层已提示过（载入后只推通知条）
                     s_StretchPromptedMapId = map.id;
                     ModLog.Warn(Tag, $"{entry} 原版地图 '{map.displayName}'：玩家已确认仍要继续，按 CV={currentCV} 拉伸");
                 }
@@ -424,7 +424,7 @@ namespace MapExtPDX.SaveLoadSystem
         }
 
         /// <summary>
-        /// 本次游戏加载的拉伸已在菜单层提示过、玩家选了"仍要继续"：载入后只推通知条，不再弹框（Q11）。
+        /// 本次游戏加载的拉伸已在菜单层提示过、玩家选了"仍要继续"：载入后只推通知条，不再弹框。
         /// 汇合点每次判定游戏加载时重设，到 <c>OnGameLoadingComplete</c> 时指的就是这次加载。
         /// </summary>
         public static bool StretchPromptedForCurrentLoad { get; private set; }
@@ -472,7 +472,7 @@ namespace MapExtPDX.SaveLoadSystem
             ModLog.Info(Tag, "已复位菜单写入的覆盖项（开局选项、主题、游戏模式）");
         }
 
-        /// <summary>按 ID 在主菜单的存档列表里找存档。取不到列表时记 Error 并返回 null，交给汇合点判定（P0-6）。</summary>
+        /// <summary>按 ID 在主菜单的存档列表里找存档。取不到列表时记 Error 并返回 null，交给汇合点判定。</summary>
         public static SaveInfo FindMenuSave(MenuUISystem menu, string saveId)
         {
             ValueBinding<List<SaveInfo>> binding = ReadMenuBinding<SaveInfo>(menu, s_SavesBindingField, "m_SavesBinding");
@@ -563,9 +563,9 @@ namespace MapExtPDX.SaveLoadSystem
             savedCV == VanillaConversionState.UntaggedVanillaCoreValue ? "无 MapExt 标记（原版）" : $"CV={savedCV}";
 
         /// <summary>
-        /// 按 <c>MapInfo.area</c> 推断地图的制作模式（开新城计划 §3.3 的守卫）。返回是否可信：
-        /// 比值要接近某个整数的平方，且这个整数是现行模式之一（Q15：面积反映的是分块而不是地形，
-        /// 比值 256 的图按 CV=16 会在所有现行模式下被拦，其中几张文件名写着 57km）。
+        /// 按 <c>MapInfo.area</c> 推断地图的制作模式。返回是否可信：
+        /// 比值要接近某个整数的平方，且这个整数是现行模式之一（面积反映的是分块而不是地形，
+        /// 极少数异常面积比值对应的 CV 不属于任何现行模式，视为不可信交由载入后按地形实际尺寸判）。
         /// </summary>
         private static bool InferMapCoreValue(float area, out double ratio, out int mapCV)
         {
@@ -614,7 +614,7 @@ namespace MapExtPDX.SaveLoadSystem
         private static ValueBinding<List<T>> ReadMenuBinding<T>(MenuUISystem menu, FieldInfo field, string name)
         {
 #if DEBUG
-            // 故障注入（DEBUG 自检）：假装取不到菜单列表，验证交给汇合点判定的路径（验收 L8）
+            // 故障注入（DEBUG 自检）：假装取不到菜单列表，验证交给汇合点判定的路径
             if (MapExtHealth.IsFaultInjected("SaveGate/" + name))
             {
                 ModLog.Error(Tag, $"故障注入：假装取不到 MenuUISystem.{name}，交给汇合点判定");
@@ -641,7 +641,7 @@ namespace MapExtPDX.SaveLoadSystem
 
         /// <summary>
         /// 转换确认：确认后新建绑定这个资产（存档或地图）的请求，再重新触发菜单方法。
-        /// 开新城另用一套文案：没有源存档，分块只解锁中央 9 格；28→57 也另用一套：源是 28 km 存档。外部连接各种转换都保留（Q27）。
+        /// 开新城另用一套文案：没有源存档，分块只解锁中央 9 格；28→57 也另用一套：源是 28 km 存档。外部连接各种转换都保留。
         /// </summary>
         private static void ShowConversionConfirm(string assetId, string displayName, GateDecision decision, Action retrigger)
         {

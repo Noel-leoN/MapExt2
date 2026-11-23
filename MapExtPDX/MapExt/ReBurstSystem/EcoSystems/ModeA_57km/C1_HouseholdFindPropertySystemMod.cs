@@ -1187,7 +1187,7 @@ namespace MapExtPDX.ModeA
                 bool isTempHomeless = m_HomelessHouseholds.HasComponent(originEntity) &&
                                       m_HomelessHouseholds[originEntity].m_TempHome != Entity.Null;
 
-                // === 🌟 [性能优化 (Q3)] 提取在内层大循环里不变的计算结果 ===
+                // === 🌟 [性能优化] 提取在内层大循环里不变的计算结果 ===
                 int householdIncome = EconomyUtils.GetHouseholdIncome(citizensBuffer, ref m_Workers, ref m_Citizens,
                     ref m_HealthProblems, ref m_EconomyParameters, m_TaxRates);
                 bool isHouseholdNeedSupport =
@@ -1197,7 +1197,7 @@ namespace MapExtPDX.ModeA
                 // 🔢 局部计数器：记录当前家庭已经成功收集了几个合格的候选房屋。
                 // 🎯 我们不再追求“全图最优解”，只要找到足够多的备选项组合，就直接抛给 A* 引擎。
                 int candidatesFound = 0;
-                // [MOD OPT/P6] 候選上限改為可配置（ModSettings.FindHomeCandidateCap 於排程時注入）；防呆退回 5
+                // [MOD OPT] 候选上限改为可配置（ModSettings.FindHomeCandidateCap 于排程时注入）；防呆退回 5
                 int kMaxCandidatesToFind = (m_MaxCandidatesToFind >= 1) ? m_MaxCandidatesToFind : 5;
 
                 // --- 🔄 核心耗时循环：遍历本 Chunk 内的售/租建筑（配合候选上限执行单 Chunk 内 Early Exit）---
@@ -1233,7 +1233,7 @@ namespace MapExtPDX.ModeA
                                 // ➕ 找到一个合格收容所，计入候选
                                 // [MOD OPT/FIX] 僅「實際加入了 target」才計數：FindTargets 回傳實際加入的
                                 // target 數，可能為 0（該建築無可用路網接入點）。無條件 ++ 會讓路網不可達的
-                                // 孤立建築白佔 cap 額度。原版 PolicePathfindSetup.cs:721 亦有檢查回傳值的先例。
+                                // 孤立建筑白占 cap 额度。原版 PolicePathfindSetup.SetupPolicePatrolRequest 亦有检查返回值的先例。
                                 if (targetSeeker.FindTargets(candidateProperty,
                                         100f * serviceCoverage + 1000f * bufferAccessor[j].Length /
                                         shelterHomelessCapacity + 10000f) > 0)
@@ -1547,7 +1547,7 @@ namespace MapExtPDX.ModeA
                     _citizenHappinessParamQuery.GetSingleton<CitizenHappinessParameterData>(),
 
                 m_City = _citySystem.City,
-                // [P6] 找房候選上限（可配置；managed 端讀 settings 注入 Burst job）
+                // 找房候选上限（可配置；managed 端读 settings 注入 Burst job）
                 m_MaxCandidatesToFind = Mod.Instance.Settings.FindHomeCandidateCap,
                 m_SetupData = setupData
             };

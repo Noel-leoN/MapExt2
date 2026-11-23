@@ -30,7 +30,7 @@ using MapExtPDX.MapExt.Core;
 using MapExtPDX.SaveLoadSystem;
     // =========================================================================================
 
-    // 降级保护（重构二 0.4）：合并版存档里本类的类型名是 MapExtPDX.CellMap.GroundWaterSystemMod，退回本版本时靠此别名读回，勿删
+    // 降级保护：合并版存档里本类的类型名是 MapExtPDX.CellMap.GroundWaterSystemMod，退回本版本时靠此别名读回，勿删
     /// <summary>
     /// 地下水系 地下水流动和污染扩散，并定期补充地下水资源
     /// </summary>
@@ -53,7 +53,7 @@ using MapExtPDX.SaveLoadSystem;
         protected override int MapSize => XCellMapSystemRe.kMapSize;
 
         // 尺寸不符时最近邻重采样、不丢弃，保留玩家的抽用与污染状态。丢弃后 OnGameLoaded 只能从原版原稿升采样，
-        // 而 MapExt 编辑器做的地图原稿为空，地下水会整张清空（ModeC 标定计划 §2.4）。重采样后场非空，OnGameLoaded 照常沿用
+        // 而 MapExt 编辑器做的地图原稿为空，地下水会整张清空。重采样后场非空，OnGameLoaded 照常沿用
         protected override SizeMismatchPolicy MismatchPolicy => SizeMismatchPolicy.NearestResample;
 
         // === 系統更新週期 ===
@@ -91,14 +91,14 @@ using MapExtPDX.SaveLoadSystem;
         protected override void OnUpdate()
         {
             // 暂存要跨三趟并行 Job、跨线程共用，Job 内的 Temp 用不了，所以用 TempJob，随 Job 链在末尾释放。
-            // 超过 TempJob 块大小（2 MB）的分配实际走默认堆，与 Persistent 同价；选 TempJob 只为自动释放（v4.12.0 整合计划 §1.4）。
-            // 不清零（4.3）：趟2 对每格无条件写入暂存（GroundWaterFlowGatherJob），趟3 读到的都是趟2 写过的值。
+            // 超过 TempJob 块大小（2 MB）的分配实际走默认堆，与 Persistent 同价；选 TempJob 只为自动释放。
+            // 不清零：趟2 对每格无条件写入暂存（GroundWaterFlowGatherJob），趟3 读到的都是趟2 写过的值。
             // 原版是散射写法，每条边同时累加到两端，暂存才必须先清零
             NativeArray<int2> scratchMap = new NativeArray<int2>(m_Map.Length, Allocator.TempJob, NativeArrayOptions.UninitializedMemory);
             // 趟1 的结果：每格的污染再分配增量（趟2 写暂存时把它并进去）
             NativeArray<int> pollutionDelta = new NativeArray<int>(m_Map.Length, Allocator.TempJob, NativeArrayOptions.UninitializedMemory);
 
-            // === 趟1：污染在邻格之间再分配（ModeC 标定计划 4.4）。每格汇总自己四条边的结果，只读主图，
+            // === 趟1：污染在邻格之间再分配。每格汇总自己四条边的结果，只读主图，
             // 整数加法与顺序无关，与原写法逐位相同，可以并行
             GroundWaterPollutionGatherJob pollutionJob = new()
             {
@@ -106,7 +106,7 @@ using MapExtPDX.SaveLoadSystem;
                 m_PollutionDelta = pollutionDelta
             };
 
-            // === 趟2：水量与污染随水位差流动（4.4）。水量只取决于主图，与原写法逐位相同；
+            // === 趟2：水量与污染随水位差流动。水量只取决于主图，与原写法逐位相同；
             // 随水带走的污染比例改用本趟开始时的值（原写法用扫描到这条边时的滚动值），
             // 每条边从两端算出的量一致，守恒精确，统计上等价
             GroundWaterFlowGatherJob flowJob = new()
@@ -143,40 +143,20 @@ using MapExtPDX.SaveLoadSystem;
             pollutionDelta.Dispose(Dependency);
         }
 
-        // === 為什麼沒有 SetDefaults 覆寫（勿再補回） ===
-        // v4.8.0 開發期間曾有一版覆寫，在 purpose == NewGame 時以原版的 Perlin 公式生成
-        // 程序化含水層。2026-08-28 遊戲內實測後移除。當時寫了兩個理由，第 1 條不成立：
-        //
-        //   1. （2026-11-02 更正，v4.12.0 整合计划 §1.7）原先说"它从未生效：SetDefaults 收到的
-        //      purpose 是 LoadMap/LoadGame"，这不对。GameManager.Load 建的 Context 就是 NewGame，
-        //      反序列化器沿用传入的 purpose，并用同一个 Context 给地图里缺席的系统调 SetDefaults
-        //      （EntityDeserializer.cs:621-625）；SerializerSystem 只在什么都读不到时才改写 purpose
-        //      （SerializerSystem.cs:130-135）。原版地图里没有本模式的区段，开新城时本类的
-        //      SetDefaults 收到的就是 NewGame，那一版覆写会生成 Perlin 含水层。2026-11-04 验收 V10 实证：
-        //      同一条路径下，NaturalResourceSystemMod 的 SetDefaults 按 Perlin 把自然资源铺满了整张图。
-        //      移除的理由只剩第 2 条，结论不变。
-        //
-        //   2. 原版同樣不生成。原版 GroundWaterSystem.SetDefaults（GroundWaterSystem.cs:266）
-        //      的守衛比這裡更嚴——多一個 context.version < Version.timoSerializationFlow，
-        //      那是為了只補償「還沒有 GroundWater 序列化區段」的舊年代地圖檔。較寬的條件都不
-        //      成立，更嚴的必然也不成立。原版的地下水一律來自地圖作者畫在地圖檔裡的資料，
-        //      而原版 GroundWaterSystem 連 OnGameLoaded 覆寫都沒有，沒有任何兜底生成路徑。
-        //
-        // 所以本 Mod 也不生成：作者沒畫就是沒有，與原版語意一致。作者畫過的含水層由
-        // OnGameLoaded 以原版原稿升采样还原——那才是 v4.8.0 真正要修的缺陷（原版 256² 与扩展模式 kTextureSize² 尺寸不符
-        // 导致原稿在 CellMapReplacementSystem.Deserialize 中被丢弃）。
-        //
-        // 副作用是正面的：Perlin 場覆蓋率約 22.7%，會讓零格早退命中率從近 100% 掉到 60–72%，
-        // GroundWaterTickJob 單次成本約從 12ms 升到 20–25ms（每 128 幀一次）。不生成即省下這筆。
-        //
-        // 基類 CellMapSystem<T>.SetDefaults 會把場清零，這正是需要的行為，故不覆寫。
+        // === 为什么没有 SetDefaults 覆写（勿再补回） ===
+        // 原版 GroundWaterSystem.SetDefaults 的守卫含 context.version < Version.timoSerializationFlow，
+        // 仅用于补偿旧年代缺少 GroundWater 序列化区段的地图，常规新图并不会程序化生成 Perlin 含水层；
+        // 原版的地下水一律来自地图作者绘制的数据。
+        // 本 Mod 保持与原版一致：不覆写 SetDefaults（沿用基类清零），作者绘制过的含水层由
+        // OnGameLoaded 从原版原稿升采样还原（解决原版 256² 与扩展模式 kTextureSize² 尺寸不符被丢弃的问题），
+        // 未绘制则保持清零，同时有助于保持 GroundWaterTickJob 的零格早退效率。
 
         /// <summary>
-        /// 載入後把地圖作者實際繪製的含水層補進本模式的擴展貼圖。
+        /// 载入后把地图作者实际绘制的含水层补进本模式的扩展贴图。
         ///
-        /// <para><b>資料來源是原版系統的 m_Map</b>：原版 <c>GroundWaterSystem</c> 仍留在 world 裡、
-        /// 仍實作 <c>IJobSerializable</c>，所以它照常參與序列化——地圖編輯器的地下水筆刷
-        /// （<c>ApplyBrushesSystem.cs:246</c> 的 <c>TerraformingTarget.GroundWater</c>）畫下的
+        /// <para><b>资料来源是原版系统的 m_Map</b>：原版 <c>GroundWaterSystem</c> 仍留在 world 里、
+        /// 仍实现 <c>IJobSerializable</c>，所以它照常参与序列化——地图编辑器的地下水笔刷
+        /// （<c>ApplyBrushesSystem</c> 的 <c>TerraformingTarget.GroundWater</c>）画下的
         /// <c>orgTextureSize²</c> 資料會完整讀進它的 <c>m_Map</c>。它被 <c>Enabled = false</c>，
         /// 且 GetMap／GetData／AddReader／AddWriter 四個入口全被本類的 <see cref="Patches"/>
         /// 重定向到本實例，所以那份資料在遊戲中沒有任何寫入者，等於唯讀的作者原稿；
@@ -237,12 +217,8 @@ using MapExtPDX.SaveLoadSystem;
 
             int nonZero = CountAquiferCells(m_Map);
 
-            // 原稿無條件先讀一次（唯讀，只多一次反射與一趟 orgTextureSize² 計數）：它是下面兩條
-            // 分支唯一的資料來源，而「修復 v4.8.0 之前存下的空場」那條至今從未在日誌裡出現過。
-            // 城市存檔的 GroundWater 由本 Mod 寫成 kTextureSize²，原版系統反序列化時長度與自身的
-            // orgTextureSize² 不符會保持全零 → 原稿可能根本活不到城市存檔裡，那樣「空場修復」
-            // 就是一條走不到的路（對外 ChangeLog 有承諾，見 CellMap_GroundWaterZeroField §5.1）。
-            // 健康場早退分支一併記下原稿格數即可判定：讀到約源圖格數 = 前提成立；0 格 = 入口不可達。
+            // 原稿无条件先读一次（只读，仅多一次反射与一趟 orgTextureSize² 计数），
+            // 用于在健康场早退分支一并记录原稿格数，核实旧存档原版区段是否仍携带作者绘制数据。
             bool hasVanilla = TryGetVanillaAquifer(out NativeArray<TargetType> vanillaMap, out int srcSize);
             int vanillaCells = hasVanilla ? CountAquiferCells(vanillaMap) : 0;
 
@@ -375,7 +351,7 @@ using MapExtPDX.SaveLoadSystem;
         }
         #endregion
 
-        #region 汇总写法（ModeC 标定计划 4.4）
+        #region 汇总写法
 
         /// <summary>
         /// 邻格成对计算：与原版 <c>GroundWaterTickJob</c> 的 HandlePollution／HandleFlow 同一套公式，

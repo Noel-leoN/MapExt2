@@ -36,7 +36,7 @@ namespace MapExtPDX.ModeA
     using TargetType = AvailabilityInfoCell;
     // =========================================================================================
 
-    // 降级保护（重构二 0.4）：合并版存档里本类的类型名是 MapExtPDX.CellMap.AvailabilityInfoToGridSystemMod，退回本版本时靠此别名读回，勿删
+    // 降级保护：合并版存档里本类的类型名是 MapExtPDX.CellMap.AvailabilityInfoToGridSystemMod，退回本版本时靠此别名读回，勿删
     /// <summary>
     /// 网格Heatmap，将网络（道管线）上的资源可用性数据（如吸引力、服务、就业机会）映射到一个二维网格Grid
     /// </summary>

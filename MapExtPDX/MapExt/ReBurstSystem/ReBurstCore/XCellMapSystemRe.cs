@@ -40,8 +40,7 @@ namespace MapExtPDX.MapExt.ReBurstSystemCore
         /// </summary>
         /// <remarks>
         /// 核心调整倍率，等于 CV：57344→4, 28672→2, 43008→3, 114688→8, 14336→1。
-        /// 各模式 256 基图层的格距因此都与原版相同（56 m）。ModeC 原先锁 1（格距 448 m），按格汇总的污染图严重失真，
-        /// 见 ModeC 标定计划（26-10-17_CellMap_ModeC_Calibration_Plan.md）。
+        /// 各模式 256 基图层的格距因此都与原版相同（56 m）；原先 ModeC 锁 1 时格距达 448 m，按格汇总的污染图会严重失真。
         /// 必须与 PatchSet3CellMapFields 的 texMult 一致，否则原版读写方的贴图边长与本模式贴图不符。
         /// </remarks>
         public const int CellMapTextureSizeMultiplier = kMapSize / 14336;

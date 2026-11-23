@@ -39,13 +39,13 @@ namespace MapExtPDX.SaveLoadSystem
     /// <summary>
     /// 原版存档转换、原版地图开新城转换与 28→57 存档扩展的后处理系统，按转换请求（<see cref="VanillaConversionState"/>）分阶段执行：
     /// <c>OnGameLoaded</c> 做转换（MapTile、车辆与居民清理、地形、自然资源、地下水、水体；开新城跳过清理；
-    /// 外部连接一律保留，原版在一个都不剩时会闪退，见整合计划 Q27；
+    /// 外部连接一律保留（原版在一个都不剩时会闪退）；
     /// 28→57 先核对路由读入的 5 张贴图，自然资源与地下水不再从原版实例嵌入）；
     /// <c>OnGameLoadingComplete</c> 把自动存档排进原版存读档队列；存档确认写入后才弹完成提示。
-    /// <para>必需步骤出错一律抛出、走失败路径（v4.12.0 整合计划 Q19），只有水体预模拟是加速项，出错只记日志。</para>
+    /// <para>必需步骤出错一律抛出、走失败路径，只有水体预模拟是加速项，出错只记日志。</para>
     ///
     /// <para><b>为什么不用 OnUpdate</b>：本系统注册在 <c>LoadSimulation</c>，这个 phase 只在加载期间由
-    /// <c>SimulationSystem</c> 补帧时更新，加载结束后 <c>OnUpdate</c> 不再跑（v4.12.0 整合计划 §1.5）。</para>
+    /// <c>SimulationSystem</c> 补帧时更新，加载结束后 <c>OnUpdate</c> 不再跑。</para>
     /// </summary>
     public partial class VanillaSaveConversionSystem : GameSystemBase
     {
@@ -58,11 +58,11 @@ namespace MapExtPDX.SaveLoadSystem
         private const int kVanillaMapSize = 14336;
         private const int kVanillaWorldSize = 57344; // kDefaultMapSize × 4
 
-        /// <summary>28→57 的外围混合宽度（像素）：目标地形 14 m/px，约 448 m（28→57 计划 §3.3）。</summary>
+        /// <summary>28→57 的外围混合宽度（像素）：目标地形 14 m/px，约 448 m。</summary>
         private const int kExpansionBlendWidth = 32;
 
         /// <summary>
-        /// 28→57 海道沿边加宽的半宽（像素，整合计划 Q24）：2 即最窄 5 像素、约 70 m，
+        /// 28→57 海道沿边加宽的半宽（像素）：2 即最窄 5 像素、约 70 m，
         /// 宽于两格水面网格（57 km 下 28 m/格），一两格宽的海口不会被平均成陆地。
         /// </summary>
         private const int kSeaChannelHalfWidth = 2;
@@ -92,11 +92,11 @@ namespace MapExtPDX.SaveLoadSystem
         {
             base.OnGameLoaded(serializationContext);
 
-            // 反序列化已经结束：撤掉 28→57 的类型路由，下一次存读档重建出不带路由的映射表（v4.12.0 整合计划 §1.8）。
+            // 反序列化已经结束：撤掉 28→57 的类型路由，下一次存读档重建出不带路由的映射表。
             // 被否决的请求也要撤，所以放在判断请求之前
             SaveExpansionTypeMapPatch.EndLoad("读档结束");
 
-            // 只认闸门放行过的请求，且一个请求只执行一次：放行时推进到"加载中"，这里推进到"转换中"（P0-2、P0-3）。
+            // 只认闸门放行过的请求，且一个请求只执行一次：放行时推进到"加载中"，这里推进到"转换中"。
             // 地形实际尺寸不是源尺寸的请求，已在反序列化阶段转为"已取消"，不执行任何步骤、不压暂停
             ConversionRequest request = VanillaConversionState.Current;
             if (request == null || request.Phase != ConversionPhase.Loading)
@@ -108,7 +108,7 @@ namespace MapExtPDX.SaveLoadSystem
             ModLog.Ok(Tag, newGame ? "=== 开始原版地图开新城转换 ===" : expansion ? "=== 开始 28→57 存档扩展 ===" : "=== 开始原版存档转换 ===");
             ModLog.Info(Tag, $"转换请求 {request}，purpose={serializationContext.purpose}");
 
-            // ⓪ 转换与自动存档期间保持暂停，失败后也停在暂停（v4.12.0 整合计划 Q6）
+            // ⓪ 转换与自动存档期间保持暂停，失败后也停在暂停
             StartPauseHold(request);
 
             try
@@ -117,11 +117,11 @@ namespace MapExtPDX.SaveLoadSystem
 
                 if (expansion)
                 {
-                    // ⓪ 28→57：ModeB 的 5 张贴图须已路由并中心嵌入，放在第一步，早于任何清理（整合计划 §1.8）
+                    // ⓪ 28→57：ModeB 的 5 张贴图须已路由并中心嵌入，放在第一步，早于任何清理
                     RunStep(request, "Receive", ExecuteExpansionReceiveCheck);
                 }
 
-                // ⓪a MapTile 边界重建：存档 529 格全部解锁；开新城只解锁中央 9 格（D2）
+                // ⓪a MapTile 边界重建：存档 529 格全部解锁；开新城只解锁中央 9 格
                 RunStep(request, "MapTiles", () => ExecuteMapTileRebuild(unlockAll: !newGame));
 
                 if (newGame)
@@ -135,10 +135,10 @@ namespace MapExtPDX.SaveLoadSystem
                     RunStep(request, "VehicleCleanup", ExecuteVehicleCleanup);
                 }
 
-                // 外部连接一律保留在原边界（整合计划 Q27，开新城原本就是 D1）。原版至少三处 Job 从外部连接列表里随机取一个、
+                // 外部连接一律保留在原边界。原版至少三处 Job 从外部连接列表里随机取一个、
                 // 不判空：ResourceExporterSystem.HandleExportsJob（无重量资源出口）、CitizenBehaviorSystem（通勤家庭）、
-                // CitizenTravelPurposeSystem（游客）。存档转换原先删光外部连接，转出的城市一出口就 Burst 越界、访问违例闪退，
-                // 无托管异常日志。MapExt 也没有重新生成外部连接的路径
+                // CitizenTravelPurposeSystem（游客）。若删光外部连接，城市一出口即会触发 Burst 越界访问违例闪退且无托管异常日志；
+                // MapExt 也没有重新生成外部连接的路径
                 ModLog.Info(Tag, "外部连接保留在原边界（不删除：一个都不剩时原版出口会闪退）");
 
                 // ① Heightmap 合成 (含平面底图回退)
@@ -146,8 +146,8 @@ namespace MapExtPDX.SaveLoadSystem
 
                 if (expansion)
                 {
-                    // ②③ 28→57：自然资源与地下水已经路由读入、中心嵌入（⓪ 已核对），再从原版实例嵌入会把它们覆盖掉
-                    // （整合计划 §1.8）；改为清空原版地下水实例，防新档重启后被拉伸回填（28→57 计划 §3.4）
+                    // ②③ 28→57：自然资源与地下水已经路由读入、中心嵌入（⓪ 已核对），再从原版实例嵌入会把它们覆盖掉；
+                    // 改为清空原版地下水实例，防新档重启后被拉伸回填
                     RunStep(request, "VanillaGroundWater", ExecuteVanillaGroundWaterClear);
                 }
                 else
@@ -183,9 +183,9 @@ namespace MapExtPDX.SaveLoadSystem
         /// 加载画面结束后：转换成功的把自动存档排进原版存读档队列（排在当前加载之后，与玩家的存读档串行）；
         /// 转换失败的弹出失败提示，被否决的弹出否决说明。读档中途界面还没就绪，都放在这里。
         ///
-        /// <para>三条路最后都把菜单的"上次存档名"改指新档名（v4.12.0 整合计划 1.8）：读档任务在加载结束后
+        /// <para>三条路最后都把菜单的"上次存档名"改指新档名：读档任务在加载结束后
         /// 才把它设成源档名，所以改动也要排进同一个队列，排在读档任务之后。被否决的城市虽然没动，
-        /// 按 F5 也只存成新档，不写回源档（§7 第 2 条）；被否决的开新城没有源档，不改。</para>
+        /// 按 F5 也只存成新档，不写回源档；被否决的开新城没有源档，不改。</para>
         /// </summary>
         protected override void OnGameLoadingComplete(Colossal.Serialization.Entities.Purpose purpose, GameMode mode)
         {
@@ -269,7 +269,7 @@ namespace MapExtPDX.SaveLoadSystem
         #region ⓪ 28→57 接收核对
 
         /// <summary>
-        /// 28→57 的接收核对（v4.12.0 整合计划 3.1、§1.8）：ModeB 的 5 张贴图须已经类型路由读进 ModeA 系统并中心嵌入。
+        /// 28→57 的接收核对：ModeB 的 5 张贴图须已经类型路由读进 ModeA 系统并中心嵌入。
         /// 读的是基类读档 Job 写下的结果，与各系统 OnGameLoaded 的先后无关；没收到（存档缺区段、路由没生效）
         /// 或被拒（源边长不对）都抛出，转换在任何清理之前失败。异常消息用英文，原样写进三语的失败提示。
         /// </summary>
@@ -299,9 +299,9 @@ namespace MapExtPDX.SaveLoadSystem
         /// <list type="bullet">
         /// <item>原版来源的两条分支照旧：目标 ModeA 嵌 1024²，目标 ModeB 裁背景中央并嵌 2048²，混合写在嵌入区内侧；</item>
         /// <item>28→57 按源／目标比值嵌入，背景按实际世界范围裁出新地图范围，校准与混合只改外围
-        /// （<see cref="SynthesizeExpansion"/>，v4.12.0 整合计划 3.5）。</item>
+        /// （<see cref="SynthesizeExpansion"/>）。</item>
         /// </list>
-        /// <para>取不到地形、detail 形状不对或回读失败都抛出、走失败路径（整合计划 Q19）：原先直接 return，
+        /// <para>取不到地形、detail 形状不对或回读失败都抛出、走失败路径：原先直接 return，
         /// 转换照样报成功，存下的城市地形没有合成，或者只剩背景。异常消息用英文，原样写进三语的失败提示。</para>
         /// </summary>
         private void ExecuteHeightmapSynthesis(ConversionRequest request)
@@ -485,13 +485,13 @@ namespace MapExtPDX.SaveLoadSystem
         }
 
         /// <summary>
-        /// 28→57 的地形合成（28→57 计划 §3.3）：
+        /// 28→57 的地形合成：
         /// <list type="number">
         /// <item>底图：背景按 TerrainSystem 记录的实际世界范围裁出新地图范围，双线性上采样；
         /// 没有背景、或背景盖不住新地图时用平底（14→28 转出的城市没有背景）；</item>
         /// <item>源 detail（覆盖源可玩区）按源／目标比值降采样，放在中央，世界位置不变；</item>
         /// <item>边界校准只平移外围，边缘混合写在外围：原 28 km 城市的地形不改写；</item>
-        /// <item>平底时开海道（整合计划 Q24）：平底校准到原边界的平均高度，常比海平面略高，海从地图边缘传不进城里；
+        /// <item>平底时开海道：平底校准到原边界的平均高度，常比海平面略高，海从地图边缘传不进城里；
         /// 原边界上低于海平面的格子沿垂直方向一直延伸到新地图边缘（<see cref="CarveSeaChannels"/>）。</item>
         /// </list>
         /// 外围是否平底、是否开了海道记在请求上，完成提示据此写一句说明。
@@ -558,7 +558,7 @@ namespace MapExtPDX.SaveLoadSystem
             ApplyOuterEdgeBlend(synthesized, hmWidth, embedStart, embedSize, kExpansionBlendWidth);
             ModLog.Info(Tag, $"28→57 外围混合: blendWidth={kExpansionBlendWidth}px (~{kExpansionBlendWidth * targetMap / hmWidth:F0}m)，原区域不改写");
 
-            // --- 海道：只在平底时开，有背景时外围带着原地图的海（Q24）。放在混合之后，免得混合带又把海道抬到海平面以上 ---
+            // --- 海道：只在平底时开，有背景时外围带着原地图的海。放在混合之后，免得混合带又把海道抬到海平面以上 ---
             request.FlatPeriphery = !backdrop;
             if (!backdrop)
             {
@@ -572,7 +572,7 @@ namespace MapExtPDX.SaveLoadSystem
 
         /// <summary>
         /// 新地图范围在背景贴图上的采样窗口（像素，可为小数）。按 TerrainSystem 记录的实际世界范围换算，
-        /// 不假设背景是可玩区的 4 倍（28→57 计划 §3.3）。窗口超出背景时返回 false：背景盖不住新地图，按没有背景处理。
+        /// 不假设背景是可玩区的 4 倍。窗口超出背景时返回 false：背景盖不住新地图，按没有背景处理。
         /// </summary>
         private static bool TryGetBackdropWindow(TerrainSystem terrainSystem, int backdropWidth, double targetMap,
             out float2 start, out float2 size)
@@ -616,7 +616,7 @@ namespace MapExtPDX.SaveLoadSystem
 
         /// <summary>
         /// 从 GPU 回读 R16 高度数据（Texture2D 与 RenderTexture 通用）。
-        /// 失败抛出（整合计划 Q19）：原先记一行错误后返回空数组，调用方跳过嵌入，存下的城市地形没有合成；
+        /// 失败抛出：原先记一行错误后返回空数组，调用方跳过嵌入，存下的城市地形没有合成；
         /// 回读请求出错时数组内容也不可信，原先没检查。
         /// </summary>
         private static NativeArray<ushort> ReadbackToR16(Texture tex, string name)
@@ -778,7 +778,7 @@ namespace MapExtPDX.SaveLoadSystem
         /// <summary>
         /// 外围混合（28→57）：嵌入区外 <paramref name="blendWidth"/> 像素内，从最近的嵌入区边缘像素（detail）
         /// 平滑过渡到底图；嵌入区内一个像素都不写。与 <see cref="ApplyEdgeBlend"/> 方向相反：
-        /// 那个写在嵌入区内侧，会改动原城市的地形（28→57 计划 §3.3"旧区域内不执行改写"）。
+        /// 那个写在嵌入区内侧，会改动原城市的地形（本步骤要求旧区域内不执行改写）。
         /// </summary>
         private static void ApplyOuterEdgeBlend(
             NativeArray<ushort> synthesized, int size,
@@ -813,9 +813,9 @@ namespace MapExtPDX.SaveLoadSystem
         }
 
         /// <summary>
-        /// 海道（28→57 平底外围，整合计划 Q24）：原边界四条边上低于海平面的格子，沿垂直方向一直延伸到新地图边缘。
-        /// <para>海水从地图边缘沿低于海平面的格子传播进来。平底校准到原边界的平均高度，常比海平面略高
-        /// （第 3 轮 Fort Johnson 高 0.7 m），城里的海与新地图边缘不连通，调高海平面又会把整片外围变成浅海。</para>
+        /// 海道（28→57 平底外围）：原边界四条边上低于海平面的格子，沿垂直方向一直延伸到新地图边缘。
+        /// <para>海水从地图边缘沿低于海平面的格子传播进来。平底校准到原边界的平均高度，常比海平面略高，
+        /// 导致城里的海与新地图边缘不连通，而调高海平面又会把整片外围变成浅海。</para>
         /// <para>每条边取嵌入区最外一圈作剖面，经 <see cref="SaveExpansionGeometry.SeaChannelDepths"/> 沿边做最小值滤波加宽，
         /// 低于海平面的位置把这一行／列的外围压到该高度（与已有值取较低者）。只写嵌入区外，原城市地形不动；
         /// 四个角落不开，边上的海道已直达地图边缘。返回开道的边界格数（含加宽）。</para>
@@ -961,7 +961,7 @@ namespace MapExtPDX.SaveLoadSystem
         /// ② 清空 Mod 扩展地图的整个 <c>m_Map</c>。
         /// ③ 将原版数据 1:1 居中嵌入到扩展地图中心。
         ///
-        /// <para>取不到系统或字段、或处理出错都抛出、走失败路径（整合计划 Q19）：原先跳过或只记日志，
+        /// <para>取不到系统或字段、或处理出错都抛出、走失败路径：原先跳过或只记日志，
         /// 转换照样报成功，存下的是被拉伸的资源图。</para>
         /// </summary>
         private void ExecuteNaturalResourceRegen()
@@ -996,7 +996,7 @@ namespace MapExtPDX.SaveLoadSystem
 #endif
 
             // 全零也要照常清零，不能跳过：原版地图开新城时，本模式的 SetDefaults 收到 NewGame，
-            // 已经按 Perlin 生成了整张资源（v4.12.0 整合计划 §1.7），跳过会把它留下
+            // 已经按 Perlin 生成了整张资源，跳过会把它留下
             if (nzFert == 0 && nzOre == 0 && nzOil == 0)
                 ModLog.Warn(Tag, "原版数据全为零（地图没有资源，或存档未正确反序列化），Mod 地图照常清零");
 
@@ -1047,7 +1047,7 @@ namespace MapExtPDX.SaveLoadSystem
 
         /// <summary>
         /// GroundWater 修复：直接读取原版系统反序列化得到的 256² <c>m_Map</c>，
-        /// 居中 1:1 嵌入扩展地图中心区域，外围保持清空。策略与 NaturalResource 相同，出错同样抛出（整合计划 Q19）。
+        /// 居中 1:1 嵌入扩展地图中心区域，外围保持清空。策略与 NaturalResource 相同，出错同样抛出。
         /// </summary>
         private void ExecuteGroundWaterInit()
         {
@@ -1105,7 +1105,7 @@ namespace MapExtPDX.SaveLoadSystem
         }
 
         /// <summary>
-        /// 28→57：清空原版 <c>GroundWaterSystem</c> 实例的 <c>m_Map</c>（28→57 计划 §3.4 防回填）。
+        /// 28→57：清空原版 <c>GroundWaterSystem</c> 实例的 <c>m_Map</c>（防回填）。
         /// <para>ModeB 存档的原版区段里还留着最早那张 14 km 地图的原稿。不清的话，新档重启后若本模式的地下水场全为零
         /// （合法的无含水层地图），<c>GroundWaterSystemMod.OnGameLoaded</c> 的空场修复会把原稿等比拉伸，回填整张图。
         /// 原版系统已停用、不模拟，清空后到自动存档前不会再被写入。</para>
@@ -1140,7 +1140,7 @@ namespace MapExtPDX.SaveLoadSystem
 
         /// <summary>
         /// 完成目标系统的所有挂起 Job 依赖，确保安全读写 m_Map。
-        /// 取不到依赖字段就保证不了这一点，抛出、走失败路径（整合计划 Q19）；原先只记 Warn，照样读写。
+        /// 取不到依赖字段就保证不了这一点，抛出、走失败路径；原先只记 Warn，照样读写。
         /// </summary>
         private static void CompleteDependencies(GameSystemBase system)
         {
@@ -1207,7 +1207,7 @@ namespace MapExtPDX.SaveLoadSystem
                     ScreenCaptureHelper.CaptureScreenshot(Camera.main, preview, new MenuHelpers.SaveGamePreviewSettings());
 
 #if DEBUG
-                // 故障注入（DEBUG 自检）：FaultInject.txt 写 SaveGate/AutoSave，模拟自动存档失败（验收 C3）
+                // 故障注入（DEBUG 自检）：FaultInject.txt 写 SaveGate/AutoSave，模拟自动存档失败
                 if (MapExtHealth.IsFaultInjected("SaveGate/AutoSave"))
                     throw new InvalidOperationException("Fault injected (DEBUG self-test)");
 #endif
@@ -1339,9 +1339,9 @@ namespace MapExtPDX.SaveLoadSystem
         /// 全部加 Native 后只给中央 3×3 去掉。
         ///
         /// <para><paramref name="unlockAll"/> 为 true（存档转换）时再移除全部 Native，529 格全部解锁；
-        /// 开新城保留原版的购地节奏，只解锁中央 9 格（D2），地图作者自定的起始格不保留。</para>
+        /// 开新城保留原版的购地节奏，只解锁中央 9 格，地图作者自定的起始格不保留。</para>
         ///
-        /// <para>失败直接抛出、走失败路径：吞掉的话会静默产出只有中央 14 km 可买的城市（v4.12.0 整合计划 §1.7）。
+        /// <para>失败直接抛出、走失败路径：吞掉的话会静默产出只有中央 14 km 可买的城市。
         /// 异常消息用英文，会原样写进三语的失败提示。</para>
         /// </summary>
         private void ExecuteMapTileRebuild(bool unlockAll)
@@ -1387,7 +1387,7 @@ namespace MapExtPDX.SaveLoadSystem
                 return;
             }
 
-            // 开新城：核对解锁格数，验收 V5 以这一行为准
+            // 开新城：核对解锁格数（应为中央 9 格）
             var allQuery = EntityManager.CreateEntityQuery(
                 ComponentType.ReadOnly<Game.Areas.MapTile>(),
                 ComponentType.Exclude<Temp>(),
@@ -1407,8 +1407,8 @@ namespace MapExtPDX.SaveLoadSystem
         /// ③ 清除陈旧 GPU 流速/传播纹理，防止水面流向异常。
         /// ④ 使用 AddComponent&lt;Deleted&gt; 替代 DestroyEntity，避免并行 Job NRE。
         /// <para>处理结果记到 <see cref="ConversionRequest.WaterSources"/>，完成提示按它写水体一段。</para>
-        /// <para>出错抛出、走失败路径（整合计划 Q19）：水面贴图在扩展后覆盖范围错拉，水源处理与 GPU 重置是必需步骤
-        /// （28→57 计划 §3.5），原先只记日志，转换照样报成功。</para>
+        /// <para>出错抛出、走失败路径：水面贴图在扩展后覆盖范围错拉，水源处理与 GPU 重置是必需步骤，
+        /// 原先只记日志，转换照样报成功。</para>
         /// </summary>
         private void ExecuteWaterSimReset(ConversionRequest request)
         {
@@ -1434,7 +1434,6 @@ namespace MapExtPDX.SaveLoadSystem
                 // 原值写回 SeaLevel：setter 经 UpdateSeaLevel 置 m_seaLevelChanged，下一次 Simulate 重算海域传播
                 // （移除海水、清传播、重新传播、按海平面补回）。Legacy 路径设海平面、MapExtUI 调海平面走的都是这一步；
                 // 不写的话海域传播已被上面清空，海水只能从地图边缘按模拟速度慢慢流进来
-                // （2026-11-06 第 3 轮验收：开新城与 28→57 的新档都要手动调海平面才注满，原版档转换正常）
                 waterSystem.SeaLevel = currentSeaLevel;
                 waterSystem.ResetToSealevel();
 
@@ -1655,7 +1654,7 @@ namespace MapExtPDX.SaveLoadSystem
         /// ④ TimeStepOverride = 1（最大化每步传播距离）
         /// ⑤ m_terrainChangeCounter = 0（> 0 时走地形恢复分支，不执行正常注水）
         ///
-        /// <para><b>③ 在转换里达不到</b>（v4.12.0 整合计划 Q25）：转换跑在读档期间，<c>SimulationSystem</c> 从 <c>OnGamePreload</c>
+        /// <para><b>③ 在转换里达不到</b>：转换跑在读档期间，<c>SimulationSystem</c> 从 <c>OnGamePreload</c>
         /// 到加载结束都忽略 <c>selectedSpeed</c> 的写入，它保持 0，<c>WaterSystem.Simulate</c> 的内循环每帧只跑 1 次就退出。
         /// 河湖预注水因此基本无效，暂不处理，河湖等解除暂停后靠水源注水。日志按实际迭代次数记。</para>
         /// <para><b>这一步不要删</b>：第一帧会执行海平面变更后的海域重算（转换前面把海平面原值写回过），
@@ -1700,7 +1699,7 @@ namespace MapExtPDX.SaveLoadSystem
 
                 // --- 解锁条件 ③ selectedSpeed > 0 ---
                 // Simulate 内部循环有 if (selectedSpeed == 0f) break;
-                // 读档期间这次写入会被 SimulationSystem 忽略（Q25，见方法注释），先保留：挪到加载结束后执行时才会生效
+                // 读档期间这次写入会被 SimulationSystem 忽略（见方法注释），先保留：挪到加载结束后执行时才会生效
                 var simSystem = World.GetExistingSystemManaged<SimulationSystem>();
                 float origSpeed = simSystem?.selectedSpeed ?? 1f;
                 if (simSystem != null)
@@ -1877,7 +1876,7 @@ namespace MapExtPDX.SaveLoadSystem
         {
             ModLog.Info(Tag, "⓪b 开始清除车辆和居民...");
 
-            // 出错抛出、走失败路径（整合计划 Q19）：原先只记日志，后续地形与地图瓦片重建期间车辆导航仍引用旧路径，易触发 NRE（外部连接现已保留）
+            // 出错抛出、走失败路径：原先只记日志，后续地形与地图瓦片重建期间车辆导航仍引用旧路径，易触发 NRE（外部连接现已保留）
 
             // 完成所有挂起的 Job（TrainNavigation/CarNavigation 等）
             // 否则已调度的 Job 会访问被 Deleted 实体的 archetype → NRE
@@ -1917,7 +1916,7 @@ namespace MapExtPDX.SaveLoadSystem
                 if (!request.IsNewGame)
                     locParams.Add("WATER_NOTE", LocalizedString.Value(ResolveText(WaterNoteKey(request.WaterSources))));
 
-                // 28→57 另写一句外围地形的来源：没有背景地形时外围是平地（28→57 计划 §3.3），开了海道再说明一句（Q24）
+                // 28→57 另写一句外围地形的来源：没有背景地形时外围是平地，开了海道再说明一句
                 if (request.IsSaveExpansion)
                     locParams.Add("TERRAIN_NOTE", LocalizedString.Value(ResolveText(
                         !request.FlatPeriphery ? "VANILLA_CONVERT.ExpandTerrainBackdrop"

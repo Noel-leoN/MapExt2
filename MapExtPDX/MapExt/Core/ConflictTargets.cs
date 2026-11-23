@@ -861,7 +861,7 @@ namespace MapExtPDX.MapExt.Core
         /// <summary>
         /// 按 <c>(PatchMode, System)</c> 二维矩阵计算外部改写该系统 <c>Enabled</c> 时的冲突等级与可一键关闭开关。
         /// <list type="bullet">
-        /// <item>D1 方向乙：模拟核心宿主（<c>ExpandedOnlyCellMapCoreHost</c>）被停用属局部功能偏差，扩展模式下定为 <c>Warning</c>（不给关组按钮、不拦截启动）；</item>
+        /// <item>模拟核心宿主（<c>ExpandedOnlyCellMapCoreHost</c>）被停用属局部功能偏差，扩展模式下定为 <c>Warning</c>（不给关组按钮、不拦截启动）；</item>
         /// <item><c>CellOnlyDualRole</c>（含 <c>RentAdjustSystem</c>）在扩展模式下保留 <c>Hard</c> 硬冲突；</item>
         /// <item>若对宿主仅赋常量 <c>Enabled = true</c>（<paramref name="constantEnabledValue"/> 为 true），对本就保持启用的宿主无害，返回 <c>None</c>。</item>
         /// </list>

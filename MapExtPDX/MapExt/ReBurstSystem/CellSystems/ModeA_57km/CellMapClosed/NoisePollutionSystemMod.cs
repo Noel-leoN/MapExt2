@@ -23,7 +23,7 @@ namespace MapExtPDX.ModeA
     using TargetType = NoisePollution;
     // =========================================================================================
 
-    // 降级保护（重构二 0.4）：合并版存档里本类的类型名是 MapExtPDX.CellMap.NoisePollutionSystemMod，退回本版本时靠此别名读回，勿删
+    // 降级保护：合并版存档里本类的类型名是 MapExtPDX.CellMap.NoisePollutionSystemMod，退回本版本时靠此别名读回，勿删
     /// <summary>
     /// 噪音污染系统
     /// 负责计算地图上噪声的扩散平滑处理

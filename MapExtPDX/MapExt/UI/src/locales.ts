@@ -1,4 +1,4 @@
-// locales.ts - MapExt 英/简/繁三语文本字典 (Phase 1 ~ Phase 5)
+// locales.ts - MapExt 英/简/繁三语文本字典
 // 使用游戏引擎内置的 activeLocale binding 检测语言
 
 import { bindValue, useValue } from "cs2/api";
@@ -8,7 +8,7 @@ const activeLocale$ = bindValue<string>("app", "activeLocale");
 
 export const locales = {
     en: {
-        // === Phase 1 ===
+        // === 核心参数 ===
         rentRes: "Multiplier for Residential rent calculation. 100% = vanilla equivalent. Lower values reduce rent across all residential buildings.",
         rentCom: "Multiplier for Commercial rent calculation. 100% = vanilla equivalent. Lower values help commercial businesses survive in high-land-value areas.",
         rentInd: "Multiplier for Industrial rent calculation. 100% = vanilla equivalent. Lower values help factories survive.",
@@ -24,7 +24,7 @@ export const locales = {
         shoppingLabel: "Shopping",
         leisureLabel: "Leisure",
 
-        // === Phase 2 — Dashboard ===
+        // === Dashboard ===
         dashboardTitle: "City Stats",
         totalHouseholds: "Households",
         rentedHouseholds: "Housed",
@@ -35,7 +35,7 @@ export const locales = {
         highRentBuildings: "High Rent Bldgs",
         petCount: "Pets",
 
-        // === Phase 2 — 扩展租金参数 ===
+        // === 扩展租金参数 ===
         lvFactorRes: "Land value contribution to residential rent. 100% = full contribution. Lower values decouple rent from land price.",
         lvFactorCom: "Land value contribution to commercial rent. 100% = full contribution.",
         lvFactorInd: "Land value contribution to industrial rent. 100% = full contribution.",
@@ -43,7 +43,7 @@ export const locales = {
         levelFactorCom: "Building level contribution to commercial rent. 100% = vanilla scaling.",
         levelFactorInd: "Building level contribution to industrial rent. 100% = vanilla scaling.",
 
-        // === Phase 4 — Dashboard 扩展 ===
+        // === Dashboard 扩展 ===
         residentialTitle: "Residential Market",
         commercialTitle: "Commercial Market",
         activityTitle: "Population Activity",
@@ -62,7 +62,7 @@ export const locales = {
         commuterCount: "Commuters",
         miscTitle: "Misc",
 
-        // === Phase 5 — 水体工具 ===
+        // === 水体工具 ===
         waterToolsTitle: "Water Tools",
         seaLevelLabel: "Sea Level",
         seaLevelTip: "Current sea level height. Adjust and click Apply to reset water surface to this height.",
@@ -102,7 +102,7 @@ export const locales = {
         pathfindingMenuTip: "Open Pathfinding details to adjust citizens' max travel cost limits for shopping and leisure.",
         waterToolsMenuTip: "Open Water Tools details to manage sea levels, lock sea height, or reset water.",
 
-        // === Phase 1.1 — Pathfinding Extended ===
+        // === Pathfinding Extended ===
         emergencyLabel: "Hospital/Crime",
         findJobLabel: "Find Job",
         findHomeLabel: "Find Home",
@@ -114,7 +114,7 @@ export const locales = {
         pathfindingOptionHint: "More pathfinding options (Company Delivery, High School, College, University) are available in Options > #MapExt > EconomyEX > Pathfinding Cost Limits.",
     },
     zh: {
-        // === Phase 1 ===
+        // === 核心参数 ===
         rentRes: "住宅租金乘数（影响所有住宅租金计算）。100% 为原版倍率。降低可缓解高地价导致的高租金问题。",
         rentCom: "商业租金乘数。100% 为原版倍率。适当降低可帮助商铺在繁华地段生存。",
         rentInd: "工业租金乘数。100% 为原版倍率。",
@@ -130,7 +130,7 @@ export const locales = {
         shoppingLabel: "购物",
         leisureLabel: "休闲",
 
-        // === Phase 2 — Dashboard ===
+        // === Dashboard ===
         dashboardTitle: "城市统计",
         totalHouseholds: "总家庭",
         rentedHouseholds: "已租住",
@@ -141,7 +141,7 @@ export const locales = {
         highRentBuildings: "高租金建筑",
         petCount: "宠物",
 
-        // === Phase 2 — 扩展租金参数 ===
+        // === 扩展租金参数 ===
         lvFactorRes: "住宅地价贡献系数：控制地价在住宅租金公式中的占比。100% = 完全贡献，降低可使租金与地价脱钩。",
         lvFactorCom: "商业地价贡献系数：控制地价在商业租金公式中的占比。100% = 完全贡献。",
         lvFactorInd: "工业地价贡献系数：控制地价在工业租金公式中的占比。100% = 完全贡献。",
@@ -149,7 +149,7 @@ export const locales = {
         levelFactorCom: "商业等级贡献系数：100% = 原版等级缩放。",
         levelFactorInd: "工业等级贡献系数：100% = 原版等级缩放。",
 
-        // === Phase 4 — Dashboard 扩展 ===
+        // === Dashboard 扩展 ===
         residentialTitle: "住宅市场",
         commercialTitle: "商业市场",
         activityTitle: "人口活动",
@@ -168,7 +168,7 @@ export const locales = {
         commuterCount: "外来通勤",
         miscTitle: "其他",
 
-        // === Phase 5 — 水体工具 ===
+        // === 水体工具 ===
         waterToolsTitle: "水体工具",
         seaLevelLabel: "海平面",
         seaLevelTip: "当前海平面高度。调整后点击“应用海平面”将水面重置到此高度。",
@@ -208,7 +208,7 @@ export const locales = {
         pathfindingMenuTip: "打开寻路参数详情以调整市民在购物和休闲时的最大出行意愿成本限制。",
         waterToolsMenuTip: "打开水体工具详情以调节、应用或锁定海平面及重置水面。",
 
-        // === Phase 1.1 — 寻路扩展 ===
+        // === 寻路扩展 ===
         emergencyLabel: "就医/犯罪",
         findJobLabel: "找工作",
         findHomeLabel: "找房",
@@ -220,7 +220,7 @@ export const locales = {
         pathfindingOptionHint: "更多寻路参数（公司货运、高中、学院(大专)、大学）请前往 选项 > #大地图 > EconomyEX > 寻路成本上限 调节。",
     },
     zhHant: {
-        // === Phase 1 ===
+        // === 核心参数 ===
         rentRes: "住宅租金乘數（影響所有住宅租金計算）。100% 為原版倍率。降低可緩解高地價導致的高租金問題。",
         rentCom: "商業租金乘數。100% 為原版倍率。適當降低可幫助商鋪在繁華地段生存。",
         rentInd: "工業租金乘數。100% 為原版倍率。",
@@ -236,7 +236,7 @@ export const locales = {
         shoppingLabel: "購物",
         leisureLabel: "休閒",
 
-        // === Phase 2 — Dashboard ===
+        // === Dashboard ===
         dashboardTitle: "城市統計",
         totalHouseholds: "總家庭",
         rentedHouseholds: "已租住",
@@ -247,7 +247,7 @@ export const locales = {
         highRentBuildings: "高租金建築",
         petCount: "寵物",
 
-        // === Phase 2 — 扩展租金参数 ===
+        // === 扩展租金参数 ===
         lvFactorRes: "住宅地價貢獻係數：控制地價在住宅租金公式中的占比。100% = 完全貢獻，降低可使租金與地價脫鉤。",
         lvFactorCom: "商業地價貢獻係數：控制地價在商業租金公式中的占比。100% = 完全貢獻。",
         lvFactorInd: "工業地價貢獻係數：控制地價在工業租金公式中的占比。100% = 完全貢獻。",
@@ -255,7 +255,7 @@ export const locales = {
         levelFactorCom: "商業等級貢獻係數：100% = 原版等級縮放。",
         levelFactorInd: "工業等級貢獻係數：100% = 原版等級縮放。",
 
-        // === Phase 4 — Dashboard 扩展 ===
+        // === Dashboard 扩展 ===
         residentialTitle: "住宅市場",
         commercialTitle: "商業市場",
         activityTitle: "人口活動",
@@ -274,7 +274,7 @@ export const locales = {
         commuterCount: "外來通勤",
         miscTitle: "其他",
 
-        // === Phase 5 — 水体工具 ===
+        // === 水体工具 ===
         waterToolsTitle: "水體工具",
         seaLevelLabel: "海平面",
         seaLevelTip: "當前海平面高度。調整後點擊“套用海平面”將水面重置到此高度。",
@@ -314,7 +314,7 @@ export const locales = {
         pathfindingMenuTip: "打開路徑參數詳情以調整市民在購物和休閒時的最大出行成本意願限制。",
         waterToolsMenuTip: "打開水體工具詳情以調節、套用或鎖定海平面及重置水面。",
 
-        // === Phase 1.1 — 尋路擴展 ===
+        // === 尋路擴展 ===
         emergencyLabel: "就醫/犯罪",
         findJobLabel: "找工作",
         findHomeLabel: "找房",

@@ -1,15 +1,14 @@
 // Copyright (c) 2024 Noel2(Noel-leoN)
 // Licensed under the MIT License.
 
-// 原版來源：Game.Simulation.CitizenPathfindSetup.SetupLeisureTargetJob + SetupLeisureTarget
-//   （_KnowledgeBase/1_GameSource/Game/Simulation/CitizenPathfindSetup.cs:101-187 / 933-961）
+// 原版来源：Game.Simulation.CitizenPathfindSetup（SetupLeisureTargetJob / SetupLeisureTarget）
 //
-// 本檔以原版 SetupLeisureTargetJob 為基礎複製，改動兩處（見 P2 計畫）：
-//   1. Early Exit（砍 T）：湊滿 m_MaxCandidatesToFind 個「已完成 FindTargets 的合格候選」即 break。
-//   2. 隨機起點 startOffset：避免先建的休閒設施恆被優先評估，攤平地理偏差。
-// 其餘篩選 / 評分邏輯（LeisureType 比對、ServiceAvailable 門檻、Commercial/Meals 的庫存 cost 計算）逐行保留。
+// 本文件以原版 SetupLeisureTargetJob 为基础复制，改动两处：
+//   1. Early Exit（砍 T）：凑满 m_MaxCandidatesToFind 个“已完成 FindTargets 的合格候选”即 break。
+//   2. 随机起点 startOffset：避免先建的休闲设施恒被优先评估，摊平地理偏差。
+// 其余筛选 / 评分逻辑（LeisureType 比对、ServiceAvailable 门槛、Commercial/Meals 的库存 cost 计算）逐行保留。
 //
-// 與 P1 差異：per-entity 極輕（無 GetAllBuyingResourcesTrucks 類重活），收益全來自砍 T；
+// 与 ResourceSellerHandler 差异：per-entity 极轻（无 GetAllBuyingResourcesTrucks 类重活），收益全来自砍 T；
 // 多數候選 cost=0，A* 端以實際路徑距離排序，Early Exit 幾乎無品質損失。
 // 原版 dead field m_LeisureSystemUpdateInterval（body 不使用）已省略——全新排程無欄位對齊約束。
 
@@ -36,7 +35,7 @@ using Unity.Mathematics;
 namespace MapExtPDX.EcoShared
 {
 	/// <summary>
-	/// P2：Leisure 尋路 Setup 的 Early Exit handler。
+	/// Leisure 寻路 Setup 的 Early Exit handler。
 	/// 掛在 <see cref="PathfindSetupDispatcher"/> 上，接管 <see cref="SetupTargetType.Leisure"/>。
 	/// 排程語義與原版 <c>CitizenPathfindSetup.SetupLeisureTarget</c> 等價，僅在內層候選遍歷加 Early Exit。
 	/// </summary>
@@ -57,7 +56,7 @@ namespace MapExtPDX.EcoShared
 		private bool _initialized;
 		private World _cachedWorld;
 
-		// Dependency getter（PathfindSetupSystem.Dependency 為 protected，經反射存取，與 C1/P1 同法）
+		// Dependency getter（PathfindSetupSystem.Dependency 为 protected，经反射存取，与 C1、ResourceSellerHandler 同法）
 		private static Func<SystemBase, JobHandle> _getDependencyAccessor;
 
 		private ResourceSystem _resourceSystem;
@@ -93,7 +92,7 @@ namespace MapExtPDX.EcoShared
 
 			_resourceSystem = currentWorld.GetOrCreateSystemManaged<ResourceSystem>();
 
-			// 與原版 m_LeisureProviderQuery 嚴格一致（CitizenPathfindSetup.cs:807）
+			// 与原版 CitizenPathfindSetup.m_LeisureProviderQuery 严格一致
 			_leisureProviderQuery = system.GetSetupQuery(
 				ComponentType.ReadOnly<Game.Buildings.LeisureProvider>(),
 				ComponentType.Exclude<Temp>(),

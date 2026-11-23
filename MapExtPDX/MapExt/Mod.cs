@@ -48,7 +48,7 @@ namespace MapExtPDX
 
         /// <summary>
         /// 双 Harmony 实例：按来源分别管理补丁，卸载时各按自己的 id 移除。
-        /// 地图尺寸模式只在启动时应用一次，不支持运行中切换（重构一移除了热切换）。
+        /// 地图尺寸模式只在启动时应用一次，不支持运行中切换。
         /// </summary>
         public static readonly string HarmonyIdGlobal = $"{ModName}_global";
 
@@ -173,7 +173,7 @@ namespace MapExtPDX
             // === D. 存档验证系统 ===
             ModLog.Info(Tag, "全局并行方式补丁正在逐条执行...");
             // 4.1 存档元数据与各入口的闸门一律挂载：「禁止读档校验」只在判定时读，
-            // 关着校验时存下的档照样带模式值标签（审查报告 P0-5）。挂载失败按关键处理，本会话进入降级
+            // 关着校验时存下的档照样带模式值标签。挂载失败按关键处理，本会话进入降级
             ApplySaveGatePatch(nameof(MetaDataExtenderPatch),
                 () => _globalPatcher.CreateClassProcessor(typeof(MetaDataExtenderPatch)).Patch());
             ApplySaveGatePatch(nameof(LoadGameValidatorPatch),
@@ -280,11 +280,9 @@ namespace MapExtPDX
         /// <summary>
         /// 註冊三語本地化：每個語言只呼叫一次 <c>AddSource</c>，且各自獨立 try-catch。
         ///
-        /// <para><b>為什麼要合併</b>：原本設定文本（<c>LocaleEN</c>／HANS／HANT）與對話框文本
-        /// （<c>ModLocalization</c>）各註冊三次、共 6 次，其中 <b>2 次落在 en-US</b>。
-        /// en-US 是引擎的 fallback 語言，每次註冊都會多觸發一趟 <c>MergeFrom</c>
-        /// 遍歷整個 fallback 字典，而那個字典無鎖——正是 2026-09-05 那次 OnLoad 中斷的
-        /// 競爭窗口。合併後 en-US 只註冊一次，窗口減半。</para>
+        /// <para><b>为什么要合并</b>：将设置文本（<c>LocaleEN</c>／HANS／HANT）与对话框文本
+        /// （<c>ModLocalization</c>）按语言合并为一次 <c>AddSource</c>，每语言仅注册一次，
+        /// 降低非英文环境下 <c>en-US</c> 触发引擎无锁 fallback 字典合并（<c>MergeFrom</c>）的竞争窗口。</para>
         ///
         /// <para><b>為什麼要 try-catch</b>：本地化註冊失敗的實際影響只是「該語言的文字顯示成
         /// key」，不該讓整個 Mod 失效。完整論證見

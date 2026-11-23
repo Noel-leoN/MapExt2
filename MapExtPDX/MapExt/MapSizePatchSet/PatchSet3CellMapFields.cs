@@ -59,7 +59,7 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
             ModLog.Patch(Tag, "开始修补 CellMapSystem<T> kMapSize/kTextureSize");
 
             int mapMult = PatchManager.CurrentCoreValue;
-            // 贴图倍率与地图倍率相同，各模式 256 基图层格距都是原版的 56 m（ModeC 原先取 1，见 ModeC 标定计划）。
+            // 贴图倍率与地图倍率相同，各模式 256 基图层格距都是原版的 56 m。
             // 必须与 XCellMapSystemRe.CellMapTextureSizeMultiplier 一致，否则原版读写方与 Mod 贴图错位
             int texMult = mapMult;
 

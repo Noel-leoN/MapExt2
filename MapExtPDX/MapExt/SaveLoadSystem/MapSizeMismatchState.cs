@@ -32,7 +32,7 @@ namespace MapExtPDX.SaveLoadSystem
 
         /// <summary>
         /// 本次加载第一次调用 <c>FinalizeTerrainData</c> 时的地形尺寸（<c>inMapSize.x</c>，缩放前）；0 表示还没记录。
-        /// 之后 <c>ReplaceHeightmap</c> 等以默认 14336 调用的不算（v4.12.0 整合计划 2.1）。
+        /// 之后 <c>ReplaceHeightmap</c> 等以默认 14336 调用的不算。
         /// </summary>
         public static float TerrainMapSize { get; private set; }
 

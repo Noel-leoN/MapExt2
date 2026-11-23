@@ -8,9 +8,9 @@ using Game.Simulation;
 using MapExtPDX.CellShared;
 using Unity.Jobs;
 
-// === CellMap 存读档 Job 的 Burst 登记（v4.12.0 整合计划 4.6）===
+// === CellMap 存读档 Job 的 Burst 登记 ===
 // 基类 CellMapReplacementSystem 的存档、读档 Job 都是泛型，封闭类型要等引擎经 IJobSerializable 调用时才确定，
-// Burst 自己发现不了，不登记就在 Mono 里执行（整合计划 0.4 实测：ModeC 一次读档 12 个系统合计 1.2 s）。
+// Burst 自己发现不了，不登记会在 Mono 里执行（大贴图读档开销显著偏高）。
 // 引擎存读档只用 BinaryWriter／BinaryReader（Game.Serialization.SerializerSystem）；基类的类型参数都是原版类型，
 // ModeA–D 与 ModeE 的 D2 共用同一组封闭类型，所以 12 个系统 × 2 = 24 条。
 // 新增 CellMap 替换系统要在这里补两行。漏了不报错、不写日志，只会在建置日志的 Burst 段少两条 Method:。

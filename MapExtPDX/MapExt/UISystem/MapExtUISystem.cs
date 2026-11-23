@@ -41,7 +41,7 @@ namespace MapExtPDX.UI
 
         #endregion
 
-        #region Fields — 租金核心参数 (Phase 1: 5 value + 5 trigger = 10)
+        #region Fields — 租金核心参数 (5 value + 5 trigger = 10)
 
         private ValueBinding<int> m_RentMultRes;
         private ValueBinding<int> m_RentMultCom;
@@ -51,7 +51,7 @@ namespace MapExtPDX.UI
 
         #endregion
 
-        #region Fields — 寻路核心参数 (Phase 1: 2 value + 2 trigger = 4) + 扩展 (4 value + 4 trigger = 8)
+        #region Fields — 寻路核心参数 (2 value + 2 trigger = 4) + 扩展 (4 value + 4 trigger = 8)
 
         private ValueBinding<float> m_ShoppingMaxCost;
         private ValueBinding<float> m_LeisureMaxCost;
@@ -62,7 +62,7 @@ namespace MapExtPDX.UI
 
         #endregion
 
-        #region Fields — 扩展租金公式参数 (Phase 2: 6 value + 6 trigger = 12)
+        #region Fields — 扩展租金公式参数 (6 value + 6 trigger = 12)
 
         private ValueBinding<int> m_LvFactorRes;
         private ValueBinding<int> m_LvFactorCom;
@@ -87,17 +87,17 @@ namespace MapExtPDX.UI
 
         #endregion
 
-        #region Fields — 水体工具 (Phase 5 + 5.1)
+        #region Fields — 水体工具与海平面锁定
 
         private WaterSystem m_WaterSystem;
         private ValueBinding<bool> m_WaterToolsOpen;
         private EntityQuery m_WaterSourceQuery;
 
-        // --- 海平面锁定 (Phase 5.1) ---
+        // --- 海平面锁定 ---
         private ValueBinding<bool> m_SeaLevelLocked;
         private float m_LockedSeaLevelValue;
 
-        // --- [DISABLED] 水模拟速度持久化 (Phase 5.2) ---
+        // --- [DISABLED] 水模拟速度持久化 ---
         // 因原版 Simulate() 每帧强制 speed=1 与 Mod 持久化回写冲突导致横跳，暂时禁用。
         // private int m_UserWaterSimSpeed = -1;
         private bool m_SeaLevelDiagLogged = false;
@@ -150,7 +150,7 @@ namespace MapExtPDX.UI
             AddBinding(m_ConfigOpen = new ValueBinding<bool>(kGroup, "ConfigOpen", false));
             AddBinding(new TriggerBinding<bool>(kGroup, "SetConfigOpen", v => m_ConfigOpen.Update(v)));
 
-            // --- Dashboard 折叠状态（Phase 2） ---
+            // --- Dashboard 折叠状态 ---
             AddBinding(m_DashboardOpen = new ValueBinding<bool>(kGroup, "DashboardOpen", false));
             AddBinding(new TriggerBinding<bool>(kGroup, "SetDashboardOpen", v =>
             {
@@ -231,7 +231,7 @@ namespace MapExtPDX.UI
                 m_LeisureMaxCost.Update(v);
             }));
 
-            // === 寻路扩展参数 Bindings (Phase 1.1: 8) ===
+            // === 寻路扩展参数 Bindings (8) ===
             // --- 急诊寻路上限 ---
             AddBinding(m_EmergencyMaxCost = new ValueBinding<float>(kGroup, "EmergencyMaxCost", s.EmergencyMaxCost));
             AddBinding(new TriggerBinding<float>(kGroup, "SetEmergencyMaxCost", v =>
@@ -264,7 +264,7 @@ namespace MapExtPDX.UI
                 m_FindSchoolElemMaxCost.Update(v);
             }));
 
-            // === 扩展租金公式参数 Bindings (Phase 2: 12) ===
+            // === 扩展租金公式参数 Bindings (12) ===
             // --- 地价贡献系数 ---
             AddBinding(m_LvFactorRes = new ValueBinding<int>(kGroup, "LvFactorRes", s.LandValueFactorResidential));
             AddBinding(new TriggerBinding<int>(kGroup, "SetLvFactorRes", v =>
@@ -344,7 +344,7 @@ namespace MapExtPDX.UI
             AddUpdateBinding(new GetterValueBinding<bool>(kGroup, "DashDefaultMisc",
                 () => Mod.Instance?.Settings?.DashboardDefaultMisc ?? true));
 
-            // === Dashboard 只读指标 (Phase 2: 8 GetterValueBinding) ===
+            // === Dashboard 只读指标 (8 GetterValueBinding) ===
             // 注意：Q2 系统在 SystemReplacer.Apply() 中注册，此时可能尚未创建
             // m_Q2System 通过 OnUpdate 懒加载获取，GetterValueBinding lambda 每次读取字段当前值
 
@@ -365,7 +365,7 @@ namespace MapExtPDX.UI
             AddUpdateBinding(new GetterValueBinding<int>(kGroup, "PetCount",
                 () => m_Q2System?.PetCount ?? 0));
 
-            // === Dashboard Phase 4 扩展指标 (13 GetterValueBinding) ===
+            // === Dashboard 扩展指标 (13 GetterValueBinding) ===
             // --- 住宅空置率（从 CountResidentialPropertySystem 缓存读取） ---
             AddUpdateBinding(new GetterValueBinding<int>(kGroup, "FreeResLow",
                 () => m_Q2System?.FreeResLow ?? 0));
@@ -404,13 +404,13 @@ namespace MapExtPDX.UI
             AddBinding(new TriggerBinding(kGroup, "ResetRentControl", () =>
             {
                 var settings = Mod.Instance.Settings;
-                // Phase 1 参数
+                // 租金与寻路核心参数
                 settings.RentMultiplierResidential = 100;
                 settings.RentMultiplierCommercial = 100;
                 settings.RentMultiplierIndustrial = 100;
                 settings.LandValueEnvironmentEffect = 40;
                 settings.ServiceBonusCapMultiplier = 100;
-                // Phase 2 扩展参数
+                // 扩展租金参数
                 settings.LandValueFactorResidential = 100;
                 settings.LandValueFactorCommercial = 100;
                 settings.LandValueFactorIndustrial = 100;
@@ -418,13 +418,13 @@ namespace MapExtPDX.UI
                 settings.LevelFactorCommercial = 100;
                 settings.LevelFactorIndustrial = 100;
 
-                // 同步 ValueBindings — Phase 1
+                // 同步 ValueBindings — 核心参数
                 m_RentMultRes.Update(100);
                 m_RentMultCom.Update(100);
                 m_RentMultInd.Update(100);
                 m_LandValueEnvEffect.Update(40);
                 m_ServiceBonusCap.Update(100);
-                // 同步 ValueBindings — Phase 2
+                // 同步 ValueBindings — 扩展租金参数
                 m_LvFactorRes.Update(100);
                 m_LvFactorCom.Update(100);
                 m_LvFactorInd.Update(100);
@@ -451,7 +451,7 @@ namespace MapExtPDX.UI
                 m_FindSchoolElemMaxCost.Update(10000f);
             }));
 
-            // === 水体工具 Bindings (Phase 5: 8) ===
+            // === 水体工具 Bindings (8) ===
             // --- 面板展开状态 ---
             AddBinding(m_WaterToolsOpen = new ValueBinding<bool>(kGroup, "WaterToolsOpen", false));
             AddBinding(new TriggerBinding<bool>(kGroup, "SetWaterToolsOpen", v => m_WaterToolsOpen.Update(v)));
@@ -505,7 +505,7 @@ namespace MapExtPDX.UI
                 // 暂不处理：原版 Simulate() 会覆盖任何手动设定值
             }));
 
-            // === 海平面锁定 Bindings (Phase 5.1: 3) ===
+            // === 海平面锁定 Bindings (3) ===
             AddBinding(m_SeaLevelLocked = new ValueBinding<bool>(kGroup, "SeaLevelLocked", false));
             AddBinding(new TriggerBinding<bool>(kGroup, "SetSeaLevelLocked", v =>
             {
@@ -585,7 +585,7 @@ namespace MapExtPDX.UI
 
             // === 反向同步：检测 Options UI 是否修改了值 ===
 
-            // --- Phase 1 租金参数 ---
+            // --- 租金核心参数 ---
             if (m_RentMultRes.value != s.RentMultiplierResidential)
                 m_RentMultRes.Update(s.RentMultiplierResidential);
 
@@ -601,7 +601,7 @@ namespace MapExtPDX.UI
             if (m_ServiceBonusCap.value != s.ServiceBonusCapMultiplier)
                 m_ServiceBonusCap.Update(s.ServiceBonusCapMultiplier);
 
-            // --- Phase 1 寻路参数 ---
+            // --- 寻路核心参数 ---
             // ReSharper disable once CompareOfFloatsByEqualityOperator
             if (m_ShoppingMaxCost.value != s.ShoppingMaxCost)
                 m_ShoppingMaxCost.Update(s.ShoppingMaxCost);
@@ -610,7 +610,7 @@ namespace MapExtPDX.UI
             if (m_LeisureMaxCost.value != s.LeisureMaxCost)
                 m_LeisureMaxCost.Update(s.LeisureMaxCost);
 
-            // --- Phase 1.1 寻路扩展参数 ---
+            // --- 寻路扩展参数 ---
             // ReSharper disable CompareOfFloatsByEqualityOperator
             if (m_EmergencyMaxCost.value != s.EmergencyMaxCost)
                 m_EmergencyMaxCost.Update(s.EmergencyMaxCost);
@@ -625,7 +625,7 @@ namespace MapExtPDX.UI
                 m_FindSchoolElemMaxCost.Update(s.FindSchoolElementaryMaxCost);
             // ReSharper restore CompareOfFloatsByEqualityOperator
 
-            // --- Phase 2 扩展租金参数 ---
+            // --- 扩展租金参数 ---
             if (m_LvFactorRes.value != s.LandValueFactorResidential)
                 m_LvFactorRes.Update(s.LandValueFactorResidential);
 

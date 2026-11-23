@@ -14,7 +14,7 @@ using static Game.UI.Menu.MenuUISystem;
 namespace MapExtPDX.SaveLoadSystem
 {
     /// <summary>
-    /// 存档入口闸门第 1 层：主菜单与启动器的"继续游戏"（<c>MenuUISystem.SafeContinueGame</c>，审查报告 P0-4）。
+    /// 存档入口闸门第 1 层：主菜单与启动器的"继续游戏"（<c>MenuUISystem.SafeContinueGame</c>）。
     ///
     /// <para>"继续"读的是最近一次成功存档（<c>userState.lastSaveGameMetadata</c>，跨重启保留），
     /// 切换模式并重启后，它仍指向上一个模式的城市。</para>
@@ -40,7 +40,7 @@ namespace MapExtPDX.SaveLoadSystem
                 if (save == null) return true;
 
                 bool booting = SaveEntryGate.IsBooting;
-                // 这一行用来确认启动器"继续"是否走这里（验收 L5）
+                // 记录调用来源（启动器启动阶段 vs 主菜单），便于诊断入口路径
                 ModLog.Info(Tag, $"继续游戏 '{save.displayName}'（{(booting ? "启动阶段，来自启动器" : "主菜单")}）");
 
                 GateDecision decision = SaveEntryGate.EvaluateSave(SaveEntry.MenuContinue, save);
@@ -60,8 +60,8 @@ namespace MapExtPDX.SaveLoadSystem
 
     /// <summary>
     /// 存档入口闸门第 1 层：主菜单开新城（<c>MenuUISystem.SafeNewGame</c>）。
-    /// 在原方法写入城市名、主题、游戏模式与开局选项之前判定：按地图面积推断制作模式，再看降级
-    /// （v4.12.0 整合计划 §2.1 第 4 条、2.3）。面积不可信的地图放行，载入后按地形实际尺寸判。
+    /// 在原方法写入城市名、主题、游戏模式与开局选项之前判定：按地图面积推断制作模式，再看降级。
+    /// 面积不可信的地图放行，载入后按地形实际尺寸判。
     /// </summary>
     [HarmonyPatch(typeof(MenuUISystem), "SafeNewGame")]
     public static class NewGameGatePatch
@@ -78,7 +78,7 @@ namespace MapExtPDX.SaveLoadSystem
                 if (map == null) return true; // 交给汇合点判定
 
                 GateDecision decision = SaveEntryGate.EvaluateNewGame(SaveEntry.MenuNewGame, map);
-                // 转换后的新档按城市名命名，玩家没填城市名时用地图名（v4.12.0 整合计划 2.0）
+                // 转换后的新档按城市名命名，玩家没填城市名时用地图名
                 string displayName = string.IsNullOrWhiteSpace(args.cityName) ? map.displayName : args.cityName;
                 return SaveEntryGate.HandleAtMenu(SaveEntry.MenuNewGame, decision, map.id, null,
                     () => AccessTools.Method(typeof(MenuUISystem), "SafeNewGame").Invoke(__instance, new object[] { args, dismiss }),

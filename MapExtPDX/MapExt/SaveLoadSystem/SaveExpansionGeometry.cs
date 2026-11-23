@@ -8,8 +8,7 @@ namespace MapExtPDX.SaveLoadSystem
     /// 28 km → 57 km 存档扩展的纯几何换算库。
     ///
     /// <para>只依赖标准 <c>System</c> 基础类型（刻意不使用 <c>Unity.Mathematics</c>），
-    /// 以便生产代码与 <c>.agents/scripts/Test-SaveExpansion.ps1</c> 的
-    /// <c>Add-Type</c> 校验脚本共用同一份实现——避免夹具与生产各算一套。</para>
+    /// 以便生产代码与独立几何校验脚本通过 <c>Add-Type</c> 共用同一份实现，避免测试与生产各算一套。</para>
     ///
     /// <para>坐标约定与 <c>XCellMapSystemRe</c> 一致：地图以原点为中心，
     /// 第 <c>i</c> 个 cell 的中心世界坐标为
@@ -94,7 +93,7 @@ namespace MapExtPDX.SaveLoadSystem
         }
 
         /// <summary>
-        /// 海道底高（28→57 没有背景地形时，v4.12.0 整合计划 Q24）：对原边界一条边的高度剖面沿边做宽
+        /// 海道底高（28→57 没有背景地形时）：对原边界一条边的高度剖面沿边做宽
         /// <c>2 × halfWidth + 1</c> 的最小值滤波，滤波后低于 <paramref name="seaLevel"/> 的位置返回该值（海道底），
         /// 其余返回 -1（不开道）。最小值滤波把一两格宽的海口加宽，免得被比地形粗一倍的水面网格平均成陆地。
         /// 例如剖面 <c>[120, 90, 120]</c>、海平面 100、半宽 1 得 <c>[90, 90, 90]</c>。

@@ -67,7 +67,7 @@ namespace MapExtPDX.SaveLoadSystem
                         }
 
                         ModLog.Warn(Tag, $"汇合点拦下读档 '{save.displayName}'（{decision.Verdict}），没有经过菜单层的判定");
-                        // 原版读档、继续在 Load 返回后不看结果，照样把"上次存档名"设成这个档；排一个任务恢复（整合计划 2.7）
+                        // 原版读档、继续在 Load 返回后不看结果，照样把"上次存档名"设成这个档；排一个任务恢复
                         LastSaveTarget.RestoreAfterBlockedLoad(save.displayName);
                         break;
                     }
@@ -76,7 +76,7 @@ namespace MapExtPDX.SaveLoadSystem
                     {
                         MapInfo map = mapMeta.target;
                         if (map == null) return true;
-                        // 放行时推进转换请求：不推进的话请求停在"已请求"，转换不执行、地下水不让路（整合计划 2.0）
+                        // 放行时推进转换请求：不推进的话请求停在"已请求"，转换不执行、地下水不让路
                         if (SaveEntryGate.TryConsumePermit(map.id))
                         {
                             SaveEntryGate.NotePermittedMapLoad(map.id);

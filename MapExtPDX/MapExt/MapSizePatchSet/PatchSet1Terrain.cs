@@ -41,7 +41,7 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
             int scalefactor = PatchManager.CurrentCoreValue;
             float baseSize = PatchManager.OriginalMapSize;
 
-            // 权威记录（v4.12.0 整合计划 2.1）：只记游戏与编辑器每次加载的第一次调用，那次的 inMapSize 来自读档的 playableArea
+            // 权威记录：只记游戏与编辑器每次加载的第一次调用，那次的 inMapSize 来自读档的 playableArea
             // 或 SetDefaults 的默认值；之后转换步骤与编辑器导入调 ReplaceHeightmap 等，都以默认 14336 调用，不算。
             // 回主菜单的 Cleanup 也经 SetDefaults 以 14336 调用一次，不记，否则每次回主菜单都多一行"原版地形被拉伸"。
             // 转换的否决闸也在这里判：此时还在反序列化阶段，地下水等系统的 OnGameLoaded 都还没跑
@@ -219,7 +219,7 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
         } // GetHeightData method
 
 
-        // === 优化 1.1: StructuredBuffer 首帧扩容 ===
+        // === StructuredBuffer 首帧扩容 ===
         // 原版 OnCreate 中初始化的 ManagedStructuredBuffers 容量偏小
         // (AreaTriangle/AreaEdge 仅 1000)，大地图下动态扩容会引发运行时卡顿
         // 在首帧 OnUpdate 时通过反射预分配更大的容量
@@ -305,7 +305,7 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
         }
 
 
-        // === 优化 1.2: AsyncGPUReadback 失败降级策略 ===
+        // === AsyncGPUReadback 失败降级策略 ===
         // 原版 UpdateGPUReadback 在 GPU 回读连续失败 10 次后，会回退到全图回读
         // 大地图下全图回读 (4096×4096 R16) 开销巨大
         // 修改策略：在 m_FailCount 即将达到阈值(10)时拦截，重置计数并放弃本次回读
@@ -353,7 +353,7 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
     }
 
 
-    // === 优化 2.1: 远距级联降频更新（修复版） ===
+    // === 远距级联降频更新 ===
     // 原版 RenderCascades 每帧渲染所有级联层
     // 对远距级联层 (baseLod+2 及以上) 每 N 帧渲染一次，降低 GPU 开销
     //
@@ -483,42 +483,42 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
     }
 
 
-    // === 優化 2.2: Backdrop 高度圖降採樣事件化 ===
+    // === Backdrop 高度图降采样事件化 ===
     //
-    // 原版 TerrainSystem.OnUpdate（ModificationEnd 階段）無條件呼叫 DownSampleHeightMap()，
-    // 該方法在 HasBackdrop（baseLod != 0）時對 cascade 做一次 compute dispatch，
+    // 原版 TerrainSystem.OnUpdate（ModificationEnd 阶段）无条件调用 DownSampleHeightMap()，
+    // 该方法在 HasBackdrop（baseLod != 0）时对 cascade 做一次 compute dispatch，
     // 规模 (m_DownscaledHeightmap.width / 8)²（4096 图 4 倍降采样为 1024 → 128×128 groups），
-    // 把 cascade 降採樣 4 倍寫入 m_DownscaledHeightmap。
+    // 把 cascade 降采样 4 倍写入 m_DownscaledHeightmap。
     //
-    // 但 cascade 的內容只會在 RenderCascades() 真正繪製時改變，而 RenderCascades 僅在
-    // heightMapRenderRequired 為 true 時才被 TerrainRenderSystem 呼叫（PreCulling 階段）。
-    // 相機靜止、地形無變更時 cascade 逐幀不變，降採樣輸出必然與上一幀完全相同 → 純浪費。
+    // 但 cascade 的内容只会在 RenderCascades() 真正绘制时改变，而 RenderCascades 仅在
+    // heightMapRenderRequired 为 true 时才被 TerrainRenderSystem 调用（PreCulling 阶段）。
+    // 相机静止、地形无变更时 cascade 逐帧不变，降采样输出必然与上一帧完全相同 → 纯浪费。
     //
-    // 門控設計（三個要點）：
+    // 门控设计（三个要点）：
     //
-    // 1. 跨幀 latch，不讀 heightMapSliceUpdated。
+    // 1. 跨帧 latch，不读 heightMapSliceUpdated。
     //    TerrainSystem 在 ModificationEnd、TerrainRenderSystem 在 PreCulling
-    //    （SystemOrder.cs:303/641），故第 N 幀的降採樣讀到的是第 N-1 幀 RenderCascades
-    //    的產物；而同一個 OnUpdate 內 UpdateCascades 已先把 heightMapSliceUpdated 改寫成
-    //    「本幀稍後才要繪製」的狀態，直接讀它會錯一幀。
-    //    另注意 heightMapSliceUpdatedLast 不可用作上一幀快照——原版 :4207 是
-    //    `heightMapSliceUpdatedLast = heightMapSliceUpdated` 的 bool[] 引用賦值，兩者同物件。
-    //    因此改由 RenderCascades 的 Postfix 置位 latch，降採樣消費並清除。
+    //    （SystemOrder.Initialize），故第 N 帧的降采样读到的是第 N-1 帧 RenderCascades
+    //    的产物；而同一个 OnUpdate 内 UpdateCascades 已先把 heightMapSliceUpdated 改写成
+    //    “本帧稍后才要绘制”的状态，直接读它会错一帧。
+    //    另注意 heightMapSliceUpdatedLast 不可用作上一帧快照——原版 TerrainSystem.UpdateCascades 是
+    //    heightMapSliceUpdatedLast = heightMapSliceUpdated 的 bool[] 引用赋值，两者同对象。
+    //    因此改由 RenderCascades 的 Postfix 置位 latch，降采样消费并清除。
     //
-    // 2. 不假設 shader 只讀哪個 slice。
-    //    AdjustTerrain 是 Resources.Load<ComputeShader>（bundle 內，無 .compute 源碼），
-    //    「只讀 slice 0」無法驗證。故 latch 條件是「本幀有繪製任何 cascade」，
-    //    即使 kernel 實際讀 baseLod slice 也不會漏更新，代價是門控偏保守。
+    // 2. 不假设 shader 只读哪个 slice。
+    //    AdjustTerrain 是 Resources.Load<ComputeShader>（bundle 内，无 .compute 源码），
+    //    “只读 slice 0”无法验证。故 latch 条件是“本帧有绘制任何 cascade”，
+    //    即使 kernel 实际读 baseLod slice 也不会漏更新，代价是门控偏保守。
     //
-    // 3. 只門控 OnUpdate 的呼叫點。
-    //    另三個呼叫點（OnHeightsChanged、InitializeBackdrop、WaterSimulation.PostDeserialize）
-    //    都是事件驅動的必要更新，一律放行。OnUpdate 內的順序是
-    //    DownSampleHeightMap() → UpdateGPUReadback()（後者可能經 OnHeightsChanged 再次呼叫），
-    //    故用「進入 OnUpdate 後的第一次呼叫」精確識別待門控的那一次。
+    // 3. 只门控 OnUpdate 的调用点。
+    //    另三个调用点（OnHeightsChanged、InitializeBackdrop、WaterSimulation.PostDeserialize）
+    //    都是事件驱动的必要更新，一律放行。OnUpdate 内的顺序是
+    //    DownSampleHeightMap() → UpdateGPUReadback()（后者可能经 OnHeightsChanged 再次调用），
+    //    故用“进入 OnUpdate 后的第一次调用”精确识别待门控的那一次。
     //
-    // 載入強制放行：FinalizeTerrainData 在 :3208 呼叫 InitializeBackdrop（其內 :3269 降採樣一次），
-    // 但 world map 要到 :3219 才 CopyTexture 進 slice 0——那次一次性降採樣拿不到 slice 0 內容，
-    // 背景地形其實是靠每幀那次才正確初始化。因此載入後強制放行一段幀數。
+    // 载入强制放行：FinalizeTerrainData 先调用 InitializeBackdrop（内部执行一次 DownSampleHeightMap），
+    // 之后才将 world map CopyTexture 进 slice 0——那次一次性降采样拿不到 slice 0 内容，
+    // 背景地形实际靠后续每帧调用才正确初始化。因此载入后强制放行一段帧数。
     //
     // 生效範圍：僅對有 world backdrop 的存檔有意義（無 backdrop 時原方法本就是空操作）。
     [HarmonyPatch(typeof(TerrainSystem), nameof(TerrainSystem.DownSampleHeightMap))]
@@ -571,7 +571,7 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
 
         /// <summary>
         /// 由 OnUpdate 的 Postfix 呼叫：清除未被消費的標記。
-        /// 原版 OnUpdate 在 m_Heightmap == null 時整段跳過（TerrainSystem.cs:3481），
+        /// 原版 TerrainSystem.OnUpdate 在 m_Heightmap == null 时整段跳过，
         /// 此時降採樣不會被呼叫，殘留標記會讓下一次事件驅動的呼叫被誤判為例行呼叫。
         /// </summary>
         internal static void ClearOnUpdateEntry() => s_PendingOnUpdateCall = false;
@@ -636,7 +636,7 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
 
         /// <summary>
         /// 清除未被消費的標記。
-        /// 原版 OnUpdate 在 <c>m_Heightmap == null</c> 時整段跳過（TerrainSystem.cs:3481），
+        /// 原版 <c>TerrainSystem.OnUpdate</c> 在 <c>m_Heightmap == null</c> 时整段跳过，
         /// 此時降採樣不會被呼叫，標記若殘留會讓下一次事件驅動的呼叫被誤判為例行呼叫而遭門控。
         /// </summary>
         [HarmonyPostfix]
@@ -680,12 +680,11 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
     }
 
 
-    // === 优化 4: Backdrop 禁用 (方案 A: InitializeTerrainData 源头拦截) ===
+    // === Backdrop 禁用（InitializeTerrainData 源头拦截）===
     // 在 InitializeTerrainData 入口处将 worldMap 参数设为 null
     // 这样 SetWorldHeightmap(null) → DestroyWorldMap() → worldHeightmap = null
     // 然后 FinalizeTerrainData 中 worldHeightmap == null → baseLod = 0 → 无 Backdrop 路径
     // 性能收益: 每帧节省 ~0.5-2ms GPU + ~37MB VRAM + CPU 阻塞消除
-    // 详见: docs/02_TerrainWater/Terrain_BackdropCost.md §9
     [HarmonyPatch(typeof(TerrainSystem), "InitializeTerrainData")]
     internal static class TerrainSystem_InitializeTerrainData_DisableBackdrop
     {

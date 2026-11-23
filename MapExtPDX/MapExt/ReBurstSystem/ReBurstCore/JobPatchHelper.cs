@@ -118,8 +118,8 @@ namespace MapExtPDX.MapExt.ReBurstSystem.Core
                                   $"其所在方法已挂载 Transpiler，可能形成部分替换：{string.Join("、", rejected)}");
             }
 
-            // 跳過項在 Release 也必須可見：ModLog.Debug 帶 [Conditional("DEBUG")]，
-            // 正式版看不到逐條明細，故在此補一條聚合 Warn 指向 /check-upgrade 的執行期驗證。
+            // 跳过项在 Release 也必须可见：ModLog.Debug 带 [Conditional("DEBUG")]，
+            // 正式版看不到逐条明细，故在此补一条聚合 Warn 以便游戏版本升级后第一时间发现目标失效。
             if (skipped.Count > 0)
             {
                 var preview = string.Join("、", skipped

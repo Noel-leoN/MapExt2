@@ -38,7 +38,7 @@ namespace MapExtPDX.MapExt.Core
         /// <summary>地图尺寸模式不符的通知条。</summary>
         private const string kMismatchNotificationId = "mapext.mapsize_mismatch";
 
-        /// <summary>原版地形被拉伸的通知条（v4.12.0 整合计划 2.2）。</summary>
+        /// <summary>原版地形被拉伸的通知条。</summary>
         private const string kStretchNotificationId = "mapext.vanilla_stretch";
 
         /// <summary>MainLoop 低频状态轮询帧间隔（120–300 帧区间取 240 帧，约 2–4 秒一次）。</summary>
@@ -123,7 +123,7 @@ namespace MapExtPDX.MapExt.Core
                     _monitoredVanillaDisabled.Clear();
                     _monitoredExpectedEnabled.Clear();
                     _reportedRuntimeAnomalies.Clear();
-                    // 存档闸门：回主菜单即作废残留的转换请求（P0-3）
+                    // 存档闸门：回主菜单即作废残留的转换请求
                     VanillaConversionState.Clear("返回主菜单");
                     ModLog.Ok(Tag, "所有 PatchSet 会话状态已重置");
                 }
@@ -137,7 +137,7 @@ namespace MapExtPDX.MapExt.Core
                 // 每次載入開始前清除上一次的地圖尺寸錯配判定，
                 // 避免「遊戲中直接載入另一張地圖」時沿用舊記錄而誤報。
                 // （Cleanup 分支已透過 TerrainSystemPatches.ResetSessionState 一併清除）
-                // 同时清掉地形尺寸记录：本次加载第一次调用 FinalizeTerrainData 才记得下来（整合计划 2.1）
+                // 同时清掉地形尺寸记录：本次加载第一次调用 FinalizeTerrainData 才记得下来
                 MapSizeMismatchState.Reset();
 
                 // 存档闸门：已完成、失败或被否决的转换请求到下一次加载就作废；本次正是转换读档时请求处于"加载中"，不受影响
@@ -210,7 +210,7 @@ namespace MapExtPDX.MapExt.Core
         /// <para>沿用 <c>VanillaSaveConversionSystem</c> 的 <c>MainThreadDispatcher</c>
         /// 延迟模式，确保排在其他 Mod 的加载完成对话框之后，避免被覆盖。</para>
         ///
-        /// <para><b>原版地形被拉伸</b>另走 <see cref="ShowVanillaStretchIfNeeded"/>（v4.12.0 整合计划 2.2）。</para>
+        /// <para><b>原版地形被拉伸</b>另走 <see cref="ShowVanillaStretchIfNeeded"/>。</para>
         /// </summary>
         private void ShowMapSizeMismatchDialogIfNeeded(Purpose purpose, GameMode mode)
         {
@@ -225,7 +225,7 @@ namespace MapExtPDX.MapExt.Core
             if (!MapSizeMismatchState.HasMismatch)
                 return;
 
-            // 28→57 读的是 28 km 存档：模式不符正是转换要处理的；被否决的由转换系统弹否决说明（v4.12.0 整合计划 §1.8）
+            // 28→57 读的是 28 km 存档：模式不符正是转换要处理的；被否决的由转换系统弹否决说明
             if (VanillaConversionState.HasRequestForCurrentLoad)
             {
                 ModLog.Info(Tag, $"地图尺寸模式不符由转换请求处理，不提示：{VanillaConversionState.Current}");
@@ -284,13 +284,13 @@ namespace MapExtPDX.MapExt.Core
         }
 
         /// <summary>
-        /// 原版 14 km 的地形在扩展模式下按当前尺寸拉伸后的载入后提示（v4.12.0 整合计划 2.2）。
+        /// 原版 14 km 的地形在扩展模式下按当前尺寸拉伸后的载入后提示。
         /// <list type="bullet">
-        /// <item>事实警告，不受"禁止读档校验"控制（D3）；</item>
+        /// <item>事实警告，不受"禁止读档校验"控制；</item>
         /// <item>只提示游戏的开新城与编辑器的读图（<c>LoadMap</c>）：编辑器新建地图本来就以默认 14336 创建再缩放；
-        /// 读档拉伸只在关闭校验后读原版存档时出现，只记 Warn（Q10）；</item>
+        /// 读档拉伸只在关闭校验后读原版存档时出现，只记 Warn；</item>
         /// <item>本次加载有转换请求时不提示，否决的说明由转换系统弹；</item>
-        /// <item>菜单层已提示过、玩家选了"仍要继续"的只推通知条（Q11），其余对话框与通知条并存（理由同模式不符）。</item>
+        /// <item>菜单层已提示过、玩家选了"仍要继续"的只推通知条，其余对话框与通知条并存（理由同模式不符）。</item>
         /// </list>
         /// 到这里的开新城，是菜单层判不了的：面积不可信、资产没有元数据，或闸门异常放行。
         /// </summary>
@@ -450,7 +450,7 @@ namespace MapExtPDX.MapExt.Core
                 CheckModEnabled<CommercialDemandSystem>(world, "Demand", conflicts, failedSystemTypes, ref okCount, ref totalChecked);
             }
 
-            // === 3. CellMap 模拟核心宿主与关键补丁宿主状态验证（D1 方向乙：宿主停用属局部功能偏差，记入普通冲突与日志，不弹 CRITICAL 退出框） ===
+            // === 3. CellMap 模拟核心宿主与关键补丁宿主状态验证（宿主停用属局部功能偏差，记入普通冲突与日志，不弹 CRITICAL 退出框） ===
             if (isExpanded)
             {
                 int beforeHostConflicts = conflicts.Count;
@@ -487,7 +487,7 @@ namespace MapExtPDX.MapExt.Core
                 }
             }
 
-            // === 4. 层 1：仅在检出状态异常或本会话首次入城核查双跑时查询归因索引（P2 + P5） ===
+            // === 4. 层 1：仅在检出状态异常或本会话首次入城核查双跑时查询归因索引 ===
             bool runDualCheckThisTime = !_sessionDualRunChecked;
             if (failedSystemTypes.Count > 0 || runDualCheckThisTime)
             {
@@ -529,7 +529,7 @@ namespace MapExtPDX.MapExt.Core
                         }
                     }
 
-                    // 4b. 静态双跑嫌疑（P5：仅凭静态 IL + 活跃模拟系统只记普通冲突与日志，绝不弹 CRITICAL 退出框）
+                    // 4b. 静态双跑嫌疑（仅凭静态 IL + 活跃模拟系统只记普通冲突与日志，绝不弹 CRITICAL 退出框）
                     if (runDualCheckThisTime)
                     {
                         foreach (KeyValuePair<Type, List<string>> kv in dualRunMap)

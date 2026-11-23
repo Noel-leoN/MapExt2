@@ -30,7 +30,7 @@ namespace MapExtPDX.EcoShared
 	/// <summary>
 	/// ResourceBuyerSystem 完整替换（System Replacement，基准 1.6.2f）。
 	/// 刻意不跟版項：1.6.0f 新增的 BuyerOutcome / IncrementOutcome 遙測統計體系
-	/// （純 UI／遙測計數，Mod 無消費端，省略以減少 Job 開銷）——/check-upgrade 比對時勿誤報為遺漏。
+	/// （纯 UI／遥测计数，Mod 无消费端，省略以减少 Job 开销）——版本升级比对时勿误报为遗漏。
 	/// </summary>
 	public partial class ResourceBuyerSystemMod : GameSystemBase
 	{

@@ -154,7 +154,7 @@ namespace MapExtPDX.EcoShared
         }
 
 
-        // P3: 恢复 ModeSettingData 读取，与原版一致
+        // 恢复 ModeSettingData 读取，与原版一致
         // 运行时倍率优先级: ModeSettingData > ModSettings > 默认值(3.5)
         protected override void OnGameLoaded(Colossal.Serialization.Entities.Context serializationContext)
         {
@@ -670,7 +670,6 @@ namespace MapExtPDX.EcoShared
                             // PropertyRenter propertyRenter = m_PropertyRenters[householdEntity];
                             // 更新家庭的需求（消费资源或产生购物需求）
 
-                            // 【优化2-StepB】 ---------------------------------------------
                             // 调用 UpdateHouseholdNeed 时，传入预计算好的参数
                             UpdateHouseholdNeed(
                                 i,
@@ -760,7 +759,7 @@ namespace MapExtPDX.EcoShared
 
             /// <summary>
             /// 更新家庭的资源需求、消费和购物行为的子系统
-            /// P2: 已移除游客相关参数（原版由 TouristHouseholdBehaviorSystem 处理）
+            /// 已移除游客相关参数（原版由 TouristHouseholdBehaviorSystem 处理）
             /// </summary>
             private void UpdateHouseholdNeed(
                 int index,

@@ -48,7 +48,7 @@ namespace MapExtPDX.ModeA
     // 3. 重构目标：Edge地价直接计算最终值，包含所有加成和扣除因素。CellMap热力图加权采样Edge地价生成，确保UI显示与经济模拟一致
     // 注意：早期版本根据道路边建筑属性计算地价方式对性能影响大，参照中日韩等地基准地价体地价公告现路线价，不再区分建筑用途对地价的影响。建筑地价影响由RentSystem体现
 
-    // 降级保护（重构二 0.4）：合并版存档里本类的类型名是 MapExtPDX.CellMap.LandValueSystemMod，退回本版本时靠此别名读回，勿删
+    // 降级保护：合并版存档里本类的类型名是 MapExtPDX.CellMap.LandValueSystemMod，退回本版本时靠此别名读回，勿删
     [Colossal.Serialization.Entities.FormerlySerializedAs("MapExtPDX.CellMap.LandValueSystemMod")]
     public partial class LandValueSystemMod : CellMapReplacementSystem<TargetType, TargetSystem>
     {
@@ -286,7 +286,7 @@ namespace MapExtPDX.ModeA
             };
 
             // 必须等待 Phase 1 完成，因为 Phase 2 要读 Phase 1 的结果。
-            // 写图前还要等这张图的读者（热力图、悬停提示、调试视图与存档），原版同样读写依赖都等（v4.12.0 整合计划 4.1）
+            // 写图前还要等这张图的读者（热力图、悬停提示、调试视图与存档），原版同样读写依赖都等
             JobHandle gridDeps = JobHandle.CombineDependencies(Dependency, searchDep, m_ReadDependencies);
 
             // 调度 Map Job

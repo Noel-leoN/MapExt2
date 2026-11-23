@@ -132,7 +132,7 @@
 		<None Remove="MapExt\UI\node_modules\**" />
 	</ItemGroup>
 
-	<!-- 模式副本（重构二 D3）：ModeA 是唯一源码；ModeB–E 与各模式的 XCellMapSystemRe_ModeX.cs 由 ModeSources.Generate.ps1
+	<!-- 模式副本：ModeA 是唯一源码；ModeB–E 与各模式的 XCellMapSystemRe_ModeX.cs 由 ModeSources.Generate.ps1
 	     在编译前生成，不入版控（见 .gitignore）。XCellMapSystemRe.cs 是生成模板，自身也参与编译（命名空间 ReBurstSystemCore，与生成文件不冲突） -->
 	<PropertyGroup>
 		<ModeSourcesScript>$(MSBuildProjectDirectory)\MapExt\ReBurstSystem\ModeSources.Generate.ps1</ModeSourcesScript>

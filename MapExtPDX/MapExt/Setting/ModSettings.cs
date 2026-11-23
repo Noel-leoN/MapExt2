@@ -61,7 +61,7 @@ namespace MapExtPDX
         Minimal_Every4Frames, // 极简：每四帧模拟，关闭背景水与水流模糊
         Paused_NoFlow, // 暂停：停止水流模拟
 
-        // [SUSPENDED] 方案 E：事件驅動自適應休眠（實作留在 PatchSet2WaterAdaptive.cs）。
+        // [SUSPENDED] 事件驱动自适应休眠（实现留在 PatchSet2WaterAdaptive.cs）。
         // 列舉值必須保留在末尾以免已存設定檔序號漂移；UI 已隱藏，運行時強制降級為 Vanilla。
         // 掛起原因：跨幀 WaterSimSpeed=0 與 Postfix 橫跳修復 / PauseFreeze 結構性衝突。
         Adaptive_EventDriven,
@@ -206,7 +206,7 @@ namespace MapExtPDX
         public bool TerrainBufferPrealloc { get; set; } = true;
 
         // === 建筑裁剪降频（已移除）===
-        // 对应的两个补丁类从未注册，这项优化从未生效，重构一已删除；需要时按性能计划重新引入并做游戏内验证。
+        // 对应的两个补丁类从未注册，这项优化从未生效，相关死代码已删除；如需重新引入须另行设计与实测。
         // 属性与设定文件键保留（避免旧 .coc 反序列化报未知键），UI 隐藏，任何代码都不再读取。
         [SettingsUIHidden]
         public bool TerrainCullThrottle { get; set; } = true;
@@ -234,7 +234,7 @@ namespace MapExtPDX
         // ==========================================
         // 地形分辨率: 8192 与水模拟级联不兼容，当前仅 4096 可用
         // 水纹理分辨率: Compute Shader 存在纹理尺寸隐式依赖，当前仅 2048 可用
-        // 待自定义 Compute Shader (Phase 3) 实现后恢复 UI
+        // 待自定义 Compute Shader 实现后恢复 UI
         [SettingsUIHidden] public TerrainResolutionSetting TerrainResolution { get; set; }
 
         [SettingsUIHidden] public WaterResolutionSetting WaterResolution { get; set; }
@@ -529,7 +529,7 @@ namespace MapExtPDX
         public int HomelessSeekerCap { get; set; } = 1280;
 
         /// <summary>
-        /// 【P1 寻路优化】企业采购寻路（ResourceSeller）每个请求按 chunk 收集的合格候选供应商上限。
+        /// 企业采购寻路（ResourceSeller）每个请求按 chunk 收集的合格候选供应商上限。
         /// 每个 chunk 凑满即跳出该 chunk 的实体遍历（Early Exit），减少单 chunk 内后续评估；所有 chunk 仍会遍历。
         /// 值越小性能越好但可能错过较优货源；值越大越贴近原版全局最优但开销越高。
         /// 稀缺资源自带保护：合格候选稀少时不会触发提前跳出，自然遍历完全部实体。默认 8。
@@ -539,7 +539,7 @@ namespace MapExtPDX
         public int ResourceSellerCandidateCap { get; set; } = 8;
 
         /// <summary>
-        /// 【P2 寻路优化】休闲寻路（Leisure）每个请求按 chunk 收集的合格休闲设施候选上限。
+        /// 休闲寻路（Leisure）每个请求按 chunk 收集的合格休闲设施候选上限。
         /// 每个 chunk 凑满即跳出该 chunk 的实体遍历（Early Exit），减少单 chunk 内后续评估；所有 chunk 仍会遍历。
         /// 多数候选 cost=0，A* 端以实际路径距离排序，提前退出几乎无质量损失；
         /// 稀缺设施自带保护：合格候选稀少时不会触发提前跳出，自然遍历完全部实体。默认 6。
@@ -549,7 +549,7 @@ namespace MapExtPDX
         public int LeisureCandidateCap { get; set; } = 6;
 
         /// <summary>
-        /// 【P6 寻路优化】家庭找房（FindHome）每户每次评估按 chunk 收集的合格候选房屋上限。
+        /// 家庭找房（FindHome）每户每次评估按 chunk 收集的合格候选房屋上限。
         /// 每个 chunk 凑满即跳出该 chunk 的实体遍历（Early Exit），所有 chunk 仍会遍历。与采购/休闲不同：找房候选的 cost 是 GetPropertyScore
         /// （房屋质量综合评分，非同质 cost=0），故本 cap 直接影响“居住质量匹配度”——
         /// 值越小性能越好，但家庭越可能住进次优房（仍付得起、可接受，但评分较低），极端偏低时可能加剧搬家频率；
@@ -1284,7 +1284,7 @@ namespace MapExtPDX
 
         /// <summary>
         /// 把启用中的 CellMap 逐图层统计（非零格数、非零面积、最值、总和）与实际参数写入 MapExtPDX.log，
-        /// 用于比较原版尺寸与扩展模式下同样布局的城市（ModeC 标定计划 Phase 1.2）。
+        /// 用于比较原版尺寸与扩展模式下同样布局的城市。
         /// </summary>
         [SettingsUISection(kDebugTab, kDebugGroup)]
         [SettingsUIButton]
@@ -1308,7 +1308,7 @@ namespace MapExtPDX
 
         /// <summary>
         /// 把 MapExt 系统的更新次序、启用状态与补丁清单写入 MapExtPDX.log，
-        /// 用于重构前后在同一配置下逐行比对注册行为。
+        /// 用于在同一配置下逐行比对注册行为。
         /// </summary>
         [SettingsUISection(kDebugTab, kDebugGroup)]
         [SettingsUIButton]
@@ -1325,7 +1325,7 @@ namespace MapExtPDX
             // 设置默认的补丁模式
             PatchModeChoice = PatchModeSetting.ModeA;
             // 分辨率设置
-            // 地形 8192 暂时禁用 — 水模拟与 8192 级联不兼容 (见 docs/02_TerrainWater/TerrainWater_Decoupling.md)
+            // 地形 8192 暂时禁用 — 水模拟与 8192 级联不兼容
             TerrainResolution = TerrainResolutionSetting.Vanilla_4096;
             WaterResolution = WaterResolutionSetting.Vanilla_2048;
             WaterSimQuality = WaterSimQualitySetting.Vanilla_EveryFrame;

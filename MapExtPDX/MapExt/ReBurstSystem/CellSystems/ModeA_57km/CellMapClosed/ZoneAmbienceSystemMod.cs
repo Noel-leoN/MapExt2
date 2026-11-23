@@ -23,7 +23,7 @@ namespace MapExtPDX.ModeA
     using TargetType = ZoneAmbienceCell;
     // =========================================================================================
 
-    // 降级保护（重构二 0.4）：合并版存档里本类的类型名是 MapExtPDX.CellMap.ZoneAmbienceSystemMod，退回本版本时靠此别名读回，勿删
+    // 降级保护：合并版存档里本类的类型名是 MapExtPDX.CellMap.ZoneAmbienceSystemMod，退回本版本时靠此别名读回，勿删
     /// <summary>
     /// 区域氛围系统 (Zone Ambience System)
     /// <para>

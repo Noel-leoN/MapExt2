@@ -24,8 +24,8 @@ namespace MapExtPDX.MapExt.Tools
     /// <summary>
     /// CellMap 校验和导出工具（开发者用）。
     ///
-    /// <para><b>用途</b>：同一存档在不同 Mod 版本下加载后，逐图比对 CellMap 数据是否一致。
-    /// 重构二（ModeA–D 合并）的旧档兼容与降级保护都以此为验收依据。</para>
+    /// <para><b>用途</b>：同一存档在不同 Mod 版本下加载后，逐图比对 CellMap 数据是否一致，
+    /// 用作旧档兼容与降级保护的验收依据。</para>
     ///
     /// <para><b>读法</b>：反射读取每个系统自己的 <c>CellMapSystem&lt;T&gt;.m_Map</c>，不经 <c>GetMap</c>。
     /// 原版系统的 <c>GetMap</c> 被替换系统的 Harmony 前缀重定向，经它读到的是替换系统的缓冲区，

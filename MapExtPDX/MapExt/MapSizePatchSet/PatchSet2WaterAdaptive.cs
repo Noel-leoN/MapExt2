@@ -10,7 +10,7 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
     using Unity.Entities;
 
     /// <summary>
-    /// 方案 E — 水模拟事件驱动自适应休眠（<c>WaterSimQuality = Adaptive_EventDriven</c>）。
+    /// 水模拟事件驱动自适应休眠（<c>WaterSimQuality = Adaptive_EventDriven</c>）。
     ///
     /// <para>
     /// <b>[SUSPENDED / 硬挂起]</b> 本档位已停用：UI 不下拉、
@@ -36,7 +36,7 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
     /// 游戏原生已有睡眠协议：所有地形类扰动（地形刷、建筑放置/升级、道路整平、
     /// 编辑器 lot、heightmap 替换、载图）都经 <c>TerrainWillChange</c>（counter=1）或
     /// <c>TerrainWillChangeFromBrush</c>（counter=15），倒数归零时由 <c>Simulate()</c>
-    /// <b>强制写 <c>WaterSimSpeed=1</c></b>（WaterSystem.cs:1426）。
+    /// <b>强制写 <c>WaterSimSpeed=1</c></b>（<c>WaterSystem.Simulate</c>）。
     /// 因此本补丁不必监听任何地形事件——休眠期间侦测到 speed 被外力改为非 0
     /// 即视为唤醒信号。这一条就吃下地形类全部路径。
     /// </para>

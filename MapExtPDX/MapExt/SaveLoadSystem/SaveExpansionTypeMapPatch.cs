@@ -14,7 +14,7 @@ using Unity.Entities;
 namespace MapExtPDX.SaveLoadSystem
 {
     /// <summary>
-    /// 28→57 存档扩展的类型路由（v4.12.0 整合计划 3.3、§1.8）：把 ModeB 存档里 5 张贴图的区段交给 ModeA 的同名系统读。
+    /// 28→57 存档扩展的类型路由：把 ModeB 存档里 5 张贴图的区段交给 ModeA 的同名系统读。
     ///
     /// <para><b>为什么要路由</b>：ModeA 会话只建 ModeA 的系统，ModeB 的类型不在 <c>SystemSerializerLibrary</c> 的映射表里，
     /// 这些区段会被 <c>ObsoleteSystemSerializer</c> 整块跳过，ModeA 系统因区段缺席改走 SetDefaults 清零。
@@ -27,7 +27,7 @@ namespace MapExtPDX.SaveLoadSystem
     /// 每次重建，旧的 <c>m_DataSizes</c>（几 KB 的 Persistent 数组）不释放，与原版启动时那次相同。</para>
     ///
     /// <para><b>类型先于数据解析</b>：存档里所有系统区段的类型在读任何数据之前一次解析完，地形否决发生在那之后，
-    /// 改不了这次的路由。已路由的系统一律中心嵌入（Q18），本类记下"本次读档已路由的类型"供基类判断。</para>
+    /// 改不了这次的路由。已路由的系统一律中心嵌入，本类记下"本次读档已路由的类型"供基类判断。</para>
     ///
     /// <para><b>只在 ModeA 挂</b>：<c>PatchManager</c> 的可选补丁集，非 CV=4 跳过。失败只让 28→57 不可用，不降级；
     /// 闸门按 <see cref="CanExpand"/> 决定给不给转换。</para>
@@ -47,7 +47,7 @@ namespace MapExtPDX.SaveLoadSystem
         /// <summary>目标模式：ModeA 57 km。</summary>
         public const int TargetCoreValue = 4;
 
-        /// <summary>白名单：ModeB 类型 → ModeA 同名系统（28→57 计划 §3.2）。其余 7 个按模式的贴图是派生数据，由模拟重建。</summary>
+        /// <summary>白名单：ModeB 类型 → ModeA 同名系统。其余 7 个按模式的贴图是派生数据，由模拟重建。</summary>
         private static readonly (Type Source, Type Target)[] s_Routes =
         {
             (typeof(ModeB.NaturalResourceSystemMod), typeof(ModeA.NaturalResourceSystemMod)),
@@ -125,7 +125,7 @@ namespace MapExtPDX.SaveLoadSystem
 
         /// <summary>
         /// 读档结束或请求清除时调用：清掉本次读档的路由记录，并置 dirty 让下一次存读档重建出不带路由的映射表。
-        /// 不在地形否决时调用：那时各系统还没读档，已路由的照样要中心嵌入（Q18）。
+        /// 不在地形否决时调用：那时各系统还没读档，已路由的照样要中心嵌入。
         /// </summary>
         internal static void EndLoad(string reason)
         {

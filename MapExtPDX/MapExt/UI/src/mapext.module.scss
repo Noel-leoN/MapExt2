@@ -1,4 +1,4 @@
-/* MapExt In-Game Panel — Master-Detail 双面板布局 (Phase 2 v2) */
+/* MapExt In-Game Panel — Master-Detail 双面板布局 */
 /* Coherent Gameface 兼容：使用 rem（在 Gameface 中等同 px） */
 
 /* === 外层容器：左右布局 === */
@@ -309,7 +309,7 @@
     text-align: right;
 }
 
-/* === Phase 4: Dashboard 子标题 === */
+/* === Dashboard 子标题 === */
 .subTitle {
     font-size: 12rem;
     font-weight: 600;
@@ -319,7 +319,7 @@
     border-bottom: 1rem dashed rgba(100, 140, 200, 0.15);
 }
 
-/* === Phase 4: 住宅空置率表格 === */
+/* === 住宅空置率表格 === */
 .statTable {
     width: 100%;
     border-collapse: collapse;
@@ -357,7 +357,7 @@
     }
 }
 
-/* === Phase 4: Accordion 折叠区块 === */
+/* === Accordion 折叠区块 === */
 .accordionBlock {
     border-bottom: 1rem solid rgba(100, 140, 200, 0.1);
 }
@@ -401,7 +401,7 @@
     padding: 2rem 4rem 8rem 20rem;
 }
 
-/* === Phase 4: 住宅密度行（紧凑三列） === */
+/* === 住宅密度行（紧凑三列） === */
 .densityRow {
     display: flex;
     align-items: baseline;
@@ -460,7 +460,7 @@
     border-radius: 3rem;
 }
 
-/* === Phase 5: 水体工具面板 === */
+/* === 水体工具面板 === */
 .waterSubTitle {
     font-size: 12rem;
     font-weight: 600;

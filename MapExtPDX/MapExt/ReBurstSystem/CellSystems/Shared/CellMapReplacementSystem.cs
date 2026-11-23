@@ -28,7 +28,7 @@ namespace MapExtPDX.CellShared
         NearestResample = 1,
 
         /// <summary>
-        /// 28→57 存档扩展（v4.12.0 整合计划 3.4）：源贴图按原格距逐行写进中央，外围清零。
+        /// 28→57 存档扩展：源贴图按原格距逐行写进中央，外围清零。
         /// 只由类型路由触发（<see cref="SaveExpansionTypeMapPatch"/>），不作为任何系统的默认策略。
         /// </summary>
         CenterEmbed = 2,
@@ -48,7 +48,7 @@ namespace MapExtPDX.CellShared
     }
 
     /// <summary>
-    /// 28→57 存档扩展的接收结果（v4.12.0 整合计划 3.4）：非泛型接口，转换系统按类型取各替换系统的结果做接收核对。
+    /// 28→57 存档扩展的接收结果：非泛型接口，转换系统按类型取各替换系统的结果做接收核对。
     /// </summary>
     public interface ISaveExpansionTarget
     {
@@ -57,7 +57,7 @@ namespace MapExtPDX.CellShared
     }
 
     /// <summary>
-    /// CellMap 替换系统的共用基类（重构三）：禁用原版、创建贴图、登记 <see cref="Instance"/>、
+    /// CellMap 替换系统的共用基类：禁用原版、创建贴图、登记 <see cref="Instance"/>、
     /// 存档读写适配、GetData 修正，以及重定向前缀的判断与转发。
     ///
     /// <para><b>手写共用源，不经生成器</b>：改动直接作用于 ModeA–D 与 ModeE 的 D2。
@@ -256,7 +256,7 @@ namespace MapExtPDX.CellShared
             }
 
             // 28→57：本次读档把 ModeB 的区段路由给了本系统，按原格距嵌进中央。
-            // 只看路由，不看请求阶段：类型在读任何数据之前就解析完了，地形否决改不了路由（v4.12.0 整合计划 Q18）
+            // 只看路由，不看请求阶段：类型在读任何数据之前就解析完了，地形否决改不了路由
             bool embed = SaveExpansionTypeMapPatch.IsRoutedThisLoad(GetType());
             if (embed)
             {
@@ -282,7 +282,7 @@ namespace MapExtPDX.CellShared
 
         /// <summary>
         /// 存档 Job。泛型 Job 的封闭类型要到运行时才确定，Burst 不会自己编译它；
-        /// 封闭类型由 <c>CellMapSerializeJobRegistration.cs</c> 的 <c>RegisterGenericJobType</c> 逐个登记（v4.12.0 整合计划 4.6），
+        /// 封闭类型由 <c>CellMapSerializeJobRegistration.cs</c> 的 <c>RegisterGenericJobType</c> 逐个登记，
         /// 所以是 internal：程序集级特性要能访问到它。新增 CellMap 替换系统时那里要补两行，否则静默退回 Mono，
         /// 唯一的信号是建置日志 Burst 段少了对应的 <c>Method:</c> 行。
         /// </summary>
@@ -298,7 +298,7 @@ namespace MapExtPDX.CellShared
                 TWriter writer = m_WriterData.GetWriter<TWriter>();
                 if (m_Stride != 0 && m_Map.Length != 0)
                 {
-                    // Job 内分配、Job 内用完，与原版一样用 Temp：超过块大小的请求改走默认堆，不会出错（v4.12.0 整合计划 §1.4）。
+                    // Job 内分配、Job 内用完，与原版一样用 Temp：超过块大小的请求改走默认堆，不会出错。
                     // 初始容量按整图一次分配到位（每格写出的字节数即 SizeOf<TCell>）。原版从 1000 字节起步、写满就翻倍，
                     // 扩展模式的图大 4–64 倍，要扩容十几次。不用 m_Stride 估算：原版 NaturalResourceCell.GetStride 漏算了鱼（12 对 16 字节）
                     NativeList<byte> buffer = new NativeList<byte>(m_Map.Length * UnsafeUtility.SizeOf<TCell>(), Allocator.Temp);
@@ -324,7 +324,7 @@ namespace MapExtPDX.CellShared
 
         /// <summary>
         /// 读档 Job。与 <see cref="SerializeJobMod{TWriter}"/> 一样靠 <c>RegisterGenericJobType</c> 登记封闭类型走 Burst，所以是 internal。
-        /// 临时数组都在 Job 内分配、Job 内释放，用 Temp（v4.12.0 整合计划 4.6）。
+        /// 临时数组都在 Job 内分配、Job 内释放，用 Temp。
         /// </summary>
         [BurstCompile]
         internal struct DeserializeJobResetMismatch<TReader> : IJob where TReader : struct, IReader
@@ -368,9 +368,9 @@ namespace MapExtPDX.CellShared
                         {
                             // 尺寸不匹配或中心嵌入：读取到临时数组（必须读取以推进流位置）。
                             // 本 Job 的三个临时数组都必须分配时清零（与原版相同），不能改成 UninitializedMemory：
-                            // ① 解码 unfilter_strided_data 不写数据长度除以 stride 的余数字节（2026-11-08 直接调用游戏的 PipelinePlugin 实测），
+                            // ① 解码 unfilter_strided_data 不写数据长度除以 stride 的余数字节（实测 PipelinePlugin 行为），
                             //    原版 NaturalResourceCell.GetStride 漏算了鱼（12 对 16 字节），每格写 16 字节时总有 4 字节余数，
-                            //    也就是最后一格的鱼，清零后读出为 0，原版同样如此；不清零就是上一次分配留下的残值（v4.12.0 整合计划 4.6 复测发现）；
+                            //    也就是最后一格的鱼，清零后读出为 0，原版同样如此；不清零则会保留上一次分配的残值；
                             // ② 读格式较老的存档时，格子里后来新增的字段（如鱼，FormatTags.FishResource）不会被读入，同样留着残值
                             var dummy = new NativeArray<TCell>(storedCount, Allocator.Temp);
                             reader.Read(dummy);

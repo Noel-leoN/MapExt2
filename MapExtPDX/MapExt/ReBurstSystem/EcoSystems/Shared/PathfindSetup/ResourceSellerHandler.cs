@@ -1,12 +1,11 @@
 // Copyright (c) 2024 Noel2(Noel-leoN)
 // Licensed under the MIT License.
 
-// 原版來源：Game.Simulation.ResourcePathfindSetup.SetupResourceSellerJob + SetupResourceSeller
-//   （_KnowledgeBase/1_GameSource/Game/Simulation/ResourcePathfindSetup.cs:25-241 / 721-774）
+// 原版来源：Game.Simulation.ResourcePathfindSetup（SetupResourceSellerJob / SetupResourceSeller）
 //
-// 本檔以原版 SetupResourceSellerJob 為基礎複製，改動三處（見 P1 計畫 §3）：
+// 本文件以原版 SetupResourceSellerJob 为基础复制，改动三处：
 //   1. Early Exit（砍 T）：凑满 m_MaxCandidatesToFind 个“已完成 FindTargets 的合格候选”即 break。
-//   2. 随机起点 startOffset：避免先建的企业恒被优先评估，摊平地理与计数偏差（计数策略方案 3）。
+//   2. 随机起点 startOffset：避免先建的企业恒被优先评估，摊平地理与计数偏差。
 //   3. cap 可配置：m_MaxCandidatesToFind 由 ModSettings.ResourceSellerCandidateCap 于排程时注入。
 // 其餘篩選 / 評分 / 分支完整性（flag~flag9、ServiceAvailable 與庫存兩套評分、CargoStation 隊列上限、
 // RequireTransport 運力上限、防超賣 num2 校驗）逐行保留，零行為偏移。
@@ -37,7 +36,7 @@ using Unity.Mathematics;
 namespace MapExtPDX.EcoShared
 {
 	/// <summary>
-	/// P1：ResourceSeller 尋路 Setup 的 Early Exit handler。
+	/// ResourceSeller 寻路 Setup 的 Early Exit handler。
 	/// 掛在 <see cref="PathfindSetupDispatcher"/> 上，接管 <see cref="SetupTargetType.ResourceSeller"/>。
 	/// 排程語義與原版 <c>ResourcePathfindSetup.SetupResourceSeller</c> 等價，僅在內層候選遍歷加 Early Exit。
 	/// </summary>
@@ -106,7 +105,7 @@ namespace MapExtPDX.EcoShared
 
 			_resourceSystem = currentWorld.GetOrCreateSystemManaged<ResourceSystem>();
 
-			// 與原版 m_ResourceSellerQuery 嚴格一致（ResourcePathfindSetup.cs:650-672）
+			// 与原版 ResourcePathfindSetup.m_ResourceSellerQuery 严格一致
 			_resourceSellerQuery = system.GetSetupQuery(new EntityQueryDesc
 			{
 				All = new[]
@@ -267,7 +266,7 @@ namespace MapExtPDX.EcoShared
 
 		public PathfindSetupSystem.SetupData m_SetupData;
 
-		// --- 原版 ResourcePathfindSetup 硬編碼常量（inline，值取自 ResourcePathfindSetup.cs:567-577）---
+		// --- 原版 ResourcePathfindSetup 硬编码常量（inline）---
 		private const float kOutsideConnectionAmountBasedPenalty = 0.03f;
 		private const float kCargoStationAmountBasedPenalty = 0.0001f;
 		private const float kCargoStationPerRequestPenalty = 0.0001f;
@@ -422,7 +421,7 @@ namespace MapExtPDX.EcoShared
 					// FindTargets 回傳實際加入的 target 數，可能為 0（該建築無可用路網接入點：
 					// m_PathEdges 查不到、lane 不存在、access restriction 擋掉）。無條件 ++ 會讓
 					// 路網不可達的孤立建築白佔 cap 額度，極端情況湊滿 cap 卻沒有任何有效 target。
-					// 原版 PolicePathfindSetup.cs:721 亦有檢查回傳值的先例。
+					// 原版 PolicePathfindSetup.SetupPolicePatrolRequest 亦有检查返回值的先例。
 					if (targetSeeker.FindTargets(entity2, num3) > 0 && ++candidatesFound >= m_MaxCandidatesToFind)
 					{
 						break;

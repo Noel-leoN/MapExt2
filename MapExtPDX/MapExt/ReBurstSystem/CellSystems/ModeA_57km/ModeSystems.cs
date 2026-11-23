@@ -12,7 +12,7 @@ namespace MapExtPDX.ModeA
     /// <summary>
     /// 本扩展模式的替换声明：在 ModeA 编写，建置时由 ModeSources.Generate.ps1 生成到 B/C/D（类型名不加限定，在各模式命名空间内解析）。
     ///
-    /// <para><b>声明顺序即同一 phase 内的更新顺序</b>，须与重构前 SystemReplacer 的注册顺序一致；
+    /// <para><b>声明顺序即同一 phase 内的更新顺序</b>，增删或调整声明时须保持既定的系统更新先后顺序；
     /// 每条声明自带它取代的原版系统，注册、读档重新禁用与诊断共用这份清单。</para>
     /// </summary>
     public static class ModeSystems
@@ -68,7 +68,7 @@ namespace MapExtPDX.ModeA
             else
             {
                 // CellOnly：经济总开关或找房组关闭时只修正 CellMap 尺寸。
-                // 声明自带原版禁用——原先这里漏了，原版与 CellOnly 同时运行（审查报告 P0-1）
+                // 声明自带原版禁用，防止原版与 CellOnly 同时运行
                 r.Replace<HouseholdFindPropertySystemMod_CellOnly>(cellMap, typeof(Game.Simulation.HouseholdFindPropertySystem))
                     .At(sim);
                 r.Replace<RentAdjustSystemMod_CellOnly>(cellMap, typeof(Game.Simulation.RentAdjustSystem))

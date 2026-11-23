@@ -31,8 +31,8 @@ namespace MapExtPDX.EcoShared
 	/// <summary>
 	/// <para>寻路 Setup 统一分派路由器 —— 挂在 <c>PathfindSetupSystem.FindTargets</c> 上的 Harmony Prefix（C1 完整版开启时另挂有 <c>PathfindSetupSystem_FindTargets_Patch</c>，两者按 <see cref="SetupTargetType"/> 互斥分工）。</para>
 	/// <para>
-	/// 依 <see cref="SetupTargetType"/> 查註冊表：命中且 handler 啟用 → 接管排程並 <c>return false</c> 跳過原版；
-	/// 否則 <c>return true</c> 放行原版。P1（ResourceSeller）等優化皆掛此框架，避免多 Prefix 疊掛衝突。
+	/// 依 <see cref="SetupTargetType"/> 查注册表：命中且 handler 启用 → 接管排程并 <c>return false</c> 跳过原版；
+	/// 否则 <c>return true</c> 放行原版。<c>ResourceSeller</c>、<c>Leisure</c> 等优化均挂此框架，避免多 Prefix 叠挂冲突。
 	/// </para>
 	/// <para>
 	/// <b>与 C1 找房补丁的分工</b>：C1 完整版（经济总开关与找房组都开启）由各模式的 <c>PathfindSetupSystem_FindTargets_Patch</c>

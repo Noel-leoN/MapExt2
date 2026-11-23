@@ -480,7 +480,7 @@ namespace MapExtPDX.ModeA
 
 							propertyRenter.m_Rent = rentPricePerRenter;
 							this.m_PropertyRenters[renter] = propertyRenter;
-							// 对齐原版 1.6.2f（与 D1 相同）：本系统只对公司打开 PropertySeeker。
+							// 对齐原版 1.6.2f（与 D1_RentAdjustSystemMod 相同）：本系统只对公司打开 PropertySeeker。
 							// 家庭找房只由原版 HouseholdBehaviorSystem 按租金收入比的概率触发；原先这里还对"付不起"
 							// 和"租金低于财富一半"的家庭打开，每次租金调整都让整批建筑的家庭同时找房
 							if (!hasHousehold && rentPricePerRenter > renterWealth)

@@ -150,7 +150,7 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
                     break;
 
                 case WaterSimQualitySetting.Adaptive_EventDriven:
-                    // [SUSPENDED] 方案 E 硬掛起：不再呼叫 WaterAdaptiveSleep。
+                    // [SUSPENDED] Adaptive_EventDriven 已硬挂起：不再调用 WaterAdaptiveSleep。
                     // 殘留設定檔若仍為 Adaptive，行為等同 Vanilla（Blur 開、Backdrop 還原），
                     // 避免跨幀 speed=0 與 Postfix 橫跳修復 / PauseFreeze 衝突。
                     // 真正的降級寫回見 ResolutionManager.SanitizeWaterSimQuality。
@@ -337,7 +337,7 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
 
             // [BUGFIX] 地形變更 counter 倒數期間（放置建築 counter=1、筆刷 counter=15）讓行：
             // 原版 Simulate() 在 counter>0 時每幀跑恢復流程（RestoreHeightFromHeightmap 等），
-            // 靠 speed=0 讓模擬循環跳過、僅在 counter 歸零時才恢復 speed=1（L1424-1426）。
+            // 靠 speed=0 让模拟循环跳过、仅在 counter 归零时才恢复 speed=1（WaterSystem.Simulate）。
             // 若此處把 speed 抬回，下一幀起恢復流程與模擬循環並行——
             // 模擬會在尚未恢復完成的水面高度上推進，筆刷後可能產生波紋/水位異常。
             // counter 歸零後原版自行設 speed=1，Editor 橫跳修復（下方分支）不受影響。
@@ -347,7 +347,7 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
             }
 
             // [關鍵] 僅 Paused_NoFlow 的 speed=0 是**跨幀刻意寫入**，不得抬回。
-            // 方案 E（Adaptive）已硬掛起：不得再佔用此例外——否則會與 Editor 橫跳修復、
+            // Adaptive_EventDriven 已硬挂起：不得再占用此例外——否则会与 Editor 横跳修复、
             // PauseFreeze（依賴 Postfix 抬回 StableSpeed）結構性衝突。
             // 其餘檔位的 speed=0 才是 TerrainWillChange 瞬態 / 當幀節流，需恢復。
             // 第二分支：Paused 時 Simulate 可能寫回 1，也不得抬成 StableSpeed（保持停水意圖）。
@@ -361,7 +361,7 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
             }
             else if (postSpeed == 1 && StableSpeed > 1 && !zeroIsIntentional)
             {
-                // Simulate() L1430 硬编码 speed=1（counter→0），
+                // WaterSystem.Simulate 在 counter→0 时硬编码 speed=1，
                 // 但用户通过 Editor 面板设了更高值 → 恢复用户值
                 __instance.WaterSimSpeed = StableSpeed;
             }

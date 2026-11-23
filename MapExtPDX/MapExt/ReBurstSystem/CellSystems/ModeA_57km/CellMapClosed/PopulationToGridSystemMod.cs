@@ -31,7 +31,7 @@ namespace MapExtPDX.ModeA
     using TargetType = PopulationCell;
     // =========================================================================================
 
-    // 降级保护（重构二 0.4）：合并版存档里本类的类型名是 MapExtPDX.CellMap.PopulationToGridSystemMod，退回本版本时靠此别名读回，勿删
+    // 降级保护：合并版存档里本类的类型名是 MapExtPDX.CellMap.PopulationToGridSystemMod，退回本版本时靠此别名读回，勿删
     /// <summary>
     /// 人口映射系统
     /// 将住宅内的居民数量映射到 PopulationCell 网格中，用于生成人口密度数据

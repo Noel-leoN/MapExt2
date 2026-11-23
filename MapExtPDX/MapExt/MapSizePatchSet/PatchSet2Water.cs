@@ -322,7 +322,7 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
             {
                 // kMapSize 是 static int：'ldsfld kMapSize' 原地换成 'ldc.i4 NewKMapSizeI'，后面若有 conv.r4 照样保留。
                 // 不删 conv.r4：它可能带着跳转标签（如 (float)(cond ? x : kMapSize)），删掉后另一条分支的值不再转成 float，
-                // 生成无效 IL。原地改 opcode 与 operand 不动标签与异常块，做法同 PatchSet3（v4.12.0 整合计划 4.2）
+                // 生成无效 IL。原地改 opcode 与 operand 不动标签与异常块，做法同 PatchSet3CellMapFields
                 if (codes[i].LoadsField(_kMapSizeField))
                 {
                     codes[i].opcode = OpCodes.Ldc_I4;

@@ -23,7 +23,7 @@ namespace MapExtPDX.ModeA
     using TargetType = TrafficAmbienceCell;
     // =========================================================================================
 
-    // 降级保护（重构二 0.4）：合并版存档里本类的类型名是 MapExtPDX.CellMap.TrafficAmbienceSystemMod，退回本版本时靠此别名读回，勿删
+    // 降级保护：合并版存档里本类的类型名是 MapExtPDX.CellMap.TrafficAmbienceSystemMod，退回本版本时靠此别名读回，勿删
     /// <summary>
     /// 交通氛围系(Traffic Ambience System)
     /// <para>

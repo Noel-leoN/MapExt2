@@ -42,7 +42,7 @@ namespace MapExtPDX.MapExt.Core
         /// </summary>
         /// <remarks>
         /// string 是名称，PatchSet 是分级与应用补丁的委托。
-        /// 初始化保持 { "Key", new PatchSet(...) } 写法：Check-SurfaceMapCoverage.ps1 按此解析键名。
+        /// 初始化保持 { "Key", new PatchSet(...) } 单行字典字面量写法，供覆盖率校验解析键名。
         /// </remarks>
         private static readonly Dictionary<string, PatchSet> s_AllPatchSets;
 
@@ -69,7 +69,7 @@ namespace MapExtPDX.MapExt.Core
                 { "TerrainToR16Patch", new PatchSet(Optional, (h) => PatchHelpers.PatchAllMethodsInType(h, typeof(TerrainToR16Patch))) },
                 // WorldMap 导入性能警告对话框
                 { "WorldMapImportWarning", new PatchSet(Optional, (h) => h.CreateClassProcessor(typeof(WorldMapImportWarningPatch)).Patch()) },
-                // v2.x.x新增: 远距级联降频优化 (Phase 2.1)
+                // 远距级联降频优化
                 { "TerrainCascadeThrottle", new PatchSet(Optional, (h) => h.CreateClassProcessor(typeof(TerrainSystem_RenderCascades_Patch)).Patch()) },
                 // Backdrop 高度圖降採樣事件化：cascade 未重繪時跳過每幀 dispatch
                 // 四個 patch 類必須同時註冊（門控本體 + OnUpdate 標記 + dirty latch + 載入重置）
@@ -98,7 +98,7 @@ namespace MapExtPDX.MapExt.Core
                 // v2.1.1新增: WaterSystem.InitTextures()重置
                 { "WaterSystemInitFix", new PatchSet(Critical, (_) => WaterSystemReinitializer.Execute()) },
 
-                // v2.x.x新增: Layer 2 水模拟地形欺骗 (方法拦截 + 全局变量双通道)
+                // 水模拟地形级联降采样适配 (方法拦截 + 全局变量双通道)
                 // 仅当地形分辨率 > 4096 时才注册 Harmony Patch，避免每帧 detour 开销
                 // 列为关键：注册了却失败，水模拟会读错纹理；跳过时不算失败
                 { "WaterAdapterOnUpdatePatch", new PatchSet(Critical, (h) => {
@@ -118,7 +118,7 @@ namespace MapExtPDX.MapExt.Core
                 // 雪模拟运行时冻结补丁（SnowSimSpeed=0，由 Settings 开关实时控制）
                 { "SnowOptRuntimePatch", new PatchSet(Optional, (h) => h.CreateClassProcessor(typeof(SnowSystemOptRuntimePatch)).Patch()) },
 
-                // v2.x.x新增: 地形 Backdrop 禁用补丁 (方案 A: InitializeTerrainData 源头拦截)
+                // 地形 Backdrop 禁用补丁 (InitializeTerrainData 源头拦截)
                 { "TerrainBackdropDisable", new PatchSet(Optional, (h) => h.CreateClassProcessor(typeof(TerrainSystem_InitializeTerrainData_DisableBackdrop)).Patch()) },
 
                 // v2.2.0改动
@@ -133,7 +133,7 @@ namespace MapExtPDX.MapExt.Core
                 // 始终注册，由 Prefix 内部 Settings 开关控制启停，实现实时切换
                 { "TerrainBrushRoadBlock", new PatchSet(Optional, (h) => h.CreateClassProcessor(typeof(Tools.TerrainBrushBlockPatch)).Patch()) },
 
-                // PatchSet6:SaveLoad — 28→57 存档扩展的类型路由（v4.12.0 整合计划 3.3）
+                // PatchSet6:SaveLoad — 28→57 存档扩展的类型路由
                 // 只在 ModeA 挂（委托内判断，其余模式跳过不算失败）；失败只让 28→57 不可用，存档闸门照常按模式不符拦下
                 { "SaveExpansionTypeMap", new PatchSet(Optional, (h) => SaveLoadSystem.SaveExpansionTypeMapPatch.Apply(h)) },
 

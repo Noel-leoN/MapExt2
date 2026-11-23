@@ -22,7 +22,7 @@
 // 2.静态字段配原版系统引用依赖
 // 3.OnCreate/OnUpdate(注意尽量使用TempJob分配临时缓冲区避免大型贴图内存溢
 // 4.Job
-// 5.存档读写、GetData修正与重定向判断由基类 CellMapReplacementSystem 提供（重构三），Patches 只留非泛型薄壳
+// 5.存档读写、GetData修正与重定向判断由基类 CellMapReplacementSystem 提供，Patches 只留非泛型薄壳
 // 其他直接套用
 
 using Colossal.Entities;
@@ -54,7 +54,7 @@ namespace MapExtPDX.ModeA
     using TargetType = AirPollution;
     // =========================================================================================
 
-    // 降级保护（重构二 0.4）：合并版存档里本类的类型名是 MapExtPDX.CellMap.AirPollutionSystemMod，退回本版本时靠此别名读回，勿删
+    // 降级保护：合并版存档里本类的类型名是 MapExtPDX.CellMap.AirPollutionSystemMod，退回本版本时靠此别名读回，勿删
     /// <summary>
     /// 空气污染计算、扩散、衰减系
     /// 负责模拟空气中污染物的传播和消散过程
@@ -111,11 +111,11 @@ namespace MapExtPDX.ModeA
             var windMap = m_WindSystem.GetMap(true, out JobHandle windDeps);
 
             // 暂存要跨多个并行 Job、跨线程共用，Job 内的 Temp 用不了，所以用 TempJob，随 Job 链在末尾释放。
-            // 超过 TempJob 块大小（2 MB）的分配实际走默认堆，与 Persistent 同价；选 TempJob 只为自动释放（v4.12.0 整合计划 §1.4）。
+            // 超过 TempJob 块大小（2 MB）的分配实际走默认堆，与 Persistent 同价；选 TempJob 只为自动释放。
             // 分配时清零（ClearMemory）：活跃区外的暂存格保持 0，扩散读到的就是正确的 0
             NativeArray<TargetType> scratchMap = new(m_Map.Length, Allocator.TempJob);
 
-            // 活跃区（ModeC 标定计划 4.3）：每行非零格的跨度，及据此扩张出的平流、扩散范围
+            // 活跃区：每行非零格的跨度，及据此扩张出的平流、扩散范围
             NativeArray<int2> rowSpans = new(kTextureSize, Allocator.TempJob, NativeArrayOptions.UninitializedMemory);
             NativeArray<int4> bounds = new(2, Allocator.TempJob, NativeArrayOptions.UninitializedMemory);
 
@@ -148,7 +148,7 @@ namespace MapExtPDX.ModeA
             };
 
             // === 趟2 扩散(Diffusion)＋衰减(Decay)：只算扩散范围内的格，按行并行，每行一条随机流。
-            // 随机舍入序列与原版不同，统计上等价（ModeC 标定计划 4.2）
+            // 随机舍入序列与原版不同，统计上等价
             AirPollutionDiffuseRowJob diffuseJob = new()
             {
                 m_PollutionMap = m_Map,
@@ -180,7 +180,7 @@ namespace MapExtPDX.ModeA
 
         #endregion
 
-        #region 活跃区与按行 Job（ModeC 标定计划 4.2／4.3）
+        #region 活跃区与按行 Job
 
         /// <summary>每行非零格的 x 跨度；空行写 (int.MaxValue, int.MinValue)。</summary>
         [BurstCompile]

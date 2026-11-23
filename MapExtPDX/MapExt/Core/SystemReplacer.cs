@@ -34,8 +34,7 @@ namespace MapExtPDX.MapExt.Core
         /// <summary>
         /// 防御性重新禁用：读档开始与完成时检查本会话各条替换声明取代的原版系统，已被启用的再禁用一次。
         /// 禁用只在 Apply()（Mod.OnLoad）里做一次，之后若有谁改回 Enabled，这里兜住。
-        /// 原注释说"退出主菜单后引擎会重置所有系统的 Enabled"，知识库里找不到依据：
-        /// Game/Simulation 中会自己改 Enabled 的原版系统都不在禁用名单里（v4.12.0 整合计划 §1.4）。
+        /// Game.Simulation 中会自行改写 Enabled 的原版系统均不在禁用名单内。
         /// 正常不应触发；真的触发时记 Warn，并逐个列出系统名，便于追查是谁启用的。
         /// </summary>
         public static void ReDisableVanillaSystems(Unity.Entities.World world)
@@ -160,7 +159,7 @@ namespace MapExtPDX.MapExt.Core
                     .At(sim).WithPatches(typeof(EcoShared.ServiceCoverageSystem_SetupPathfindMethods_Patch));
                 r.Replace<EcoShared.ResourceBuyerSystemMod>(resourceBuyer, typeof(Game.Simulation.ResourceBuyerSystem)).At(sim);
 
-                // === [P1] ResourceSeller 尋路 Early Exit ===
+                // === ResourceSeller 寻路 Early Exit ===
                 // 只接管 SetupTargetType.ResourceSeller，其餘類型放行（含 C1 各 Mode 的 FindHome patch）。
                 r.FindTargetsHandler(resourceBuyer, Game.Pathfind.SetupTargetType.ResourceSeller,
                     new EcoShared.ResourceSellerHandler());
@@ -178,7 +177,7 @@ namespace MapExtPDX.MapExt.Core
                 const string downstream = AppliedConfig.GroupDownstreamAI;
                 const SystemUpdatePhase load = SystemUpdatePhase.LoadSimulation;
 
-                // F2: 私家车AI（含 Actions 子系统）；存档加载阶段另注册一份（对齐原版 SystemOrder.cs L620-621）
+                // F2: 私家车AI（含 Actions 子系统）；存档加载阶段另注册一份（对齐原版 SystemOrder.Initialize）
                 r.Replace<EcoShared.PersonalCarAISystemMod>(downstream,
                         typeof(Game.Simulation.PersonalCarAISystem), typeof(Game.Simulation.PersonalCarAISystem.Actions))
                     .At(sim).WithActions<EcoShared.PersonalCarAISystemMod.ActionsMod>(sim)
@@ -190,7 +189,7 @@ namespace MapExtPDX.MapExt.Core
                 // F6: 找学校系统
                 r.Replace<EcoShared.FindSchoolSystemMod>(downstream, typeof(Game.Simulation.FindSchoolSystem)).At(sim);
 
-                // === [P2] Leisure 尋路 Early Exit ===
+                // === Leisure 寻路 Early Exit ===
                 // 掛在 dispatcher 上，只接管 SetupTargetType.Leisure。
                 r.FindTargetsHandler(downstream, Game.Pathfind.SetupTargetType.Leisure, new EcoShared.LeisureHandler());
             }

@@ -17,19 +17,19 @@ namespace MapExtPDX.SaveLoadSystem
         CoreValue1Save = 1,
 
         /// <summary>
-        /// 用原版地图开新城（v4.12.0 整合计划 2.4）：重建分块后只解锁中央 9 格（D2），
-        /// 跳过车辆与居民清理。外部连接三种转换都保留（D1，存档转换自 Q27 起也保留）。
+        /// 用原版地图开新城：重建分块后只解锁中央 9 格，
+        /// 跳过车辆与居民清理。外部连接在所有转换模式中均保留。
         /// </summary>
         VanillaMapNewGame = 2,
 
         /// <summary>
-        /// MapExt ModeB（CV=2）存档扩展到 ModeA（v4.12.0 整合计划 Phase 3，28→57）：ModeB 的 5 张贴图经类型路由
+        /// MapExt ModeB（CV=2）存档扩展到 ModeA（28→57）：ModeB 的 5 张贴图经类型路由
         /// 读进 ModeA 系统并中心嵌入（<see cref="SaveExpansionTypeMapPatch"/>），不再从原版实例嵌入。
         /// </summary>
         CoreValue2Save = 3,
     }
 
-    /// <summary>转换中水源的处理结果：存档转换的完成提示按它写水体一段（v4.12.0 整合计划 2.5）。</summary>
+    /// <summary>转换中水源的处理结果：存档转换的完成提示按它写水体一段。</summary>
     public enum WaterSourceOutcome : byte
     {
         /// <summary>新版水源：一个不删，只把水体重置到海平面。</summary>
@@ -64,7 +64,7 @@ namespace MapExtPDX.SaveLoadSystem
         Failed = 5,
 
         /// <summary>
-        /// 被否决：地形实际尺寸不是源尺寸，不执行任何步骤、不压暂停，城市按原样载入（v4.12.0 整合计划 2.1）。
+        /// 被否决：地形实际尺寸不是源尺寸，不执行任何步骤、不压暂停，城市按原样载入。
         /// 不走"失败"：失败提示要玩家别继续玩，被否决的城市可以照常玩。
         /// </summary>
         Cancelled = 6,
@@ -73,7 +73,7 @@ namespace MapExtPDX.SaveLoadSystem
     /// <summary>
     /// 一次转换请求：玩家确认时生成，绑定源存档的资产 ID，按 <see cref="ConversionPhase"/> 推进。
     /// 取代原先的全局 <c>PendingConversion</c> 标志：标志不认存档，残留时会让下一次任意读档跳过校验，
-    /// 新档也会被打上转换标签（审查报告 P0-3）；转换系统的"已执行"标志又只置真、不复位，同一会话的第二次转换被跳过（P0-2）。
+    /// 新档也会被打上转换标签；转换系统的"已执行"标志又只置真、不复位，导致同一会话的第二次转换被跳过。
     /// </summary>
     public sealed class ConversionRequest
     {
@@ -133,7 +133,7 @@ namespace MapExtPDX.SaveLoadSystem
         /// <summary>28→57 地形合成时外围是否为平底（存档没有背景地形，或背景盖不住新地图），写进完成提示。</summary>
         public bool FlatPeriphery { get; internal set; }
 
-        /// <summary>28→57 平底外围是否开了海道（原边界上有低于海平面的格子，整合计划 Q24），写进完成提示。</summary>
+        /// <summary>28→57 平底外围是否开了海道（原边界上有低于海平面的格子），写进完成提示。</summary>
         public bool SeaChannels { get; internal set; }
 
         /// <summary>自动存档是否已排进任务队列，防止重复排队。</summary>
@@ -228,7 +228,7 @@ namespace MapExtPDX.SaveLoadSystem
             Current.Phase = ConversionPhase.Loading;
             ModLog.Info(Tag, $"转换请求进入加载：{Current}");
 
-            // 28→57：让这次读档重建序列化映射表，类型路由才会生效（整合计划 §1.8）
+            // 28→57：让这次读档重建序列化映射表，类型路由才会生效
             if (Current.IsSaveExpansion) SaveExpansionTypeMapPatch.BeginLoad();
         }
 
@@ -245,7 +245,7 @@ namespace MapExtPDX.SaveLoadSystem
 
         /// <summary>
         /// 记录地形实际尺寸时调用（反序列化阶段，早于各系统的 <c>OnGameLoaded</c>）：加载中的请求要求地形是源尺寸，
-        /// 不符就转为"已取消"，不执行任何步骤。地形已是扩展尺寸的地图若照样转换，会被降采样塞进中央（开新城计划 §5.1）。
+        /// 不符就转为"已取消"，不执行任何步骤。地形已是扩展尺寸的地图若照样转换，会被降采样塞进中央。
         /// 这时地下水还没判断让路，被否决的加载照常补场。地形是正方形，只比 x。
         /// </summary>
         public static void VetoIfTerrainMismatch(float terrainMapSize)

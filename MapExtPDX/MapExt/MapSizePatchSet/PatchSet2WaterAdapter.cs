@@ -11,7 +11,7 @@ namespace MapExtPDX.MapExt.MapSizePatchSet
     using UnityEngine.Rendering;
 
     /// <summary>
-    /// Layer 2: 水模拟地形欺骗 (v9 - 方法拦截 + 全局变量双通道)。
+    /// 水模拟地形级联降采样适配（方法拦截 + 全局变量双通道）。
     ///
     /// 根因分析:
     /// WaterSimulation 通过以下两个通道读取地形级联纹理:

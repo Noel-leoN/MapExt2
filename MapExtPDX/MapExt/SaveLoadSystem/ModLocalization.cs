@@ -17,13 +17,10 @@ namespace MapExtPDX.SaveLoadSystem
         /// <summary>
         /// 產出三語的對話框文本來源，<b>不自行註冊</b>。
         ///
-        /// <para>註冊統一由 <c>Mod.RegisterLocalization</c> 執行：它把這裡的對話框文本與
-        /// 設定 UI 文本（<c>LocaleEN</c> 等）併成一個 <c>CompositeLocaleSource</c>，
-        /// 讓每個語言只呼叫一次 <c>AddSource</c>。原本這裡各自呼叫一次、
-        /// 設定那邊再各自呼叫一次，共 6 次，其中 2 次落在 en-US——
-        /// 而 en-US 每次註冊都會觸發一趟無鎖的全字典 <c>MergeFrom</c>，
-        /// 那是 2026-09-05 那次 <c>Mod.OnLoad</c> 中斷的競爭窗口。
-        /// 完整論證見 <see cref="MapExtPDX.MapExt.Core.CompositeLocaleSource"/>。</para>
+        /// <para>注册统一由 <c>Mod.RegisterLocalization</c> 执行：将此处的对话框文本与
+        /// 设置 UI 文本（<c>LocaleEN</c> 等）合并为一个 <c>CompositeLocaleSource</c>，
+        /// 让每种语言仅调用一次 <c>AddSource</c>，避免重复触发引擎无锁 fallback 字典的 <c>MergeFrom</c> 合并。
+        /// 完整说明见 <see cref="MapExtPDX.MapExt.Core.CompositeLocaleSource"/>。</para>
         /// </summary>
         public static void GetSources(
             out IDictionarySource en, out IDictionarySource hans, out IDictionarySource hant)
@@ -52,7 +49,7 @@ namespace MapExtPDX.SaveLoadSystem
                 // 通知條版本（短文案）：對話框可能被其它 Mod 的 UI 重建沖掉，這條留在通知區
                 { "MAPEXT_MAPSIZE.MismatchNotify", "This map was made for '{AUTHORED_MODE}' but MapExt is set to '{CURRENT_MODE}'. Terrain height is sampled at the wrong scale. Quit to the main menu, switch MapExt's MapSize Mode to '{AUTHORED_MODE}', then reload." },
 
-                // === 原版地形被拉伸：载入后提示（v4.12.0 整合计划 2.2），游戏开新城与编辑器读图各一套 ===
+                // === 原版地形被拉伸：载入后提示，游戏开新城与编辑器读图各一套 ===
                 { "MAPEXT_MAPSIZE.StretchTitle", "⚠️ Vanilla Map Stretched" },
                 { "MAPEXT_MAPSIZE.StretchMessage", "This new city was started on a map with vanilla 14 km terrain, but MapExt is set to '{CURRENT_MODE}'. The terrain has been stretched to the current map size: slopes are flattened, while water sources, outside connections and map tiles stayed where they were, so only the central 14 km can ever be bought. Natural resources were also generated randomly instead of using the ones painted on the map.\n\nIt is best not to keep building this city. Return to the main menu and start a new city on a map made for '{CURRENT_MODE}' instead." },
                 { "MAPEXT_MAPSIZE.StretchNotify", "This city's vanilla 14 km terrain is stretched to '{CURRENT_MODE}': slopes are flattened and only the central 14 km can be bought." },
@@ -91,7 +88,7 @@ namespace MapExtPDX.SaveLoadSystem
                 { "VANILLA_CONVERT.WaterRemoved", "   • The old water sources could not be converted and were all removed; place new river and sea sources where needed\n   • ⚠ Use the built-in Water Tools (MAP/EXT button) to adjust the sea level." },
                 // 通知條版本（短文案）：完成對話框可能被其它 Mod 的 UI 重建沖掉，這條留在通知區
                 { "VANILLA_CONVERT.CompleteNotify", "Conversion finished - saved as '{SAVE_NAME}'. You must restart the game before playing it." },
-                // 原版地图开新城（v4.12.0 整合计划 2.4）：分块只解锁中央 9 格（D2），外部连接保留（D1）
+                // 原版地图开新城：分块只解锁中央 9 格，外部连接保留
                 { "VANILLA_CONVERT.NewGameMessage", "The selected map is a vanilla 14 km map. Extend it to the current mode ({TARGET_MODE}) before starting the new city?\n\n⚠ HIGHLY EXPERIMENTAL - the following will happen:\n• The terrain heightmap is synthesized: the original 14 km stays in the center, the background terrain fills the rest\n• Map tiles are rebuilt for the new size; only the central 9 tiles start unlocked, the rest can be bought as usual\n• Starting tiles set by the map author are not kept\n• The map's natural resources and ground water are kept in the center; the new area starts without them\n• Outside connections stay at the old 14 km border\n• Water is reset to the sea level\n\nThe map itself will NOT be modified.\nThe new city will be saved automatically (Format: CityName_MapExtMode).\nYou MUST restart the game after conversion to prevent water glitches or crashes." },
                 { "VANILLA_CONVERT.NewGameConfirm", "Extend and Start" },
                 { "VANILLA_CONVERT.NewGameCompleteMessage", "The vanilla map has been extended to {TARGET_MODE}.\nNew save: {SAVE_NAME}\n\n• Terrain heightmap synthesized\n• Map tiles rebuilt; the central 9 tiles are unlocked\n• The map's natural resources and ground water kept in the center\n• Water reset to the sea level\n⚠ Outside connections are still at the old 14 km border\n\n⚠ RESTART REQUIRED\nYou MUST quit to desktop and load the new save.\nFailure to restart will cause water simulation glitches or crashes!" },
@@ -118,7 +115,7 @@ namespace MapExtPDX.SaveLoadSystem
                 { "SAVE_GATE.DegradedBlocked", "Some critical MapExt components failed to load this session ({COMPONENTS}), so this load was stopped. Load the city from the main menu, or restart the game." },
                 { "SAVE_GATE.ConvertFromMenu", "This save must be converted before it can be played in the current mode. Return to the main menu and load it from the save list to convert it." },
 
-                // === 开新城：按地图面积推断制作模式（v4.12.0 整合计划 2.3）===
+                // === 开新城：按地图面积推断制作模式 ===
                 { "SAVE_GATE.StretchTitle", "Vanilla Map Will Be Stretched" },
                 { "SAVE_GATE.StretchMessage", "'{MAP_NAME}' is a vanilla 14 km map, but MapExt is set to '{CURRENT_MODE}'. A new city on it gets its terrain stretched to the current map size: slopes flatten out, while water sources, outside connections and map tiles stay where they were, so only the central 14 km can ever be bought. Natural resources are also generated randomly instead of using the ones painted on the map.\n\n'{CURRENT_MODE}' cannot convert vanilla maps. Use a map made for this mode instead." },
                 { "SAVE_GATE.StretchMessageConvertOff", "'{MAP_NAME}' is a vanilla 14 km map, but MapExt is set to '{CURRENT_MODE}'. A new city on it gets its terrain stretched to the current map size: slopes flatten out, while water sources, outside connections and map tiles stay where they were, so only the central 14 km can ever be bought. Natural resources are also generated randomly instead of using the ones painted on the map.\n\nTo extend the map properly instead, enable '⚠ Map Extension Conversion' under MapSize → Save Conversion (Experimental), then start the new city again." },

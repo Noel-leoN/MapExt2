@@ -20,7 +20,7 @@ namespace MapExtPDX.MapExt.Core
     /// 与诊断（<see cref="Diagnose"/>）。
     ///
     /// <para><b>为什么</b>：原先注册、禁用原版、重新禁用和诊断各写一份清单，靠人工保持一致。
-    /// CellOnly 路径就因为注册处漏了禁用原版，原版找房／租金系统与替换系统同时运行（审查报告 P0-1）。
+    /// CellOnly 路径曾因注册处漏了禁用原版，导致原版找房／租金系统与替换系统同时运行。
     /// 现在每条声明自带它取代的原版系统，四处共用同一份清单。</para>
     ///
     /// <para><b>顺序即更新顺序</b>：<see cref="Apply"/> 严格按声明顺序执行，每条声明内部也按链式调用的顺序执行各步骤。
@@ -98,7 +98,7 @@ namespace MapExtPDX.MapExt.Core
 
         /// <summary>
         /// 在 <c>PathfindSetupSystem.FindTargets</c> 的统一 dispatcher 上登记一个 handler。
-        /// 第一个 handler 执行时自动 Clear 并挂载 dispatcher：新增 handler 不必再同步维护引导条件（mod-traps §2.3）。
+        /// 第一个 handler 执行时自动 Clear 并挂载 dispatcher：新增 handler 不必再同步维护引导条件。
         /// </summary>
         public void FindTargetsHandler(string group, SetupTargetType type, IFindTargetsHandler handler)
         {

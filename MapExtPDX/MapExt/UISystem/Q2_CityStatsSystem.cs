@@ -21,10 +21,10 @@ using Unity.Jobs;
 namespace MapExtPDX.UI
 {
     /// <summary>
-    /// 📊 [MOD] 城市统计数据收集系统（Phase 4）
+    /// 📊 [MOD] 城市统计数据收集系统
     /// 按需运行：仅当 Dashboard 面板展开时由 MapExtUISystem 启用。
     /// 每 256 帧（约 4.3 秒）执行一次 ECS 查询，收集人口健康度指标。
-    /// Phase 4 新增：住宅空置率、商业活动、人口活动（购物/休闲/通勤）。
+    /// 覆盖指标：人口与家庭健康度、住宅空置率、商业活动、人口活动（购物/休闲/通勤）。
     /// 住宅空置率、商业活动与多数人口活动直接读取原生系统缓存；通勤者经自建 CommuterCount Query 统计，高租金建筑经自建 CountHighRentJob 统计。
     /// 面板关闭时 Enabled = false，零开销。
     /// </summary>
@@ -54,7 +54,7 @@ namespace MapExtPDX.UI
         private EntityQuery m_PetQuery;
         private EntityQuery m_CommuterQuery;
 
-        // --- Phase 4: 游戏原生统计系统引用 ---
+        // --- 游戏原生统计系统引用 ---
         private CountResidentialPropertySystem m_CountResPropertySystem;
         private CountCompanyDataSystem m_CountCompanySystem;
         private ResidentPurposeCounterSystem m_PurposeCounterSystem;
@@ -119,7 +119,7 @@ namespace MapExtPDX.UI
         /// <summary>宠物实体数量</summary>
         public int PetCount { get; private set; }
 
-        // --- Phase 4: 住宅空置率（从 CountResidentialPropertySystem 缓存读取） ---
+        // --- 住宅空置率（从 CountResidentialPropertySystem 缓存读取） ---
 
         /// <summary>低密度空置住宅数</summary>
         public int FreeResLow { get; private set; }
@@ -134,14 +134,14 @@ namespace MapExtPDX.UI
         /// <summary>高密度总住宅数</summary>
         public int TotalResHigh { get; private set; }
 
-        // --- Phase 4: 商业活动（从 CountCompanyDataSystem 缓存读取） ---
+        // --- 商业活动（从 CountCompanyDataSystem 缓存读取） ---
 
         /// <summary>有物业的商业公司总数</summary>
         public int TotalCommercial { get; private set; }
         /// <summary>无物业（等待入驻）的商业公司数</summary>
         public int CommercialPropertyless { get; private set; }
 
-        // --- Phase 4: 人口活动（从 ResidentPurposeCounterSystem 缓存读取） ---
+        // --- 人口活动（从 ResidentPurposeCounterSystem 缓存读取） ---
 
         /// <summary>正在前往购物的市民数</summary>
         public int ShoppingCount { get; private set; }
@@ -152,7 +152,7 @@ namespace MapExtPDX.UI
         /// <summary>正在回家途中的市民数</summary>
         public int GoingHomeCount { get; private set; }
 
-        // --- Phase 4: 通勤者 ---
+        // --- 通勤者 ---
 
         /// <summary>外来通勤者家庭数</summary>
         public int CommuterCount { get; private set; }
@@ -230,17 +230,17 @@ namespace MapExtPDX.UI
                 ComponentType.Exclude<Deleted>(),
                 ComponentType.Exclude<Temp>());
 
-            // === Phase 4: 通勤者查询 ===
+            // === 通勤者查询 ===
             m_CommuterQuery = GetEntityQuery(
                 ComponentType.ReadOnly<CommuterHousehold>(),
                 ComponentType.ReadOnly<HouseholdCitizen>(),
                 ComponentType.Exclude<Deleted>(),
                 ComponentType.Exclude<Temp>());
 
-            // === 高租金建築計數累加器（S1：把主執行緒掃描搬進 Job） ===
+            // === 高租金建筑计数累加器（将主线程扫描搬进 Burst Job） ===
             m_HighRentAccumulator = new NativeAccumulator<HighRentData>(Allocator.Persistent);
 
-            // === Phase 4: 获取游戏原生统计系统引用 ===
+            // === 获取游戏原生统计系统引用 ===
             m_CountResPropertySystem = World.GetOrCreateSystemManaged<CountResidentialPropertySystem>();
             m_CountCompanySystem = World.GetOrCreateSystemManaged<CountCompanyDataSystem>();
             m_PurposeCounterSystem = World.GetOrCreateSystemManaged<ResidentPurposeCounterSystem>();
@@ -302,7 +302,7 @@ namespace MapExtPDX.UI
             SeekerHomelessCount = m_PropertySeekerHomelessQuery.CalculateEntityCount();
             PetCount = m_PetQuery.CalculateEntityCount();
 
-            // === 高租金建築：讀上一輪 Job 結果 → 清 → 排本輪（S1） ===
+            // === 高租金建筑：读上一轮 Job 结果 → 清 → 排本轮 ===
             // HighRentWarning 是 BuildingFlags 的位元而非獨立 component，無法用 EntityQuery 過濾，
             // 只能逐 entity 檢查；但沒有理由佔用主執行緒。結果延遲一輪（256 幀），
             // 首屏由 OnStartRunning 的同步計算補上。
@@ -327,16 +327,16 @@ namespace MapExtPDX.UI
             }.ScheduleParallel(m_HighRentBuildingQuery, Dependency);
             Dependency = m_HighRentHandle;
 
-            // === Phase 4: 通勤者（O(1) archetype 计数） ===
+            // === 通勤者（O(1) archetype 计数） ===
             CommuterCount = m_CommuterQuery.CalculateEntityCount();
 
-            // === Phase 4: 住宅空置率（从缓存读取，零成本） ===
+            // === 住宅空置率（从缓存读取，零成本） ===
             ReadResidentialVacancy();
 
-            // === Phase 4: 商业活动（从缓存读取，零成本） ===
+            // === 商业活动（从缓存读取，零成本） ===
             ReadCommercialData();
 
-            // === Phase 4: 人口活动（从缓存读取，零成本） ===
+            // === 人口活动（从缓存读取，零成本） ===
             ReadPurposeCounterData();
         }
 
@@ -398,7 +398,7 @@ namespace MapExtPDX.UI
         }
 
         /// <summary>
-        /// 統計帶 HighRentWarning 標誌的建築數（S1）。
+        /// 统计带 HighRentWarning 标志的建筑数。
         /// 該標誌是 BuildingFlags 的位元而非獨立 component，無法用 EntityQuery 過濾，
         /// 只能逐 entity 檢查——但可以平行化，不必佔用主執行緒。
         /// </summary>
@@ -467,7 +467,7 @@ namespace MapExtPDX.UI
         }
 
         /// <summary>
-        /// Phase 4: 从 CountResidentialPropertySystem 读取住宅空置缓存。
+        /// 从 CountResidentialPropertySystem 读取住宅空置缓存。
         /// int3.x = Low, .y = Medium, .z = High
         /// </summary>
         private void ReadResidentialVacancy()
@@ -483,7 +483,7 @@ namespace MapExtPDX.UI
         }
 
         /// <summary>
-        /// Phase 4: 从 CountCompanyDataSystem 读取商业公司缓存。
+        /// 从 CountCompanyDataSystem 读取商业公司缓存。
         /// 汇总所有资源类型的 ServiceCompanies 和 ServicePropertyless。
         /// </summary>
         private void ReadCommercialData()
@@ -491,7 +491,7 @@ namespace MapExtPDX.UI
             if (m_CountCompanySystem == null) return;
             var comData = m_CountCompanySystem.GetCommercialCompanyDatas(out JobHandle deps);
 
-            // S2：不阻塞主執行緒。deps 是 CountCompanyDataSystem 的
+            // 非阻塞检查，不阻塞主线程：deps 是 CountCompanyDataSystem 的
             // CountCompanyDataJob → 單執行緒 SumJob 整條鏈，未完成就跳過本輪、保留上一輪的值
             // （256 幀後會再試）。GetUpdateOffset 已把本系統固定在對方排 job 之後 7 幀，
             // 常態下這裡總是已完成；連續跳過上限是防止任何未預期的相位關係讓數值永久凍結的保險，
@@ -515,7 +515,7 @@ namespace MapExtPDX.UI
         }
 
         /// <summary>
-        /// Phase 4: 从 ResidentPurposeCounterSystem 的 m_Results 读取人口活动缓存。
+        /// 从 ResidentPurposeCounterSystem 的 m_Results 读取人口活动缓存。
         /// 索引对应 CountPurpose 枚举：0=GoingHome, 2=GoingToWork, 3=Leisure, 5=Shopping
         /// </summary>
         private void ReadPurposeCounterData()

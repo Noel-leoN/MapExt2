@@ -844,7 +844,7 @@ namespace MapExtPDX.EcoShared
 			m_VehicleQuery.SetSharedComponentFilter(new UpdateFrame(index));
 			m_Actions.m_MoneyTransferQueue = new NativeQueue<MoneyTransfer>(Allocator.TempJob);
 			JobHandle deps;
-			// [1.6.0f] FindJob 寻路 MaxCost：用户可调绝对成本上限（方案 B，与其余寻路滑块单位统一）
+			// [1.6.0f] FindJob 寻路 MaxCost：用户可调绝对成本上限（与其余寻路滑块单位统一）
 			float findJobMaxCost = Mod.Instance.Settings.FindJobMaxCost;
 			JobHandle jobHandle = new PersonalCarTickJob
 			{

@@ -82,7 +82,7 @@ namespace MapExtPDX.MapExt.Core
         /// <c>ClearTexture</c> kernel 與 <c>_ClearTarget</c>/<c>_ClearColor</c>，
         /// 改走 <c>DispatchCompute</c> 即可）；但缺陷 ② 需同時對上述三個消費點插 fence，
         /// 其中 TerrainSystem 那條是 hot path 且用自有 CommandBuffer，只能上 transpiler。
-        /// 兩者<b>都</b>解決前不得恢復。詳見 <c>docs/02_TerrainWater/Water_AsyncCompute_Analysis.md</c>。</para>
+        /// 两者<b>都</b>解决前不得恢复。</para>
         /// </summary>
         public static bool WaterAsyncCompute => false;
 
@@ -141,7 +141,7 @@ namespace MapExtPDX.MapExt.Core
             };
 
             // 水纹理分辨率: 计算着色器内部存在纹理尺寸硬编码依赖，无法通过 Harmony 补丁修改
-            // 降低水分辨率导致水体偏移/放大，需要自定义计算着色器才能实现 (Phase 3)
+            // 降低水分辨率导致水体偏移/放大，需要自定义计算着色器才能实现
             WaterTextureSize = water switch
             {
                 // WaterResolutionSetting.Medium_1024 => 1024,
@@ -163,7 +163,7 @@ namespace MapExtPDX.MapExt.Core
         }
 
         /// <summary>
-        /// 方案 E（Adaptive_EventDriven）硬掛起：列舉值保留以免設定檔序號漂移，
+        /// <c>Adaptive_EventDriven</c> 档位硬挂起：枚举值保留以免设定档序号漂移，
         /// 但運行時一律降級為 Vanilla，避免跨幀 speed=0 與 Postfix / PauseFreeze 衝突。
         /// </summary>
         public static WaterSimQualitySetting SanitizeWaterSimQuality(WaterSimQualitySetting quality)

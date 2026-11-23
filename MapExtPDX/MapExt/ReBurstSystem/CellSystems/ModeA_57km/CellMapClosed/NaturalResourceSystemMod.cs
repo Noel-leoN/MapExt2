@@ -41,7 +41,7 @@ namespace MapExtPDX.ModeA
 
     // =========================================================================================
 
-    // 降级保护（重构二 0.4）：合并版存档里本类的类型名是 MapExtPDX.CellMap.NaturalResourceSystemMod，退回本版本时靠此别名读回，勿删
+    // 降级保护：合并版存档里本类的类型名是 MapExtPDX.CellMap.NaturalResourceSystemMod，退回本版本时靠此别名读回，勿删
     /// <summary>
     /// 自然资源系统
     /// 负责管理地图上的肥力、矿产、石油和鱼类资源。

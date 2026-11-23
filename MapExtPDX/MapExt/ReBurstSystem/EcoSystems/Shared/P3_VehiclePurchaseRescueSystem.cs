@@ -44,27 +44,14 @@ namespace MapExtPDX.EcoShared
     /// 【设计】追踪表只存在内存中（<see cref="m_RescuedVehicles"/>），不注入任何自定义 ECS 组件到实体上，
     /// 确保存档零污染，禁用 Mod 后不留痕迹。
     ///
-    /// 【2026-08-11 加固】三项变更，起因为某 78 万人口旧存档在启用本系统时
-    /// 于 <c>Serialize</c> 阶段抛 <c>NullReferenceException</c>（<c>EntityManager.HighestEntityIndex</c>），
-    /// 關閉本系統後存檔恢復正常：
-    /// ① 移除全部 <c>EntityManager</c> 同步直寫（原 <c>CleanupOwnership</c> 直改
-    ///    <c>OwnedVehicle</c> buffer、<c>ClearCarKeeper</c> 直寫 <c>CarKeeper</c>）——
-    ///    這兩件事原版 <c>Game.Vehicles.ReferencesSystem</c> 的 Deleted 分支本就會做，屬重複勞動；
-    /// ② 首次救援加單幀配額 <see cref="kMaxRescuePerRun"/>，避免載入時一次動上千輛；
-    /// ③ <c>OnGamePreload</c> 清空追蹤表，避免跨存檔的 Entity 索引重用誤傷。
-    ///
-    /// 【2026-08-19 Job 化】原本整個掃描與指令建構都在主執行緒，且以
-    /// <c>ecb.Playback(EntityManager)</c> 當場回放——後者會在模擬迴圈中間製造
-    /// 結構性變更同步點（原版同位置一律交給 barrier）。本次改為：
-    /// ① 追蹤表 <c>Dictionary&lt;Entity,int&gt;</c> → <c>NativeHashMap&lt;Entity,int&gt;</c>（Persistent）；
-    /// ② 重試與首次救援各自成為 Burst job（<see cref="RetryJob"/>／<see cref="RescueScanJob"/>），
-    ///    以單執行緒 <c>Schedule</c> 串接，保留「重試必須先於首次救援」的順序與配額累積語意；
-    /// ③ 指令改由 <c>EndFrameBarrier</c> 回放——它註冊在 MainLoop 的 <c>UpdateBefore</c>，
-    ///    回放點在下一幀 MainLoop 開頭，仍早於 Modification5，可見性窗口與原本完全相同；
-    /// ④ 統計改寫入 <see cref="m_Stats"/>，只在除錯日誌開啟時才 Complete 讀取，
-    ///    因此關閉日誌（預設）時本系統不再產生任何主執行緒同步點；
-    /// ⑤ 移除原 <c>CleanupStaleEntries</c>——它的條件（不在 Query 且實體已不存在）
-    ///    是 <c>ProcessRetry</c> 存在性檢查的真子集，在同一次 OnUpdate 中必然已被清掉，屬死碼。
+    /// 【架构要点】：
+    /// ① 不直写 <c>EntityManager</c>，仅通过 <c>EndFrameBarrier</c> 回放结构性指令，避免在模拟循环中制造同步点；
+    ///    归属清理（<c>OwnedVehicle</c> / <c>CarKeeper</c>）交由原版 <c>Game.Vehicles.ReferencesSystem</c> 的 Deleted 分支自动完成；
+    /// ② 追踪表使用 <c>NativeHashMap&lt;Entity,int&gt;</c>（Persistent），重试与首次救援分别由 Burst job
+    ///    （<see cref="RetryJob"/>／<see cref="RescueScanJob"/>）以单线程 <c>Schedule</c> 串接，保留“重试先于首次救援”的顺序与配额语义；
+    /// ③ 首次救援受单帧配额 <see cref="kMaxRescuePerRun"/> 限制，避免旧存档载入时单帧修改大量存量异常车辆；
+    /// ④ <c>OnGamePreload</c> 清空追踪表，避免跨存档的 Entity 索引重用误伤；
+    /// ⑤ 统计数据写入 <see cref="m_Stats"/>，仅开启调试日志时读取，默认关闭日志时不产生主线程同步点。
     /// </summary>
     public partial class P3_VehiclePurchaseRescueSystem : GameSystemBase
     {
@@ -85,14 +72,12 @@ namespace MapExtPDX.EcoShared
         private const int kMaxRetries = 8;
 
         /// <summary>
-        /// 單次執行的「首次救援」上限。
+        /// 单次执行的“首次救援”上限。
         ///
-        /// 舊存檔可能累積上千輛存量幽靈車（實測某 78 萬人口存檔載入後一次性命中 1334 輛），
-        /// 若不設限則會在單幀內對它們全部下 SetComponent + AddComponent×2，
-        /// 令原版 FixParkingLocationSystem 在同一幀面對上千個搜尋請求。
-        /// 分批攤平：每 64 模擬幀處理 64 輛，1334 輛約需 21 輪（≈1344 模擬幀）完成，
-        /// 對玩家無感，但把單幀結構性變更量壓回個位數量級。
-        /// 重試路徑不受此限——它本就受 <see cref="kMaxRetries"/> 與追蹤表規模自然約束。
+        /// 旧存档可能累积大量存量幽灵车，若不设限会在单帧内集中下发 SetComponent + AddComponent×2，
+        /// 令原版 FixParkingLocationSystem 在同一帧面对大量搜索请求。
+        /// 按每 64 模拟帧处理 64 辆分批摊平消化，可把单帧结构性变更量压回较低水平。
+        /// 重试路径不受此限——它本就受 <see cref="kMaxRetries"/> 与追踪表规模自然约束。
         /// </summary>
         private const int kMaxRescuePerRun = 64;
 
@@ -407,8 +392,8 @@ namespace MapExtPDX.EcoShared
         /// 阶段 2：检测 InitializeSystem.FindParkingSpace() 失败的车辆（新购车与存量幽灵车），
         /// 有家者传送到住宅附近交由原版系统重试；无家的孤兒車直接安全刪除。
         ///
-        /// 單次處理量受 <see cref="kMaxRescuePerRun"/> 限制，避免舊存檔載入時
-        /// 一次性對上千輛存量幽靈車下指令（實測曾達 1334 輛／幀）。
+        /// 单次处理量受 <see cref="kMaxRescuePerRun"/> 限制，避免旧存档载入时
+        /// 一次性对大量存量幽灵车集中下发指令。
         /// 未處理的會在後續每 64 模擬幀繼續消化，順序由 chunk 迭代決定，無飢餓問題
         /// （已處理者進追蹤表後即被 <c>ContainsKey</c> 略過）。
         /// </summary>
@@ -471,10 +456,9 @@ namespace MapExtPDX.EcoShared
                         // 車輛本身已是不可用的幽靈狀態，直接安全刪除是淨收益。
                         //
                         // 只下 Deleted，不自行清 CarKeeper / OwnedVehicle：
-                        // 原版 Game.Vehicles.ReferencesSystem（Modification5）的 Deleted 分支會在
-                        // 實體真正銷毀前自動清理兩者——`m_CarKeepers[keeper].m_Car == entity` 時歸零
-                        // （ReferencesSystem.cs:532-536），並 `CollectionUtils.RemoveValue` 移除
-                        // OwnedVehicle 項（:481-484）。其 query 為 All{Vehicle} + Any{Created,Deleted}，
+                        // 原版 Game.Vehicles.ReferencesSystem（Modification5）的 Deleted 分支会在
+                        // 实体真正销毁前自动清理两者——m_CarKeepers[keeper].m_Car == entity 时归零，
+                        // 并经 CollectionUtils.RemoveValue 移除 OwnedVehicle 项。其 query 为 All{Vehicle} + Any{Created,Deleted}，
                         // 而私家車 archetype 經 VehiclePrefab 必帶 Vehicle，故必被覆蓋。
                         // 實際銷毀更晚：MainLoop 的 PrepareCleanUpSystem 收集 → Cleanup 的
                         // CleanUpSystem.DestroyEntity，兩者都在 ReferencesSystem 之後。

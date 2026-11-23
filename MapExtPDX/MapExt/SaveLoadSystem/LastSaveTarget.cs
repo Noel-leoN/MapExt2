@@ -20,10 +20,10 @@ namespace MapExtPDX.SaveLoadSystem
     /// <summary>
     /// 菜单的"上次存档名"与存储位置：<c>MenuUISystem</c> 的两个私有字段，快速存档按它们定档名、存进哪个库。
     ///
-    /// <para><b>转换后改指新档</b>（v4.12.0 整合计划 1.8）：读档、继续结束后原版把两者设成源档的，
+    /// <para><b>转换后改指新档</b>：读档、继续结束后原版把两者设成源档的，
     /// 不改的话转换后按 F5 会写回源档。</para>
     ///
-    /// <para><b>汇合点拦下后恢复</b>（2.7）：原版读档、继续在 <c>GameManager.Load</c> 返回后不看结果，
+    /// <para><b>汇合点拦下后恢复</b>：原版读档、继续在 <c>GameManager.Load</c> 返回后不看结果，
     /// 被拦下也照样把两者设成被拦的档。菜单层失效、只剩汇合点拦截时，玩家留在城里按 F5 就会写进被拦的档。</para>
     /// </summary>
     internal static class LastSaveTarget

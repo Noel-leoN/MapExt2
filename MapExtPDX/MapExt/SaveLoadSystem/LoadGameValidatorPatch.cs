@@ -30,7 +30,7 @@ namespace MapExtPDX.SaveLoadSystem
         {
             try
             {
-                // 取不到存档（反射失败或 ID 不在列表里）就放行，交给汇合点判定（P0-6）
+                // 取不到存档（反射失败或 ID 不在列表里）就放行，交给汇合点判定
                 SaveInfo save = SaveEntryGate.FindMenuSave(__instance, args.saveId);
                 if (save == null) return true;
 

@@ -26,7 +26,7 @@ namespace MapExtPDX.ModeA
     using TargetType = TerrainAttractiveness;
     // =========================================================================================
 
-    // 降级保护（重构二 0.4）：合并版存档里本类的类型名是 MapExtPDX.CellMap.TerrainAttractivenessSystemMod，退回本版本时靠此别名读回，勿删
+    // 降级保护：合并版存档里本类的类型名是 MapExtPDX.CellMap.TerrainAttractivenessSystemMod，退回本版本时靠此别名读回，勿删
     /// <summary>
     /// 地形吸引力计算系(Terrain Attractiveness System)
     /// <para>
@@ -117,7 +117,7 @@ namespace MapExtPDX.ModeA
 
             // 3. 邻域表：圆内邻格的偏移与（森林、海岸）衰减，只依赖格距与两个距离参数，在主线程上用 Burst 算一次。
             // 原写法逐格扫 (2r+1)² 的方阵，r 按高度图分辨率换算（m_Scale），比真实格距所需的大好几倍；
-            // 圆外的衰减为 0，不影响取最大值，只扫圆内结果逐位相同（ModeC 标定计划 4.1）
+            // 圆外的衰减为 0，不影响取最大值，只扫圆内结果逐位相同
             NativeList<int2> kernelOffsets = new NativeList<int2>(Allocator.TempJob);
             NativeList<float2> kernelFalloffs = new NativeList<float2>(Allocator.TempJob);
             new TerrainAttractivenessKernelJob
@@ -199,7 +199,7 @@ namespace MapExtPDX.ModeA
         }
 
         /// <summary>
-        /// 邻域表（ModeC 标定计划 4.1）：圆内邻格的偏移与（森林、海岸）衰减。
+        /// 邻域表：圆内邻格的偏移与（森林、海岸）衰减。
         /// 下文的"原写法"指原版 <c>TerrainAttractivenessJob</c>：逐格扫 (2r+1)² 的方阵、逐个算距离。
         /// <para>距离用贴图中央一对实际格中心按原写法计算。格中心都是整数米，任意两格的坐标差精确，
         /// 所以与原写法逐格算出的距离逐位相同。</para>
@@ -242,7 +242,7 @@ namespace MapExtPDX.ModeA
         }
 
         /// <summary>
-        /// 主计算 Job（ModeC 标定计划 4.1）：按邻域表取森林与海岸加成的最大值。
+        /// 主计算 Job：按邻域表取森林与海岸加成的最大值。
         /// <para>越界的邻格直接跳过：原写法把它们钳回边缘格，而钳回后的格本来就以真实偏移在表内，
         /// 取最大值时没有新贡献。</para>
         /// </summary>

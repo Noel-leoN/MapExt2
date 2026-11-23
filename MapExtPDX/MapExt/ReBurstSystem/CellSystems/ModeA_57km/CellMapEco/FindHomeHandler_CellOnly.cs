@@ -1,8 +1,7 @@
 // Copyright (c) 2024 Noel2(Noel-leoN)
 // Licensed under the MIT License.
 
-// 原版来源：Game.Simulation.CitizenPathfindSetup.SetupFindHomeJob ＋ SetupFindHome
-//   （_KnowledgeBase/1_GameSource/Game/Simulation/CitizenPathfindSetup.cs:414-647 / 1044-1141，查询见 :826-859）
+// 原版来源：Game.Simulation.CitizenPathfindSetup（SetupFindHomeJob / SetupFindHome / m_FreePropertyQuery）
 //
 // CellOnly 配置（经济修复总开关或找房组关闭）下替原版处理 SetupTargetType.FindHome。
 // 原版 Job 是游戏出厂的 Burst 代码，PropertyUtils.GetPropertyScore 里的污染与噪音采样已按原版 14336／256 折叠成常量，

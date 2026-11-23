@@ -1,7 +1,7 @@
 #Requires -Version 7
 <#
 .SYNOPSIS
-    从 ModeA 生成各地图尺寸模式的副本（重构二 D3）。生成物不入版控，由 MapExt2.csproj 的
+    从 ModeA 生成各地图尺寸模式的副本。生成物不入版控，由 MapExt2.csproj 的
     GenerateModeSources 目标在编译前调用，也可手动执行。
 
 .DESCRIPTION
@@ -11,8 +11,7 @@
       CellSystems/ModeA_57km/CellMapClosed/LandValueSystemMod.cs → EcoSystems/ModeE_vanilla/D2_LandValueSystemMod.cs
       ReBurstCore/XCellMapSystemRe.cs（模板，自身也参与编译） → ReBurstCore/XCellMapSystemRe_Mode{A-E}.cs
 
-    转换规则逐字节沿用此前的 sync_internal_modes.ps1 与 XCellMapSystemRe.Generate.ps1，输出与当时受版控的副本完全相同；
-    唯一的例外是 XCellMapSystemRe 的第一行头注释：完成等价验证后，改为指向本脚本。
+    转换规则按字节严格保留编码与格式：
     PDB 记录每个源文件的校验和，差一个 BOM，DLL 就不再逐字节一致：
       - 副本与 D2：保留源文件的 BOM 与换行，严格 UTF-8 解码，MapExtPDX.ModeA 换成目标命名空间；
       - XCellMapSystemRe：替换三行头注释、命名空间与 kMapSize，换行统一为 LF，写成带 BOM 的 UTF-8。
@@ -112,7 +111,7 @@ try {
         $outputs[$full] = $Bytes
     }
 
-    # === 副本与 D2（规则同原 sync_internal_modes.ps1 的 Get-SyncEdit） ===
+    # === 副本与 D2 ===
     function Add-ModeCopy([string]$Source, [string]$Target, [string]$Mode) {
         $src = Read-Utf8 $Source
         $text = $src.Text -creplace 'MapExtPDX\.ModeA\b', "MapExtPDX.Mode$Mode"
@@ -146,7 +145,7 @@ try {
     if (-not (Test-Path -LiteralPath $landValue -PathType Leaf)) { throw "D2 source missing: $(Get-RelPath $landValue)" }
     Add-ModeCopy $landValue (Join-Path $root "EcoSystems/$($modes.E.Dir)/D2_LandValueSystemMod.cs") 'E'
 
-    # === XCellMapSystemRe（规则同原 XCellMapSystemRe.Generate.ps1；-replace 不区分大小写） ===
+    # === XCellMapSystemRe（-replace 不区分大小写） ===
     $coreDir = Join-Path $root 'ReBurstCore'
     Assert-SafeTree $coreDir
     $template = Join-Path $coreDir 'XCellMapSystemRe.cs'

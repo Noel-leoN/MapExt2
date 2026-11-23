@@ -43,7 +43,7 @@ namespace MapExtPDX.MapExt.Core
     }
 
     /// <summary>
-    /// 游戏内运行期冲突精准归因底座（轨道 B）：
+    /// 游戏内运行期冲突精准归因底座：
     /// <list type="bullet">
     /// <item>基于 <c>ModManager.TryGetExecutableAsset</c> + <c>GetMeta()</c> 将任意第三方 <see cref="Assembly"/>（含随包附属业务 DLL）回溯至主入口 Mod 的商店显示名与平台 ID；</item>
     /// <item>在 <c>Mod.OnLoad</c> 末尾录制本会话实际挂载的 Dual Harmony 补丁快照并执行单向子集自检（<c>实际已挂 ⊆ ConflictTargets</c>）；</item>

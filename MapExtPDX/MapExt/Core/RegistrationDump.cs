@@ -22,8 +22,8 @@ namespace MapExtPDX.MapExt.Core
     /// <summary>
     /// 系统注册表导出工具（开发者用）。
     ///
-    /// <para><b>用途</b>：重构一（声明式替换注册表）的行为等价验收。
-    /// 同一配置下重构前后各导出一次，逐行比对。</para>
+    /// <para><b>用途</b>：声明式替换注册表的行为等价验收与诊断导出。
+    /// 同一配置下可导出系统更新次序与补丁注册结果逐行比对。</para>
     ///
     /// <para><b>内容</b>：
     /// ① 更新次序：读 <c>UpdateSystem.m_Updates</c>，即引擎把 UpdateAt 与 UpdateBefore／UpdateAfter 锚定合并后的实际执行顺序，
