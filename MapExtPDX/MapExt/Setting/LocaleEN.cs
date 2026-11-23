@@ -352,7 +352,7 @@ namespace MapExtPDX
                 },
                 {
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.FindHomeMaxCost)),
-                    "Controls the maximum search distance when citizens look for a new home. Also applies to essential trips (going home, to work, to school), moving away, and long-distance taxi trips (when the Vehicle AI group is enabled). Increasing this allows citizens to relocate and commute across the entire extended map, preventing remote towns from being empty. Recommended to max it out.\n" +
+                    "Controls the maximum search distance when citizens look for a new home. With the related pathing groups enabled (Consumer and Service, Resident AI, Vehicle AI), it also applies to essential trips (going home, to work, to school), moving away, and long-distance taxi trips. Increasing this allows citizens to relocate across the entire extended map, preventing remote towns from being empty. Recommended to max it out.\n" +
                     "★ Recommended:\n" +
                     " - All Map Sizes: 200000"
                 },

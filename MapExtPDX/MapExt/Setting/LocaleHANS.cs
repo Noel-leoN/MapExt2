@@ -305,7 +305,7 @@ namespace MapExtPDX
                 { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.FindHomeMaxCost)), "找房搬家最高寻路成本" },
                 {
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.FindHomeMaxCost)),
-                    "控制市民搬家找房时的最大搜索范围上限，同时作用于回家、上班、上学等刚需出行与搬离城市（启用载具 AI 组时亦用于出租车长途出行）。提升此数值可让市民跨越整张大地图找房与通勤，避免偏远新城无人入住或回不了家，建议直接拉满。\n" +
+                    "控制市民搬家找房时的最大搜索范围上限；启用相关寻路系统组（消费采购与服务覆盖、居民 AI、载具 AI）后，也用于回家、上班、上学等刚需出行、搬离城市及出租车长途出行的寻路。提升此数值可让市民跨越整张大地图找房，避免偏远新城无人入住，建议直接拉满。\n" +
                     "★ 建议值：\n" +
                     " - 全地图通用：200000"
                 },
