@@ -531,7 +531,7 @@ namespace MapExtPDX.UI
             AddUpdateBinding(new GetterValueBinding<float>(kGroup, "LockedSeaLevel",
                 () => m_LockedSeaLevelValue));
 
-            ModLog.Ok(Tag, "MapExtUISystem 已创建 (Phase 5.1: 71 Bindings)");
+            ModLog.Ok(Tag, "MapExtUISystem 已创建");
         }
 
         #endregion

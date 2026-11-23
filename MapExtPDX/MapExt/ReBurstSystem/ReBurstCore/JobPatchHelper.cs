@@ -127,7 +127,7 @@ namespace MapExtPDX.MapExt.ReBurstSystem.Core
                     .Select(s => $"{s.Target.TargetTypeName}.{s.Target.TargetMethodName}"));
                 if (skipped.Count > 3) preview += $" 等 {skipped.Count} 项";
                 ModLog.Warn(Tag, $"有 {skipped.Count} 个 Job 目标解析失败，已退回原版行为：{preview}" +
-                                 "（多为游戏版本升级导致的类型／方法改名，参见 /check-upgrade）");
+                                 "（多为游戏版本升级导致的类型／方法改名）");
             }
 
             if (failMethods > 0 || skipped.Count > 0 || rejected.Count > 0)

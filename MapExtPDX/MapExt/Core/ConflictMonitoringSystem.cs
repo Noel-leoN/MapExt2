@@ -208,7 +208,7 @@ namespace MapExtPDX.MapExt.Core
         /// 該時機 UI 尚未就緒無法彈窗。此處是載入完成後最早的安全時機。</para>
         ///
         /// <para>沿用 <c>VanillaSaveConversionSystem</c> 的 <c>MainThreadDispatcher</c>
-        /// 延遲模式，確保排在 RoadBuilder 等其它 Mod 的載入完成對話框之後，不被覆蓋。</para>
+        /// 延迟模式，确保排在其他 Mod 的加载完成对话框之后，避免被覆盖。</para>
         ///
         /// <para><b>原版地形被拉伸</b>另走 <see cref="ShowVanillaStretchIfNeeded"/>（v4.12.0 整合计划 2.2）。</para>
         /// </summary>
@@ -263,11 +263,9 @@ namespace MapExtPDX.MapExt.Core
                     return true;
                 });
 
-                // === 通知條（與彈窗並存，不是備援）===
-                // 延後一帧只能跳出「同帧其它 Mod 也彈對話框」那種覆蓋；擋不住跨帧的 UI 重建
-                // ——2026-09-06 實測 RoadBuilder 在本彈窗顯示後仍在刷新 UI，把它整個沖掉。
-                // 通知條由 PSI 層管理、不屬於場景 UI，重建沖不掉它，且玩家事後回頭仍看得到。
-                // 兩者各自解決不同的失敗模式，所以都留著。
+                // === 通知条（与弹窗并存，非备援）===
+                // 延迟一帧只能避免同帧其他 Mod 弹窗覆盖，挡不住跨帧 UI 刷新冲掉模态弹窗；
+                // 通知条由 PSI 层管理、独立于场景 UI，不会被重建冲掉，且玩家事后仍可见，两者互补。
                 NotificationSystem.Push(
                     identifier: kMismatchNotificationId,
                     title: LocalizedString.Id("MAPEXT_MAPSIZE.MismatchTitle"),
@@ -696,7 +694,7 @@ namespace MapExtPDX.MapExt.Core
             World world = this.World;
             if (world == null || !world.IsCreated) return;
 
-            // 1. 检查本应保持禁用的原版系统是否被运行期重开（如 Time2Work 每 512 ticks 重开 RentAdjustSystem）
+            // 1. 检查本应保持禁用的原版系统是否被其他 Mod 在运行期周期性重新启用
             for (int i = 0; i < _monitoredVanillaDisabled.Count; i++)
             {
                 CachedSystemRef item = _monitoredVanillaDisabled[i];

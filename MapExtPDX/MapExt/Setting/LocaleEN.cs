@@ -231,7 +231,7 @@ namespace MapExtPDX
                 },
                 {
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.EnableJobSearchEcoSystem)),
-                    "Optimizes citizen job-search behavior and matching algorithms to improve efficiency.\n\n⚠️ Incompatible with Realistic JobSearch and similar mods!\n⚠️ Restart Required."
+                    "Optimizes citizen job-search behavior and matching algorithms to improve efficiency.\n\nOverlaps with other mods that replace the same job-search system.\n⚠️ Restart Required."
                 },
                 {
                     m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.EnableHouseholdPropertyEcoSystem)),
@@ -239,7 +239,7 @@ namespace MapExtPDX
                 },
                 {
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.EnableHouseholdPropertyEcoSystem)),
-                    "Optimizes household home-searching pathfinding; includes a realistic Land Value remake to make location values more reasonable; and heavily refactors the expensive rent adjustment mechanism.\n\n⚠️ Restart Required."
+                    "Optimizes household home-searching pathfinding; includes a realistic Land Value rework to make location values more reasonable; and heavily refactors the expensive rent adjustment mechanism.\n\n⚠️ Restart Required."
                 },
                 {
                     m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.EnableResourceBuyerEcoSystem)),
@@ -247,7 +247,7 @@ namespace MapExtPDX
                 },
                 {
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.EnableResourceBuyerEcoSystem)),
-                    "Optimizes resource matching for citizen shopping and company restocking, greatly reducing performance overhead from extreme-distance pathfinding.\n\nReplaces the same system as Realistic PathFinding; when that mod is enabled, this group is turned off for this session.\n⚠️ Restart Required."
+                    "Optimizes resource matching for citizen shopping and company restocking, greatly reducing performance overhead from extreme-distance pathfinding.\n\nIf a known conflicting mod that replaces the same system is detected, this group is turned off for this session.\n⚠️ Restart Required."
                 },
                 {
                     m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.EnableResidentAIEcoSystem)),
@@ -255,7 +255,7 @@ namespace MapExtPDX
                 },
                 {
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.EnableResidentAIEcoSystem)),
-                    "Fixes citizen pathfinding AI wait time logic flaws and mitigates critical memory overflows caused by large map path calculations.\n\nReplaces the same system as Realistic PathFinding; when that mod is enabled, this group is turned off for this session.\n⚠️ Restart Required.\n\nDefault: OFF."
+                    "Fixes citizen pathfinding AI wait time logic flaws and mitigates critical memory overflows caused by large map path calculations.\n\nIf a known conflicting mod that replaces the same system is detected, this group is turned off for this session.\n⚠️ Restart Required.\n\nDefault: OFF."
                 },
                 {
                     m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.EnableDownstreamAIEcoSystem)),

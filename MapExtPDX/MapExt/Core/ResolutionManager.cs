@@ -191,8 +191,7 @@ namespace MapExtPDX.MapExt.Core
                     "WaterAsyncCompute=true 已挂起，强制关闭。原因：DoTextureClear 的 " +
                     "SetRenderTarget/ClearRenderTarget 在 async compute 队列会被拒收，" +
                     "海水传播纹理清除静默失效（地形笔刷／改海平面时会出现水位错误）；" +
-                    "且水纹理跨队列消费点无任何 GraphicsFence。与显卡无关，见 " +
-                    "docs/20_systems/02_terrain_water/Water_AsyncCompute_Analysis.md");
+                    "且水纹理跨队列消费点无任何 GraphicsFence，与显卡无关。");
             }
             return false;
         }

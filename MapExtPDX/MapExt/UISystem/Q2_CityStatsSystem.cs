@@ -269,7 +269,7 @@ namespace MapExtPDX.UI
             // 默认关闭，由 MapExtUISystem 在 Dashboard 展开时启用
             Enabled = false;
 
-            ModLog.Ok(Tag, "城市统计系统已创建 (Phase 4: 按需启用, UpdateInterval=256)");
+            ModLog.Ok(Tag, "城市统计系统已创建 (按需启用, UpdateInterval=256)");
         }
 
         /// <summary>

@@ -201,7 +201,7 @@ namespace MapExtPDX
                 { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.EnableJobSearchEcoSystem)), "├─ 找工作系统组" },
                 {
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.EnableJobSearchEcoSystem)),
-                    "优化市民找工作行为与匹配算法，提升就业匹配效率。\n\n⚠️ 与 Realistic JobSearch 等 Mod 不兼容！\n⚠️ 修改后需重启游戏生效。"
+                    "优化市民找工作行为与匹配算法，提升就业匹配效率。\n\n与其他修改同一求职系统的 Mod 存在功能重叠。\n⚠️ 修改后需重启游戏生效。"
                 },
                 {
                     m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.EnableHouseholdPropertyEcoSystem)),
@@ -217,12 +217,12 @@ namespace MapExtPDX
                 },
                 {
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.EnableResourceBuyerEcoSystem)),
-                    "优化市民购物与企业采购的资源匹配，并优化服务覆盖寻路，大幅降低超远路程规划产生的性能开销。\n\n与 Realistic PathFinding 替换同一个系统；启用该 Mod 时，本分组在本次游戏中自动停用。\n⚠️ 修改后需重启游戏生效。"
+                    "优化市民购物与企业采购的资源匹配，并优化服务覆盖寻路，大幅降低超远路程规划产生的性能开销。\n\n检测到替换同一系统的已知冲突 Mod 时，本分组在本次游戏中自动停用。\n⚠️ 修改后需重启游戏生效。"
                 },
                 { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.EnableResidentAIEcoSystem)), "└─ 居民AI寻路优化补丁" },
                 {
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.EnableResidentAIEcoSystem)),
-                    "修复市民寻路AI等待时间的逻辑缺陷，缓解大地图底层寻路内存溢出的问题。\n\n与 Realistic PathFinding 替换同一个系统；启用该 Mod 时，本分组在本次游戏中自动停用。\n⚠️ 修改后需重启游戏生效。\n\n默认关闭。"
+                    "修复市民寻路AI等待时间的逻辑缺陷，缓解大地图底层寻路内存溢出的问题。\n\n检测到替换同一系统的已知冲突 Mod 时，本分组在本次游戏中自动停用。\n⚠️ 修改后需重启游戏生效。\n\n默认关闭。"
                 },
                 {
                     m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.EnableDownstreamAIEcoSystem)),
@@ -438,7 +438,7 @@ namespace MapExtPDX
                 },
                 {
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.ResourceSellerCandidateCap)),
-                    "【P1 寻路优化】企业采购寻路（ResourceSeller）在每个实体区块（chunk）中最多收集的合格候选供应商数量。" +
+                    "企业采购寻路（ResourceSeller）在每个实体区块（chunk）中最多收集的合格候选供应商数量。" +
                     "凑满即提前退出该区块的扫描（Early Exit），不再为区块内每家企业打分。\n" +
                     "由于扫描按区块并行，最终交给 A* 引擎的候选总数约为「本上限 × 区块数」，仍远少于全城扫描。\n\n" +
                     "值越小性能越好但可能错过较优货源；值越大越贴近原版全局最优但开销越高。\n" +
@@ -455,7 +455,7 @@ namespace MapExtPDX
                 },
                 {
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.LeisureCandidateCap)),
-                    "【P2 寻路优化】休闲寻路（Leisure）在每个实体区块（chunk）中最多收集的合格候选休闲设施数量。" +
+                    "休闲寻路（Leisure）在每个实体区块（chunk）中最多收集的合格候选休闲设施数量。" +
                     "凑满即提前退出该区块的扫描（Early Exit），不再为区块内每处设施打分。\n" +
                     "由于扫描按区块并行，最终交给 A* 引擎的候选总数约为「本上限 × 区块数」。\n\n" +
                     "多数候选 cost=0，A* 端以实际路径距离排序，提前退出几乎无质量损失；\n" +
@@ -472,7 +472,7 @@ namespace MapExtPDX
                 },
                 {
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.FindHomeCandidateCap)),
-                    "【P6 寻路优化】家庭找房（FindHome）在每个实体区块（chunk）中最多收集的合格候选房屋数量。" +
+                    "家庭找房（FindHome）在每个实体区块（chunk）中最多收集的合格候选房屋数量。" +
                     "凑满即提前退出该区块的扫描（Early Exit）。\n" +
                     "由于扫描按区块并行，最终交给 A* 引擎的候选总数约为「本上限 × 区块数」。本 Mod 此前硬编码为 5。\n\n" +
                     "★ 性能与逻辑的取舍（与购物/休闲不同，务必理解）：\n" +

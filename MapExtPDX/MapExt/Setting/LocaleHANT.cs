@@ -201,7 +201,7 @@ namespace MapExtPDX
                 { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.EnableJobSearchEcoSystem)), "├─ 找工作系統組" },
                 {
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.EnableJobSearchEcoSystem)),
-                    "優化市民找工作行為與匹配演算法，提升就業尋找效率。\n\n⚠️ 與 Realistic JobSearch 等模組不相容！\n⚠️ 修改後需重啟遊戲生效。"
+                    "優化市民找工作行為與匹配演算法，提升就業尋找效率。\n\n與其他修改同一求職系統的模組存在功能重疊。\n⚠️ 修改後需重啟遊戲生效。"
                 },
                 {
                     m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.EnableHouseholdPropertyEcoSystem)),
@@ -217,12 +217,12 @@ namespace MapExtPDX
                 },
                 {
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.EnableResourceBuyerEcoSystem)),
-                    "優化市民購物與企業採購的資源匹配，並優化服務覆蓋尋路，大幅降低超遠路程規劃產生的性能開銷。\n\n與 Realistic PathFinding 替換同一個系統；啟用該模組時，本分組在本次遊戲中自動停用。\n⚠️ 修改後需重啟遊戲生效。"
+                    "優化市民購物與企業採購的資源匹配，並優化服務覆蓋尋路，大幅降低超遠路程規劃產生的性能開銷。\n\n偵測到替換同一系統的已知衝突模組時，本分組在本次遊戲中自動停用。\n⚠️ 修改後需重啟遊戲生效。"
                 },
                 { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.EnableResidentAIEcoSystem)), "└─ 居民AI尋路優化補丁" },
                 {
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.EnableResidentAIEcoSystem)),
-                    "修復市民尋路 AI 等待時間的邏輯缺陷，緩解大地圖底層尋路記憶體溢出的問題。\n\n與 Realistic PathFinding 替換同一個系統；啟用該模組時，本分組在本次遊戲中自動停用。\n⚠️ 修改後需重啟遊戲生效。\n\n預設關閉。"
+                    "修復市民尋路 AI 等待時間的邏輯缺陷，緩解大地圖底層尋路記憶體溢出的問題。\n\n偵測到替換同一系統的已知衝突模組時，本分組在本次遊戲中自動停用。\n⚠️ 修改後需重啟遊戲生效。\n\n預設關閉。"
                 },
                 { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.EnableDownstreamAIEcoSystem)), "└─ 載具AI與尋路系統組 (Beta)" },
                 {

@@ -138,8 +138,8 @@ namespace MapExtPDX.SaveLoadSystem
                 // 外部连接一律保留在原边界（整合计划 Q27，开新城原本就是 D1）。原版至少三处 Job 从外部连接列表里随机取一个、
                 // 不判空：ResourceExporterSystem.HandleExportsJob（无重量资源出口）、CitizenBehaviorSystem（通勤家庭）、
                 // CitizenTravelPurposeSystem（游客）。存档转换原先删光外部连接，转出的城市一出口就 Burst 越界、访问违例闪退，
-                // 没有任何日志（第 4 轮 4b，Special K 的 crash.log 定位）。MapExt 也没有重新生成外部连接的路径
-                ModLog.Info(Tag, "外部连接保留在原边界（不删除：一个都不剩时原版出口会闪退，整合计划 Q27）");
+                // 无托管异常日志。MapExt 也没有重新生成外部连接的路径
+                ModLog.Info(Tag, "外部连接保留在原边界（不删除：一个都不剩时原版出口会闪退）");
 
                 // ① Heightmap 合成 (含平面底图回退)
                 RunStep(request, "Heightmap", () => ExecuteHeightmapSynthesis(request));
@@ -1394,7 +1394,7 @@ namespace MapExtPDX.SaveLoadSystem
                 ComponentType.Exclude<Deleted>());
             int total = allQuery.CalculateEntityCount();
             int unlocked = total - lockedQuery.CalculateEntityCount();
-            ModLog.Ok(Tag, $"MapTile 边界重建完成：{total} 格，解锁 {unlocked} 格（D2 应为中央 9 格）");
+            ModLog.Ok(Tag, $"MapTile 边界重建完成：{total} 格，解锁 {unlocked} 格（开新城应为中央 9 格）");
         }
 
         // === ③b 水模拟重置 ===
@@ -1935,8 +1935,8 @@ namespace MapExtPDX.SaveLoadSystem
                     LocalizedString.Id("VANILLA_CONVERT.QuitConfirm"),
                     LocalizedString.Id("VANILLA_CONVERT.QuitCancel"));
 
-                // 使用 MainThreadDispatcher 延迟显示，确保在 RoadBuilder 等 mod
-                // 的 OnGameLoadingComplete 对话框之后显示（避免被覆盖）
+                // 使用 MainThreadDispatcher 延迟显示，确保排在其他 Mod 的
+                // OnGameLoadingComplete 对话框之后显示（避免被覆盖）
                 Colossal.Core.MainThreadDispatcher.RegisterUpdater(() =>
                 {
                     GameManager.instance.userInterface.appBindings.ShowConfirmationDialog(dialog, (int result) =>
@@ -1954,11 +1954,10 @@ namespace MapExtPDX.SaveLoadSystem
                     return true;
                 });
 
-                // === 通知條（與對話框並存）===
-                // 對話框延後一帧只擋得住「同帧其它 Mod 也彈對話框」；擋不住跨帧的 UI 重建
-                // （實測 RoadBuilder 會沖掉錯配彈窗，本對話框走同一條路徑、風險相同）。
-                // 這一則尤其不能丟——它是玩家唯一得知「必須重啟才能玩轉換後的城市」的途徑，
-                // 沖掉的話玩家會在水體未穩的狀態下繼續玩。
+                // === 通知条（与对话框并存）===
+                // 对话框延迟一帧只能避免同帧其他 Mod 弹窗覆盖，挡不住跨帧 UI 重建冲掉模态弹窗；
+                // 这一则尤其不能丢失——它是玩家得知“必须重启才能游玩转换后城市”的唯一提示，
+                // 否则可能在水体未稳定的状态下继续游玩。
                 NotificationSystem.Push(
                     identifier: "mapext.convert_complete",
                     title: LocalizedString.Id("VANILLA_CONVERT.Complete"),

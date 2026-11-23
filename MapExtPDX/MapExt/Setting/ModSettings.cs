@@ -760,11 +760,10 @@ namespace MapExtPDX
         public bool IsWorldBackdropLocked => m_EnableVanillaConversion && !m_DisableWorldBackdrop;
 
         /// <summary>
-        /// 載入後的互斥歸一化。setter 不再互相清除，正常路徑產生不出 (true, true)，
-        /// 但手動編輯過的 .coc、或第三方設定還原工具（如 Simple Mod Checker Plus 的
-        /// 「啟動時恢復配置」，它會在各 Mod <c>OnLoad</c> 之後按自己的備份回寫 .coc）
-        /// 可能塞回這種非法組合。此時保留「原版存檔轉換」——它是使用者主動發起的一次性流程，
-        /// 而停用背景地圖只是渲染層開關，讓路成本較低。
+        /// 载入后的互斥归一化。setter 不再互相清除，正常路径不会产生 (true, true)，
+        /// 但手动编辑过的 .coc 或外部配置备份/还原工具（在 Mod <c>OnLoad</c> 之后回写 .coc）
+        /// 可能写入这种互斥组合。此时保留地图扩展转换（用户主动发起的一次性流程），
+        /// 关闭停用背景世界地图以让路。
         /// </summary>
         internal void NormalizeSaveConvertExclusion()
         {
@@ -787,26 +786,18 @@ namespace MapExtPDX
         internal static bool s_settingsLoaded;
 
         /// <summary>
-        /// 探測進程內是否有多個 Mod 的設定類共用同一個「短類名」。
+        /// 探测进程内是否有多个 Mod 的设置类共用同一个短类名。
         ///
-        /// <para><b>為何要查這個</b>：原版 <c>Setting.ApplyAndSave()</c>（OptionUI 每次變更都會呼叫）
+        /// <para><b>原因</b>：原版 <c>Setting.ApplyAndSave()</c>（OptionsUI 每次变更都会调用）
         /// 走 <c>AssetDatabase.SaveSpecificSetting(GetType().Name)</c>，而
-        /// <c>AssetDatabase.GetTargetSetting</c> 只用 <b>短類名</b>（不含命名空間）比對
-        /// <c>fragment.source</c>，且<b>在第一個命中就 break</b>。本工作區四個 Mod 的設定類都叫
-        /// <c>ModSettings</c>，第三方 Mod 亦常用此名——若命中的不是自己那份 asset，
-        /// UI 上的每次變更就只寫進別人的 <c>.coc</c>，本 Mod 的值不落盤，
-        /// 只剩遊戲正常退出時 <c>GameManager</c> 的 <c>SaveAllSettings()</c> 兜底
-        /// （崩潰或強制結束即丟失）。</para>
+        /// <c>AssetDatabase.GetTargetSetting</c> 只用<b>短类名</b>（不含命名空间）比对
+        /// <c>fragment.source</c>，且<b>在首个命中即 break</b>。当多个 Mod 共用 <c>ModSettings</c>
+        /// 类名时，若命中的不是自身 asset，UI 上的即时变更会写入其他配置，本 Mod 的值无法及时落盘，
+        /// 只能依赖游戏正常退出时 <c>GameManager</c> 的 <c>SaveAllSettings()</c> 兜底
+        /// （崩溃或强制退出即丢失）。</para>
         ///
-        /// <para><b>已證偽為設定回退的元兇</b>：實測進程內有 8 份同名設定類，
-        /// 但 MapExtPDX 排第一、即時保存正常命中自己（受害的是另外七個）。
-        /// 「勾了重啟又跳回」的真兇是 Simple Mod Checker Plus 的「啟動時恢復配置」，
-        /// 它在各 Mod <c>OnLoad</c> 之後按自己的備份回寫 <c>.coc</c>。撞名仍然存在，
-        /// 故保留本探測作為長期監控。</para>
-        ///
-        /// <para>此處只記錄實況、不改變保存行為；每個進程只輸出一次。
-        /// 已核對 1.5.10f 與 1.6.0f 的 <c>AssetDatabase.cs</c>／<c>Setting.cs</c>，
-        /// 這段機制兩版完全相同，故它不是版本升級引入的新問題。</para>
+        /// <para>此外，外部配置还原工具在 <c>OnLoad</c> 之后回写 <c>.coc</c> 也可能导致配置回退。
+        /// 本方法仅记录短类名碰撞实况、不改变保存行为；每个进程只输出一次，作为长期诊断监控。</para>
         /// </summary>
         private static void ProbeSaveTargetCollision()
         {
