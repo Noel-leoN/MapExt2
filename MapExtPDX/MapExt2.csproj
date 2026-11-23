@@ -4,7 +4,7 @@
 		<Configurations>Debug;Release</Configurations>
 		<AssemblyName>MapExt2</AssemblyName>
 		<RootNamespace>MapExtPDX</RootNamespace>
-		<Description>MapSize Extend 28/43/57km</Description>
+		<Description>Extended maps (28/43/57/114 km and vanilla 14 km), economy rework, in-game tools and performance</Description>
 		<Authors>Noel2</Authors>
 		<Copyright>Copyright (c) [2025] [Noel2/Noel-leoN/=Noel=]</Copyright>
 		<Title>MapExt: Big Map, Economy and Performance</Title>

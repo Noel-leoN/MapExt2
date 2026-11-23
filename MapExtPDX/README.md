@@ -1,10 +1,10 @@
 # Map Extended Mod (28/43/57 km + vanilla) — Economy Rework, In-Game Tools and Performance
 
-* **Larger Maps:** 57km (default), 28km, an experimental 43km mode and a 114km mode (not recommended), alongside the vanilla 14km size.
+* **Extended Maps:** 57km (default), 28km, an experimental 43km mode and a 114km mode (not recommended), alongside the vanilla 14km size.
 * **Economy and Performance:** Reworked demand, job and home search, and consumption to ease pathfinding load at large populations, adjustable in game.
 * **In-Game Tools:** HUD dashboard with key economic metrics, sea level and water tools, through-traffic and pet controls, editor collision override and heightmap export.
 * **Safeguards:** Every load checks the map size mode first, and conflicting mods are detected at startup.
-* **Map Extension Conversion (Optional):** Move a vanilla 14km city or map, or a 28km city, onto a larger map.
+* **Map Extension Conversion (Optional):** Move a vanilla 14km city or map, or a 28km city, onto an extended map.
 
 > **🧰 MapExTools (optional companion app):** A separate Windows app — switch MapExt's map size mode and economy groups while the game is closed, set launch options, read the game and MapExt logs, and inspect saves and heightmaps. It is not included in this mod; download it from Releases via the GitHub icon on the right side of this page.
 
@@ -31,7 +31,7 @@ Maps for each size can be made yourself (see "Making a 1:1 Map" below) or subscr
 
 ## 🗺️ Map Extension Conversion (Optional)
 
-An **optional extra** for moving to a larger map without starting over. You do not need it to start a new city on a map built for your mode — see "Getting Started" above.
+An **optional extra** for moving to an extended map without starting over. You do not need it to start a new city on a map built for your mode — see "Getting Started" above.
 
 Three sources can be converted to 28km or 57km (43km and 114km are not supported):
 
@@ -85,7 +85,7 @@ The original save or map is never modified. The result is saved as `{Name}_MapEx
 
 ### 💡 Economy and Simulation
 * **Demand Algorithm Rework:** Converts vanilla RCI demand to percentage-based scaling, normalizes industrial labor metrics, and stabilizes household rent affordability evaluations.
-* **Pathfinding Distance Control:** Configurable maximum pathfinding cost per travel purpose (shopping, company procurement, leisure, job search, home search, emergency, and four school levels), plus candidate and seeker caps for home and leisure searches, to reduce CPU load.
+* **Pathfinding Distance Control:** Configurable maximum pathfinding cost per travel purpose (shopping, company procurement, leisure, job search, home search, hospital/crime, and four school levels), plus candidate and seeker caps for home and leisure searches, to reduce CPU load.
 * **NoDogs 2.0:** Three pet control modes (Disable OnStreet, Prevent New Generation, Purge All) with live pet statistics.
 * **No Through-Traffic:** Disables through-traffic vehicle spawning to reduce transit routing pressure.
 * **Ghost Vehicle Cleanup:** The base game leaves a car bought with no parking space nearby stranded without a parking lane, turning it into a permanent "ghost". Vehicle Purchase Rescue (Debug tab, default off) re-parks these near the owner's home, deletes orphans whose household is gone, and works through the backlog in existing saves in batches. Use the "Scan Ghost Vehicles" button to check your save first.
@@ -95,10 +95,10 @@ The original save or map is never modified. The result is saved as `{Name}_MapEx
 ### 🛠️ In-Game Tools and Performance
 * **HUD Dashboard:** Click the **MAP/EXT** button on the in-game HUD to open the dashboard, featuring city statistics, rent control, and pathfinding sliders. Zero overhead when closed.
 * **Heightmap Export:** Export the current city terrain from the Debug tab as a 16-bit grayscale PNG, mapped 1:1 for direct import into the Map Editor. Five orientations (Native, flip vertical, flip horizontal, rotate 180, or all four at once) plus optional raw output.
-* **Water Tools:** Sea level control (0.1m precision), sea level apply, water simulation reset, and simulation speed control (0x-128x).
+* **Water Tools:** Sea level control (0.1m precision), sea level apply and lock, and water simulation reset.
 * **Editor Collision Override:** Bypass collision validation checks when placing objects in the Map Editor (Off / Trees Only / All Objects).
 * **Disable World Backdrop:** Disables background terrain heightmap loading to reduce GPU and VRAM overhead.
-* **Terrain-Water Optimization:** GPU buffer pre-allocation, building culling adjustments, and terrain cascade throttling.
+* **Terrain-Water Optimization:** GPU buffer pre-allocation, terrain cascade throttling, and water/snow simulation optimization.
 
 ---
 
@@ -138,7 +138,7 @@ Import heightmaps and worldmaps corresponding to your chosen mode in the Map Edi
 
 * **Pathfinding Overhead at Large Populations:** At populations above 200k-500k, pathfinding volume increases significantly. Mod optimizations help mitigate lag, but system limits still apply.
 * **Map Edge Floating-Point Precision:** Near extreme map edges, floating-point precision limits may cause terrain artifacts and simulation inaccuracies. It is recommended to keep core urban zones toward the center.
-* **Fast Water Filling:** Use built-in Water Tools (HUD MAP/EXT button): set sea level, click "Apply", then increase simulation speed to 128x for rapid water filling. For water source placement and advanced features, pair with the **Water Features** mod.
+* **Sea Level and Water Sources:** Use built-in Water Tools (HUD MAP/EXT button) to adjust, apply, or lock the sea level and reset water. For water source placement and fast water filling, pair with the **Water Features** mod.
 * **Clear Mod Cache:** After a crash, open **Skyve** and click "Clear Mod Cache" to prevent potential save issues on next load.
 
 ---
@@ -172,8 +172,8 @@ Import heightmaps and worldmaps corresponding to your chosen mode in the Map Edi
 
 **改用其他尺寸**（28km / 43km / 114km / 原版 14km）：
 
-1. 在**主菜单**打开 选项 -> MapExt -> **MapSize** 标签页，用 **“► Select MapSize Mode”** 选择目标尺寸。
-2. 点击 **“► Apply Changes”** 应用。
+1. 在**主菜单**打开 选项 -> #大地图 -> **地图尺寸** 标签页，用 **“► 选择地图尺寸模式”** 选择目标尺寸。
+2. 点击 **“► 应用设置”** 应用。
 3. **完全重启游戏。** 本模组不支持热切换——未重启就载入存档会造成模拟逻辑冲突并可能损坏存档。
 4. 重启后载入一张**与所选尺寸相符**的地图，即可开始建城。
 
@@ -197,8 +197,8 @@ Import heightmaps and worldmaps corresponding to your chosen mode in the Map Edi
 
 ### 🛠️ 操作步骤
 
-1. 在**主菜单**的 Options 中打开 MapExt 选项，在 MapSize 界面中选择目标模式（28km 或 57km），点击 **“► Apply Changes”** 应用，然后**完全重启游戏**。
-2. 在 MapSize 标签页开启 **“⚠ 地图扩展转换（实验性）”**。
+1. 在**主菜单**打开 选项 -> #大地图 -> **地图尺寸** 标签页，选择目标模式（28km 或 57km），点击 **“► 应用设置”**，然后**完全重启游戏**。
+2. 在“地图尺寸”标签页开启 **“⚠ 地图扩展转换（实验性）”**。
 3. **加载**存档，或用原版地图开新城。
 4. 在确认对话框中点击 **“扩展并加载”**（开新城为 **“扩展并开始”**）。模组将合成扩展地形（新增区域取地图的背景地形；没有背景地形的 28km 存档为平地，并开出通往外海的直水道），把自然资源与地下水保留在中央（28km 存档另保留污染与土壤水），清除存档中的车辆与居民，把水体重置到海平面，并保存结果。
 5. **再次完全重启游戏**后再游玩新存档，以便水体模拟与地图边界重新初始化。
@@ -239,7 +239,7 @@ Import heightmaps and worldmaps corresponding to your chosen mode in the Map Edi
 
 ### 💡 经济与模拟
 * **需求算法调整**：将原版 RCI 需求改为百分比制，标准化工业劳动力指标，并调整家庭租金承受力评估机制。
-* **寻路距离控制**：按出行目的（购物、企业采购、休闲、求职、找房、急救及四级就学）分别配置最大寻路成本上限，并可限制找房与休闲的候选数量，降低 CPU 寻路负载。
+* **寻路距离控制**：按出行目的（购物、企业采购、休闲、求职、找房、就医/犯罪及四级就学）分别配置最大寻路成本上限，并可限制找房与休闲的候选数量，降低 CPU 寻路负载。
 * **NoDogs 2.0**：三档宠物控制模式（禁止外出、阻止新生成、清除全部），提供实时宠物统计。
 * **过境交通控制**：禁止过境交通车辆生成，降低道路寻路计算量。
 * **幽灵车清理**：原版在购车时若附近无停车位，车辆不会被分配车道，从此成为永久“幽灵车”。购车救援（调试面板，默认关闭）将其移至车主住宅附近重新停放，家庭已消失的孤儿车则直接删除；存档中的存量幽灵车分批处理。可先用“扫描幽灵车”按钮查看存档内数量。
@@ -249,10 +249,10 @@ Import heightmaps and worldmaps corresponding to your chosen mode in the Map Edi
 ### 🛠️ 游戏内工具与性能
 * **HUD 仪表盘**：点击游戏内 HUD 的 **MAP/EXT** 按钮可展开面板，包含城市统计、租金调控与寻路参数。面板关闭时零开销。
 * **高度图导出**：在调试面板中可将当前城市地形导出为 16-bit 灰度 PNG 高度图，地图像素与高度 1:1 映射，可直接导入游戏地图编辑器。提供五种方位（Native、垂直翻转、水平翻转、旋转 180、一次输出全部四份），并可另存原始 RAW。
-* **水体工具**：海平面调节（0.1m 精度）、应用海平面、水体重置与模拟速度控制（0x-128x）。
+* **水体工具**：海平面调节（0.1m 精度）、应用与锁定海平面、水体重置。
 * **编辑器碰撞跳过**：在地图编辑器中跳过物体放置碰撞检查（关闭 / 仅树木 / 所有物体）。
 * **禁用背景世界地图**：阻止背景地形（Backdrop）加载，降低 GPU 与显存开销。
-* **地形-水体优化**：GPU 缓冲预分配、建筑裁剪降频与地形级联降频。
+* **地形-水体优化**：GPU 缓冲预分配、地形级联降频与水体/雪模拟优化。
 
 ---
 
@@ -292,7 +292,7 @@ Import heightmaps and worldmaps corresponding to your chosen mode in the Map Edi
 
 * **大人口寻路开销**：当人口达到 20 万至 50 万以上时，寻路计算量显著增加。模组的优化可缓解卡顿，但依然受硬件性能约束。
 * **地图边缘浮点精度**：在地图极大边缘区域，浮点精度可能引起地形伪影和模拟不准确，建议核心城区尽量偏向中心建设。
-* **快速水体填充**：在水体工具（HUD 上的 MAP/EXT 按钮）中设置海平面后点击“应用”，再将模拟速度调至 128x，可快速注入水体。若需水源生成和更多功能，请配合 **Water Features** 模组。
+* **海平面与水源调整**：可在内置水体工具（HUD 上的 MAP/EXT 按钮）中调节、应用或锁定海平面并重置水面；若需水源放置或快速注水，请配合 **Water Features** 模组。
 * **清理模组缓存**：若遇异常崩溃，可在 Skyve 中执行“清理模组缓存”。
 
 ---

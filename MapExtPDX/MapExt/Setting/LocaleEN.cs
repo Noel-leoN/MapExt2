@@ -41,7 +41,7 @@ namespace MapExtPDX
                 },
                 {
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.PatchModeChoice)),
-                    "⚠️ Changes require clicking the 'Apply Changes' button to take effect!\n\nMode List:\n - ModeA: 57km (4x4)  DEM:14m\n - ModeB: 28km (2x2)  DEM:7m\n - ModeC: 114km (8x8)  DEM:28m\n - ModeD: 43km (3x3)  DEM:10.5m (Experimental - Map size is not a power-of-two; some simulation systems may exhibit unexpected behavior)\n - Vanilla: 14km Vanilla(1x1) DEM:3.5m\n\nNotice:\n1. Larger MapSizes suffer from lower DEM resolution, resulting in rougher graphics for mountains, ramps, and waterfronts. If you have high requirements for terrain smoothness, it is recommended to build a flatter map or use landscaping tools to mask areas.\n2. The larger the MapSize, the greater the floating-point calculation deviation of the economic simulation data at the edges (causing false visuals). This is an unfixable engine limitation, especially noticeable in 114km mode. It is recommended to build active zones (Res/Com/Ind) in the center of the map.\n\n! [CRITICAL]: You MUST RESTART THE GAME after changing the map size mode before loading a save. Failure to do so will cause logic conflicts and may corrupt your save data!"
+                    "⚠️ Changes require clicking the 'Apply Changes' button to take effect!\n\nMode List:\n - ModeA: 57km (4x4)  DEM:14m\n - ModeB: 28km (2x2)  DEM:7m\n - ModeC: 114km (8x8)  DEM:28m\n - ModeD: 43km (3x3)  DEM:10.5m (Experimental - Map size is not a power-of-two; some simulation systems may exhibit unexpected behavior)\n - Vanilla: 14km Vanilla(1x1) DEM:3.5m\n\nNotice:\n1. Extended map sizes suffer from lower DEM resolution, resulting in rougher graphics for mountains, ramps, and waterfronts. If you have high requirements for terrain smoothness, it is recommended to build a flatter map or use landscaping tools to mask areas.\n2. As map size increases, floating-point calculation deviation of the economic simulation data at the edges grows (causing false visuals). This is an unfixable engine limitation, especially noticeable in 114km mode. It is recommended to build active zones (Res/Com/Ind) in the center of the map.\n\n! [CRITICAL]: You MUST RESTART THE GAME after changing the map size mode before loading a save. Failure to do so will cause logic conflicts and may corrupt your save data!"
                 },
                 {
                     m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.ModSettingCoreValue)),
@@ -49,7 +49,7 @@ namespace MapExtPDX
                 },
                 {
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.ModSettingCoreValue)),
-                    "The currently selected and successfully applied map size. This size refers to the edge length of the map. Unit is in meters.\n⚠️ Warning: Although MapExt has loadgame validation to prevent loading wrong size game saves, Please BACKUP ALL of your GameSaves (Strongly recommand SKYVE) before Loading them with this mod!!! Otherwise, there is a risk that the save may be corrupted due to game crashes or other special reasons."
+                    "The currently selected and successfully applied map size. This size refers to the edge length of the map. Unit is in meters.\n⚠️ Warning: Although MapExt has loadgame validation to prevent loading wrong size game saves, Please BACKUP ALL of your GameSaves (Strongly recommend SKYVE) before Loading them with this mod!!! Otherwise, there is a risk that the save may be corrupted due to game crashes or other special reasons."
                 },
                 { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.ApplyPatchChanges)), "► Apply Changes" },
                 {
@@ -107,7 +107,7 @@ namespace MapExtPDX
                     "Controls the CPU/GPU update frequency of the water system to improve frame rates on large maps.\n\n" +
                     " - Vanilla (Every Frame): Simulates every frame, highest quality but maximum performance cost.\n" +
                     " - Reduced (No Backdrop): Simulates every frame, but disables flow calculation in the distant backdrop.\n" +
-                    " - Minimal (Every 4 Frames): Skips simulation for 3 out of 4 frames and disables visual blur. Massively reduces GPU requests, with only slightly noticeable water stuttering.\n" +
+                    " - Minimal (Every 4 Frames): Simulates once every 4 frames (skipping 3 frames), disables backdrop water simulation and flow blur. Massively reduces GPU requests, with only slightly noticeable water stuttering.\n" +
                     " - Paused (No Flow): Completely freezes water flow calculations (water will remain static).\n\n" +
                     "★ Tip: Applies instantly, no restart required."
                 },
@@ -352,7 +352,7 @@ namespace MapExtPDX
                 },
                 {
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.FindHomeMaxCost)),
-                    "Controls the maximum search distance when citizens look for a new home. Increasing this allows citizens to relocate across the entire large map, preventing remote towns from being empty. This occurs rarely, recommended to max it out.\n" +
+                    "Controls the maximum search distance when citizens look for a new home. Also applies to essential trips (going home, to work, to school), moving away, and long-distance taxi trips (when the Vehicle AI group is enabled). Increasing this allows citizens to relocate and commute across the entire extended map, preventing remote towns from being empty. Recommended to max it out.\n" +
                     "★ Recommended:\n" +
                     " - All Map Sizes: 200000"
                 },
@@ -553,9 +553,9 @@ namespace MapExtPDX
                     "Unlike leisure (where most candidates have cost 0), each housing candidate carries a real quality score (GetPropertyScore: rent affordability, pollution, services, crime, etc.). " +
                     "The cap decides how many scored candidates are handed to the A* engine. A LOWER cap exits sooner and costs less CPU, but the household picks from fewer options, so it may settle into a lower-scored (yet still affordable) home and is more likely to relocate again later. " +
                     "A HIGHER cap yields housing closer to the citywide optimum at greater per-request CPU cost.\n\n" +
-                    "★ Note on map size: larger maps have MORE candidate housing, so a small cap there means choosing from a tiny fraction of the city. If anything, prefer keeping or slightly raising the cap on large maps rather than lowering it.\n\n" +
+                    "★ Note on map size: extended maps have MORE candidate housing, so a small cap there means choosing from a tiny fraction of the city. If anything, prefer keeping or slightly raising the cap on extended maps rather than lowering it.\n\n" +
                     "★ Scarcity is safe: when qualified housing is rare, the cap is never filled, so the full city is scanned anyway and no property is missed.\n\n" +
-                    "★ Recommended: 5 (default, matches vanilla behavior). Raise toward 8 ~ 10 for better housing-quality matching, lower toward 3 for maximum performance on weak hardware.\n\n" +
+                    "★ Recommended: 5 (default, previous hardcoded default). Raise toward 8 ~ 10 for better housing-quality matching, lower toward 3 for maximum performance on weak hardware.\n\n" +
                     "★ Note: this is a per-request candidate cap, NOT the per-frame household throughput (see Home Search: Move / Homeless Throughput). Can be adjusted in-game."
                 },
                 { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.ResetEcoBehavior)), "Reset" },
@@ -724,7 +724,7 @@ namespace MapExtPDX
                     " - Simulation instability may occur in expanded areas\n\n" +
                     "★ Use at your own risk. Mutually exclusive with 'Disable World Backdrop' " +
                     "— enabling one greys out the other.\n" +
-                    "⚠ Requires game restart after enabling."
+                    "⚠ Restart the game after conversion completes before playing the new save."
                 },
 
                 // --- Group: Terrain Performance ---
@@ -803,7 +803,7 @@ namespace MapExtPDX
                 },
                 {
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.EditorCollisionSkip)),
-                    "Allows you to bypass normal collision validation checks when placing objects in the Map Editor. 'Trees Only' skips validation specifically for trees, while 'All Objects' disables collision checks for all plopables."
+                    "Allows you to bypass normal collision validation checks when placing objects in the Map Editor. 'Trees Only' skips validation specifically for trees, while 'All Objects' disables collision checks for all ploppables."
                 },
                 {
                     m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.TerrainBrushRoadBlock)),
@@ -826,17 +826,22 @@ namespace MapExtPDX
                     "★ Recommended: 1.0 ~ 4.0m for most roads."
                 },
 
+                // ============================================================
+                // Tab 5: UI
+                // ============================================================
+                { m_Setting.GetOptionTabLocaleID(ModSettings.kUITab), "UI" },
+
                 // --- Group: In-Game UI ---
                 { m_Setting.GetOptionGroupLocaleID(ModSettings.kInGameUIGroup), "In-Game UI Appearance" },
                 { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.UIMenuPanelWidth)), "Menu Panel Width" },
                 {
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.UIMenuPanelWidth)),
-                    "Controls the width of the left menu panel (in rem). Can also be adjusted by dragging the panel edge in-game. Default: 220. Range: 160~320."
+                    "Controls the width of the left menu panel (in rem). Can also be adjusted by dragging the panel edge in-game. Default: 200. Range: 160~320."
                 },
                 { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.UIDetailPanelWidth)), "Detail Panel Width" },
                 {
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.UIDetailPanelWidth)),
-                    "Controls the width of the right detail panel (in rem). Can also be adjusted by dragging the panel edge in-game. Default: 260. Range: 200~450."
+                    "Controls the width of the right detail panel (in rem). Can also be adjusted by dragging the panel edge in-game. Default: 220. Range: 200~450."
                 },
                 { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.UIPanelHeight)), "Panel Height" },
                 {
@@ -880,11 +885,6 @@ namespace MapExtPDX
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.DashboardDefaultMisc)),
                     "When checked, the 'Misc' section will be expanded by default."
                 },
-
-                // ============================================================
-                // Tab 5: UI
-                // ============================================================
-                { m_Setting.GetOptionTabLocaleID(ModSettings.kUITab), "UI" },
 
                 // ============================================================
                 // Tab 6: Debug

@@ -93,7 +93,7 @@ namespace MapExtPDX
                     "控制水系統 CPU 和 GPU 計算的更新頻率，以提升大地圖的更新率和遊戲速度。\n\n" +
                     " - Vanilla: 原版高精度：每幀排程計算，效果最好，消耗最大。\n" +
                     " - Reduced: 降低消耗：每幀計算並傳播水體，但關閉背景大地圖邊緣的水流計算。\n" +
-                    " - Minimal: 極簡性能：每四幀跳過計算並顯式關閉水面模糊和後處理效果，將大幅降低 GPU 請求頻率，可能會有些微的水流卡頓。\n" +
+                    " - Minimal: 極簡性能：每四幀模擬一次（跳過 3 幀），關閉背景水與水流模糊，將大幅降低 GPU 請求頻率，可能會有些微的水流卡頓。\n" +
                     " - Paused: 暫停流體：完全凍結水體流動計算（水面將靜止但水位不會出現大變化）。\n\n" +
                     "★ 提示：該選項即時生效無須重啟。"
                 },
@@ -172,7 +172,7 @@ namespace MapExtPDX
                 { m_Setting.GetOptionGroupLocaleID(ModSettings.kEcoGroup), "經濟系統修復" },
                 {
                     m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.isEnableEconomyFix)),
-                    "• 經濟系統修復与性能優化 (Beta 總開關)"
+                    "• 經濟系統修復與性能優化 (Beta 總開關)"
                 },
                 {
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.isEnableEconomyFix)),
@@ -284,7 +284,7 @@ namespace MapExtPDX
                     " - 14km / 28km： 8000 ~ 12000\n" +
                     " - 57km / 114km：12000 ~ 20000"
                 },
-                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.EmergencyMaxCost)), "醫院/犯罪最高尋路成本" },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.EmergencyMaxCost)), "就醫/犯罪最高尋路成本" },
                 {
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.EmergencyMaxCost)),
                     "控制市民生病就醫或犯罪時的最大搜尋範圍。較低的值將這些行為限制在就近區域，鼓勵在地化的公共服務規劃。\n" +
@@ -302,7 +302,7 @@ namespace MapExtPDX
                 { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.FindHomeMaxCost)), "找房搬家最高尋路成本" },
                 {
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.FindHomeMaxCost)),
-                    "控制市民搬家找房時的最大搜尋範圍上限。提升此數值可讓市民跨越整張大地圖尋找新住宅，避免偏遠新城無人入住。該行為頻率較低，建議直接拉滿。\n" +
+                    "控制市民搬家找房時的最大搜尋範圍上限，同時作用於回家、上班、上學等剛需出行與搬離城市（啟用載具 AI 組時亦用於計程車長途出行）。提升此數值可讓市民跨越整張大地圖找房與通勤，避免偏遠新城無人入住或回不了家，建議直接拉滿。\n" +
                     "★ 建議值：\n" +
                     " - 全地圖通用：200000"
                 },
@@ -353,8 +353,8 @@ namespace MapExtPDX
                     "較高的值加快就業尋找速度，但增加 CPU 負擔。可於遊戲中即時調節。\n" +
                     "★ 建議值：\n" +
                     " - 50萬以下人口：200 ~ 500\n" +
-                    " - 200万人口：500 ~ 1000\n" +
-                    " - 500万以上人口：1000 ~ 3000"
+                    " - 200萬人口：500 ~ 1000\n" +
+                    " - 500萬以上人口：1000 ~ 3000"
                 },
                 { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.PathfindRequestCap)), "找工作系統：尋路吞吐量" },
                 {
@@ -362,9 +362,9 @@ namespace MapExtPDX
                     "每次尋路更新最多處理的求職尋路請求數量。通常為求職吞吐量的 2~4 倍。\n" +
                     "較高的值加快職缺匹配，但增加尋路系統的 CPU 負擔。可於遊戲中即時調節。\n" +
                     "★ 建議值：\n" +
-                    " - 50万以下人口：1000 ~ 2000\n" +
-                    " - 200万人口：2000 ~ 4000\n" +
-                    " - 500万以上人口：4000 ~ 8000"
+                    " - 50萬以下人口：1000 ~ 2000\n" +
+                    " - 200萬人口：2000 ~ 4000\n" +
+                    " - 500萬以上人口：4000 ~ 8000"
                 },
                 { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.ShoppingTrafficReduction)), "購物機率人口壓制係數 (x0.0001)" },
                 {
@@ -372,15 +372,15 @@ namespace MapExtPDX
                     "控制城市人口對家庭購物機率的衰減影響。公式：shopChance = 200 / sqrt(係數 × 人口)。" +
                     "數值越大，高人口時購物機率越低，商業區交易量越少。\n\n" +
                     "★ 不同人口規模的效果對照：（以預設值 0.0004 為例）\n" +
-                    " - 1万人口：shopChance ≈ 100% → 幾乎每戶都購物\n" +
-                    " - 10万人口：shopChance ≈ 32% → 三分之一家庭購物\n" +
-                    " - 100万人口：shopChance ≈ 10% → 十分之一家庭購物\n" +
-                    " - 500万人口：shopChance ≈ 4% → 極少數家庭購物\n\n" +
+                    " - 1萬人口：shopChance ≈ 100% → 幾乎每戶都購物\n" +
+                    " - 10萬人口：shopChance ≈ 32% → 三分之一家庭購物\n" +
+                    " - 100萬人口：shopChance ≈ 10% → 十分之一家庭購物\n" +
+                    " - 500萬人口：shopChance ≈ 4% → 極少數家庭購物\n\n" +
                     "★ 按人口規模調節建議：\n" +
-                    " - 10万以下小城市：0.0004（預設，與原版一致）\n" +
-                    " - 10万~50万中型城市：0.0003 ~ 0.0004\n" +
-                    " - 50万~200万大型城市：0.0002 ~ 0.0003\n" +
-                    " - 200万以上超大城市：0.0001 ~ 0.0002\n\n" +
+                    " - 10萬以下小城市：0.0004（預設，與原版一致）\n" +
+                    " - 10萬~50萬中型城市：0.0003 ~ 0.0004\n" +
+                    " - 50萬~200萬大型城市：0.0002 ~ 0.0003\n" +
+                    " - 200萬以上超大城市：0.0001 ~ 0.0002\n\n" +
                     "可於遊戲中即時調節。降低此值可鼓勵消費、提升商業區收入。"
                 },
                 { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.HouseholdResourceDemandMultiplier)), "家庭購物需求倍率" },
@@ -399,7 +399,7 @@ namespace MapExtPDX
                     " - 57km (ModeA)：3.5 ~ 5.0（預設 3.5）\n" +
                     " - 114km (ModeC)：5.0 ~ 8.0\n\n" +
                     "★ 觀察指標：如果商業區大量空置/倒閉，請提高此值。" +
-                    "如果商品供不应求（工業產品被秒殺），請降低此值。\n" +
+                    "如果商品供不應求（工業產品被秒殺），請降低此值。\n" +
                     "可於遊戲中即時調節。"
                 },
                 { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.HomeSeekerCap)), "找房系統：搬家吞吐量" },
@@ -408,9 +408,9 @@ namespace MapExtPDX
                     "每幀最多處理的【已有住房但想搬家】的家庭數量。此參數控制系統每次更新(16幀/次)中評估搬家請求的速率。" +
                     "數值越大，搬家匹配越快，但單幀 CPU 開銷越高（FindPropertyJob 為單線程）。\n\n" +
                     "★ 調節建議：\n" +
-                    " - 50万以下人口：64 ~ 128（預設）\n" +
-                    " - 200万人口：128 ~ 256\n" +
-                    " - 500万以上人口：256 ~ 512\n\n" +
+                    " - 50萬以下人口：64 ~ 128（預設）\n" +
+                    " - 200萬人口：128 ~ 256\n" +
+                    " - 500萬以上人口：256 ~ 512\n\n" +
                     "★ 如何判斷：若城市中大量家庭不主動搬遷（明明有更好住房），說明吞吐量不足，請提高此值。" +
                     "若遊戲出現卡頓，請降低此值。可於遊戲中即時調節。"
                 },
@@ -420,9 +420,9 @@ namespace MapExtPDX
                     "每幀最多處理的【無家可歸】家庭找房數量。流浪家庭的找房優先級高於搬家家庭。" +
                     "此參數決定無家可歸者被安置的速度。\n\n" +
                     "★ 調節建議：\n" +
-                    " - 50万以下人口：640 ~ 1280（預設）\n" +
-                    " - 200万人口：1280 ~ 2560\n" +
-                    " - 500万以上人口：2560 ~ 5120\n\n" +
+                    " - 50萬以下人口：640 ~ 1280（預設）\n" +
+                    " - 200萬人口：1280 ~ 2560\n" +
+                    " - 500萬以上人口：2560 ~ 5120\n\n" +
                     "★ 如何判斷：若城市中大量流浪漢長期無法入住空置住宅，請提高此值。" +
                     "若大量流浪同時湧入導致更新率驟降，請降低此值。可於遊戲中即時調節。"
                 },
@@ -540,7 +540,7 @@ namespace MapExtPDX
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.RentMultiplierCommercial)),
                     "應用於所有商業租金的總體乘數。100% = 等效原版公式。降低此值有助於商業在高地價區域生存。\n\n可於遊戲中即時調節。"
                 },
-                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.RentMultiplierIndustrial)), "工業租金總乘数" },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.RentMultiplierIndustrial)), "工業租金總乘數" },
                 {
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.RentMultiplierIndustrial)),
                     "應用於所有工業租金的總體乘數。100% = 等效原版公式。\n\n可於遊戲中即時調節。"
@@ -609,7 +609,7 @@ namespace MapExtPDX
                     " - 水體模擬可能需要轉換後透過 MapExt 遊戲內面板手動調整\n" +
                     " - 擴展區域可能出現模擬不穩定\n\n" +
                     "★ 使用風險自負。與「停用背景世界地圖」互斥——啟用其一，另一項會變灰不可選。\n" +
-                    "⚠ 啟用後需重啟遊戲。"
+                    "⚠ 轉換完成後需重啟遊戲再遊玩新存檔。"
                 },
 
                 // --- Group: 地形性能 ---
@@ -692,17 +692,22 @@ namespace MapExtPDX
                     "★ 建議值：大多數道路 1.0 ~ 4.0m。"
                 },
 
+                // ============================================================
+                // Tab 5: 界面
+                // ============================================================
+                { m_Setting.GetOptionTabLocaleID(ModSettings.kUITab), "介面" },
+
                 // --- Group: 游戏内 UI 外观 ---
                 { m_Setting.GetOptionGroupLocaleID(ModSettings.kInGameUIGroup), "遊戲內 UI 外觀" },
                 { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.UIMenuPanelWidth)), "左側選單面板寬度" },
                 {
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.UIMenuPanelWidth)),
-                    "控制左側選單面板的寬度（rem 單位）。也可以在遊戲內透過拖曳面板邊緣調整。預設值：220，範圍：160~320。"
+                    "控制左側選單面板的寬度（rem 單位）。也可以在遊戲內透過拖曳面板邊緣調整。預設值：200，範圍：160~320。"
                 },
                 { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.UIDetailPanelWidth)), "右側詳情面板寬度" },
                 {
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.UIDetailPanelWidth)),
-                    "控制右側詳情面板的寬度（rem 單位）。也可以在遊戲內透過拖曳面板邊緣調整。預設值：260，範圍：200~450。"
+                    "控制右側詳情面板的寬度（rem 單位）。也可以在遊戲內透過拖曳面板邊緣調整。預設值：220，範圍：200~450。"
                 },
                 { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.UIPanelHeight)), "面板高度" },
                 {
@@ -734,11 +739,6 @@ namespace MapExtPDX
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.DashboardDefaultMisc)),
                     "勾選後，開啟儀表板時「其他」區塊將自動展開。"
                 },
-
-                // ============================================================
-                // Tab 5: 界面
-                // ============================================================
-                { m_Setting.GetOptionTabLocaleID(ModSettings.kUITab), "介面" },
 
                 // ============================================================
                 // Tab 6: 开发者选项
@@ -779,7 +779,7 @@ namespace MapExtPDX
                     "★ 預設關閉。可先用下方「掃描幽靈車輛」按鈕確認存檔中的規模。\n" +
                     "★ 純記憶體追蹤，不會向實體或存檔寫入任何自訂元件。"
                 },
-                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.EnableRescueDebugLog)), "• 啟用購車救援偵測日誌" },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.EnableRescueDebugLog)), "• 啟用購車救援除錯日誌" },
                 {
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.EnableRescueDebugLog)),
                     "開啟後，購車救援系統在每次執行救援、重試或清理放棄邏輯時會列印日誌。\n★ 建議在大城市或穩定執行後保持關閉以防止日誌檔案膨脹。"

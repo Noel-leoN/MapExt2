@@ -1867,7 +1867,7 @@ public static class Strings
             "MapExt 在開啟「{0}」時替換它；改動原版的啟用狀態後，兩邊的版本可能同時執行。",
         ],
         ["Conflicts.Effect.ExpandedHost"] = [
-            "In extended map modes MapExt modifies its calculations for the larger map; while it is disabled, those changes do not apply.",
+            "In extended map modes MapExt modifies its calculations for the extended map; while it is disabled, those changes do not apply.",
             "扩展地图模式下 MapExt 修改了它的计算以适配扩展地图；它被停用时，这些修改不起作用。",
             "擴展地圖模式下 MapExt 修改了它的計算以適配擴展地圖；它被停用時，這些修改不起作用。",
         ],

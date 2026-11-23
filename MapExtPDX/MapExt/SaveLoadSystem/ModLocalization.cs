@@ -40,7 +40,7 @@ namespace MapExtPDX.SaveLoadSystem
                 { "LOAD_VALIDATION.Mismatch", "Mode Mismatch! This save requires '{SAVED_MODE}', but your mod is set to '{CURRENT_MODE}'. Please change MapExt's MapSize Mode in the options menu to match the save file." },
                 // { "LOAD_VALIDATION.LegacySave", "This is a legacy save file without mode data. It will be loaded using the '{LEGACY_MODE}' mode settings. Do you want to continue?" },
 
-                 { "LOAD_VALIDATION.LegacyMismatch", "This is a legacy save file. If it's 57km map, please switch the mod to '{LEGACY_MODE}' in the options menu. If it's other mapsize, Please Read MapExt's new Description!" },
+                 { "LOAD_VALIDATION.LegacyMismatch", "This is a legacy save file. If it's a 57km map, please switch the mod to '{LEGACY_MODE}' in the options menu. If it's another map size, please read MapExt's latest description." },
                 
                 // Button Texts
                 { "LOAD_VALIDATION.ConfirmOK", "OK" },
@@ -86,9 +86,9 @@ namespace MapExtPDX.SaveLoadSystem
                 { "VANILLA_CONVERT.Complete", "Extension Complete" },
                 { "VANILLA_CONVERT.CompleteMessage", "Vanilla map has been extended to {TARGET_MODE}.\nNew save: {SAVE_NAME}\n\n• Terrain heightmap synthesized\n• Original natural resources and ground water preserved\n• All vehicle and resident entities cleared\n• Outside connections kept at the old border\n• Water reset to the sea level\n⚠ All 529 map tiles unlocked\n\n⚠ RESTART REQUIRED\nYou MUST quit to desktop and reload the new save.\nFailure to restart will cause water simulation glitches or crashes!\n\n★ AFTER RESTART - TODO LIST:\n\n1. (Optional) Add outside connections at the new map edges:\n   The existing ones stay at the old border, so trade and immigration continue. To have roads, railways, shipping lanes and airline routes enter from the new map edges, add new ones there with developer mode (launch option --developerMode, then press Home in game to open the object placement panel) or a mod that can place outside connections in game.\n   Do not remove all of the old ones: with no road, rail, ship or air outside connection left, the vanilla game crashes when companies export goods.\n\n2. Check the water and sea level:\n{WATER_NOTE}" },
                 // 水体一段：按水源的实际处理结果三选一，C# 端取文本后填进 {WATER_NOTE}
-                { "VANILLA_CONVERT.WaterKept", "   • The existing water sources were kept; the water was reset to the sea level\n   • ⚠ Water levels might not be perfectly accurate after the conversion. Use the built-in Water Tools (M button) to adjust the sea level and speed up filling." },
-                { "VANILLA_CONVERT.WaterUpgraded", "   • River, lake and sea-water sources were kept and converted to the new water system; the old constant sea sources were replaced by the sea level\n   • ⚠ Water levels might not be perfectly accurate after the conversion. Use the built-in Water Tools (M button) to adjust the sea level and speed up filling." },
-                { "VANILLA_CONVERT.WaterRemoved", "   • The old water sources could not be converted and were all removed; place new river and sea sources where needed\n   • ⚠ Use the built-in Water Tools (M button) to adjust the sea level and speed up filling." },
+                { "VANILLA_CONVERT.WaterKept", "   • The existing water sources were kept; the water was reset to the sea level\n   • ⚠ Water levels might not be perfectly accurate after the conversion. Use the built-in Water Tools (MAP/EXT button) to adjust the sea level." },
+                { "VANILLA_CONVERT.WaterUpgraded", "   • River, lake and sea-water sources were kept and converted to the new water system; the old constant sea sources were replaced by the sea level\n   • ⚠ Water levels might not be perfectly accurate after the conversion. Use the built-in Water Tools (MAP/EXT button) to adjust the sea level." },
+                { "VANILLA_CONVERT.WaterRemoved", "   • The old water sources could not be converted and were all removed; place new river and sea sources where needed\n   • ⚠ Use the built-in Water Tools (MAP/EXT button) to adjust the sea level." },
                 // 通知條版本（短文案）：完成對話框可能被其它 Mod 的 UI 重建沖掉，這條留在通知區
                 { "VANILLA_CONVERT.CompleteNotify", "Conversion finished - saved as '{SAVE_NAME}'. You must restart the game before playing it." },
                 // 原版地图开新城（v4.12.0 整合计划 2.4）：分块只解锁中央 9 格（D2），外部连接保留（D1）
@@ -190,9 +190,9 @@ namespace MapExtPDX.SaveLoadSystem
                 { "VANILLA_CONVERT.Cancel", "取消" },
                 { "VANILLA_CONVERT.Complete", "扩展完成" },
                 { "VANILLA_CONVERT.CompleteMessage", "原版地图已成功扩展至 {TARGET_MODE}。\n新存档：{SAVE_NAME}\n\n• 地形高度图已合成\n• 原版自然资源与地下水已完美保留\n• 所有车辆与居民实体已清除\n• 外部连接保留在原边界\n• 水体已重置到海平面\n⚠ 全部 529 格地图分块已解锁\n\n⚠ 必须重启游戏\n请立即退出到桌面并重新加载新存档。\n不重启直接游玩会导致水体异常或游戏崩溃！\n\n★ 重启后待办事项：\n\n1. （可选）在新的地图边界补建外部连接：\n   外部连接仍在原边界，城市照常贸易与迁入。想让道路、铁路、航道、航线从新地图边缘进出，可用开发者模式（启动参数 --developerMode，游戏内按 Home 键打开物件摆放面板）或可在游戏内放置外部连接的 Mod 在新边界补建。\n   旧的不要全部删掉：一个交通类外部连接都不剩时，原版游戏会在企业出口商品时闪退。\n\n2. 检查水体与海平面：\n{WATER_NOTE}" },
-                { "VANILLA_CONVERT.WaterKept", "   • 原有水源全部保留，水体已重置到海平面\n   • ⚠ 提示：转换后水位可能不够准确。建议使用内建水体工具（M按钮）手动调整海平面并加速注水。" },
-                { "VANILLA_CONVERT.WaterUpgraded", "   • 河流、湖泊与海水水源已保留并换算到新水体系统，旧式恒定海源改由海平面代替\n   • ⚠ 提示：转换后水位可能不够准确。建议使用内建水体工具（M按钮）手动调整海平面并加速注水。" },
-                { "VANILLA_CONVERT.WaterRemoved", "   • 旧版水源无法换算，已全部删除，请在所需位置重新放置河流与海洋水源\n   • ⚠ 提示：建议使用内建水体工具（M按钮）手动调整海平面并加速注水。" },
+                { "VANILLA_CONVERT.WaterKept", "   • 原有水源全部保留，水体已重置到海平面\n   • ⚠ 提示：转换后水位可能不够准确。建议使用内建水体工具（MAP/EXT 按钮）手动调整海平面。" },
+                { "VANILLA_CONVERT.WaterUpgraded", "   • 河流、湖泊与海水水源已保留并换算到新水体系统，旧式恒定海源改由海平面代替\n   • ⚠ 提示：转换后水位可能不够准确。建议使用内建水体工具（MAP/EXT 按钮）手动调整海平面。" },
+                { "VANILLA_CONVERT.WaterRemoved", "   • 旧版水源无法换算，已全部删除，请在所需位置重新放置河流与海洋水源\n   • ⚠ 提示：建议使用内建水体工具（MAP/EXT 按钮）手动调整海平面。" },
                 // 通知条版本（短文案）
                 { "VANILLA_CONVERT.CompleteNotify", "转换完成，已存为「{SAVE_NAME}」。开始游玩前必须重启游戏。" },
                 { "VANILLA_CONVERT.NewGameMessage", "所选地图是原版 14 km 地图。是否先扩展至当前模式（{TARGET_MODE}）再开新城？\n\n⚠ 高度实验性 - 转换过程将执行以下操作：\n• 合成地形高度图：原版 14 km 留在中央，外围由背景地形补齐\n• 按新尺寸重建地图分块：开局只解锁中央 9 格，其余照常购买\n• 地图作者设定的起始分块不保留\n• 地图的自然资源与地下水保留在中央，新增区域开局没有\n• 外部连接留在原 14 km 边界\n• 水体重置到海平面\n\n地图本身不会被修改。\n新城将自动保存为新存档（格式：城市名_MapExt模式）。\n转换后必须重启游戏！否则将导致水体表现异常或游戏崩溃。" },
@@ -285,14 +285,14 @@ namespace MapExtPDX.SaveLoadSystem
 
                 // === 原版地图扩展对话框 ===
                 { "VANILLA_CONVERT.Title", "擴展原版地圖" },
-                { "VANILLA_CONVERT.Message", "此存檔未使用 MapExt Mod（原版 14km）。\n\n是否擴展至當前模式（{TARGET_MODE}）？\n\n⚠ 高度實驗性 - 轉換過程將執行以下操作：\n• 擴展可遊玩區域至新邊界\n• 解鎖全部 529 格地圖分塊\n• 合成並擴展地形高度圖\n• 完美保留原版自然資源與地下水\n• 清除所有車輛與居民實體\n• 外部連接保留在原邊界，城市照常貿易與遷入；想讓車流從新地圖邊緣進出，可用開發者模式或 Mod 在新邊界補建\n• 升級水源并重置海平面\n\n原始存檔不會被修改。\n轉換後將自動儲存為新存檔 (格式: 存檔名_MapExt模式)。\n必須重啟遊戲！否則將導致水體表現異常或遊戲崩潰。" },
+                { "VANILLA_CONVERT.Message", "此存檔未使用 MapExt Mod（原版 14km）。\n\n是否擴展至當前模式（{TARGET_MODE}）？\n\n⚠ 高度實驗性 - 轉換過程將執行以下操作：\n• 擴展可遊玩區域至新邊界\n• 解鎖全部 529 格地圖分塊\n• 合成並擴展地形高度圖\n• 完美保留原版自然資源與地下水\n• 清除所有車輛與居民實體\n• 外部連接保留在原邊界，城市照常貿易與遷入；想讓車流從新地圖邊緣進出，可用開發者模式或 Mod 在新邊界補建\n• 升級水源並重置海平面\n\n原始存檔不會被修改。\n轉換後將自動儲存為新存檔 (格式: 存檔名_MapExt模式)。\n必須重啟遊戲！否則將導致水體表現異常或遊戲崩潰。" },
                 { "VANILLA_CONVERT.Confirm", "擴展並載入" },
                 { "VANILLA_CONVERT.Cancel", "取消" },
                 { "VANILLA_CONVERT.Complete", "擴展完成" },
                 { "VANILLA_CONVERT.CompleteMessage", "原版地圖已成功擴展至 {TARGET_MODE}。\n新存檔：{SAVE_NAME}\n\n• 地形高度圖已合成\n• 原版自然資源與地下水已完美保留\n• 所有車輛與居民實體已清除\n• 外部連接保留在原邊界\n• 水體已重置到海平面\n⚠ 全部 529 格地圖分塊已解鎖\n\n⚠ 必須重啟遊戲\n請立即退出到桌面並重新載入新存檔。\n不重啟直接遊玩會導致水體異常或遊戲崩潰！\n\n★ 重啟後待辦事項：\n\n1. （可選）在新的地圖邊界補建外部連接：\n   外部連接仍在原邊界，城市照常貿易與遷入。想讓道路、鐵路、航道、航線從新地圖邊緣進出，可用開發者模式（啟動參數 --developerMode，遊戲內按 Home 鍵開啟物件擺放面板）或可在遊戲內放置外部連接的 Mod 在新邊界補建。\n   舊的不要全部刪掉：一個交通類外部連接都不剩時，原版遊戲會在企業出口商品時閃退。\n\n2. 檢查水體與海平面：\n{WATER_NOTE}" },
-                { "VANILLA_CONVERT.WaterKept", "   • 原有水源全部保留，水體已重置到海平面\n   • ⚠ 提示：轉換後水位可能不夠準確。建議使用內建水體工具（M按鈕）手動調整海平面並加速注水。" },
-                { "VANILLA_CONVERT.WaterUpgraded", "   • 河流、湖泊與海水水源已保留並換算到新水體系統，舊式恆定海源改由海平面代替\n   • ⚠ 提示：轉換後水位可能不夠準確。建議使用內建水體工具（M按鈕）手動調整海平面並加速注水。" },
-                { "VANILLA_CONVERT.WaterRemoved", "   • 舊版水源無法換算，已全部刪除，請在所需位置重新放置河流與海洋水源\n   • ⚠ 提示：建議使用內建水體工具（M按鈕）手動調整海平面並加速注水。" },
+                { "VANILLA_CONVERT.WaterKept", "   • 原有水源全部保留，水體已重置到海平面\n   • ⚠ 提示：轉換後水位可能不夠準確。建議使用內建水體工具（MAP/EXT 按鈕）手動調整海平面。" },
+                { "VANILLA_CONVERT.WaterUpgraded", "   • 河流、湖泊與海水水源已保留並換算到新水體系統，舊式恆定海源改由海平面代替\n   • ⚠ 提示：轉換後水位可能不夠準確。建議使用內建水體工具（MAP/EXT 按鈕）手動調整海平面。" },
+                { "VANILLA_CONVERT.WaterRemoved", "   • 舊版水源無法換算，已全部刪除，請在所需位置重新放置河流與海洋水源\n   • ⚠ 提示：建議使用內建水體工具（MAP/EXT 按鈕）手動調整海平面。" },
                 // 通知條版本（短文案）
                 { "VANILLA_CONVERT.CompleteNotify", "轉換完成，已存為「{SAVE_NAME}」。開始遊玩前必須重啟遊戲。" },
                 { "VANILLA_CONVERT.NewGameMessage", "所選地圖是原版 14 km 地圖。是否先擴展至當前模式（{TARGET_MODE}）再開新城？\n\n⚠ 高度實驗性 - 轉換過程將執行以下操作：\n• 合成地形高度圖：原版 14 km 留在中央，外圍由背景地形補齊\n• 按新尺寸重建地圖分塊：開局只解鎖中央 9 格，其餘照常購買\n• 地圖作者設定的起始分塊不保留\n• 地圖的自然資源與地下水保留在中央，新增區域開局沒有\n• 外部連接留在原 14 km 邊界\n• 水體重置到海平面\n\n地圖本身不會被修改。\n新城將自動儲存為新存檔（格式：城市名_MapExt模式）。\n轉換後必須重啟遊戲！否則將導致水體表現異常或遊戲崩潰。" },

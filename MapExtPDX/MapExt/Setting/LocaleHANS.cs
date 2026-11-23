@@ -93,7 +93,7 @@ namespace MapExtPDX
                     "控制水系统 CPU 和 GPU 计算的更新频率，以提升大地图的帧率和游戏速度。\n\n" +
                     " - Vanilla: 原版高精度：每帧调度计算，效果最好，消耗最大。\n" +
                     " - Reduced: 降低消耗：每帧计算并传播水体，但关闭背景大地图边缘的水流计算。\n" +
-                    " - Minimal: 极简性能：每四帧跳过计算并显式关闭水面模糊和后处理效果，将大幅度降低 GPU 请求频率，可能会有极不明显的水流卡顿。\n" +
+                    " - Minimal: 极简性能：每四帧模拟一次（跳过 3 帧），关闭背景水与水流模糊，将大幅度降低 GPU 请求频率，可能会有极不明显的水流卡顿。\n" +
                     " - Paused: 暂停流体：完全冻结水体流动计算（水面将静止但水位不会出现大变化）。\n\n" +
                     "★ 提示：该选项即时生效无须重启。"
                 },
@@ -162,7 +162,7 @@ namespace MapExtPDX
                 { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.WaterTextureFormat)), "水模拟贴图精度 (VRAM 优化)" },
                 {
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.WaterTextureFormat)),
-                    "将原本 32 浮点的模拟通道数据强制压缩到 16 浮点，省去高达 43% 的显存占用并将理论上的宽带开销减半，极大提升 GPU 模拟性能限制。\n\n" +
+                    "将原本 32 浮点的模拟通道数据强制压缩到 16 浮点，省去高达 43% 的显存占用并将理论上的带宽开销减半，极大提升 GPU 模拟性能限制。\n\n" +
                     " - 原版 HDR (32-bit)：精度高无损，消耗约 180MB 显存。 \n" +
                     " - 性能模式 (16-bit)：精度有损，消耗约 105MB 显存。在水深大于 100 米时边缘可能会因截断出现计算波纹（通常很少见）。\n\n" +
                     "⚠️ 修改后需【重启游戏】或重新读取存档生效。"
@@ -287,7 +287,7 @@ namespace MapExtPDX
                     " - 14km / 28km： 8000 ~ 12000\n" +
                     " - 57km / 114km：12000 ~ 20000"
                 },
-                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.EmergencyMaxCost)), "医院/犯罪最高寻路成本" },
+                { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.EmergencyMaxCost)), "就医/犯罪最高寻路成本" },
                 {
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.EmergencyMaxCost)),
                     "控制市民生病就医或犯罪时的最大搜索范围。较低的值将这些行为限制在就近区域，鼓励本地化的公共服务规划。\n" +
@@ -305,7 +305,7 @@ namespace MapExtPDX
                 { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.FindHomeMaxCost)), "找房搬家最高寻路成本" },
                 {
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.FindHomeMaxCost)),
-                    "控制市民搬家找房时的最大搜索范围上限。提升此数值可让市民跨越整张特大地图寻找新住宅，避免偏远新城无人入住。该行为频率较低，建议直接拉满。\n" +
+                    "控制市民搬家找房时的最大搜索范围上限，同时作用于回家、上班、上学等刚需出行与搬离城市（启用载具 AI 组时亦用于出租车长途出行）。提升此数值可让市民跨越整张大地图找房与通勤，避免偏远新城无人入住或回不了家，建议直接拉满。\n" +
                     "★ 建议值：\n" +
                     " - 全地图通用：200000"
                 },
@@ -610,7 +610,7 @@ namespace MapExtPDX
                     " - 水体模拟可能需要转换后通过 MapExt 游戏内面板手动调整\n" +
                     " - 扩展区域可能出现模拟不稳定\n\n" +
                     "★ 使用风险自负。与「禁用背景世界地图」互斥——启用其一，另一项会变灰不可选。\n" +
-                    "⚠ 启用后需重启游戏。"
+                    "⚠ 转换完成后需重启游戏再游玩新存档。"
                 },
 
                 // --- Group: 地形性能 ---
@@ -693,17 +693,22 @@ namespace MapExtPDX
                     "★ 建议值：大多数道路 1.0 ~ 4.0m。"
                 },
 
+                // ============================================================
+                // Tab 5: 界面
+                // ============================================================
+                { m_Setting.GetOptionTabLocaleID(ModSettings.kUITab), "界面" },
+
                 // --- Group: 游戏内 UI 外观 ---
                 { m_Setting.GetOptionGroupLocaleID(ModSettings.kInGameUIGroup), "游戏内 UI 外观" },
                 { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.UIMenuPanelWidth)), "左侧菜单面板宽度" },
                 {
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.UIMenuPanelWidth)),
-                    "控制左侧菜单面板的宽度（rem 单位）。也可以在游戏内通过拖拽面板边缘调整。默认值：220，范围：160~320。"
+                    "控制左侧菜单面板的宽度（rem 单位）。也可以在游戏内通过拖拽面板边缘调整。默认值：200，范围：160~320。"
                 },
                 { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.UIDetailPanelWidth)), "右侧详情面板宽度" },
                 {
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.UIDetailPanelWidth)),
-                    "控制右侧详情面板的宽度（rem 单位）。也可以在游戏内通过拖拽面板边缘调整。默认值：260，范围：200~450。"
+                    "控制右侧详情面板的宽度（rem 单位）。也可以在游戏内通过拖拽面板边缘调整。默认值：220，范围：200~450。"
                 },
                 { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.UIPanelHeight)), "面板高度" },
                 {
@@ -735,11 +740,6 @@ namespace MapExtPDX
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.DashboardDefaultMisc)),
                     "勾选后，打开仪表盘时「其他」区块将自动展开。"
                 },
-
-                // ============================================================
-                // Tab 5: 界面
-                // ============================================================
-                { m_Setting.GetOptionTabLocaleID(ModSettings.kUITab), "界面" },
 
                 // ============================================================
                 // Tab 6: 开发者选项

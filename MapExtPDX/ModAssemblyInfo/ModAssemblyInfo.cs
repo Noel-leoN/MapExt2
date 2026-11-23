@@ -12,6 +12,6 @@ namespace MapExt2
         public const string Name        = "MapExt2";
         public const string Version     = "4.12.0";
         public const string Title       = "MapExt: Big Map, Economy and Performance";
-        public const string Description = "MapSize Extend 28/43/57km";
+        public const string Description = "Extended maps (28/43/57/114 km and vanilla 14 km), economy rework, in-game tools and performance";
     }
 }
