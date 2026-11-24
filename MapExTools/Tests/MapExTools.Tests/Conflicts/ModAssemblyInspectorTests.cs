@@ -1085,4 +1085,103 @@ public sealed class ModAssemblyInspectorTests
         EnabledWriteEvidence write = Assert.Single(res.EnabledWrites, w => w.CallerTypeAndMethod == "StackTest.Entry.CondEnable");
         Assert.Null(write.ConstantEnabledValue);
     }
+
+    [Fact]
+    public void InspectBytes_MalformedIl_InvalidTokensAndUserString_DegradesPerInstruction()
+    {
+        const int m1 = 0x11223344;
+        const int m2 = 0x22334455;
+        const int m3 = 0x33445566;
+        const int m4 = 0x44556677;
+        const int m5 = 0x55667788;
+
+        // 5 组 ldc.i4 <marker> + pop（共 30 字节），替换为 5 条畸形元数据令牌/越界字符串指令，
+        // 紧随其后是一条合法的 WaterSimSpeed 写入：证明单条指令降级而不中止整方法或整程序集扫描
+        byte[] pattern =
+        [
+            0x20, 0x44, 0x33, 0x22, 0x11, 0x26,
+            0x20, 0x55, 0x44, 0x33, 0x22, 0x26,
+            0x20, 0x66, 0x55, 0x44, 0x33, 0x26,
+            0x20, 0x77, 0x66, 0x55, 0x44, 0x26,
+            0x20, 0x88, 0x77, 0x66, 0x55, 0x26,
+        ];
+        byte[] replacement =
+        [
+            0xD0, 0x01, 0x00, 0x00, 0xFF, 0x26, // ldtoken 0xFF000001 (非法表号) + pop
+            0x72, 0xFF, 0xFF, 0x7F, 0x70, 0x26, // ldstr 0x707FFFFF (越界用户字符串偏移) + pop
+            0xD0, 0xFF, 0xFF, 0x00, 0x02, 0x26, // ldtoken 0x0200FFFF (越界 TypeDef 行号) + pop
+            0x7E, 0x02, 0x00, 0x00, 0xFF, 0x26, // ldsfld 0xFF000002 (非法表号) + pop
+            0x28, 0x03, 0x00, 0x00, 0xFF, 0x00, // call 0xFF000003 (非法表号) + nop
+        ];
+
+        byte[] dll = SyntheticModBuilder.BuildModAssemblyWithIlPatch(
+            "MalformedTokenMod",
+            new Version(1, 0, 0),
+            (mod, env) =>
+            {
+                TypeBuilder tb = mod.DefineType("Malformed.TokenSys", TypeAttributes.Public | TypeAttributes.Class, env.GameSystemBaseType);
+                FieldBuilder waterField = tb.DefineField("_water", env.WaterSystemType, FieldAttributes.Private);
+
+                MethodBuilder mb = tb.DefineMethod("OnUpdate", MethodAttributes.Family | MethodAttributes.Virtual, typeof(void), Type.EmptyTypes);
+                ILGenerator il = mb.GetILGenerator();
+                il.Emit(OpCodes.Ldc_I4, m1); il.Emit(OpCodes.Pop);
+                il.Emit(OpCodes.Ldc_I4, m2); il.Emit(OpCodes.Pop);
+                il.Emit(OpCodes.Ldc_I4, m3); il.Emit(OpCodes.Pop);
+                il.Emit(OpCodes.Ldc_I4, m4); il.Emit(OpCodes.Pop);
+                il.Emit(OpCodes.Ldc_I4, m5); il.Emit(OpCodes.Pop);
+                // 畸形指令之后的合法调用必须仍能被检出
+                il.Emit(OpCodes.Ldarg_0);
+                il.Emit(OpCodes.Ldfld, waterField);
+                il.Emit(OpCodes.Ldc_I4_0);
+                il.Emit(OpCodes.Callvirt, env.WaterSimSpeedSetter);
+                il.Emit(OpCodes.Ret);
+                tb.CreateType();
+            },
+            pattern,
+            replacement);
+
+        AssemblyInspectionResult? res = ModAssemblyInspector.InspectBytes(dll);
+        Assert.NotNull(res);
+        Assert.Equal("MalformedTokenMod", res.AssemblyName);
+        Assert.NotNull(res.WaterSimSpeedWrites);
+        Assert.Single(res.WaterSimSpeedWrites);
+    }
+
+    [Fact]
+    public void InspectBytes_MalformedIl_FieldAssignmentScanInvalidTokens_ReturnsCleanly()
+    {
+        const int m1 = 0x12345678;
+        const int m2 = 0x23456789;
+        byte[] pattern =
+        [
+            0x20, 0x78, 0x56, 0x34, 0x12, 0x26,
+            0x20, 0x89, 0x67, 0x45, 0x23, 0x26,
+        ];
+        byte[] replacement =
+        [
+            0x28, 0x04, 0x00, 0x00, 0xFF, 0x00, // call 0xFF000004 (非法表号) + nop
+            0x80, 0x05, 0x00, 0x00, 0xFF, 0x00, // stsfld 0xFF000005 (非法表号) + nop
+        ];
+
+        byte[] dll = SyntheticModBuilder.BuildModAssemblyWithIlPatch(
+            "MalformedFieldScanMod",
+            new Version(1, 0, 0),
+            (mod, env) =>
+            {
+                TypeBuilder tb = mod.DefineType("Malformed.FieldScanSys", TypeAttributes.Public | TypeAttributes.Class, env.GameSystemBaseType);
+                tb.DefineField("_land", env.LandValueSystemType, FieldAttributes.Private);
+                MethodBuilder onCreate = tb.DefineMethod("OnCreate", MethodAttributes.Family | MethodAttributes.Virtual, typeof(void), Type.EmptyTypes);
+                ILGenerator il = onCreate.GetILGenerator();
+                il.Emit(OpCodes.Ldc_I4, m1); il.Emit(OpCodes.Pop);
+                il.Emit(OpCodes.Ldc_I4, m2); il.Emit(OpCodes.Pop);
+                il.Emit(OpCodes.Ret);
+                tb.CreateType();
+            },
+            pattern,
+            replacement);
+
+        AssemblyInspectionResult? res = ModAssemblyInspector.InspectBytes(dll);
+        Assert.NotNull(res);
+        Assert.Equal("MalformedFieldScanMod", res.AssemblyName);
+    }
 }

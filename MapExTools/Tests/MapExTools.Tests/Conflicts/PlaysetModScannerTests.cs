@@ -540,6 +540,75 @@ public sealed class PlaysetModScannerTests : IDisposable
         Assert.Equal(2, ciAmbiguous.Candidates.Count);
     }
 
+    [Fact]
+    public void Scan_PathTraversalSiblingPrefixAndInvalidRootPaths_RejectedSafely()
+    {
+        Directory.CreateDirectory(_paths.ModsCacheDir);
+        string pdxRoot = Path.Combine(_paths.ModsCacheDir, "pdx_mods");
+        string localRoot = Path.Combine(_paths.ModsCacheDir, "local");
+        string siblingLocal2 = Path.Combine(_paths.ModsCacheDir, "local2");
+        string outsideDir = Path.Combine(_tempRoot, "escaped_mod");
+        Directory.CreateDirectory(pdxRoot);
+        Directory.CreateDirectory(localRoot);
+        Directory.CreateDirectory(siblingLocal2);
+        Directory.CreateDirectory(outsideDir);
+
+        // 在越界目录与兄弟目录（local2）放置合法 DLL，验证穿越条目与前缀伪匹配绝不会被扫描命中
+        File.WriteAllBytes(Path.Combine(outsideDir, "EscapedMod.dll"), BuildSimpleIMod("EscapedMod", new Version(1, 0, 0)));
+        File.WriteAllBytes(Path.Combine(siblingLocal2, "SiblingMod.dll"), BuildSimpleIMod("SiblingMod", new Version(1, 0, 0)));
+
+        // 在正常 pdx_mods 下放一个正常模组，用于验证非法 mod_directory.json 条目被过滤后能安全回退默认根
+        string validDir = Path.Combine(pdxRoot, "67890_1");
+        Directory.CreateDirectory(validDir);
+        File.WriteAllBytes(Path.Combine(validDir, "LegitMod.dll"), BuildSimpleIMod("LegitMod", new Version(1, 0, 0)));
+
+        // mod_directory.json 写入相对路径与含非法字符的路径：均应被忽略并回退默认目录
+        File.WriteAllText(_paths.ModsDirectoryFile, """
+            {
+              "modsSources": [
+                { "source": "pdx_mods", "rootPaths": ["..\\relative_root", "bad\u0000path"] },
+                { "source": "local", "rootPaths": ["relative_local"] }
+              ]
+            }
+            """);
+
+        File.WriteAllText(_paths.PlaysetConfigFile, """
+            {
+              "configVersion": 1,
+              "activePlaysetId": "ps-sec",
+              "playsets": [
+                {
+                  "id": "ps-sec",
+                  "presentation": { "name": "Security" },
+                  "mods": [
+                    { "source": "local", "sourceId": "../../escaped_mod", "isEnabled": true },
+                    { "source": "local", "sourceId": "../local2", "isEnabled": true },
+                    { "source": "local", "sourceId": ".", "isEnabled": true },
+                    { "source": "local", "sourceId": "..", "isEnabled": true },
+                    { "source": "pdx_mods", "sourceId": "123*", "isEnabled": true },
+                    { "source": "pdx_mods", "sourceId": "12345", "preferredVersion": "../../escaped_mod", "isEnabled": true },
+                    { "source": "pdx_mods", "sourceId": "67890", "preferredVersion": "1", "isEnabled": true }
+                  ]
+                }
+              ]
+            }
+            """);
+
+        PlaysetScanResult result = PlaysetModScanner.Scan(_paths, gameDir: null);
+
+        Assert.Null(result.PlaysetConfigError);
+        // 越界目录与兄弟目录中的 DLL 绝不可被加载为胜出程序集
+        Assert.DoesNotContain(result.Packages, p => p.WinningAssemblies.Any(a => a.AssemblyName is "EscapedMod" or "SiblingMod"));
+        // 非法路径条目应被拒收为无本地目录（Pending），而合法 12345_1 经默认根目录回退后正常扫描到
+        EnabledModPackage legit = Assert.Single(result.Packages, p => p.WinningAssemblies.Any(a => a.AssemblyName == "LegitMod"));
+        Assert.Equal(Path.GetFullPath(validDir), legit.DirectoryPath);
+        Assert.All(
+            result.Packages.Where(p => p.DirectoryPath != null),
+            p => Assert.True(
+                p.DirectoryPath!.StartsWith(Path.GetFullPath(pdxRoot) + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase) ||
+                p.DirectoryPath!.StartsWith(Path.GetFullPath(localRoot) + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase)));
+    }
+
     private static byte[] BuildSimpleIMod(string asmName, Version version) =>
         SyntheticModBuilder.BuildModAssembly(asmName, version, (mod, env) =>
         {

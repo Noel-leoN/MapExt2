@@ -257,6 +257,7 @@ public partial class HeightmapViewerPage : UserControl
         _decodeCts?.Dispose();
         var cts = new CancellationTokenSource();
         _decodeCts = cts;
+        CancellationToken token = cts.Token;
 
         _current = file;
         _image = null;
@@ -273,8 +274,8 @@ public partial class HeightmapViewerPage : UserControl
 
         try
         {
-            DecodedHeightmap? decoded = await Task.Run(() => HeightmapDecoder.Decode(file.Path, cts.Token), cts.Token);
-            if (cts.IsCancellationRequested || !ReferenceEquals(file, _current))
+            DecodedHeightmap? decoded = await Task.Run(() => HeightmapDecoder.Decode(file.Path, token), token);
+            if (token.IsCancellationRequested || !ReferenceEquals(file, _current))
                 return;
 
             _image = decoded;
@@ -287,8 +288,8 @@ public partial class HeightmapViewerPage : UserControl
         }
         catch (Exception ex) when (ex is not OutOfMemoryException)
         {
-            // 图片是用户的文件，内容不可信：解不出来就在界面上说明，不让 async void 把异常抛出去
-            if (!ReferenceEquals(file, _current))
+            // 切走再切回同一文件时 _current 引用不变，先判取消避免旧任务把“解码失败”覆盖到新状态上
+            if (token.IsCancellationRequested || !ReferenceEquals(file, _current))
                 return;
             SetImageMessage("Heightmaps.DecodeFailed", ex.Message);
         }

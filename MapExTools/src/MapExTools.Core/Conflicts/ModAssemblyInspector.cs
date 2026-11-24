@@ -138,10 +138,11 @@ public static class ModAssemblyInspector
             bool typeIsIMod = TypeImplementsInterface(md, td, "Game.Modding.IMod");
             bool typeIsSystem = TypeDerivesFromSystem(md, td);
 
-            // 解析类级（含外层声明类）的 [HarmonyPatch] 特性
+            // 解析类级（含外层声明类）的 [HarmonyPatch] 特性（加深度上限防损坏嵌套表形成环）
             bool hasClassHarmonyPatch = CollectHarmonyPatchSpecs(md, td.GetCustomAttributes(), out List<PatchTargetSpec> classSpecs);
             TypeDefinitionHandle parentHandle = td.GetDeclaringType();
-            while (!parentHandle.IsNil)
+            int outerDepth = 0;
+            while (!parentHandle.IsNil && outerDepth++ < 32)
             {
                 TypeDefinition parentTd = md.GetTypeDefinition(parentHandle);
                 if (CollectHarmonyPatchSpecs(md, parentTd.GetCustomAttributes(), out List<PatchTargetSpec> parentSpecs))
@@ -214,7 +215,7 @@ public static class ModAssemblyInspector
                 }
 
                 // 扫描方法体 IL
-                if (mdef.RelativeVirtualAddress == 0)
+                if (mdef.RelativeVirtualAddress <= 0)
                     continue;
 
                 MethodBodyBlock body;
@@ -222,7 +223,7 @@ public static class ModAssemblyInspector
                 {
                     body = peReader.GetMethodBody(mdef.RelativeVirtualAddress);
                 }
-                catch (BadImageFormatException)
+                catch (Exception ex) when (ex is BadImageFormatException or ArgumentOutOfRangeException or InvalidOperationException)
                 {
                     continue;
                 }
@@ -391,7 +392,7 @@ public static class ModAssemblyInspector
         {
             return md.GetTypeSpecification(handle).DecodeSignature(s_typeProvider, GenericContext.Empty);
         }
-        catch (BadImageFormatException)
+        catch (Exception ex) when (ex is BadImageFormatException or ArgumentException or NotSupportedException or OverflowException)
         {
             return null;
         }
@@ -459,7 +460,7 @@ public static class ModAssemblyInspector
 
                 specs.Add(new PatchTargetSpec(targetType, genericArg, methodName, methodTypeCode));
             }
-            catch (BadImageFormatException)
+            catch (Exception ex) when (ex is BadImageFormatException or ArgumentException or NotSupportedException or OverflowException)
             {
                 // 跳过畸形特性 Blob
             }
@@ -597,7 +598,7 @@ public static class ModAssemblyInspector
                 MethodSignature<string?> sig = mdef.DecodeSignature(s_typeProvider, GenericContext.Empty);
                 returnsBool = sig.ReturnType == "System.Boolean";
             }
-            catch (BadImageFormatException)
+            catch (Exception ex) when (ex is BadImageFormatException or ArgumentException or NotSupportedException or OverflowException)
             {
                 returnsBool = true;
             }
@@ -855,12 +856,22 @@ public static class ModAssemblyInspector
         return visited;
     }
 
-    private static string? GetAttributeTypeName(MetadataReader md, CustomAttribute attr) => attr.Constructor.Kind switch
+    private static string? GetAttributeTypeName(MetadataReader md, CustomAttribute attr)
     {
-        HandleKind.MemberReference => PlaysetModScanner.GetEntityFullTypeName(md, md.GetMemberReference((MemberReferenceHandle)attr.Constructor).Parent),
-        HandleKind.MethodDefinition => PlaysetModScanner.GetEntityFullTypeName(md, md.GetMethodDefinition((MethodDefinitionHandle)attr.Constructor).GetDeclaringType()),
-        _ => null,
-    };
+        try
+        {
+            return attr.Constructor.Kind switch
+            {
+                HandleKind.MemberReference => PlaysetModScanner.GetEntityFullTypeName(md, md.GetMemberReference((MemberReferenceHandle)attr.Constructor).Parent),
+                HandleKind.MethodDefinition => PlaysetModScanner.GetEntityFullTypeName(md, md.GetMethodDefinition((MethodDefinitionHandle)attr.Constructor).GetDeclaringType()),
+                _ => null,
+            };
+        }
+        catch (Exception ex) when (ex is BadImageFormatException or ArgumentException)
+        {
+            return null;
+        }
+    }
 
     /// <summary>
     /// 解析特性序列化类型字符串（如 <c>"Game.Simulation.WaterSystem, Game, Version=..."</c> 或

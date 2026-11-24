@@ -74,7 +74,7 @@ public static class ConflictAnalyzer
                             pkgHasIMod = true;
                     }
                 }
-                catch (Exception ex) when (ex is BadImageFormatException or InvalidOperationException or IOException or UnauthorizedAccessException)
+                catch (Exception ex) when (ex is BadImageFormatException or InvalidOperationException or IOException or UnauthorizedAccessException or ArgumentException or NotSupportedException or OverflowException)
                 {
                     unreadableExtra.Add(new UnreadableAssemblyEntry(asm.FilePath, pkg.PackageKey, pkg.DisplayName, ex.Message));
                 }

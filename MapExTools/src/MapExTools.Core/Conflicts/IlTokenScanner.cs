@@ -149,7 +149,7 @@ internal static class IlTokenScanner
             foreach (MethodDefinitionHandle mh in td.GetMethods())
             {
                 MethodDefinition m = md.GetMethodDefinition(mh);
-                if (m.RelativeVirtualAddress == 0)
+                if (m.RelativeVirtualAddress <= 0)
                     continue;
                 string mName = md.GetString(m.Name);
                 if (mName is not ("OnCreate" or ".ctor" or ".cctor" or "OnLoad"))
@@ -160,7 +160,7 @@ internal static class IlTokenScanner
                 {
                     body = peReader.GetMethodBody(m.RelativeVirtualAddress);
                 }
-                catch (BadImageFormatException)
+                catch (Exception ex) when (ex is BadImageFormatException or ArgumentOutOfRangeException or InvalidOperationException)
                 {
                     continue;
                 }
@@ -352,27 +352,40 @@ internal static class IlTokenScanner
             if (opVal == OpCodes.Ldstr.Value)
             {
                 int token = BitConverter.ToInt32(il, operandStart);
+                // UserStringHandle 仅掩码低 24 位不抛异常，真正越界抛 BadImageFormatException 在 GetUserString
                 UserStringHandle ush = System.Reflection.Metadata.Ecma335.MetadataTokens.UserStringHandle(token);
                 string? pushedLiteral = null;
                 if (!ush.IsNil)
                 {
-                    string str = md.GetUserString(ush);
-                    if (str is "kMapSize" or "kTextureSize")
-                        seenMapSizeLiteral ??= str;
-
-                    // 支持提取 "Namespace.Type, Assembly" 或 "Namespace.Type" 形式的完整敏感类型字符串
-                    string typeCandidate = str;
-                    int comma = typeCandidate.IndexOf(',');
-                    if (comma > 0)
-                        typeCandidate = typeCandidate[..comma].Trim();
-                    if (ConflictTargets.IsTargetSystemOrPatchTypeName(typeCandidate))
-                        assemblySensitiveTypeLiterals.Add(typeCandidate);
-
-                    stringLiteralsInMethod ??= [];
-                    if (str.Length is > 0 and <= 120)
+                    string? str = null;
+                    try
                     {
-                        stringLiteralsInMethod.Add(str);
-                        pushedLiteral = str;
+                        str = md.GetUserString(ush);
+                    }
+                    catch (Exception ex) when (ex is BadImageFormatException or ArgumentException)
+                    {
+                        // 死字节或混淆导致越界字符串偏移：单条指令降级，不中断整方法／整程序集扫描
+                    }
+
+                    if (str != null)
+                    {
+                        if (str is "kMapSize" or "kTextureSize")
+                            seenMapSizeLiteral ??= str;
+
+                        // 支持提取 "Namespace.Type, Assembly" 或 "Namespace.Type" 形式的完整敏感类型字符串
+                        string typeCandidate = str;
+                        int comma = typeCandidate.IndexOf(',');
+                        if (comma > 0)
+                            typeCandidate = typeCandidate[..comma].Trim();
+                        if (ConflictTargets.IsTargetSystemOrPatchTypeName(typeCandidate))
+                            assemblySensitiveTypeLiterals.Add(typeCandidate);
+
+                        stringLiteralsInMethod ??= [];
+                        if (str.Length is > 0 and <= 120)
+                        {
+                            stringLiteralsInMethod.Add(str);
+                            pushedLiteral = str;
+                        }
                     }
                 }
 
@@ -384,8 +397,9 @@ internal static class IlTokenScanner
             if (opVal == OpCodes.Ldtoken.Value || opVal == OpCodes.Castclass.Value || opVal == OpCodes.Isinst.Value)
             {
                 int token = BitConverter.ToInt32(il, operandStart);
-                EntityHandle eh = System.Reflection.Metadata.Ecma335.MetadataTokens.EntityHandle(token);
-                string? typeName = ResolveTypeToken(md, eh, typeProvider);
+                string? typeName = TryCreateEntityHandle(token, out EntityHandle eh)
+                    ? ResolveTypeToken(md, eh, typeProvider)
+                    : null;
                 if (typeName != null)
                 {
                     referencedTypesInMethod ??= [];
@@ -411,8 +425,9 @@ internal static class IlTokenScanner
                     PopSafe(stack);
 
                 int token = BitConverter.ToInt32(il, operandStart);
-                EntityHandle fh = System.Reflection.Metadata.Ecma335.MetadataTokens.EntityHandle(token);
-                string? fieldSys = ResolveProtectedFieldType(md, fh, typeProvider, protectedFields);
+                string? fieldSys = TryCreateEntityHandle(token, out EntityHandle fh)
+                    ? ResolveProtectedFieldType(md, fh, typeProvider, protectedFields)
+                    : null;
                 stack.Add(fieldSys != null ? SlotTag.Protected(fieldSys) : SlotTag.Other);
                 continue;
             }
@@ -421,7 +436,10 @@ internal static class IlTokenScanner
             if (opVal == OpCodes.Call.Value || opVal == OpCodes.Callvirt.Value || opVal == OpCodes.Newobj.Value)
             {
                 int token = BitConverter.ToInt32(il, operandStart);
-                EntityHandle mh = System.Reflection.Metadata.Ecma335.MetadataTokens.EntityHandle(token);
+                if (!TryCreateEntityHandle(token, out EntityHandle mh))
+                {
+                    continue;
+                }
 
                 if (mh.Kind == HandleKind.MethodDefinition)
                 {
@@ -688,8 +706,8 @@ internal static class IlTokenScanner
             short opVal = info.Code.Value;
             if (opVal == OpCodes.Call.Value || opVal == OpCodes.Callvirt.Value)
             {
-                EntityHandle mh = System.Reflection.Metadata.Ecma335.MetadataTokens.EntityHandle(BitConverter.ToInt32(il, operandStart));
-                if (TryResolveCalledMethod(md, mh, typeProvider, out CalledMethodInfo call) &&
+                if (TryCreateEntityHandle(BitConverter.ToInt32(il, operandStart), out EntityHandle mh) &&
+                    TryResolveCalledMethod(md, mh, typeProvider, out CalledMethodInfo call) &&
                     call.MethodName is "GetOrCreateSystemManaged" or "GetExistingSystemManaged" &&
                     call.FirstGenericMethodArg is { } sys &&
                     ConflictTargets.IsProtectedEnabledTarget(sys))
@@ -702,15 +720,32 @@ internal static class IlTokenScanner
             }
             else if ((opVal == OpCodes.Stfld.Value || opVal == OpCodes.Stsfld.Value) && pendingProtected != null)
             {
-                EntityHandle fh = System.Reflection.Metadata.Ecma335.MetadataTokens.EntityHandle(BitConverter.ToInt32(il, operandStart));
-                if (fh.Kind == HandleKind.FieldDefinition)
+                if (TryCreateEntityHandle(BitConverter.ToInt32(il, operandStart), out EntityHandle fh) &&
+                    fh.Kind == HandleKind.FieldDefinition)
+                {
                     fieldMap[fh] = pendingProtected;
+                }
+
                 pendingProtected = null;
             }
             else if (opVal != OpCodes.Castclass.Value && opVal != OpCodes.Isinst.Value && opVal != OpCodes.Nop.Value)
             {
                 pendingProtected = null;
             }
+        }
+    }
+
+    private static bool TryCreateEntityHandle(int token, out EntityHandle handle)
+    {
+        try
+        {
+            handle = System.Reflection.Metadata.Ecma335.MetadataTokens.EntityHandle(token);
+            return !handle.IsNil;
+        }
+        catch (ArgumentException)
+        {
+            handle = default;
+            return false;
         }
     }
 
@@ -769,7 +804,7 @@ internal static class IlTokenScanner
                 return true;
             }
         }
-        catch (BadImageFormatException)
+        catch (Exception ex) when (ex is BadImageFormatException or ArgumentException or NotSupportedException or OverflowException)
         {
             return false;
         }
@@ -802,7 +837,7 @@ internal static class IlTokenScanner
                 return ft != null && ConflictTargets.IsProtectedEnabledTarget(ft) ? ft : null;
             }
         }
-        catch (BadImageFormatException)
+        catch (Exception ex) when (ex is BadImageFormatException or ArgumentException or NotSupportedException or OverflowException)
         {
             return null;
         }
@@ -812,20 +847,20 @@ internal static class IlTokenScanner
 
     private static string? ResolveTypeToken(MetadataReader md, EntityHandle handle, EcmaTypeNameProvider typeProvider)
     {
-        if (handle.Kind == HandleKind.TypeSpecification)
+        try
         {
-            try
+            if (handle.Kind == HandleKind.TypeSpecification)
             {
                 TypeSpecification ts = md.GetTypeSpecification((TypeSpecificationHandle)handle);
                 return ts.DecodeSignature(typeProvider, GenericContext.Empty);
             }
-            catch (BadImageFormatException)
-            {
-                return null;
-            }
-        }
 
-        return PlaysetModScanner.GetEntityFullTypeName(md, handle);
+            return PlaysetModScanner.GetEntityFullTypeName(md, handle);
+        }
+        catch (Exception ex) when (ex is BadImageFormatException or ArgumentException or NotSupportedException or OverflowException)
+        {
+            return null;
+        }
     }
 
     private static string? TryDecodeFieldType(FieldDefinition fd, EcmaTypeNameProvider provider)
@@ -834,7 +869,7 @@ internal static class IlTokenScanner
         {
             return fd.DecodeSignature(provider, GenericContext.Empty);
         }
-        catch (BadImageFormatException)
+        catch (Exception ex) when (ex is BadImageFormatException or ArgumentException or NotSupportedException or OverflowException)
         {
             return null;
         }
@@ -846,7 +881,7 @@ internal static class IlTokenScanner
         {
             return md.DecodeSignature(provider, GenericContext.Empty);
         }
-        catch (BadImageFormatException)
+        catch (Exception ex) when (ex is BadImageFormatException or ArgumentException or NotSupportedException or OverflowException)
         {
             return null;
         }
@@ -861,7 +896,7 @@ internal static class IlTokenScanner
             StandaloneSignature sig = md.GetStandaloneSignature(body.LocalSignature);
             return sig.DecodeLocalSignature(provider, GenericContext.Empty);
         }
-        catch (BadImageFormatException)
+        catch (Exception ex) when (ex is BadImageFormatException or ArgumentException or NotSupportedException or OverflowException)
         {
             return ImmutableArray<string?>.Empty;
         }
@@ -1127,8 +1162,11 @@ internal static class IlTokenScanner
     };
 }
 
-internal readonly record struct GenericContext
+internal readonly record struct GenericContext(int Depth = 0)
 {
+    /// <summary>签名解码递归上限：随值类型逐层传值，保证全局静态 <see cref="EcmaTypeNameProvider"/> 单例并发安全。</summary>
+    public const int MaxDepth = 32;
+
     public static readonly GenericContext Empty = default;
 }
 
@@ -1164,8 +1202,12 @@ internal sealed class EcmaTypeNameProvider : ISignatureTypeProvider<string?, Gen
     public string? GetTypeFromReference(MetadataReader reader, TypeReferenceHandle handle, byte rawTypeKind) =>
         PlaysetModScanner.GetEntityFullTypeName(reader, handle);
 
-    public string? GetTypeFromSpecification(MetadataReader reader, GenericContext genericContext, TypeSpecificationHandle handle, byte rawTypeKind) =>
-        reader.GetTypeSpecification(handle).DecodeSignature(this, genericContext);
+    public string? GetTypeFromSpecification(MetadataReader reader, GenericContext genericContext, TypeSpecificationHandle handle, byte rawTypeKind)
+    {
+        if (genericContext.Depth >= GenericContext.MaxDepth)
+            return null;
+        return reader.GetTypeSpecification(handle).DecodeSignature(this, new GenericContext(genericContext.Depth + 1));
+    }
 
     public string? GetSZArrayType(string? elementType) => elementType != null ? elementType + "[]" : null;
     public string? GetArrayType(string? elementType, ArrayShape shape) => elementType != null ? elementType + "[]" : null;

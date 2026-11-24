@@ -783,10 +783,9 @@ public static class PlaysetModScanner
         {
             foreach (string root in roots)
             {
-                string direct = Path.Combine(root, sourceId);
-                if (Directory.Exists(direct))
+                if (TryCombineUnderRoot(root, sourceId, out string direct) && Directory.Exists(direct))
                 {
-                    folder = Path.GetFullPath(direct);
+                    folder = direct;
                     break;
                 }
             }
@@ -836,7 +835,7 @@ public static class PlaysetModScanner
                         if (src.ValueKind != JsonValueKind.Object)
                             continue;
                         string? name = GetOptionalString(src, "source");
-                        string[] roots = ReadStringArray(src, "rootPaths");
+                        string[] roots = SanitizeRootPaths(ReadStringArray(src, "rootPaths"));
                         if (roots.Length == 0)
                             continue;
 
@@ -907,10 +906,9 @@ public static class PlaysetModScanner
         {
             foreach (string root in localRoots)
             {
-                string direct = Path.Combine(root, sourceId);
-                if (Directory.Exists(direct))
+                if (TryCombineUnderRoot(root, sourceId, out string direct) && Directory.Exists(direct))
                 {
-                    folder = Path.GetFullPath(direct);
+                    folder = direct;
                     break;
                 }
             }
@@ -944,21 +942,24 @@ public static class PlaysetModScanner
         string sourceId,
         string? preferredVersion)
     {
+        if (!IsSafePathSegment(sourceId))
+            return (null, null);
+
         if (!string.IsNullOrWhiteSpace(preferredVersion))
         {
             string trimmed = preferredVersion.Trim();
             int? parsed = int.TryParse(trimmed, NumberStyles.Integer, CultureInfo.InvariantCulture, out int v)
                 ? v
                 : null;
+            if (!IsSafePathSegment(trimmed))
+                return (null, parsed);
+
             string targetName = $"{sourceId}_{trimmed}";
             foreach (string root in roots)
             {
-                if (!Directory.Exists(root))
-                    continue;
-                string candidate = Path.Combine(root, targetName);
-                if (Directory.Exists(candidate))
+                if (TryCombineUnderRoot(root, targetName, out string candidate) && Directory.Exists(candidate))
                 {
-                    return (Path.GetFullPath(candidate), parsed);
+                    return (candidate, parsed);
                 }
             }
 
@@ -977,9 +978,15 @@ public static class PlaysetModScanner
 
             try
             {
-                foreach (string subDir in Directory.EnumerateDirectories(root, prefix + "*"))
+                string rootFull = Path.GetFullPath(root);
+                string rootPrefix = Path.TrimEndingDirectorySeparator(rootFull) + Path.DirectorySeparatorChar;
+                foreach (string subDir in Directory.EnumerateDirectories(rootFull, prefix + "*"))
                 {
-                    string dirName = Path.GetFileName(subDir);
+                    string subFull = Path.GetFullPath(subDir);
+                    if (!subFull.StartsWith(rootPrefix, StringComparison.OrdinalIgnoreCase))
+                        continue;
+
+                    string dirName = Path.GetFileName(subFull);
                     if (!dirName.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
                         continue;
 
@@ -987,17 +994,87 @@ public static class PlaysetModScanner
                     if (int.TryParse(suffix, NumberStyles.None, CultureInfo.InvariantCulture, out int ver) && ver > bestVersion)
                     {
                         bestVersion = ver;
-                        bestPath = Path.GetFullPath(subDir);
+                        bestPath = subFull;
                     }
                 }
             }
-            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException or PathTooLongException or NotSupportedException)
             {
-                // 忽略不可读根目录
+                // 忽略不可读或非法根目录
             }
         }
 
         return bestPath != null ? (bestPath, bestVersion) : (null, null);
+    }
+
+    private static bool IsSafePathSegment(string? segment)
+    {
+        if (string.IsNullOrWhiteSpace(segment))
+            return false;
+
+        string s = segment.Trim();
+        if (s is "." or ".." || s.Contains("..", StringComparison.Ordinal))
+            return false;
+        if (s.IndexOfAny(['/', '\\', ':', '*', '?']) >= 0)
+            return false;
+        if (s.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0)
+            return false;
+        return !Path.IsPathRooted(s);
+    }
+
+    private static bool TryCombineUnderRoot(string root, string segment, out string fullPath)
+    {
+        fullPath = string.Empty;
+        if (!IsSafePathSegment(segment))
+            return false;
+
+        try
+        {
+            if (string.IsNullOrWhiteSpace(root) || !Directory.Exists(root))
+                return false;
+
+            string rootFull = Path.GetFullPath(root);
+            // 为根目录补齐尾分隔符，防止前缀判断将 local 误匹配到兄弟目录 local2
+            string rootPrefix = Path.TrimEndingDirectorySeparator(rootFull) + Path.DirectorySeparatorChar;
+            string candidateFull = Path.GetFullPath(Path.Combine(rootFull, segment));
+            if (!candidateFull.StartsWith(rootPrefix, StringComparison.OrdinalIgnoreCase))
+                return false;
+
+            fullPath = candidateFull;
+            return true;
+        }
+        catch (Exception ex) when (ex is ArgumentException or PathTooLongException or NotSupportedException)
+        {
+            return false;
+        }
+    }
+
+    private static string[] SanitizeRootPaths(string[] rawPaths)
+    {
+        if (rawPaths.Length == 0)
+            return [];
+
+        char[] invalidPathChars = Path.GetInvalidPathChars();
+        var valid = new List<string>(rawPaths.Length);
+        foreach (string raw in rawPaths)
+        {
+            string trimmed = raw.Trim();
+            if (trimmed.Length == 0 || trimmed.IndexOfAny(invalidPathChars) >= 0)
+                continue;
+            if (!Path.IsPathFullyQualified(trimmed))
+                continue;
+
+            try
+            {
+                valid.Add(Path.GetFullPath(trimmed));
+            }
+            catch (Exception ex) when (ex is ArgumentException or PathTooLongException or NotSupportedException)
+            {
+                // 忽略非法路径项
+            }
+        }
+
+        return valid.ToArray();
     }
 
     private static ResolvedMetadata LookupMetadata(
@@ -1257,7 +1334,7 @@ public static class PlaysetModScanner
             header = new ManagedHeader(asmName, NormalizeEcmaVersion(asmDef.Version), refs, implementsIMod);
             return true;
         }
-        catch (Exception ex) when (ex is BadImageFormatException or InvalidOperationException or IOException or UnauthorizedAccessException)
+        catch (Exception ex) when (ex is BadImageFormatException or InvalidOperationException or IOException or UnauthorizedAccessException or ArgumentException or NotSupportedException or OverflowException)
         {
             unreadable.Add(new UnreadableAssemblyEntry(dllPath, packageKey, packageName, ex.Message));
             return false;
@@ -1280,9 +1357,12 @@ public static class PlaysetModScanner
         return false;
     }
 
-    internal static string? GetEntityFullTypeName(MetadataReader md, EntityHandle handle)
+    internal static string? GetEntityFullTypeName(MetadataReader md, EntityHandle handle) =>
+        GetEntityFullTypeName(md, handle, depth: 0);
+
+    private static string? GetEntityFullTypeName(MetadataReader md, EntityHandle handle, int depth)
     {
-        if (handle.IsNil)
+        if (handle.IsNil || depth >= 32)
             return null;
 
         switch (handle.Kind)
@@ -1293,7 +1373,7 @@ public static class PlaysetModScanner
                 string name = md.GetString(tr.Name);
                 if (tr.ResolutionScope.Kind == HandleKind.TypeReference)
                 {
-                    string? parent = GetEntityFullTypeName(md, tr.ResolutionScope);
+                    string? parent = GetEntityFullTypeName(md, tr.ResolutionScope, depth + 1);
                     return parent != null ? $"{parent}+{name}" : name;
                 }
 
@@ -1307,7 +1387,7 @@ public static class PlaysetModScanner
                 TypeDefinitionHandle declaring = td.GetDeclaringType();
                 if (!declaring.IsNil)
                 {
-                    string? parent = GetEntityFullTypeName(md, declaring);
+                    string? parent = GetEntityFullTypeName(md, declaring, depth + 1);
                     return parent != null ? $"{parent}+{name}" : name;
                 }
 

@@ -352,9 +352,17 @@ public sealed class CocSession
     {
         var start = new ProcessStartInfo("explorer.exe") { UseShellExecute = false };
         if (File.Exists(CocPath))
+        {
             start.Arguments = "/select,\"" + CocPath + "\"";
+        }
         else
-            start.ArgumentList.Add(Path.GetDirectoryName(CocPath)!);
+        {
+            string? dir = Path.GetDirectoryName(CocPath);
+            if (string.IsNullOrEmpty(dir) || !Directory.Exists(dir))
+                return;
+            start.ArgumentList.Add(dir);
+        }
+
         StartProcess(owner, start);
     }
 

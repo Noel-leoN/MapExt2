@@ -258,7 +258,7 @@ public sealed class CommandLineRunner
                     WriteModList(ws, report);
             }
         }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidOperationException)
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidOperationException or BadImageFormatException or ArgumentException or NotSupportedException or OverflowException)
         {
             // 若在复用诊断分支中定位游戏失败导致尚未打印激活成功消息，先补齐激活输出
             if (activationResult != null && !_activationOutcomePrinted)
@@ -268,9 +268,9 @@ public sealed class CommandLineRunner
             diagnosticsFailed = true;
         }
 
-        // 6. 执行启动
+        // 6. 执行启动（D16：诊断失败时仍启动，但 Launch 返回 GameRunning(2) 时以 2 为准不被 1 覆盖）
         int code = options.Launch ? Launch() : ExitCodes.Success;
-        return diagnosticsFailed ? ExitCodes.Error : code;
+        return code == ExitCodes.GameRunning ? code : diagnosticsFailed ? ExitCodes.Error : code;
     }
 
     private bool _activationOutcomePrinted;

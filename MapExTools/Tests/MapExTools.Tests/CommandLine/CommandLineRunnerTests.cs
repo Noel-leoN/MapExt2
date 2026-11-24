@@ -348,6 +348,41 @@ public sealed class CommandLineRunnerTests : IDisposable
         Assert.Contains("已启动", output);
     }
 
+    [Fact]
+    public void ShowFails_WithLaunch_GameRunning_ReturnsExit2AndDoesNotLaunch()
+    {
+        // D16：前置诊断失败期间游戏启动起来时，Launch() 返回 GameRunning(2) 不应被诊断失败的 1 覆盖，且不启动
+        bool runningNow = false;
+        int locateCalls = 0;
+        var launcher = new GameLauncher(Paths.RunOnceFile, () => runningNow, () => _steamRunning, start => _started.Add(start));
+        var ctx = new CommandLineContext
+        {
+            Paths = Paths,
+            Config = _config,
+            IsGameRunning = () => runningNow,
+            LocateGame = () =>
+            {
+                if (locateCalls++ == 0)
+                {
+                    runningNow = true;
+                    throw new InvalidOperationException("定位失败（测试）");
+                }
+
+                return _location;
+            },
+            Launcher = launcher,
+        };
+
+        var output = new StringWriter();
+        var error = new StringWriter();
+        int code = new CommandLineRunner(ctx, output, Lang, error).Run(CommandLineParser.Parse(["--show", "--launch"]));
+
+        Assert.Equal(ExitCodes.GameRunning, code);
+        Assert.Empty(_started);
+        Assert.Contains("定位失败（测试）", error.ToString());
+        Assert.Contains(Text("Launch.Block.GameRunning"), error.ToString());
+    }
+
     // === 输出分流 ===
 
     [Fact]

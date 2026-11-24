@@ -12,4 +12,12 @@
     <NeutralLanguage>en-US</NeutralLanguage>
     <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
   </PropertyGroup>
+
+  <!-- 从 GitHub 源码压缩包（无 .git）执行 CI 确定性构建时提供仓库根 SourceRoot 兜底，避免产出空 PathMap -->
+  <PropertyGroup>
+    <_MapExToolsRepoRoot>$([MSBuild]::NormalizeDirectory('$(MSBuildThisFileDirectory)..'))</_MapExToolsRepoRoot>
+  </PropertyGroup>
+  <ItemGroup Condition="'$(ContinuousIntegrationBuild)' == 'true' and !Exists('$(_MapExToolsRepoRoot).git')">
+    <SourceRoot Include="$(_MapExToolsRepoRoot)" />
+  </ItemGroup>
 </Project>

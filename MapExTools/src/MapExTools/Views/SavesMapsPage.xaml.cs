@@ -478,9 +478,23 @@ public partial class SavesMapsPage : UserControl
         if (_shownItem == null)
             return;
 
+        string path = _shownItem.Package.Path;
+        var start = new ProcessStartInfo("explorer.exe") { UseShellExecute = false };
+        if (File.Exists(path))
+        {
+            start.Arguments = "/select,\"" + path + "\"";
+        }
+        else
+        {
+            string? dir = Path.GetDirectoryName(path);
+            if (string.IsNullOrEmpty(dir) || !Directory.Exists(dir))
+                return;
+            start.ArgumentList.Add(dir);
+        }
+
         try
         {
-            Process.Start("explorer.exe", "/select,\"" + _shownItem.Package.Path + "\"")?.Dispose();
+            Process.Start(start)?.Dispose();
         }
         catch (Win32Exception ex)
         {

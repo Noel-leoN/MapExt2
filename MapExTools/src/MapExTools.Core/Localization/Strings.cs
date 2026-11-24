@@ -1245,7 +1245,7 @@ public static class Strings
         ["Options.Group.PathfindSchool"] = ["Education Pathfinding (4 Tiers)", "四级教育就学范围", "四級教育就學範圍"],
         ["Options.Group.EcoThroughput"] = ["Job & Housing Seeker Throughput", "求职与找房每轮吞吐上限", "求職與找房每輪吞吐上限"],
         ["Options.Group.EcoConsumption"] = ["Household Shopping & Consumption", "家庭购物频率与购买量补偿", "家庭購物頻率與購買量補償"],
-        ["Options.Group.EcoCandidates"] = ["Pathfind Early-Exit Candidate Caps", "寻路提前退出候选上限（P1 / P2 / P6）", "尋路提前退出候選上限（P1 / P2 / P6）"],
+        ["Options.Group.EcoCandidates"] = ["Pathfind Early-Exit Candidate Caps", "寻路提前退出候选上限", "尋路提前退出候選上限"],
         ["Options.Group.LandValue"] = ["Edge Land Value Factors", "道路地价传递因子", "道路地價傳遞因子"],
         ["Options.Group.RentMatrix"] = ["RCI Rent Formula Matrix (3×3)", "住宅／商业／工业 租金公式矩阵", "住宅／商業／工業 租金公式矩陣"],
         ["Options.Group.PanelSize"] = ["In-Game Floating Panel Dimensions", "游戏内悬浮面板尺寸", "遊戲內懸浮面板尺寸"],
@@ -1296,7 +1296,7 @@ public static class Strings
         // 枚举选项译文
         ["Options.Enum.WaterSimQuality.Vanilla_EveryFrame"] = ["Vanilla (Every Frame)", "原版（每帧计算）", "原版（每幀計算）"],
         ["Options.Enum.WaterSimQuality.Reduced_NoBackdrop"] = ["Reduced (No Backdrop)", "降低（关闭远景水流）", "降低（關閉遠景水流）"],
-        ["Options.Enum.WaterSimQuality.Minimal_Every4Frames"] = ["Minimal (Every 4 Frames)", "极简（每 4 帧 + 关模糊）", "極簡（每 4 幀 + 關模糊）"],
+        ["Options.Enum.WaterSimQuality.Minimal_Every4Frames"] = ["Minimal (Every 4 Frames, No Backdrop)", "极简（每 4 帧 + 关背景水与模糊）", "極簡（每 4 幀 + 關背景水與模糊）"],
         ["Options.Enum.WaterSimQuality.Paused_NoFlow"] = ["Paused (No Flow)", "暂停（冻结流动）", "暫停（凍結流動）"],
 
         ["Options.Enum.SnowSimFreeze.Off"] = ["Off (Vanilla)", "关闭（原版常开）", "關閉（原版常開）"],
@@ -1333,12 +1333,12 @@ public static class Strings
         ["Startup.Key.TerrainBrushRoadMargin"] = ["Road Block Margin", "道路阻挡宽度余量", "道路阻擋寬度餘量"],
 
         ["Startup.Key.EnableVehicleRescue"] = ["Enable Stuck Vehicle Rescue", "启用购车停放救援", "啟用購車停放救援"],
-        ["Startup.Key.EnableRescueDebugLog"] = ["Enable Vehicle Rescue Debug Log", "启用购车救援调试日志", "啟用購車救援偵錯日誌"],
+        ["Startup.Key.EnableRescueDebugLog"] = ["Enable Vehicle Rescue Debug Log", "启用购车救援调试日志", "啟用購車救援除錯日誌"],
 
         ["Startup.Key.ShoppingMaxCost"] = ["Max Shopping Pathfind Cost", "购物最高寻路成本", "購物最高尋路成本"],
         ["Startup.Key.CompanyShoppingMaxCost"] = ["Company Max Delivery Pathfind Cost", "公司货运最高寻路成本", "公司貨運最高尋路成本"],
         ["Startup.Key.LeisureMaxCost"] = ["Max Leisure / Sightseeing Cost", "休闲观光最高寻路成本", "休閒觀光最高尋路成本"],
-        ["Startup.Key.EmergencyMaxCost"] = ["Max Hospital / Crime Cost", "医院／犯罪最高寻路成本", "醫院／犯罪最高尋路成本"],
+        ["Startup.Key.EmergencyMaxCost"] = ["Max Hospital/Crime Pathfind Cost", "就医/犯罪最高寻路成本", "就醫/犯罪最高尋路成本"],
         ["Startup.Key.FindJobMaxCost"] = ["Max Find Job Pathfind Cost", "找工作最高寻路成本", "找工作最高尋路成本"],
         ["Startup.Key.FindHomeMaxCost"] = ["Max Find Home Pathfind Cost", "找房搬家最高寻路成本", "找房搬家最高尋路成本"],
         ["Startup.Key.FindSchoolElementaryMaxCost"] = ["Max Elementary School Cost", "找小学最高寻路成本", "找小學最高尋路成本"],
@@ -1352,9 +1352,9 @@ public static class Strings
         ["Startup.Key.HouseholdResourceDemandMultiplier"] = ["Household Shopping Demand Multiplier", "家庭购物需求倍率", "家庭購物需求倍率"],
         ["Startup.Key.HomeSeekerCap"] = ["Home Search: Move Throughput", "找房：常规搬家吞吐量", "找房：常規搬家吞吐量"],
         ["Startup.Key.HomelessSeekerCap"] = ["Home Search: Homeless Throughput", "找房：流浪安置吞吐量", "找房：流浪安置吞吐量"],
-        ["Startup.Key.ResourceSellerCandidateCap"] = ["Business Purchasing: Supplier Cap (P1)", "企业采购：候选供应商上限 (P1)", "企業採購：候選供應商上限 (P1)"],
-        ["Startup.Key.LeisureCandidateCap"] = ["Leisure Search: Venue Cap (P2)", "休闲寻路：候选设施上限 (P2)", "休閒尋路：候選設施上限 (P2)"],
-        ["Startup.Key.FindHomeCandidateCap"] = ["Home Search: Property Cap (P6)", "找房寻路：候选房屋上限 (P6)", "找房尋路：候選房屋上限 (P6)"],
+        ["Startup.Key.ResourceSellerCandidateCap"] = ["Business Purchasing: Supplier Cap", "企业采购：候选供应商上限", "企業採購：候選供應商上限"],
+        ["Startup.Key.LeisureCandidateCap"] = ["Leisure Search: Venue Cap", "休闲寻路：候选设施上限", "休閒尋路：候選設施上限"],
+        ["Startup.Key.FindHomeCandidateCap"] = ["Home Search: Property Cap", "找房寻路：候选房屋上限", "找房尋路：候選房屋上限"],
 
         ["Startup.Key.LandValueEnvironmentEffect"] = ["Environment Land Value Impact", "环境地价影响系数", "環境地價影響係數"],
         ["Startup.Key.ServiceBonusCapMultiplier"] = ["Service Bonus Cap Multiplier", "服务加成上限乘数", "服務加成上限乘數"],
@@ -1396,9 +1396,9 @@ public static class Strings
             "平滑住宅、商業、工業需求曲線以適配巨型城市。修改後需重啟。",
         ],
         ["Startup.Tip.EnableJobSearchEcoSystem"] = [
-            "Optimizes citizen job-seeking throughput and matching. Incompatible with Realistic JobSearch. Requires restart.",
-            "优化市民求职吞吐与岗位匹配效率；与 Realistic JobSearch 等冲突。修改后需重启。",
-            "優化市民求職吞吐與職缺匹配效率；與 Realistic JobSearch 等衝突。修改後需重啟。",
+            "Optimizes citizen job-seeking throughput and matching. Overlaps with other mods that replace the same job-search system. Requires restart.",
+            "优化市民求职吞吐与岗位匹配效率；与其他修改同一求职系统的模组存在功能重叠。修改后需重启。",
+            "優化市民求職吞吐與職缺匹配效率；與其他修改同一求職系統的模組存在功能重疊。修改後需重啟。",
         ],
         ["Startup.Tip.EnableHouseholdPropertyEcoSystem"] = [
             "Optimizes household home-search, consumption and rent adjustment. Requires restart.",
@@ -1406,9 +1406,9 @@ public static class Strings
             "優化家庭找房尋路、消費行為與租金重算機制。修改後需重啟。",
         ],
         ["Startup.Tip.EnableResourceBuyerEcoSystem"] = [
-            "Optimizes citizen shopping, company procurement and service coverage pathfinding. Auto-disabled if Realistic PathFinding is active.",
-            "优化市民购物、企业采购与服务覆盖寻路；启用 Realistic PathFinding 时会自动让路停用。",
-            "優化市民購物、企業採購與服務覆蓋尋路；啟用 Realistic PathFinding 時會自動讓路停用。",
+            "Optimizes citizen shopping, company procurement and service coverage pathfinding. Automatically disabled for this session if a known conflicting mod replacing the same system is detected.",
+            "优化市民购物、企业采购与服务覆盖寻路；检测到替换同一系统的已知冲突模组时，本分组在本次游戏中自动停用。",
+            "優化市民購物、企業採購與服務覆蓋尋路；偵測到替換同一系統的已知衝突模組時，本分組在本次遊戲中自動停用。",
         ],
         ["Startup.Tip.EnableResidentAIEcoSystem"] = [
             "Mitigates pathfinding wait-time and memory pressure on large maps. Default: Off. Requires restart.",
@@ -1451,9 +1451,9 @@ public static class Strings
             "地形級聯未重繪時跳過每幀背景高度圖降採樣計算；對含背景世界地圖的存檔有穩定的小幅 GPU 收益。",
         ],
         ["Startup.Tip.WaterSimQuality"] = [
-            "Controls water CPU/GPU simulation frequency. Reduced skips backdrop flow; Minimal runs every 4 frames without blur; Paused freezes flow.",
-            "控制水体计算频率：降低档关闭远景水流；极简档每 4 帧计算并关模糊；暂停档冻结水体流动。",
-            "控制水體計算頻率：降低檔關閉遠景水流；極簡檔每 4 幀計算並關模糊；暫停檔凍結水體流動。",
+            "Controls water CPU/GPU simulation frequency. Reduced skips backdrop flow; Minimal runs every 4 frames without backdrop water or blur; Paused freezes flow.",
+            "控制水体计算频率：降低档关闭远景水流；极简档每 4 帧计算并关闭背景水与水流模糊；暂停档冻结水体流动。",
+            "控制水體計算頻率：降低檔關閉遠景水流；極簡檔每 4 幀計算並關閉背景水與水流模糊；暫停檔凍結水體流動。",
         ],
         ["Startup.Tip.WaterPauseFreeze"] = [
             "Freezes wasted GPU water simulation dispatches while the game is paused (automatically yields during terrain edits). Recommended: On.",
@@ -1476,9 +1476,9 @@ public static class Strings
             "讀檔時將新搬入家庭生成寵物的機率設為 0%，已有存量寵物保留不變。",
         ],
         ["Startup.Tip.NoThroughTraffic"] = [
-            "Disables TrafficSpawnerAISystem to stop outside-to-outside dummy through-traffic.",
-            "禁用外部连接之间的过境虚拟车流生成，降低寻路负载与高速拥堵。",
-            "停用外部連接之間的過境虛擬車流生成，降低尋路負載與高速擁堵。",
+            "Disables TrafficSpawnerAISystem and RandomTrafficDispatchSystem to stop outside-to-outside dummy through-traffic.",
+            "禁用 TrafficSpawnerAISystem 与 RandomTrafficDispatchSystem，停止外部连接之间的过境虚拟车流生成，降低寻路负载与高速拥堵。",
+            "停用 TrafficSpawnerAISystem 與 RandomTrafficDispatchSystem，停止外部連接之間的過境虛擬車流生成，降低尋路負載與高速擁堵。",
         ],
         ["Startup.Tip.EditorCollisionSkip"] = [
             "Skips object collision checks when placing trees or props in the Map Editor.",
@@ -1531,9 +1531,9 @@ public static class Strings
             "市民全圖求職的最大成本（17000～200000，預設拉滿 200000 以便遠郊城鎮招工）。",
         ],
         ["Startup.Tip.FindHomeMaxCost"] = [
-            "Max relocation search cost across the map (17000–200000, default 200000 so remote districts can be settled).",
-            "家庭跨全图搬家找房的最大成本（17000～200000，默认拉满 200000 避免偏远新城无人入住）。",
-            "家庭跨全圖搬家找房的最大成本（17000～200000，預設拉滿 200000 避免偏遠新城無人入住）。",
+            "Max relocation search cost across the map (17000–200000, default 200000 so remote districts can be settled). With related pathing groups enabled (Consumer & Service, Resident AI, Vehicle AI), also applies to essential trips (home/work/school), moving away and long-distance taxis.",
+            "家庭跨全图搬家找房的最大成本（17000～200000，默认拉满 200000 避免偏远新城无人入住）；启用相关寻路系统组（消费采购与服务覆盖、居民 AI、载具 AI）后，也用于回家、上班、上学等刚需出行、搬离城市及出租车长途出行。",
+            "家庭跨全圖搬家找房的最大成本（17000～200000，預設拉滿 200000 避免偏遠新城無人入住）；啟用相關尋路系統組（消費採購與服務覆蓋、居民 AI、載具 AI）後，也用於回家、上班、上學等剛需出行、搬離城市及計程車長途出行。",
         ],
         ["Startup.Tip.FindSchoolElementaryMaxCost"] = [
             "Max travel cost for elementary students (1000–200000, default 10000 to encourage neighborhood enrollment).",
@@ -1556,12 +1556,12 @@ public static class Strings
             "尋找大學的最大路線成本（1000～200000，預設 100000；全圖單一大學城可拉滿至 200000）。",
         ],
         ["Startup.Tip.JobSeekerCap"] = [
-            "Max job seeker entities created per B1 update (200–5000, default 1000). Recommended: 200–500 (<500k pop), 500–1000 (2M), 1000–3000 (>5M).",
+            "Max job seeker entities created per update (200–5000, default 1000). Recommended: 200–500 (<500k pop), 500–1000 (2M), 1000–3000 (>5M).",
             "每次求职系统更新最多创建的求职者数（200～5000，默认 1000）。建议：<50万用 200～500，200万用 500～1000，>500万用 1000～3000。",
             "每次求職系統更新最多建立的求職者數（200～5000，預設 1000）。建議：<50萬用 200～500，200萬用 500～1000，>500萬用 1000～3000。",
         ],
         ["Startup.Tip.PathfindRequestCap"] = [
-            "Max job pathfind requests processed per B2 update (500–10000, default 4000; typically 2–4× Seeker Throughput).",
+            "Max job pathfind requests processed per update (500–10000, default 4000; typically 2–4× Seeker Throughput).",
             "每次求职寻路最多处理的请求数（500～10000，默认 4000；通常设为求职吞吐量的 2～4 倍）。",
             "每次求職尋路最多處理的請求數（500～10000，預設 4000；通常設為求職吞吐量的 2～4 倍）。",
         ],
@@ -1586,19 +1586,19 @@ public static class Strings
             "每輪最多處理的無家可歸家庭找房安置數（128～5120，預設 1280）。",
         ],
         ["Startup.Tip.ResourceSellerCandidateCap"] = [
-            "P1 early-exit cap: max qualified suppliers collected per chunk for company purchasing (3–20, default 8).",
-            "【P1】企业采购在每个实体区块收集的合格供应商上限（3～20，默认 8），凑满提前退出区块扫描；稀缺资源自动遍历全城不漏找。",
-            "【P1】企業採購在每個實體區塊收集的合格供應商上限（3～20，預設 8），湊滿提前退出區塊掃描；稀缺資源自動遍歷全城不漏找。",
+            "Early-exit cap: max qualified suppliers collected per chunk for company purchasing (3–20, default 8).",
+            "企业采购在每个实体区块收集的合格供应商上限（3～20，默认 8），凑满提前退出区块扫描；稀缺资源自动遍历全城不漏找。",
+            "企業採購在每個實體區塊收集的合格供應商上限（3～20，預設 8），湊滿提前退出區塊掃描；稀缺資源自動遍歷全城不漏找。",
         ],
         ["Startup.Tip.LeisureCandidateCap"] = [
-            "P2 early-exit cap: max qualified leisure venues collected per chunk (3–15, default 6).",
-            "【P2】休闲寻路在每个实体区块收集的合格设施上限（3～15，默认 6），凑满提前退出扫描。",
-            "【P2】休閒尋路在每個實體區塊收集的合格設施上限（3～15，預設 6），湊滿提前退出掃描。",
+            "Early-exit cap: max qualified leisure venues collected per chunk (3–15, default 6).",
+            "休闲寻路在每个实体区块收集的合格设施上限（3～15，默认 6），凑满提前退出扫描。",
+            "休閒尋路在每個實體區塊收集的合格設施上限（3～15，預設 6），湊滿提前退出掃描。",
         ],
         ["Startup.Tip.FindHomeCandidateCap"] = [
-            "P6 early-exit cap: max qualified properties scored per chunk (3–15, default 5). Higher values improve housing quality match at slightly higher CPU cost.",
-            "【P6】家庭找房在每个区块打分收集的候选房源上限（3～15，默认 5）。值越高选房质量越优但 CPU 开销略增。",
-            "【P6】家庭找房在每個區塊評分收集的候選房源上限（3～15，預設 5）。值越高選房品質越優但 CPU 開銷略增。",
+            "Early-exit cap: max qualified properties scored per chunk (3–15, default 5). Higher values improve housing quality match at slightly higher CPU cost.",
+            "家庭找房在每个区块打分收集的候选房源上限（3～15，默认 5）。值越高选房质量越优但 CPU 开销略增。",
+            "家庭找房在每個區塊評分收集的候選房源上限（3～15，預設 5）。值越高選房品質越優但 CPU 開銷略增。",
         ],
         ["Startup.Tip.LandValueEnvironmentEffect"] = [
             "Share of environmental factors (attractiveness, telecom, pollution) passed to road Edge land value (0–100%, default 40%; 0% = near vanilla).",
@@ -2042,9 +2042,9 @@ public static class Strings
             "播放集「{0}」（含本機 Mods/）未啟用 MapEx。切換後啟動遊戲不會載入 MapEx，沒有讀檔尺寸驗證，直接載入擴展尺寸存檔會導致地圖與城市異常（切勿覆蓋儲存）。\n\n仍要將「{0}」設為目前啟用播放集嗎？",
         ],
         ["Conflicts.Activate.ConfirmPendingMapEx"] = [
-            "MapEx in playset \"{0}\" has not been downloaded to disk yet. On the first launch, wait in the main menu for Paradox Mods sync to finish before loading any save (delayed loading can bypass the save size gate).\n\nSet \"{0}\" as the active playset?",
-            "播放集「{0}」中的 MapEx 尚未下载到本地。首次进游戏时请先在主菜单等待 Paradox Mods 同步完成再读档（推迟加载时可能绕过读档尺寸校验）。\n\n确认将「{0}」设为当前激活播放集吗？",
-            "播放集「{0}」中的 MapEx 尚未下載至本機。首次進遊戲時請先在主選單等待 Paradox Mods 同步完成再讀檔（延遲載入時可能繞過讀檔尺寸校驗）。\n\n確認將「{0}」設為目前啟用播放集嗎？",
+            "MapEx in playset \"{0}\" has not been downloaded to disk yet. On the first launch, wait in the main menu for Paradox Mods sync to finish before loading any save (if delayed loading enters a city before the pre-load check runs, MapEx will pause the simulation and block saving until you return to the main menu).\n\nSet \"{0}\" as the active playset?",
+            "播放集「{0}」中的 MapEx 尚未下载到本地。首次进游戏时请先在主菜单等待 Paradox Mods 同步完成再读档（若推迟加载在入口校验前直接进城，MapEx 会在载入后补判、暂停模拟并在返回主菜单前阻止保存）。\n\n确认将「{0}」设为当前激活播放集吗？",
+            "播放集「{0}」中的 MapEx 尚未下載至本機。首次進遊戲時請先在主選單等待 Paradox Mods 同步完成再讀檔（若延遲載入在入口校驗前直接進城，MapEx 會在載入後補判、暫停模擬並在返回主選單前阻止儲存）。\n\n確認將「{0}」設為目前啟用播放集嗎？",
         ],
         ["Conflicts.Activate.Success"] = [
             "Set \"{0}\" as the active playset (previous file backed up to playset_config.json.bak).",
