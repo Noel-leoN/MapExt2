@@ -356,7 +356,10 @@ namespace MapExtPDX.MapExt.Core
                         GameManager gm = GameManager.instance;
                         if (gm == null || gm.gameMode != GameMode.Game) return true;
 
-                        gm.userInterface.appBindings.ShowMessageDialog(dialog, null);
+                        var bindings = gm.userInterface?.appBindings;
+                        if (bindings == null) return true;
+
+                        bindings.ShowMessageDialog(dialog, null);
                     }
                     catch (Exception ex)
                     {
@@ -389,14 +392,22 @@ namespace MapExtPDX.MapExt.Core
             int settledFrames = 0;
             Colossal.Core.MainThreadDispatcher.RegisterUpdater(() =>
             {
-                if (Mod.IsUnloading || s_LoadGeneration != generation) return true;
+                try
+                {
+                    if (Mod.IsUnloading || s_LoadGeneration != generation) return true;
 
-                GameManager gm = GameManager.instance;
-                if (gm == null || gm.gameMode != GameMode.Game) return true;
-                if (gm.isGameLoading || simulation.loadingProgress < 1f) return false;
+                    GameManager gm = GameManager.instance;
+                    if (gm == null || gm.gameMode != GameMode.Game) return true;
+                    if (gm.isGameLoading || simulation.loadingProgress < 1f) return false;
 
-                simulation.selectedSpeed = 0f;
-                return ++settledFrames >= kUngatedPauseSettleFrames;
+                    simulation.selectedSpeed = 0f;
+                    return ++settledFrames >= kUngatedPauseSettleFrames;
+                }
+                catch (Exception ex)
+                {
+                    ModLog.Warn(Tag, $"载入后补判暂停保持异常，已停止：{ex.Message}");
+                    return true;
+                }
             });
         }
 
@@ -459,7 +470,15 @@ namespace MapExtPDX.MapExt.Core
 
                 Colossal.Core.MainThreadDispatcher.RegisterUpdater(() =>
                 {
-                    GameManager.instance.userInterface.appBindings.ShowMessageDialog(dialog, null);
+                    try
+                    {
+                        var bindings = GameManager.instance?.userInterface?.appBindings;
+                        bindings?.ShowMessageDialog(dialog, null);
+                    }
+                    catch (Exception ex)
+                    {
+                        ModLog.Warn(Tag, $"延迟显示地图尺寸错配对话框失败: {ex.Message}");
+                    }
                     return true;
                 });
 
@@ -535,7 +554,15 @@ namespace MapExtPDX.MapExt.Core
 
                     Colossal.Core.MainThreadDispatcher.RegisterUpdater(() =>
                     {
-                        GameManager.instance.userInterface.appBindings.ShowMessageDialog(dialog, null);
+                        try
+                        {
+                            var bindings = GameManager.instance?.userInterface?.appBindings;
+                            bindings?.ShowMessageDialog(dialog, null);
+                        }
+                        catch (Exception ex)
+                        {
+                            ModLog.Warn(Tag, $"延迟显示拉伸提示对话框失败: {ex.Message}");
+                        }
                         return true;
                     });
                 }
@@ -1119,18 +1146,28 @@ namespace MapExtPDX.MapExt.Core
 
                 Colossal.Core.MainThreadDispatcher.RegisterUpdater(() =>
                 {
-                    GameManager.instance.userInterface.appBindings.ShowConfirmationDialog(dialog, (int result) =>
+                    try
                     {
-                        if (result == 0)
+                        var bindings = GameManager.instance?.userInterface?.appBindings;
+                        if (bindings == null) return true;
+
+                        bindings.ShowConfirmationDialog(dialog, (int result) =>
                         {
-                            ModLog.Error(Tag, "CellMap 冲突：用户选择退出游戏");
-                            GameManager.QuitGame();
-                        }
-                        else
-                        {
-                            ModLog.Warn(Tag, "CellMap 冲突：用户选择继续运行");
-                        }
-                    });
+                            if (result == 0)
+                            {
+                                ModLog.Error(Tag, "CellMap 冲突：用户选择退出游戏");
+                                GameManager.QuitGame();
+                            }
+                            else
+                            {
+                                ModLog.Warn(Tag, "CellMap 冲突：用户选择继续运行");
+                            }
+                        });
+                    }
+                    catch (Exception ex)
+                    {
+                        ModLog.Warn(Tag, $"延迟显示 CellMap 冲突弹窗失败: {ex.Message}");
+                    }
                     return true;
                 });
 

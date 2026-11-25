@@ -1,5 +1,14 @@
 import { ModRegistrar } from "cs2/modding";
+import { preloadImages } from "cs2/utils";
 import { MapExtButton } from "components/MapExtButton";
+import mapIcon from "./assets/map-icon.svg";
+
+try {
+    // 预取 coui://ui-mods/ 图标，避免首次显示时逐 UI Mod 目录异步请求造成 1+ 帧闪烁
+    preloadImages([mapIcon]);
+} catch (err) {
+    console.warn("[MapExt2] Failed to preload UI images:", err);
+}
 
 const register: ModRegistrar = (moduleRegistry) => {
     try {

@@ -1360,6 +1360,8 @@ namespace MapExtPDX.MapExt.Core
             var seen = new HashSet<Assembly>();
             foreach (ModManager.ModInfo modInfo in mm)
             {
+                // 失败或已卸载的 Mod 仍留在 modManager 且 asset.assembly 非空，跳过非 Loaded 状态防止对失效程序集反射扫描
+                if (modInfo.state != ModManager.ModInfo.State.Loaded) continue;
                 ExecutableAsset asset = modInfo.asset;
                 if (asset == null || !asset.isLoaded || asset.assembly == null) continue;
                 if (IsSelfOrCompanionAssembly(asset.assembly)) continue;

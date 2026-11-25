@@ -41,32 +41,41 @@ namespace MapExtPDX.MapExt.Core
                 // 延后一帧显示，沿用 VanillaSaveConversionSystem 的做法，避开设定页处理按钮的同一帧
                 Colossal.Core.MainThreadDispatcher.RegisterUpdater(() =>
                 {
-                    var bindings = GameManager.instance.userInterface.appBindings;
-                    if (savedMode == appliedMode)
+                    try
                     {
-                        bindings.ShowMessageDialog(new MessageDialog(
-                            LocalizedString.Id("MODE_APPLY.Title"),
-                            new LocalizedString("MODE_APPLY.Unchanged", null, locParams),
-                            LocalizedString.Id("MODE_APPLY.OK")), null);
-                        return true;
-                    }
+                        var bindings = GameManager.instance?.userInterface?.appBindings;
+                        if (bindings == null) return true;
 
-                    bindings.ShowConfirmationDialog(new ConfirmationDialog(
-                        LocalizedString.Id("MODE_APPLY.Title"),
-                        new LocalizedString("MODE_APPLY.Message", null, locParams),
-                        LocalizedString.Id("MODE_APPLY.Quit"),
-                        LocalizedString.Id("MODE_APPLY.Later")), result =>
+                        if (savedMode == appliedMode)
+                        {
+                            bindings.ShowMessageDialog(new MessageDialog(
+                                LocalizedString.Id("MODE_APPLY.Title"),
+                                new LocalizedString("MODE_APPLY.Unchanged", null, locParams),
+                                LocalizedString.Id("MODE_APPLY.OK")), null);
+                            return true;
+                        }
+
+                        bindings.ShowConfirmationDialog(new ConfirmationDialog(
+                            LocalizedString.Id("MODE_APPLY.Title"),
+                            new LocalizedString("MODE_APPLY.Message", null, locParams),
+                            LocalizedString.Id("MODE_APPLY.Quit"),
+                            LocalizedString.Id("MODE_APPLY.Later")), result =>
+                        {
+                            if (result == 0)
+                            {
+                                ModLog.Info(Tag, $"用户选择退出游戏，下次启动按 {savedMode} 运行");
+                                GameManager.QuitGame();
+                            }
+                            else
+                            {
+                                ModLog.Info(Tag, $"用户选择稍后重启，本会话仍为 {appliedMode}");
+                            }
+                        });
+                    }
+                    catch (Exception ex)
                     {
-                        if (result == 0)
-                        {
-                            ModLog.Info(Tag, $"用户选择退出游戏，下次启动按 {savedMode} 运行");
-                            GameManager.QuitGame();
-                        }
-                        else
-                        {
-                            ModLog.Info(Tag, $"用户选择稍后重启，本会话仍为 {appliedMode}");
-                        }
-                    });
+                        ModLog.Warn(Tag, $"延迟显示模式提示对话框失败: {ex.Message}");
+                    }
                     return true;
                 });
             }

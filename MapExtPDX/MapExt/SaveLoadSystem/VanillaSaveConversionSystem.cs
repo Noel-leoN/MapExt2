@@ -255,14 +255,22 @@ namespace MapExtPDX.SaveLoadSystem
             int settledFrames = 0;
             Colossal.Core.MainThreadDispatcher.RegisterUpdater(() =>
             {
-                GameManager gm = GameManager.instance;
-                // 请求已清除（回主菜单、新的读档）或已离开游戏：停止
-                if (gm == null || VanillaConversionState.Current != request || gm.gameMode != GameMode.Game) return true;
-                if (gm.isGameLoading) return false;
+                try
+                {
+                    GameManager gm = GameManager.instance;
+                    // 请求已清除（回主菜单、新的读档）或已离开游戏：停止
+                    if (gm == null || VanillaConversionState.Current != request || gm.gameMode != GameMode.Game) return true;
+                    if (gm.isGameLoading) return false;
 
-                simulation.selectedSpeed = 0f;
-                bool finished = request.Phase != ConversionPhase.Converting && request.Phase != ConversionPhase.Saving;
-                return finished && ++settledFrames >= kPauseSettleFrames;
+                    simulation.selectedSpeed = 0f;
+                    bool finished = request.Phase != ConversionPhase.Converting && request.Phase != ConversionPhase.Saving;
+                    return finished && ++settledFrames >= kPauseSettleFrames;
+                }
+                catch (Exception ex)
+                {
+                    ModLog.Warn(Tag, $"转换期间暂停保持异常，已停止：{ex.Message}");
+                    return true;
+                }
             });
         }
 
@@ -1938,18 +1946,28 @@ namespace MapExtPDX.SaveLoadSystem
                 // OnGameLoadingComplete 对话框之后显示（避免被覆盖）
                 Colossal.Core.MainThreadDispatcher.RegisterUpdater(() =>
                 {
-                    GameManager.instance.userInterface.appBindings.ShowConfirmationDialog(dialog, (int result) =>
+                    try
                     {
-                        if (result == 0)
+                        var bindings = GameManager.instance?.userInterface?.appBindings;
+                        if (bindings == null) return true;
+
+                        bindings.ShowConfirmationDialog(dialog, (int result) =>
                         {
-                            ModLog.Info(Tag, "用户确认退出游戏");
-                            GameManager.QuitGame();
-                        }
-                        else
-                        {
-                            ModLog.Info(Tag, "用户选择留在游戏中");
-                        }
-                    });
+                            if (result == 0)
+                            {
+                                ModLog.Info(Tag, "用户确认退出游戏");
+                                GameManager.QuitGame();
+                            }
+                            else
+                            {
+                                ModLog.Info(Tag, "用户选择留在游戏中");
+                            }
+                        });
+                    }
+                    catch (Exception ex)
+                    {
+                        ModLog.Warn(Tag, $"延迟显示完成对话框失败: {ex.Message}");
+                    }
                     return true;
                 });
 
@@ -2036,7 +2054,7 @@ namespace MapExtPDX.SaveLoadSystem
                         title,
                         message,
                         LocalizedString.Id("LOAD_VALIDATION.ConfirmOK"));
-                    GameManager.instance.userInterface.appBindings.ShowMessageDialog(dialog, null);
+                    GameManager.instance?.userInterface?.appBindings?.ShowMessageDialog(dialog, null);
                 }
                 catch (Exception ex)
                 {
