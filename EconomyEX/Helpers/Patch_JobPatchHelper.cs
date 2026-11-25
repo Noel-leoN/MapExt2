@@ -118,7 +118,7 @@ namespace EconomyEX.Helpers
             }
 
             // 跳過項在 Release 也必須可見：ModLog.Debug 帶 [Conditional("DEBUG")]，
-            // 正式版看不到逐條明細，故在此補一條聚合 Warn 指向 /check-upgrade 的執行期驗證。
+            // 正式版看不到逐條明細，故在此補一條聚合 Warn 提示執行期降級。
             if (skipped.Count > 0)
             {
                 var preview = string.Join("、", skipped
@@ -126,7 +126,7 @@ namespace EconomyEX.Helpers
                     .Select(s => $"{s.Target.TargetTypeName}.{s.Target.TargetMethodName}"));
                 if (skipped.Count > 3) preview += $" 等 {skipped.Count} 项";
                 ModLog.Warn(Tag, $"有 {skipped.Count} 个 Job 目标解析失败，已退回原版行为：{preview}" +
-                                 "（多为游戏版本升级导致的类型／方法改名，参见 /check-upgrade）");
+                                 "（多为游戏版本升级导致的类型或方法改名）");
             }
         }
 

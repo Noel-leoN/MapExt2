@@ -57,7 +57,7 @@ namespace EconomyEX.Systems
         // 由 JobPatchHelper 直接「複用原版 System 壓棧的 Job 實例記憶體佈局」——
         // 因此以下欄位的【型別 + 宣告順序】必須與原版逐一嚴格對齊（名稱不影響佈局，型別／順序錯位會讓 Burst 讀到錯誤記憶體，
         // 導致靜默資料損壞或崩潰，且【編譯不會報錯】）。
-        // 新增／刪除／重排任何欄位前，務必先比對 _KnowledgeBase 原版欄位塊；遊戲版本升級時由 /check-upgrade 覆核。
+        // 新增／刪除／重排任何欄位前，務必先比對原版反編譯欄位塊；遊戲版本升級時須重新覆核。
         // ================= 輸入資料 (唯讀) =================
         [ReadOnly] public NativeList<Entity> m_UnlockedZonePrefabs; // 已解鎖的區域類型
         [ReadOnly] public ComponentLookup<Population> m_Populations; // 人口組件查找
@@ -323,7 +323,7 @@ namespace EconomyEX.Systems
             // F. 填充 UI 因子陣列 (Low/Medium/High DemandFactors)
             // ⚠️ [脆弱點] 以下索引 (7/6/5/11/13/12/8/18) 為對原版 DemandFactor 顯示順序的【經驗推測值】，
             //    非來自具名列舉，遊戲本體若調整需求面板因子順序，這裡會【靜默錯位】(顯示錯誤但不崩潰、編譯不報錯)。
-            //    遊戲版本升級後務必經 /check-upgrade 覆核原版 DemandFactor enum / UI 因子順序是否變動。
+            //    遊戲版本升級後務必重新覆核原版 DemandFactor enum / UI 因子順序是否變動。
             // 索引含義推測：7=幸福, 6=工作, 5=失業, 11=稅收, 13=空置率, 12=學生, 8=無家可歸(高密度), 18=未建設提示
 
             // 低密度 UI 因子

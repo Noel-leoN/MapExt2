@@ -31,7 +31,7 @@ namespace EconomyEX.Systems
 	/// <summary>
 	/// ResourceBuyerSystem 完整替換（System Replacement，基準 1.6.0f）。
 	/// 刻意不跟版項：1.6.0f 新增的 BuyerOutcome / IncrementOutcome 遙測統計體系
-	/// （純 UI／遙測計數，Mod 無消費端，省略以減少 Job 開銷）——/check-upgrade 比對時勿誤報為遺漏。
+	/// （純 UI／遙測計數，Mod 無消費端，省略以減少 Job 開銷）——版本升級比對時勿誤報為遺漏。
 	/// </summary>
 	public partial class ResourceBuyerSystemMod : GameSystemBase
 	{

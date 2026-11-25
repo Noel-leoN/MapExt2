@@ -14,7 +14,7 @@ This mod modifies several core vanilla simulation systems and includes a **Confl
 
 * **Realistic JobSearch / Realistic Trips:** Technically compatible (the Conflict Monitoring System will automatically yield overlapping subsystems to prevent crashes), but simulation anomalies may still occur. Running them together is not recommended.
 
-* **Extended Maps (28 km+):** Active only on vanilla 14km maps. For larger map sizes (28/43/57 km), please use MapExt.
+* **Extended Maps (28 km+):** Active only on vanilla 14km maps. For extended map sizes (28/43/57 km), please use MapExt.
 
 * **Asset / Visual Mods:** Fully compatible.
 

@@ -1,9 +1,3 @@
-# Reference Code & External Solutions
-_KnowledgeBase/
-_GameLogs/
-_GamePlayerLogs/
-Ref-Mods/
-
 # Unity generated
 [Ll]ibrary/
 [Tt]emp/
@@ -17,9 +11,10 @@ Ref-Mods/
 [Mm]emoryCaptures/
 [Rr]ecordings/
 
-# Visual Studio / Rider generated
+# Visual Studio / Rider / VS Code
 .vs/
 .idea/
+.vscode/
 *.csproj.DotSettings
 *.user
 *.userprefs
@@ -46,15 +41,10 @@ BurstDebugInformation_DoNotShip/
 # Build output
 [Bb]in/
 
-# Tooling
-.clinerules
-.agent/
-.trae/
-
 # Auto-generated publish config (built from .csproj)
 **/PublishConfiguration.xml
 
-# 模式副本：建置时由 MapExtPDX/MapExt/ReBurstSystem/ModeSources.Generate.ps1 从 ModeA 生成（重构二 D3），勿手改
+# 模式副本：建置时由 MapExtPDX/MapExt/ReBurstSystem/ModeSources.Generate.ps1 从 ModeA 生成，勿手改
 MapExtPDX/MapExt/ReBurstSystem/CellSystems/ModeB_28km/
 MapExtPDX/MapExt/ReBurstSystem/CellSystems/ModeC_114km/
 MapExtPDX/MapExt/ReBurstSystem/CellSystems/ModeD_43km/
@@ -64,34 +54,10 @@ MapExtPDX/MapExt/ReBurstSystem/EcoSystems/ModeD_43km/
 MapExtPDX/MapExt/ReBurstSystem/EcoSystems/ModeE_vanilla/
 MapExtPDX/MapExt/ReBurstSystem/ReBurstCore/XCellMapSystemRe_Mode?.cs
 
-# Backup & draft files
+# Backup & Log Files
 *.bak
-*.TestVersion
-
-# Internal documentation (not for public)
-**/docs/
-
-# Temporary Files
-.scratch/
 *.log
 *.binlog
-
-# AI Agent & GitNexus
-.gitnexus
-.claude/
-.agents/
-AGENTS.md
-CLAUDE.md
-# 注意：.grok/ 刻意**不列在此**——Grok CLI 会跳过被 .gitignore 忽略的 **rules 目录**，
-# 列进来会让 .grok/rules/ 静默失效（hooks、skills 与顶层 CLAUDE.md 不受影响；实测 2026-08-21）。
-# 它改由 .git/info/exclude 本地排除（该文件不随仓库分发，新克隆须自行补上）。
-
-# Internal knowledge-asset backup repo (overlay, see .agents/skills/backup-internal/SKILL.md)
-.git-internal/
-
-# IDE & Version Control
-.vscode/
-.github/
 
 # UI Mod (React/Webpack)
 # package-lock.json 刻意纳管：npm ci 靠它锁定全部依赖版本与校验值，勿再忽略。
