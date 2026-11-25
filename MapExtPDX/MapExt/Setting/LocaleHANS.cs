@@ -668,7 +668,7 @@ namespace MapExtPDX
                 { m_Setting.GetOptionLabelLocaleID(nameof(ModSettings.NoThroughTraffic)), "禁止过境交通" },
                 {
                     m_Setting.GetOptionDescLocaleID(nameof(ModSettings.NoThroughTraffic)),
-                    "禁止所有过境交通工具出现，降低寻路计算量和交通拥堵. (可能需要运行一段时间生效)"
+                    "禁止所有过境交通工具出现，降低寻路计算量和交通拥堵。(可能需要运行一段时间生效)"
                 },
 
                 // --- Group: 编辑器工具 ---

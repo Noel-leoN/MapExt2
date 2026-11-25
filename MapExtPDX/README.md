@@ -1,12 +1,12 @@
 # Map Extended Mod (28/43/57 km + vanilla) — Economy Rework, In-Game Tools and Performance
 
+> **🧰 Recommended Companion App — MapExTools (Optional):** A free, open-source Windows app to edit all 65 MapExt settings offline (MapEx Settings), switch modes and local playsets, pre-check mod conflicts, skip the Paradox Launcher, read logs, and inspect saves and heightmaps. Not bundled here — download from [GitHub Releases](https://github.com/Noel-leoN/MapExt2/releases) (or via the GitHub icon on this page).
+
 * **Extended Maps:** 57km (default), 28km, an experimental 43km mode and a 114km mode (not recommended), alongside the vanilla 14km size.
 * **Economy and Performance:** Reworked demand, job and home search, and consumption to ease pathfinding load at large populations, adjustable in game.
 * **In-Game Tools:** HUD dashboard with key economic metrics, sea level and water tools, through-traffic and pet controls, editor collision override and heightmap export.
-* **Safeguards:** Every load checks the map size mode first, and conflicting mods are detected at startup.
+* **Safeguards:** Checks map size before loading on normal paths (and pauses with a save lock if deferred mod loading bypasses the gate), and detects conflicting mods.
 * **Map Extension Conversion (Optional):** Move a vanilla 14km city or map, or a 28km city, onto an extended map.
-
-> **🧰 MapExTools (optional companion app):** A separate Windows app — switch MapExt's map size mode and economy groups while the game is closed, set launch options, read the game and MapExt logs, and inspect saves and heightmaps. It is not included in this mod; download it from Releases via the GitHub icon on the right side of this page.
 
 ---
 
@@ -25,7 +25,7 @@ The normal way to play is to start a new city on a large map built for your chos
 
 Maps for each size can be made yourself (see "Making a 1:1 Map" below) or subscribed from other players.
 
-> **⚠️ Sizes must match**: if the map does not match the selected mode, terrain is sampled at the wrong scale. The mod checks before every load (Load, Continue, New Game, quick load) and stops a mismatched save or map — follow the prompt and switch to the correct mode.
+> **⚠️ Sizes must match**: if the map does not match the selected mode, terrain is sampled at the wrong scale. Normal loads check beforehand and stop mismatches; if deferred mod loading enters a city first, MapExt warns, pauses, and blocks saving until you return to the main menu.
 
 ---
 
@@ -154,13 +154,13 @@ Import heightmaps and worldmaps corresponding to your chosen mode in the Map Edi
 
 # 地图尺寸扩展模组（28/43/57 km 及原版尺寸）— 经济改良、游戏内工具与性能优化
 
+> **🧰 推荐配套工具 — MapExTools（可选）**：免费开源的独立 Windows 程序——游戏关闭时一站式编辑 65 项 MapExt 设置（MapEx 设置）、切换模式与本地播放集、执行字节码冲突预检、跳过启动器直启游戏、诊断日志及检视存档与高度图。不在本模组包内，请前往 [GitHub Releases](https://github.com/Noel-leoN/MapExt2/releases)（或点击本页右侧 GitHub 图标）下载。
+
 * **更大的地图**：57km（默认）、28km、实验性的 43km 与不推荐的 114km 模式，也可使用原版 14km 尺寸。
 * **经济与性能**：改写需求、求职找房与消费逻辑，缓解大人口规模下的寻路负担，可在游戏内调整。
 * **游戏内工具**：HUD 经济数据面板、海平面与水体工具、过境交通与宠物控制、编辑器碰撞跳过与高度图导出。
-* **防错机制**：每次载入前先检查地图尺寸模式，启动时识别冲突模组。
+* **防错机制**：常规途径载入前校验地图尺寸，推迟加载进城时自动暂停并拦下存档；支持启动与运行期冲突检测。
 * **地图扩展转换（可选）**：把原版 14km 的城市或地图、或 28km 的城市迁到更大的地图上。
-
-> **🧰 MapExTools（可选配套工具）**：独立的 Windows 程序——游戏关闭时切换 MapExt 的地图尺寸模式与经济分组，设置游戏启动参数，查看游戏与 MapExt 日志，检视存档与高度图。它不在本模组包内，请点击本页面右侧的 GitHub 图标，在 Releases 中下载。
 
 ---
 
@@ -179,7 +179,7 @@ Import heightmaps and worldmaps corresponding to your chosen mode in the Map Edi
 
 各尺寸的地图可以自己制作（见下方“制作 1:1 地图”），也可以订阅其他玩家发布的对应尺寸地图。
 
-> **⚠️ 尺寸必须匹配**：地图与所选模式的尺寸不一致时，地形会按错误比例采样。模组会在每次载入前检查（读档、继续、开新城、快速读档），并拦下尺寸不符的存档或地图，请依提示切换到正确的模式。
+> **⚠️ 尺寸必须匹配**：地图与所选模式的尺寸不一致时，地形会按错误比例采样。常规读档、继续、开新城与快速读档均会在载入前拦下不符项；若推迟加载模组导致先进入城市，MapExt 会在载入后弹窗暂停并在返回主菜单前阻止保存。
 
 ---
 

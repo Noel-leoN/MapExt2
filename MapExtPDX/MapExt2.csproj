@@ -6,7 +6,7 @@
 		<RootNamespace>MapExtPDX</RootNamespace>
 		<Description>Extended maps (28/43/57/114 km and vanilla 14 km), economy rework, in-game tools and performance</Description>
 		<Authors>Noel2</Authors>
-		<Copyright>Copyright (c) [2025] [Noel2/Noel-leoN/=Noel=]</Copyright>
+		<Copyright>Copyright (c) 2024-2026 Noel2/Noel-leoN</Copyright>
 		<Title>MapExt: Big Map, Economy and Performance</Title>
 		<Version>4.12.0</Version>
 
@@ -42,7 +42,7 @@
 		<Reference Include="Colossal.IO.AssetDatabase">
 			<Private>false</Private>
 		</Reference>
-		<!-- 高度圖 PNG 編碼：TextureUtilities.SaveImage / NativeTextures.ImageFileFormat -->
+		<!-- 高度图 PNG 编码：TextureUtilities.SaveImage / NativeTextures.ImageFileFormat -->
 		<Reference Include="Colossal.AssetPipeline.Native">
 			<Private>false</Private>
 		</Reference>
