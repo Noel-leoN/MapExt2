@@ -30,6 +30,13 @@ namespace MapExtPDX.SaveLoadSystem
         {
             try
             {
+#if DEBUG
+                if (MapExtHealth.IsFaultInjected(SaveEntryGate.FaultKeyBypass))
+                {
+                    ModLog.Warn(Tag, "故障注入 SaveGate/Bypass：跳过主菜单读档闸门");
+                    return true;
+                }
+#endif
                 // 取不到存档（反射失败或 ID 不在列表里）就放行，交给汇合点判定
                 SaveInfo save = SaveEntryGate.FindMenuSave(__instance, args.saveId);
                 if (save == null) return true;

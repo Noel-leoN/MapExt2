@@ -185,6 +185,8 @@ namespace MapExtPDX
                 () => _globalPatcher.CreateClassProcessor(typeof(QuickLoadGatePatch)).Patch());
             ApplySaveGatePatch(nameof(GameManagerLoadGatePatch),
                 () => _globalPatcher.CreateClassProcessor(typeof(GameManagerLoadGatePatch)).Patch());
+            ApplySaveGatePatch(nameof(GameManagerSaveGuardPatch),
+                () => _globalPatcher.CreateClassProcessor(typeof(GameManagerSaveGuardPatch)).Patch());
 
             // 對話框本地化已隨設定文本在 RegisterLocalization 一併註冊（合併為每語言一次）
 
@@ -478,6 +480,9 @@ namespace MapExtPDX
 
             IsUnloading = true;
             VanillaConversionState.Clear("Mod 卸载");
+            SaveEntryGate.ResetTransientFlags();
+            GameManagerSaveGuardPatch.Clear();
+            ConflictMonitoringSystem.ResetUngatedLoadState();
 
             // 在Mod卸载时移除所有补丁
             // 必須傳入自己的 Harmony id：Harmony 的 UnpatchAll(null) 會對每個 patch 的

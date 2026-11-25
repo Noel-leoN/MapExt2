@@ -125,6 +125,17 @@ namespace MapExtPDX.SaveLoadSystem
                 { "SAVE_GATE.MapMismatch", "'{MAP_NAME}' was made for '{MAP_MODE}', but MapExt is set to '{CURRENT_MODE}', so its terrain would be sampled at the wrong scale.\n\nSwitch MapExt's MapSize Mode to '{MAP_MODE}' and restart the game, then start the new city again." },
                 { "SAVE_GATE.DegradedVanillaMap", "Some critical MapExt components failed to load this session ({COMPONENTS}), so the vanilla map '{MAP_NAME}' can be neither extended nor loaded correctly in '{CURRENT_MODE}'. The new city was not started; restart the game and try again." },
 
+                // === 载入后补判与存档保护（未经闸门读档） ===
+                { "SAVE_GUARD.MismatchTitle", "⚠️ Map Size Mismatch - Saving Blocked" },
+                { "SAVE_GUARD.MismatchMessage", "This save was loaded before MapExt's entry check could run (for example via launcher Continue during deferred mod loading).\n\nThe save's terrain size is '{SAVE_MODE}', which does not match MapExt's current mode '{CURRENT_MODE}'. Terrain, water and simulation grids are running at the wrong scale.\n\nThe simulation has been paused and ALL saving (manual, quick save and auto-save) is blocked until you return to the main menu, so your original save will not be overwritten.\n\nReturn to the main menu, switch MapExt's MapSize Mode to '{SAVE_MODE}' and restart the game (or load it from the main menu save list if converting a vanilla or 28 km save)." },
+                { "SAVE_GUARD.MismatchNotify", "Loaded '{SAVE_MODE}' save in '{CURRENT_MODE}' without pre-load check. Saving (including auto-save) is blocked until you return to the main menu." },
+                { "SAVE_GUARD.DegradedTitle", "⚠️ MapExt Degraded - Saving Blocked" },
+                { "SAVE_GUARD.DegradedMessage", "This save was loaded before MapExt's entry check could run, and some critical MapExt components failed to load this session: {COMPONENTS}.\n\nIn '{CURRENT_MODE}', saving now could write mixed-size data into this city's save.\n\nThe simulation has been paused and ALL saving (manual, quick save and auto-save) is blocked until you return to the main menu.\n\nReturn to the main menu and restart the game; if it repeats, inspect Logs/MapExtPDX.log or wait for a MapExt update." },
+                { "SAVE_GUARD.DegradedNotify", "Critical MapExt component(s) failed ({COMPONENTS}). Saving (including auto-save) is blocked until you return to the main menu." },
+                { "SAVE_GUARD.SaveBlockedTitle", "Saving Blocked by MapExt" },
+                { "SAVE_GUARD.SaveBlockedMismatch", "Saving is blocked for this session because the loaded '{SAVE_MODE}' save does not match MapExt's current mode '{CURRENT_MODE}'.\n\nReturn to the main menu, switch MapExt's MapSize Mode to '{SAVE_MODE}' and restart the game to avoid corrupting your save file." },
+                { "SAVE_GUARD.SaveBlockedDegraded", "Saving is blocked for this session because critical MapExt component(s) failed to load ({COMPONENTS}).\n\nReturn to the main menu and restart the game to avoid writing mixed-size data into your save file." },
+
                 // === Map size mode apply (restart required) ===
                 { "MODE_APPLY.Title", "Map Size Mode Saved" },
                 { "MODE_APPLY.Message", "MapExt will run in '{NEW_MODE}' after a full restart of the game.\n\nUntil then this session keeps running in '{CURRENT_MODE}', and saves made for '{NEW_MODE}' cannot be loaded." },
@@ -226,6 +237,17 @@ namespace MapExtPDX.SaveLoadSystem
                 { "SAVE_GATE.MapMismatch", "「{MAP_NAME}」是为「{MAP_MODE}」制作的，但 MapExt 当前为「{CURRENT_MODE}」，地形会按错误的比例采样。\n\n请把 MapExt 的地图尺寸模式改为「{MAP_MODE}」并重启游戏，再开新城。" },
                 { "SAVE_GATE.DegradedVanillaMap", "本次游戏有 MapExt 关键组件加载失败（{COMPONENTS}），原版地图「{MAP_NAME}」在「{CURRENT_MODE}」下既无法扩展、也无法正确载入，已阻止开新城。请重启游戏后再试。" },
 
+                // === 载入后补判与存档保护（未经闸门读档） ===
+                { "SAVE_GUARD.MismatchTitle", "⚠️ 地图尺寸不符 — 已禁止保存" },
+                { "SAVE_GUARD.MismatchMessage", "此存档在 MapExt 入口校验介入前已开始加载（例如推迟加载模组时经启动器「继续」进入）。\n\n存档的实际地形尺寸为「{SAVE_MODE}」，与 MapExt 当前模式「{CURRENT_MODE}」不符，地形、水体与模拟网格正按错误比例运行。\n\n已自动暂停模拟，并在返回主菜单前拦截所有保存操作（手动保存、快速保存与自动保存），以防原存档被错误尺寸的数据覆盖。\n\n请返回主菜单，将 MapExt 的地图尺寸模式切换为「{SAVE_MODE}」并重启游戏（若需将原版或 28 km 存档扩展，请从主菜单存档列表读取以执行转换）。" },
+                { "SAVE_GUARD.MismatchNotify", "未经载入前校验在「{CURRENT_MODE}」下读入了「{SAVE_MODE}」存档。返回主菜单前已禁止保存（含自动保存）。" },
+                { "SAVE_GUARD.DegradedTitle", "⚠️ MapExt 未完整加载 — 已禁止保存" },
+                { "SAVE_GUARD.DegradedMessage", "此存档在 MapExt 入口校验介入前已开始加载，且本次游戏有 MapExt 关键组件加载失败：{COMPONENTS}。\n\n当前处于「{CURRENT_MODE}」，继续保存可能将混杂错误尺寸的数据写入原存档。\n\n已自动暂停模拟，并在返回主菜单前拦截所有保存操作（手动保存、快速保存与自动保存）。\n\n请返回主菜单并重启游戏排查；若反复出现，请检查 Logs/MapExtPDX.log 或等待 MapExt 更新。" },
+                { "SAVE_GUARD.DegradedNotify", "MapExt 关键组件加载失败（{COMPONENTS}）。返回主菜单前已禁止保存（含自动保存）。" },
+                { "SAVE_GUARD.SaveBlockedTitle", "MapExt 已阻止保存" },
+                { "SAVE_GUARD.SaveBlockedMismatch", "已阻止本次保存：当前读入的「{SAVE_MODE}」存档与 MapExt 当前模式「{CURRENT_MODE}」不符。\n\n请返回主菜单，将 MapExt 的地图尺寸模式切换为「{SAVE_MODE}」并重启游戏，以免损坏原存档。" },
+                { "SAVE_GUARD.SaveBlockedDegraded", "已阻止本次保存：本次游戏有 MapExt 关键组件加载失败（{COMPONENTS}）。\n\n请返回主菜单并重启游戏，以免将错误尺寸的数据写入原存档。" },
+
                 // === 应用地图尺寸模式（需重启） ===
                 { "MODE_APPLY.Title", "地图尺寸模式已保存" },
                 { "MODE_APPLY.Message", "完全重启游戏后，MapExt 将以「{NEW_MODE}」运行。\n\n在此之前，本次游戏仍按「{CURRENT_MODE}」运行，为「{NEW_MODE}」制作的存档也无法加载。" },
@@ -325,6 +347,17 @@ namespace MapExtPDX.SaveLoadSystem
                 { "SAVE_GATE.StretchBlocked", "「{MAP_NAME}」是原版 14 km 地圖，在「{CURRENT_MODE}」下地形會被拉伸，已阻止這次開新城。請從主選單開新城，在那裡選擇處理方式。" },
                 { "SAVE_GATE.MapMismatch", "「{MAP_NAME}」是為「{MAP_MODE}」製作的，但 MapExt 當前為「{CURRENT_MODE}」，地形會按錯誤的比例取樣。\n\n請把 MapExt 的地圖尺寸模式改為「{MAP_MODE}」並重啟遊戲，再開新城。" },
                 { "SAVE_GATE.DegradedVanillaMap", "本次遊戲有 MapExt 關鍵元件載入失敗（{COMPONENTS}），原版地圖「{MAP_NAME}」在「{CURRENT_MODE}」下既無法擴展、也無法正確載入，已阻止開新城。請重啟遊戲後再試。" },
+
+                // === 載入後補判與存檔保護（未經閘門讀檔） ===
+                { "SAVE_GUARD.MismatchTitle", "⚠️ 地圖尺寸不符 — 已禁止儲存" },
+                { "SAVE_GUARD.MismatchMessage", "此存檔在 MapExt 入口校驗介入前已開始載入（例如延後載入模組時經啟動器「繼續」進入）。\n\n存檔的實際地形尺寸為「{SAVE_MODE}」，與 MapExt 當前模式「{CURRENT_MODE}」不符，地形、水體與模擬網格正按錯誤比例運行。\n\n已自動暫停模擬，並在返回主選單前攔截所有儲存操作（手動儲存、快速儲存與自動儲存），以防原存檔被錯誤尺寸的資料覆蓋。\n\n請返回主選單，將 MapExt 的地圖尺寸模式切換為「{SAVE_MODE}」並重啟遊戲（若需將原版或 28 km 存檔擴展，請從主選單存檔列表讀取以執行轉換）。" },
+                { "SAVE_GUARD.MismatchNotify", "未經載入前校驗在「{CURRENT_MODE}」下讀入了「{SAVE_MODE}」存檔。返回主選單前已禁止儲存（含自動儲存）。" },
+                { "SAVE_GUARD.DegradedTitle", "⚠️ MapExt 未完整載入 — 已禁止儲存" },
+                { "SAVE_GUARD.DegradedMessage", "此存檔在 MapExt 入口校驗介入前已開始載入，且本次遊戲有 MapExt 關鍵元件載入失敗：{COMPONENTS}。\n\n當前處於「{CURRENT_MODE}」，繼續儲存可能將混雜錯誤尺寸的資料寫入原存檔。\n\n已自動暫停模擬，並在返回主選單前攔截所有儲存操作（手動儲存、快速儲存與自動儲存）。\n\n請返回主選單並重啟遊戲排查；若反覆出現，請檢查 Logs/MapExtPDX.log 或等待 MapExt 更新。" },
+                { "SAVE_GUARD.DegradedNotify", "MapExt 關鍵元件載入失敗（{COMPONENTS}）。返回主選單前已禁止儲存（含自動儲存）。" },
+                { "SAVE_GUARD.SaveBlockedTitle", "MapExt 已阻止儲存" },
+                { "SAVE_GUARD.SaveBlockedMismatch", "已阻止本次儲存：當前讀入的「{SAVE_MODE}」存檔與 MapExt 當前模式「{CURRENT_MODE}」不符。\n\n請返回主選單，將 MapExt 的地圖尺寸模式切換為「{SAVE_MODE}」並重啟遊戲，以免損壞原存檔。" },
+                { "SAVE_GUARD.SaveBlockedDegraded", "已阻止本次儲存：本次遊戲有 MapExt 關鍵元件載入失敗（{COMPONENTS}）。\n\n請返回主選單並重啟遊戲，以免將錯誤尺寸的資料寫入原存檔。" },
 
                 // === 套用地圖尺寸模式（需重啟） ===
                 { "MODE_APPLY.Title", "地圖尺寸模式已儲存" },

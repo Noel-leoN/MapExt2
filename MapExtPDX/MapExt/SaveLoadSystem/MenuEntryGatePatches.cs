@@ -33,6 +33,13 @@ namespace MapExtPDX.SaveLoadSystem
         {
             try
             {
+#if DEBUG
+                if (MapExtHealth.IsFaultInjected(SaveEntryGate.FaultKeyBypass))
+                {
+                    ModLog.Warn(Tag, "故障注入 SaveGate/Bypass：跳过继续游戏闸门");
+                    return true;
+                }
+#endif
                 SaveGameMetadata last = GameManager.instance?.settings?.userState?.lastSaveGameMetadata;
                 if (last == null || !last.isValidSaveGame) return true; // 原版这时什么也不做
 
@@ -112,6 +119,13 @@ namespace MapExtPDX.SaveLoadSystem
         {
             try
             {
+#if DEBUG
+                if (MapExtHealth.IsFaultInjected(SaveEntryGate.FaultKeyBypass))
+                {
+                    ModLog.Warn(Tag, "故障注入 SaveGate/Bypass：跳过快速读档闸门");
+                    return true;
+                }
+#endif
                 if (!MenuHelpers.hasPreviouslySavedGame) return true; // 原版这时什么也不做
 
                 SaveInfo save = GameManager.instance.settings.userState.lastSaveGameMetadata?.target;

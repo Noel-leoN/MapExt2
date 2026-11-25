@@ -44,6 +44,15 @@ namespace MapExtPDX.SaveLoadSystem
             {
                 SaveEntryGate.BeginGameLoad();
 
+#if DEBUG
+                // 故障注入（DEBUG 自检）：仅对游戏读档放行（且上方已清零汇合点标记），模拟推迟加载绕过闸门；不误放开新城
+                if (purpose == Purpose.LoadGame && MapExtHealth.IsFaultInjected(SaveEntryGate.FaultKeyBypass))
+                {
+                    ModLog.Warn(Tag, "故障注入 SaveGate/Bypass：跳过汇合点读档闸门，交由载入后补判");
+                    return true;
+                }
+#endif
+
                 GateDecision decision;
                 switch (asset)
                 {
@@ -55,6 +64,7 @@ namespace MapExtPDX.SaveLoadSystem
                         if (SaveEntryGate.TryConsumePermit(save.id))
                         {
                             VanillaConversionState.MarkLoading(save.id);
+                            if (purpose == Purpose.LoadGame) SaveEntryGate.MarkConvergencePassed();
                             return true;
                         }
 
@@ -63,6 +73,7 @@ namespace MapExtPDX.SaveLoadSystem
                         {
                             SaveEntryGate.ApplyAllow(decision, save);
                             VanillaConversionState.MarkLoading(save.id);
+                            if (purpose == Purpose.LoadGame) SaveEntryGate.MarkConvergencePassed();
                             return true;
                         }
 
@@ -109,6 +120,7 @@ namespace MapExtPDX.SaveLoadSystem
             }
             catch (Exception ex)
             {
+                SaveEntryGate.ConsumeConvergencePassed();
                 ModLog.Error(Tag, ex, "汇合点校验异常，放行");
                 return true;
             }

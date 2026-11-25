@@ -41,6 +41,9 @@ namespace MapExtPDX.MapExt.Core
         /// <summary>原版地形被拉伸的通知条。</summary>
         private const string kStretchNotificationId = "mapext.vanilla_stretch";
 
+        /// <summary>载入后补判自动暂停压速的稳定帧数：进入 WorldReady 后再压满该帧数即退出，之后由玩家决定是否继续。</summary>
+        private const int kUngatedPauseSettleFrames = 3;
+
         /// <summary>MainLoop 低频状态轮询帧间隔（120–300 帧区间取 240 帧，约 2–4 秒一次）。</summary>
         private const int kPollFrameInterval = 240;
 
@@ -61,6 +64,12 @@ namespace MapExtPDX.MapExt.Core
             public string Group;
             public bool IsCriticalCellMap;
         }
+
+        /// <summary>本次游戏读档未经过汇合点闸门校验（推迟加载或无元数据资产），需在载入完成后执行补判。</summary>
+        private static bool s_LoadUngated = false;
+
+        /// <summary>单调递增的加载代数：每次 OnGamePreload 或 Mod 卸载时递增，用于安全终止上一轮未退出的压速与延迟回调。</summary>
+        private static int s_LoadGeneration = 0;
 
         /// <summary>是否已执行过首次诊断</summary>
         private bool _initialCheckDone = false;
@@ -97,6 +106,19 @@ namespace MapExtPDX.MapExt.Core
             // 这两条通知说的是上一次加载的地图；原版加载时不清通知条，不撤下会留到另一座城市
             PopNotification(kMismatchNotificationId);
             PopNotification(kStretchNotificationId);
+
+            // 每次加载（含回主菜单 Cleanup、城中直接读另一城、进编辑器）先无条件复位补判标记与存档拦截锁，
+            // 并递增单调加载代数，防止 Cleanup / NewGame 沿用旧状态或残留压速回调
+            s_LoadUngated = false;
+            s_LoadGeneration++;
+            GameManagerSaveGuardPatch.Clear();
+            bool passedGate = SaveEntryGate.ConsumeConvergencePassed();
+
+            if (mode == GameMode.Game && purpose == Purpose.LoadGame && !passedGate)
+            {
+                s_LoadUngated = true;
+                ModLog.Warn(Tag, "本次游戏读档未经过存档入口闸门（疑为推迟加载或无元数据资产），载入完成后将执行尺寸与健康补判");
+            }
 
             if (purpose == Purpose.Cleanup)
             {
@@ -163,8 +185,12 @@ namespace MapExtPDX.MapExt.Core
                 // 诊断前再次执行防御性检查，确保被本 Mod 替换的原版系统未被外部 Mod 重新启用
                 SystemReplacer.ReDisableVanillaSystems(this.World);
 
-                // 地圖尺寸模式錯配提示（由 FinalizeTerrainData_Prefix 於載入中途記錄）
-                ShowMapSizeMismatchDialogIfNeeded(purpose, mode);
+                // 未经入口闸门的读档先做载入后补判：命中时接管提示（置 DialogShown）、暂停模拟并锁存，避免与既有错配提示重复弹框
+                if (!EvaluateUngatedLoadIfNeeded(purpose))
+                {
+                    // 地圖尺寸模式錯配提示（由 FinalizeTerrainData_Prefix 於載入中途記錄）
+                    ShowMapSizeMismatchDialogIfNeeded(purpose, mode);
+                }
 
                 RunDiagnostics();
             }
@@ -197,6 +223,181 @@ namespace MapExtPDX.MapExt.Core
                 _pollCacheReady = false;
                 ModLog.Warn(Tag, $"运行期状态轮询异常，本会话已暂停轮询: {ex.Message}");
             }
+        }
+
+        /// <summary>Mod 卸载时清理未经闸门读档的跨加载状态，并递增代数终止尚未退出的延迟回调。</summary>
+        public static void ResetUngatedLoadState()
+        {
+            s_LoadUngated = false;
+            s_LoadGeneration++;
+            PopNotification(kMismatchNotificationId);
+            PopNotification(kStretchNotificationId);
+        }
+
+        /// <summary>
+        /// 对未经过入口闸门的游戏读档执行载入后补判（方案 A + D17）：
+        /// <list type="number">
+        /// <item>地形尺寸不符（含原版 14 km 拉伸，受“禁止读档校验”控制）：先读 <see cref="MapSizeMismatchState.TerrainMapSize"/>，
+        /// 为 0 时回退 <c>TerrainSystem.playableArea.x</c>（覆盖 None 模式及地形补丁失效场景）；</item>
+        /// <item>扩展模式降级态读同尺寸存档（D17，不受“禁止读档校验”控制）：<c>MapExtHealth.IsDegraded &amp;&amp; CurrentCoreValue &gt; 1</c>。</item>
+        /// </list>
+        /// 命中任一条件即置 <c>DialogShown = true</c>、弹提示框、推持久通知条、逐帧压速暂停并开启回主菜单前拦截所有存档锁。
+        /// </summary>
+        /// <returns>true 表示已命中并由补判接管提示；false 表示放行，由既有错配逻辑继续处理。</returns>
+        private bool EvaluateUngatedLoadIfNeeded(Purpose purpose)
+        {
+            if (!s_LoadUngated || purpose != Purpose.LoadGame) return false;
+            if (VanillaConversionState.HasRequestForCurrentLoad) return false;
+
+            int currentCV = PatchManager.CurrentCoreValue;
+            float currentMapSize = PatchManager.CurrentMapSize;
+            string currentMode = PatchManager.GetModeNameForCoreValue(currentCV);
+            bool validationDisabled = Mod.Instance?.CurrentSettings?.DisableLoadGameValidation == true;
+
+            // 先取 TerrainSystemPatch 在拉伸前记录的原始尺寸；为 0 时回退 TerrainSystem.playableArea.x
+            // （None 模式配方不含 TerrainSystemPatch，扩展模式该补丁失败时亦同；顺序不可反，否则扩展模式读原版档会读到拉伸后尺寸）
+            float loadedTerrainSize = MapSizeMismatchState.TerrainMapSize;
+            string sizeSource = "TerrainSystemPatch";
+            if (loadedTerrainSize <= 0f)
+            {
+                TerrainSystem terrain = this.World?.GetExistingSystemManaged<TerrainSystem>();
+                if (terrain != null && terrain.playableArea.x > 0f)
+                {
+                    loadedTerrainSize = terrain.playableArea.x;
+                    sizeSource = "TerrainSystem.playableArea";
+                }
+            }
+
+            bool sizeMismatch = loadedTerrainSize > 0f && Math.Abs(loadedTerrainSize - currentMapSize) >= 1f;
+            bool degradedExpanded = MapExtHealth.IsDegraded && currentCV > SaveEntryGate.NoneModeCoreValue;
+
+            if (loadedTerrainSize <= 0f)
+            {
+                ModLog.Warn(Tag, "未经闸门读档补判：未能取得有效地形尺寸，略过尺寸比对");
+            }
+
+            if (sizeMismatch && !validationDisabled)
+            {
+                string saveMode = MapSizeMismatchState.DescribeMapSize(loadedTerrainSize);
+                var locParams = new Dictionary<string, ILocElement>
+                {
+                    { "SAVE_MODE", LocalizedString.Value(saveMode) },
+                    { "CURRENT_MODE", LocalizedString.Value(currentMode) },
+                };
+
+                ActivateUngatedSaveGuard(
+                    title: LocalizedString.Id("SAVE_GUARD.MismatchTitle"),
+                    dialogMessage: new LocalizedString("SAVE_GUARD.MismatchMessage", null, locParams),
+                    notifyText: new LocalizedString("SAVE_GUARD.MismatchNotify", null, locParams),
+                    saveBlockedMessage: new LocalizedString("SAVE_GUARD.SaveBlockedMismatch", null, locParams));
+
+                ModLog.Warn(Tag,
+                    $"未经闸门读档补判命中尺寸不符：存档地形 {loadedTerrainSize:0.#} m（{saveMode}，来源 {sizeSource}），" +
+                    $"当前 {currentMapSize:0.#} m（{currentMode}）；已暂停模拟并在返回主菜单前拦截所有保存");
+                return true;
+            }
+
+            if (degradedExpanded)
+            {
+                string components = MapExtHealth.ComponentSummary;
+                var locParams = new Dictionary<string, ILocElement>
+                {
+                    { "COMPONENTS", LocalizedString.Value(components) },
+                    { "CURRENT_MODE", LocalizedString.Value(currentMode) },
+                };
+
+                ActivateUngatedSaveGuard(
+                    title: LocalizedString.Id("SAVE_GUARD.DegradedTitle"),
+                    dialogMessage: new LocalizedString("SAVE_GUARD.DegradedMessage", null, locParams),
+                    notifyText: new LocalizedString("SAVE_GUARD.DegradedNotify", null, locParams),
+                    saveBlockedMessage: new LocalizedString("SAVE_GUARD.SaveBlockedDegraded", null, locParams));
+
+                ModLog.Warn(Tag,
+                    $"未经闸门读档补判命中扩展模式降级态（{currentMode}，关键组件失败：{components}）；" +
+                    "已暂停模拟并在返回主菜单前拦截所有保存");
+                return true;
+            }
+
+            if (sizeMismatch && validationDisabled)
+            {
+                ModLog.Info(Tag,
+                    $"未经闸门读档地形尺寸不符（{loadedTerrainSize:0.#} m vs {currentMapSize:0.#} m），" +
+                    "但已启用禁止读档校验，略过补判暂停与存档拦截");
+            }
+            else if (loadedTerrainSize > 0f)
+            {
+                ModLog.Info(Tag,
+                    $"未经闸门读档补判通过：地形尺寸 {loadedTerrainSize:0.#} m（来源 {sizeSource}）与当前 {currentMode} 相符且组件健康");
+            }
+
+            return false;
+        }
+
+        private void ActivateUngatedSaveGuard(
+            LocalizedString title,
+            LocalizedString dialogMessage,
+            LocalizedString notifyText,
+            LocalizedString saveBlockedMessage)
+        {
+            MapSizeMismatchState.DialogShown = true;
+            int generation = s_LoadGeneration;
+
+            GameManagerSaveGuardPatch.Activate(title, notifyText, saveBlockedMessage);
+            StartUngatedPauseHold(generation);
+
+            try
+            {
+                var dialog = new MessageDialog(title, dialogMessage, LocalizedString.Id("LOAD_VALIDATION.ConfirmOK"));
+                Colossal.Core.MainThreadDispatcher.RegisterUpdater(() =>
+                {
+                    try
+                    {
+                        if (Mod.IsUnloading || s_LoadGeneration != generation) return true;
+                        GameManager gm = GameManager.instance;
+                        if (gm == null || gm.gameMode != GameMode.Game) return true;
+
+                        gm.userInterface.appBindings.ShowMessageDialog(dialog, null);
+                    }
+                    catch (Exception ex)
+                    {
+                        ModLog.Warn(Tag, $"显示载入后补判提示框失败：{ex.Message}");
+                    }
+
+                    return true;
+                });
+            }
+            catch (Exception ex)
+            {
+                ModLog.Warn(Tag, $"安排载入后补判提示框失败：{ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// 加载完成进入 WorldReady 后逐帧将模拟速度压回 0，压满 <see cref="kUngatedPauseSettleFrames"/> 帧即退出。
+        /// 根因：OnGameLoadingComplete 时仍处于 Loading，SimulationSystem 会忽略 selectedSpeed 写入，
+        /// 并在 WorldReady 第 1 帧 LateUpdate 按“加载后暂停”定速；第 2 帧 Update 才能生效压回 0。
+        /// </summary>
+        private void StartUngatedPauseHold(int generation)
+        {
+            SimulationSystem simulation = this.World?.GetExistingSystemManaged<SimulationSystem>();
+            if (simulation == null)
+            {
+                ModLog.Warn(Tag, "SimulationSystem 不存在，载入后补判无法自动暂停模拟");
+                return;
+            }
+
+            int settledFrames = 0;
+            Colossal.Core.MainThreadDispatcher.RegisterUpdater(() =>
+            {
+                if (Mod.IsUnloading || s_LoadGeneration != generation) return true;
+
+                GameManager gm = GameManager.instance;
+                if (gm == null || gm.gameMode != GameMode.Game) return true;
+                if (gm.isGameLoading || simulation.loadingProgress < 1f) return false;
+
+                simulation.selectedSpeed = 0f;
+                return ++settledFrames >= kUngatedPauseSettleFrames;
+            });
         }
 
         /// <summary>

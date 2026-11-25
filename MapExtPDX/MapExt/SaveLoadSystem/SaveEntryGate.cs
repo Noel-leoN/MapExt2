@@ -151,6 +151,11 @@ namespace MapExtPDX.SaveLoadSystem
         /// <summary>面积比值与 CV² 的相对容差：超过就判为面积不可信。</summary>
         private const double kAreaRatioTolerance = StartupKeys.MapAreaRatioTolerance;
 
+#if DEBUG
+        /// <summary>DEBUG 故障注入键：跳过全部读档入口闸门（仅放行 LoadGame），用于验证载入后补判。</summary>
+        internal const string FaultKeyBypass = "SaveGate/Bypass";
+#endif
+
         #endregion
 
         // === Fields ===
@@ -171,6 +176,9 @@ namespace MapExtPDX.SaveLoadSystem
 
         /// <summary>菜单层对这张地图提示过拉伸、玩家选了"仍要继续"：汇合点放行它时转为 <see cref="StretchPromptedForCurrentLoad"/>。</summary>
         private static string s_StretchPromptedMapId;
+
+        /// <summary>本次游戏读档是否已通过汇合点闸门校验并放行；由 <c>ConflictMonitoringSystem.OnGamePreload</c> 消费清零。</summary>
+        private static bool s_PassedConvergenceForCurrentLoad;
 
         #endregion
 
@@ -430,7 +438,33 @@ namespace MapExtPDX.SaveLoadSystem
         public static bool StretchPromptedForCurrentLoad { get; private set; }
 
         /// <summary>汇合点开始判定一次游戏模式的读档或开新城：清掉上一次加载的标记。</summary>
-        public static void BeginGameLoad() => StretchPromptedForCurrentLoad = false;
+        public static void BeginGameLoad()
+        {
+            StretchPromptedForCurrentLoad = false;
+            s_PassedConvergenceForCurrentLoad = false;
+        }
+
+        /// <summary>汇合点已校验并放行本次游戏读档：供载入阶段确认本次加载经过闸门。</summary>
+        public static void MarkConvergencePassed() => s_PassedConvergenceForCurrentLoad = true;
+
+        /// <summary>消费并清零汇合点放行标记：返回本次读档是否已由闸门校验放行。</summary>
+        public static bool ConsumeConvergencePassed()
+        {
+            bool passed = s_PassedConvergenceForCurrentLoad;
+            s_PassedConvergenceForCurrentLoad = false;
+            return passed;
+        }
+
+        /// <summary>卸载时清理全部跨加载临时标记。</summary>
+        public static void ResetTransientFlags()
+        {
+            StretchPromptedForCurrentLoad = false;
+            s_PassedConvergenceForCurrentLoad = false;
+            s_PermitAssetId = null;
+            s_DegradedAckAssetId = null;
+            s_StretchAckAssetId = null;
+            s_StretchPromptedMapId = null;
+        }
 
         /// <summary>汇合点凭许可放行一张地图：菜单层对它提示过拉伸的，记到本次加载上。</summary>
         public static void NotePermittedMapLoad(string mapId)

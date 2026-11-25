@@ -618,13 +618,14 @@ namespace MapExtPDX.MapExt.Core
                 new PatchedMethodTarget("Game.Simulation.WaterLevelChangeSystem", "OnUpdate", HarmonyOwnerModes, PatchTargetScope.ExpandedModesOnly),
                 new PatchedMethodTarget("Game.Audio.WeatherAudioSystem", "OnUpdate", HarmonyOwnerModes, PatchTargetScope.ExpandedModesOnly),
 
-                // === C. MapExtPDX_global：6 个全模式必挂存档入口闸门 ===
+                // === C. MapExtPDX_global：7 个全模式必挂存档入口与保存保护闸门 ===
                 new PatchedMethodTarget("Game.UI.Menu.MenuUISystem", "GetSaveInfo", HarmonyOwnerGlobal, PatchTargetScope.AllModes),
                 new PatchedMethodTarget("Game.UI.Menu.MenuUISystem", "SafeLoadGame", HarmonyOwnerGlobal, PatchTargetScope.AllModes),
                 new PatchedMethodTarget("Game.UI.Menu.MenuUISystem", "SafeContinueGame", HarmonyOwnerGlobal, PatchTargetScope.AllModes),
                 new PatchedMethodTarget("Game.UI.Menu.MenuUISystem", "SafeNewGame", HarmonyOwnerGlobal, PatchTargetScope.AllModes),
                 new PatchedMethodTarget("Game.UI.Menu.MenuUISystem", "SafeQuickLoad", HarmonyOwnerGlobal, PatchTargetScope.AllModes),
                 new PatchedMethodTarget("Game.SceneFlow.GameManager", "Load", HarmonyOwnerGlobal, PatchTargetScope.AllModes),
+                new PatchedMethodTarget("Game.SceneFlow.GameManager", "Save", HarmonyOwnerGlobal, PatchTargetScope.AllModes),
 
                 // === D. MapExtPDX_global：经济与寻路条件补丁 ===
                 new PatchedMethodTarget("Game.Simulation.PathfindSetupSystem", "FindTargets", HarmonyOwnerGlobal, PatchTargetScope.FindTargets),
